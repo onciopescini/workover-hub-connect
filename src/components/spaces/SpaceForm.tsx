@@ -13,7 +13,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Plus, Image } from "lucide-react";
-
 import {
   WORKSPACE_FEATURES_OPTIONS,
   AMENITIES_OPTIONS,
