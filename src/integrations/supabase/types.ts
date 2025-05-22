@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          booking_date: string
+          created_at: string | null
+          id: string
+          space_id: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string | null
+          id?: string
+          space_id: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string | null
+          id?: string
+          space_id?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           bio: string | null
@@ -151,6 +189,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      booking_status: "pending" | "confirmed" | "cancelled"
       confirmation_type: "instant" | "host_approval"
       space_category: "home" | "outdoor" | "professional"
       user_role: "host" | "coworker"
@@ -270,6 +309,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      booking_status: ["pending", "confirmed", "cancelled"],
       confirmation_type: ["instant", "host_approval"],
       space_category: ["home", "outdoor", "professional"],
       user_role: ["host", "coworker"],
