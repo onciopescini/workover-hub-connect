@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,83 +20,86 @@ import SpacesManage from "./pages/SpacesManage";
 import SpaceNew from "./pages/SpaceNew";
 import SpaceEdit from "./pages/SpaceEdit";
 
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route 
-              path="/onboarding" 
-              element={
-                <AuthProtected requireOnboarding={false}>
-                  <Onboarding />
-                </AuthProtected>
-              } 
-            />
-            <Route 
-              path="/dashboard" 
-              element={
-                <AuthProtected>
-                  <Dashboard />
-                </AuthProtected>
-              }
-            />
-            <Route 
-              path="/host/dashboard" 
-              element={
-                <AuthProtected>
-                  <HostDashboard />
-                </AuthProtected>
-              }
-            />
-            <Route 
-              path="/spaces/manage" 
-              element={
-                <AuthProtected>
-                  <SpacesManage />
-                </AuthProtected>
-              }
-            />
-            <Route 
-              path="/spaces/new" 
-              element={
-                <AuthProtected>
-                  <SpaceNew />
-                </AuthProtected>
-              }
-            />
-            <Route 
-              path="/spaces/:id/edit" 
-              element={
-                <AuthProtected>
-                  <SpaceEdit />
-                </AuthProtected>
-              }
-            />
-            <Route 
-              path="/favorites" 
-              element={
-                <AuthProtected>
-                  <Favorites />
-                </AuthProtected>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route 
+                path="/onboarding" 
+                element={
+                  <AuthProtected requireOnboarding={false}>
+                    <Onboarding />
+                  </AuthProtected>
+                } 
+              />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <AuthProtected>
+                    <Dashboard />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/host/dashboard" 
+                element={
+                  <AuthProtected>
+                    <HostDashboard />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/spaces/manage" 
+                element={
+                  <AuthProtected>
+                    <SpacesManage />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/spaces/new" 
+                element={
+                  <AuthProtected>
+                    <SpaceNew />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/spaces/:id/edit" 
+                element={
+                  <AuthProtected>
+                    <SpaceEdit />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/favorites" 
+                element={
+                  <AuthProtected>
+                    <Favorites />
+                  </AuthProtected>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;
