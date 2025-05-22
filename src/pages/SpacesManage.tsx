@@ -162,7 +162,7 @@ const SpacesManage = () => {
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg truncate">{space.title}</CardTitle>
                     <Badge 
-                      variant={space.published ? "success" : "outline"} 
+                      variant="default" 
                       className={space.published ? "bg-green-100 text-green-800" : "text-gray-500"}
                     >
                       {space.published ? "Published" : "Draft"}

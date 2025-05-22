@@ -218,6 +218,11 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       return;
     }
     
+    if (!formData.address) {
+      alert("Address is required");
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
