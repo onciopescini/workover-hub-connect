@@ -237,15 +237,26 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       
       const spaceData = {
         ...formData,
-        address: formData.address!,
-        category: formData.category!,
+        title: formData.title!,
         description: formData.description!,
+        category: formData.category!,
         max_capacity: formData.max_capacity!,
+        workspace_features: formData.workspace_features || [],
+        work_environment: formData.work_environment!,
+        amenities: formData.amenities || [],
+        seating_types: formData.seating_types || [],
         price_per_hour: formData.price_per_hour!,
         price_per_day: formData.price_per_day!,
-        work_environment: formData.work_environment!,
-        confirmation_type: formData.confirmation_type!,
+        address: formData.address!,
+        latitude: formData.latitude || 0, // se il campo esiste, altrimenti rimuovi
+        longitude: formData.longitude || 0, // idem
         photos: photoUrls,
+        rules: formData.rules || "",
+        ideal_guest_tags: formData.ideal_guest_tags || [],
+        event_friendly_tags: formData.event_friendly_tags || [],
+        confirmation_type: formData.confirmation_type!,
+        availability: formData.availability || { recurring: [], exceptions: [] },
+        published: formData.published ?? false,
         host_id: user.id,
       };
       
