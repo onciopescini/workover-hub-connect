@@ -43,6 +43,14 @@ const Onboarding = () => {
     }
   }, [authState.profile]);
 
+  // Redirect if onboarding is already completed
+  useEffect(() => {
+    if (authState.profile?.onboarding_completed) {
+      const destination = authState.profile.role === 'host' ? '/host/dashboard' : '/dashboard';
+      navigate(destination, { replace: true });
+    }
+  }, [authState.profile, navigate]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -102,14 +110,11 @@ const Onboarding = () => {
       const fileName = `${userId}/profile-photo-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload the file
+      // Upload the file - Fixed the FileOptions issue by removing onUploadProgress
       const { error: uploadError, data } = await supabase.storage
         .from('profile_photos')
         .upload(filePath, formData.profilePhoto, {
           upsert: true,
-          onUploadProgress: (progress) => {
-            setUploadProgress(Math.round((progress.loaded / progress.total) * 100));
-          },
         });
 
       if (uploadError) {
@@ -166,7 +171,7 @@ const Onboarding = () => {
       });
 
       // Redirect based on user role
-      navigate(userRole === "host" ? "/host/dashboard" : "/explore");
+      navigate(userRole === "host" ? "/host/dashboard" : "/dashboard");
     } catch (error: any) {
       console.error("Onboarding error:", error);
       setErrors({

@@ -31,18 +31,19 @@ const AuthCallback = () => {
           }
 
           if (profile?.onboarding_completed) {
-            navigate("/");
+            // Redirect based on user role
+            navigate(profile.role === 'host' ? '/host/dashboard' : '/dashboard', { replace: true });
           } else {
-            navigate("/onboarding");
+            navigate("/onboarding", { replace: true });
           }
         } else {
-          navigate("/login");
+          navigate("/login", { replace: true });
         }
       } catch (error) {
         console.error("Auth callback error:", error);
         setError("Authentication failed. Please try signing in again.");
         setTimeout(() => {
-          navigate("/login");
+          navigate("/login", { replace: true });
         }, 3000);
       }
     };

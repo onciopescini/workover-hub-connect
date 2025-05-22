@@ -13,6 +13,8 @@ import AuthCallback from "./pages/AuthCallback";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 import AuthProtected from "./components/auth/AuthProtected";
+import Dashboard from "./pages/Dashboard";
+import HostDashboard from "./pages/HostDashboard";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,22 @@ const App = () => (
                   <Onboarding />
                 </AuthProtected>
               } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                <AuthProtected>
+                  <Dashboard />
+                </AuthProtected>
+              }
+            />
+            <Route 
+              path="/host/dashboard" 
+              element={
+                <AuthProtected>
+                  <HostDashboard />
+                </AuthProtected>
+              }
             />
             <Route 
               path="/favorites" 
