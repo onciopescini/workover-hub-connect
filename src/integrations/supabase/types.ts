@@ -54,6 +54,95 @@ export type Database = {
         }
         Relationships: []
       }
+      spaces: {
+        Row: {
+          address: string
+          amenities: string[]
+          availability: Json | null
+          category: Database["public"]["Enums"]["space_category"]
+          confirmation_type: Database["public"]["Enums"]["confirmation_type"]
+          created_at: string
+          description: string
+          event_friendly_tags: string[] | null
+          host_id: string
+          id: string
+          ideal_guest_tags: string[] | null
+          latitude: number | null
+          longitude: number | null
+          max_capacity: number
+          photos: string[]
+          price_per_day: number
+          price_per_hour: number
+          published: boolean
+          rules: string | null
+          seating_types: string[]
+          title: string
+          updated_at: string
+          work_environment: Database["public"]["Enums"]["work_environment"]
+          workspace_features: string[]
+        }
+        Insert: {
+          address: string
+          amenities?: string[]
+          availability?: Json | null
+          category: Database["public"]["Enums"]["space_category"]
+          confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
+          created_at?: string
+          description: string
+          event_friendly_tags?: string[] | null
+          host_id: string
+          id?: string
+          ideal_guest_tags?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity: number
+          photos?: string[]
+          price_per_day: number
+          price_per_hour: number
+          published?: boolean
+          rules?: string | null
+          seating_types?: string[]
+          title: string
+          updated_at?: string
+          work_environment: Database["public"]["Enums"]["work_environment"]
+          workspace_features?: string[]
+        }
+        Update: {
+          address?: string
+          amenities?: string[]
+          availability?: Json | null
+          category?: Database["public"]["Enums"]["space_category"]
+          confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
+          created_at?: string
+          description?: string
+          event_friendly_tags?: string[] | null
+          host_id?: string
+          id?: string
+          ideal_guest_tags?: string[] | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity?: number
+          photos?: string[]
+          price_per_day?: number
+          price_per_hour?: number
+          published?: boolean
+          rules?: string | null
+          seating_types?: string[]
+          title?: string
+          updated_at?: string
+          work_environment?: Database["public"]["Enums"]["work_environment"]
+          workspace_features?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -62,7 +151,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      confirmation_type: "instant" | "host_approval"
+      space_category: "home" | "outdoor" | "professional"
       user_role: "host" | "coworker"
+      work_environment: "silent" | "controlled" | "dynamic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -178,7 +270,10 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      confirmation_type: ["instant", "host_approval"],
+      space_category: ["home", "outdoor", "professional"],
       user_role: ["host", "coworker"],
+      work_environment: ["silent", "controlled", "dynamic"],
     },
   },
 } as const

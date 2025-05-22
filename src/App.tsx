@@ -15,6 +15,9 @@ import NotFound from "./pages/NotFound";
 import AuthProtected from "./components/auth/AuthProtected";
 import Dashboard from "./pages/Dashboard";
 import HostDashboard from "./pages/HostDashboard";
+import SpacesManage from "./pages/SpacesManage";
+import SpaceNew from "./pages/SpaceNew";
+import SpaceEdit from "./pages/SpaceEdit";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +54,30 @@ const App = () => (
               element={
                 <AuthProtected>
                   <HostDashboard />
+                </AuthProtected>
+              }
+            />
+            <Route 
+              path="/spaces/manage" 
+              element={
+                <AuthProtected>
+                  <SpacesManage />
+                </AuthProtected>
+              }
+            />
+            <Route 
+              path="/spaces/new" 
+              element={
+                <AuthProtected>
+                  <SpaceNew />
+                </AuthProtected>
+              }
+            />
+            <Route 
+              path="/spaces/:id/edit" 
+              element={
+                <AuthProtected>
+                  <SpaceEdit />
                 </AuthProtected>
               }
             />
