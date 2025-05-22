@@ -240,6 +240,11 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         address: formData.address!,
         category: formData.category!,
         description: formData.description!,
+        max_capacity: formData.max_capacity!,
+        price_per_hour: formData.price_per_hour!,
+        price_per_day: formData.price_per_day!,
+        work_environment: formData.work_environment!,
+        confirmation_type: formData.confirmation_type!,
         photos: photoUrls,
         host_id: user.id,
       };
