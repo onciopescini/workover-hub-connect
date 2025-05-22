@@ -239,6 +239,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         ...formData,
         address: formData.address!,
         category: formData.category!,
+        description: formData.description!,
         photos: photoUrls,
         host_id: user.id,
       };
