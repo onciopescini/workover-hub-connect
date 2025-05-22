@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Plus, Image } from "lucide-react";
-// import { v4 as uuidv4 } from 'uuid';
+
 import {
   WORKSPACE_FEATURES_OPTIONS,
   AMENITIES_OPTIONS,
@@ -179,7 +179,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     try {
       for (const file of photoFiles) {
         const fileExt = file.name.split('.').pop();
-        //const fileName = `${userId}/${uuidv4()}.${fileExt}`;
+  
         const fileName = `${userId}/${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
