@@ -15,7 +15,7 @@ export type BookingWithDetails = Booking & {
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
-  };
+  } | null;
 };
 
 export const BOOKING_STATUS_COLORS = {
