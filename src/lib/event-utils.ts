@@ -18,21 +18,21 @@ export const getEvent = async (eventId: string): Promise<EventWithDetails | null
     return null;
   }
 
-  // Fetch participants
+  // Fetch participants con la sintassi corretta per le foreign key
   const { data: participants } = await supabase
     .from('event_participants')
     .select(`
       *,
-      user:profiles(id, first_name, last_name, profile_photo_url)
+      user:profiles!fk_event_participants_user_id(id, first_name, last_name, profile_photo_url)
     `)
     .eq('event_id', eventId);
 
-  // Fetch waitlist
+  // Fetch waitlist con la sintassi corretta per le foreign key
   const { data: waitlist } = await supabase
     .from('waitlists')
     .select(`
       *,
-      user:profiles(id, first_name, last_name, profile_photo_url)
+      user:profiles!fk_waitlists_user_id(id, first_name, last_name, profile_photo_url)
     `)
     .eq('event_id', eventId)
     .order('created_at', { ascending: true });
