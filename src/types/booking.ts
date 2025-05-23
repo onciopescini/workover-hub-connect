@@ -18,7 +18,7 @@ export type BookingWithDetails = Booking & {
   } | null;
 };
 
-// Updated Message type to match our database schema
+// Message type definition to match our database schema
 export type Message = {
   id: string;
   booking_id: string;
@@ -27,7 +27,6 @@ export type Message = {
   attachments: string[];
   is_read: boolean;
   created_at: string;
-  updated_at: string;
   sender?: {
     first_name: string;
     last_name: string;

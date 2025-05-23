@@ -50,15 +50,24 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return 0;
 
-    // Need to join with bookings to find messages across all bookings the user participates in
+    // Get all bookings where the user is either the coworker or the host
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('id, space:spaces(host_id)')
+      .or(`user_id.eq.${user.user.id},spaces.host_id.eq.${user.user.id}`);
+
+    if (!bookings || bookings.length === 0) return 0;
+
+    // Get booking IDs
+    const bookingIds = bookings.map(booking => booking.id);
+
+    // Count unread messages in those bookings that weren't sent by the user
     const { count, error } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('is_read', false)
       .neq('sender_id', user.user.id)
-      .in('booking_id', (supabase.from('bookings')
-        .select('id')
-        .or(`user_id.eq.${user.user.id},spaces.host_id.eq.${user.user.id}`)));
+      .in('booking_id', bookingIds);
 
     if (error) throw error;
     return count || 0;

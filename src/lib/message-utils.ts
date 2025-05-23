@@ -6,11 +6,17 @@ import { toast } from "@/hooks/use-toast";
 // Fetch messages for a specific booking
 export const fetchBookingMessages = async (bookingId: string): Promise<Message[]> => {
   try {
-    const { data: messages, error } = await supabase
+    const { data, error } = await supabase
       .from("messages")
       .select(`
-        *,
-        sender:sender_id (
+        id,
+        booking_id,
+        sender_id,
+        content,
+        attachments,
+        is_read,
+        created_at,
+        sender:profiles!sender_id (
           first_name,
           last_name,
           profile_photo_url
@@ -23,7 +29,7 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       throw error;
     }
     
-    return messages as Message[];
+    return data as unknown as Message[];
   } catch (error) {
     console.error("Error fetching messages:", error);
     return [];
@@ -49,8 +55,7 @@ export const sendBookingMessage = async (
         booking_id: bookingId,
         sender_id: user.user.id,
         content,
-        attachments,
-        is_read: false
+        attachments
       })
       .select()
       .single();
@@ -59,7 +64,7 @@ export const sendBookingMessage = async (
       throw error;
     }
     
-    return data as Message;
+    return data as unknown as Message;
   } catch (error) {
     console.error("Error sending message:", error);
     toast({
