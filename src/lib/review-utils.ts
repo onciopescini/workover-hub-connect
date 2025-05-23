@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ReviewWithDetails, ReviewInsert } from "@/types/review";
@@ -13,7 +14,7 @@ export const getUserReviews = async (userId: string): Promise<{
       .from("reviews")
       .select(`
         *,
-        reviewee:profiles!reviewee_id (
+        reviewer:profiles!reviewer_id (
           first_name,
           last_name,
           profile_photo_url
