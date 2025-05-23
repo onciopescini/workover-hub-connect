@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,6 +22,7 @@ import HostDashboardNew from "./pages/HostDashboardNew";
 import Bookings from "./pages/Bookings";
 import Messages from "./pages/Messages";
 import MessageConversation from "./pages/MessageConversation";
+import Reviews from "./pages/Reviews";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -108,6 +108,14 @@ const App = () => (
               element={
                 <AuthProtected>
                   <Bookings />
+                </AuthProtected>
+              }
+            />
+            <Route 
+              path="/reviews" 
+              element={
+                <AuthProtected>
+                  <Reviews />
                 </AuthProtected>
               }
             />
