@@ -105,6 +105,10 @@ export type Database = {
       bookings: {
         Row: {
           booking_date: string
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_host: boolean | null
           created_at: string | null
           id: string
           space_id: string
@@ -114,6 +118,10 @@ export type Database = {
         }
         Insert: {
           booking_date: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_host?: boolean | null
           created_at?: string | null
           id?: string
           space_id: string
@@ -123,6 +131,10 @@ export type Database = {
         }
         Update: {
           booking_date?: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_host?: boolean | null
           created_at?: string | null
           id?: string
           space_id?: string
@@ -1042,6 +1054,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_cancellation_fee: {
+        Args: { booking_date: string; price_amount: number }
+        Returns: number
+      }
+      cancel_booking: {
+        Args: {
+          booking_id: string
+          cancelled_by_host?: boolean
+          reason?: string
+        }
+        Returns: Json
+      }
       expire_pending_connections: {
         Args: Record<PropertyKey, never>
         Returns: undefined

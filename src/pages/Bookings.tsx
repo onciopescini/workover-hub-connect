@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -7,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BookingWithDetails } from "@/types/booking";
-import { Calendar, MessageSquare, MapPin, User } from "lucide-react";
+import { Calendar, MessageSquare, MapPin, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoadingScreen from "@/components/LoadingScreen";
 import { MessageDialog } from "@/components/messaging/MessageDialog";
+import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
+import { cancelBooking } from "@/lib/booking-utils";
 
 export default function Bookings() {
   const { authState } = useAuth();
@@ -27,6 +28,9 @@ export default function Bookings() {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string>("");
   const [selectedBookingTitle, setSelectedBookingTitle] = useState<string>("");
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<BookingWithDetails | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Fetch all bookings for current user (both as coworker and host)
   useEffect(() => {
@@ -45,7 +49,8 @@ export default function Bookings() {
               title,
               address,
               photos,
-              host_id
+              host_id,
+              price_per_day
             ),
             coworker:user_id (
               first_name,
@@ -80,7 +85,8 @@ export default function Bookings() {
                   title,
                   address,
                   photos,
-                  host_id
+                  host_id,
+                  price_per_day
                 ),
                 coworker:user_id (
                   first_name,
@@ -151,11 +157,54 @@ export default function Bookings() {
     }
   };
 
+  // Check if booking can be cancelled
+  const canCancelBooking = (booking: BookingWithDetails) => {
+    const userRole = getUserRole(booking);
+    return booking.status === "confirmed" || booking.status === "pending";
+  };
+
   // Open message dialog
   const openMessageDialog = (bookingId: string, spaceTitle: string) => {
     setSelectedBookingId(bookingId);
     setSelectedBookingTitle(spaceTitle);
     setMessageDialogOpen(true);
+  };
+
+  // Open cancel dialog
+  const openCancelDialog = (booking: BookingWithDetails) => {
+    setBookingToCancel(booking);
+    setCancelDialogOpen(true);
+  };
+
+  // Handle booking cancellation
+  const handleCancelBooking = async (reason?: string) => {
+    if (!bookingToCancel) return;
+
+    setIsCancelling(true);
+    try {
+      const userRole = getUserRole(bookingToCancel);
+      const result = await cancelBooking(
+        bookingToCancel.id, 
+        userRole === "host", 
+        reason
+      );
+
+      if (result.success) {
+        // Update the booking in the local state
+        setBookings(prev => prev.map(booking => 
+          booking.id === bookingToCancel.id 
+            ? { ...booking, status: 'cancelled' as const }
+            : booking
+        ));
+        setCancelDialogOpen(false);
+        setBookingToCancel(null);
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error("Errore nella cancellazione della prenotazione");
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   if (authState.isLoading || isLoading) {
@@ -282,6 +331,17 @@ export default function Bookings() {
                             <MessageSquare className="w-4 h-4 mr-1" />
                             Messaggi
                           </Button>
+                          {canCancelBooking(booking) && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="flex items-center"
+                              onClick={() => openCancelDialog(booking)}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Cancella
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -299,6 +359,17 @@ export default function Bookings() {
           bookingId={selectedBookingId}
           bookingTitle={selectedBookingTitle}
         />
+
+        {/* Cancel Booking Dialog */}
+        {bookingToCancel && (
+          <CancelBookingDialog
+            open={cancelDialogOpen}
+            onOpenChange={setCancelDialogOpen}
+            booking={bookingToCancel}
+            onConfirm={handleCancelBooking}
+            isLoading={isCancelling}
+          />
+        )}
       </div>
     </div>
   );
