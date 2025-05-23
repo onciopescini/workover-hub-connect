@@ -57,7 +57,7 @@ const HostDashboard = () => {
                 address,
                 photos
               ),
-              coworker:user_id (
+              coworker:profiles!bookings_user_id_fkey (
                 first_name,
                 last_name,
                 profile_photo_url
