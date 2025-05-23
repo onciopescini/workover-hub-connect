@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, MarkAsRead } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { NotificationItem } from "./NotificationItem";
 import { UserNotification, NotificationCounts } from "@/types/notification";
 import { getUserNotifications, getNotificationCounts, markAllNotificationsAsRead } from "@/lib/notification-utils";
@@ -113,7 +113,7 @@ export function NotificationCenter() {
                 onClick={handleMarkAllAsRead}
                 className="text-xs"
               >
-                <MarkAsRead className="w-3 h-3 mr-1" />
+                <CheckCheck className="w-3 h-3 mr-1" />
                 Segna tutte
               </Button>
             )}

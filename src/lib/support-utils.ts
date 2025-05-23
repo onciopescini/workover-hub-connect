@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { SupportTicket, SupportTicketInsert } from "@/types/support";
+import type { SupportTicket } from "@/types/support";
 
 // Get support tickets for current user
 export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
@@ -25,7 +25,11 @@ export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
 };
 
 // Create a new support ticket
-export const createSupportTicket = async (ticket: SupportTicketInsert): Promise<boolean> => {
+export const createSupportTicket = async (ticket: {
+  subject: string;
+  message: string;
+  status: string;
+}): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
@@ -36,8 +40,10 @@ export const createSupportTicket = async (ticket: SupportTicketInsert): Promise<
     const { error } = await supabase
       .from('support_tickets')
       .insert({
-        ...ticket,
-        user_id: user.user.id
+        user_id: user.user.id,
+        subject: ticket.subject,
+        message: ticket.message,
+        status: ticket.status
       });
 
     if (error) {

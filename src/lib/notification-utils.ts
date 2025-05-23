@@ -22,7 +22,20 @@ export const getUserNotifications = async (limit?: number): Promise<UserNotifica
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    
+    // Map the raw data to ensure type compatibility
+    const notifications: UserNotification[] = (data || []).map(notification => ({
+      id: notification.id,
+      user_id: notification.user_id,
+      type: notification.type as UserNotification['type'],
+      title: notification.title,
+      content: notification.content,
+      metadata: notification.metadata as Record<string, any>,
+      is_read: notification.is_read,
+      created_at: notification.created_at
+    }));
+
+    return notifications;
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return [];
