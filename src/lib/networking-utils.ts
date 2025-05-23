@@ -32,7 +32,12 @@ export const getUserConnections = async (): Promise<Connection[]> => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast esplicito per il campo status
+    return (data || []).map(conn => ({
+      ...conn,
+      status: conn.status as 'pending' | 'accepted' | 'rejected'
+    }));
   } catch (error) {
     console.error("Error fetching connections:", error);
     return [];
@@ -154,7 +159,12 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
       .limit(20);
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast esplicito per il campo reason
+    return (data || []).map(suggestion => ({
+      ...suggestion,
+      reason: suggestion.reason as 'shared_space' | 'shared_event' | 'similar_interests'
+    }));
   } catch (error) {
     console.error("Error fetching suggestions:", error);
     return [];
@@ -282,7 +292,12 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    
+    // Cast esplicito per il campo attachments
+    return (data || []).map(message => ({
+      ...message,
+      attachments: message.attachments as string[]
+    }));
   } catch (error) {
     console.error("Error fetching private messages:", error);
     return [];
