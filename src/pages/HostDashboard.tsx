@@ -57,7 +57,7 @@ const HostDashboard = () => {
                 address,
                 photos
               ),
-              coworker:profiles!bookings_user_id_fkey (
+              coworker:user_id (
                 first_name,
                 last_name,
                 profile_photo_url
@@ -67,7 +67,7 @@ const HostDashboard = () => {
             .order("booking_date", { ascending: true });
 
           if (bookingsError) throw bookingsError;
-          setBookings(bookingsData as BookingWithDetails[] || []);
+          setBookings(bookingsData as unknown as BookingWithDetails[] || []);
         }
       } catch (error) {
         console.error("Error fetching host data:", error);
