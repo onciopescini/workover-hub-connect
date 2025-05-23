@@ -1,25 +1,26 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Home, Users, Upload, Loader2, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidLinkedInUrl } from "@/lib/auth-utils";
-import { Loader2, Upload, X, Users, Building } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 const Onboarding = () => {
   const { authState, updateProfile } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,24 +28,31 @@ const Onboarding = () => {
     profilePhoto: null as File | null,
     linkedinUrl: "",
     bio: "",
-    networkingEnabled: false,
+    networkingEnabled: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // If user already selected a role during signup, use that
   useEffect(() => {
     if (authState.profile?.role) {
-      setUserRole(authState.profile.role as UserRole);
+      setUserRole(authState.profile.role);
     }
   }, [authState.profile]);
 
+  // Redirect if onboarding is already completed
+  useEffect(() => {
+    if (authState.profile?.onboarding_completed) {
+      const destination = authState.profile.role === 'host' ? '/host/dashboard' : '/dashboard';
+      navigate(destination, { replace: true });
+    }
+  }, [authState.profile, navigate]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!userRole) {
-      newErrors.role = "Please select your role";
-    }
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
@@ -58,8 +66,8 @@ const Onboarding = () => {
       newErrors.linkedinUrl = "Please enter a valid LinkedIn URL";
     }
 
-    if (userRole === "coworker" && formData.bio && formData.bio.length > 500) {
-      newErrors.bio = "Bio must be 500 characters or less";
+    if (!userRole) {
+      newErrors.role = "Please select a role";
     }
 
     setErrors(newErrors);
@@ -69,56 +77,62 @@ const Onboarding = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, profilePhoto: "File size must be less than 5MB" }));
-        return;
-      }
-
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({ ...prev, profilePhoto: "Please select an image file" }));
-        return;
-      }
-
-      setFormData(prev => ({ ...prev, profilePhoto: file }));
-      setErrors(prev => ({ ...prev, profilePhoto: "" }));
-
+      setFormData((prev) => ({ ...prev, profilePhoto: file }));
+      
+      // Create preview URL
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewUrl(e.target?.result as string);
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const removePhoto = () => {
-    setFormData(prev => ({ ...prev, profilePhoto: null }));
-    setPreviewUrl(null);
-    setErrors(prev => ({ ...prev, profilePhoto: "" }));
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear error when field is edited
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const uploadProfilePhoto = async (userId: string): Promise<string | null> => {
     if (!formData.profilePhoto) return null;
 
     try {
+      setIsUploading(true);
       const fileExt = formData.profilePhoto.name.split('.').pop();
-      const fileName = `${userId}/profile.${fileExt}`;
+      const fileName = `${userId}/profile-photo-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('profile-photos')
-        .upload(fileName, formData.profilePhoto, {
+      // Upload the file - Fixed the FileOptions issue by removing onUploadProgress
+      const { error: uploadError, data } = await supabase.storage
+        .from('profile_photos')
+        .upload(filePath, formData.profilePhoto, {
           upsert: true,
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw uploadError;
+      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('profile-photos')
-        .getPublicUrl(fileName);
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('profile_photos')
+        .getPublicUrl(filePath);
 
-      return publicUrl;
+      return urlData.publicUrl;
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      throw new Error('Failed to upload profile photo');
+      console.error("Error uploading profile photo:", error);
+      throw error;
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -156,12 +170,8 @@ const Onboarding = () => {
         onboarding_completed: true,
       });
 
-      // Centralized redirect logic will handle the routing
-      toast({
-        title: "Welcome!",
-        description: "Your profile has been set up successfully.",
-      });
-      
+      // Redirect based on user role
+      navigate(userRole === "host" ? "/host/dashboard" : "/dashboard");
     } catch (error: any) {
       console.error("Onboarding error:", error);
       setErrors({
@@ -172,261 +182,300 @@ const Onboarding = () => {
     }
   };
 
-  if (authState.isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Complete Your Profile
-            </CardTitle>
-            <CardDescription>
-              Let's set up your account to get you started
-            </CardDescription>
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">W</span>
+            </div>
+            <span className="text-2xl font-bold text-gray-900">Workover</span>
+          </div>
+          
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+          <p className="text-gray-600">Tell us about yourself to help us customize your experience</p>
+        </div>
+
+        <Card className="shadow-lg border-0 mb-6">
+          <CardHeader>
+            <CardTitle className="text-xl">1. Choose Your Role</CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Role Selection */}
-              {!userRole && (
-                <div className="space-y-4">
-                  <Label className="text-base font-medium">I am a...</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setUserRole("coworker")}
-                      className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Users className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <div className="font-medium">Coworker</div>
-                          <div className="text-sm text-gray-500">
-                            Looking for spaces to work
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setUserRole("host")}
-                      className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Building className="w-6 h-6 text-green-600" />
-                        <div>
-                          <div className="font-medium">Host</div>
-                          <div className="text-sm text-gray-500">
-                            Offering spaces to others
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                  {errors.role && (
-                    <p className="text-red-600 text-sm">{errors.role}</p>
-                  )}
-                </div>
-              )}
-
-              {userRole && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-blue-800">
-                    Great! You're signing up as a{" "}
-                    <span className="font-semibold">{userRole}</span>.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setUserRole(null)}
-                    className="text-blue-600 text-sm hover:underline"
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Select how you'll primarily use Workover. This cannot be changed later.
+              </p>
+              
+              <RadioGroup
+                value={userRole || ""}
+                onValueChange={(value) => setUserRole(value as UserRole)}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"
+              >
+                <div>
+                  <RadioGroupItem
+                    id="coworker"
+                    value="coworker"
+                    className="sr-only peer"
+                  />
+                  <Label
+                    htmlFor="coworker"
+                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      userRole === "coworker"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300 peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500"
+                    }`}
                   >
-                    Change role
-                  </button>
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
+                      <Users className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1 flex items-center">
+                        Coworker
+                        {userRole === "coworker" && (
+                          <Check className="w-4 h-4 text-blue-500 ml-2" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        I'm looking for spaces to work and want to connect with
+                        like-minded professionals
+                      </p>
+                    </div>
+                  </Label>
+                </div>
+
+                <div>
+                  <RadioGroupItem
+                    id="host"
+                    value="host"
+                    className="sr-only peer"
+                  />
+                  <Label
+                    htmlFor="host"
+                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      userRole === "host"
+                        ? "border-orange-400 bg-orange-50"
+                        : "border-gray-200 hover:border-gray-300 peer-focus-visible:ring-2 peer-focus-visible:ring-orange-400"
+                    }`}
+                  >
+                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
+                      <Home className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1 flex items-center">
+                        Host
+                        {userRole === "host" && (
+                          <Check className="w-4 h-4 text-orange-500 ml-2" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        I have space to share and want to earn income while
+                        building community
+                      </p>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
+              
+              {errors.role && (
+                <p className="text-sm text-red-500 mt-1">{errors.role}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-xl">2. Personal Details</CardTitle>
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.submit && (
+                <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-md mb-4 text-sm">
+                  {errors.submit}
                 </div>
               )}
+              
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                <div className="w-full md:w-1/3 flex flex-col items-center">
+                  <div className="mb-2 text-center">
+                    <p className="text-gray-700 font-medium mb-2">Profile Photo</p>
+                    <Avatar className="w-28 h-28 mx-auto mb-3 border-2 border-gray-200">
+                      {previewUrl ? (
+                        <AvatarImage src={previewUrl} alt="Profile preview" />
+                      ) : (
+                        <AvatarFallback className="bg-blue-100 text-blue-600 text-xl uppercase">
+                          {formData.firstName && formData.lastName
+                            ? `${formData.firstName[0]}${formData.lastName[0]}`
+                            : "?"}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
 
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">
-                    First Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, firstName: e.target.value }))
-                    }
-                    placeholder="Your first name"
-                  />
-                  {errors.firstName && (
-                    <p className="text-red-600 text-sm">{errors.firstName}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">
-                    Last Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, lastName: e.target.value }))
-                    }
-                    placeholder="Your last name"
-                  />
-                  {errors.lastName && (
-                    <p className="text-red-600 text-sm">{errors.lastName}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nickname">Nickname (Optional)</Label>
-                <Input
-                  id="nickname"
-                  value={formData.nickname}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, nickname: e.target.value }))
-                  }
-                  placeholder="How would you like to be called?"
-                />
-              </div>
-
-              {/* Profile Photo */}
-              <div className="space-y-2">
-                <Label>Profile Photo (Optional)</Label>
-                <div className="flex items-center space-x-4">
-                  {previewUrl ? (
-                    <div className="relative">
-                      <img
-                        src={previewUrl}
-                        alt="Profile preview"
-                        className="w-20 h-20 rounded-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={removePhoto}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center">
-                      <Upload className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div>
-                    <label htmlFor="profilePhoto" className="cursor-pointer">
-                      <div className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Choose Photo
+                    {isUploading && (
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                        <div
+                          className="bg-blue-500 h-2.5 rounded-full"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                        <p className="text-xs text-gray-500 text-center">{uploadProgress}%</p>
+                      </div>
+                    )}
+                    
+                    <label className="cursor-pointer">
+                      <div className="flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Photo
                       </div>
                       <input
-                        id="profilePhoto"
                         type="file"
+                        className="hidden"
                         accept="image/*"
                         onChange={handleFileChange}
-                        className="hidden"
+                        disabled={isSubmitting || isUploading}
                       />
                     </label>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Max 5MB, JPG/PNG
+                    <p className="text-xs text-gray-500 mt-2">
+                      Recommended: Square, at least 300x300px
                     </p>
                   </div>
                 </div>
-                {errors.profilePhoto && (
-                  <p className="text-red-600 text-sm">{errors.profilePhoto}</p>
-                )}
-              </div>
 
-              {/* LinkedIn URL */}
-              <div className="space-y-2">
-                <Label htmlFor="linkedinUrl">LinkedIn URL (Optional)</Label>
-                <Input
-                  id="linkedinUrl"
-                  value={formData.linkedinUrl}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, linkedinUrl: e.target.value }))
-                  }
-                  placeholder="https://linkedin.com/in/yourprofile"
-                />
-                {errors.linkedinUrl && (
-                  <p className="text-red-600 text-sm">{errors.linkedinUrl}</p>
-                )}
-              </div>
+                <div className="w-full md:w-2/3 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">
+                        First Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        disabled={isSubmitting}
+                      />
+                      {errors.firstName && (
+                        <p className="text-sm text-red-500">{errors.firstName}</p>
+                      )}
+                    </div>
 
-              {/* Coworker-specific fields */}
-              {userRole === "coworker" && (
-                <>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">
+                        Last Name <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        disabled={isSubmitting}
+                      />
+                      {errors.lastName && (
+                        <p className="text-sm text-red-500">{errors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="bio">Bio (Optional)</Label>
-                    <Textarea
-                      id="bio"
-                      value={formData.bio}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, bio: e.target.value }))
-                      }
-                      placeholder="Tell us about yourself..."
-                      rows={4}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-gray-500">
-                      {formData.bio.length}/500 characters
-                    </p>
-                    {errors.bio && (
-                      <p className="text-red-600 text-sm">{errors.bio}</p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="networking"
-                      checked={formData.networkingEnabled}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          networkingEnabled: !!checked,
-                        }))
-                      }
-                    />
-                    <Label htmlFor="networking" className="text-sm">
-                      Enable networking features (connect with other coworkers)
+                    <Label htmlFor="nickname">
+                      Nickname <span className="text-gray-400">(Optional)</span>
                     </Label>
+                    <Input
+                      id="nickname"
+                      placeholder="How you'd like to be called"
+                      value={formData.nickname}
+                      onChange={(e) => handleInputChange("nickname", e.target.value)}
+                      disabled={isSubmitting}
+                    />
                   </div>
-                </>
-              )}
 
-              {errors.submit && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-red-600 text-sm">{errors.submit}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedinUrl">
+                      LinkedIn URL <span className="text-gray-400">(Optional)</span>
+                    </Label>
+                    <Input
+                      id="linkedinUrl"
+                      placeholder="https://linkedin.com/in/yourprofile"
+                      value={formData.linkedinUrl}
+                      onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                    {errors.linkedinUrl && (
+                      <p className="text-sm text-red-500">{errors.linkedinUrl}</p>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      Add your LinkedIn profile to help build trust in the community
+                    </p>
+                  </div>
+
+                  {userRole === "coworker" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">
+                          Bio <span className="text-gray-400">(Optional)</span>
+                        </Label>
+                        <Textarea
+                          id="bio"
+                          placeholder="Tell the community a bit about yourself..."
+                          value={formData.bio}
+                          onChange={(e) => handleInputChange("bio", e.target.value)}
+                          className="min-h-[100px]"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <Label htmlFor="networkingEnabled">
+                            Enable Networking
+                          </Label>
+                          <p className="text-sm text-gray-500">
+                            Allow other coworkers to connect with you
+                          </p>
+                        </div>
+                        <Switch
+                          id="networkingEnabled"
+                          checked={formData.networkingEnabled}
+                          onCheckedChange={(checked) =>
+                            handleInputChange("networkingEnabled", checked)
+                          }
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {userRole === "host" && (
+                    <div className="bg-amber-50 p-4 rounded-md border border-amber-200">
+                      <h4 className="font-medium text-amber-800 mb-1">Host Setup</h4>
+                      <p className="text-sm text-amber-700">
+                        After completing your profile, you'll be guided to set up your
+                        payment details and create your first space listing.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="pt-6 flex items-center justify-between">
+                    <Badge variant="outline" className="text-gray-500 border-gray-300">
+                      {userRole === "host" ? "Host Account" : userRole === "coworker" ? "Coworker Account" : "Select a role"}
+                    </Badge>
+                    <Button
+                      type="submit"
+                      className="px-6 bg-blue-500 hover:bg-blue-600"
+                      disabled={isSubmitting || isUploading}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Complete Profile"
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting || !userRole}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Setting up your profile...
-                  </>
-                ) : (
-                  "Complete Setup"
-                )}
-              </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
