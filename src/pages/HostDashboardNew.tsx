@@ -27,7 +27,7 @@ const HostDashboardNew = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   
-  // Dashboard data
+  // Dashboard data states
   const [totalSpaces, setTotalSpaces] = useState(0);
   const [activeBookings, setActiveBookings] = useState(0);
   const [averageRating, setAverageRating] = useState<number | null>(null);
@@ -37,20 +37,20 @@ const HostDashboardNew = () => {
   const [recentReviews, setRecentReviews] = useState<ReviewWithDetails[]>([]);
   const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
 
-  // Redirect non-hosts
+  // Redirect non-hosts to regular dashboard
   useEffect(() => {
     if (authState.profile?.role !== "host") {
       navigate("/dashboard", { replace: true });
     }
   }, [authState.profile, navigate]);
 
-  // Fetch dashboard data
+  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!authState.user) return;
 
       try {
-        // Fetch spaces count
+        // 1. Fetch spaces count for current host
         const { data: spacesData, error: spacesError } = await supabase
           .from("spaces")
           .select("id")
@@ -61,7 +61,7 @@ const HostDashboardNew = () => {
         setTotalSpaces(spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // Fetch active bookings
+          // 2. Fetch active bookings for host's spaces
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
@@ -86,7 +86,7 @@ const HostDashboardNew = () => {
           setActiveBookings(bookingsData?.length || 0);
           setRecentBookings(bookingsData as unknown as BookingWithDetails[] || []);
 
-          // Fetch recent messages
+          // 3. Fetch recent messages for host's bookings
           const { data: messagesData, error: messagesError } = await supabase
             .from("messages")
             .select(`
@@ -107,7 +107,7 @@ const HostDashboardNew = () => {
           setRecentMessages(messages);
           setUnreadMessages(messages.filter(m => !m.is_read).length);
 
-          // Fetch checklists for first space
+          // 4. Fetch checklist status for first space (demo)
           if (spaceIds.length > 0) {
             const { data: checklistData, error: checklistError } = await supabase
               .from("checklists")
@@ -119,7 +119,7 @@ const HostDashboardNew = () => {
           }
         }
 
-        // Fetch reviews and average rating
+        // 5. Fetch reviews and average rating for host
         const reviewsData = await getUserReviews(authState.user.id);
         setRecentReviews(reviewsData.received);
         
@@ -137,10 +137,12 @@ const HostDashboardNew = () => {
     fetchDashboardData();
   }, [authState.user]);
 
+  // Show loading screen while data is being fetched
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
   }
 
+  // Redirect non-hosts
   if (authState.profile?.role !== "host") {
     return null;
   }
@@ -148,7 +150,7 @@ const HostDashboardNew = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header Section */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             Dashboard Host
@@ -158,7 +160,7 @@ const HostDashboardNew = () => {
           </p>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Statistics Cards - Full width responsive grid */}
         <DashboardStats 
           totalSpaces={totalSpaces}
           activeBookings={activeBookings}
@@ -166,15 +168,15 @@ const HostDashboardNew = () => {
           unreadMessages={unreadMessages}
         />
 
-        {/* Quick Actions */}
+        {/* Quick Actions Section */}
         <QuickActions />
 
-        {/* Space Checklist */}
+        {/* Space Checklist - Show only if there are checklist items */}
         {checklists.length > 0 && (
           <SpaceChecklist checklists={checklists} />
         )}
 
-        {/* Main Content Grid */}
+        {/* Main Content Grid - Two columns on large screens */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
