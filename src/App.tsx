@@ -61,6 +61,11 @@ function App() {
                   <Dashboard />
                 </AuthProtected>
               } />
+              <Route path="/host/dashboard" element={
+                <AuthProtected>
+                  <HostDashboard />
+                </AuthProtected>
+              } />
               <Route path="/host-dashboard" element={
                 <AuthProtected>
                   <HostDashboard />

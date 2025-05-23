@@ -11,10 +11,11 @@ import { AdminTagManagement } from "@/components/admin/AdminTagManagement";
 import { AdminTicketManagement } from "@/components/admin/AdminTicketManagement";
 import { AdminActionsLog } from "@/components/admin/AdminActionsLog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building, Tags, Headphones, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home } from "lucide-react";
 
 const AdminPanel = () => {
-  const { authState } = useAuth();
+  const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -44,6 +45,14 @@ const AdminPanel = () => {
     checkAdminAccess();
   }, [authState.user, navigate]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
   }
@@ -54,7 +63,7 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
+      <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -63,8 +72,31 @@ const AdminPanel = () => {
                 Pannello Amministrazione
               </h1>
             </div>
-            <div className="text-sm text-gray-500">
-              Admin: {authState.profile?.first_name} {authState.profile?.last_name}
+            
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600">
+                Admin: {authState.profile?.first_name} {authState.profile?.last_name}
+              </div>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/")}
+                className="flex items-center gap-2"
+              >
+                <Home className="w-4 h-4" />
+                Home
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>

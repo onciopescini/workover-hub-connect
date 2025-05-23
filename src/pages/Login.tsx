@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,32 @@ const Login = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
+
+  // Handle post-login redirect based on user role
+  useEffect(() => {
+    if (!authState.isLoading && authState.isAuthenticated && authState.profile) {
+      if (authState.profile.onboarding_completed) {
+        // Redirect based on role
+        switch (authState.profile.role) {
+          case 'admin':
+            navigate("/admin", { replace: true });
+            break;
+          case 'host':
+            navigate("/host/dashboard", { replace: true });
+            break;
+          case 'coworker':
+            navigate("/dashboard", { replace: true });
+            break;
+          default:
+            navigate("/dashboard", { replace: true });
+        }
+      } else {
+        navigate("/onboarding", { replace: true });
+      }
+    }
+  }, [authState.isLoading, authState.isAuthenticated, authState.profile, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -31,7 +55,7 @@ const Login = () => {
     
     try {
       await signIn(formData.email, formData.password);
-      navigate("/");
+      // Navigation will be handled by the useEffect above
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please check your credentials.");
     } finally {
@@ -53,29 +77,29 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center text-gray-600 hover:text-blue-500 mb-6">
+          <Link to="/" className="inline-flex items-center text-gray-600 hover:text-indigo-500 mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Workover
+            Torna a Workover
           </Link>
           
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold">W</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">Workover</span>
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to continue your workspace journey</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bentornato</h1>
+          <p className="text-gray-600">Accedi per continuare il tuo percorso lavorativo</p>
         </div>
 
         <Card className="shadow-lg border-0">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl">Sign In</CardTitle>
+            <CardTitle className="text-xl">Accedi</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -93,7 +117,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john@example.com"
+                    placeholder="mario.rossi@example.com"
                     className="pl-10"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
@@ -106,8 +130,8 @@ const Login = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link to="/forgot-password" className="text-sm text-blue-500 hover:underline">
-                    Forgot password?
+                  <Link to="/forgot-password" className="text-sm text-indigo-500 hover:underline">
+                    Password dimenticata?
                   </Link>
                 </div>
                 <div className="relative">
@@ -127,17 +151,17 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600"
+                className="w-full bg-indigo-500 hover:bg-indigo-600"
                 size="lg"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
+                    Accesso in corso...
                   </>
                 ) : (
-                  "Sign In"
+                  "Accedi"
                 )}
               </Button>
             </form>
@@ -148,7 +172,7 @@ const Login = () => {
                   <Separator />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                  <span className="bg-white px-2 text-gray-500">Oppure continua con</span>
                 </div>
               </div>
 
@@ -182,7 +206,7 @@ const Login = () => {
                     />
                   </svg>
                 )}
-                Continue with Google
+                Continua con Google
               </Button>
             </div>
           </CardContent>
@@ -190,9 +214,9 @@ const Login = () => {
 
         <div className="text-center mt-6">
           <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-blue-500 hover:underline font-medium">
-              Sign up
+            Non hai un account?{' '}
+            <Link to="/signup" className="text-indigo-500 hover:underline font-medium">
+              Registrati
             </Link>
           </p>
         </div>
