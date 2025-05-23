@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -19,6 +18,7 @@ import HostDashboard from "./pages/HostDashboard";
 import SpacesManage from "./pages/SpacesManage";
 import SpaceNew from "./pages/SpaceNew";
 import SpaceEdit from "./pages/SpaceEdit";
+import HostDashboardNew from "./pages/HostDashboardNew";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -57,6 +57,14 @@ const App = () => (
                 element={
                   <AuthProtected>
                     <HostDashboard />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/host/dashboard-new" 
+                element={
+                  <AuthProtected>
+                    <HostDashboardNew />
                   </AuthProtected>
                 }
               />
