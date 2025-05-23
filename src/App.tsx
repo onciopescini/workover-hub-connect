@@ -23,6 +23,8 @@ import EventDetail from './pages/EventDetail';
 import NotFound from './pages/NotFound';
 import HostDashboardNew from './pages/HostDashboardNew';
 import Support from './pages/Support';
+import Networking from './pages/Networking';
+import NetworkingDiscover from './pages/NetworkingDiscover';
 import { Toaster } from "@/components/ui/sonner"
 
 const queryClient = new QueryClient({

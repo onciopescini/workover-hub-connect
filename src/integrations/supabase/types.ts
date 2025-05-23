@@ -114,6 +114,96 @@ export type Database = {
           },
         ]
       }
+      connection_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          reason: string | null
+          score: number | null
+          shared_context: Json | null
+          suggested_user_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          score?: number | null
+          shared_context?: Json | null
+          suggested_user_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          score?: number | null
+          shared_context?: Json | null
+          suggested_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      connections: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           event_id: string
@@ -338,6 +428,90 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_chats: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          participant_1_id: string
+          participant_2_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          participant_1_id: string
+          participant_2_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          participant_1_id?: string
+          participant_2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_chats_participant_1_id_fkey"
+            columns: ["participant_1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_2_id_fkey"
+            columns: ["participant_2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      private_messages: {
+        Row: {
+          attachments: Json | null
+          chat_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          chat_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          chat_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "private_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "private_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -752,6 +926,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expire_pending_connections: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      generate_connection_suggestions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
         Returns: boolean
