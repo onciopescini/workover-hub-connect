@@ -10,6 +10,7 @@ export type BookingWithDetails = Booking & {
     title: string;
     address: string;
     photos: string[];
+    host_id: string;
   };
   coworker?: {
     first_name: string;
