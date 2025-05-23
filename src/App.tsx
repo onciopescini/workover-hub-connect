@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -20,6 +21,8 @@ import SpaceNew from "./pages/SpaceNew";
 import SpaceEdit from "./pages/SpaceEdit";
 import HostDashboardNew from "./pages/HostDashboardNew";
 import Bookings from "./pages/Bookings";
+import Messages from "./pages/Messages";
+import MessageConversation from "./pages/MessageConversation";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -106,6 +109,22 @@ const App = () => (
                 element={
                   <AuthProtected>
                     <Bookings />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/messages" 
+                element={
+                  <AuthProtected>
+                    <Messages />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/messages/:bookingId" 
+                element={
+                  <AuthProtected>
+                    <MessageConversation />
                   </AuthProtected>
                 }
               />

@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LoadingScreen from "@/components/LoadingScreen";
+import { MessageDialog } from "@/components/messaging/MessageDialog";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 
 export default function Bookings() {
@@ -23,6 +24,9 @@ export default function Bookings() {
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string>("");
+  const [selectedBookingTitle, setSelectedBookingTitle] = useState<string>("");
 
   // Fetch all bookings for current user (both as coworker and host)
   useEffect(() => {
@@ -147,6 +151,13 @@ export default function Bookings() {
     }
   };
 
+  // Open message dialog
+  const openMessageDialog = (bookingId: string, spaceTitle: string) => {
+    setSelectedBookingId(bookingId);
+    setSelectedBookingTitle(spaceTitle);
+    setMessageDialogOpen(true);
+  };
+
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
   }
@@ -266,10 +277,7 @@ export default function Bookings() {
                             variant="outline"
                             size="sm"
                             className="flex items-center"
-                            onClick={() => {
-                              // TODO: Open message dialog or navigate to messages
-                              toast.info("Funzionalità messaggi in sviluppo");
-                            }}
+                            onClick={() => openMessageDialog(booking.id, booking.space?.title || "Spazio")}
                           >
                             <MessageSquare className="w-4 h-4 mr-1" />
                             Messaggi
@@ -283,6 +291,14 @@ export default function Bookings() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Message Dialog */}
+        <MessageDialog
+          open={messageDialogOpen}
+          onOpenChange={setMessageDialogOpen}
+          bookingId={selectedBookingId}
+          bookingTitle={selectedBookingTitle}
+        />
       </div>
     </div>
   );
