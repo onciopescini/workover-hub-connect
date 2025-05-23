@@ -144,28 +144,40 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          current_participants: number | null
           date: string
           description: string | null
           id: string
+          image_url: string | null
+          max_participants: number | null
           space_id: string
+          status: string | null
           title: string
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          current_participants?: number | null
           date: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          max_participants?: number | null
           space_id: string
+          status?: string | null
           title: string
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
+          current_participants?: number | null
           date?: string
           description?: string | null
           id?: string
+          image_url?: string | null
+          max_participants?: number | null
           space_id?: string
+          status?: string | null
           title?: string
         }
         Relationships: [
