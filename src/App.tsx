@@ -14,6 +14,7 @@ import HostDashboard from './pages/HostDashboard';
 import Bookings from './pages/Bookings';
 import Favorites from './pages/Favorites';
 import Reviews from './pages/Reviews';
+import BidirectionalReviews from './pages/BidirectionalReviews';
 import Messages from './pages/Messages';
 import MessageConversation from './pages/MessageConversation';
 import SpaceNew from './pages/SpaceNew';
@@ -82,6 +83,11 @@ function App() {
               <Route path="/reviews" element={
                 <AuthProtected>
                   <Reviews />
+                </AuthProtected>
+              } />
+              <Route path="/bidirectional-reviews" element={
+                <AuthProtected>
+                  <BidirectionalReviews />
                 </AuthProtected>
               } />
               <Route path="/messages" element={

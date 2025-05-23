@@ -44,6 +44,64 @@ export type Database = {
           },
         ]
       }
+      booking_reviews: {
+        Row: {
+          author_id: string
+          booking_id: string
+          content: string | null
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          rating: number
+          target_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          booking_id: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          rating: number
+          target_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          booking_id?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          rating?: number
+          target_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           booking_date: string
@@ -231,6 +289,64 @@ export type Database = {
           {
             foreignKeyName: "fk_event_participants_user_id"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_reviews: {
+        Row: {
+          author_id: string
+          content: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          is_visible: boolean | null
+          rating: number
+          target_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          is_visible?: boolean | null
+          rating: number
+          target_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          is_visible?: boolean | null
+          rating?: number
+          target_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reviews_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reviews_target_id_fkey"
+            columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -941,6 +1057,10 @@ export type Database = {
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      update_review_visibility: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

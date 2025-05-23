@@ -7,6 +7,7 @@ import { ReviewWithDetails } from "@/types/review";
 import { Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface RecentReviewsProps {
   reviews: ReviewWithDetails[];
@@ -14,6 +15,8 @@ interface RecentReviewsProps {
 }
 
 export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardHeader>
@@ -87,7 +90,11 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
         
         {reviews.length > 0 && (
           <div className="text-center pt-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/bidirectional-reviews')}
+            >
               Vedi Tutte le Recensioni
             </Button>
           </div>
