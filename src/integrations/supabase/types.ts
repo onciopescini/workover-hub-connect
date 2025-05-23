@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_actions_log: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      admin_warnings: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          severity: string
+          title: string
+          updated_at: string | null
+          user_id: string
+          warning_type: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          severity?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+          warning_type: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          severity?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          warning_type?: string
+        }
+        Relationships: []
+      }
       availability: {
         Row: {
           created_at: string | null
@@ -451,6 +523,45 @@ export type Database = {
           },
         ]
       }
+      global_tags: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_approved: boolean | null
+          name: string
+          usage_count: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          name: string
+          usage_count?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_approved?: boolean | null
+          name?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           attachments: Json | null
@@ -646,10 +757,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_notes: string | null
           bio: string | null
           created_at: string
           first_name: string
           id: string
+          is_suspended: boolean | null
           last_name: string
           linkedin_url: string | null
           networking_enabled: boolean | null
@@ -657,13 +770,19 @@ export type Database = {
           onboarding_completed: boolean | null
           profile_photo_url: string | null
           role: Database["public"]["Enums"]["user_role"]
+          stripe_connected: boolean | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           bio?: string | null
           created_at?: string
           first_name: string
           id: string
+          is_suspended?: boolean | null
           last_name: string
           linkedin_url?: string | null
           networking_enabled?: boolean | null
@@ -671,13 +790,19 @@ export type Database = {
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          stripe_connected?: boolean | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           bio?: string | null
           created_at?: string
           first_name?: string
           id?: string
+          is_suspended?: boolean | null
           last_name?: string
           linkedin_url?: string | null
           networking_enabled?: boolean | null
@@ -685,6 +810,10 @@ export type Database = {
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          stripe_connected?: boolean | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -805,6 +934,8 @@ export type Database = {
         Row: {
           address: string
           amenities: string[]
+          approved_at: string | null
+          approved_by: string | null
           availability: Json | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
@@ -817,10 +948,12 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           max_capacity: number
+          pending_approval: boolean | null
           photos: string[]
           price_per_day: number
           price_per_hour: number
           published: boolean
+          rejection_reason: string | null
           rules: string | null
           seating_types: string[]
           title: string
@@ -831,6 +964,8 @@ export type Database = {
         Insert: {
           address: string
           amenities?: string[]
+          approved_at?: string | null
+          approved_by?: string | null
           availability?: Json | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
@@ -843,10 +978,12 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           max_capacity: number
+          pending_approval?: boolean | null
           photos?: string[]
           price_per_day: number
           price_per_hour: number
           published?: boolean
+          rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[]
           title: string
@@ -857,6 +994,8 @@ export type Database = {
         Update: {
           address?: string
           amenities?: string[]
+          approved_at?: string | null
+          approved_by?: string | null
           availability?: Json | null
           category?: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
@@ -869,10 +1008,12 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           max_capacity?: number
+          pending_approval?: boolean | null
           photos?: string[]
           price_per_day?: number
           price_per_hour?: number
           published?: boolean
+          rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[]
           title?: string
@@ -889,6 +1030,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      static_content: {
+        Row: {
+          content: string
+          content_type: string
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          last_updated_by: string
+          title: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          content: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          last_updated_by: string
+          title: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          content?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          last_updated_by?: string
+          title?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
       }
       support_tickets: {
         Row: {
@@ -1054,6 +1231,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_tag: {
+        Args: { tag_id: string; approver_id: string }
+        Returns: Json
+      }
       calculate_cancellation_fee: {
         Args: { booking_date: string; price_amount: number }
         Returns: number
@@ -1074,6 +1255,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1081,6 +1266,27 @@ export type Database = {
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
+      }
+      moderate_space: {
+        Args: {
+          space_id: string
+          approve: boolean
+          moderator_id: string
+          rejection_reason?: string
+        }
+        Returns: Json
+      }
+      reactivate_user: {
+        Args: { target_user_id: string; reactivated_by_admin: string }
+        Returns: Json
+      }
+      suspend_user: {
+        Args: {
+          target_user_id: string
+          reason: string
+          suspended_by_admin: string
+        }
+        Returns: Json
       }
       update_review_visibility: {
         Args: Record<PropertyKey, never>
@@ -1091,7 +1297,7 @@ export type Database = {
       booking_status: "pending" | "confirmed" | "cancelled"
       confirmation_type: "instant" | "host_approval"
       space_category: "home" | "outdoor" | "professional"
-      user_role: "host" | "coworker"
+      user_role: "host" | "coworker" | "admin"
       work_environment: "silent" | "controlled" | "dynamic"
     }
     CompositeTypes: {
@@ -1211,7 +1417,7 @@ export const Constants = {
       booking_status: ["pending", "confirmed", "cancelled"],
       confirmation_type: ["instant", "host_approval"],
       space_category: ["home", "outdoor", "professional"],
-      user_role: ["host", "coworker"],
+      user_role: ["host", "coworker", "admin"],
       work_environment: ["silent", "controlled", "dynamic"],
     },
   },

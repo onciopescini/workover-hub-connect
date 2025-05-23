@@ -26,6 +26,7 @@ import HostDashboardNew from './pages/HostDashboardNew';
 import Support from './pages/Support';
 import Networking from './pages/Networking';
 import NetworkingDiscover from './pages/NetworkingDiscover';
+import AdminPanel from './pages/AdminPanel';
 import { Toaster } from "@/components/ui/sonner"
 
 const queryClient = new QueryClient({
@@ -68,6 +69,11 @@ function App() {
               <Route path="/host-dashboard-new" element={
                 <AuthProtected>
                   <HostDashboardNew />
+                </AuthProtected>
+              } />
+              <Route path="/admin" element={
+                <AuthProtected>
+                  <AdminPanel />
                 </AuthProtected>
               } />
               <Route path="/bookings" element={
@@ -123,6 +129,16 @@ function App() {
               <Route path="/support" element={
                 <AuthProtected>
                   <Support />
+                </AuthProtected>
+              } />
+              <Route path="/networking" element={
+                <AuthProtected>
+                  <Networking />
+                </AuthProtected>
+              } />
+              <Route path="/networking/discover" element={
+                <AuthProtected>
+                  <NetworkingDiscover />
                 </AuthProtected>
               } />
               
