@@ -121,7 +121,7 @@ export default function Messages() {
             .neq("sender_id", authState.user.id)
             .eq("is_read", false);
 
-          const userRole = authState.user.id === booking.space?.host_id ? "host" : "coworker";
+          const userRole = (authState.user.id === booking.space?.host_id ? "host" : "coworker") as "host" | "coworker";
 
           return {
             booking,
