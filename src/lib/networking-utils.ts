@@ -160,10 +160,13 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
 
     if (error) throw error;
     
-    // Cast esplicito per il campo reason
+    // Cast esplicito e sicuro per tutti i campi
     return (data || []).map(suggestion => ({
       ...suggestion,
-      reason: suggestion.reason as 'shared_space' | 'shared_event' | 'similar_interests'
+      reason: suggestion.reason as 'shared_space' | 'shared_event' | 'similar_interests',
+      shared_context: (suggestion.shared_context ?? {}) as Record<string, any>,
+      score: suggestion.score ?? 0,
+      created_at: suggestion.created_at ?? new Date().toISOString()
     }));
   } catch (error) {
     console.error("Error fetching suggestions:", error);
@@ -296,7 +299,7 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
     // Cast esplicito per il campo attachments
     return (data || []).map(message => ({
       ...message,
-      attachments: message.attachments as string[]
+      attachments: (message.attachments ?? []) as string[]
     }));
   } catch (error) {
     console.error("Error fetching private messages:", error);
