@@ -36,9 +36,21 @@ const Onboarding = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Debug logging
+  useEffect(() => {
+    console.log("🟢 Onboarding state:", {
+      isLoading: authState.isLoading,
+      hasUser: !!authState.user,
+      hasProfile: !!authState.profile,
+      userRole: authState.profile?.role,
+      onboardingCompleted: authState.profile?.onboarding_completed,
+    });
+  }, [authState]);
+
   // Handle admin redirect immediately
   useEffect(() => {
     if (authState.profile?.role === 'admin') {
+      console.log("🟡 Admin detected, redirecting to /admin");
       navigate('/admin', { replace: true });
     }
   }, [authState.profile?.role, navigate]);
@@ -46,6 +58,7 @@ const Onboarding = () => {
   // Set user role if already exists (for non-admin users)
   useEffect(() => {
     if (authState.profile?.role && authState.profile.role !== 'admin') {
+      console.log("🟢 Setting existing role:", authState.profile.role);
       setUserRole(authState.profile.role);
     }
   }, [authState.profile?.role]);
@@ -53,6 +66,7 @@ const Onboarding = () => {
   // Redirect if onboarding is already completed
   useEffect(() => {
     if (authState.profile?.onboarding_completed) {
+      console.log("🟡 Onboarding already completed, redirecting");
       let destination = '/dashboard';
       switch (authState.profile.role) {
         case 'admin':
@@ -71,15 +85,32 @@ const Onboarding = () => {
     }
   }, [authState.profile, navigate]);
 
-  // Show loading while auth state is loading
-  if (authState.isLoading || !authState.profile) {
+  // Show loading while auth state is loading or no user
+  if (authState.isLoading) {
+    console.log("🔵 Showing loading screen - auth state is loading");
     return <LoadingScreen />;
   }
 
-  // Prevent UI flicker for admins - return null immediately
-  if (authState.profile.role === 'admin') {
-    return null;
+  // If no user, something went wrong
+  if (!authState.user) {
+    console.log("🔴 No user found, redirecting to login");
+    navigate('/login', { replace: true });
+    return <LoadingScreen />;
   }
+
+  // If no profile yet, wait for it to load
+  if (!authState.profile) {
+    console.log("🔵 Showing loading screen - waiting for profile");
+    return <LoadingScreen />;
+  }
+
+  // If admin, don't show anything (redirect should handle this)
+  if (authState.profile.role === 'admin') {
+    console.log("🔴 Admin role detected, should redirect");
+    return <LoadingScreen />;
+  }
+
+  console.log("🟢 Rendering onboarding UI");
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

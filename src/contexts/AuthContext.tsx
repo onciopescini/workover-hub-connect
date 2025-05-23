@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,9 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("🔵 AuthProvider: Setting up auth state listeners");
+    
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("🔵 Auth event:", event, "Session:", !!session);
+        
         setAuthState(prev => ({
           ...prev,
           session,
@@ -40,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
 
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log("🔵 User signed in, fetching profile...");
           // Defer fetching profile to avoid potential deadlocks
           setTimeout(() => {
             fetchUserProfile(session.user.id);
@@ -47,12 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (event === 'SIGNED_OUT') {
+          console.log("🔵 User signed out, clearing state");
           setAuthState(prev => ({
             ...prev,
             session: null,
             user: null,
             profile: null,
             isAuthenticated: false,
+            isLoading: false,
           }));
         }
       }
@@ -60,16 +66,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("🔵 Initial session check:", !!session);
+      
       setAuthState(prev => ({
         ...prev,
         session,
         user: session?.user ?? null,
         isAuthenticated: !!session?.user,
-        isLoading: false,
+        // Keep loading true if we have a user but need to fetch profile
+        isLoading: !!session?.user,
       }));
 
       if (session?.user) {
+        console.log("🔵 Found existing session, fetching profile...");
         fetchUserProfile(session.user.id);
+      } else {
+        console.log("🔵 No existing session, setting loading to false");
+        setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
@@ -80,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log("🔵 Fetching profile for user:", userId);
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -87,17 +102,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error("🔴 Error fetching profile:", error);
+        setAuthState(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
+      console.log("🔵 Profile fetched:", data);
       setAuthState(prev => ({
         ...prev,
         profile: data,
         isLoading: false,
       }));
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("🔴 Error fetching profile:", error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
