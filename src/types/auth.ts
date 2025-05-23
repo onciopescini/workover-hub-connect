@@ -12,4 +12,4 @@ export type AuthState = {
   isAuthenticated: boolean;
 };
 
-export type UserRole = "host" | "coworker";
+export type UserRole = "host" | "coworker" | "admin";

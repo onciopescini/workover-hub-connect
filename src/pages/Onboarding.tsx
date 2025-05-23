@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,14 +38,32 @@ const Onboarding = () => {
   // If user already selected a role during signup, use that
   useEffect(() => {
     if (authState.profile?.role) {
+      // If user is already an admin, redirect them to admin panel
+      if (authState.profile.role === 'admin') {
+        navigate('/admin', { replace: true });
+        return;
+      }
       setUserRole(authState.profile.role);
     }
-  }, [authState.profile]);
+  }, [authState.profile, navigate]);
 
   // Redirect if onboarding is already completed
   useEffect(() => {
     if (authState.profile?.onboarding_completed) {
-      const destination = authState.profile.role === 'host' ? '/host/dashboard' : '/dashboard';
+      let destination = '/dashboard';
+      switch (authState.profile.role) {
+        case 'admin':
+          destination = '/admin';
+          break;
+        case 'host':
+          destination = '/host/dashboard';
+          break;
+        case 'coworker':
+          destination = '/dashboard';
+          break;
+        default:
+          destination = '/dashboard';
+      }
       navigate(destination, { replace: true });
     }
   }, [authState.profile, navigate]);
@@ -171,7 +188,21 @@ const Onboarding = () => {
       });
 
       // Redirect based on user role
-      navigate(userRole === "host" ? "/host/dashboard" : "/dashboard");
+      let destination = '/dashboard';
+      switch (userRole) {
+        case 'admin':
+          destination = '/admin';
+          break;
+        case 'host':
+          destination = '/host/dashboard';
+          break;
+        case 'coworker':
+          destination = '/dashboard';
+          break;
+        default:
+          destination = '/dashboard';
+      }
+      navigate(destination);
     } catch (error: any) {
       console.error("Onboarding error:", error);
       setErrors({
@@ -210,7 +241,7 @@ const Onboarding = () => {
               
               <RadioGroup
                 value={userRole || ""}
-                onValueChange={(value) => setUserRole(value as UserRole)}
+                onValueChange={(value) => setUserRole(value as "host" | "coworker")}
                 className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"
               >
                 <div>

@@ -38,7 +38,12 @@ const Login = () => {
             navigate("/dashboard", { replace: true });
         }
       } else {
-        navigate("/onboarding", { replace: true });
+        // If user is admin but onboarding not completed, still send to admin
+        if (authState.profile.role === 'admin') {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
       }
     }
   }, [authState.isLoading, authState.isAuthenticated, authState.profile, navigate]);
