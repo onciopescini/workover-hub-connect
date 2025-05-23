@@ -19,23 +19,14 @@ const AuthCallback = () => {
         }
 
         if (session) {
-          // Check if user has completed onboarding
-          const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            throw profileError;
-          }
-
-          if (profile?.onboarding_completed) {
-            // Redirect based on user role
-            navigate(profile.role === 'host' ? '/host/dashboard' : '/dashboard', { replace: true });
-          } else {
-            navigate("/onboarding", { replace: true });
-          }
+          // Let the centralized redirect logic in AuthContext handle the routing
+          // Just wait a moment for the profile to load
+          setTimeout(() => {
+            // If still on callback page after 3 seconds, something went wrong
+            if (window.location.pathname === '/auth/callback') {
+              navigate("/dashboard", { replace: true });
+            }
+          }, 3000);
         } else {
           navigate("/login", { replace: true });
         }

@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AuthState, Profile } from "@/types/auth";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const initialState: AuthState = {
   user: null,
@@ -26,7 +26,57 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>(initialState);
+  const [hasRedirected, setHasRedirected] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Centralized redirect logic
+  useEffect(() => {
+    // Don't redirect if still loading or already redirected in this session
+    if (authState.isLoading || hasRedirected) return;
+
+    // Only redirect authenticated users with loaded profiles
+    if (authState.isAuthenticated && authState.profile) {
+      const currentPath = location.pathname;
+      
+      // If onboarding not completed, always go to onboarding
+      if (!authState.profile.onboarding_completed) {
+        if (currentPath !== '/onboarding') {
+          console.log('Redirecting to onboarding: onboarding not completed');
+          navigate('/onboarding', { replace: true });
+          setHasRedirected(true);
+        }
+        return;
+      }
+
+      // If onboarding completed, redirect based on role
+      const roleRedirects = {
+        admin: '/admin',
+        host: '/host-dashboard',
+        coworker: '/dashboard'
+      };
+
+      const targetPath = roleRedirects[authState.profile.role as keyof typeof roleRedirects] || '/dashboard';
+      
+      // Only redirect if not already on the correct path and not on allowed paths
+      const allowedPaths = ['/auth/callback', '/onboarding'];
+      const isOnAllowedPath = allowedPaths.includes(currentPath);
+      
+      if (currentPath !== targetPath && !isOnAllowedPath) {
+        console.log(`Redirecting ${authState.profile.role} from ${currentPath} to ${targetPath}`);
+        navigate(targetPath, { replace: true });
+        setHasRedirected(true);
+      }
+    }
+  }, [authState.isAuthenticated, authState.profile, authState.isLoading, location.pathname, navigate, hasRedirected]);
+
+  // Reset redirect flag when user signs out
+  useEffect(() => {
+    if (!authState.isAuthenticated) {
+      setHasRedirected(false);
+    }
+  }, [authState.isAuthenticated]);
 
   useEffect(() => {
     // Set up auth state listener first
@@ -98,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }));
     } catch (error) {
       console.error("Error fetching profile:", error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -146,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           title: "Login successful",
           description: "Welcome back!",
         });
+        // Redirect will be handled by the centralized logic above
       }
     } catch (error: any) {
       console.error("Error signing in:", error);
