@@ -54,10 +54,20 @@ export const cancelBooking = async (
       return { success: false, error: error.message };
     }
 
-    // Type the response properly
-    const result = data as CancelBookingResponse;
+    // Safe cast through unknown first
+    const result = data as unknown as CancelBookingResponse;
 
-    if (result && !result.success) {
+    // Optional validation for extra safety
+    if (
+      typeof result !== "object" ||
+      result === null ||
+      typeof result.success !== "boolean"
+    ) {
+      toast.error("Risposta inattesa dal server");
+      return { success: false, error: "Risposta inattesa dal server" };
+    }
+
+    if (!result.success) {
       toast.error(result.error || "Errore nella cancellazione");
       return { success: false, error: result.error };
     }
@@ -65,7 +75,7 @@ export const cancelBooking = async (
     toast.success("Prenotazione cancellata con successo");
     return { 
       success: true, 
-      fee: result?.cancellation_fee || 0 
+      fee: result.cancellation_fee || 0 
     };
   } catch (error) {
     console.error("Error cancelling booking:", error);
