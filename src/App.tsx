@@ -19,6 +19,7 @@ import SpacesManage from "./pages/SpacesManage";
 import SpaceNew from "./pages/SpaceNew";
 import SpaceEdit from "./pages/SpaceEdit";
 import HostDashboardNew from "./pages/HostDashboardNew";
+import Bookings from "./pages/Bookings";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -97,6 +98,14 @@ const App = () => (
                 element={
                   <AuthProtected>
                     <Favorites />
+                  </AuthProtected>
+                }
+              />
+              <Route 
+                path="/bookings" 
+                element={
+                  <AuthProtected>
+                    <Bookings />
                   </AuthProtected>
                 }
               />
