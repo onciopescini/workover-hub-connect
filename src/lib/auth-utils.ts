@@ -43,3 +43,23 @@ export const isValidLinkedInUrl = (url: string | null): boolean => {
   const linkedinRegex = /^https?:\/\/([a-z]{2,3}\.)?linkedin\.com\/.*/i;
   return linkedinRegex.test(url);
 };
+
+// Get counts of unread messages for a user
+export const getUnreadMessagesCount = async (): Promise<number> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) return 0;
+    
+    const { count: unreadCount, error } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_read', false)
+      .not('sender_id', 'eq', user.user.id);
+      
+    if (error) throw error;
+    return unreadCount || 0;
+  } catch (error) {
+    console.error("Error getting unread message count:", error);
+    return 0;
+  }
+};
