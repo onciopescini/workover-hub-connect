@@ -36,6 +36,14 @@ export type Message = {
   };
 };
 
+// Interface for the cancel_booking RPC response
+export interface CancelBookingResponse {
+  success: boolean;
+  error?: string;
+  booking_id?: string;
+  cancellation_fee?: number;
+}
+
 export const BOOKING_STATUS_COLORS = {
   pending: "bg-yellow-100 text-yellow-800",
   confirmed: "bg-green-100 text-green-800",

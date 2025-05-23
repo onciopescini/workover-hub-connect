@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CancelBookingResponse } from "@/types/booking";
 
 // Calculate cancellation fee based on booking date
 export const calculateCancellationFee = (bookingDate: string, pricePerDay: number): { fee: number; percentage: string; description: string } => {
@@ -53,15 +54,18 @@ export const cancelBooking = async (
       return { success: false, error: error.message };
     }
 
-    if (data && !data.success) {
-      toast.error(data.error || "Errore nella cancellazione");
-      return { success: false, error: data.error };
+    // Type the response properly
+    const result = data as CancelBookingResponse;
+
+    if (result && !result.success) {
+      toast.error(result.error || "Errore nella cancellazione");
+      return { success: false, error: result.error };
     }
 
     toast.success("Prenotazione cancellata con successo");
     return { 
       success: true, 
-      fee: data?.cancellation_fee || 0 
+      fee: result?.cancellation_fee || 0 
     };
   } catch (error) {
     console.error("Error cancelling booking:", error);
