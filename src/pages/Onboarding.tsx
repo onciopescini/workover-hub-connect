@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidLinkedInUrl } from "@/lib/auth-utils";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const Onboarding = () => {
   const { authState, updateProfile } = useAuth();
@@ -35,17 +36,19 @@ const Onboarding = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  // If user already selected a role during signup, use that
+  // Handle admin redirect immediately
   useEffect(() => {
-    if (authState.profile?.role) {
-      // If user is already an admin, redirect them to admin panel
-      if (authState.profile.role === 'admin') {
-        navigate('/admin', { replace: true });
-        return;
-      }
+    if (authState.profile?.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [authState.profile?.role, navigate]);
+
+  // Set user role if already exists (for non-admin users)
+  useEffect(() => {
+    if (authState.profile?.role && authState.profile.role !== 'admin') {
       setUserRole(authState.profile.role);
     }
-  }, [authState.profile, navigate]);
+  }, [authState.profile?.role]);
 
   // Redirect if onboarding is already completed
   useEffect(() => {
@@ -67,6 +70,16 @@ const Onboarding = () => {
       navigate(destination, { replace: true });
     }
   }, [authState.profile, navigate]);
+
+  // Show loading while auth state is loading
+  if (authState.isLoading || !authState.profile) {
+    return <LoadingScreen />;
+  }
+
+  // Prevent UI flicker for admins - return null immediately
+  if (authState.profile.role === 'admin') {
+    return null;
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
