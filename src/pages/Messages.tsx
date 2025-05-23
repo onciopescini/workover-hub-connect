@@ -121,7 +121,8 @@ export default function Messages() {
             .neq("sender_id", authState.user.id)
             .eq("is_read", false);
 
-          const userRole = (authState.user.id === booking.space?.host_id ? "host" : "coworker") as "host" | "coworker";
+          // Fix the userRole typing by explicitly casting to the correct type
+          const userRole: "host" | "coworker" = (authState.user.id === booking.space?.host_id ? "host" : "coworker");
 
           return {
             booking,
