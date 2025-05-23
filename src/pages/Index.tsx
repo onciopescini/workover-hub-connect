@@ -1,11 +1,26 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { authState } = useAuth();
 
+  // Show loading screen while auth is being determined
+  if (authState.isLoading) {
+    return <LoadingScreen />;
+  }
+
+  // If user is authenticated, let AuthContext handle redirect
+  // This component will show briefly before redirect
+  if (authState.isAuthenticated) {
+    return <LoadingScreen />;
+  }
+
+  // Show landing page for non-authenticated users
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-16">

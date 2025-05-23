@@ -36,11 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Don't redirect if still loading or already redirected in this session
     if (authState.isLoading || hasRedirected) return;
 
-    // Only redirect authenticated users with loaded profiles
-    if (authState.isAuthenticated && authState.profile) {
+    // Only redirect authenticated users
+    if (authState.isAuthenticated && authState.user) {
       const currentPath = location.pathname;
       
-      // If onboarding not completed, always go to onboarding
+      // If profile is not loaded yet, wait
+      if (authState.profile === null) return;
+
+      // If onboarding not completed, redirect to onboarding (unless already there)
       if (!authState.profile.onboarding_completed) {
         if (currentPath !== '/onboarding') {
           console.log('Redirecting to onboarding: onboarding not completed');
@@ -62,14 +65,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Only redirect if not already on the correct path and not on allowed paths
       const allowedPaths = ['/auth/callback', '/onboarding'];
       const isOnAllowedPath = allowedPaths.includes(currentPath);
+      const isOnCorrectPath = currentPath === targetPath;
       
-      if (currentPath !== targetPath && !isOnAllowedPath) {
+      if (!isOnCorrectPath && !isOnAllowedPath) {
         console.log(`Redirecting ${authState.profile.role} from ${currentPath} to ${targetPath}`);
         navigate(targetPath, { replace: true });
         setHasRedirected(true);
       }
     }
-  }, [authState.isAuthenticated, authState.profile, authState.isLoading, location.pathname, navigate, hasRedirected]);
+
+    // Handle root path redirect for authenticated users
+    if (authState.isAuthenticated && authState.profile && location.pathname === '/') {
+      if (authState.profile.onboarding_completed) {
+        const roleRedirects = {
+          admin: '/admin',
+          host: '/host-dashboard',
+          coworker: '/dashboard'
+        };
+        const targetPath = roleRedirects[authState.profile.role as keyof typeof roleRedirects] || '/dashboard';
+        navigate(targetPath, { replace: true });
+        setHasRedirected(true);
+      } else {
+        navigate('/onboarding', { replace: true });
+        setHasRedirected(true);
+      }
+    }
+  }, [authState.isAuthenticated, authState.profile, authState.isLoading, authState.user, location.pathname, navigate, hasRedirected]);
 
   // Reset redirect flag when user signs out
   useEffect(() => {
