@@ -98,19 +98,19 @@ export function MessageList({ bookingId }: MessageListProps) {
     try {
       setIsLoading(true);
       
-      let attachmentUrl: string | undefined;
+      let attachments: string[] = [];
       
       if (attachment) {
         const uploadedUrl = await uploadMessageAttachment(attachment);
         if (uploadedUrl) {
-          attachmentUrl = uploadedUrl;
+          attachments = [uploadedUrl];
         }
       }
       
       await sendBookingMessage(
         bookingId, 
         newMessage.trim(), 
-        attachmentUrl
+        attachments
       );
       
       setNewMessage("");
@@ -196,33 +196,37 @@ export function MessageList({ bookingId }: MessageListProps) {
                       <CardContent className="p-3">
                         {message.content && <p>{message.content}</p>}
                         
-                        {message.attachment_url && (
+                        {message.attachments && message.attachments.length > 0 && (
                           <div className="mt-2">
-                            {getAttachmentType(message.attachment_url) === 'image' ? (
-                              <a 
-                                href={message.attachment_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="block"
-                              >
-                                <img 
-                                  src={message.attachment_url} 
-                                  alt="Attachment" 
-                                  className="max-w-full max-h-48 rounded-md" 
-                                />
-                              </a>
-                            ) : (
-                              <a 
-                                href={message.attachment_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className={`flex items-center gap-2 py-1 px-2 rounded-md ${isCurrentUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
-                              >
-                                <FileIcon className="h-4 w-4" />
-                                <span className="text-sm truncate">Attachment</span>
-                                <Download className="h-4 w-4" />
-                              </a>
-                            )}
+                            {message.attachments.map((url, index) => (
+                              getAttachmentType(url) === 'image' ? (
+                                <a 
+                                  key={index}
+                                  href={url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <img 
+                                    src={url} 
+                                    alt="Attachment" 
+                                    className="max-w-full max-h-48 rounded-md" 
+                                  />
+                                </a>
+                              ) : (
+                                <a 
+                                  key={index}
+                                  href={url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className={`flex items-center gap-2 py-1 px-2 rounded-md ${isCurrentUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                                >
+                                  <FileIcon className="h-4 w-4" />
+                                  <span className="text-sm truncate">Attachment</span>
+                                  <Download className="h-4 w-4" />
+                                </a>
+                              )
+                            ))}
                           </div>
                         )}
                       </CardContent>

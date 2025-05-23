@@ -49,15 +49,19 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return 0;
-    
-    const { count: unreadCount, error } = await supabase
+
+    // Need to join with bookings to find messages across all bookings the user participates in
+    const { count, error } = await supabase
       .from('messages')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('is_read', false)
-      .not('sender_id', 'eq', user.user.id);
-      
+      .neq('sender_id', user.user.id)
+      .in('booking_id', (supabase.from('bookings')
+        .select('id')
+        .or(`user_id.eq.${user.user.id},spaces.host_id.eq.${user.user.id}`)));
+
     if (error) throw error;
-    return unreadCount || 0;
+    return count || 0;
   } catch (error) {
     console.error("Error getting unread message count:", error);
     return 0;
