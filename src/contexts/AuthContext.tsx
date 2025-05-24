@@ -35,28 +35,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         console.log("🔵 Auth event:", event, "Session:", !!session);
         
-        setAuthState(prev => ({
-          ...prev,
-          session,
-          user: session?.user ?? null,
-          isAuthenticated: !!session?.user,
-        }));
-
         if (event === 'SIGNED_IN' && session?.user) {
           console.log("🔵 User signed in, fetching profile...");
-          // Defer fetching profile to avoid potential deadlocks
+          setAuthState(prev => ({
+            ...prev,
+            session,
+            user: session.user,
+            isAuthenticated: true,
+            isLoading: true, // Keep loading while fetching profile
+          }));
+          
+          // Fetch profile with timeout
           setTimeout(() => {
             fetchUserProfile(session.user.id);
-          }, 0);
-        }
-
-        if (event === 'SIGNED_OUT') {
+          }, 100);
+        } else if (event === 'SIGNED_OUT') {
           console.log("🔵 User signed out, clearing state");
+          setAuthState({
+            session: null,
+            user: null,
+            profile: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        } else if (!session) {
+          console.log("🔵 No session, setting loading to false");
           setAuthState(prev => ({
             ...prev,
             session: null,
             user: null,
-            profile: null,
             isAuthenticated: false,
             isLoading: false,
           }));
@@ -65,20 +72,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("🔵 Initial session check:", !!session);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log("🔵 Initial session check:", !!session, error);
       
-      setAuthState(prev => ({
-        ...prev,
-        session,
-        user: session?.user ?? null,
-        isAuthenticated: !!session?.user,
-        // Keep loading true if we have a user but need to fetch profile
-        isLoading: !!session?.user,
-      }));
+      if (error) {
+        console.error("🔴 Session error:", error);
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
 
       if (session?.user) {
         console.log("🔵 Found existing session, fetching profile...");
+        setAuthState(prev => ({
+          ...prev,
+          session,
+          user: session.user,
+          isAuthenticated: true,
+          isLoading: true,
+        }));
         fetchUserProfile(session.user.id);
       } else {
         console.log("🔵 No existing session, setting loading to false");
@@ -101,21 +112,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", userId)
         .maybeSingle();
 
+      console.log("🔵 Profile query result:", { data, error });
+
       if (error) {
         console.error("🔴 Error fetching profile:", error);
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+        // If there's an error but user is authenticated, create a minimal profile state
+        setAuthState(prev => ({
+          ...prev,
+          profile: null,
+          isLoading: false,
+        }));
         return;
       }
 
-      console.log("🔵 Profile fetched:", data);
+      console.log("🔵 Profile fetched successfully:", data);
       setAuthState(prev => ({
         ...prev,
         profile: data,
         isLoading: false,
       }));
     } catch (error) {
-      console.error("🔴 Error fetching profile:", error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      console.error("🔴 Exception fetching profile:", error);
+      setAuthState(prev => ({
+        ...prev,
+        profile: null,
+        isLoading: false,
+      }));
     }
   };
 

@@ -47,31 +47,33 @@ const Onboarding = () => {
     });
   }, [authState]);
 
-  // Handle admin redirect immediately
+  // Handle redirects based on auth state and profile
   useEffect(() => {
+    // Don't do anything while loading
+    if (authState.isLoading) {
+      console.log("🔵 Still loading, waiting...");
+      return;
+    }
+
+    // No user means redirect to login
+    if (!authState.user) {
+      console.log("🔴 No user, redirecting to login");
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // Admin users go to admin panel
     if (authState.profile?.role === 'admin') {
       console.log("🟡 Admin detected, redirecting to /admin");
       navigate('/admin', { replace: true });
+      return;
     }
-  }, [authState.profile?.role, navigate]);
 
-  // Set user role if already exists (for non-admin users)
-  useEffect(() => {
-    if (authState.profile?.role && authState.profile.role !== 'admin') {
-      console.log("🟢 Setting existing role:", authState.profile.role);
-      setUserRole(authState.profile.role);
-    }
-  }, [authState.profile?.role]);
-
-  // Redirect if onboarding is already completed
-  useEffect(() => {
+    // Users who completed onboarding go to dashboard
     if (authState.profile?.onboarding_completed) {
       console.log("🟡 Onboarding already completed, redirecting");
       let destination = '/dashboard';
       switch (authState.profile.role) {
-        case 'admin':
-          destination = '/admin';
-          break;
         case 'host':
           destination = '/host/dashboard';
           break;
@@ -82,31 +84,25 @@ const Onboarding = () => {
           destination = '/dashboard';
       }
       navigate(destination, { replace: true });
+      return;
     }
-  }, [authState.profile, navigate]);
 
-  // Show loading while auth state is loading or no user
+    // Set existing role if user has one
+    if (authState.profile?.role && authState.profile.role !== 'admin') {
+      console.log("🟢 Setting existing role:", authState.profile.role);
+      setUserRole(authState.profile.role);
+    }
+  }, [authState.isLoading, authState.user, authState.profile, navigate]);
+
+  // Show loading while auth state is loading
   if (authState.isLoading) {
     console.log("🔵 Showing loading screen - auth state is loading");
     return <LoadingScreen />;
   }
 
-  // If no user, something went wrong
+  // If no user, redirect should handle this but show loading as fallback
   if (!authState.user) {
-    console.log("🔴 No user found, redirecting to login");
-    navigate('/login', { replace: true });
-    return <LoadingScreen />;
-  }
-
-  // If no profile yet, wait for it to load
-  if (!authState.profile) {
-    console.log("🔵 Showing loading screen - waiting for profile");
-    return <LoadingScreen />;
-  }
-
-  // If admin, don't show anything (redirect should handle this)
-  if (authState.profile.role === 'admin') {
-    console.log("🔴 Admin role detected, should redirect");
+    console.log("🔴 No user found, should redirect to login");
     return <LoadingScreen />;
   }
 
@@ -171,7 +167,7 @@ const Onboarding = () => {
       const fileName = `${userId}/profile-photo-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload the file - Fixed the FileOptions issue by removing onUploadProgress
+      // Upload the file
       const { error: uploadError, data } = await supabase.storage
         .from('profile_photos')
         .upload(filePath, formData.profilePhoto, {
