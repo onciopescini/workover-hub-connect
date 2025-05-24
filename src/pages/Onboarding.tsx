@@ -176,7 +176,7 @@ const Onboarding = () => {
         onboarding_completed: true,
       });
 
-      // Redirect based on user role
+      // Redirect based on user role with replace to prevent back navigation
       let destination = '/dashboard';
       switch (userRole) {
         case 'admin':
@@ -191,7 +191,9 @@ const Onboarding = () => {
         default:
           destination = '/dashboard';
       }
-      navigate(destination);
+      
+      console.log(`🟢 Onboarding completed, redirecting to: ${destination}`);
+      navigate(destination, { replace: true });
     } catch (error: any) {
       console.error("Onboarding error:", error);
       setErrors({

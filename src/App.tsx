@@ -22,7 +22,6 @@ import SpacesManage from './pages/SpacesManage';
 import SpaceEdit from './pages/SpaceEdit';
 import EventDetail from './pages/EventDetail';
 import NotFound from './pages/NotFound';
-import HostDashboardNew from './pages/HostDashboardNew';
 import Support from './pages/Support';
 import Networking from './pages/Networking';
 import NetworkingDiscover from './pages/NetworkingDiscover';
@@ -66,16 +65,6 @@ function App() {
               <Route path="/host/dashboard" element={
                 <AuthProtected>
                   <HostDashboard />
-                </AuthProtected>
-              } />
-              <Route path="/host-dashboard" element={
-                <AuthProtected>
-                  <HostDashboard />
-                </AuthProtected>
-              } />
-              <Route path="/host-dashboard-new" element={
-                <AuthProtected>
-                  <HostDashboardNew />
                 </AuthProtected>
               } />
               <Route path="/admin" element={
