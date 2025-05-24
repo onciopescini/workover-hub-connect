@@ -62,8 +62,8 @@ const Onboarding = () => {
       return;
     }
 
-    // Admin users go to admin panel
-    if (authState.profile?.role === 'admin') {
+    // Admin users go to admin panel - check for admin role as string
+    if (authState.profile?.role === 'admin' as any) {
       console.log("🟡 Admin detected, redirecting to /admin");
       navigate('/admin', { replace: true });
       return;
