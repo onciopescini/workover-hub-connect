@@ -50,12 +50,14 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               
-              {/* Protected Routes */}
+              {/* Onboarding route - requires auth but NOT completed onboarding */}
               <Route path="/onboarding" element={
-                <AuthProtected>
+                <AuthProtected requireOnboarding={false}>
                   <Onboarding />
                 </AuthProtected>
               } />
+              
+              {/* Protected Routes - require completed onboarding */}
               <Route path="/dashboard" element={
                 <AuthProtected>
                   <Dashboard />

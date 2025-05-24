@@ -14,7 +14,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidLinkedInUrl } from "@/lib/auth-utils";
-import LoadingScreen from "@/components/LoadingScreen";
 
 const Onboarding = () => {
   const { authState, updateProfile } = useAuth();
@@ -38,72 +37,25 @@ const Onboarding = () => {
 
   // Debug logging
   useEffect(() => {
-    console.log("🟢 Onboarding state:", {
+    console.log("🟢 Onboarding component state:", {
       isLoading: authState.isLoading,
       hasUser: !!authState.user,
       hasProfile: !!authState.profile,
       userRole: authState.profile?.role,
       onboardingCompleted: authState.profile?.onboarding_completed,
+      currentUserRole: userRole
     });
-  }, [authState]);
+  }, [authState, userRole]);
 
-  // Handle redirects based on auth state and profile - simplified version
+  // Handle admin users - they should go directly to admin panel
   useEffect(() => {
-    // Don't do anything while loading
-    if (authState.isLoading) {
-      console.log("🔵 Still loading, waiting...");
-      return;
-    }
-
-    // No user means redirect to login
-    if (!authState.user) {
-      console.log("🔴 No user, redirecting to login");
-      navigate('/login', { replace: true });
-      return;
-    }
-
-    // Admin users go to admin panel - check for admin role as string
-    if (authState.profile?.role === 'admin' as any) {
+    if (!authState.isLoading && authState.user && authState.profile?.role === 'admin') {
       console.log("🟡 Admin detected, redirecting to /admin");
       navigate('/admin', { replace: true });
-      return;
     }
+  }, [authState.isLoading, authState.user, authState.profile?.role, navigate]);
 
-    // Users who completed onboarding go to dashboard
-    if (authState.profile?.onboarding_completed) {
-      console.log("🟡 Onboarding already completed, redirecting");
-      let destination = '/dashboard';
-      switch (authState.profile.role) {
-        case 'host':
-          destination = '/host/dashboard';
-          break;
-        case 'coworker':
-          destination = '/dashboard';
-          break;
-        default:
-          destination = '/dashboard';
-      }
-      navigate(destination, { replace: true });
-      return;
-    }
-
-    // If we reach here, user needs to complete onboarding
-    console.log("🟢 User needs to complete onboarding, showing form");
-  }, [authState.isLoading, authState.user, authState.profile?.onboarding_completed, authState.profile?.role, navigate]);
-
-  // Show loading while auth state is loading
-  if (authState.isLoading) {
-    console.log("🔵 Showing loading screen - auth state is loading");
-    return <LoadingScreen />;
-  }
-
-  // If no user, redirect should handle this but show loading as fallback
-  if (!authState.user) {
-    console.log("🔴 No user found, should redirect to login");
-    return <LoadingScreen />;
-  }
-
-  console.log("🟢 Rendering onboarding UI");
+  console.log("🟢 Rendering onboarding form");
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
