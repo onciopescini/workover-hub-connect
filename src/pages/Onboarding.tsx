@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ const Onboarding = () => {
     });
   }, [authState]);
 
-  // Handle redirects based on auth state and profile
+  // Handle redirects based on auth state and profile - simplified version
   useEffect(() => {
     // Don't do anything while loading
     if (authState.isLoading) {
@@ -87,12 +88,12 @@ const Onboarding = () => {
       return;
     }
 
-    // Set existing role if user has one
-    if (authState.profile?.role && authState.profile.role !== 'admin') {
-      console.log("🟢 Setting existing role:", authState.profile.role);
+    // If user has an existing role, pre-select it in the UI without causing loops
+    if (authState.profile?.role && authState.profile.role !== 'admin' && userRole === null) {
+      console.log("🟢 Pre-selecting existing role:", authState.profile.role);
       setUserRole(authState.profile.role);
     }
-  }, [authState.isLoading, authState.user, authState.profile, navigate]);
+  }, [authState.isLoading, authState.user, authState.profile?.onboarding_completed, authState.profile?.role, navigate, userRole]);
 
   // Show loading while auth state is loading
   if (authState.isLoading) {
