@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -88,12 +87,9 @@ const Onboarding = () => {
       return;
     }
 
-    // If user has an existing role, pre-select it in the UI without causing loops
-    if (authState.profile?.role && authState.profile.role !== 'admin' && userRole === null) {
-      console.log("🟢 Pre-selecting existing role:", authState.profile.role);
-      setUserRole(authState.profile.role);
-    }
-  }, [authState.isLoading, authState.user, authState.profile?.onboarding_completed, authState.profile?.role, navigate, userRole]);
+    // If we reach here, user needs to complete onboarding
+    console.log("🟢 User needs to complete onboarding, showing form");
+  }, [authState.isLoading, authState.user, authState.profile?.onboarding_completed, authState.profile?.role, navigate]);
 
   // Show loading while auth state is loading
   if (authState.isLoading) {
