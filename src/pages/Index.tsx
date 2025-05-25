@@ -55,7 +55,7 @@ const Index = () => {
               Workover connette professionisti e spazi di lavoro flessibili. 
               Trova il workspace perfetto o monetizza i tuoi spazi inutilizzati.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button 
                 onClick={() => navigate("/signup")}
                 size="lg"
@@ -70,6 +70,26 @@ const Index = () => {
                 className="px-8 py-3 text-lg border-indigo-600 text-indigo-600 hover:bg-indigo-50"
               >
                 Accedi
+              </Button>
+            </div>
+            
+            {/* Quick access to marketplace */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => navigate("/spaces")}
+                variant="outline"
+                size="lg"
+                className="px-6 py-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+              >
+                Esplora Spazi
+              </Button>
+              <Button 
+                onClick={() => navigate("/events")}
+                variant="outline"
+                size="lg"
+                className="px-6 py-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+              >
+                Scopri Eventi
               </Button>
             </div>
           </div>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -29,6 +28,8 @@ import Networking from './pages/Networking';
 import NetworkingDiscover from './pages/NetworkingDiscover';
 import AdminPanel from './pages/AdminPanel';
 import { Toaster } from "@/components/ui/sonner"
+import PublicSpaces from './pages/PublicSpaces';
+import PublicEvents from './pages/PublicEvents';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +48,11 @@ function App() {
           <div className="min-h-screen bg-background">
             <Routes>
               <Route path="/" element={<Index />} />
+              
+              {/* Public marketplace routes */}
+              <Route path="/spaces" element={<PublicSpaces />} />
+              <Route path="/events" element={<PublicEvents />} />
+              
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
