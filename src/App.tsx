@@ -12,6 +12,7 @@ import RoleProtected from './components/auth/RoleProtected';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import HostDashboard from './pages/HostDashboard';
+import Profile from './pages/Profile';
 import Bookings from './pages/Bookings';
 import Favorites from './pages/Favorites';
 import Reviews from './pages/Reviews';
@@ -61,6 +62,11 @@ function App() {
               <Route path="/dashboard" element={
                 <AuthProtected>
                   <Dashboard />
+                </AuthProtected>
+              } />
+              <Route path="/profile" element={
+                <AuthProtected>
+                  <Profile />
                 </AuthProtected>
               } />
               <Route path="/host/dashboard" element={
