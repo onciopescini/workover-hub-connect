@@ -762,14 +762,18 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          interests: string | null
           is_suspended: boolean | null
           last_name: string
           linkedin_url: string | null
+          location: string | null
           networking_enabled: boolean | null
           nickname: string | null
           onboarding_completed: boolean | null
           profile_photo_url: string | null
           role: Database["public"]["Enums"]["user_role"]
+          skills: string | null
+          stripe_account_id: string | null
           stripe_connected: boolean | null
           suspended_at: string | null
           suspended_by: string | null
@@ -782,14 +786,18 @@ export type Database = {
           created_at?: string
           first_name: string
           id: string
+          interests?: string | null
           is_suspended?: boolean | null
           last_name: string
           linkedin_url?: string | null
+          location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          skills?: string | null
+          stripe_account_id?: string | null
           stripe_connected?: boolean | null
           suspended_at?: string | null
           suspended_by?: string | null
@@ -802,14 +810,18 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          interests?: string | null
           is_suspended?: boolean | null
           last_name?: string
           linkedin_url?: string | null
+          location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          skills?: string | null
+          stripe_account_id?: string | null
           stripe_connected?: boolean | null
           suspended_at?: string | null
           suspended_by?: string | null
