@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error("🔴 Error fetching profile:", error);
-        // If there's an error but user is authenticated, create a minimal profile state
         setAuthState(prev => ({
           ...prev,
           profile: null,
@@ -131,16 +129,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data?.id,
         role: data?.role,
         stripeConnected: data?.stripe_connected,
-        stripeAccountId: data?.stripe_account_id || null,
-        location: data?.location || null,
-        skills: data?.skills || null,
-        interests: data?.interests || null,
+        stripeAccountId: data?.stripe_account_id,
+        location: data?.location,
+        skills: data?.skills,
+        interests: data?.interests,
         onboardingCompleted: data?.onboarding_completed
       });
       
       setAuthState(prev => ({
         ...prev,
-        profile: data as Profile,
+        profile: data,
         isLoading: false,
       }));
     } catch (error) {

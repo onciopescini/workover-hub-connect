@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,7 +109,7 @@ export function StripeSetup() {
 
         console.log("🔵 Profilo aggiornato:", {
           stripeConnected: profile?.stripe_connected,
-          stripeAccountId: profile?.stripe_account_id || null
+          stripeAccountId: profile?.stripe_account_id
         });
 
         if (profile?.stripe_connected && !stripeConnected) {
