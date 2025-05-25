@@ -439,6 +439,7 @@ export type Database = {
       }
       events: {
         Row: {
+          city: string | null
           created_at: string | null
           created_by: string | null
           current_participants: number | null
@@ -452,6 +453,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          city?: string | null
           created_at?: string | null
           created_by?: string | null
           current_participants?: number | null
@@ -465,6 +467,7 @@ export type Database = {
           title: string
         }
         Update: {
+          city?: string | null
           created_at?: string | null
           created_by?: string | null
           current_participants?: number | null
@@ -949,6 +952,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           availability: Json | null
+          capacity: number | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
           created_at: string
@@ -979,6 +983,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           availability?: Json | null
+          capacity?: number | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
           created_at?: string
@@ -1009,6 +1014,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           availability?: Json | null
+          capacity?: number | null
           category?: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
           created_at?: string

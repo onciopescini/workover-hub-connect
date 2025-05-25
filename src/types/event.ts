@@ -11,6 +11,7 @@ export interface Event {
   current_participants: number | null;
   image_url: string | null;
   status: string | null;
+  city: string | null;
 }
 
 export interface EventWithDetails extends Event {
@@ -18,6 +19,8 @@ export interface EventWithDetails extends Event {
     id: string;
     title: string;
     address: string;
+    latitude: number | null;
+    longitude: number | null;
   };
   creator?: {
     id: string;

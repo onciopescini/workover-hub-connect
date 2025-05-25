@@ -56,11 +56,8 @@ const PublicSpaces = () => {
       try {
         const { data, error } = await supabase
           .from('spaces')
-          .select(`
-            *,
-            host:profiles!host_id(first_name, last_name, profile_photo_url)
-          `)
-          .eq('is_active', true);
+          .select('*')
+          .eq('published', true);
 
         if (error) throw error;
         setSpaces(data || []);
@@ -80,11 +77,10 @@ const PublicSpaces = () => {
   useEffect(() => {
     let filtered = [...spaces];
 
-    // City search
+    // City search - usa address invece di city
     if (searchCity) {
       filtered = filtered.filter(space => 
-        space.address?.toLowerCase().includes(searchCity.toLowerCase()) ||
-        space.city?.toLowerCase().includes(searchCity.toLowerCase())
+        space.address?.toLowerCase().includes(searchCity.toLowerCase())
       );
     }
 

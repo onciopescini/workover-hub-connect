@@ -101,7 +101,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             {space.amenities?.includes('Parking') && <span className="text-sm">🅿️</span>}
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              <span className="text-sm">{space.capacity || 1}</span>
+              <span className="text-sm">{space.max_capacity || space.capacity || 1}</span>
             </div>
           </div>
 
