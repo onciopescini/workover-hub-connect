@@ -19,6 +19,7 @@ interface AuthContextProps {
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (profile: Partial<Profile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -102,9 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, forceRefresh: boolean = false) => {
     try {
-      console.log("🔵 Fetching profile for user:", userId);
+      console.log("🔵 Fetching profile for user:", userId, "Force refresh:", forceRefresh);
       
       const { data, error } = await supabase
         .from("profiles")
@@ -125,7 +126,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.log("🔵 Profile fetched successfully:", data);
+      console.log("🔵 Profile fetched successfully:", {
+        id: data?.id,
+        role: data?.role,
+        stripeConnected: data?.stripe_connected,
+        onboardingCompleted: data?.onboarding_completed
+      });
+      
       setAuthState(prev => ({
         ...prev,
         profile: data,
@@ -138,6 +145,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile: null,
         isLoading: false,
       }));
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (authState.user?.id) {
+      console.log("🔵 Manual profile refresh requested");
+      await fetchUserProfile(authState.user.id, true);
     }
   };
 
@@ -304,6 +318,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!authState.user) throw new Error("User not authenticated");
 
+      console.log("🔵 Updating profile:", profile);
+
       const { error } = await supabase
         .from("profiles")
         .update(profile)
@@ -311,15 +327,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // Refresh user profile
-      fetchUserProfile(authState.user.id);
+      // Refresh user profile after update
+      await fetchUserProfile(authState.user.id, true);
 
       toast({
         title: "Profile updated",
         description: "Your profile has been successfully updated.",
       });
     } catch (error: any) {
-      console.error("Error updating profile:", error);
+      console.error("🔴 Error updating profile:", error);
       toast({
         title: "Profile update failed",
         description: error.message || "There was an error updating your profile.",
@@ -338,6 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signOut: handleSignOut,
         updateProfile,
+        refreshProfile,
       }}
     >
       {children}

@@ -36,7 +36,6 @@ export function AppLayout({
       { icon: Home, label: "Dashboard", href: getDashboardUrl() },
       { icon: Calendar, label: "Prenotazioni", href: "/bookings" },
       { icon: MessageSquare, label: "Messaggi", href: "/messages" },
-      { icon: Users, label: "Networking", href: "/networking" },
     ];
 
     if (role === "host") {
@@ -55,6 +54,11 @@ export function AppLayout({
       ];
     }
 
+    // Solo i coworker possono accedere al networking
+    if (role === "coworker") {
+      baseLinks.splice(3, 0, { icon: Users, label: "Networking", href: "/networking" });
+    }
+
     return baseLinks;
   };
 
@@ -69,7 +73,7 @@ export function AppLayout({
   const isCurrentPath = (href: string) => location.pathname === href;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Navbar */}
       <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -142,11 +146,11 @@ export function AppLayout({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 pb-20">
+      <main className="flex-1">
         {children}
       </main>
 
-      {/* Footer */}
+      {/* Footer - Ora sempre visibile */}
       <footer className="bg-white border-t mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -168,14 +172,16 @@ export function AppLayout({
                     Supporto
                   </button>
                 </li>
-                <li>
-                  <button 
-                    onClick={() => navigate("/networking")}
-                    className="text-xs text-gray-600 hover:text-gray-900"
-                  >
-                    Networking
-                  </button>
-                </li>
+                {authState.profile?.role === "coworker" && (
+                  <li>
+                    <button 
+                      onClick={() => navigate("/networking")}
+                      className="text-xs text-gray-600 hover:text-gray-900"
+                    >
+                      Networking
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
             

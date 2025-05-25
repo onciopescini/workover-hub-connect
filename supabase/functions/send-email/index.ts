@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
@@ -57,6 +56,22 @@ const emailTemplates = {
       </ul>
       <p>Riceverai ulteriori dettagli dall'host a breve.</p>
       <p>Buon lavoro!<br>Il Team Workover</p>
+    `
+  }),
+
+  stripe_setup_complete: (data: any) => ({
+    subject: "Setup Stripe Completato - Workover",
+    html: `
+      <h1>Congratulazioni ${data.firstName}! 🎉</h1>
+      <p>Il tuo account Stripe è stato configurato con successo!</p>
+      <p>Ora puoi:</p>
+      <ul>
+        <li>✅ Pubblicare i tuoi spazi di coworking</li>
+        <li>✅ Ricevere pagamenti dai coworker</li>
+        <li>✅ Gestire le tue prenotazioni</li>
+      </ul>
+      <p><a href="${data.dashboardUrl}" style="background: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Vai alla Dashboard Host</a></p>
+      <p>Il Team Workover</p>
     `
   }),
 

@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthCallback from './pages/AuthCallback';
 import AuthProtected from './components/auth/AuthProtected';
+import RoleProtected from './components/auth/RoleProtected';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import HostDashboard from './pages/HostDashboard';
@@ -64,12 +65,16 @@ function App() {
               } />
               <Route path="/host/dashboard" element={
                 <AuthProtected>
-                  <HostDashboard />
+                  <RoleProtected allowedRoles={["host"]}>
+                    <HostDashboard />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/admin" element={
                 <AuthProtected>
-                  <AdminPanel />
+                  <RoleProtected allowedRoles={["admin"]}>
+                    <AdminPanel />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/bookings" element={
@@ -79,7 +84,9 @@ function App() {
               } />
               <Route path="/favorites" element={
                 <AuthProtected>
-                  <Favorites />
+                  <RoleProtected allowedRoles={["coworker"]}>
+                    <Favorites />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/reviews" element={
@@ -104,17 +111,23 @@ function App() {
               } />
               <Route path="/spaces/new" element={
                 <AuthProtected>
-                  <SpaceNew />
+                  <RoleProtected allowedRoles={["host"]}>
+                    <SpaceNew />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/spaces/manage" element={
                 <AuthProtected>
-                  <SpacesManage />
+                  <RoleProtected allowedRoles={["host"]}>
+                    <SpacesManage />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/spaces/:id/edit" element={
                 <AuthProtected>
-                  <SpaceEdit />
+                  <RoleProtected allowedRoles={["host"]}>
+                    <SpaceEdit />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/events/:id" element={
@@ -127,14 +140,19 @@ function App() {
                   <Support />
                 </AuthProtected>
               } />
+              {/* Networking - Solo per coworker */}
               <Route path="/networking" element={
                 <AuthProtected>
-                  <Networking />
+                  <RoleProtected allowedRoles={["coworker"]}>
+                    <Networking />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               <Route path="/networking/discover" element={
                 <AuthProtected>
-                  <NetworkingDiscover />
+                  <RoleProtected allowedRoles={["coworker"]}>
+                    <NetworkingDiscover />
+                  </RoleProtected>
                 </AuthProtected>
               } />
               

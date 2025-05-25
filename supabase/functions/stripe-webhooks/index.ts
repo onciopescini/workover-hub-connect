@@ -46,12 +46,12 @@ serve(async (req) => {
       return new Response('Invalid signature', { status: 400 });
     }
 
-    console.log('Processing Stripe webhook:', event.type);
+    console.log('🔵 Processing Stripe webhook:', event.type);
 
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log('Checkout session completed:', session.id);
+        console.log('🔵 Checkout session completed:', session.id);
         
         // Update payment status
         if (session.metadata?.booking_id) {
@@ -64,7 +64,9 @@ serve(async (req) => {
             .eq('id', session.metadata.booking_id);
 
           if (paymentError) {
-            console.error('Error updating payment:', paymentError);
+            console.error('🔴 Error updating payment:', paymentError);
+          } else {
+            console.log('✅ Payment updated successfully');
           }
 
           // Update booking status
@@ -74,7 +76,9 @@ serve(async (req) => {
             .eq('id', session.metadata.booking_id);
 
           if (bookingError) {
-            console.error('Error updating booking:', bookingError);
+            console.error('🔴 Error updating booking:', bookingError);
+          } else {
+            console.log('✅ Booking confirmed successfully');
           }
 
           // Send confirmation email
@@ -91,8 +95,9 @@ serve(async (req) => {
                   }
                 }
               });
+              console.log('✅ Confirmation email sent');
             } catch (emailError) {
-              console.error('Failed to send confirmation email:', emailError);
+              console.error('🔴 Failed to send confirmation email:', emailError);
             }
           }
         }
@@ -101,12 +106,12 @@ serve(async (req) => {
 
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
-        console.log('Stripe account updated:', account.id);
+        console.log('🔵 Stripe account updated:', account.id);
         
         // Check if account is verified and can accept payments
         const isVerified = account.charges_enabled && account.payouts_enabled;
         
-        console.log('Account verification status:', {
+        console.log('🔵 Account verification status:', {
           id: account.id,
           charges_enabled: account.charges_enabled,
           payouts_enabled: account.payouts_enabled,
@@ -120,19 +125,19 @@ serve(async (req) => {
           .eq('stripe_account_id', account.id);
 
         if (findError) {
-          console.error('Error finding profile by stripe_account_id:', findError);
+          console.error('🔴 Error finding profile by stripe_account_id:', findError);
           break;
         }
 
         if (!profiles || profiles.length === 0) {
-          console.log('No profile found for Stripe account:', account.id);
+          console.log('🔴 No profile found for Stripe account:', account.id);
           break;
         }
 
         const profile = profiles[0];
-        console.log('Updating profile for user:', profile.id);
+        console.log('🔵 Updating profile for user:', profile.id, 'isVerified:', isVerified);
 
-        // Update the stripe_connected status
+        // Update the stripe_connected status - FIX PRINCIPALE
         const { error: updateError } = await supabaseAdmin
           .from('profiles')
           .update({ 
@@ -142,9 +147,9 @@ serve(async (req) => {
           .eq('id', profile.id);
 
         if (updateError) {
-          console.error('Error updating host stripe status:', updateError);
+          console.error('🔴 Error updating host stripe status:', updateError);
         } else {
-          console.log('Host stripe status updated successfully:', {
+          console.log('✅ Host stripe status updated successfully:', {
             userId: profile.id,
             stripeConnected: isVerified
           });
@@ -166,9 +171,10 @@ serve(async (req) => {
                     }
                   }
                 });
+                console.log('✅ Stripe setup completion email sent');
               }
             } catch (emailError) {
-              console.error('Failed to send Stripe setup completion email:', emailError);
+              console.error('🔴 Failed to send Stripe setup completion email:', emailError);
             }
           }
         }
@@ -176,7 +182,7 @@ serve(async (req) => {
       }
 
       default:
-        console.log('Unhandled webhook event type:', event.type);
+        console.log('🔵 Unhandled webhook event type:', event.type);
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -185,7 +191,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('🔴 Webhook error:', error);
     return new Response(
       JSON.stringify({ error: 'Webhook processing failed' }),
       {
