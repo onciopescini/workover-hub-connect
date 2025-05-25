@@ -7,7 +7,7 @@ export const getEvent = async (eventId: string): Promise<EventWithDetails | null
     .from('events')
     .select(`
       *,
-      space:spaces(id, title, address),
+      space:spaces(id, title, address, latitude, longitude),
       creator:profiles!fk_events_created_by(id, first_name, last_name, profile_photo_url)
     `)
     .eq('id', eventId)
