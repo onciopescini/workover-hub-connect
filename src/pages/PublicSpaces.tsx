@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
@@ -123,16 +123,16 @@ const PublicSpaces = () => {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <MarketplaceLayout>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
         </div>
-      </PublicLayout>
+      </MarketplaceLayout>
     );
   }
 
   return (
-    <PublicLayout>
+    <MarketplaceLayout>
       <div className="flex flex-col h-screen">
         {/* Search and filters header */}
         <div className="bg-white border-b p-4">
@@ -211,7 +211,7 @@ const PublicSpaces = () => {
           </div>
         </div>
       </div>
-    </PublicLayout>
+    </MarketplaceLayout>
   );
 };
 

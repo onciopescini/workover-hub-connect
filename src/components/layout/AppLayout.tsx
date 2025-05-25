@@ -35,7 +35,7 @@ export function AppLayout({
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/dashboard";
+    return "/spaces"; // Changed from /dashboard to /spaces for coworkers
   };
 
   const getNavLinks = () => {
