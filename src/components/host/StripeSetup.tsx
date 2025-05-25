@@ -16,11 +16,12 @@ export function StripeSetup() {
   
   // Leggi lo stato direttamente dal profilo autenticato
   const stripeConnected = authState.profile?.stripe_connected || false;
+  const stripeAccountId = authState.profile?.stripe_account_id;
 
   console.log("🔵 StripeSetup - Stato corrente:", {
     userId: authState.user?.id,
     stripeConnected,
-    stripeAccountId: authState.profile?.stripe_account_id
+    stripeAccountId
   });
 
   // Auto-refresh status quando la pagina viene ricaricata o focus

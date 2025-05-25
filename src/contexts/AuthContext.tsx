@@ -130,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data?.id,
         role: data?.role,
         stripeConnected: data?.stripe_connected,
+        stripeAccountId: data?.stripe_account_id,
         onboardingCompleted: data?.onboarding_completed
       });
       
