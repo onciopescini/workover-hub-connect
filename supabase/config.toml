@@ -1,1 +1,20 @@
+
 project_id = "khtqwzvrxzsgfhsslwyz"
+
+[functions.stripe-webhooks]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.create-profile]
+verify_jwt = true
+
+[functions.support-tickets]
+verify_jwt = true
+
+[functions.connection-suggestions]
+verify_jwt = false
+
+[functions.admin-security]
+verify_jwt = true
