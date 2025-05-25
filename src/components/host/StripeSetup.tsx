@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, AlertTriangle, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
+import { CreditCard, AlertTriangle, CheckCircle, ExternalLink, Loader2, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ export function StripeSetup() {
   const { authState } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   
   // Leggi lo stato direttamente dal profilo autenticato con fallback sicuri
   const stripeConnected = authState.profile?.stripe_connected || false;
@@ -51,33 +53,40 @@ export function StripeSetup() {
 
   const handleStripeConnect = async () => {
     setIsLoading(true);
+    setLastError(null);
+    
     try {
       console.log("🔵 Iniziando connessione Stripe...");
       
       const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: {
           return_url: `${window.location.origin}/host/dashboard?stripe_setup=success`,
-          refresh_url: `${window.location.origin}/host/dashboard`
+          refresh_url: `${window.location.origin}/host/dashboard?stripe_setup=refresh`
         }
       });
 
       if (error) {
         console.error("🔴 Errore Stripe Connect:", error);
+        setLastError(error.message);
         throw error;
       }
 
-      if (data?.url) {
+      if (data?.success && data?.url) {
         console.log("🔵 URL Stripe ricevuto:", data.url);
         // Apri Stripe Connect in una nuova finestra
         window.open(data.url, '_blank');
         toast.success("Reindirizzamento a Stripe Connect...");
       } else {
-        throw new Error("URL di reindirizzamento non ricevuto");
+        const errorMsg = data?.error || "URL di reindirizzamento non ricevuto";
+        setLastError(errorMsg);
+        throw new Error(errorMsg);
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("🔴 Errore nel collegamento Stripe:", error);
-      toast.error("Errore nel collegamento con Stripe");
+      const errorMessage = error.message || "Errore nel collegamento con Stripe";
+      setLastError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +99,8 @@ export function StripeSetup() {
 
   const handleRefreshStatus = async () => {
     setIsCheckingStatus(true);
+    setLastError(null);
+    
     try {
       console.log("🔵 Refreshing profile status...");
       
@@ -104,6 +115,7 @@ export function StripeSetup() {
 
         if (error) {
           console.error("🔴 Errore fetch profilo:", error);
+          setLastError("Errore nel caricamento del profilo");
           throw error;
         }
 
@@ -120,9 +132,11 @@ export function StripeSetup() {
           toast.info("Setup Stripe ancora in corso...");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("🔴 Errore nel refresh dello stato:", error);
-      toast.error("Errore nel controllo dello stato");
+      const errorMessage = error.message || "Errore nel controllo dello stato";
+      setLastError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsCheckingStatus(false);
     }
@@ -166,6 +180,15 @@ export function StripeSetup() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {lastError && (
+          <Alert className="mb-4" variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Errore:</strong> {lastError}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {!stripeConnected ? (
           <div className="space-y-4">
             <Alert>
@@ -216,6 +239,16 @@ export function StripeSetup() {
                 )}
               </Button>
             </div>
+
+            {lastError && (
+              <Alert className="mt-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Se il problema persiste, verifica che la tua chiave Stripe sia configurata correttamente 
+                  nelle impostazioni del progetto.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
         ) : (
           <div className="space-y-4">

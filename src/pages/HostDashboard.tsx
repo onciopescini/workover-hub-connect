@@ -66,18 +66,25 @@ const HostDashboard = () => {
       if (!authState.user) return;
 
       try {
+        console.log('🔵 Fetching dashboard data for host:', authState.user.id);
+
         // 1. Fetch spaces count for current host
         const { data: spacesData, error: spacesError } = await supabase
           .from("spaces")
           .select("id")
           .eq("host_id", authState.user.id);
 
-        if (spacesError) throw spacesError;
+        if (spacesError) {
+          console.error('🔴 Error fetching spaces:', spacesError);
+          throw spacesError;
+        }
+
         const spaceIds = spacesData?.map(s => s.id) || [];
         setTotalSpaces(spaceIds.length);
+        console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces
+          // 2. Fetch active bookings for host's spaces - FIX: use correct field name
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
@@ -87,7 +94,7 @@ const HostDashboard = () => {
                 address,
                 photos
               ),
-              coworker:user_id (
+              profile:user_id (
                 first_name,
                 last_name,
                 profile_photo_url
@@ -98,52 +105,84 @@ const HostDashboard = () => {
             .gte("booking_date", new Date().toISOString().split('T')[0])
             .order("booking_date", { ascending: true });
 
-          if (bookingsError) throw bookingsError;
-          setActiveBookings(bookingsData?.length || 0);
-          setRecentBookings(bookingsData as unknown as BookingWithDetails[] || []);
+          if (bookingsError) {
+            console.error('🔴 Error fetching bookings:', bookingsError);
+            // Don't throw, just log and continue with empty bookings
+            console.log('⚠️ Continuing without bookings data');
+            setActiveBookings(0);
+            setRecentBookings([]);
+          } else {
+            setActiveBookings(bookingsData?.length || 0);
+            setRecentBookings(bookingsData as unknown as BookingWithDetails[] || []);
+            console.log('🔵 Found active bookings:', bookingsData?.length || 0);
 
-          // 3. Fetch recent messages for host's bookings
-          const { data: messagesData, error: messagesError } = await supabase
-            .from("messages")
-            .select(`
-              *,
-              sender:sender_id (
-                first_name,
-                last_name,
-                profile_photo_url
-              )
-            `)
-            .in("booking_id", bookingsData?.map(b => b.id) || [])
-            .neq("sender_id", authState.user.id)
-            .order("created_at", { ascending: false })
-            .limit(10);
+            // 3. Fetch recent messages for host's bookings
+            if (bookingsData && bookingsData.length > 0) {
+              const { data: messagesData, error: messagesError } = await supabase
+                .from("messages")
+                .select(`
+                  *,
+                  sender:sender_id (
+                    first_name,
+                    last_name,
+                    profile_photo_url
+                  )
+                `)
+                .in("booking_id", bookingsData.map(b => b.id))
+                .neq("sender_id", authState.user.id)
+                .order("created_at", { ascending: false })
+                .limit(10);
 
-          if (messagesError) throw messagesError;
-          const messages = messagesData as unknown as Message[] || [];
-          setRecentMessages(messages);
-          setUnreadMessages(messages.filter(m => !m.is_read).length);
+              if (messagesError) {
+                console.error('🔴 Error fetching messages:', messagesError);
+                setRecentMessages([]);
+                setUnreadMessages(0);
+              } else {
+                const messages = messagesData as unknown as Message[] || [];
+                setRecentMessages(messages);
+                setUnreadMessages(messages.filter(m => !m.is_read).length);
+                console.log('🔵 Found messages:', messages.length);
+              }
+            }
 
-          // 4. Fetch checklist status for first space (demo)
-          if (spaceIds.length > 0) {
+            // 4. Fetch checklist status for first space (demo)
             const { data: checklistData, error: checklistError } = await supabase
               .from("checklists")
               .select("*")
               .eq("space_id", spaceIds[0]);
 
-            if (checklistError) throw checklistError;
-            setChecklists(checklistData || []);
+            if (checklistError) {
+              console.error('🔴 Error fetching checklist:', checklistError);
+              setChecklists([]);
+            } else {
+              setChecklists(checklistData || []);
+            }
           }
+        } else {
+          // No spaces, set empty data
+          setActiveBookings(0);
+          setRecentBookings([]);
+          setRecentMessages([]);
+          setUnreadMessages(0);
+          setChecklists([]);
         }
 
         // 5. Fetch reviews and average rating for host
-        const reviewsData = await getUserReviews(authState.user.id);
-        setRecentReviews(reviewsData.received);
-        
-        const avgRating = await getUserAverageRating(authState.user.id);
-        setAverageRating(avgRating);
+        try {
+          const reviewsData = await getUserReviews(authState.user.id);
+          setRecentReviews(reviewsData.received);
+          
+          const avgRating = await getUserAverageRating(authState.user.id);
+          setAverageRating(avgRating);
+          console.log('🔵 Reviews and rating loaded');
+        } catch (reviewError) {
+          console.error('🔴 Error fetching reviews:', reviewError);
+          setRecentReviews([]);
+          setAverageRating(null);
+        }
 
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("🔴 Error fetching dashboard data:", error);
         toast.error("Errore nel caricamento della dashboard");
       } finally {
         setIsLoading(false);
