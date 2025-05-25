@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,13 +131,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data?.id,
         role: data?.role,
         stripeConnected: data?.stripe_connected,
-        stripeAccountId: data?.stripe_account_id,
+        stripeAccountId: data?.stripe_account_id || null,
+        location: data?.location || null,
+        skills: data?.skills || null,
+        interests: data?.interests || null,
         onboardingCompleted: data?.onboarding_completed
       });
       
       setAuthState(prev => ({
         ...prev,
-        profile: data,
+        profile: data as Profile,
         isLoading: false,
       }));
     } catch (error) {

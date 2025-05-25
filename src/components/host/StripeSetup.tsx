@@ -14,14 +14,15 @@ export function StripeSetup() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   
-  // Leggi lo stato direttamente dal profilo autenticato
+  // Leggi lo stato direttamente dal profilo autenticato con fallback sicuri
   const stripeConnected = authState.profile?.stripe_connected || false;
-  const stripeAccountId = authState.profile?.stripe_account_id;
+  const stripeAccountId = authState.profile?.stripe_account_id || null;
 
   console.log("🔵 StripeSetup - Stato corrente:", {
     userId: authState.user?.id,
     stripeConnected,
-    stripeAccountId
+    stripeAccountId,
+    profileLoaded: !!authState.profile
   });
 
   // Auto-refresh status quando la pagina viene ricaricata o focus
@@ -109,7 +110,7 @@ export function StripeSetup() {
 
         console.log("🔵 Profilo aggiornato:", {
           stripeConnected: profile?.stripe_connected,
-          stripeAccountId: profile?.stripe_account_id
+          stripeAccountId: profile?.stripe_account_id || null
         });
 
         if (profile?.stripe_connected && !stripeConnected) {
@@ -127,6 +128,24 @@ export function StripeSetup() {
       setIsCheckingStatus(false);
     }
   };
+
+  // Show loading if profile is not yet loaded
+  if (authState.isLoading || !authState.profile) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Configurazione Pagamenti
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">Caricamento stato Stripe...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
@@ -210,6 +229,12 @@ export function StripeSetup() {
               Il tuo account Stripe è collegato e configurato. Puoi ora pubblicare spazi 
               e ricevere pagamenti dai coworker.
             </p>
+
+            {stripeAccountId && (
+              <p className="text-xs text-gray-500">
+                Account ID: {stripeAccountId}
+              </p>
+            )}
 
             <div className="flex gap-3">
               <Button 
