@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import SpaceForm from "@/components/spaces/SpaceForm";
 import type { Space } from "@/types/space";
 
@@ -63,42 +64,41 @@ const SpaceEdit = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-      </div>
+      <AppLayout title="Caricamento..." subtitle="Sto caricando i dettagli dello spazio">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (error || !space) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
-          <h1 className="text-2xl font-bold text-red-500">Error</h1>
-          <p className="mt-2">{error || "Could not load the space"}</p>
-          <button
-            onClick={() => navigate("/spaces/manage")}
-            className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded"
-          >
-            Return to Spaces
-          </button>
+      <AppLayout 
+        title="Errore" 
+        subtitle="Impossibile caricare lo spazio"
+        customBackUrl="/spaces/manage"
+      >
+        <div className="max-w-4xl mx-auto p-4 md:p-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h1 className="text-2xl font-bold text-red-500 mb-2">Errore</h1>
+            <p className="text-gray-600 mb-4">{error || "Could not load the space"}</p>
+          </div>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Edit Space</h1>
-          <p className="text-gray-600 mt-2">
-            Make changes to your space listing
-          </p>
-        </div>
-
+    <AppLayout 
+      title="Modifica Spazio" 
+      subtitle={`Modifica "${space.title}"`}
+      customBackUrl="/spaces/manage"
+    >
+      <div className="max-w-4xl mx-auto p-4 md:p-6">
         <SpaceForm initialData={space} isEdit={true} />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

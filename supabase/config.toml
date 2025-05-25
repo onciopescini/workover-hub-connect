@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.admin-security]
 verify_jwt = true
+
+[functions.stripe-connect]
+verify_jwt = true

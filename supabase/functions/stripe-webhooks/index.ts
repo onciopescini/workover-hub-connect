@@ -79,17 +79,21 @@ serve(async (req) => {
 
           // Send confirmation email
           if (session.customer_email) {
-            await supabaseAdmin.functions.invoke('send-email', {
-              body: {
-                type: 'booking_confirmation',
-                to: session.customer_email,
-                data: {
-                  booking_id: session.metadata.booking_id,
-                  amount: session.amount_total,
-                  currency: session.currency
+            try {
+              await supabaseAdmin.functions.invoke('send-email', {
+                body: {
+                  type: 'booking_confirmation',
+                  to: session.customer_email,
+                  data: {
+                    booking_id: session.metadata.booking_id,
+                    amount: session.amount_total,
+                    currency: session.currency
+                  }
                 }
-              }
-            });
+              });
+            } catch (emailError) {
+              console.error('Failed to send confirmation email:', emailError);
+            }
           }
         }
         break;
@@ -99,22 +103,74 @@ serve(async (req) => {
         const account = event.data.object as Stripe.Account;
         console.log('Stripe account updated:', account.id);
         
-        // Check if account is verified
+        // Check if account is verified and can accept payments
         const isVerified = account.charges_enabled && account.payouts_enabled;
         
-        // Find and update host profile
-        const { error } = await supabaseAdmin
+        console.log('Account verification status:', {
+          id: account.id,
+          charges_enabled: account.charges_enabled,
+          payouts_enabled: account.payouts_enabled,
+          isVerified
+        });
+        
+        // Find and update host profile by stripe_account_id
+        const { data: profiles, error: findError } = await supabaseAdmin
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .eq('stripe_account_id', account.id);
+
+        if (findError) {
+          console.error('Error finding profile by stripe_account_id:', findError);
+          break;
+        }
+
+        if (!profiles || profiles.length === 0) {
+          console.log('No profile found for Stripe account:', account.id);
+          break;
+        }
+
+        const profile = profiles[0];
+        console.log('Updating profile for user:', profile.id);
+
+        // Update the stripe_connected status
+        const { error: updateError } = await supabaseAdmin
           .from('profiles')
           .update({ 
             stripe_connected: isVerified,
             updated_at: new Date().toISOString()
           })
-          .eq('stripe_account_id', account.id);
+          .eq('id', profile.id);
 
-        if (error) {
-          console.error('Error updating host stripe status:', error);
+        if (updateError) {
+          console.error('Error updating host stripe status:', updateError);
         } else {
-          console.log('Host stripe status updated successfully');
+          console.log('Host stripe status updated successfully:', {
+            userId: profile.id,
+            stripeConnected: isVerified
+          });
+
+          // Send notification email to host about successful setup
+          if (isVerified) {
+            try {
+              // Get user email from auth
+              const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+              
+              if (authUser?.user?.email) {
+                await supabaseAdmin.functions.invoke('send-email', {
+                  body: {
+                    type: 'stripe_setup_complete',
+                    to: authUser.user.email,
+                    data: {
+                      firstName: profile.first_name,
+                      dashboardUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.app'}/host/dashboard`
+                    }
+                  }
+                });
+              }
+            } catch (emailError) {
+              console.error('Failed to send Stripe setup completion email:', emailError);
+            }
+          }
         }
         break;
       }

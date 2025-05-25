@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LoadingScreen from "@/components/LoadingScreen";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardStats } from "@/components/host/DashboardStats";
 import { QuickActions } from "@/components/host/QuickActions";
 import { RecentBookings } from "@/components/host/RecentBookings";
@@ -163,18 +164,12 @@ const HostDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Dashboard Host
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Benvenuto, {authState.profile?.first_name || "Host"}
-          </p>
-        </div>
-
+    <AppLayout 
+      title="Dashboard Host" 
+      subtitle={`Benvenuto, ${authState.profile?.first_name || "Host"}`}
+      showBackButton={false}
+    >
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Welcome Message for New Hosts */}
         {isNewHost && <WelcomeMessage />}
 
@@ -183,7 +178,7 @@ const HostDashboard = () => {
           <StripeSetup />
         </div>
 
-        {/* Statistics Cards - Full width responsive grid */}
+        {/* Statistics Cards */}
         <DashboardStats 
           totalSpaces={totalSpaces}
           activeBookings={activeBookings}
@@ -199,7 +194,7 @@ const HostDashboard = () => {
           <SpaceChecklist checklists={checklists} />
         )}
 
-        {/* Main Content Grid - Two columns on large screens */}
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
@@ -216,7 +211,7 @@ const HostDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
