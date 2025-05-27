@@ -92,10 +92,6 @@ export function PaymentsDashboard() {
                 title,
                 host_id
               )
-            ),
-            profiles(
-              first_name,
-              last_name
             )
           `)
           .gte('created_at', dateThreshold.toISOString())
@@ -104,31 +100,43 @@ export function PaymentsDashboard() {
 
         if (hostError) throw hostError;
 
+        // Get user profiles separately for host payments
+        const userIds = hostPayments?.map(p => p.user_id) || [];
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
         // Transform the data to match our interface
-        const transformedPayments: PaymentWithDetails[] = (hostPayments || []).map(payment => ({
-          id: payment.id,
-          user_id: payment.user_id,
-          booking_id: payment.booking_id,
-          amount: payment.amount,
-          currency: payment.currency,
-          payment_status: payment.payment_status,
-          method: payment.method,
-          receipt_url: payment.receipt_url,
-          stripe_session_id: payment.stripe_session_id,
-          created_at: payment.created_at,
-          booking: payment.bookings ? {
-            booking_date: payment.bookings.booking_date,
-            status: payment.bookings.status,
-            space: {
-              title: payment.bookings.spaces?.title || '',
-              host_id: payment.bookings.spaces?.host_id || ''
-            }
-          } : null,
-          user: payment.profiles ? {
-            first_name: payment.profiles.first_name,
-            last_name: payment.profiles.last_name
-          } : null
-        }));
+        const transformedPayments: PaymentWithDetails[] = (hostPayments || []).map(payment => {
+          const userProfile = profiles?.find(p => p.id === payment.user_id);
+          return {
+            id: payment.id,
+            user_id: payment.user_id,
+            booking_id: payment.booking_id,
+            amount: payment.amount,
+            currency: payment.currency,
+            payment_status: payment.payment_status,
+            method: payment.method,
+            receipt_url: payment.receipt_url,
+            stripe_session_id: payment.stripe_session_id,
+            created_at: payment.created_at,
+            booking: payment.bookings ? {
+              booking_date: payment.bookings.booking_date,
+              status: payment.bookings.status,
+              space: {
+                title: payment.bookings.spaces?.title || '',
+                host_id: payment.bookings.spaces?.host_id || ''
+              }
+            } : null,
+            user: userProfile ? {
+              first_name: userProfile.first_name,
+              last_name: userProfile.last_name
+            } : null
+          };
+        });
 
         let finalPayments = transformedPayments;
         if (filter !== 'all') {
@@ -178,10 +186,6 @@ export function PaymentsDashboard() {
                 title,
                 host_id
               )
-            ),
-            profiles(
-              first_name,
-              last_name
             )
           `)
           .eq('user_id', authState.user.id)
@@ -210,10 +214,7 @@ export function PaymentsDashboard() {
               host_id: payment.bookings.spaces?.host_id || ''
             }
           } : null,
-          user: payment.profiles ? {
-            first_name: payment.profiles.first_name,
-            last_name: payment.profiles.last_name
-          } : null
+          user: null // Users don't need to see their own profile info
         }));
 
         let finalPayments = transformedPayments;
