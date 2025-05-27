@@ -12,7 +12,7 @@ export interface PaymentSession {
 }
 
 export interface PaymentWithStripe extends Payment {
-  stripe_session_id?: string;
+  // stripe_session_id is already in the base Payment type, no need to override
 }
 
 export const PAYMENT_STATUS = {

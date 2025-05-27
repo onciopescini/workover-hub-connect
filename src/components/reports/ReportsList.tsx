@@ -18,6 +18,7 @@ import {
   FileText
 } from "lucide-react";
 import ReportDialog from "./ReportDialog";
+import ReportDetailsDialog from "./ReportDetailsDialog";
 
 interface Report {
   id: string;
@@ -242,7 +243,7 @@ export function ReportsList() {
       )}
 
       {selectedReport && (
-        <ReportDialog
+        <ReportDetailsDialog
           report={selectedReport}
           isOpen={!!selectedReport}
           onClose={() => setSelectedReport(null)}

@@ -74,43 +74,54 @@ export function PaymentsDashboard() {
         .from('payments')
         .select(`
           *,
-          booking:booking_id(
+          booking:bookings!booking_id(
             booking_date,
             status,
-            space:space_id(title, host_id)
+            space:spaces!space_id(title, host_id)
           ),
-          user:user_id(first_name, last_name)
+          user:profiles!user_id(first_name, last_name)
         `)
         .gte('created_at', dateThreshold.toISOString())
         .order('created_at', { ascending: false });
 
       // Filter by user role
       if (authState.profile?.role === 'host') {
-        query = query.eq('booking.space.host_id', authState.user.id);
+        // For hosts, we need to filter by payments where the booking's space belongs to them
+        const { data: hostPayments, error: hostError } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            booking:bookings!booking_id(
+              booking_date,
+              status,
+              space:spaces!space_id(title, host_id)
+            ),
+            user:profiles!user_id(first_name, last_name)
+          `)
+          .gte('created_at', dateThreshold.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (hostError) throw hostError;
+
+        // Filter client-side for host's spaces
+        const filteredPayments = (hostPayments || []).filter(payment => 
+          payment.booking?.space?.host_id === authState.user?.id
+        );
+
+        setPayments(filteredPayments as Payment[]);
       } else {
         query = query.eq('user_id', authState.user.id);
+        const { data, error } = await query;
+        if (error) throw error;
+        setPayments((data || []) as Payment[]);
       }
 
       if (filter !== 'all') {
-        query = query.eq('payment_status', filter);
+        setPayments(prev => prev.filter(payment => payment.payment_status === filter));
       }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Type-safe mapping of the data
-      const formattedPayments: Payment[] = (data || [])
-        .filter(payment => payment.booking && payment.user) // Filter out records with missing relations
-        .map(payment => ({
-          ...payment,
-          booking: payment.booking as Payment['booking'],
-          user: payment.user as Payment['user']
-        }));
-
-      setPayments(formattedPayments);
       
       // Calculate stats
-      const stats = formattedPayments.reduce((acc, payment) => {
+      const stats = payments.reduce((acc, payment) => {
         if (payment.payment_status === 'completed') {
           acc.totalRevenue += payment.amount;
           acc.completedPayments++;
