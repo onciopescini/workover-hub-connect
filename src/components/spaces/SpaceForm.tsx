@@ -1,28 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { AddressAutocomplete } from "./AddressAutocomplete";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Plus, Image } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
+import { BasicInformation } from "./BasicInformation";
+import { SpaceDetails } from "./SpaceDetails";
+import { LocationPricing } from "./LocationPricing";
+import { Photos } from "./Photos";
+import { PublishingOptions } from "./PublishingOptions";
 import {
-  WORKSPACE_FEATURES_OPTIONS,
-  AMENITIES_OPTIONS,
-  SEATING_TYPES_OPTIONS,
-  WORK_ENVIRONMENT_OPTIONS,
-  CATEGORY_OPTIONS,
-  CONFIRMATION_TYPE_OPTIONS,
-  EVENT_FRIENDLY_OPTIONS,
-  IDEAL_GUEST_OPTIONS,
   type Space,
   type SpaceInsert
 } from "@/types/space";
@@ -325,385 +314,54 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">
-              Space Title <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              value={formData.title || ""}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="E.g., Bright Home Office in Downtown"
-              disabled={isSubmitting}
-            />
-            {errors.title && (
-              <p className="text-sm text-red-500">{errors.title}</p>
-            )}
-          </div>
+      <BasicInformation
+        title={formData.title || ""}
+        description={formData.description || ""}
+        category={formData.category || "home"}
+        onInputChange={handleInputChange}
+        errors={errors}
+        isSubmitting={isSubmitting}
+      />
 
-          <div className="space-y-2">
-            <Label htmlFor="description">
-              Description <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="description"
-              value={formData.description || ""}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-              placeholder="Describe your space, amenities, and the work atmosphere"
-              className="min-h-[100px]"
-              disabled={isSubmitting}
-            />
-            {errors.description && (
-              <p className="text-sm text-red-500">{errors.description}</p>
-            )}
-          </div>
+      <SpaceDetails
+        workEnvironment={formData.work_environment || "controlled"}
+        maxCapacity={formData.max_capacity || 1}
+        confirmationType={formData.confirmation_type || "host_approval"}
+        workspaceFeatures={formData.workspace_features || []}
+        amenities={formData.amenities || []}
+        seatingTypes={formData.seating_types || []}
+        idealGuestTags={formData.ideal_guest_tags || []}
+        eventFriendlyTags={formData.event_friendly_tags || []}
+        rules={formData.rules || ""}
+        onInputChange={handleInputChange}
+        onCheckboxArrayChange={handleCheckboxArrayChange}
+        errors={errors}
+        isSubmitting={isSubmitting}
+      />
 
-          <div className="space-y-2">
-            <Label htmlFor="category">
-              Category <span className="text-red-500">*</span>
-            </Label>
-            <RadioGroup
-              value={formData.category || "home"}
-              onValueChange={(value) => handleInputChange("category", value)}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2"
-            >
-              {CATEGORY_OPTIONS.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroupItem id={`category-${option.value}`} value={option.value} />
-                  <Label htmlFor={`category-${option.value}`} className="cursor-pointer">
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-sm text-gray-500">{option.description}</div>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            {errors.category && (
-              <p className="text-sm text-red-500">{errors.category}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <LocationPricing
+        address={formData.address || ""}
+        pricePerHour={formData.price_per_hour || 0}
+        pricePerDay={formData.price_per_day || 0}
+        onInputChange={handleInputChange}
+        onAddressChange={handleAddressChange}
+        errors={errors}
+        isSubmitting={isSubmitting}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Space Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="work_environment">
-              Work Environment <span className="text-red-500">*</span>
-            </Label>
-            <RadioGroup
-              value={formData.work_environment || "controlled"}
-              onValueChange={(value) => handleInputChange("work_environment", value)}
-              className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2"
-            >
-              {WORK_ENVIRONMENT_OPTIONS.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroupItem id={`env-${option.value}`} value={option.value} />
-                  <Label htmlFor={`env-${option.value}`} className="cursor-pointer">
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-sm text-gray-500">{option.description}</div>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            {errors.work_environment && (
-              <p className="text-sm text-red-500">{errors.work_environment}</p>
-            )}
-          </div>
+      <Photos
+        photoPreviewUrls={photoPreviewUrls}
+        onPhotoChange={handlePhotoChange}
+        onRemovePhoto={removePhoto}
+        isSubmitting={isSubmitting}
+        uploadingPhotos={uploadingPhotos}
+      />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="max_capacity">
-                Maximum Capacity <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="max_capacity"
-                type="number"
-                min="1"
-                value={formData.max_capacity || "1"}
-                onChange={(e) => handleInputChange("max_capacity", parseInt(e.target.value))}
-                disabled={isSubmitting}
-              />
-              {errors.max_capacity && (
-                <p className="text-sm text-red-500">{errors.max_capacity}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmation_type">Booking Confirmation</Label>
-              <RadioGroup
-                value={formData.confirmation_type || "host_approval"}
-                onValueChange={(value) => handleInputChange("confirmation_type", value)}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2"
-              >
-                {CONFIRMATION_TYPE_OPTIONS.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <RadioGroupItem id={`conf-${option.value}`} value={option.value} />
-                    <Label htmlFor={`conf-${option.value}`} className="cursor-pointer">
-                      <div className="font-medium">{option.label}</div>
-                      <div className="text-xs text-gray-500">{option.description}</div>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Workspace Features</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
-                  <div key={feature} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`feature-${feature}`}
-                      checked={(formData.workspace_features || []).includes(feature)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxArrayChange("workspace_features", feature, checked === true)
-                      }
-                    />
-                    <Label htmlFor={`feature-${feature}`} className="cursor-pointer">
-                      {feature}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Amenities</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {AMENITIES_OPTIONS.map((amenity) => (
-                  <div key={amenity} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`amenity-${amenity}`}
-                      checked={(formData.amenities || []).includes(amenity)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxArrayChange("amenities", amenity, checked === true)
-                      }
-                    />
-                    <Label htmlFor={`amenity-${amenity}`} className="cursor-pointer">
-                      {amenity}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Seating Options</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {SEATING_TYPES_OPTIONS.map((seating) => (
-                  <div key={seating} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`seating-${seating}`}
-                      checked={(formData.seating_types || []).includes(seating)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxArrayChange("seating_types", seating, checked === true)
-                      }
-                    />
-                    <Label htmlFor={`seating-${seating}`} className="cursor-pointer">
-                      {seating}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Ideal For (Optional)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {IDEAL_GUEST_OPTIONS.map((tag) => (
-                  <div key={tag} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`ideal-${tag}`}
-                      checked={(formData.ideal_guest_tags || []).includes(tag)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxArrayChange("ideal_guest_tags", tag, checked === true)
-                      }
-                    />
-                    <Label htmlFor={`ideal-${tag}`} className="cursor-pointer">
-                      {tag}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Event-Friendly For (Optional)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {EVENT_FRIENDLY_OPTIONS.map((tag) => (
-                  <div key={tag} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`event-${tag}`}
-                      checked={(formData.event_friendly_tags || []).includes(tag)}
-                      onCheckedChange={(checked) => 
-                        handleCheckboxArrayChange("event_friendly_tags", tag, checked === true)
-                      }
-                    />
-                    <Label htmlFor={`event-${tag}`} className="cursor-pointer">
-                      {tag}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <Label htmlFor="rules">
-              House Rules (Optional)
-            </Label>
-            <Textarea
-              id="rules"
-              value={formData.rules || ""}
-              onChange={(e) => handleInputChange("rules", e.target.value)}
-              placeholder="Any specific rules guests should follow?"
-              className="min-h-[100px]"
-              disabled={isSubmitting}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Location & Pricing</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <AddressAutocomplete
-            value={formData.address || ""}
-            onChange={handleAddressChange}
-            error={errors.address}
-            disabled={isSubmitting}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="price_per_hour">
-                Hourly Rate ($) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="price_per_hour"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price_per_hour || ""}
-                onChange={(e) => handleInputChange("price_per_hour", parseFloat(e.target.value))}
-                disabled={isSubmitting}
-              />
-              {errors.price_per_hour && (
-                <p className="text-sm text-red-500">{errors.price_per_hour}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price_per_day">
-                Daily Rate ($) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="price_per_day"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price_per_day || ""}
-                onChange={(e) => handleInputChange("price_per_day", parseFloat(e.target.value))}
-                disabled={isSubmitting}
-              />
-              {errors.price_per_day && (
-                <p className="text-sm text-red-500">{errors.price_per_day}</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Photos</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {photoPreviewUrls.map((url, index) => (
-              <div key={index} className="relative group">
-                <div className="aspect-square bg-gray-100 rounded-md overflow-hidden border border-gray-200">
-                  <img
-                    src={url}
-                    alt={`Space photo ${index + 1}`}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removePhoto(index)}
-                  className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1
-                            text-white hover:bg-opacity-70 transition-opacity"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-
-            <div className="aspect-square bg-gray-50 rounded-md border-2 border-dashed border-gray-200 
-                       flex flex-col items-center justify-center p-4 hover:bg-gray-100 transition-colors">
-              <label className="cursor-pointer text-center w-full h-full flex flex-col items-center justify-center">
-                <Image className="w-8 h-8 mb-2 text-gray-400" />
-                <span className="text-sm text-gray-500">Add Photo</span>
-                <span className="text-xs text-gray-400 mt-1">Click to upload</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                  disabled={isSubmitting || uploadingPhotos}
-                />
-              </label>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            Add high-quality photos that showcase your space well. You can upload multiple photos.
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Publishing Options</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="published" className="text-base">Publish this space</Label>
-              <p className="text-sm text-gray-500">
-                When published, your space will be visible to coworkers for booking
-              </p>
-            </div>
-            <Switch
-              id="published"
-              checked={!!formData.published}
-              onCheckedChange={(checked) => handleInputChange("published", checked)}
-              disabled={isSubmitting}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <PublishingOptions
+        published={formData.published || false}
+        onInputChange={handleInputChange}
+        isSubmitting={isSubmitting}
+      />
 
       <div className="flex justify-end space-x-4">
         <Button
