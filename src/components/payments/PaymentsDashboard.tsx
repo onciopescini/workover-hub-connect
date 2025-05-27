@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +20,7 @@ import {
   RefreshCw
 } from "lucide-react";
 
-interface Payment {
+interface PaymentWithDetails {
   id: string;
   user_id: string;
   booking_id: string;
@@ -39,16 +38,16 @@ interface Payment {
       title: string;
       host_id: string;
     };
-  };
+  } | null;
   user: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
 }
 
 export function PaymentsDashboard() {
   const { authState } = useAuth();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [timeRange, setTimeRange] = useState('30');
@@ -71,38 +70,75 @@ export function PaymentsDashboard() {
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - parseInt(timeRange));
 
-      // For hosts, we need to get payments for their spaces
       if (authState.profile?.role === 'host') {
+        // For hosts, get payments for their spaces
         const { data: hostPayments, error: hostError } = await supabase
           .from('payments')
           .select(`
-            *,
-            booking:bookings!booking_id(
+            id,
+            user_id,
+            booking_id,
+            amount,
+            currency,
+            payment_status,
+            method,
+            receipt_url,
+            stripe_session_id,
+            created_at,
+            bookings!inner(
               booking_date,
               status,
-              space:spaces!space_id(title, host_id)
+              spaces!inner(
+                title,
+                host_id
+              )
             ),
-            user:profiles!user_id(first_name, last_name)
+            profiles(
+              first_name,
+              last_name
+            )
           `)
           .gte('created_at', dateThreshold.toISOString())
+          .eq('bookings.spaces.host_id', authState.user.id)
           .order('created_at', { ascending: false });
 
         if (hostError) throw hostError;
 
-        // Filter client-side for host's spaces
-        const filteredPayments = (hostPayments || []).filter(payment => 
-          payment.booking?.space?.host_id === authState.user?.id
-        );
+        // Transform the data to match our interface
+        const transformedPayments: PaymentWithDetails[] = (hostPayments || []).map(payment => ({
+          id: payment.id,
+          user_id: payment.user_id,
+          booking_id: payment.booking_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          payment_status: payment.payment_status,
+          method: payment.method,
+          receipt_url: payment.receipt_url,
+          stripe_session_id: payment.stripe_session_id,
+          created_at: payment.created_at,
+          booking: payment.bookings ? {
+            booking_date: payment.bookings.booking_date,
+            status: payment.bookings.status,
+            space: {
+              title: payment.bookings.spaces?.title || '',
+              host_id: payment.bookings.spaces?.host_id || ''
+            }
+          } : null,
+          user: payment.profiles ? {
+            first_name: payment.profiles.first_name,
+            last_name: payment.profiles.last_name
+          } : null
+        }));
 
-        let finalPayments = filteredPayments;
+        let finalPayments = transformedPayments;
         if (filter !== 'all') {
-          finalPayments = filteredPayments.filter(payment => payment.payment_status === filter);
+          finalPayments = transformedPayments.filter(payment => payment.payment_status === filter);
         }
 
-        setPayments(finalPayments as Payment[]);
+        setPayments(finalPayments);
         
         // Calculate stats
-        const statsResult = filteredPayments.reduce((acc, payment) => {
+        const statsResult = transformedPayments.reduce((acc, payment) => {
           if (payment.payment_status === 'completed') {
             acc.totalRevenue += payment.amount;
             acc.completedPayments++;
@@ -122,33 +158,73 @@ export function PaymentsDashboard() {
         setStats(statsResult);
       } else {
         // For regular users, get their own payments
-        let query = supabase
+        const { data, error } = await supabase
           .from('payments')
           .select(`
-            *,
-            booking:bookings!booking_id(
+            id,
+            user_id,
+            booking_id,
+            amount,
+            currency,
+            payment_status,
+            method,
+            receipt_url,
+            stripe_session_id,
+            created_at,
+            bookings(
               booking_date,
               status,
-              space:spaces!space_id(title, host_id)
+              spaces(
+                title,
+                host_id
+              )
             ),
-            user:profiles!user_id(first_name, last_name)
+            profiles(
+              first_name,
+              last_name
+            )
           `)
           .eq('user_id', authState.user.id)
           .gte('created_at', dateThreshold.toISOString())
           .order('created_at', { ascending: false });
 
-        const { data, error } = await query;
         if (error) throw error;
 
-        let finalPayments = data || [];
+        // Transform the data to match our interface
+        const transformedPayments: PaymentWithDetails[] = (data || []).map(payment => ({
+          id: payment.id,
+          user_id: payment.user_id,
+          booking_id: payment.booking_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          payment_status: payment.payment_status,
+          method: payment.method,
+          receipt_url: payment.receipt_url,
+          stripe_session_id: payment.stripe_session_id,
+          created_at: payment.created_at,
+          booking: payment.bookings ? {
+            booking_date: payment.bookings.booking_date,
+            status: payment.bookings.status,
+            space: {
+              title: payment.bookings.spaces?.title || '',
+              host_id: payment.bookings.spaces?.host_id || ''
+            }
+          } : null,
+          user: payment.profiles ? {
+            first_name: payment.profiles.first_name,
+            last_name: payment.profiles.last_name
+          } : null
+        }));
+
+        let finalPayments = transformedPayments;
         if (filter !== 'all') {
-          finalPayments = finalPayments.filter(payment => payment.payment_status === filter);
+          finalPayments = transformedPayments.filter(payment => payment.payment_status === filter);
         }
 
-        setPayments(finalPayments as Payment[]);
+        setPayments(finalPayments);
         
         // Calculate stats
-        const statsResult = (data || []).reduce((acc, payment) => {
+        const statsResult = transformedPayments.reduce((acc, payment) => {
           if (payment.payment_status === 'completed') {
             acc.totalRevenue += payment.amount;
             acc.completedPayments++;
@@ -347,7 +423,7 @@ export function PaymentsDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-semibold">
-                        {payment.booking?.space?.title}
+                        {payment.booking?.space?.title || 'Spazio non disponibile'}
                       </h4>
                       {getStatusBadge(payment.payment_status)}
                     </div>
@@ -356,8 +432,8 @@ export function PaymentsDashboard() {
                       <span>€{payment.amount.toFixed(2)}</span>
                       <span>
                         {authState.profile?.role === 'host' 
-                          ? `Cliente: ${payment.user?.first_name} ${payment.user?.last_name}`
-                          : `Data: ${new Date(payment.booking?.booking_date).toLocaleDateString('it-IT')}`
+                          ? `Cliente: ${payment.user?.first_name || ''} ${payment.user?.last_name || ''}`
+                          : `Data: ${payment.booking?.booking_date ? new Date(payment.booking.booking_date).toLocaleDateString('it-IT') : 'N/A'}`
                         }
                       </span>
                       <span>{new Date(payment.created_at).toLocaleDateString('it-IT')}</span>
