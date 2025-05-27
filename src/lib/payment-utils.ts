@@ -3,6 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
 
+// Importa il tipo Payment dalla tabella Supabase
+type Payment = {
+  id: string;
+  user_id: string;
+  booking_id: string;
+  amount: number;
+  currency: string;
+  payment_status: string;
+  method?: string;
+  receipt_url?: string;
+  created_at: string;
+};
+
 // Create payment session for booking
 export const createPaymentSession = async (
   bookingId: string,
