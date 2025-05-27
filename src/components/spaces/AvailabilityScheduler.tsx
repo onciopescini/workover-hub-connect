@@ -6,27 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Clock, Copy } from "lucide-react";
-
-interface TimeSlot {
-  start: string;
-  end: string;
-}
-
-interface WeeklySchedule {
-  [key: string]: {
-    enabled: boolean;
-    slots: TimeSlot[];
-  };
-}
-
-interface AvailabilityData {
-  recurring: WeeklySchedule;
-  exceptions: Array<{
-    date: string;
-    available: boolean;
-    slots?: TimeSlot[];
-  }>;
-}
+import { type AvailabilityData, type TimeSlot, type WeeklySchedule } from "@/types/availability";
 
 interface AvailabilitySchedulerProps {
   availability: AvailabilityData;
@@ -57,9 +37,9 @@ export const AvailabilityScheduler = ({
       recurring: {
         ...availability.recurring,
         [day]: {
-          ...availability.recurring[day],
+          ...availability.recurring[day as keyof WeeklySchedule],
           enabled,
-          slots: enabled ? availability.recurring[day]?.slots || [{ start: '09:00', end: '17:00' }] : []
+          slots: enabled ? availability.recurring[day as keyof WeeklySchedule]?.slots || [{ start: '09:00', end: '17:00' }] : []
         }
       }
     };
@@ -67,7 +47,8 @@ export const AvailabilityScheduler = ({
   };
 
   const updateTimeSlot = (day: string, slotIndex: number, field: 'start' | 'end', value: string) => {
-    const newSlots = [...(availability.recurring[day]?.slots || [])];
+    const daySchedule = availability.recurring[day as keyof WeeklySchedule];
+    const newSlots = [...(daySchedule?.slots || [])];
     newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
     
     const newAvailability = {
@@ -75,7 +56,7 @@ export const AvailabilityScheduler = ({
       recurring: {
         ...availability.recurring,
         [day]: {
-          ...availability.recurring[day],
+          ...daySchedule,
           slots: newSlots
         }
       }
@@ -84,7 +65,8 @@ export const AvailabilityScheduler = ({
   };
 
   const addTimeSlot = (day: string) => {
-    const existingSlots = availability.recurring[day]?.slots || [];
+    const daySchedule = availability.recurring[day as keyof WeeklySchedule];
+    const existingSlots = daySchedule?.slots || [];
     const newSlot = { start: '09:00', end: '17:00' };
     
     const newAvailability = {
@@ -92,7 +74,7 @@ export const AvailabilityScheduler = ({
       recurring: {
         ...availability.recurring,
         [day]: {
-          ...availability.recurring[day],
+          ...daySchedule,
           enabled: true,
           slots: [...existingSlots, newSlot]
         }
@@ -102,14 +84,15 @@ export const AvailabilityScheduler = ({
   };
 
   const removeTimeSlot = (day: string, slotIndex: number) => {
-    const newSlots = availability.recurring[day]?.slots.filter((_, index) => index !== slotIndex) || [];
+    const daySchedule = availability.recurring[day as keyof WeeklySchedule];
+    const newSlots = daySchedule?.slots.filter((_, index) => index !== slotIndex) || [];
     
     const newAvailability = {
       ...availability,
       recurring: {
         ...availability.recurring,
         [day]: {
-          ...availability.recurring[day],
+          ...daySchedule,
           slots: newSlots
         }
       }
@@ -118,15 +101,16 @@ export const AvailabilityScheduler = ({
   };
 
   const copyScheduleFromDay = (fromDay: string, toDay: string) => {
-    if (!availability.recurring[fromDay]) return;
+    const fromDaySchedule = availability.recurring[fromDay as keyof WeeklySchedule];
+    if (!fromDaySchedule) return;
     
     const newAvailability = {
       ...availability,
       recurring: {
         ...availability.recurring,
         [toDay]: {
-          enabled: availability.recurring[fromDay].enabled,
-          slots: [...availability.recurring[fromDay].slots]
+          enabled: fromDaySchedule.enabled,
+          slots: [...fromDaySchedule.slots]
         }
       }
     };
@@ -134,13 +118,15 @@ export const AvailabilityScheduler = ({
   };
 
   const applyToAllDays = () => {
-    if (!copyFromDay || !availability.recurring[copyFromDay]) return;
+    if (!copyFromDay) return;
     
-    const templateSchedule = availability.recurring[copyFromDay];
-    const newRecurring: WeeklySchedule = {};
+    const templateSchedule = availability.recurring[copyFromDay as keyof WeeklySchedule];
+    if (!templateSchedule) return;
+    
+    const newRecurring: WeeklySchedule = {} as WeeklySchedule;
     
     DAYS_OF_WEEK.forEach(({ key }) => {
-      newRecurring[key] = {
+      newRecurring[key as keyof WeeklySchedule] = {
         enabled: templateSchedule.enabled,
         slots: [...templateSchedule.slots]
       };
@@ -198,7 +184,7 @@ export const AvailabilityScheduler = ({
         {/* Weekly Schedule */}
         <div className="space-y-4">
           {DAYS_OF_WEEK.map(({ key, label }) => {
-            const daySchedule = availability.recurring[key] || { enabled: false, slots: [] };
+            const daySchedule = availability.recurring[key as keyof WeeklySchedule] || { enabled: false, slots: [] };
             
             return (
               <div key={key} className="border rounded-lg p-4">

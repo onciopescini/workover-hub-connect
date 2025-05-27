@@ -15,6 +15,7 @@ import {
   type Space,
   type SpaceInsert
 } from "@/types/space";
+import { type AvailabilityData } from "@/types/availability";
 
 interface SpaceFormProps {
   initialData?: Space;
@@ -25,6 +26,20 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  
+  const defaultAvailability: AvailabilityData = {
+    recurring: {
+      monday: { enabled: false, slots: [] },
+      tuesday: { enabled: false, slots: [] },
+      wednesday: { enabled: false, slots: [] },
+      thursday: { enabled: false, slots: [] },
+      friday: { enabled: false, slots: [] },
+      saturday: { enabled: false, slots: [] },
+      sunday: { enabled: false, slots: [] }
+    },
+    exceptions: []
+  };
+
   const [formData, setFormData] = useState<Partial<SpaceInsert>>({
     title: "",
     description: "",
@@ -44,18 +59,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     ideal_guest_tags: [],
     event_friendly_tags: [],
     confirmation_type: "host_approval",
-    availability: { 
-      recurring: {
-        monday: { enabled: false, slots: [] },
-        tuesday: { enabled: false, slots: [] },
-        wednesday: { enabled: false, slots: [] },
-        thursday: { enabled: false, slots: [] },
-        friday: { enabled: false, slots: [] },
-        saturday: { enabled: false, slots: [] },
-        sunday: { enabled: false, slots: [] }
-      }, 
-      exceptions: [] 
-    },
+    availability: defaultAvailability,
     published: false
   });
   
@@ -65,20 +69,25 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
 
   useEffect(() => {
     if (initialData) {
+      // Parse availability if it exists and is valid
+      let parsedAvailability = defaultAvailability;
+      if (initialData.availability) {
+        try {
+          const availabilityJson = typeof initialData.availability === 'string' 
+            ? JSON.parse(initialData.availability)
+            : initialData.availability;
+          
+          if (availabilityJson && typeof availabilityJson === 'object' && availabilityJson.recurring) {
+            parsedAvailability = availabilityJson as AvailabilityData;
+          }
+        } catch (error) {
+          console.error("Error parsing availability:", error);
+        }
+      }
+
       setFormData({
         ...initialData,
-        availability: initialData.availability || { 
-          recurring: {
-            monday: { enabled: false, slots: [] },
-            tuesday: { enabled: false, slots: [] },
-            wednesday: { enabled: false, slots: [] },
-            thursday: { enabled: false, slots: [] },
-            friday: { enabled: false, slots: [] },
-            saturday: { enabled: false, slots: [] },
-            sunday: { enabled: false, slots: [] }
-          }, 
-          exceptions: [] 
-        }
+        availability: parsedAvailability
       });
       
       // If we have photos in the initial data, set up preview URLs
@@ -171,7 +180,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     }
   };
 
-  const handleAvailabilityChange = (availability: any) => {
+  const handleAvailabilityChange = (availability: AvailabilityData) => {
     setFormData((prev) => ({ ...prev, availability }));
     
     // Clear availability error when changed
@@ -315,7 +324,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
         confirmation_type: formData.confirmation_type!,
-        availability: formData.availability || { recurring: [], exceptions: [] },
+        availability: formData.availability || defaultAvailability,
         published: formData.published ?? false,
         host_id: user.id,
       };
@@ -395,7 +404,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       />
 
       <AvailabilityScheduler
-        availability={formData.availability || { recurring: {}, exceptions: [] }}
+        availability={formData.availability || defaultAvailability}
         onAvailabilityChange={handleAvailabilityChange}
         isSubmitting={isSubmitting}
       />
