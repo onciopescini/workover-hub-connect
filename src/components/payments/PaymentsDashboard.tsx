@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,6 @@ import {
   AlertCircle,
   RefreshCw
 } from "lucide-react";
-import { PaymentButton } from "./PaymentButton";
 
 interface Payment {
   id: string;
@@ -100,10 +98,19 @@ export function PaymentsDashboard() {
       const { data, error } = await query;
       if (error) throw error;
 
-      setPayments(data || []);
+      // Type-safe mapping of the data
+      const formattedPayments: Payment[] = (data || [])
+        .filter(payment => payment.booking && payment.user) // Filter out records with missing relations
+        .map(payment => ({
+          ...payment,
+          booking: payment.booking as Payment['booking'],
+          user: payment.user as Payment['user']
+        }));
+
+      setPayments(formattedPayments);
       
       // Calculate stats
-      const stats = (data || []).reduce((acc, payment) => {
+      const stats = formattedPayments.reduce((acc, payment) => {
         if (payment.payment_status === 'completed') {
           acc.totalRevenue += payment.amount;
           acc.completedPayments++;

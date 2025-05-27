@@ -5,22 +5,26 @@ export type Payment = Database["public"]["Tables"]["payments"]["Row"];
 export type PaymentInsert = Database["public"]["Tables"]["payments"]["Insert"];
 export type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
-export interface PaymentIntent {
-  id: string;
-  client_secret: string;
-  amount: number;
-  currency: string;
-  status: string;
-}
-
 export interface PaymentSession {
-  session_id: string;
+  id: string;
   payment_url: string;
-  booking_id: string;
-  amount: number;
+  session_id: string;
 }
 
-// Estendo il tipo Payment locale per includere stripe_session_id
 export interface PaymentWithStripe extends Payment {
   stripe_session_id?: string;
 }
+
+export const PAYMENT_STATUS = {
+  pending: "In attesa",
+  completed: "Completato", 
+  failed: "Fallito",
+  cancelled: "Cancellato"
+} as const;
+
+export const PAYMENT_STATUS_COLORS = {
+  pending: "bg-yellow-100 text-yellow-800",
+  completed: "bg-green-100 text-green-800",
+  failed: "bg-red-100 text-red-800",
+  cancelled: "bg-gray-100 text-gray-800"
+} as const;

@@ -1,22 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  Clock, 
-  Users, 
-  Calendar, 
-  MapPin, 
-  CheckCircle, 
-  XCircle,
-  AlertCircle,
-  UserPlus
-} from "lucide-react";
+import { Clock, Users, Search, UserPlus, X, Calendar, MapPin } from "lucide-react";
 
 interface WaitlistEntry {
   id: string;
@@ -31,56 +22,51 @@ interface WaitlistEntry {
   };
   space?: {
     title: string;
-    address: string;
     max_capacity: number;
   };
   event?: {
     title: string;
-    date: string;
     max_participants: number;
-    current_participants: number;
+    date: string;
   };
 }
 
 export function WaitlistManager() {
-  const { authState } = useAuth();
   const [waitlists, setWaitlists] = useState<WaitlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('spaces');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<'all' | 'spaces' | 'events'>('all');
 
   useEffect(() => {
     fetchWaitlists();
-  }, [activeTab]);
+  }, []);
 
   const fetchWaitlists = async () => {
-    if (!authState.user) return;
-    
     setIsLoading(true);
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('waitlists')
         .select(`
           *,
-          user:user_id(first_name, last_name, profile_photo_url),
-          space:space_id(title, address, max_capacity, host_id),
-          event:event_id(title, date, max_participants, current_participants, created_by)
-        `);
-
-      if (activeTab === 'spaces') {
-        query = query
-          .not('space_id', 'is', null)
-          .eq('space.host_id', authState.user.id);
-      } else {
-        query = query
-          .not('event_id', 'is', null)
-          .eq('event.created_by', authState.user.id);
-      }
-
-      const { data, error } = await query
-        .order('created_at', { ascending: true });
+          user:profiles!user_id(first_name, last_name, profile_photo_url),
+          space:spaces(title, max_capacity),
+          event:events(title, max_participants, date)
+        `)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWaitlists(data || []);
+
+      // Type-safe filtering to remove entries with missing relations
+      const validWaitlists: WaitlistEntry[] = (data || [])
+        .filter(entry => entry.user) // Only include entries with valid user data
+        .map(entry => ({
+          ...entry,
+          user: entry.user as WaitlistEntry['user'],
+          space: entry.space as WaitlistEntry['space'],
+          event: entry.event as WaitlistEntry['event']
+        }));
+
+      setWaitlists(validWaitlists);
     } catch (error) {
       console.error('Error fetching waitlists:', error);
       toast.error('Errore nel caricamento delle liste d\'attesa');
@@ -89,71 +75,43 @@ export function WaitlistManager() {
     }
   };
 
-  const promoteFromWaitlist = async (entry: WaitlistEntry) => {
+  const promoteUser = async (waitlistId: string, spaceId?: string, eventId?: string) => {
     try {
-      if (entry.space_id) {
-        // Promote to space booking - create a pending booking
-        const { error: bookingError } = await supabase
-          .from('bookings')
-          .insert({
-            user_id: entry.user_id,
-            space_id: entry.space_id,
-            booking_date: new Date().toISOString().split('T')[0],
-            status: 'pending'
-          });
-
-        if (bookingError) throw bookingError;
-      } else if (entry.event_id) {
-        // Promote to event participation
-        const { error: participantError } = await supabase
+      if (spaceId) {
+        // For spaces, we would need to create a booking
+        // This is a simplified version - you'd need to implement actual booking logic
+        toast.info('Funzionalità di promozione per spazi non ancora implementata');
+      } else if (eventId) {
+        // Add user to event participants
+        const { error: addError } = await supabase
           .from('event_participants')
-          .insert({
-            user_id: entry.user_id,
-            event_id: entry.event_id
-          });
+          .insert({ event_id: eventId, user_id: waitlists.find(w => w.id === waitlistId)?.user_id });
 
-        if (participantError) throw participantError;
+        if (addError) throw addError;
+
+        // Remove from waitlist
+        const { error: removeError } = await supabase
+          .from('waitlists')
+          .delete()
+          .eq('id', waitlistId);
+
+        if (removeError) throw removeError;
+
+        toast.success('Utente promosso dall\'evento');
+        fetchWaitlists();
       }
-
-      // Remove from waitlist
-      const { error: removeError } = await supabase
-        .from('waitlists')
-        .delete()
-        .eq('id', entry.id);
-
-      if (removeError) throw removeError;
-
-      // Send notification
-      await supabase
-        .from('user_notifications')
-        .insert({
-          user_id: entry.user_id,
-          type: 'waitlist_promotion',
-          title: 'Promosso dalla lista d\'attesa!',
-          content: activeTab === 'spaces' 
-            ? `Ora puoi prenotare "${entry.space?.title}"`
-            : `Ora sei iscritto all'evento "${entry.event?.title}"`,
-          metadata: {
-            [activeTab === 'spaces' ? 'space_id' : 'event_id']: 
-              entry.space_id || entry.event_id,
-            promoted_from_waitlist: true
-          }
-        });
-
-      toast.success('Utente promosso dalla lista d\'attesa');
-      fetchWaitlists();
     } catch (error) {
-      console.error('Error promoting from waitlist:', error);
-      toast.error('Errore nella promozione dalla lista d\'attesa');
+      console.error('Error promoting user:', error);
+      toast.error('Errore nella promozione dell\'utente');
     }
   };
 
-  const removeFromWaitlist = async (entryId: string) => {
+  const removeFromWaitlist = async (waitlistId: string) => {
     try {
       const { error } = await supabase
         .from('waitlists')
         .delete()
-        .eq('id', entryId);
+        .eq('id', waitlistId);
 
       if (error) throw error;
 
@@ -164,6 +122,21 @@ export function WaitlistManager() {
       toast.error('Errore nella rimozione dalla lista d\'attesa');
     }
   };
+
+  const filteredWaitlists = waitlists.filter(entry => {
+    const matchesSearch = 
+      entry.user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.space?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.event?.title.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter = 
+      filter === 'all' || 
+      (filter === 'spaces' && entry.space_id) ||
+      (filter === 'events' && entry.event_id);
+
+    return matchesSearch && matchesFilter;
+  });
 
   if (isLoading) {
     return (
@@ -184,197 +157,179 @@ export function WaitlistManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <Clock className="w-6 h-6 text-blue-500" />
-        <h2 className="text-2xl font-bold">Gestione Liste d'Attesa</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Clock className="w-6 h-6 text-orange-500" />
+          <h2 className="text-2xl font-bold">Gestione Liste d'Attesa</h2>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 text-gray-500" />
+            <Input
+              placeholder="Cerca utenti o contenuti..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-64"
+            />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant={filter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('all')}
+            >
+              Tutti
+            </Button>
+            <Button
+              variant={filter === 'spaces' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('spaces')}
+            >
+              Spazi
+            </Button>
+            <Button
+              variant={filter === 'events' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('events')}
+            >
+              Eventi
+            </Button>
+          </div>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="spaces" className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            Spazi
-          </TabsTrigger>
-          <TabsTrigger value="events" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Eventi
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="spaces" className="space-y-4">
-          {waitlists.filter(w => w.space_id).length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Nessuna lista d'attesa per spazi
-                </h3>
-                <p className="text-gray-600">
-                  Al momento non ci sono utenti in lista d'attesa per i tuoi spazi.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {waitlists.filter(w => w.space_id).map((entry) => (
-                <Card key={entry.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            {entry.user.profile_photo_url ? (
-                              <img 
-                                src={entry.user.profile_photo_url} 
-                                alt="Profile" 
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <Users className="w-5 h-5 text-gray-500" />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">
-                              {entry.user.first_name} {entry.user.last_name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              In attesa per: {entry.space?.title}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
-                            {entry.space?.address}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {new Date(entry.created_at).toLocaleDateString('it-IT')}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => promoteFromWaitlist(entry)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Promuovi
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeFromWaitlist(entry.id)}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Rimuovi
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+      {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              <div>
+                <div className="text-2xl font-bold">{waitlists.length}</div>
+                <div className="text-sm text-gray-600">Totale in attesa</div>
+              </div>
             </div>
-          )}
-        </TabsContent>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-green-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {waitlists.filter(w => w.space_id).length}
+                </div>
+                <div className="text-sm text-gray-600">Spazi</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {waitlists.filter(w => w.event_id).length}
+                </div>
+                <div className="text-sm text-gray-600">Eventi</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="events" className="space-y-4">
-          {waitlists.filter(w => w.event_id).length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Nessuna lista d'attesa per eventi
-                </h3>
-                <p className="text-gray-600">
-                  Al momento non ci sono utenti in lista d'attesa per i tuoi eventi.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {waitlists.filter(w => w.event_id).map((entry) => (
-                <Card key={entry.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            {entry.user.profile_photo_url ? (
-                              <img 
-                                src={entry.user.profile_photo_url} 
-                                alt="Profile" 
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <Users className="w-5 h-5 text-gray-500" />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold">
-                              {entry.user.first_name} {entry.user.last_name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              In attesa per: {entry.event?.title}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {entry.event?.date && new Date(entry.event.date).toLocaleDateString('it-IT')}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            {entry.event?.current_participants}/{entry.event?.max_participants} partecipanti
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            In lista dal {new Date(entry.created_at).toLocaleDateString('it-IT')}
-                          </div>
-                        </div>
-
-                        {entry.event && entry.event.current_participants >= entry.event.max_participants && (
-                          <div className="mt-2">
-                            <Badge variant="destructive">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Evento al completo
-                            </Badge>
-                          </div>
+      {/* Waitlist entries */}
+      {filteredWaitlists.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Clock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nessuna lista d'attesa
+            </h3>
+            <p className="text-gray-600">
+              Non ci sono utenti in lista d'attesa al momento.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredWaitlists.map((entry) => (
+            <Card key={entry.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                      {entry.user.profile_photo_url ? (
+                        <img
+                          src={entry.user.profile_photo_url}
+                          alt={`${entry.user.first_name} ${entry.user.last_name}`}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <Users className="w-6 h-6 text-gray-400" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="font-semibold">
+                        {entry.user.first_name} {entry.user.last_name}
+                      </h3>
+                      
+                      <div className="flex items-center gap-2 mt-1">
+                        {entry.space_id ? (
+                          <Badge variant="secondary">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            Spazio: {entry.space?.title}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            Evento: {entry.event?.title}
+                          </Badge>
                         )}
                       </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => promoteFromWaitlist(entry)}
-                          disabled={entry.event && entry.event.current_participants >= entry.event.max_participants}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Promuovi
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeFromWaitlist(entry.id)}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Rimuovi
-                        </Button>
+                      
+                      <div className="text-sm text-gray-500 mt-1">
+                        In attesa dal {new Date(entry.created_at).toLocaleDateString('it-IT')}
+                        {entry.event?.date && (
+                          <span className="ml-2">
+                            • Evento: {new Date(entry.event.date).toLocaleDateString('it-IT')}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => promoteUser(entry.id, entry.space_id, entry.event_id)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Promuovi
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => removeFromWaitlist(entry.id)}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Rimuovi
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

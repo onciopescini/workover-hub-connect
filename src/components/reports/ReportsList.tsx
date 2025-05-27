@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ import {
   Filter,
   FileText
 } from "lucide-react";
-import { ReportDialog } from "./ReportDialog";
+import ReportDialog from "./ReportDialog";
 
 interface Report {
   id: string;
