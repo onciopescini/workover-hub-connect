@@ -1,7 +1,6 @@
 
-import React from "react";
-import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { NotificationIcon } from "@/components/notifications/NotificationIcon";
 
 export function NotificationButton() {
-  return <NotificationCenter />;
+  return <NotificationIcon />;
 }

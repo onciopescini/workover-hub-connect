@@ -1,29 +1,40 @@
 
-import React from "react";
-import { Bell, MessageSquare, Calendar, Star, Settings, LifeBuoy } from "lucide-react";
-import { UserNotification } from "@/types/notification";
+import { useState, useRef, useEffect } from "react";
+import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NotificationCenter } from "./NotificationCenter";
+import { useNotifications } from "@/hooks/useNotifications";
 
-interface NotificationIconProps {
-  type: UserNotification['type'];
-  className?: string;
-}
+export function NotificationIcon() {
+  const { counts } = useNotifications();
+  const [isOpen, setIsOpen] = useState(false);
 
-export function NotificationIcon({ type, className = "w-4 h-4" }: NotificationIconProps) {
-  const iconProps = { className };
-
-  switch (type) {
-    case 'message':
-      return <MessageSquare {...iconProps} className={`${className} text-blue-500`} />;
-    case 'booking':
-      return <Calendar {...iconProps} className={`${className} text-green-500`} />;
-    case 'event':
-      return <Calendar {...iconProps} className={`${className} text-purple-500`} />;
-    case 'review':
-      return <Star {...iconProps} className={`${className} text-yellow-500`} />;
-    case 'ticket':
-      return <LifeBuoy {...iconProps} className={`${className} text-orange-500`} />;
-    case 'system':
-    default:
-      return <Settings {...iconProps} className={`${className} text-gray-500`} />;
-  }
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="relative">
+          <Bell className="w-5 h-5" />
+          {counts.unread > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-2 -right-2 w-5 h-5 text-xs p-0 flex items-center justify-center"
+            >
+              {counts.unread > 99 ? '99+' : counts.unread}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      
+      <PopoverContent 
+        className="w-96 p-0" 
+        align="end"
+        side="bottom"
+        sideOffset={8}
+      >
+        <NotificationCenter />
+      </PopoverContent>
+    </Popover>
+  );
 }

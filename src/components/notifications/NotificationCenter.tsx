@@ -1,231 +1,247 @@
 
-import React, { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
+import { Bell, Check, X, MessageSquare, Calendar, Users, Ticket, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell, CheckCheck } from "lucide-react";
-import { NotificationItem } from "./NotificationItem";
-import { UserNotification, NotificationCounts } from "@/types/notification";
-import { getUserNotifications, getNotificationCounts, markAllNotificationsAsRead } from "@/lib/notification-utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useNotifications } from "@/hooks/useNotifications";
+import { markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/notification-utils";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
+import { UserNotification } from "@/types/notification";
+import { toast } from "sonner";
 
 export function NotificationCenter() {
-  const { authState } = useAuth();
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
-  const [counts, setCounts] = useState<NotificationCounts>({ total: 0, unread: 0, byType: {} });
-  const [isLoading, setIsLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const { notifications, counts, isLoading, markAsRead, markAllAsRead } = useNotifications();
+  const [selectedType, setSelectedType] = useState<string>('all');
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!authState.user) return;
-    
-    setIsLoading(true);
-    const [notificationsData, countsData] = await Promise.all([
-      getUserNotifications(50),
-      getNotificationCounts()
-    ]);
-    
-    setNotifications(notificationsData);
-    setCounts(countsData);
-    setIsLoading(false);
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'message':
+        return <MessageSquare className="w-4 h-4 text-blue-500" />;
+      case 'booking':
+        return <Calendar className="w-4 h-4 text-green-500" />;
+      case 'connection':
+        return <Users className="w-4 h-4 text-purple-500" />;
+      case 'review':
+        return <Heart className="w-4 h-4 text-pink-500" />;
+      case 'ticket':
+        return <Ticket className="w-4 h-4 text-orange-500" />;
+      default:
+        return <Bell className="w-4 h-4 text-gray-500" />;
+    }
   };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [authState.user]);
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!authState.user) return;
-
-    const channel = supabase
-      .channel('user-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_notifications',
-          filter: `user_id=eq.${authState.user.id}`
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [authState.user]);
-
-  const handleMarkAsRead = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-    );
-    setCounts(prev => ({ 
-      ...prev, 
-      unread: Math.max(0, prev.unread - 1) 
-    }));
+  const handleMarkAsRead = async (notificationId: string) => {
+    const success = await markNotificationAsRead(notificationId);
+    if (success) {
+      markAsRead(notificationId);
+    }
   };
 
   const handleMarkAllAsRead = async () => {
     const success = await markAllNotificationsAsRead();
     if (success) {
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setCounts(prev => ({ ...prev, unread: 0 }));
+      markAllAsRead();
     }
   };
 
-  const filterNotifications = (type?: string) => {
-    if (!type || type === 'all') return notifications;
-    return notifications.filter(n => n.type === type);
+  const filteredNotifications = notifications.filter(notification => 
+    selectedType === 'all' || notification.type === selectedType
+  );
+
+  const getActionUrl = (notification: UserNotification) => {
+    const metadata = notification.metadata;
+    
+    switch (notification.type) {
+      case 'message':
+        return metadata.booking_id ? `/messages/${metadata.booking_id}` : '/messages';
+      case 'connection':
+        return '/networking';
+      case 'booking':
+        return '/bookings';
+      case 'review':
+        return '/reviews';
+      case 'ticket':
+        return '/support';
+      default:
+        return null;
+    }
   };
 
-  return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {counts.unread > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {counts.unread > 99 ? '99+' : counts.unread}
-            </Badge>
-          )}
-        </Button>
-      </SheetTrigger>
-      
-      <SheetContent className="w-full sm:max-w-md">
-        <SheetHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <SheetTitle>Notifiche</SheetTitle>
-            {counts.unread > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleMarkAllAsRead}
-                className="text-xs"
-              >
-                <CheckCheck className="w-3 h-3 mr-1" />
-                Segna tutte
-              </Button>
-            )}
+  const handleNotificationClick = (notification: UserNotification) => {
+    if (!notification.is_read) {
+      handleMarkAsRead(notification.id);
+    }
+    
+    const url = getActionUrl(notification);
+    if (url) {
+      window.location.href = url;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifiche
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
-        </SheetHeader>
+        </CardContent>
+      </Card>
+    );
+  }
 
-        <Tabs defaultValue="all" className="h-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all" className="text-xs">
-              Tutte
-              {counts.total > 0 && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {counts.total}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="message" className="text-xs">
-              Messaggi
-              {counts.byType.message && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {counts.byType.message}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="booking" className="text-xs">
-              Prenotazioni
-              {counts.byType.booking && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {counts.byType.booking}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="ticket" className="text-xs">
-              Supporto
-              {counts.byType.ticket && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  {counts.byType.ticket}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="mt-4 h-full">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-sm text-gray-500">Caricamento...</div>
-                </div>
-              ) : filterNotifications('all').length === 0 ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-center">
-                    <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <div className="text-sm text-gray-500">Nessuna notifica</div>
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            Notifiche
+            {counts.unread > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {counts.unread}
+              </Badge>
+            )}
+          </CardTitle>
+          
+          {counts.unread > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleMarkAllAsRead}
+            >
+              <Check className="w-4 h-4 mr-1" />
+              Segna tutto
+            </Button>
+          )}
+        </div>
+        
+        {/* Filtri per tipo */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          <Button
+            variant={selectedType === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedType('all')}
+          >
+            Tutte ({counts.total})
+          </Button>
+          {Object.entries(counts.byType).map(([type, count]) => (
+            <Button
+              key={type}
+              variant={selectedType === type ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedType(type)}
+              className="flex items-center gap-1"
+            >
+              {getNotificationIcon(type)}
+              {count}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-0">
+        <ScrollArea className="h-96">
+          {filteredNotifications.length === 0 ? (
+            <div className="text-center py-8 px-4">
+              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nessuna notifica
+              </h3>
+              <p className="text-gray-600">
+                {selectedType === 'all' 
+                  ? 'Non hai notifiche al momento' 
+                  : `Nessuna notifica di tipo ${selectedType}`
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filteredNotifications.map((notification, index) => (
+                <div key={notification.id}>
+                  <div 
+                    className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
+                      !notification.is_read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 mt-1">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className={`text-sm font-medium ${
+                            !notification.is_read ? 'text-gray-900' : 'text-gray-700'
+                          }`}>
+                            {notification.title}
+                          </h4>
+                          
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">
+                              {formatDistanceToNow(new Date(notification.created_at), { 
+                                addSuffix: true, 
+                                locale: it 
+                              })}
+                            </span>
+                            
+                            {!notification.is_read && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.id);
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {notification.content && (
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                            {notification.content}
+                          </p>
+                        )}
+                        
+                        {/* Metadati aggiuntivi */}
+                        {notification.metadata && Object.keys(notification.metadata).length > 0 && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            {notification.metadata.sender_name && (
+                              <span>Da: {notification.metadata.sender_name}</span>
+                            )}
+                            {notification.metadata.space_title && (
+                              <span>Spazio: {notification.metadata.space_title}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                  
+                  {index < filteredNotifications.length - 1 && (
+                    <Separator className="mx-4" />
+                  )}
                 </div>
-              ) : (
-                <div className="space-y-0">
-                  {filterNotifications('all').map((notification) => (
-                    <NotificationItem
-                      key={notification.id}
-                      notification={notification}
-                      onMarkAsRead={handleMarkAsRead}
-                    />
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="message" className="mt-4 h-full">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              <div className="space-y-0">
-                {filterNotifications('message').map((notification) => (
-                  <NotificationItem
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="booking" className="mt-4 h-full">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              <div className="space-y-0">
-                {filterNotifications('booking').map((notification) => (
-                  <NotificationItem
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="ticket" className="mt-4 h-full">
-            <ScrollArea className="h-[calc(100vh-200px)]">
-              <div className="space-y-0">
-                {filterNotifications('ticket').map((notification) => (
-                  <NotificationItem
-                    key={notification.id}
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
-      </SheetContent>
-    </Sheet>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }
