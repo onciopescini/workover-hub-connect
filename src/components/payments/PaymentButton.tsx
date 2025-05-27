@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
-import { createPaymentSession } from "@/lib/payment-utils";
+import { createPaymentSession, validatePayment } from "@/lib/payment-utils";
 import { toast } from "sonner";
 
 interface PaymentButtonProps {
@@ -11,6 +11,7 @@ interface PaymentButtonProps {
   currency?: string;
   disabled?: boolean;
   className?: string;
+  onPaymentSuccess?: () => void;
 }
 
 const PaymentButton = ({ 
@@ -18,7 +19,8 @@ const PaymentButton = ({
   amount, 
   currency = "EUR", 
   disabled = false, 
-  className 
+  className,
+  onPaymentSuccess
 }: PaymentButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,11 +28,49 @@ const PaymentButton = ({
     setIsLoading(true);
     
     try {
+      console.log('🔵 Starting payment process for booking:', bookingId);
+      
       const session = await createPaymentSession(bookingId, amount, currency);
       
       if (session?.payment_url) {
-        // Redirect to Stripe Checkout
-        window.location.href = session.payment_url;
+        console.log('🔵 Redirecting to Stripe Checkout:', session.payment_url);
+        
+        // Apri Stripe Checkout in una nuova finestra
+        const checkoutWindow = window.open(session.payment_url, '_blank');
+        
+        if (checkoutWindow) {
+          // Controlla periodicamente se la finestra è stata chiusa
+          const checkClosed = setInterval(async () => {
+            if (checkoutWindow.closed) {
+              clearInterval(checkClosed);
+              console.log('🔵 Checkout window closed, validating payment...');
+              
+              // Valida il pagamento
+              try {
+                const isValid = await validatePayment(session.session_id);
+                if (isValid) {
+                  toast.success("Pagamento completato con successo!");
+                  onPaymentSuccess?.();
+                } else {
+                  toast.info("Pagamento non completato o annullato");
+                }
+              } catch (error) {
+                console.error('Error validating payment:', error);
+                toast.error("Errore nella validazione del pagamento");
+              }
+            }
+          }, 1000);
+          
+          // Timeout di sicurezza (10 minuti)
+          setTimeout(() => {
+            clearInterval(checkClosed);
+            if (!checkoutWindow.closed) {
+              checkoutWindow.close();
+            }
+          }, 600000);
+        } else {
+          toast.error("Impossibile aprire la finestra di pagamento");
+        }
       } else {
         toast.error("Errore nella creazione della sessione di pagamento");
       }

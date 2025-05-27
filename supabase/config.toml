@@ -21,3 +21,9 @@ verify_jwt = true
 
 [functions.stripe-connect]
 verify_jwt = true
+
+[functions.create-payment-session]
+verify_jwt = true
+
+[functions.validate-payment]
+verify_jwt = true

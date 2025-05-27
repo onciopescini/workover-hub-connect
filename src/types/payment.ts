@@ -19,3 +19,8 @@ export interface PaymentSession {
   booking_id: string;
   amount: number;
 }
+
+// Estendo il tipo Payment locale per includere stripe_session_id
+export interface PaymentWithStripe extends Payment {
+  stripe_session_id?: string;
+}
