@@ -640,6 +640,7 @@ export type Database = {
           method: string | null
           payment_status: string
           receipt_url: string | null
+          stripe_session_id: string | null
           user_id: string
         }
         Insert: {
@@ -651,6 +652,7 @@ export type Database = {
           method?: string | null
           payment_status?: string
           receipt_url?: string | null
+          stripe_session_id?: string | null
           user_id: string
         }
         Update: {
@@ -662,6 +664,7 @@ export type Database = {
           method?: string | null
           payment_status?: string
           receipt_url?: string | null
+          stripe_session_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -763,8 +766,11 @@ export type Database = {
           admin_notes: string | null
           bio: string | null
           created_at: string
+          facebook_url: string | null
           first_name: string
+          github_url: string | null
           id: string
+          instagram_url: string | null
           interests: string | null
           is_suspended: boolean | null
           last_name: string
@@ -781,14 +787,20 @@ export type Database = {
           suspended_at: string | null
           suspended_by: string | null
           suspension_reason: string | null
+          twitter_url: string | null
           updated_at: string
+          website: string | null
+          youtube_url: string | null
         }
         Insert: {
           admin_notes?: string | null
           bio?: string | null
           created_at?: string
+          facebook_url?: string | null
           first_name: string
+          github_url?: string | null
           id: string
+          instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
           last_name: string
@@ -805,14 +817,20 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          website?: string | null
+          youtube_url?: string | null
         }
         Update: {
           admin_notes?: string | null
           bio?: string | null
           created_at?: string
+          facebook_url?: string | null
           first_name?: string
+          github_url?: string | null
           id?: string
+          instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
           last_name?: string
@@ -829,7 +847,10 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          website?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

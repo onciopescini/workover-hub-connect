@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +26,7 @@ import {
   BarChart,
   Bar,
   PieChart as RechartsPieChart,
+  Pie,
   Cell,
   Legend
 } from "recharts";
@@ -58,7 +58,7 @@ export function HostAnalytics() {
     userRetention: 0,
     cancellationRate: 0
   });
-  const [timeRange, setTimeRange] = useState('30'); // giorni
+  const [timeRange, setTimeRange] = useState('30');
   const [selectedSpace, setSelectedSpace] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [spaces, setSpaces] = useState<any[]>([]);
@@ -92,7 +92,6 @@ export function HostAnalytics() {
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - parseInt(timeRange));
       
-      // Fetch bookings data
       let bookingsQuery = supabase
         .from('bookings')
         .select(`
@@ -108,7 +107,6 @@ export function HostAnalytics() {
       if (selectedSpace !== 'all') {
         bookingsQuery = bookingsQuery.eq('space_id', selectedSpace);
       } else {
-        // Filter by host's spaces
         const { data: hostSpaces } = await supabase
           .from('spaces')
           .select('id')
@@ -123,7 +121,6 @@ export function HostAnalytics() {
       const { data: bookingsData, error: bookingsError } = await bookingsQuery;
       if (bookingsError) throw bookingsError;
 
-      // Fetch reviews data
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('booking_reviews')
         .select('rating, created_at')
@@ -132,7 +129,6 @@ export function HostAnalytics() {
 
       if (reviewsError) throw reviewsError;
 
-      // Process data
       const processedData = processAnalyticsData(bookingsData || [], reviewsData || []);
       setAnalyticsData(processedData);
       
@@ -158,24 +154,17 @@ export function HostAnalytics() {
       ? (bookings.filter(b => b.status === 'cancelled').length / totalBookings) * 100
       : 0;
 
-    // Booking trends by day
     const bookingTrends = generateDailyTrends(bookings);
-    
-    // Revenue by month
     const revenueByMonth = generateMonthlyRevenue(confirmedBookings);
-    
-    // Space performance
     const spacePerformance = generateSpacePerformance(bookings);
-    
-    // Popular booking times
     const popularTimes = generatePopularTimes(bookings);
 
     return {
       totalBookings,
       totalRevenue,
       averageRating,
-      occupancyRate: 75, // Calculated based on available vs booked days
-      userRetention: 65, // Percentage of returning customers
+      occupancyRate: 75,
+      userRetention: 65,
       cancellationRate,
       bookingTrends,
       revenueByMonth,
@@ -285,7 +274,6 @@ export function HostAnalytics() {
 
   return (
     <div className="space-y-6">
-      {/* Filtri */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
         
