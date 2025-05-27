@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
@@ -113,21 +113,30 @@ const PublicSpaces = () => {
   }, [spaces, searchCity, filters]);
 
   const handleSpaceClick = (spaceId: string) => {
-    navigate(`/spaces/${spaceId}`);
+    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
+      navigate(`/app/spaces/${spaceId}`);
+    } else {
+      navigate(`/spaces/${spaceId}`);
+    }
   };
+
+  // Use appropriate layout based on authentication status
+  const LayoutComponent = authState.isAuthenticated && authState.profile?.onboarding_completed 
+    ? MarketplaceLayout 
+    : AppLayout;
 
   if (isLoading) {
     return (
-      <AppLayout>
+      <LayoutComponent>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
         </div>
-      </AppLayout>
+      </LayoutComponent>
     );
   }
 
   return (
-    <AppLayout>
+    <LayoutComponent>
       <div className="flex flex-col h-screen">
         {/* Search and filters header */}
         <div className="bg-white border-b p-4">
@@ -206,7 +215,7 @@ const PublicSpaces = () => {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </LayoutComponent>
   );
 }
 

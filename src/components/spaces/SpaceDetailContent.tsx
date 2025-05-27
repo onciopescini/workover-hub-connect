@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,13 +35,20 @@ export const SpaceDetailContent = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedImage, setSelectedImage] = useState(0);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch space details
   useEffect(() => {
     const fetchSpaceDetails = async () => {
-      if (!id) return;
+      if (!id) {
+        setError('ID spazio non valido');
+        setLoading(false);
+        return;
+      }
 
       try {
+        console.log('Fetching space with ID:', id);
+        
         const { data: spaceData, error: spaceError } = await supabase
           .from('spaces')
           .select('*')
@@ -50,14 +56,19 @@ export const SpaceDetailContent = () => {
           .eq('published', true)
           .maybeSingle();
 
-        if (spaceError) throw spaceError;
+        if (spaceError) {
+          console.error('Space fetch error:', spaceError);
+          throw spaceError;
+        }
         
         if (!spaceData) {
-          toast.error('Spazio non trovato');
-          navigate('/spaces');
+          console.log('No space found with ID:', id);
+          setError('Spazio non trovato o non pubblicato');
+          setLoading(false);
           return;
         }
         
+        console.log('Space data fetched:', spaceData);
         setSpace(spaceData);
 
         // Fetch host details
@@ -70,24 +81,37 @@ export const SpaceDetailContent = () => {
         if (hostError) {
           console.warn('Error fetching host:', hostError);
         } else {
+          console.log('Host data fetched:', hostData);
           setHost(hostData);
         }
 
       } catch (error) {
         console.error('Error fetching space:', error);
-        toast.error('Errore nel caricamento dello spazio');
-        navigate('/spaces');
+        setError('Errore nel caricamento dello spazio');
       } finally {
         setLoading(false);
       }
     };
 
     fetchSpaceDetails();
-  }, [id, navigate]);
+  }, [id]);
 
   const handleBooking = async () => {
     if (!selectedDate || !space || !authState.user) {
       toast.error('Seleziona una data per prenotare');
+      return;
+    }
+
+    // Check if user has completed onboarding
+    if (!authState.profile?.onboarding_completed) {
+      toast.error('Completa il tuo profilo per poter prenotare');
+      navigate('/onboarding');
+      return;
+    }
+
+    // Check if user is a coworker
+    if (authState.profile?.role !== 'coworker') {
+      toast.error('Solo i coworker possono prenotare spazi');
       return;
     }
 
@@ -122,6 +146,18 @@ export const SpaceDetailContent = () => {
     }
   };
 
+  const handleBackClick = () => {
+    if (authState.isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/spaces');
+    }
+  };
+
+  const handleLoginClick = () => {
+    navigate('/login', { state: { from: `/spaces/${id}` } });
+  };
+
   const getCategoryLabel = () => {
     switch (space?.category) {
       case 'home': return 'Casa';
@@ -148,23 +184,27 @@ export const SpaceDetailContent = () => {
     );
   }
 
-  if (!space) {
+  if (error || !space) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Spazio non trovato</p>
-        <Button onClick={() => navigate('/spaces')} className="mt-4">
+        <p className="text-gray-500 mb-4">{error || 'Spazio non trovato'}</p>
+        <Button onClick={handleBackClick} className="mt-4">
           Torna alla ricerca
         </Button>
       </div>
     );
   }
 
+  const canUserBook = authState.isAuthenticated && 
+                      authState.profile?.onboarding_completed && 
+                      authState.profile?.role === 'coworker';
+
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Back button */}
       <Button
         variant="ghost"
-        onClick={() => navigate(-1)}
+        onClick={handleBackClick}
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -304,8 +344,8 @@ export const SpaceDetailContent = () => {
                 )}
               </div>
 
-              {/* Date selection */}
-              {authState.user ? (
+              {/* Booking section */}
+              {canUserBook ? (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Seleziona data</label>
@@ -351,13 +391,41 @@ export const SpaceDetailContent = () => {
                     }
                   </div>
                 </div>
+              ) : authState.isAuthenticated ? (
+                <div className="text-center">
+                  {!authState.profile?.onboarding_completed ? (
+                    <>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Completa il tuo profilo per prenotare questo spazio
+                      </p>
+                      <Button
+                        onClick={() => navigate('/onboarding')}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        Completa Profilo
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Solo i coworker possono prenotare spazi
+                      </p>
+                      <Button
+                        disabled
+                        className="w-full"
+                      >
+                        Prenotazione non disponibile
+                      </Button>
+                    </>
+                  )}
+                </div>
               ) : (
                 <div className="text-center">
                   <p className="text-sm text-gray-600 mb-4">
                     Accedi per prenotare questo spazio
                   </p>
                   <Button
-                    onClick={() => navigate('/login')}
+                    onClick={handleLoginClick}
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     Accedi

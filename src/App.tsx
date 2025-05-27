@@ -87,6 +87,9 @@ function App() {
                 <Route path="/reports" element={<UserReportsPage />} />
                 <Route path="/waitlists" element={<WaitlistsPage />} />
                 <Route path="/bidirectional-reviews" element={<BidirectionalReviews />} />
+                {/* Add protected space detail route for authenticated users */}
+                <Route path="/app/spaces/:id" element={<SpaceDetail />} />
+                <Route path="/app/events/:id" element={<EventDetail />} />
               </Route>
 
               {/* Host routes */}
