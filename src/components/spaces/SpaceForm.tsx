@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     exceptions: []
   };
 
-  const [formData, setFormData] = useState<Partial<SpaceInsert>>({
+  // Separate form data that excludes availability for database operations
+  const [formData, setFormData] = useState<Omit<Partial<SpaceInsert>, 'availability'>>({
     title: "",
     description: "",
     category: "home",
@@ -59,9 +61,11 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     ideal_guest_tags: [],
     event_friendly_tags: [],
     confirmation_type: "host_approval",
-    availability: defaultAvailability,
     published: false
   });
+
+  // Separate state for availability data
+  const [availabilityData, setAvailabilityData] = useState<AvailabilityData>(defaultAvailability);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
@@ -85,10 +89,10 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         }
       }
 
-      setFormData({
-        ...initialData,
-        availability: parsedAvailability
-      });
+      // Extract availability separately
+      const { availability, ...restData } = initialData;
+      setFormData(restData);
+      setAvailabilityData(parsedAvailability);
       
       // If we have photos in the initial data, set up preview URLs
       if (initialData.photos && initialData.photos.length > 0) {
@@ -138,8 +142,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     }
 
     // Validate availability - at least one day should be enabled
-    const hasAvailability = formData.availability?.recurring && 
-      Object.values(formData.availability.recurring).some(day => day.enabled && day.slots.length > 0);
+    const hasAvailability = availabilityData?.recurring && 
+      Object.values(availabilityData.recurring).some(day => day.enabled && day.slots.length > 0);
     
     if (!hasAvailability) {
       newErrors.availability = "Devi impostare almeno un giorno e orario di disponibilità";
@@ -181,7 +185,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
   };
 
   const handleAvailabilityChange = (availability: AvailabilityData) => {
-    setFormData((prev) => ({ ...prev, availability }));
+    setAvailabilityData(availability);
     
     // Clear availability error when changed
     if (errors.availability) {
@@ -304,6 +308,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       // Upload photos if there are any
       const photoUrls = await uploadPhotos(user.id);
       
+      // Prepare data for database insertion, ensuring availability is properly serialized
       const spaceData = {
         ...formData,
         title: formData.title!,
@@ -324,7 +329,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
         confirmation_type: formData.confirmation_type!,
-        availability: formData.availability || defaultAvailability,
+        availability: JSON.parse(JSON.stringify(availabilityData)), // Serialize as JSON
         published: formData.published ?? false,
         host_id: user.id,
       };
@@ -404,7 +409,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       />
 
       <AvailabilityScheduler
-        availability={formData.availability || defaultAvailability}
+        availability={availabilityData}
         onAvailabilityChange={handleAvailabilityChange}
         isSubmitting={isSubmitting}
       />
