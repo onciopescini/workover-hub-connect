@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,23 +71,8 @@ export function PaymentsDashboard() {
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - parseInt(timeRange));
 
-      let query = supabase
-        .from('payments')
-        .select(`
-          *,
-          booking:bookings!booking_id(
-            booking_date,
-            status,
-            space:spaces!space_id(title, host_id)
-          ),
-          user:profiles!user_id(first_name, last_name)
-        `)
-        .gte('created_at', dateThreshold.toISOString())
-        .order('created_at', { ascending: false });
-
-      // Filter by user role
+      // For hosts, we need to get payments for their spaces
       if (authState.profile?.role === 'host') {
-        // For hosts, we need to filter by payments where the booking's space belongs to them
         const { data: hostPayments, error: hostError } = await supabase
           .from('payments')
           .select(`
@@ -108,37 +94,79 @@ export function PaymentsDashboard() {
           payment.booking?.space?.host_id === authState.user?.id
         );
 
-        setPayments(filteredPayments as Payment[]);
+        let finalPayments = filteredPayments;
+        if (filter !== 'all') {
+          finalPayments = filteredPayments.filter(payment => payment.payment_status === filter);
+        }
+
+        setPayments(finalPayments as Payment[]);
+        
+        // Calculate stats
+        const statsResult = filteredPayments.reduce((acc, payment) => {
+          if (payment.payment_status === 'completed') {
+            acc.totalRevenue += payment.amount;
+            acc.completedPayments++;
+          } else if (payment.payment_status === 'pending') {
+            acc.pendingPayments++;
+          } else if (payment.payment_status === 'failed') {
+            acc.failedPayments++;
+          }
+          return acc;
+        }, {
+          totalRevenue: 0,
+          pendingPayments: 0,
+          completedPayments: 0,
+          failedPayments: 0
+        });
+
+        setStats(statsResult);
       } else {
-        query = query.eq('user_id', authState.user.id);
+        // For regular users, get their own payments
+        let query = supabase
+          .from('payments')
+          .select(`
+            *,
+            booking:bookings!booking_id(
+              booking_date,
+              status,
+              space:spaces!space_id(title, host_id)
+            ),
+            user:profiles!user_id(first_name, last_name)
+          `)
+          .eq('user_id', authState.user.id)
+          .gte('created_at', dateThreshold.toISOString())
+          .order('created_at', { ascending: false });
+
         const { data, error } = await query;
         if (error) throw error;
-        setPayments((data || []) as Payment[]);
-      }
 
-      if (filter !== 'all') {
-        setPayments(prev => prev.filter(payment => payment.payment_status === filter));
-      }
-      
-      // Calculate stats
-      const stats = payments.reduce((acc, payment) => {
-        if (payment.payment_status === 'completed') {
-          acc.totalRevenue += payment.amount;
-          acc.completedPayments++;
-        } else if (payment.payment_status === 'pending') {
-          acc.pendingPayments++;
-        } else if (payment.payment_status === 'failed') {
-          acc.failedPayments++;
+        let finalPayments = data || [];
+        if (filter !== 'all') {
+          finalPayments = finalPayments.filter(payment => payment.payment_status === filter);
         }
-        return acc;
-      }, {
-        totalRevenue: 0,
-        pendingPayments: 0,
-        completedPayments: 0,
-        failedPayments: 0
-      });
 
-      setStats(stats);
+        setPayments(finalPayments as Payment[]);
+        
+        // Calculate stats
+        const statsResult = (data || []).reduce((acc, payment) => {
+          if (payment.payment_status === 'completed') {
+            acc.totalRevenue += payment.amount;
+            acc.completedPayments++;
+          } else if (payment.payment_status === 'pending') {
+            acc.pendingPayments++;
+          } else if (payment.payment_status === 'failed') {
+            acc.failedPayments++;
+          }
+          return acc;
+        }, {
+          totalRevenue: 0,
+          pendingPayments: 0,
+          completedPayments: 0,
+          failedPayments: 0
+        });
+
+        setStats(statsResult);
+      }
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast.error('Errore nel caricamento dei pagamenti');
