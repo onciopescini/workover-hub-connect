@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import Index from './pages/Index';
@@ -31,9 +32,9 @@ import AdminPanel from './pages/AdminPanel';
 import { Toaster } from "@/components/ui/sonner"
 import PublicSpaces from './pages/PublicSpaces';
 import PublicEvents from './pages/PublicEvents';
-import PublicLayout from './layouts/PublicLayout';
-import MarketplaceLayout from './layouts/MarketplaceLayout';
-import AppLayout from './layouts/AppLayout';
+import { PublicLayout } from './components/layout/PublicLayout';
+import { MarketplaceLayout } from './components/layout/MarketplaceLayout';
+import { AppLayout } from './components/layout/AppLayout';
 import PrivateChats from './pages/PrivateChats';
 import UserReportsPage from './pages/UserReportsPage';
 import WaitlistsPage from './pages/WaitlistsPage';
@@ -50,12 +51,12 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <AuthProvider>
-      <QueryClient>
+      <QueryClientProvider client={queryClient}>
         <Toaster />
         <BrowserRouter>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<PublicLayout />}>
+            <Route path="/" element={<PublicLayout><Outlet /></PublicLayout>}>
               <Route index element={<Index />} />
               <Route path="/spaces" element={<PublicSpaces />} />
               <Route path="/events" element={<PublicEvents />} />
@@ -67,10 +68,10 @@ function App() {
             </Route>
 
             {/* Protected routes */}
-            <Route element={<AuthProtected />}>
+            <Route element={<AuthProtected><Outlet /></AuthProtected>}>
               <Route path="/onboarding" element={<Onboarding />} />
               
-              <Route element={<MarketplaceLayout />}>
+              <Route element={<MarketplaceLayout><Outlet /></MarketplaceLayout>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/bookings" element={<Bookings />} />
@@ -89,8 +90,8 @@ function App() {
               </Route>
 
               {/* Host routes */}
-              <Route element={<RoleProtected allowedRoles={['host', 'admin']} />}>
-                <Route element={<AppLayout />}>
+              <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
+                <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/host" element={<HostDashboard />} />
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
@@ -99,8 +100,8 @@ function App() {
               </Route>
 
               {/* Admin routes */}
-              <Route element={<RoleProtected allowedRoles={['admin']} />}>
-                <Route element={<AppLayout />}>
+              <Route element={<RoleProtected allowedRoles={['admin']}><Outlet /></RoleProtected>}>
+                <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/admin" element={<AdminPanel />} />
                 </Route>
               </Route>
@@ -110,7 +111,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </QueryClient>
+      </QueryClientProvider>
     </AuthProvider>
   );
 }
