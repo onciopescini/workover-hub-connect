@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,13 +10,14 @@ import {
   DollarSign, 
   TrendingUp, 
   Download, 
-  Eye,
-  CheckCircle,
-  Clock,
-  XCircle,
-  AlertCircle,
   RefreshCw
 } from "lucide-react";
+
+import { useAsyncOperation } from "@/hooks/useAsyncOperation";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { DateFormatter } from "@/components/shared/DateFormatter";
+import { LoadingCard } from "@/components/shared/LoadingCard";
+import { StatusType } from "@/types/common";
 
 interface PaymentWithDetails {
   id: string;
@@ -58,6 +57,15 @@ export function PaymentsDashboard() {
     failedPayments: 0
   });
 
+  const { execute: executeWithLoading } = useAsyncOperation({
+    errorMessage: 'Errore nel caricamento dei pagamenti'
+  });
+
+  const { execute: executeRetryPayment } = useAsyncOperation({
+    successMessage: 'Tentativo di pagamento avviato',
+    errorMessage: 'Errore nel tentativo di pagamento'
+  });
+
   useEffect(() => {
     fetchPayments();
   }, [filter, timeRange]);
@@ -65,13 +73,12 @@ export function PaymentsDashboard() {
   const fetchPayments = async () => {
     if (!authState.user) return;
     
-    setIsLoading(true);
-    try {
+    await executeWithLoading(async () => {
+      setIsLoading(true);
       const dateThreshold = new Date();
       dateThreshold.setDate(dateThreshold.getDate() - parseInt(timeRange));
 
       if (authState.profile?.role === 'host') {
-        // For hosts, get payments for their spaces
         const { data: hostPayments, error: hostError } = await supabase
           .from('payments')
           .select(`
@@ -165,7 +172,6 @@ export function PaymentsDashboard() {
 
         setStats(statsResult);
       } else {
-        // For regular users, get their own payments
         const { data, error } = await supabase
           .from('payments')
           .select(`
@@ -244,17 +250,12 @@ export function PaymentsDashboard() {
 
         setStats(statsResult);
       }
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-      toast.error('Errore nel caricamento dei pagamenti');
-    } finally {
       setIsLoading(false);
-    }
+    });
   };
 
   const retryPayment = async (paymentId: string, bookingId: string, amount: number) => {
-    try {
-      // Create new payment session
+    await executeRetryPayment(async () => {
       const { data, error } = await supabase.functions.invoke('create-payment-session', {
         body: {
           booking_id: bookingId,
@@ -269,10 +270,7 @@ export function PaymentsDashboard() {
       if (data?.payment_url) {
         window.open(data.payment_url, '_blank');
       }
-    } catch (error) {
-      console.error('Error retrying payment:', error);
-      toast.error('Errore nel tentativo di pagamento');
-    }
+    });
   };
 
   const downloadReceipt = (receiptUrl: string) => {
@@ -283,34 +281,12 @@ export function PaymentsDashboard() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="default"><CheckCircle className="w-3 h-3 mr-1" />Completato</Badge>;
-      case 'pending':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />In sospeso</Badge>;
-      case 'failed':
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Fallito</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline"><XCircle className="w-3 h-3 mr-1" />Annullato</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </CardContent>
-            </Card>
+            <LoadingCard key={i} rows={2} />
           ))}
         </div>
       </div>
@@ -352,7 +328,6 @@ export function PaymentsDashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
