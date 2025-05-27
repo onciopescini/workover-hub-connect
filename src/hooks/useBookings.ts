@@ -26,6 +26,8 @@ export const useBookings = () => {
             space_id,
             user_id,
             booking_date,
+            start_time,
+            end_time,
             status,
             created_at,
             updated_at,
@@ -70,8 +72,6 @@ export const useBookings = () => {
           // Combine booking and space data
           coworkerBookings = coworkerBookingsRaw.map(booking => ({
             ...booking,
-            start_time: undefined,
-            end_time: undefined,
             space: spacesData?.find(space => space.id === booking.space_id) || {
               id: booking.space_id,
               title: 'Spazio non trovato',
@@ -113,6 +113,8 @@ export const useBookings = () => {
                 space_id,
                 user_id,
                 booking_date,
+                start_time,
+                end_time,
                 status,
                 created_at,
                 updated_at,
@@ -172,8 +174,6 @@ export const useBookings = () => {
               // Combine host booking data
               hostBookings = hostBookingsRaw.map(booking => ({
                 ...booking,
-                start_time: undefined,
-                end_time: undefined,
                 space: hostSpacesData?.find(space => space.id === booking.space_id) || {
                   id: booking.space_id,
                   title: 'Spazio non trovato',

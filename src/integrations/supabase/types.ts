@@ -182,8 +182,10 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by_host: boolean | null
           created_at: string | null
+          end_time: string | null
           id: string
           space_id: string
+          start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           updated_at: string | null
           user_id: string
@@ -195,8 +197,10 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by_host?: boolean | null
           created_at?: string | null
+          end_time?: string | null
           id?: string
           space_id: string
+          start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           updated_at?: string | null
           user_id: string
@@ -208,8 +212,10 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by_host?: boolean | null
           created_at?: string | null
+          end_time?: string | null
           id?: string
           space_id?: string
+          start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           updated_at?: string | null
           user_id?: string
