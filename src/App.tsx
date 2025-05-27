@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,6 +22,7 @@ import MessageConversation from './pages/MessageConversation';
 import SpaceNew from './pages/SpaceNew';
 import SpacesManage from './pages/SpacesManage';
 import SpaceEdit from './pages/SpaceEdit';
+import SpaceDetail from './pages/SpaceDetail';
 import EventDetail from './pages/EventDetail';
 import NotFound from './pages/NotFound';
 import Support from './pages/Support';
@@ -51,6 +53,7 @@ function App() {
               
               {/* Public marketplace routes */}
               <Route path="/spaces" element={<PublicSpaces />} />
+              <Route path="/spaces/:id" element={<SpaceDetail />} />
               <Route path="/events" element={<PublicEvents />} />
               
               <Route path="/login" element={<Login />} />

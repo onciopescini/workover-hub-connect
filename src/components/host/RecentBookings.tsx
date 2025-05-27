@@ -4,13 +4,54 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BookingWithDetails, BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
-import { Calendar, MapPin, User } from "lucide-react";
+import { Calendar, MapPin, User, CheckCircle, XCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface RecentBookingsProps {
   bookings: BookingWithDetails[];
+  onBookingUpdate?: () => void;
 }
 
-export function RecentBookings({ bookings }: RecentBookingsProps) {
+export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProps) {
+  const [loadingBookings, setLoadingBookings] = useState<Set<string>>(new Set());
+
+  const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {
+    setLoadingBookings(prev => new Set(prev).add(bookingId));
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ 
+          status: action === 'confirm' ? 'confirmed' : 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast.success(
+        action === 'confirm' 
+          ? 'Prenotazione confermata!' 
+          : 'Prenotazione respinta'
+      );
+
+      if (onBookingUpdate) {
+        onBookingUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      toast.error('Errore nell\'aggiornamento della prenotazione');
+    } finally {
+      setLoadingBookings(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bookingId);
+        return newSet;
+      });
+    }
+  };
+
   if (bookings.length === 0) {
     return (
       <Card>
@@ -59,9 +100,35 @@ export function RecentBookings({ bookings }: RecentBookingsProps) {
               </div>
             </div>
             
-            <Button variant="outline" size="sm">
-              Dettagli
-            </Button>
+            <div className="flex gap-2">
+              {booking.status === 'pending' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBookingAction(booking.id, 'confirm')}
+                    disabled={loadingBookings.has(booking.id)}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBookingAction(booking.id, 'reject')}
+                    disabled={loadingBookings.has(booking.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+              {booking.status !== 'pending' && (
+                <Button variant="outline" size="sm">
+                  Dettagli
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </CardContent>

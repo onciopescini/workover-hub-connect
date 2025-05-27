@@ -1,8 +1,9 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Space } from '@/types/space';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -14,12 +15,43 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch Mapbox token from Supabase Edge Function
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          setError('Impossibile caricare la mappa');
+          return;
+        }
+
+        if (data?.token) {
+          setMapboxToken(data.token);
+        } else {
+          setError('Token Mapbox non configurato');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError('Errore nel caricamento della mappa');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMapboxToken();
+  }, []);
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !mapboxToken) return;
 
     // Initialize map
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGVzdC1tYXBib3giLCJhIjoiY2xldjZxN3poMDhsNzQzcGl1aDd2a2xvNCJ9.example'; // You'll need to add your Mapbox token
+    mapboxgl.accessToken = mapboxToken;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -34,7 +66,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
     return () => {
       map.current?.remove();
     };
-  }, [userLocation]);
+  }, [userLocation, mapboxToken]);
 
   // Add markers for spaces
   useEffect(() => {
@@ -91,16 +123,31 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
       .addTo(map.current);
   }, [userLocation]);
 
+  if (isLoading) {
+    return (
+      <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Caricamento mappa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
+        <div className="text-center p-4">
+          <p className="text-sm text-red-600 mb-2">{error}</p>
+          <p className="text-xs text-gray-500">La mappa non è disponibile al momento</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0" />
-      
-      {/* Map overlay with token requirement message */}
-      <div className="absolute top-4 left-4 bg-white p-3 rounded-lg shadow-lg max-w-sm">
-        <p className="text-sm text-gray-600">
-          <strong>Nota:</strong> Per visualizzare la mappa, è necessario configurare il token Mapbox.
-        </p>
-      </div>
     </div>
   );
 };
