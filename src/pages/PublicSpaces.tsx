@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
@@ -77,7 +77,7 @@ const PublicSpaces = () => {
   useEffect(() => {
     let filtered = [...spaces];
 
-    // City search - usa address invece di city
+    // City search
     if (searchCity) {
       filtered = filtered.filter(space => 
         space.address?.toLowerCase().includes(searchCity.toLowerCase())
@@ -113,26 +113,21 @@ const PublicSpaces = () => {
   }, [spaces, searchCity, filters]);
 
   const handleSpaceClick = (spaceId: string) => {
-    if (authState.user) {
-      navigate(`/spaces/${spaceId}`);
-    } else {
-      toast.error('Devi effettuare il login per vedere i dettagli dello spazio');
-      navigate('/login');
-    }
+    navigate(`/spaces/${spaceId}`);
   };
 
   if (isLoading) {
     return (
-      <MarketplaceLayout>
+      <AppLayout>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
         </div>
-      </MarketplaceLayout>
+      </AppLayout>
     );
   }
 
   return (
-    <MarketplaceLayout>
+    <AppLayout>
       <div className="flex flex-col h-screen">
         {/* Search and filters header */}
         <div className="bg-white border-b p-4">
@@ -211,8 +206,8 @@ const PublicSpaces = () => {
           </div>
         </div>
       </div>
-    </MarketplaceLayout>
+    </AppLayout>
   );
-};
+}
 
 export default PublicSpaces;

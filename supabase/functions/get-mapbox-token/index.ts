@@ -13,9 +13,13 @@ serve(async (req) => {
   }
 
   try {
+    // Cambiato il nome della variabile per matchare il secret in Supabase
     const mapboxToken = Deno.env.get("NEXT_PUBLIC_MAPBOX_TOKEN");
     
+    console.log("Mapbox token check:", mapboxToken ? "Token found" : "Token not found");
+    
     if (!mapboxToken) {
+      console.error("NEXT_PUBLIC_MAPBOX_TOKEN environment variable not set");
       return new Response(
         JSON.stringify({ error: "Mapbox token not configured" }),
         {
@@ -25,6 +29,7 @@ serve(async (req) => {
       );
     }
 
+    console.log("Returning token successfully");
     return new Response(
       JSON.stringify({ token: mapboxToken }),
       {
@@ -32,7 +37,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in get-mapbox-token function:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {

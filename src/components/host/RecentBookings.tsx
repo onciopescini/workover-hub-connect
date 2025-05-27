@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BookingWithDetails, BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
-import { Calendar, MapPin, User, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, MapPin, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -94,7 +94,7 @@ export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProp
               
               <div className="flex items-center text-sm text-gray-500 mt-1">
                 <Calendar className="w-3 h-3 mr-1" />
-                {new Date(booking.booking_date).toLocaleDateString()}
+                {new Date(booking.booking_date).toLocaleDateString('it-IT')}
                 <MapPin className="w-3 h-3 ml-2 mr-1" />
                 <span className="truncate">{booking.space?.title}</span>
               </div>
@@ -108,7 +108,7 @@ export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProp
                     size="sm"
                     onClick={() => handleBookingAction(booking.id, 'confirm')}
                     disabled={loadingBookings.has(booking.id)}
-                    className="text-green-600 hover:text-green-700"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
                   >
                     <CheckCircle className="w-4 h-4" />
                   </Button>
@@ -117,20 +117,28 @@ export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProp
                     size="sm"
                     onClick={() => handleBookingAction(booking.id, 'reject')}
                     disabled={loadingBookings.has(booking.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <XCircle className="w-4 h-4" />
                   </Button>
                 </>
               )}
               {booking.status !== 'pending' && (
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="text-indigo-600 hover:text-indigo-700">
                   Dettagli
                 </Button>
               )}
             </div>
           </div>
         ))}
+        
+        {bookings.length > 5 && (
+          <div className="text-center pt-2">
+            <Button variant="ghost" size="sm" className="text-indigo-600">
+              Vedi tutte le prenotazioni ({bookings.length})
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
