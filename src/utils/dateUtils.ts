@@ -1,5 +1,5 @@
 
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, Locale } from 'date-fns';
 import { it } from 'date-fns/locale';
 
 export interface DateFormatOptions {

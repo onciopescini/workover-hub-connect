@@ -1,23 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  CreditCard, 
-  DollarSign, 
-  TrendingUp, 
-  Download, 
-  RefreshCw
-} from "lucide-react";
 
 import { useAsyncOperation } from "@/hooks/useAsyncOperation";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { DateFormatter } from "@/components/shared/DateFormatter";
 import { LoadingCard } from "@/components/shared/LoadingCard";
-import { StatusType } from "@/types/common";
+import { PaymentStats } from "./PaymentStats";
+import { PaymentFilters } from "./PaymentFilters";
+import { PaymentsList } from "./PaymentsList";
 
 interface PaymentWithDetails {
   id: string;
@@ -301,150 +293,26 @@ export function PaymentsDashboard() {
           <h2 className="text-2xl font-bold">Dashboard Pagamenti</h2>
         </div>
         
-        <div className="flex gap-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Periodo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Ultimi 7 giorni</SelectItem>
-              <SelectItem value="30">Ultimi 30 giorni</SelectItem>
-              <SelectItem value="90">Ultimi 3 mesi</SelectItem>
-              <SelectItem value="365">Ultimo anno</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Stato" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti</SelectItem>
-              <SelectItem value="completed">Completati</SelectItem>
-              <SelectItem value="pending">In sospeso</SelectItem>
-              <SelectItem value="failed">Falliti</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <PaymentFilters
+          timeRange={timeRange}
+          filter={filter}
+          onTimeRangeChange={setTimeRange}
+          onFilterChange={setFilter}
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {authState.profile?.role === 'host' ? 'Ricavi Totali' : 'Speso Totale'}
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">€{stats.totalRevenue.toFixed(2)}</div>
-            <Badge variant="secondary" className="mt-1">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              Ultimi {timeRange} giorni
-            </Badge>
-          </CardContent>
-        </Card>
+      <PaymentStats 
+        stats={stats} 
+        timeRange={timeRange} 
+        userRole={authState.profile?.role} 
+      />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pagamenti Completati</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completedPayments}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Sospeso</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingPayments}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Falliti</CardTitle>
-            <XCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.failedPayments}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Payments List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista Pagamenti</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {payments.length === 0 ? (
-            <div className="text-center py-8">
-              <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nessun pagamento
-              </h3>
-              <p className="text-gray-600">
-                Non ci sono pagamenti per il periodo selezionato.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {payments.map((payment) => (
-                <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h4 className="font-semibold">
-                        {payment.booking?.space?.title || 'Spazio non disponibile'}
-                      </h4>
-                      {getStatusBadge(payment.payment_status)}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>€{payment.amount.toFixed(2)}</span>
-                      <span>
-                        {authState.profile?.role === 'host' 
-                          ? `Cliente: ${payment.user?.first_name || ''} ${payment.user?.last_name || ''}`
-                          : `Data: ${payment.booking?.booking_date ? new Date(payment.booking.booking_date).toLocaleDateString('it-IT') : 'N/A'}`
-                        }
-                      </span>
-                      <span>{new Date(payment.created_at).toLocaleDateString('it-IT')}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    {payment.payment_status === 'failed' && authState.profile?.role !== 'host' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => retryPayment(payment.id, payment.booking_id, payment.amount)}
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Riprova
-                      </Button>
-                    )}
-                    
-                    {payment.receipt_url && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => downloadReceipt(payment.receipt_url!)}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Ricevuta
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <PaymentsList
+        payments={payments}
+        userRole={authState.profile?.role}
+        onRetryPayment={retryPayment}
+        onDownloadReceipt={downloadReceipt}
+      />
     </div>
   );
 }
