@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Users, Calendar, Star } from 'lucide-react';
@@ -10,7 +9,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <MarketplaceLayout>
+    <>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-indigo-50 to-emerald-50 py-20">
         <div className="container mx-auto px-4 text-center">
@@ -111,7 +110,7 @@ const Index = () => {
           </Button>
         </div>
       </section>
-    </MarketplaceLayout>
+    </>
   );
 };
 

@@ -93,6 +93,7 @@ function App() {
               <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
                 <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/host" element={<HostDashboard />} />
+                  <Route path="/host/dashboard" element={<HostDashboard />} />
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
                   <Route path="/spaces/:id/edit" element={<SpaceEdit />} />
