@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,6 +31,12 @@ import AdminPanel from './pages/AdminPanel';
 import { Toaster } from "@/components/ui/sonner"
 import PublicSpaces from './pages/PublicSpaces';
 import PublicEvents from './pages/PublicEvents';
+import PublicLayout from './layouts/PublicLayout';
+import MarketplaceLayout from './layouts/MarketplaceLayout';
+import AppLayout from './layouts/AppLayout';
+import PrivateChats from './pages/PrivateChats';
+import UserReportsPage from './pages/UserReportsPage';
+import WaitlistsPage from './pages/WaitlistsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,141 +49,69 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+    <AuthProvider>
+      <QueryClient>
+        <Toaster />
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              
-              {/* Public marketplace routes */}
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<PublicLayout />}>
+              <Route index element={<Index />} />
               <Route path="/spaces" element={<PublicSpaces />} />
-              <Route path="/spaces/:id" element={<SpaceDetail />} />
               <Route path="/events" element={<PublicEvents />} />
-              
+              <Route path="/spaces/:id" element={<SpaceDetail />} />
+              <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+            </Route>
+
+            {/* Protected routes */}
+            <Route element={<AuthProtected />}>
+              <Route path="/onboarding" element={<Onboarding />} />
               
-              {/* Onboarding route - requires auth but NOT completed onboarding */}
-              <Route path="/onboarding" element={
-                <AuthProtected requireOnboarding={false}>
-                  <Onboarding />
-                </AuthProtected>
-              } />
-              
-              {/* Protected Routes - require completed onboarding */}
-              <Route path="/dashboard" element={
-                <AuthProtected>
-                  <Dashboard />
-                </AuthProtected>
-              } />
-              <Route path="/profile" element={
-                <AuthProtected>
-                  <Profile />
-                </AuthProtected>
-              } />
-              <Route path="/host/dashboard" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["host"]}>
-                    <HostDashboard />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/admin" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["admin"]}>
-                    <AdminPanel />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/bookings" element={
-                <AuthProtected>
-                  <Bookings />
-                </AuthProtected>
-              } />
-              <Route path="/favorites" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["coworker"]}>
-                    <Favorites />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/reviews" element={
-                <AuthProtected>
-                  <Reviews />
-                </AuthProtected>
-              } />
-              <Route path="/bidirectional-reviews" element={
-                <AuthProtected>
-                  <BidirectionalReviews />
-                </AuthProtected>
-              } />
-              <Route path="/messages" element={
-                <AuthProtected>
-                  <Messages />
-                </AuthProtected>
-              } />
-              <Route path="/messages/:bookingId" element={
-                <AuthProtected>
-                  <MessageConversation />
-                </AuthProtected>
-              } />
-              <Route path="/spaces/new" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["host"]}>
-                    <SpaceNew />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/spaces/manage" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["host"]}>
-                    <SpacesManage />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/spaces/:id/edit" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["host"]}>
-                    <SpaceEdit />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/events/:id" element={
-                <AuthProtected>
-                  <EventDetail />
-                </AuthProtected>
-              } />
-              <Route path="/support" element={
-                <AuthProtected>
-                  <Support />
-                </AuthProtected>
-              } />
-              {/* Networking - Solo per coworker */}
-              <Route path="/networking" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["coworker"]}>
-                    <Networking />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              <Route path="/networking/discover" element={
-                <AuthProtected>
-                  <RoleProtected allowedRoles={["coworker"]}>
-                    <NetworkingDiscover />
-                  </RoleProtected>
-                </AuthProtected>
-              } />
-              
-              {/* Catch all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-          <Toaster />
+              <Route element={<MarketplaceLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/bookings" element={<Bookings />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/reviews" element={<Reviews />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/messages/:bookingId" element={<MessageConversation />} />
+                <Route path="/private-chats" element={<PrivateChats />} />
+                <Route path="/private-chats/:chatId" element={<PrivateChats />} />
+                <Route path="/networking" element={<Networking />} />
+                <Route path="/networking/discover" element={<NetworkingDiscover />} />
+                <Route path="/support" element={<Support />} />
+                <Route path="/reports" element={<UserReportsPage />} />
+                <Route path="/waitlists" element={<WaitlistsPage />} />
+                <Route path="/bidirectional-reviews" element={<BidirectionalReviews />} />
+              </Route>
+
+              {/* Host routes */}
+              <Route element={<RoleProtected allowedRoles={['host', 'admin']} />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/host" element={<HostDashboard />} />
+                  <Route path="/spaces/manage" element={<SpacesManage />} />
+                  <Route path="/spaces/new" element={<SpaceNew />} />
+                  <Route path="/spaces/:id/edit" element={<SpaceEdit />} />
+                </Route>
+              </Route>
+
+              {/* Admin routes */}
+              <Route element={<RoleProtected allowedRoles={['admin']} />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/admin" element={<AdminPanel />} />
+                </Route>
+              </Route>
+            </Route>
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+      </QueryClient>
+    </AuthProvider>
   );
 }
 
