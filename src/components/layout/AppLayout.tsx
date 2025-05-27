@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +34,7 @@ export function AppLayout({
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/spaces"; // Changed from /dashboard to /spaces for coworkers
+    return "/dashboard";
   };
 
   const getNavLinks = () => {

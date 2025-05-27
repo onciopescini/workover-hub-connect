@@ -3,11 +3,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, MapPin, Briefcase, Heart } from "lucide-react";
+import { User, MapPin, Briefcase, Heart, Edit } from "lucide-react";
+import { useState } from "react";
+import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
 const Profile = () => {
   const { authState } = useAuth();
+  const [isEditing, setIsEditing] = useState(false);
 
   if (!authState.profile) {
     return (
@@ -31,32 +35,59 @@ const Profile = () => {
     return `${firstName} ${lastName}`.trim() || "Utente";
   };
 
+  if (isEditing) {
+    return (
+      <AppLayout title="Modifica Profilo" subtitle="Aggiorna le tue informazioni">
+        <div className="max-w-4xl mx-auto p-4 md:p-6">
+          <div className="mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+            >
+              ← Torna al Profilo
+            </Button>
+          </div>
+          <ProfileEditForm />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Profilo" subtitle="Il tuo profilo personale">
       <div className="max-w-4xl mx-auto p-4 md:p-6">
         <Card>
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={authState.profile?.profile_photo_url || ""} />
-                <AvatarFallback className="text-xl">
-                  {getUserInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{getUserFullName()}</CardTitle>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="secondary">
-                    {authState.profile.role === "host" ? "Host" : 
-                     authState.profile.role === "admin" ? "Admin" : "Coworker"}
-                  </Badge>
-                  {authState.profile.nickname && (
-                    <span className="text-sm text-gray-600">
-                      @{authState.profile.nickname}
-                    </span>
-                  )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={authState.profile?.profile_photo_url || ""} />
+                  <AvatarFallback className="text-xl">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle className="text-2xl">{getUserFullName()}</CardTitle>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Badge variant="secondary">
+                      {authState.profile.role === "host" ? "Host" : 
+                       authState.profile.role === "admin" ? "Admin" : "Coworker"}
+                    </Badge>
+                    {authState.profile.nickname && (
+                      <span className="text-sm text-gray-600">
+                        @{authState.profile.nickname}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+              <Button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Modifica Profilo
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
