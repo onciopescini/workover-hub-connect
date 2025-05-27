@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,9 +9,10 @@ import { AdminSpaceManagement } from "@/components/admin/AdminSpaceManagement";
 import { AdminTagManagement } from "@/components/admin/AdminTagManagement";
 import { AdminTicketManagement } from "@/components/admin/AdminTicketManagement";
 import { AdminActionsLog } from "@/components/admin/AdminActionsLog";
+import AdminReportManagement from "@/components/admin/AdminReportManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home } from "lucide-react";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag } from "lucide-react";
 
 const AdminPanel = () => {
   const { authState, signOut } = useAuth();
@@ -104,7 +104,7 @@ const AdminPanel = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Dashboard
@@ -120,6 +120,10 @@ const AdminPanel = () => {
             <TabsTrigger value="tags" className="flex items-center gap-2">
               <Tags className="w-4 h-4" />
               Tag
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <Flag className="w-4 h-4" />
+              Segnalazioni
             </TabsTrigger>
             <TabsTrigger value="tickets" className="flex items-center gap-2">
               <Headphones className="w-4 h-4" />
@@ -145,6 +149,10 @@ const AdminPanel = () => {
 
           <TabsContent value="tags">
             <AdminTagManagement />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <AdminReportManagement />
           </TabsContent>
 
           <TabsContent value="tickets">
