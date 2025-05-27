@@ -81,11 +81,13 @@ export const reviewReport = async (
 
     if (error) throw error;
     
-    if (data?.success) {
+    const result = data as { success?: boolean; error?: string };
+    
+    if (result?.success) {
       toast.success("Segnalazione aggiornata con successo");
       return true;
     } else {
-      toast.error(data?.error || "Errore nell'aggiornamento della segnalazione");
+      toast.error(result?.error || "Errore nell'aggiornamento della segnalazione");
       return false;
     }
   } catch (error) {

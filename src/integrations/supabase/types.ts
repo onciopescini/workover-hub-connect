@@ -835,31 +835,46 @@ export type Database = {
       }
       reports: {
         Row: {
+          admin_notes: string | null
           created_at: string | null
+          description: string | null
           id: string
           reason: string
           reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string | null
           target_id: string
           target_type: string
+          updated_at: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           reason: string
           reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string | null
           target_id: string
           target_type: string
+          updated_at?: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           reason?: string
           reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string | null
           target_id?: string
           target_type?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -1296,6 +1311,10 @@ export type Database = {
       }
       reactivate_user: {
         Args: { target_user_id: string; reactivated_by_admin: string }
+        Returns: Json
+      }
+      review_report: {
+        Args: { report_id: string; new_status: string; admin_notes?: string }
         Returns: Json
       }
       suspend_user: {

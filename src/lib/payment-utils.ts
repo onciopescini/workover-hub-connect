@@ -1,10 +1,62 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
-import type { PaymentWithDetails, PaymentInsert } from "@/types/payment";
 
-// Get payments for current user
-export const getUserPayments = async (): Promise<PaymentWithDetails[]> => {
+// Create payment session for booking
+export const createPaymentSession = async (
+  bookingId: string,
+  amount: number,
+  currency: string = "EUR"
+): Promise<PaymentSession | null> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) {
+      toast.error("Devi essere autenticato per effettuare un pagamento");
+      return null;
+    }
+
+    const { data, error } = await supabase.functions.invoke('create-payment-session', {
+      body: {
+        booking_id: bookingId,
+        amount: Math.round(amount * 100), // Convert to cents
+        currency,
+        user_id: user.user.id
+      }
+    });
+
+    if (error) throw error;
+    
+    return data as PaymentSession;
+  } catch (error) {
+    console.error("Error creating payment session:", error);
+    toast.error("Errore nella creazione della sessione di pagamento");
+    return null;
+  }
+};
+
+// Get payment status
+export const getPaymentStatus = async (bookingId: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('payment_status')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    
+    return data?.payment_status || null;
+  } catch (error) {
+    console.error("Error fetching payment status:", error);
+    return null;
+  }
+};
+
+// Get user payments
+export const getUserPayments = async (): Promise<Payment[]> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return [];
@@ -13,73 +65,55 @@ export const getUserPayments = async (): Promise<PaymentWithDetails[]> => {
       .from('payments')
       .select(`
         *,
-        booking:booking_id (
+        bookings:booking_id(
           booking_date,
-          space:space_id (
-            title,
-            address
-          )
+          spaces:space_id(title)
         )
       `)
       .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
-    return data as PaymentWithDetails[] || [];
+    return data || [];
   } catch (error) {
-    console.error("Error fetching payments:", error);
+    console.error("Error fetching user payments:", error);
     return [];
   }
 };
 
-// Create a new payment record
-export const createPayment = async (payment: PaymentInsert): Promise<boolean> => {
+// Record payment in database
+export const recordPayment = async (paymentData: Omit<PaymentInsert, 'user_id'>): Promise<boolean> => {
   try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) return false;
+
     const { error } = await supabase
       .from('payments')
-      .insert(payment);
+      .insert({
+        ...paymentData,
+        user_id: user.user.id
+      });
 
-    if (error) {
-      toast.error("Failed to create payment record");
-      console.error(error);
-      return false;
-    }
-
-    toast.success("Payment recorded successfully");
+    if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error creating payment:", error);
-    toast.error("Failed to create payment record");
+    console.error("Error recording payment:", error);
     return false;
   }
 };
 
-// Update payment status
-export const updatePaymentStatus = async (
-  paymentId: string, 
-  status: string, 
-  receiptUrl?: string
-): Promise<boolean> => {
+// Validate payment completion
+export const validatePayment = async (sessionId: string): Promise<boolean> => {
   try {
-    const updateData: any = { payment_status: status };
-    if (receiptUrl) updateData.receipt_url = receiptUrl;
+    const { data, error } = await supabase.functions.invoke('validate-payment', {
+      body: { session_id: sessionId }
+    });
 
-    const { error } = await supabase
-      .from('payments')
-      .update(updateData)
-      .eq('id', paymentId);
-
-    if (error) {
-      toast.error("Failed to update payment status");
-      console.error(error);
-      return false;
-    }
-
-    return true;
+    if (error) throw error;
+    
+    return data?.success || false;
   } catch (error) {
-    console.error("Error updating payment status:", error);
-    toast.error("Failed to update payment status");
+    console.error("Error validating payment:", error);
     return false;
   }
 };
