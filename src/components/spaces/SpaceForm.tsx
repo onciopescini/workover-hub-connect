@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { toast } from "sonner";
 import { Loader2, Upload, X, Plus, Image } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
@@ -48,6 +48,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     price_per_hour: 0,
     price_per_day: 0,
     address: "",
+    latitude: undefined,
+    longitude: undefined,
     photos: [],
     rules: "",
     ideal_guest_tags: [],
@@ -88,6 +90,11 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       newErrors.address = "Address is required";
     }
 
+    // Validate coordinates if address is provided
+    if (formData.address?.trim() && (!formData.latitude || !formData.longitude)) {
+      newErrors.address = "Seleziona un indirizzo dai suggerimenti per ottenere le coordinate GPS";
+    }
+
     if (formData.max_capacity === undefined || formData.max_capacity < 1) {
       newErrors.max_capacity = "Capacity must be at least 1";
     }
@@ -120,6 +127,24 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleAddressChange = (address: string, coordinates?: { lat: number; lng: number }) => {
+    setFormData((prev) => ({
+      ...prev,
+      address,
+      latitude: coordinates?.lat,
+      longitude: coordinates?.lng
+    }));
+    
+    // Clear address error when coordinates are provided
+    if (coordinates && errors.address) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.address;
         return newErrors;
       });
     }
@@ -249,8 +274,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         price_per_hour: formData.price_per_hour!,
         price_per_day: formData.price_per_day!,
         address: formData.address!,
-        latitude: formData.latitude || 0, // se il campo esiste, altrimenti rimuovi
-        longitude: formData.longitude || 0, // idem
+        latitude: formData.latitude || 0,
+        longitude: formData.longitude || 0,
         photos: photoUrls,
         rules: formData.rules || "",
         ideal_guest_tags: formData.ideal_guest_tags || [],
@@ -562,26 +587,12 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
           <CardTitle>Location & Pricing</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="address">
-              Full Address <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="address"
-              value={formData.address || ""}
-              onChange={(e) => handleInputChange("address", e.target.value)}
-              placeholder="Full address including street, city, state, and zip code"
-              className="min-h-[80px]"
-              disabled={isSubmitting}
-            />
-            {errors.address && (
-              <p className="text-sm text-red-500">{errors.address}</p>
-            )}
-            <p className="text-sm text-gray-500">
-              This address will be used to show the location on a map. 
-              For privacy, we'll only show the approximate location to guests.
-            </p>
-          </div>
+          <AddressAutocomplete
+            value={formData.address || ""}
+            onChange={handleAddressChange}
+            error={errors.address}
+            disabled={isSubmitting}
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
