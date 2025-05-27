@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { BasicInformation } from "./BasicInformation";
 import { SpaceDetails } from "./SpaceDetails";
 import { LocationPricing } from "./LocationPricing";
+import { AvailabilityScheduler } from "./AvailabilityScheduler";
 import { Photos } from "./Photos";
 import { PublishingOptions } from "./PublishingOptions";
 import {
@@ -44,6 +44,18 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     ideal_guest_tags: [],
     event_friendly_tags: [],
     confirmation_type: "host_approval",
+    availability: { 
+      recurring: {
+        monday: { enabled: false, slots: [] },
+        tuesday: { enabled: false, slots: [] },
+        wednesday: { enabled: false, slots: [] },
+        thursday: { enabled: false, slots: [] },
+        friday: { enabled: false, slots: [] },
+        saturday: { enabled: false, slots: [] },
+        sunday: { enabled: false, slots: [] }
+      }, 
+      exceptions: [] 
+    },
     published: false
   });
   
@@ -55,6 +67,18 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     if (initialData) {
       setFormData({
         ...initialData,
+        availability: initialData.availability || { 
+          recurring: {
+            monday: { enabled: false, slots: [] },
+            tuesday: { enabled: false, slots: [] },
+            wednesday: { enabled: false, slots: [] },
+            thursday: { enabled: false, slots: [] },
+            friday: { enabled: false, slots: [] },
+            saturday: { enabled: false, slots: [] },
+            sunday: { enabled: false, slots: [] }
+          }, 
+          exceptions: [] 
+        }
       });
       
       // If we have photos in the initial data, set up preview URLs
@@ -104,6 +128,14 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       newErrors.work_environment = "Work environment is required";
     }
 
+    // Validate availability - at least one day should be enabled
+    const hasAvailability = formData.availability?.recurring && 
+      Object.values(formData.availability.recurring).some(day => day.enabled && day.slots.length > 0);
+    
+    if (!hasAvailability) {
+      newErrors.availability = "Devi impostare almeno un giorno e orario di disponibilità";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -134,6 +166,19 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.address;
+        return newErrors;
+      });
+    }
+  };
+
+  const handleAvailabilityChange = (availability: any) => {
+    setFormData((prev) => ({ ...prev, availability }));
+    
+    // Clear availability error when changed
+    if (errors.availability) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.availability;
         return newErrors;
       });
     }
@@ -348,6 +393,15 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         errors={errors}
         isSubmitting={isSubmitting}
       />
+
+      <AvailabilityScheduler
+        availability={formData.availability || { recurring: {}, exceptions: [] }}
+        onAvailabilityChange={handleAvailabilityChange}
+        isSubmitting={isSubmitting}
+      />
+      {errors.availability && (
+        <p className="text-sm text-red-500 mt-2">{errors.availability}</p>
+      )}
 
       <Photos
         photoPreviewUrls={photoPreviewUrls}
