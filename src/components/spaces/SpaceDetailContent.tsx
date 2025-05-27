@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   MapPin, 
   Star, 
@@ -33,9 +34,17 @@ export const SpaceDetailContent = () => {
   const [host, setHost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedStartTime, setSelectedStartTime] = useState<string>('');
+  const [selectedEndTime, setSelectedEndTime] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState(0);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Generate time slots (9 AM to 6 PM in 1-hour intervals)
+  const timeSlots = Array.from({ length: 10 }, (_, i) => {
+    const hour = 9 + i;
+    return `${hour.toString().padStart(2, '0')}:00`;
+  });
 
   // Fetch space details
   useEffect(() => {
@@ -102,6 +111,16 @@ export const SpaceDetailContent = () => {
       return;
     }
 
+    if (!selectedStartTime || !selectedEndTime) {
+      toast.error('Seleziona orario di inizio e fine');
+      return;
+    }
+
+    if (selectedStartTime >= selectedEndTime) {
+      toast.error('L\'orario di fine deve essere successivo a quello di inizio');
+      return;
+    }
+
     // Check if user has completed onboarding
     if (!authState.profile?.onboarding_completed) {
       toast.error('Completa il tuo profilo per poter prenotare');
@@ -118,6 +137,15 @@ export const SpaceDetailContent = () => {
     setBookingLoading(true);
 
     try {
+      console.log('Creating booking with data:', {
+        space_id: space.id,
+        user_id: authState.user.id,
+        booking_date: format(selectedDate, 'yyyy-MM-dd'),
+        start_time: selectedStartTime,
+        end_time: selectedEndTime,
+        status: space.confirmation_type === 'instant' ? 'confirmed' : 'pending'
+      });
+
       const { data, error } = await supabase
         .from('bookings')
         .insert({
@@ -129,7 +157,12 @@ export const SpaceDetailContent = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Booking error:', error);
+        throw error;
+      }
+
+      console.log('Booking created successfully:', data);
 
       toast.success(
         space.confirmation_type === 'instant' 
@@ -137,6 +170,7 @@ export const SpaceDetailContent = () => {
           : 'Richiesta di prenotazione inviata all\'host'
       );
       
+      // Navigate to bookings page
       navigate('/bookings');
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -147,7 +181,7 @@ export const SpaceDetailContent = () => {
   };
 
   const handleBackClick = () => {
-    if (authState.isAuthenticated) {
+    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
       navigate('/dashboard');
     } else {
       navigate('/spaces');
@@ -375,9 +409,45 @@ export const SpaceDetailContent = () => {
                     </Popover>
                   </div>
 
+                  {/* Time selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Orario inizio</label>
+                      <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Inizio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timeSlots.map((time) => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Orario fine</label>
+                      <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Fine" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {timeSlots.map((time) => (
+                            <SelectItem 
+                              key={time} 
+                              value={time}
+                              disabled={selectedStartTime && time <= selectedStartTime}
+                            >
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
                   <Button
                     onClick={handleBooking}
-                    disabled={!selectedDate || bookingLoading}
+                    disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading}
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     {bookingLoading ? 'Prenotazione...' : 
