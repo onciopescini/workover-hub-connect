@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -141,8 +142,6 @@ export const SpaceDetailContent = () => {
         space_id: space.id,
         user_id: authState.user.id,
         booking_date: format(selectedDate, 'yyyy-MM-dd'),
-        start_time: selectedStartTime,
-        end_time: selectedEndTime,
         status: space.confirmation_type === 'instant' ? 'confirmed' : 'pending'
       });
 
@@ -152,8 +151,6 @@ export const SpaceDetailContent = () => {
           space_id: space.id,
           user_id: authState.user.id,
           booking_date: format(selectedDate, 'yyyy-MM-dd'),
-          start_time: selectedStartTime,
-          end_time: selectedEndTime,
           status: space.confirmation_type === 'instant' ? 'confirmed' : 'pending'
         })
         .select()

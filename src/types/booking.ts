@@ -35,6 +35,21 @@ export type BookingWithDetails = {
   } | null;
 };
 
+// Raw booking data from database
+export type RawBookingData = {
+  id: string;
+  space_id: string;
+  user_id: string;
+  booking_date: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  cancelled_at?: string | null;
+  cancellation_fee?: number | null;
+  cancelled_by_host?: boolean | null;
+  cancellation_reason?: string | null;
+};
+
 // Message type definition to match our database schema
 export type Message = {
   id: string;
