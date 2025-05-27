@@ -5,8 +5,22 @@ export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 export type BookingUpdate = Database["public"]["Tables"]["bookings"]["Update"];
 
-export type BookingWithDetails = Booking & {
+export type BookingWithDetails = {
+  id: string;
+  space_id: string;
+  user_id: string;
+  booking_date: string;
+  start_time?: string;
+  end_time?: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  cancelled_at?: string | null;
+  cancellation_fee?: number | null;
+  cancelled_by_host?: boolean | null;
+  cancellation_reason?: string | null;
   space: {
+    id: string;
     title: string;
     address: string;
     photos: string[];
@@ -14,6 +28,7 @@ export type BookingWithDetails = Booking & {
     price_per_day?: number;
   };
   coworker?: {
+    id: string;
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
@@ -51,7 +66,7 @@ export const BOOKING_STATUS_COLORS = {
 };
 
 export const BOOKING_STATUS_LABELS = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  cancelled: "Cancelled",
+  pending: "In attesa",
+  confirmed: "Confermata", 
+  cancelled: "Annullata",
 };

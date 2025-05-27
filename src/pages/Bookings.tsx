@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -39,78 +40,188 @@ export default function Bookings() {
 
       try {
         setIsLoading(true);
+        console.log('Fetching bookings for user:', authState.user.id);
 
         // Fetch bookings where user is the coworker
-        const { data: coworkerBookings, error: coworkerError } = await supabase
+        const { data: coworkerBookingsRaw, error: coworkerError } = await supabase
           .from("bookings")
           .select(`
-            *,
-            space:space_id (
+            id,
+            space_id,
+            user_id,
+            booking_date,
+            start_time,
+            end_time,
+            status,
+            created_at,
+            updated_at,
+            cancelled_at,
+            cancellation_fee,
+            cancelled_by_host,
+            cancellation_reason
+          `)
+          .eq("user_id", authState.user.id)
+          .order("booking_date", { ascending: false });
+
+        if (coworkerError) {
+          console.error('Coworker bookings error:', coworkerError);
+          throw coworkerError;
+        }
+
+        console.log('Raw coworker bookings:', coworkerBookingsRaw);
+
+        // Get space details for coworker bookings
+        let coworkerBookings: BookingWithDetails[] = [];
+        if (coworkerBookingsRaw && coworkerBookingsRaw.length > 0) {
+          const spaceIds = coworkerBookingsRaw.map(b => b.space_id);
+          const { data: spacesData, error: spacesError } = await supabase
+            .from("spaces")
+            .select(`
+              id,
               title,
               address,
               photos,
               host_id,
               price_per_day
-            ),
-            coworker:user_id (
-              first_name,
-              last_name,
-              profile_photo_url
-            )
-          `)
-          .eq("user_id", authState.user.id)
-          .order("booking_date", { ascending: false });
+            `)
+            .in("id", spaceIds);
 
-        if (coworkerError) throw coworkerError;
+          if (spacesError) {
+            console.error('Spaces fetch error:', spacesError);
+            throw spacesError;
+          }
+
+          console.log('Spaces data:', spacesData);
+
+          // Combine booking and space data
+          coworkerBookings = coworkerBookingsRaw.map(booking => ({
+            ...booking,
+            space: spacesData?.find(space => space.id === booking.space_id) || {
+              title: 'Spazio non trovato',
+              address: '',
+              photos: [],
+              host_id: '',
+              price_per_day: 0
+            },
+            coworker: null
+          })) as BookingWithDetails[];
+        }
+
+        console.log('Processed coworker bookings:', coworkerBookings);
 
         // If user is a host, also fetch bookings for their spaces
-        let hostBookings: any[] = [];
-        if (authState.profile?.role === "host") {
+        let hostBookings: BookingWithDetails[] = [];
+        if (authState.profile?.role === "host" || authState.profile?.role === "admin") {
           // First get host's spaces
           const { data: userSpaces, error: spacesError } = await supabase
             .from("spaces")
             .select("id")
             .eq("host_id", authState.user.id);
 
-          if (spacesError) throw spacesError;
+          if (spacesError) {
+            console.error('User spaces error:', spacesError);
+            throw spacesError;
+          }
+
+          console.log('User spaces:', userSpaces);
 
           if (userSpaces && userSpaces.length > 0) {
             const spaceIds = userSpaces.map(s => s.id);
             
-            const { data: hostBookingsData, error: hostError } = await supabase
+            // Get bookings for host's spaces
+            const { data: hostBookingsRaw, error: hostError } = await supabase
               .from("bookings")
               .select(`
-                *,
-                space:space_id (
-                  title,
-                  address,
-                  photos,
-                  host_id,
-                  price_per_day
-                ),
-                coworker:user_id (
-                  first_name,
-                  last_name,
-                  profile_photo_url
-                )
+                id,
+                space_id,
+                user_id,
+                booking_date,
+                start_time,
+                end_time,
+                status,
+                created_at,
+                updated_at,
+                cancelled_at,
+                cancellation_fee,
+                cancelled_by_host,
+                cancellation_reason
               `)
               .in("space_id", spaceIds)
               .neq("user_id", authState.user.id) // Exclude own bookings as coworker
               .order("booking_date", { ascending: false });
 
-            if (hostError) throw hostError;
-            hostBookings = hostBookingsData || [];
+            if (hostError) {
+              console.error('Host bookings error:', hostError);
+              throw hostError;
+            }
+
+            console.log('Raw host bookings:', hostBookingsRaw);
+
+            if (hostBookingsRaw && hostBookingsRaw.length > 0) {
+              // Get space details
+              const { data: hostSpacesData, error: hostSpacesError } = await supabase
+                .from("spaces")
+                .select(`
+                  id,
+                  title,
+                  address,
+                  photos,
+                  host_id,
+                  price_per_day
+                `)
+                .in("id", spaceIds);
+
+              if (hostSpacesError) {
+                console.error('Host spaces fetch error:', hostSpacesError);
+                throw hostSpacesError;
+              }
+
+              // Get coworker details
+              const coworkerIds = hostBookingsRaw.map(b => b.user_id);
+              const { data: coworkersData, error: coworkersError } = await supabase
+                .from("profiles")
+                .select(`
+                  id,
+                  first_name,
+                  last_name,
+                  profile_photo_url
+                `)
+                .in("id", coworkerIds);
+
+              if (coworkersError) {
+                console.error('Coworkers fetch error:', coworkersError);
+              }
+
+              console.log('Coworkers data:', coworkersData);
+
+              // Combine host booking data
+              hostBookings = hostBookingsRaw.map(booking => ({
+                ...booking,
+                space: hostSpacesData?.find(space => space.id === booking.space_id) || {
+                  title: 'Spazio non trovato',
+                  address: '',
+                  photos: [],
+                  host_id: authState.user?.id || '',
+                  price_per_day: 0
+                },
+                coworker: coworkersData?.find(coworker => coworker.id === booking.user_id) || null
+              })) as BookingWithDetails[];
+            }
           }
         }
 
-        // Combine and deduplicate bookings
-        const allBookings = [...(coworkerBookings || []), ...hostBookings];
+        console.log('Processed host bookings:', hostBookings);
+
+        // Combine all bookings and remove duplicates
+        const allBookings = [...coworkerBookings, ...hostBookings];
         const uniqueBookings = allBookings.filter((booking, index, self) => 
           index === self.findIndex(b => b.id === booking.id)
         );
 
-        setBookings(uniqueBookings as unknown as BookingWithDetails[]);
-        setFilteredBookings(uniqueBookings as unknown as BookingWithDetails[]);
+        console.log('All unique bookings:', uniqueBookings);
+
+        setBookings(uniqueBookings);
+        setFilteredBookings(uniqueBookings);
 
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -143,12 +254,12 @@ export default function Bookings() {
     if (userRole === "host") {
       // Show coworker info
       return {
-        name: `${booking.coworker?.first_name} ${booking.coworker?.last_name}`,
+        name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
         photo: booking.coworker?.profile_photo_url,
         role: "Coworker"
       };
     } else {
-      // For coworker view, we'd need host info - for now show space title
+      // For coworker view, show space title as host identifier
       return {
         name: booking.space?.title || "Spazio",
         photo: null,
@@ -159,7 +270,6 @@ export default function Bookings() {
 
   // Check if booking can be cancelled
   const canCancelBooking = (booking: BookingWithDetails) => {
-    const userRole = getUserRole(booking);
     return booking.status === "confirmed" || booking.status === "pending";
   };
 
@@ -254,7 +364,7 @@ export default function Bookings() {
                     }
                   </p>
                   {activeTab === "all" && (
-                    <Button onClick={() => navigate("/")} className="bg-[#4F46E5] hover:bg-[#4F46E5]/90">
+                    <Button onClick={() => navigate("/dashboard")} className="bg-[#4F46E5] hover:bg-[#4F46E5]/90">
                       Trova spazi
                     </Button>
                   )}
@@ -273,11 +383,11 @@ export default function Bookings() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <CardTitle className="text-lg font-semibold text-gray-900">
-                              {booking.space?.title}
+                              {booking.space?.title || 'Spazio senza titolo'}
                             </CardTitle>
                             <div className="flex items-center text-sm text-gray-600 mt-1">
                               <MapPin className="w-4 h-4 mr-1" />
-                              {booking.space?.address}
+                              {booking.space?.address || 'Indirizzo non disponibile'}
                             </div>
                           </div>
                           <Badge className={BOOKING_STATUS_COLORS[booking.status as keyof typeof BOOKING_STATUS_COLORS]}>
@@ -306,6 +416,11 @@ export default function Bookings() {
                               <Calendar className="w-4 h-4 mr-1" />
                               {formattedDate}
                             </div>
+                            {booking.start_time && booking.end_time && (
+                              <p className="text-xs text-gray-500">
+                                {booking.start_time} - {booking.end_time}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500">
                               Tu sei: {userRole === "host" ? "Host" : "Coworker"}
                             </p>
@@ -314,14 +429,6 @@ export default function Bookings() {
 
                         {/* Action buttons */}
                         <div className="flex space-x-2 mt-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/bookings/${booking.id}`)}
-                            className="flex-1"
-                          >
-                            Dettagli
-                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
