@@ -11,17 +11,15 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const PublicSpaces = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     city: '',
     category: '',
-    priceRange: [0, 200] as number[],
-    amenities: [] as string[],
-    workEnvironment: ''
+    maxPrice: '',
+    workEnvironment: '',
+    tags: [] as string[]
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -44,16 +42,13 @@ const PublicSpaces = () => {
         query = query.ilike('address', `%${filters.city}%`);
       }
       if (filters.category) {
-        query = query.eq('category', filters.category as 'home' | 'outdoor' | 'professional');
+        query = query.eq('category', filters.category);
       }
       if (filters.workEnvironment) {
-        query = query.eq('work_environment', filters.workEnvironment as 'silent' | 'controlled' | 'dynamic');
+        query = query.eq('work_environment', filters.workEnvironment);
       }
-      if (filters.priceRange[1] < 200) {
-        query = query.lte('price_per_hour', filters.priceRange[1]);
-      }
-      if (filters.priceRange[0] > 0) {
-        query = query.gte('price_per_hour', filters.priceRange[0]);
+      if (filters.maxPrice) {
+        query = query.lte('price_per_day', parseFloat(filters.maxPrice));
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -69,10 +64,6 @@ const PublicSpaces = () => {
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
-  };
-
-  const handleSpaceClick = (spaceId: string) => {
-    navigate(`/space/${spaceId}`);
   };
 
   if (error) {
@@ -100,10 +91,7 @@ const PublicSpaces = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <SpaceFilters 
-              filters={filters}
-              onFiltersChange={handleFilterChange} 
-            />
+            <SpaceFilters onFilterChange={handleFilterChange} />
           </div>
 
           <div className="lg:w-3/4">
@@ -141,19 +129,11 @@ const PublicSpaces = () => {
                 <LoadingSpinner />
               </div>
             ) : showMap ? (
-              <SpaceMap 
-                spaces={spaces || []} 
-                userLocation={null}
-                onSpaceClick={handleSpaceClick}
-              />
+              <SpaceMap spaces={spaces || []} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {spaces?.map((space) => (
-                  <SpaceCard 
-                    key={space.id} 
-                    space={space} 
-                    onClick={() => handleSpaceClick(space.id)}
-                  />
+                  <SpaceCard key={space.id} space={space} />
                 ))}
                 {spaces?.length === 0 && (
                   <div className="col-span-full text-center py-12">

@@ -11,15 +11,13 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const PublicEvents = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate();
   const [filters, setFilters] = useState({
-    dateRange: '',
-    eventType: '',
-    hasAvailability: false,
+    city: '',
+    category: '',
+    dateRange: null as { from: Date; to?: Date } | null,
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -46,32 +44,16 @@ const PublicEvents = () => {
         .eq('status', 'active')
         .gte('date', new Date().toISOString());
 
-      if (filters.dateRange) {
-        const today = new Date();
-        let startDate = today;
-        let endDate = new Date(today);
-
-        switch (filters.dateRange) {
-          case 'today':
-            endDate.setDate(today.getDate() + 1);
-            break;
-          case 'tomorrow':
-            startDate.setDate(today.getDate() + 1);
-            endDate.setDate(today.getDate() + 2);
-            break;
-          case 'week':
-            endDate.setDate(today.getDate() + 7);
-            break;
-        }
-
-        query = query.gte('date', startDate.toISOString());
-        if (filters.dateRange !== 'week') {
-          query = query.lt('date', endDate.toISOString());
-        }
+      if (filters.city) {
+        query = query.ilike('city', `%${filters.city}%`);
       }
 
-      if (filters.hasAvailability) {
-        query = query.lt('current_participants', query.select('max_participants'));
+      if (filters.dateRange?.from) {
+        query = query.gte('date', filters.dateRange.from.toISOString());
+      }
+
+      if (filters.dateRange?.to) {
+        query = query.lte('date', filters.dateRange.to.toISOString());
       }
 
       const { data, error } = await query.order('date', { ascending: true });
@@ -87,10 +69,6 @@ const PublicEvents = () => {
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
-  };
-
-  const handleEventClick = (eventId: string) => {
-    navigate(`/event/${eventId}`);
   };
 
   if (error) {
@@ -118,10 +96,7 @@ const PublicEvents = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <EventFilters 
-              filters={filters}
-              onFiltersChange={handleFilterChange} 
-            />
+            <EventFilters onFilterChange={handleFilterChange} />
           </div>
 
           <div className="lg:w-3/4">
@@ -159,19 +134,11 @@ const PublicEvents = () => {
                 <LoadingSpinner />
               </div>
             ) : showMap ? (
-              <EventMap 
-                events={events || []} 
-                userLocation={null}
-                onEventClick={handleEventClick}
-              />
+              <EventMap events={events || []} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events?.map((event) => (
-                  <EventCard 
-                    key={event.id} 
-                    event={event} 
-                    onClick={() => handleEventClick(event.id)}
-                  />
+                  <EventCard key={event.id} event={event} />
                 ))}
                 {events?.length === 0 && (
                   <div className="col-span-full text-center py-12">
