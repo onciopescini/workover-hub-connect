@@ -8,12 +8,8 @@ import { SpaceMap } from '@/components/spaces/SpaceMap';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Map, Grid } from 'lucide-react';
-import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
-import { PublicLayout } from '@/components/layout/PublicLayout';
-import { useAuth } from '@/contexts/AuthContext';
 
 const PublicSpaces = () => {
-  const { authState } = useAuth();
   const [filters, setFilters] = useState({
     category: '',
     priceRange: [0, 200],
@@ -89,7 +85,7 @@ const PublicSpaces = () => {
   };
 
   const handleSpaceClick = (spaceId: string) => {
-    window.open(`/space/${spaceId}`, '_blank');
+    window.open(`/spaces/${spaceId}`, '_blank');
   };
 
   if (error) {
@@ -103,7 +99,7 @@ const PublicSpaces = () => {
     );
   }
 
-  const content = (
+  return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -183,13 +179,6 @@ const PublicSpaces = () => {
       </div>
     </div>
   );
-
-  // Use MarketplaceLayout for authenticated users, PublicLayout for guests
-  if (authState.isAuthenticated) {
-    return <MarketplaceLayout>{content}</MarketplaceLayout>;
-  }
-
-  return <PublicLayout>{content}</PublicLayout>;
 };
 
 export default PublicSpaces;
