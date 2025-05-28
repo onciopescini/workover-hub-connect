@@ -33,7 +33,7 @@ interface SocialLinks {
 }
 
 export function SocialMediaSection() {
-  const { authState } = useAuth(); // Rimuovo refreshProfile per evitare chiamate non necessarie
+  const { authState, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [socialLinks, setSocialLinks] = useState<SocialLinks>({
@@ -57,7 +57,7 @@ export function SocialMediaSection() {
   ];
 
   const validateUrl = (url: string): boolean => {
-    if (!url) return true;
+    if (!url) return true; // URL vuoto è valido
     try {
       new URL(url);
       return true;
@@ -76,6 +76,7 @@ export function SocialMediaSection() {
   const handleSave = async () => {
     if (!authState.user) return;
 
+    // Valida tutti gli URL
     const invalidUrls = Object.entries(socialLinks)
       .filter(([_, url]) => url && !validateUrl(url))
       .map(([platform, _]) => platform);
@@ -104,7 +105,7 @@ export function SocialMediaSection() {
 
       if (error) throw error;
 
-      // Non chiamo refreshProfile automaticamente per evitare loop
+      await refreshProfile();
       setIsEditing(false);
       toast.success("Collegamenti social aggiornati con successo!");
       

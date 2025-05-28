@@ -35,7 +35,7 @@ export const ProfileEditForm = () => {
   const validateLinkedInUrl = (url: string): boolean => {
     if (!url.trim()) return true; // Empty is valid
     
-    // Strict LinkedIn URL validation matching database constraint
+    // More flexible LinkedIn URL validation that matches database constraint
     const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/i;
     return linkedinRegex.test(url);
   };
@@ -170,23 +170,13 @@ export const ProfileEditForm = () => {
     try {
       console.log('Saving profile data:', formData);
 
-      // Prepare data for submission
-      const submitData = {
-        ...formData,
-        linkedin_url: formData.linkedin_url.trim() || null // Set to null if empty
-      };
-
       const { error } = await supabase
         .from('profiles')
-        .update(submitData)
+        .update(formData)
         .eq('id', authState.user.id);
 
       if (error) {
         console.error('Profile update error:', error);
-        if (error.message.includes('profiles_linkedin_url_check')) {
-          setLinkedinError('URL LinkedIn non valido. Controlla il formato dell\'URL.');
-          return;
-        }
         throw error;
       }
 

@@ -11,12 +11,10 @@ import { EmptyBookingsState } from "@/components/bookings/EmptyBookingsState";
 import { useBookings } from "@/hooks/useBookings";
 import { cancelBooking } from "@/lib/booking-utils";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, AlertCircle } from "lucide-react";
 
 export default function Bookings() {
   const { authState } = useAuth();
-  const { bookings, setBookings, isLoading, error, refetch } = useBookings();
+  const { bookings, setBookings, isLoading } = useBookings();
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
@@ -84,36 +82,7 @@ export default function Bookings() {
     }
   };
 
-  const handleRetry = () => {
-    refetch();
-  };
-
-  if (authState.isLoading) {
-    return <LoadingScreen />;
-  }
-
-  // Show error state with retry option
-  if (error && !isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center py-12">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Errore nel caricamento
-            </h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <Button onClick={handleRetry} className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Riprova
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
   }
 
@@ -121,26 +90,13 @@ export default function Bookings() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Le tue Prenotazioni
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Gestisci le tue prenotazioni come {authState.profile?.role === "host" ? "host e coworker" : "coworker"}
-            </p>
-          </div>
-          
-          {/* Refresh button */}
-          <Button
-            variant="outline"
-            onClick={handleRetry}
-            className="flex items-center gap-2"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Aggiorna
-          </Button>
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Le tue Prenotazioni
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Gestisci le tue prenotazioni come {authState.profile?.role === "host" ? "host e coworker" : "coworker"}
+          </p>
         </div>
 
         {/* Tabs for filtering */}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +16,14 @@ import { useAuth } from '@/contexts/AuthContext';
 export function UnifiedHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authState, signOut } = useAuth();
+  const { authState, signOut, refreshProfile } = useAuth();
+
+  // Refresh profile when header mounts or location changes
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.user && refreshProfile) {
+      refreshProfile();
+    }
+  }, [authState.isAuthenticated, authState.user, location.pathname, refreshProfile]);
 
   const isActivePath = (path: string) => location.pathname === path;
 
@@ -44,7 +51,7 @@ export function UnifiedHeader() {
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/app/spaces";
+    return "/app/spaces"; // Coworker ora va agli spazi autenticati
   };
 
   const getMainNavItems = () => {
@@ -66,7 +73,11 @@ export function UnifiedHeader() {
     return baseItems;
   };
 
-  const handleNavigation = (path: string) => {
+  const handleNavigation = async (path: string) => {
+    // Refresh profile before navigation to ensure consistent state
+    if (authState.isAuthenticated && refreshProfile) {
+      await refreshProfile();
+    }
     navigate(path);
   };
 
@@ -164,6 +175,7 @@ export function UnifiedHeader() {
                   
                   <DropdownMenuSeparator />
                   
+                  {/* Informational pages moved from "Altro" section */}
                   <DropdownMenuItem onClick={() => handleNavigation('/about')}>
                     <span>Chi siamo</span>
                   </DropdownMenuItem>

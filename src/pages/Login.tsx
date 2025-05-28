@@ -21,46 +21,32 @@ const Login = () => {
 
   // Handle post-login redirect based on user role
   useEffect(() => {
-    // Only redirect if user is authenticated and not loading
-    if (authState.isAuthenticated && !authState.isLoading) {
-      console.log('User authenticated, checking redirect...', authState.profile);
-      
-      if (authState.profile) {
-        if (authState.profile.onboarding_completed) {
-          // Redirect based on role
-          switch (authState.profile.role) {
-            case 'admin':
-              navigate("/admin", { replace: true });
-              break;
-            case 'host':
-              navigate("/host/dashboard", { replace: true });
-              break;
-            case 'coworker':
-              navigate("/app/spaces", { replace: true });
-              break;
-            default:
-              navigate("/app/spaces", { replace: true });
-          }
-        } else {
-          // If user is admin but onboarding not completed, still send to admin
-          if (authState.profile.role === 'admin') {
+    if (!authState.isLoading && authState.isAuthenticated && authState.profile) {
+      if (authState.profile.onboarding_completed) {
+        // Redirect based on role
+        switch (authState.profile.role) {
+          case 'admin':
             navigate("/admin", { replace: true });
-          } else {
-            navigate("/onboarding", { replace: true });
-          }
+            break;
+          case 'host':
+            navigate("/host/dashboard", { replace: true });
+            break;
+          case 'coworker':
+            navigate("/app/spaces", { replace: true }); // Changed to authenticated spaces route
+            break;
+          default:
+            navigate("/app/spaces", { replace: true });
         }
       } else {
-        // If authenticated but no profile yet, wait a bit then redirect to default
-        console.log('Authenticated but no profile, waiting...');
-        setTimeout(() => {
-          if (authState.isAuthenticated && !authState.profile) {
-            console.log('Still no profile after timeout, redirecting to default');
-            navigate("/app/spaces", { replace: true });
-          }
-        }, 3000);
+        // If user is admin but onboarding not completed, still send to admin
+        if (authState.profile.role === 'admin') {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/onboarding", { replace: true });
+        }
       }
     }
-  }, [authState.isAuthenticated, authState.isLoading, authState.profile, navigate]);
+  }, [authState.isLoading, authState.isAuthenticated, authState.profile, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -73,12 +59,9 @@ const Login = () => {
     setError("");
     
     try {
-      console.log('Attempting login...');
       await signIn(formData.email, formData.password);
-      console.log('Login successful');
       // Navigation will be handled by the useEffect above
     } catch (err: any) {
-      console.error('Login error:', err);
       setError(err.message || "Failed to sign in. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
@@ -97,31 +80,6 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
-
-  // Show loading state while auth is initializing
-  if (authState.isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="mx-auto w-12 h-12 text-indigo-500 animate-spin" />
-          <p className="mt-4 text-gray-600">Inizializzazione...</p>
-          <p className="mt-2 text-sm text-gray-500">Se il caricamento continua, ricarica la pagina</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If user is already authenticated, show different loading message
-  if (authState.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="mx-auto w-12 h-12 text-green-500 animate-spin" />
-          <p className="mt-4 text-gray-600">Accesso effettuato, reindirizzamento...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
