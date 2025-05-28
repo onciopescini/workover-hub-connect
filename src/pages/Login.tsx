@@ -21,7 +21,12 @@ const Login = () => {
 
   // Handle post-login redirect based on user role
   useEffect(() => {
-    if (!authState.isLoading && authState.isAuthenticated && authState.profile) {
+    // Add safety checks to prevent errors when authState is not fully loaded
+    if (!authState || authState.isLoading) {
+      return; // Don't do anything while still loading
+    }
+
+    if (authState.isAuthenticated && authState.profile) {
       if (authState.profile.onboarding_completed) {
         // Redirect based on role
         switch (authState.profile.role) {
@@ -32,7 +37,7 @@ const Login = () => {
             navigate("/host/dashboard", { replace: true });
             break;
           case 'coworker':
-            navigate("/app/spaces", { replace: true }); // Changed to authenticated spaces route
+            navigate("/app/spaces", { replace: true });
             break;
           default:
             navigate("/app/spaces", { replace: true });
@@ -46,7 +51,7 @@ const Login = () => {
         }
       }
     }
-  }, [authState.isLoading, authState.isAuthenticated, authState.profile, navigate]);
+  }, [authState, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -80,6 +85,18 @@ const Login = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state while auth is initializing
+  if (!authState || authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="mx-auto w-12 h-12 text-indigo-500 animate-spin" />
+          <p className="mt-4 text-gray-600">Caricamento...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
