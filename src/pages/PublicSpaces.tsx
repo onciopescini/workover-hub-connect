@@ -11,15 +11,17 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const PublicSpaces = () => {
   const { authState } = useAuth();
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     city: '',
     category: '',
-    maxPrice: '',
-    workEnvironment: '',
-    tags: [] as string[]
+    priceRange: [0, 200] as number[],
+    amenities: [] as string[],
+    workEnvironment: ''
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -47,8 +49,11 @@ const PublicSpaces = () => {
       if (filters.workEnvironment) {
         query = query.eq('work_environment', filters.workEnvironment);
       }
-      if (filters.maxPrice) {
-        query = query.lte('price_per_day', parseFloat(filters.maxPrice));
+      if (filters.priceRange[1] < 200) {
+        query = query.lte('price_per_hour', filters.priceRange[1]);
+      }
+      if (filters.priceRange[0] > 0) {
+        query = query.gte('price_per_hour', filters.priceRange[0]);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -64,6 +69,10 @@ const PublicSpaces = () => {
 
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
+  };
+
+  const handleSpaceClick = (spaceId: string) => {
+    navigate(`/space/${spaceId}`);
   };
 
   if (error) {
@@ -91,7 +100,10 @@ const PublicSpaces = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <SpaceFilters onFilterChange={handleFilterChange} />
+            <SpaceFilters 
+              filters={filters}
+              onFiltersChange={handleFilterChange} 
+            />
           </div>
 
           <div className="lg:w-3/4">
@@ -129,11 +141,19 @@ const PublicSpaces = () => {
                 <LoadingSpinner />
               </div>
             ) : showMap ? (
-              <SpaceMap spaces={spaces || []} />
+              <SpaceMap 
+                spaces={spaces || []} 
+                userLocation={null}
+                onSpaceClick={handleSpaceClick}
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {spaces?.map((space) => (
-                  <SpaceCard key={space.id} space={space} />
+                  <SpaceCard 
+                    key={space.id} 
+                    space={space} 
+                    onClick={() => handleSpaceClick(space.id)}
+                  />
                 ))}
                 {spaces?.length === 0 && (
                   <div className="col-span-full text-center py-12">

@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { MessageList } from '@/components/messaging/MessageList';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Messages = () => {
   const { authState } = useAuth();
@@ -80,7 +80,36 @@ const Messages = () => {
             </p>
           </div>
         ) : (
-          <MessageList bookings={bookings} />
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <Card key={booking.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {booking.spaces?.title || 'Spazio'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Data: {new Date(booking.booking_date).toLocaleDateString('it-IT')}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Stato: {booking.status}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => navigate(`/message-conversation/${booking.id}`)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Visualizza messaggi
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </AppLayout>
