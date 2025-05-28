@@ -11,35 +11,45 @@ export const useBookings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Ref per prevenire fetch multipli simultanei
+  // Refs per prevenire fetch multipli simultanei e debouncing
   const isFetchingRef = useRef(false);
   const lastFetchRef = useRef<number>(0);
-  
-  // Debounce timer
+  const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout>();
 
   const fetchBookings = useCallback(async () => {
     if (!authState.user) {
       setIsLoading(false);
+      setBookings([]);
+      setError(null);
       return;
     }
 
-    // Prevenire fetch multipli simultanei
+    // Prevenire fetch multipli simultanei con controllo più stringente
     if (isFetchingRef.current) {
       console.log('Fetch already in progress, skipping...');
       return;
     }
 
-    // Debouncing - non fare fetch se l'ultimo è stato fatto meno di 2 secondi fa
+    // Debouncing aggressivo - non fare fetch se l'ultimo è stato fatto meno di 5 secondi fa
     const now = Date.now();
-    if (now - lastFetchRef.current < 2000) {
+    if (now - lastFetchRef.current < 5000) {
       console.log('Debouncing fetch request...');
       return;
+    }
+
+    // Cancella richieste precedenti se esistono
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
     isFetchingRef.current = true;
     lastFetchRef.current = now;
     setError(null);
+
+    // Crea nuovo AbortController per questa richiesta
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
 
     try {
       console.log('Fetching bookings for user:', authState.user.id);
@@ -63,7 +73,10 @@ export const useBookings = () => {
           cancellation_reason
         `)
         .eq("user_id", authState.user.id)
-        .order("booking_date", { ascending: false });
+        .order("booking_date", { ascending: false })
+        .abortSignal(signal);
+
+      if (signal.aborted) return;
 
       if (coworkerError) {
         console.error('Coworker bookings error:', coworkerError);
@@ -86,7 +99,10 @@ export const useBookings = () => {
             host_id,
             price_per_day
           `)
-          .in("id", spaceIds);
+          .in("id", spaceIds)
+          .abortSignal(signal);
+
+        if (signal.aborted) return;
 
         if (spacesError) {
           console.error('Spaces fetch error:', spacesError);
@@ -117,11 +133,13 @@ export const useBookings = () => {
           const { data: userSpaces, error: spacesError } = await supabase
             .from("spaces")
             .select("id")
-            .eq("host_id", authState.user.id);
+            .eq("host_id", authState.user.id)
+            .abortSignal(signal);
+
+          if (signal.aborted) return;
 
           if (spacesError) {
             console.error('User spaces error:', spacesError);
-            // Non bloccare tutto se non riusciamo a caricare gli spazi dell'host
             console.warn('Failed to load host spaces, skipping host bookings');
           } else if (userSpaces && userSpaces.length > 0) {
             const spaceIds = userSpaces.map(s => s.id);
@@ -145,12 +163,14 @@ export const useBookings = () => {
                 cancellation_reason
               `)
               .in("space_id", spaceIds)
-              .neq("user_id", authState.user.id) // Exclude own bookings as coworker
-              .order("booking_date", { ascending: false });
+              .neq("user_id", authState.user.id)
+              .order("booking_date", { ascending: false })
+              .abortSignal(signal);
+
+            if (signal.aborted) return;
 
             if (hostError) {
               console.error('Host bookings error:', hostError);
-              // Non bloccare tutto per errori delle prenotazioni host
               console.warn('Failed to load host bookings, using only coworker bookings');
             } else if (hostBookingsRaw && hostBookingsRaw.length > 0) {
               // Get space details
@@ -164,7 +184,10 @@ export const useBookings = () => {
                   host_id,
                   price_per_day
                 `)
-                .in("id", spaceIds);
+                .in("id", spaceIds)
+                .abortSignal(signal);
+
+              if (signal.aborted) return;
 
               // Get coworker details
               const coworkerIds = hostBookingsRaw.map(b => b.user_id);
@@ -176,7 +199,10 @@ export const useBookings = () => {
                   last_name,
                   profile_photo_url
                 `)
-                .in("id", coworkerIds);
+                .in("id", coworkerIds)
+                .abortSignal(signal);
+
+              if (signal.aborted) return;
 
               if (hostSpacesError || coworkersError) {
                 console.warn('Failed to load complete host booking details, using fallback data');
@@ -203,6 +229,8 @@ export const useBookings = () => {
         }
       }
 
+      if (signal.aborted) return;
+
       // Combine all bookings and remove duplicates
       const allBookings = [...coworkerBookings, ...hostBookings];
       const uniqueBookings = allBookings.filter((booking, index, self) => 
@@ -213,15 +241,25 @@ export const useBookings = () => {
       setBookings(uniqueBookings);
 
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Fetch was aborted');
+        return;
+      }
+      
       console.error("Error fetching bookings:", error);
       const errorMessage = error.message || "Errore nel caricamento delle prenotazioni";
       setError(errorMessage);
-      toast.error(errorMessage);
+      
+      // Solo mostra toast se non è un errore di abort
+      if (!error.message?.includes('aborted')) {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
       isFetchingRef.current = false;
+      abortControllerRef.current = null;
     }
-  }, [authState.user, authState.profile?.role]);
+  }, []); // Rimuoviamo completamente le dipendenze per evitare il loop
 
   useEffect(() => {
     // Clear any existing debounce timeout
@@ -237,22 +275,30 @@ export const useBookings = () => {
       return;
     }
 
-    // Se il profilo non è ancora caricato, aspetta
+    // Se l'autenticazione è ancora in caricamento, aspetta
     if (authState.isLoading) {
       return;
     }
 
-    // Debounce the fetch call
-    debounceTimeoutRef.current = setTimeout(() => {
-      fetchBookings();
-    }, 500);
+    // Solo se abbiamo un utente autenticato e il profilo è caricato
+    if (authState.user && !authState.isLoading) {
+      // Debounce più aggressivo
+      debounceTimeoutRef.current = setTimeout(() => {
+        fetchBookings();
+      }, 1000);
+    }
 
     return () => {
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
+      
+      // Cancella richieste pendenti quando il componente si smonta o cambia
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [fetchBookings, authState.isLoading]);
+  }, [authState.user?.id, authState.isLoading]); // Solo dipendenze essenziali
 
   return { 
     bookings, 

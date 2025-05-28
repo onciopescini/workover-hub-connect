@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState } from '@/types/auth';
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const validateLinkedInUrl = (url: string): boolean => {
     if (!url || !url.trim()) return true; // Empty is valid
     
-    // Strict LinkedIn URL validation matching database constraint
+    // Più permissivo per rispettare il constraint del database
     const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/i;
     return linkedinRegex.test(url);
   };
@@ -179,14 +180,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Validate LinkedIn URL if provided with strict validation
+      // Validate LinkedIn URL if provided
       if (userData.linkedin_url && userData.linkedin_url.trim()) {
         const linkedinUrl = userData.linkedin_url.trim();
         
         // Format URL if needed
         let formattedUrl = linkedinUrl;
-        if (!linkedinUrl.startsWith('http://') && !linkedinUrl.startsWith('https://')) {
+        
+        // Se l'utente inserisce solo il nome utente, costruisci l'URL completo
+        if (!linkedinUrl.includes('linkedin.com') && !linkedinUrl.includes('http')) {
           formattedUrl = `https://linkedin.com/in/${linkedinUrl}`;
+        }
+        // Se manca il protocollo, aggiungilo
+        else if (linkedinUrl.includes('linkedin.com') && !linkedinUrl.startsWith('http')) {
+          formattedUrl = `https://${linkedinUrl}`;
+        }
+        // Assicurati che sia https
+        else if (linkedinUrl.startsWith('http://linkedin.com')) {
+          formattedUrl = linkedinUrl.replace('http://', 'https://');
         }
         
         // Validate against database constraint
