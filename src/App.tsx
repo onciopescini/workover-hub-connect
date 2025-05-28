@@ -55,7 +55,7 @@ function App() {
         <Toaster />
         <BrowserRouter>
           <Routes>
-            {/* Public routes */}
+            {/* Public routes - for non-authenticated users */}
             <Route path="/" element={<PublicLayout><Outlet /></PublicLayout>}>
               <Route index element={<Index />} />
               <Route path="/spaces" element={<PublicSpaces />} />
@@ -71,6 +71,7 @@ function App() {
             <Route element={<AuthProtected><Outlet /></AuthProtected>}>
               <Route path="/onboarding" element={<Onboarding />} />
               
+              {/* Authenticated user routes - using MarketplaceLayout for full header */}
               <Route element={<MarketplaceLayout><Outlet /></MarketplaceLayout>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
@@ -87,7 +88,10 @@ function App() {
                 <Route path="/reports" element={<UserReportsPage />} />
                 <Route path="/waitlists" element={<WaitlistsPage />} />
                 <Route path="/bidirectional-reviews" element={<BidirectionalReviews />} />
-                {/* Add protected space detail route for authenticated users */}
+                
+                {/* Authenticated routes for spaces and events - these will show the full header */}
+                <Route path="/app/spaces" element={<PublicSpaces />} />
+                <Route path="/app/events" element={<PublicEvents />} />
                 <Route path="/app/spaces/:id" element={<SpaceDetail />} />
                 <Route path="/app/events/:id" element={<EventDetail />} />
               </Route>

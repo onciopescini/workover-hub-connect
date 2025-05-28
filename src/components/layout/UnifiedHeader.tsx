@@ -43,13 +43,13 @@ export function UnifiedHeader() {
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/spaces"; // Coworker ora va direttamente agli spazi
+    return "/app/spaces"; // Coworker ora va agli spazi autenticati
   };
 
   const getMainNavItems = () => {
     const baseItems = [
-      { path: '/spaces', label: 'Spazi', icon: Building2 },
-      { path: '/events', label: 'Eventi', icon: Calendar },
+      { path: '/app/spaces', label: 'Spazi', icon: Building2 },
+      { path: '/app/events', label: 'Eventi', icon: Calendar },
     ];
 
     // Add coworker-specific navigation items when authenticated

@@ -32,10 +32,10 @@ const Login = () => {
             navigate("/host/dashboard", { replace: true });
             break;
           case 'coworker':
-            navigate("/spaces", { replace: true }); // Changed from /dashboard to /spaces
+            navigate("/app/spaces", { replace: true }); // Changed to authenticated spaces route
             break;
           default:
-            navigate("/spaces", { replace: true });
+            navigate("/app/spaces", { replace: true });
         }
       } else {
         // If user is admin but onboarding not completed, still send to admin
