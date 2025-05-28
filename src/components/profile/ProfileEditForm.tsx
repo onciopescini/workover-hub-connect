@@ -17,6 +17,13 @@ export const ProfileEditForm = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkedinError, setLinkedinError] = useState('');
+  
+  // Helper function to parse interests from string to array
+  const parseInterests = (interests: string | null): string => {
+    if (!interests || interests.trim() === '') return '';
+    return interests;
+  };
+
   const [formData, setFormData] = useState({
     first_name: authState.profile?.first_name || '',
     last_name: authState.profile?.last_name || '',
@@ -27,7 +34,7 @@ export const ProfileEditForm = () => {
     bio: authState.profile?.bio || '',
     location: authState.profile?.location || '',
     skills: authState.profile?.skills || '',
-    interests: authState.profile?.interests || '',
+    interests: parseInterests(authState.profile?.interests),
     linkedin_url: authState.profile?.linkedin_url || '',
     website: authState.profile?.website || '',
   });
@@ -375,7 +382,7 @@ export const ProfileEditForm = () => {
                   id="interests"
                   value={formData.interests}
                   onChange={(e) => handleInputChange('interests', e.target.value)}
-                  placeholder="I tuoi interessi..."
+                  placeholder="I tuoi interessi separati da virgole..."
                   rows={2}
                 />
               </div>

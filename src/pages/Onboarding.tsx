@@ -53,8 +53,15 @@ const Onboarding = () => {
     setIsLoading(true);
 
     try {
+      // Convert interests array to comma-separated string for database
+      const interestsString = formData.interests.length > 0 ? formData.interests.join(',') : '';
+      
       await updateProfile({
-        ...formData,
+        role: formData.role,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        bio: formData.bio,
+        interests: interestsString,
         onboarding_completed: true,
       });
 

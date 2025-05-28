@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MapPin, Calendar, Mail, Phone } from 'lucide-react';
+import { Edit, MapPin, Calendar, Mail } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Profile = () => {
   const { profile, isLoading } = useProfile();
+  const { authState } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
   if (isLoading) {
@@ -71,18 +73,28 @@ const Profile = () => {
     }
   };
 
+  // Helper function to parse interests from string to array
+  const parseInterests = (interests: string | null): string[] => {
+    if (!interests || interests.trim() === '') return [];
+    return interests.split(',').map(item => item.trim()).filter(item => item.length > 0);
+  };
+
   if (isEditing) {
     return (
       <AppLayout title="Modifica Profilo">
         <div className="max-w-4xl mx-auto p-4 md:p-6">
-          <ProfileEditForm 
-            profile={profile} 
-            onEditComplete={handleEditComplete}
-          />
+          <ProfileEditForm />
+          <div className="mt-6">
+            <Button onClick={handleEditComplete} variant="outline">
+              Torna al Profilo
+            </Button>
+          </div>
         </div>
       </AppLayout>
     );
   }
+
+  const parsedInterests = parseInterests(profile.interests);
 
   return (
     <AppLayout title="Il tuo Profilo">
@@ -125,22 +137,16 @@ const Profile = () => {
               <CardTitle>Informazioni Personali</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {profile.email && (
+              {authState.user?.email && (
                 <div className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{profile.email}</span>
+                  <span>{authState.user.email}</span>
                 </div>
               )}
-              {profile.phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="h-4 w-4 text-gray-500" />
-                  <span>{profile.phone}</span>
-                </div>
-              )}
-              {(profile.city || profile.country) && (
+              {profile.location && (
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
-                  <span>{[profile.city, profile.country].filter(Boolean).join(', ')}</span>
+                  <span>{profile.location}</span>
                 </div>
               )}
               <div className="flex items-center space-x-2">
@@ -151,14 +157,14 @@ const Profile = () => {
           </Card>
 
           {/* Interessi */}
-          {profile.interests && profile.interests.length > 0 && (
+          {parsedInterests.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Interessi</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {profile.interests.map((interest, index) => (
+                  {parsedInterests.map((interest, index) => (
                     <Badge key={index} variant="outline">
                       {interest}
                     </Badge>
