@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,13 +10,14 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { EventFilters as EventFiltersType } from '@/types/eventFilters';
 
 const PublicEvents = () => {
   const { authState } = useAuth();
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<EventFiltersType>({
     city: '',
     category: '',
-    dateRange: null as { from: Date; to?: Date } | null,
+    dateRange: null,
   });
   const [showMap, setShowMap] = useState(false);
 
@@ -71,7 +71,7 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFiltersChange = (newFilters: typeof filters) => {
+  const handleFiltersChange = (newFilters: EventFiltersType) => {
     setFilters(newFilters);
   };
 

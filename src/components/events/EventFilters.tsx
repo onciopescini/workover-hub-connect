@@ -9,23 +9,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Filter, Calendar, MapPin } from 'lucide-react';
-
-interface EventFiltersProps {
-  filters: {
-    city: string;
-    category: string;
-    dateRange: { from: Date; to?: Date } | null;
-  };
-  onFiltersChange: (filters: {
-    city: string;
-    category: string;
-    dateRange: { from: Date; to?: Date } | null;
-  }) => void;
-}
+import { EventFiltersProps } from '@/types/eventFilters';
 
 export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
-  const updateFilter = (key: string, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+  const updateCity = (city: string) => {
+    onFiltersChange({ ...filters, city });
+  };
+
+  const updateCategory = (category: string) => {
+    onFiltersChange({ ...filters, category });
   };
 
   const setDateRange = (range: string) => {
@@ -36,19 +28,23 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
+    let dateRange: { from: Date; to?: Date } | null = null;
+
     switch (range) {
       case 'today':
-        updateFilter('dateRange', { from: today });
+        dateRange = { from: today };
         break;
       case 'tomorrow':
-        updateFilter('dateRange', { from: tomorrow });
+        dateRange = { from: tomorrow };
         break;
       case 'week':
-        updateFilter('dateRange', { from: today, to: nextWeek });
+        dateRange = { from: today, to: nextWeek };
         break;
       default:
-        updateFilter('dateRange', null);
+        dateRange = null;
     }
+
+    onFiltersChange({ ...filters, dateRange });
   };
 
   const clearAllFilters = () => {
@@ -74,7 +70,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
         <Input
           placeholder="Cerca per città..."
           value={filters.city}
-          onChange={(e) => updateFilter('city', e.target.value)}
+          onChange={(e) => updateCity(e.target.value)}
         />
       </div>
 
@@ -91,19 +87,19 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-full">
-            <DropdownMenuItem onClick={() => updateFilter('category', '')}>
+            <DropdownMenuItem onClick={() => updateCategory('')}>
               Tutte le categorie
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => updateFilter('category', 'networking')}>
+            <DropdownMenuItem onClick={() => updateCategory('networking')}>
               Networking
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => updateFilter('category', 'workshop')}>
+            <DropdownMenuItem onClick={() => updateCategory('workshop')}>
               Workshop
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => updateFilter('category', 'conference')}>
+            <DropdownMenuItem onClick={() => updateCategory('conference')}>
               Conference
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => updateFilter('category', 'social')}>
+            <DropdownMenuItem onClick={() => updateCategory('social')}>
               Social
             </DropdownMenuItem>
           </DropdownMenuContent>
