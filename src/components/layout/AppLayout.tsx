@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,20 +35,17 @@ export function AppLayout({
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/dashboard";
+    return "/spaces";
   };
 
   const getNavLinks = () => {
     const role = authState.profile?.role;
-    const baseLinks = [
-      { icon: Home, label: "Dashboard", href: getDashboardUrl() },
-      { icon: Calendar, label: "Prenotazioni", href: "/bookings" },
-      { icon: MessageSquare, label: "Messaggi", href: "/messages" },
-    ];
 
     if (role === "host") {
       return [
-        ...baseLinks,
+        { icon: Home, label: "Dashboard", href: "/host/dashboard" },
+        { icon: Calendar, label: "Prenotazioni", href: "/bookings" },
+        { icon: MessageSquare, label: "Messaggi", href: "/messages" },
         { icon: CreditCard, label: "Spazi", href: "/spaces/manage" },
         { icon: Settings, label: "Host Dashboard", href: "/host/dashboard" },
       ];
@@ -61,12 +59,8 @@ export function AppLayout({
       ];
     }
 
-    // Solo i coworker possono accedere al networking
-    if (role === "coworker") {
-      baseLinks.splice(3, 0, { icon: Users, label: "Networking", href: "/networking" });
-    }
-
-    return baseLinks;
+    // For coworkers, don't show navigation here as it's now in the main header
+    return [];
   };
 
   const handleBackClick = () => {
@@ -105,6 +99,7 @@ export function AppLayout({
 
   // Don't show user menu for admin users
   const showUserMenu = authState.profile?.role !== "admin";
+  const navLinks = getNavLinks();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -187,33 +182,35 @@ export function AppLayout({
         </div>
       </nav>
 
-      {/* Quick Navigation Bar (Mobile-friendly) */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 py-2 overflow-x-auto">
-            {getNavLinks().map((link) => {
-              const Icon = link.icon;
-              const isActive = isCurrentPath(link.href);
-              
-              return (
-                <Button
-                  key={link.href}
-                  variant={isActive ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => navigate(link.href)}
-                  className={`flex items-center gap-2 whitespace-nowrap ${
-                    isActive ? "bg-[#4F46E5] text-white" : ""
-                  }`}
-                  aria-label={link.label}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden md:inline">{link.label}</span>
-                </Button>
-              );
-            })}
+      {/* Quick Navigation Bar (Only for hosts and admins) */}
+      {navLinks.length > 0 && (
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-1 py-2 overflow-x-auto">
+              {navLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = isCurrentPath(link.href);
+                
+                return (
+                  <Button
+                    key={link.href}
+                    variant={isActive ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => navigate(link.href)}
+                    className={`flex items-center gap-2 whitespace-nowrap ${
+                      isActive ? "bg-[#4F46E5] text-white" : ""
+                    }`}
+                    aria-label={link.label}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden md:inline">{link.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1">

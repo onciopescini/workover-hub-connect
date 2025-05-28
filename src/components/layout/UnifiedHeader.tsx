@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Building2, User, LogOut } from "lucide-react";
+import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 
 export function UnifiedHeader() {
@@ -46,6 +46,25 @@ export function UnifiedHeader() {
     return "/spaces"; // Coworker ora va direttamente agli spazi
   };
 
+  const getMainNavItems = () => {
+    const baseItems = [
+      { path: '/spaces', label: 'Spazi', icon: Building2 },
+      { path: '/events', label: 'Eventi', icon: Calendar },
+    ];
+
+    // Add coworker-specific navigation items when authenticated
+    if (authState.isAuthenticated && authState.profile?.role === "coworker") {
+      return [
+        ...baseItems,
+        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
+        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+        { path: '/networking', label: 'Networking', icon: Users },
+      ];
+    }
+
+    return baseItems;
+  };
+
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,43 +82,22 @@ export function UnifiedHeader() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Button
-              variant={isActivePath('/spaces') ? 'default' : 'ghost'}
-              onClick={() => navigate('/spaces')}
-              className={isActivePath('/spaces') ? 'bg-indigo-600 text-white' : ''}
-            >
-              Spazi
-            </Button>
-            
-            <Button
-              variant={isActivePath('/events') ? 'default' : 'ghost'}
-              onClick={() => navigate('/events')}
-              className={isActivePath('/events') ? 'bg-indigo-600 text-white' : ''}
-            >
-              Eventi
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  Altro <ChevronDown className="h-4 w-4" />
+            {getMainNavItems().map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.path}
+                  variant={isActivePath(item.path) ? 'default' : 'ghost'}
+                  onClick={() => navigate(item.path)}
+                  className={`flex items-center gap-2 ${
+                    isActivePath(item.path) ? 'bg-indigo-600 text-white' : ''
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/about')}>
-                  Chi siamo
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/faq')}>
-                  FAQ
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/terms')}>
-                  Termini di servizio
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/privacy')}>
-                  Privacy Policy
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              );
+            })}
           </nav>
 
           {/* Auth section */}
@@ -158,6 +156,23 @@ export function UnifiedHeader() {
                     <User className="mr-2 h-4 w-4" />
                     <span>Visualizza Profilo</span>
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Informational pages moved from "Altro" section */}
+                  <DropdownMenuItem onClick={() => navigate('/about')}>
+                    <span>Chi siamo</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/faq')}>
+                    <span>FAQ</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/terms')}>
+                    <span>Termini di servizio</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/privacy')}>
+                    <span>Privacy Policy</span>
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
