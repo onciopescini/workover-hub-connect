@@ -8,12 +8,9 @@ import { EventMap } from '@/components/events/EventMap';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Map, Grid } from 'lucide-react';
-import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
-import { PublicLayout } from '@/components/layout/PublicLayout';
-import { useAuth } from '@/contexts/AuthContext';
 
-// Simple, explicit types to avoid TypeScript recursion
-type SimpleEvent = {
+// Simplified types to avoid TypeScript recursion
+type BasicEvent = {
   id: string;
   title: string;
   description: string | null;
@@ -40,15 +37,14 @@ type SimpleEvent = {
   } | null;
 };
 
-type EventFilters = {
+type FilterState = {
   city: string;
   category: string;
   dateRange: { from: string; to?: string } | null;
 };
 
 const PublicEvents = () => {
-  const { authState } = useAuth();
-  const [filters, setFilters] = useState<EventFilters>({
+  const [filters, setFilters] = useState<FilterState>({
     city: '',
     category: '',
     dateRange: null,
@@ -57,11 +53,11 @@ const PublicEvents = () => {
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['public-events', filters],
-    queryFn: async (): Promise<SimpleEvent[]> => {
+    queryFn: async (): Promise<BasicEvent[]> => {
       try {
         console.log('Fetching events with filters:', filters);
         
-        // Step 1: Get basic events data only
+        // Get basic events data
         let query = supabase
           .from('events')
           .select(`
@@ -112,44 +108,40 @@ const PublicEvents = () => {
 
         console.log('Found events:', eventsData.length);
 
-        // Step 2: Enrich events with additional data
-        const enrichedEvents: SimpleEvent[] = [];
+        // Enrich events with additional data
+        const enrichedEvents: BasicEvent[] = [];
         
         for (const event of eventsData) {
-          const enrichedEvent: SimpleEvent = { ...event };
+          const enrichedEvent: BasicEvent = { ...event };
 
-          // Get space data if space_id exists
+          // Get space data
           if (event.space_id) {
             try {
-              const { data: spaceData, error: spaceError } = await supabase
+              const { data: spaceData } = await supabase
                 .from('spaces')
                 .select('title, address, latitude, longitude, city')
                 .eq('id', event.space_id)
                 .maybeSingle();
               
-              if (!spaceError && spaceData) {
+              if (spaceData) {
                 enrichedEvent.spaces = spaceData;
-              } else if (spaceError) {
-                console.warn('Error fetching space for event', event.id, ':', spaceError);
               }
             } catch (error) {
               console.warn('Failed to fetch space data for event', event.id, ':', error);
             }
           }
 
-          // Get creator profile if created_by exists
+          // Get creator profile
           if (event.created_by) {
             try {
-              const { data: profileData, error: profileError } = await supabase
+              const { data: profileData } = await supabase
                 .from('profiles')
                 .select('first_name, last_name, profile_photo_url')
                 .eq('id', event.created_by)
                 .maybeSingle();
               
-              if (!profileError && profileData) {
+              if (profileData) {
                 enrichedEvent.profiles = profileData;
-              } else if (profileError) {
-                console.warn('Error fetching profile for event', event.id, ':', profileError);
               }
             } catch (error) {
               console.warn('Failed to fetch profile data for event', event.id, ':', error);
@@ -168,14 +160,14 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFiltersChange = (newFilters: EventFilters) => {
+  const handleFiltersChange = (newFilters: FilterState) => {
     console.log('Filters changed:', newFilters);
     setFilters(newFilters);
   };
 
   const handleEventClick = (eventId: string) => {
     console.log('Event clicked:', eventId);
-    window.open(`/event/${eventId}`, '_blank');
+    window.open(`/events/${eventId}`, '_blank');
   };
 
   if (error) {
@@ -185,13 +177,13 @@ const PublicEvents = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Errore nel caricamento</h2>
           <p className="text-gray-600">Si è verificato un errore durante il caricamento degli eventi.</p>
-          <p className="text-sm text-gray-500 mt-2">Dettagli: {error.message}</p>
+          <p className="text-sm text-gray-500 mt-2">Dettagli: {String(error)}</p>
         </div>
       </div>
     );
   }
 
-  const content = (
+  return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -271,13 +263,6 @@ const PublicEvents = () => {
       </div>
     </div>
   );
-
-  // Use MarketplaceLayout for authenticated users, PublicLayout for guests
-  if (authState.isAuthenticated) {
-    return <MarketplaceLayout>{content}</MarketplaceLayout>;
-  }
-
-  return <PublicLayout>{content}</PublicLayout>;
 };
 
 export default PublicEvents;

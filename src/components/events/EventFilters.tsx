@@ -11,15 +11,15 @@ import { Input } from '@/components/ui/input';
 import { Filter, Calendar, MapPin } from 'lucide-react';
 
 // Local types to avoid circular dependencies
-type EventFilters = {
+type FilterState = {
   city: string;
   category: string;
   dateRange: { from: string; to?: string } | null;
 };
 
 interface EventFiltersProps {
-  filters: EventFilters;
-  onFiltersChange: (filters: EventFilters) => void;
+  filters: FilterState;
+  onFiltersChange: (filters: FilterState) => void;
 }
 
 export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
