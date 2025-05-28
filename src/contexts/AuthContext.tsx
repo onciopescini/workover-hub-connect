@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
@@ -14,6 +14,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
     isAuthenticated: false,
   });
+
+  // Anti-loop flags
+  const isRefreshingRef = useRef(false);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -35,8 +39,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const refreshProfile = async () => {
-    if (!authState.user) return;
+  // Debounced refresh profile to prevent infinite loops
+  const refreshProfile = useCallback(async () => {
+    if (!authState.user || isRefreshingRef.current) return;
+    
+    isRefreshingRef.current = true;
+    
+    // Clear any existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
     
     try {
       const profile = await fetchProfile(authState.user.id);
@@ -46,8 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }));
     } catch (error) {
       console.error('Error refreshing profile:', error);
+    } finally {
+      // Reset flag after a delay to prevent rapid successive calls
+      refreshTimeoutRef.current = setTimeout(() => {
+        isRefreshingRef.current = false;
+      }, 1000);
     }
-  };
+  }, [authState.user?.id]); // Only depend on user id, not entire authState
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!authState.user) {
@@ -189,8 +206,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // Cleanup function
     return () => {
       subscription.unsubscribe();
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
     };
   }, []);
 

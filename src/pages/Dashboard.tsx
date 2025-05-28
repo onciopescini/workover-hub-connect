@@ -9,9 +9,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!authState.isLoading && authState.profile) {
-      // Redirect coworkers to the marketplace (spaces page)
+      // Unified routing logic - all coworkers go to /app/spaces
       if (authState.profile.role === "coworker") {
-        navigate("/spaces", { replace: true });
+        navigate("/app/spaces", { replace: true });
       }
       // Keep host and admin on their respective dashboards
       else if (authState.profile.role === "host") {

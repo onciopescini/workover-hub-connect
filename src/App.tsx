@@ -89,7 +89,7 @@ function App() {
                 <Route path="/waitlists" element={<WaitlistsPage />} />
                 <Route path="/bidirectional-reviews" element={<BidirectionalReviews />} />
                 
-                {/* Authenticated routes for spaces and events - these will show the full header */}
+                {/* Authenticated routes for spaces and events - unified coworker experience */}
                 <Route path="/app/spaces" element={<PublicSpaces />} />
                 <Route path="/app/events" element={<PublicEvents />} />
                 <Route path="/app/spaces/:id" element={<SpaceDetail />} />

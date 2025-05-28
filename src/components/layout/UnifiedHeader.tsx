@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,16 +16,9 @@ import { useAuth } from '@/contexts/AuthContext';
 export function UnifiedHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authState, signOut, refreshProfile } = useAuth();
+  const { authState, signOut } = useAuth();
 
-  // Refresh profile when header mounts or location changes
-  useEffect(() => {
-    if (authState.isAuthenticated && authState.user && refreshProfile) {
-      refreshProfile();
-    }
-  }, [authState.isAuthenticated, authState.user, location.pathname, refreshProfile]);
-
-  const isActivePath = (path: string) => location.pathname === path;
+  const isActivePath = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
   const handleSignOut = async () => {
     try {
@@ -36,25 +29,25 @@ export function UnifiedHeader() {
     }
   };
 
-  const getUserInitials = () => {
+  const getUserInitials = useMemo(() => {
     const firstName = authState.profile?.first_name || "";
     const lastName = authState.profile?.last_name || "";
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "U";
-  };
+  }, [authState.profile?.first_name, authState.profile?.last_name]);
 
-  const getUserFullName = () => {
+  const getUserFullName = useMemo(() => {
     const firstName = authState.profile?.first_name || "";
     const lastName = authState.profile?.last_name || "";
     return `${firstName} ${lastName}`.trim() || "Utente";
-  };
+  }, [authState.profile?.first_name, authState.profile?.last_name]);
 
-  const getDashboardUrl = () => {
+  const getDashboardUrl = useCallback(() => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/app/spaces"; // Coworker ora va agli spazi autenticati
-  };
+    return "/app/spaces"; // Unified redirect for coworkers
+  }, [authState.profile?.role]);
 
-  const getMainNavItems = () => {
+  const getMainNavItems = useMemo(() => {
     const baseItems = [
       { path: '/app/spaces', label: 'Spazi', icon: Building2 },
       { path: '/app/events', label: 'Eventi', icon: Calendar },
@@ -65,21 +58,17 @@ export function UnifiedHeader() {
       return [
         ...baseItems,
         { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
-        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+        { path: '/messages', label: 'Messaggi', icon: MessageSquare }, // Fixed route
         { path: '/networking', label: 'Networking', icon: Users },
       ];
     }
 
     return baseItems;
-  };
+  }, [authState.isAuthenticated, authState.profile?.role]);
 
-  const handleNavigation = async (path: string) => {
-    // Refresh profile before navigation to ensure consistent state
-    if (authState.isAuthenticated && refreshProfile) {
-      await refreshProfile();
-    }
+  const handleNavigation = useCallback((path: string) => {
     navigate(path);
-  };
+  }, [navigate]);
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
@@ -98,7 +87,7 @@ export function UnifiedHeader() {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {getMainNavItems().map((item) => {
+            {getMainNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Button
@@ -141,18 +130,18 @@ export function UnifiedHeader() {
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={authState.profile?.profile_photo_url || ""} />
                       <AvatarFallback className="text-xs">
-                        {getUserInitials()}
+                        {getUserInitials}
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium text-gray-700 hidden md:inline">
-                      {getUserFullName()}
+                      {getUserFullName}
                     </span>
                     <ChevronDown className="h-4 w-4 text-gray-500" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{getUserFullName()}</p>
+                    <p className="text-sm font-medium">{getUserFullName}</p>
                     <p className="text-xs text-gray-500">{authState.user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />
@@ -175,21 +164,6 @@ export function UnifiedHeader() {
                   
                   <DropdownMenuSeparator />
                   
-                  {/* Informational pages moved from "Altro" section */}
-                  <DropdownMenuItem onClick={() => handleNavigation('/about')}>
-                    <span>Chi siamo</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavigation('/faq')}>
-                    <span>FAQ</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavigation('/terms')}>
-                    <span>Termini di servizio</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleNavigation('/privacy')}>
-                    <span>Privacy Policy</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>

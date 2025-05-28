@@ -17,7 +17,8 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
   useEffect(() => {
     if (!authState.isLoading) {
       // Small delay to prevent flash of redirects
-      setTimeout(() => setIsChecking(false), 200);
+      const timer = setTimeout(() => setIsChecking(false), 200);
+      return () => clearTimeout(timer);
     }
   }, [authState.isLoading]);
 
@@ -34,7 +35,8 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
   if (
     requireOnboarding &&
     authState.profile &&
-    !authState.profile.onboarding_completed
+    !authState.profile.onboarding_completed &&
+    authState.profile.role !== 'admin' // Admin can skip onboarding
   ) {
     return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,10 +41,19 @@ export const SpaceDetailContent = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Generate time slots (9 AM to 6 PM in 1-hour intervals)
-  const timeSlots = Array.from({ length: 10 }, (_, i) => {
-    const hour = 9 + i;
-    return `${hour.toString().padStart(2, '0')}:00`;
-  });
+  const timeSlots = useMemo(() => 
+    Array.from({ length: 10 }, (_, i) => {
+      const hour = 9 + i;
+      return `${hour.toString().padStart(2, '0')}:00`;
+    }), []
+  );
+
+  // Memoized authorization check
+  const canUserBook = useMemo(() => {
+    return authState.isAuthenticated && 
+           authState.profile?.onboarding_completed && 
+           authState.profile?.role === 'coworker';
+  }, [authState.isAuthenticated, authState.profile?.onboarding_completed, authState.profile?.role]);
 
   // Fetch space details
   useEffect(() => {
@@ -105,7 +114,7 @@ export const SpaceDetailContent = () => {
     fetchSpaceDetails();
   }, [id]);
 
-  const handleBooking = async () => {
+  const handleBooking = useCallback(async () => {
     if (!selectedDate || !space || !authState.user) {
       toast.error('Seleziona una data per prenotare');
       return;
@@ -121,17 +130,17 @@ export const SpaceDetailContent = () => {
       return;
     }
 
-    // Check if user has completed onboarding
-    if (!authState.profile?.onboarding_completed) {
-      toast.error('Completa il tuo profilo per poter prenotare');
-      navigate('/onboarding');
-      return;
-    }
-
-    // Check if user is a coworker
-    if (authState.profile?.role !== 'coworker') {
-      toast.error('Solo i coworker possono prenotare spazi');
-      return;
+    // Simplified authorization check
+    if (!canUserBook) {
+      if (!authState.profile?.onboarding_completed) {
+        toast.error('Completa il tuo profilo per poter prenotare');
+        navigate('/onboarding');
+        return;
+      }
+      if (authState.profile?.role !== 'coworker') {
+        toast.error('Solo i coworker possono prenotare spazi');
+        return;
+      }
     }
 
     setBookingLoading(true);
@@ -180,20 +189,21 @@ export const SpaceDetailContent = () => {
     } finally {
       setBookingLoading(false);
     }
-  };
+  }, [selectedDate, space, authState.user, selectedStartTime, selectedEndTime, canUserBook, authState.profile, navigate]);
 
-  const handleBackClick = () => {
+  const handleBackClick = useCallback(() => {
     if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
-      navigate('/dashboard');
+      navigate('/app/spaces'); // Unified navigation
     } else {
       navigate('/spaces');
     }
-  };
+  }, [authState.isAuthenticated, authState.profile?.onboarding_completed, navigate]);
 
-  const handleLoginClick = () => {
+  const handleLoginClick = useCallback(() => {
     navigate('/login', { state: { from: `/spaces/${id}` } });
-  };
+  }, [navigate, id]);
 
+  // Helper functions for labels
   const getCategoryLabel = () => {
     switch (space?.category) {
       case 'home': return 'Casa';
@@ -230,10 +240,6 @@ export const SpaceDetailContent = () => {
       </div>
     );
   }
-
-  const canUserBook = authState.isAuthenticated && 
-                      authState.profile?.onboarding_completed && 
-                      authState.profile?.role === 'coworker';
 
   return (
     <div className="max-w-7xl mx-auto p-4">

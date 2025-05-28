@@ -24,7 +24,7 @@ const RoleProtected = ({ children, allowedRoles }: RoleProtectedProps) => {
     // Redirect to appropriate dashboard based on role
     const redirectTo = authState.profile.role === "admin" ? "/admin" :
                       authState.profile.role === "host" ? "/host/dashboard" : 
-                      "/dashboard";
+                      "/app/spaces"; // Unified redirect for coworkers
     return <Navigate to={redirectTo} replace />;
   }
 
