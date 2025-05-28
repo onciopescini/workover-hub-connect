@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import type { AuthState, Profile } from '@/types/auth';
-import { useProfile } from './useProfile';
+import { useOptimizedProfile } from './useOptimizedProfile';
 
 export const useAuthState = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -13,37 +13,29 @@ export const useAuthState = () => {
     isAuthenticated: false,
   });
 
-  const { fetchProfile } = useProfile();
+  const { fetchProfile, clearCache } = useOptimizedProfile();
 
   const updateAuthState = useCallback(async (user: User | null, session: Session | null) => {
     console.log('Updating auth state:', { user: !!user, session: !!session });
     
     if (user && session) {
       try {
-        // Set authenticated state first
-        setAuthState({
+        // Set authenticated state first with existing profile if available
+        setAuthState(prev => ({
           user,
           session,
-          profile: null, // Will be set after profile fetch
+          profile: prev.profile, // Keep existing profile to avoid flicker
           isLoading: false,
           isAuthenticated: true,
-        });
-
-        // Fetch profile separately with timeout
-        const profilePromise = fetchProfile(user.id);
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 5000); // 5 second timeout
-        });
-
-        const profile = await Promise.race([profilePromise, timeoutPromise]);
-        
-        setAuthState(prev => ({
-          ...prev,
-          profile
         }));
 
-        if (!profile) {
-          console.warn('Profile fetch timed out or failed, but user is authenticated');
+        // Fetch profile only if we don't have one or if it's for a different user
+        if (!authState.profile || authState.profile.id !== user.id) {
+          const profile = await fetchProfile(user.id);
+          setAuthState(prev => ({
+            ...prev,
+            profile
+          }));
         }
       } catch (error) {
         console.error('Error in updateAuthState:', error);
@@ -58,6 +50,7 @@ export const useAuthState = () => {
       }
     } else {
       console.log('Setting unauthenticated state');
+      clearCache(); // Clear cache on logout
       setAuthState({
         user: null,
         session: null,
@@ -66,13 +59,17 @@ export const useAuthState = () => {
         isAuthenticated: false,
       });
     }
-  }, [fetchProfile]);
+  }, [authState.profile, fetchProfile, clearCache]);
 
   const refreshProfile = useCallback(async () => {
-    if (!authState.user) return;
+    if (!authState.user) {
+      console.log('No user to refresh profile for');
+      return;
+    }
     
     try {
-      const profile = await fetchProfile(authState.user.id);
+      console.log('Refreshing profile for user:', authState.user.id);
+      const profile = await fetchProfile(authState.user.id, true); // Force refresh
       setAuthState(prev => ({
         ...prev,
         profile

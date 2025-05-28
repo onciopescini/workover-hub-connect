@@ -1,9 +1,9 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState } from '@/types/auth';
 import { useAuthState } from '@/hooks/useAuthState';
-import { useProfile } from '@/hooks/useProfile';
+import { useOptimizedProfile } from '@/hooks/useOptimizedProfile';
 
 interface AuthContextType {
   authState: AuthState;
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { authState, setAuthState, updateAuthState, refreshProfile } = useAuthState();
-  const { updateProfile: updateUserProfile } = useProfile();
+  const { updateProfile: updateUserProfile } = useOptimizedProfile();
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-
       // State will be updated by onAuthStateChange
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -48,7 +47,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-
       // State will be updated by onAuthStateChange
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -116,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.warn('Auth initialization timed out, setting loading to false');
           setAuthState(prev => ({ ...prev, isLoading: false }));
         }
-      }, 10000); // 10 second timeout for initialization
+      }, 10000);
     };
 
     // Get initial session
@@ -159,9 +157,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(initializationTimeout);
       subscription.unsubscribe();
     };
-  }, [updateAuthState, setAuthState]);
+  }, []); // Rimuovo updateAuthState dalle dipendenze per evitare loop
 
-  const value: AuthContextType = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value: AuthContextType = useMemo(() => ({
     authState,
     signIn,
     signUp,
@@ -169,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     updateProfile,
     refreshProfile,
-  };
+  }), [authState, refreshProfile]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, MapPin, Briefcase, Heart, Edit, LinkIcon } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
@@ -15,12 +15,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Refresh profile data when component mounts
-  useEffect(() => {
-    if (authState.isAuthenticated && refreshProfile) {
-      refreshProfile();
-    }
-  }, [authState.isAuthenticated, refreshProfile]);
+  // Rimuovo il useEffect automatico che causava refresh continui
 
   if (!authState.profile) {
     return (
@@ -47,22 +42,12 @@ const Profile = () => {
   const getDashboardUrl = () => {
     if (authState.profile?.role === "admin") return "/admin";
     if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/app/spaces"; // Coworker ora va agli spazi autenticati
+    return "/app/spaces";
   };
 
-  const handleDashboardNavigation = async () => {
-    // Force refresh profile before navigation to ensure header updates correctly
-    if (refreshProfile) {
-      await refreshProfile();
-    }
-    
+  const handleDashboardNavigation = () => {
     const dashboardUrl = getDashboardUrl();
     navigate(dashboardUrl);
-    
-    // Small delay to ensure state is updated before potential page refresh
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   };
 
   const getJobTypeLabel = (type: string) => {
@@ -87,7 +72,7 @@ const Profile = () => {
 
   const handleEditComplete = async () => {
     setIsEditing(false);
-    // Refresh profile data after editing
+    // Refresh profile solo quando necessario, dopo modifica
     if (refreshProfile) {
       await refreshProfile();
     }
