@@ -10,11 +10,11 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { EventFilters as EventFiltersType } from '@/types/eventFilters';
+import type { EventFilters as IEventFilters } from '@/types/eventFilters';
 
 const PublicEvents = () => {
   const { authState } = useAuth();
-  const [filters, setFilters] = useState<EventFiltersType>({
+  const [filters, setFilters] = useState<IEventFilters>({
     city: '',
     category: '',
     dateRange: null,
@@ -71,7 +71,7 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFiltersChange = (newFilters: EventFiltersType) => {
+  const handleFiltersChange = (newFilters: IEventFilters) => {
     setFilters(newFilters);
   };
 
