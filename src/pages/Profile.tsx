@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
@@ -176,7 +175,7 @@ const Profile = () => {
         </div>
 
         {/* Social Media */}
-        <SocialMediaSection profile={profile} />
+        <SocialMediaSection />
       </div>
     </AppLayout>
   );

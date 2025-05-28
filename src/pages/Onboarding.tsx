@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import LoadingScreen from '@/components/LoadingScreen';
+import { UserRole } from '@/types/auth';
 
 const INTEREST_OPTIONS = [
   'Tecnologia', 'Marketing', 'Design', 'Sviluppo Web', 'Fotografia',
@@ -35,8 +35,8 @@ const Onboarding = () => {
   useEffect(() => {
     if (!authState.isLoading && authState.profile?.onboarding_completed) {
       // User has already completed onboarding, redirect to appropriate dashboard
-      const redirectTo = authState.profile.role === "admin" ? "/admin" :
-                        authState.profile.role === "host" ? "/host/dashboard" : 
+      const redirectTo = authState.profile?.role === "admin" ? "/admin" :
+                        authState.profile?.role === "host" ? "/host/dashboard" : 
                         "/app/spaces";
       navigate(redirectTo, { replace: true });
     }
@@ -57,7 +57,7 @@ const Onboarding = () => {
       const interestsString = formData.interests.length > 0 ? formData.interests.join(',') : '';
       
       await updateProfile({
-        role: formData.role,
+        role: formData.role as UserRole,
         first_name: formData.first_name,
         last_name: formData.last_name,
         bio: formData.bio,
