@@ -15,13 +15,35 @@ import { useAuth } from '@/contexts/AuthContext';
 const PublicSpaces = () => {
   const { authState } = useAuth();
   const [filters, setFilters] = useState({
-    city: '',
     category: '',
-    maxPrice: '',
-    workEnvironment: '',
-    tags: [] as string[]
+    priceRange: [0, 200],
+    amenities: [] as string[],
+    workEnvironment: ''
   });
   const [showMap, setShowMap] = useState(false);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+
+  // Get user location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log('Geolocation error:', error);
+          // Default to Rome if geolocation fails
+          setUserLocation({ lat: 41.9028, lng: 12.4964 });
+        }
+      );
+    } else {
+      // Default to Rome if geolocation not supported
+      setUserLocation({ lat: 41.9028, lng: 12.4964 });
+    }
+  }, []);
 
   const { data: spaces, isLoading, error } = useQuery({
     queryKey: ['public-spaces', filters],
@@ -38,17 +60,17 @@ const PublicSpaces = () => {
         `)
         .eq('published', true);
 
-      if (filters.city) {
-        query = query.ilike('address', `%${filters.city}%`);
-      }
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.eq('category', filters.category as 'home' | 'outdoor' | 'professional');
       }
       if (filters.workEnvironment) {
-        query = query.eq('work_environment', filters.workEnvironment);
+        query = query.eq('work_environment', filters.workEnvironment as 'silent' | 'controlled' | 'dynamic');
       }
-      if (filters.maxPrice) {
-        query = query.lte('price_per_day', parseFloat(filters.maxPrice));
+      if (filters.priceRange[1] < 200) {
+        query = query.lte('price_per_day', filters.priceRange[1]);
+      }
+      if (filters.priceRange[0] > 0) {
+        query = query.gte('price_per_day', filters.priceRange[0]);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -62,8 +84,12 @@ const PublicSpaces = () => {
     },
   });
 
-  const handleFilterChange = (newFilters: typeof filters) => {
+  const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
+  };
+
+  const handleSpaceClick = (spaceId: string) => {
+    window.open(`/space/${spaceId}`, '_blank');
   };
 
   if (error) {
@@ -91,7 +117,7 @@ const PublicSpaces = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <SpaceFilters onFilterChange={handleFilterChange} />
+            <SpaceFilters filters={filters} onFiltersChange={handleFiltersChange} />
           </div>
 
           <div className="lg:w-3/4">
@@ -129,11 +155,21 @@ const PublicSpaces = () => {
                 <LoadingSpinner />
               </div>
             ) : showMap ? (
-              <SpaceMap spaces={spaces || []} />
+              <div className="h-[600px]">
+                <SpaceMap 
+                  spaces={spaces || []} 
+                  userLocation={userLocation}
+                  onSpaceClick={handleSpaceClick}
+                />
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {spaces?.map((space) => (
-                  <SpaceCard key={space.id} space={space} />
+                  <SpaceCard 
+                    key={space.id} 
+                    space={space} 
+                    onClick={() => handleSpaceClick(space.id)}
+                  />
                 ))}
                 {spaces?.length === 0 && (
                   <div className="col-span-full text-center py-12">

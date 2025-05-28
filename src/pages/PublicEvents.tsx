@@ -67,8 +67,12 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFilterChange = (newFilters: typeof filters) => {
+  const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
+  };
+
+  const handleEventClick = (eventId: string) => {
+    window.open(`/event/${eventId}`, '_blank');
   };
 
   if (error) {
@@ -96,7 +100,7 @@ const PublicEvents = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <EventFilters onFilterChange={handleFilterChange} />
+            <EventFilters onFiltersChange={handleFiltersChange} />
           </div>
 
           <div className="lg:w-3/4">
@@ -134,11 +138,21 @@ const PublicEvents = () => {
                 <LoadingSpinner />
               </div>
             ) : showMap ? (
-              <EventMap events={events || []} />
+              <div className="h-[600px]">
+                <EventMap 
+                  events={events || []} 
+                  userLocation={{ lat: 41.9028, lng: 12.4964 }}
+                  onEventClick={handleEventClick}
+                />
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {events?.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard 
+                    key={event.id} 
+                    event={event} 
+                    onClick={() => handleEventClick(event.id)}
+                  />
                 ))}
                 {events?.length === 0 && (
                   <div className="col-span-full text-center py-12">
