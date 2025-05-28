@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, MapPin, Briefcase, Heart, Edit } from "lucide-react";
+import { User, MapPin, Briefcase, Heart, Edit, LinkIcon } from "lucide-react";
 import { useState } from "react";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
@@ -33,6 +33,26 @@ const Profile = () => {
     const firstName = authState.profile?.first_name || "";
     const lastName = authState.profile?.last_name || "";
     return `${firstName} ${lastName}`.trim() || "Utente";
+  };
+
+  const getJobTypeLabel = (type: string) => {
+    const labels = {
+      'aziendale': 'Aziendale',
+      'freelance': 'Freelance',
+      'studente': 'Studente'
+    };
+    return labels[type as keyof typeof labels] || type;
+  };
+
+  const getWorkStyleLabel = (style: string) => {
+    const labels = {
+      'silenzioso': 'Silenzioso',
+      'collaborativo': 'Collaborativo',
+      'flessibile': 'Flessibile',
+      'strutturato': 'Strutturato',
+      'creativo': 'Creativo'
+    };
+    return labels[style as keyof typeof labels] || style;
   };
 
   if (isEditing) {
@@ -68,11 +88,24 @@ const Profile = () => {
                 </Avatar>
                 <div>
                   <CardTitle className="text-2xl">{getUserFullName()}</CardTitle>
+                  {authState.profile.job_title && (
+                    <p className="text-lg text-gray-600 mt-1">{authState.profile.job_title}</p>
+                  )}
                   <div className="flex items-center space-x-2 mt-2">
                     <Badge variant="secondary">
                       {authState.profile.role === "host" ? "Host" : 
                        authState.profile.role === "admin" ? "Admin" : "Coworker"}
                     </Badge>
+                    {authState.profile.job_type && (
+                      <Badge variant="outline">
+                        {getJobTypeLabel(authState.profile.job_type)}
+                      </Badge>
+                    )}
+                    {authState.profile.work_style && (
+                      <Badge variant="outline">
+                        {getWorkStyleLabel(authState.profile.work_style)}
+                      </Badge>
+                    )}
                     {authState.profile.nickname && (
                       <span className="text-sm text-gray-600">
                         @{authState.profile.nickname}
@@ -113,6 +146,36 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Professional Info */}
+            {(authState.profile.job_title || authState.profile.job_type || authState.profile.work_style) && (
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <Briefcase className="h-5 w-5 mr-2" />
+                  Informazioni Professionali
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {authState.profile.job_title && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Titolo di Lavoro</p>
+                      <p className="text-sm">{authState.profile.job_title}</p>
+                    </div>
+                  )}
+                  {authState.profile.job_type && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Tipo di Lavoro</p>
+                      <p className="text-sm">{getJobTypeLabel(authState.profile.job_type)}</p>
+                    </div>
+                  )}
+                  {authState.profile.work_style && (
+                    <div className="md:col-span-2">
+                      <p className="text-sm font-medium text-gray-500">Stile di Lavoro</p>
+                      <p className="text-sm">{getWorkStyleLabel(authState.profile.work_style)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Location */}
             {authState.profile.location && (
@@ -155,18 +218,35 @@ const Profile = () => {
               </div>
             )}
 
-            {/* LinkedIn */}
-            {authState.profile.linkedin_url && (
+            {/* Links */}
+            {(authState.profile.linkedin_url || authState.profile.website) && (
               <div>
-                <h3 className="text-lg font-semibold mb-3">Collegamenti</h3>
-                <a 
-                  href={authState.profile.linkedin_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                >
-                  Profilo LinkedIn
-                </a>
+                <h3 className="text-lg font-semibold mb-3 flex items-center">
+                  <LinkIcon className="h-5 w-5 mr-2" />
+                  Collegamenti
+                </h3>
+                <div className="space-y-2">
+                  {authState.profile.linkedin_url && (
+                    <a 
+                      href={authState.profile.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm block"
+                    >
+                      Profilo LinkedIn
+                    </a>
+                  )}
+                  {authState.profile.website && (
+                    <a 
+                      href={authState.profile.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-sm block"
+                    >
+                      Sito Web
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>

@@ -1,222 +1,159 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
-import { SpaceMap } from '@/components/spaces/SpaceMap';
-import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
-import { Input } from '@/components/ui/input';
+import { SpaceFilters } from '@/components/spaces/SpaceFilters';
+import { SpaceMap } from '@/components/spaces/SpaceMap';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin } from 'lucide-react';
-import { Space } from '@/types/space';
-import { toast } from 'sonner';
+import { Map, Grid } from 'lucide-react';
+import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
+import { PublicLayout } from '@/components/layout/PublicLayout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PublicSpaces = () => {
-  const navigate = useNavigate();
   const { authState } = useAuth();
-  const [spaces, setSpaces] = useState<Space[]>([]);
-  const [filteredSpaces, setFilteredSpaces] = useState<Space[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchCity, setSearchCity] = useState('');
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [filters, setFilters] = useState({
+    city: '',
     category: '',
-    priceRange: [0, 200],
-    amenities: [] as string[],
-    workspaceFeatures: [] as string[],
-    workEnvironment: ''
+    maxPrice: '',
+    workEnvironment: '',
+    tags: [] as string[]
+  });
+  const [showMap, setShowMap] = useState(false);
+
+  const { data: spaces, isLoading, error } = useQuery({
+    queryKey: ['public-spaces', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('spaces')
+        .select(`
+          *,
+          profiles!spaces_host_id_fkey (
+            first_name,
+            last_name,
+            profile_photo_url
+          )
+        `)
+        .eq('published', true);
+
+      if (filters.city) {
+        query = query.ilike('address', `%${filters.city}%`);
+      }
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      }
+      if (filters.workEnvironment) {
+        query = query.eq('work_environment', filters.workEnvironment);
+      }
+      if (filters.maxPrice) {
+        query = query.lte('price_per_day', parseFloat(filters.maxPrice));
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching spaces:', error);
+        throw error;
+      }
+      
+      return data || [];
+    },
   });
 
-  // Get user location
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.log('Geolocation error:', error);
-          // Default to Rome if geolocation fails
-          setUserLocation({ lat: 41.9028, lng: 12.4964 });
-        }
-      );
-    } else {
-      setUserLocation({ lat: 41.9028, lng: 12.4964 });
-    }
-  }, []);
-
-  // Fetch spaces
-  useEffect(() => {
-    const fetchSpaces = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('spaces')
-          .select('*')
-          .eq('published', true);
-
-        if (error) throw error;
-        setSpaces(data || []);
-        setFilteredSpaces(data || []);
-      } catch (error) {
-        console.error('Error fetching spaces:', error);
-        toast.error('Errore nel caricamento degli spazi');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSpaces();
-  }, []);
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...spaces];
-
-    // City search
-    if (searchCity) {
-      filtered = filtered.filter(space => 
-        space.address?.toLowerCase().includes(searchCity.toLowerCase())
-      );
-    }
-
-    // Category filter
-    if (filters.category) {
-      filtered = filtered.filter(space => space.category === filters.category);
-    }
-
-    // Price range filter
-    filtered = filtered.filter(space => 
-      space.price_per_hour >= filters.priceRange[0] && 
-      space.price_per_hour <= filters.priceRange[1]
-    );
-
-    // Amenities filter
-    if (filters.amenities.length > 0) {
-      filtered = filtered.filter(space => 
-        filters.amenities.every(amenity => 
-          space.amenities?.includes(amenity)
-        )
-      );
-    }
-
-    // Work environment filter
-    if (filters.workEnvironment) {
-      filtered = filtered.filter(space => space.work_environment === filters.workEnvironment);
-    }
-
-    setFilteredSpaces(filtered);
-  }, [spaces, searchCity, filters]);
-
-  const handleSpaceClick = (spaceId: string) => {
-    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
-      navigate(`/app/spaces/${spaceId}`);
-    } else {
-      navigate(`/spaces/${spaceId}`);
-    }
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
   };
 
-  // Use appropriate layout based on authentication status
-  const LayoutComponent = authState.isAuthenticated && authState.profile?.onboarding_completed 
-    ? MarketplaceLayout 
-    : AppLayout;
-
-  if (isLoading) {
+  if (error) {
     return (
-      <LayoutComponent>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Errore nel caricamento</h2>
+          <p className="text-gray-600">Si è verificato un errore durante il caricamento degli spazi.</p>
         </div>
-      </LayoutComponent>
+      </div>
     );
   }
 
-  return (
-    <LayoutComponent>
-      <div className="flex flex-col h-screen">
-        {/* Search and filters header */}
-        <div className="bg-white border-b p-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Cerca per città..."
-                  value={searchCity}
-                  onChange={(e) => setSearchCity(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <SpaceFilters filters={filters} onFiltersChange={setFilters} />
-            </div>
-          </div>
+  const content = (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Trova il tuo spazio di lavoro ideale
+          </h1>
+          <p className="text-gray-600">
+            Scopri spazi di coworking, uffici privati e sale riunioni nella tua città
+          </p>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex">
-          {/* Map */}
-          <div className="w-1/2 relative">
-            <SpaceMap 
-              spaces={filteredSpaces} 
-              userLocation={userLocation}
-              onSpaceClick={handleSpaceClick}
-            />
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="lg:w-1/4">
+            <SpaceFilters onFilterChange={handleFilterChange} />
           </div>
 
-          {/* Spaces list */}
-          <div className="w-1/2 overflow-y-auto bg-gray-50 p-4">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {filteredSpaces.length} spazi trovati
-              </h2>
-              {userLocation && (
-                <p className="text-sm text-gray-600 flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  Vicino alla tua posizione
+          <div className="lg:w-3/4">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={!showMap ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowMap(false)}
+                  className="flex items-center gap-2"
+                >
+                  <Grid className="h-4 w-4" />
+                  Griglia
+                </Button>
+                <Button
+                  variant={showMap ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowMap(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Map className="h-4 w-4" />
+                  Mappa
+                </Button>
+              </div>
+              
+              {spaces && (
+                <p className="text-sm text-gray-600">
+                  {spaces.length} spazi trovati
                 </p>
               )}
             </div>
 
-            <div className="space-y-4">
-              {filteredSpaces.map((space) => (
-                <SpaceCard
-                  key={space.id}
-                  space={space}
-                  onClick={() => handleSpaceClick(space.id)}
-                />
-              ))}
-            </div>
-
-            {filteredSpaces.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-gray-500">Nessuno spazio trovato con i filtri selezionati</p>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchCity('');
-                    setFilters({
-                      category: '',
-                      priceRange: [0, 200],
-                      amenities: [],
-                      workspaceFeatures: [],
-                      workEnvironment: ''
-                    });
-                  }}
-                  className="mt-4"
-                >
-                  Rimuovi filtri
-                </Button>
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <LoadingSpinner />
+              </div>
+            ) : showMap ? (
+              <SpaceMap spaces={spaces || []} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {spaces?.map((space) => (
+                  <SpaceCard key={space.id} space={space} />
+                ))}
+                {spaces?.length === 0 && (
+                  <div className="col-span-full text-center py-12">
+                    <p className="text-gray-500">Nessuno spazio trovato con i filtri selezionati.</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
-    </LayoutComponent>
+    </div>
   );
-}
+
+  // Use MarketplaceLayout for authenticated users, PublicLayout for guests
+  if (authState.isAuthenticated) {
+    return <MarketplaceLayout>{content}</MarketplaceLayout>;
+  }
+
+  return <PublicLayout>{content}</PublicLayout>;
+};
 
 export default PublicSpaces;

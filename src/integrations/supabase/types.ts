@@ -779,6 +779,8 @@ export type Database = {
           instagram_url: string | null
           interests: string | null
           is_suspended: boolean | null
+          job_title: string | null
+          job_type: string | null
           last_name: string
           linkedin_url: string | null
           location: string | null
@@ -796,6 +798,7 @@ export type Database = {
           twitter_url: string | null
           updated_at: string
           website: string | null
+          work_style: string | null
           youtube_url: string | null
         }
         Insert: {
@@ -809,6 +812,8 @@ export type Database = {
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
+          job_title?: string | null
+          job_type?: string | null
           last_name: string
           linkedin_url?: string | null
           location?: string | null
@@ -826,6 +831,7 @@ export type Database = {
           twitter_url?: string | null
           updated_at?: string
           website?: string | null
+          work_style?: string | null
           youtube_url?: string | null
         }
         Update: {
@@ -839,6 +845,8 @@ export type Database = {
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
+          job_title?: string | null
+          job_type?: string | null
           last_name?: string
           linkedin_url?: string | null
           location?: string | null
@@ -856,6 +864,7 @@ export type Database = {
           twitter_url?: string | null
           updated_at?: string
           website?: string | null
+          work_style?: string | null
           youtube_url?: string | null
         }
         Relationships: []

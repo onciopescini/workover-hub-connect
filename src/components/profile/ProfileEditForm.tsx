@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Save, Upload } from 'lucide-react';
 
@@ -19,6 +20,9 @@ export const ProfileEditForm = () => {
     first_name: authState.profile?.first_name || '',
     last_name: authState.profile?.last_name || '',
     nickname: authState.profile?.nickname || '',
+    job_title: authState.profile?.job_title || '',
+    job_type: authState.profile?.job_type || '',
+    work_style: authState.profile?.work_style || '',
     bio: authState.profile?.bio || '',
     location: authState.profile?.location || '',
     skills: authState.profile?.skills || '',
@@ -59,7 +63,7 @@ export const ProfileEditForm = () => {
       if (updateError) throw updateError;
 
       toast.success('Foto profilo aggiornata con successo');
-      window.location.reload(); // Refresh to show new photo
+      window.location.reload();
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast.error('Errore nel caricamento della foto');
@@ -166,6 +170,59 @@ export const ProfileEditForm = () => {
               onChange={(e) => handleInputChange('nickname', e.target.value)}
               placeholder="@nickname"
             />
+          </div>
+
+          {/* Job Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Informazioni Professionali</h3>
+            
+            <div>
+              <Label htmlFor="job_title">Titolo di Lavoro</Label>
+              <Input
+                id="job_title"
+                value={formData.job_title}
+                onChange={(e) => handleInputChange('job_title', e.target.value)}
+                placeholder="es. Frontend Developer, Marketing Manager..."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="job_type">Tipo di Lavoro</Label>
+                <Select
+                  value={formData.job_type}
+                  onValueChange={(value) => handleInputChange('job_type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="aziendale">Aziendale</SelectItem>
+                    <SelectItem value="freelance">Freelance</SelectItem>
+                    <SelectItem value="studente">Studente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="work_style">Stile di Lavoro</Label>
+                <Select
+                  value={formData.work_style}
+                  onValueChange={(value) => handleInputChange('work_style', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona stile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="silenzioso">Silenzioso</SelectItem>
+                    <SelectItem value="collaborativo">Collaborativo</SelectItem>
+                    <SelectItem value="flessibile">Flessibile</SelectItem>
+                    <SelectItem value="strutturato">Strutturato</SelectItem>
+                    <SelectItem value="creativo">Creativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <div>
