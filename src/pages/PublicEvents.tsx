@@ -5,7 +5,7 @@ import { EventMap } from '@/components/events/EventMap';
 import { EventsGrid } from '@/components/events/EventsGrid';
 import { EventsViewToggle } from '@/components/events/EventsViewToggle';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { usePublicEvents } from '@/hooks/usePublicEvents';
+import { usePublicEvents, SimpleEvent } from '@/hooks/usePublicEvents';
 import { useEventFilters } from '@/hooks/useEventFilters';
 
 const PublicEvents = () => {
@@ -20,12 +20,14 @@ const PublicEvents = () => {
     handleFiltersChange
   } = useEventFilters();
 
-  const { data: events, isLoading, error } = usePublicEvents({
+  const queryResult = usePublicEvents({
     cityFilter,
     categoryFilter,
     dateFromFilter,
     dateToFilter
-  });
+  }) as { data: SimpleEvent[] | undefined; isLoading: boolean; error: any };
+
+  const { data: events, isLoading, error } = queryResult;
 
   const handleEventClick = (eventId: string) => {
     console.log('Event clicked:', eventId);
