@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,12 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, AlertCircle } from 'lucide-react';
 
 export const ProfileEditForm = () => {
   const { authState } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [linkedinError, setLinkedinError] = useState('');
   const [formData, setFormData] = useState({
     first_name: authState.profile?.first_name || '',
     last_name: authState.profile?.last_name || '',
@@ -31,8 +31,48 @@ export const ProfileEditForm = () => {
     website: authState.profile?.website || '',
   });
 
+  const validateLinkedInUrl = (url: string): boolean => {
+    if (!url.trim()) return true; // Empty is valid
+    
+    // Check if it's a valid LinkedIn URL format
+    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/.+/i;
+    return linkedinRegex.test(url);
+  };
+
+  const formatLinkedInUrl = (input: string): string => {
+    if (!input.trim()) return '';
+    
+    // If user just entered a username (no URL), format it properly
+    if (!input.includes('linkedin.com') && !input.includes('http')) {
+      return `https://linkedin.com/in/${input.trim()}`;
+    }
+    
+    // If missing protocol, add it
+    if (input.includes('linkedin.com') && !input.startsWith('http')) {
+      return `https://${input}`;
+    }
+    
+    return input;
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear LinkedIn error when user starts typing
+    if (field === 'linkedin_url') {
+      setLinkedinError('');
+    }
+  };
+
+  const handleLinkedInBlur = (value: string) => {
+    if (value.trim()) {
+      const formattedUrl = formatLinkedInUrl(value);
+      setFormData(prev => ({ ...prev, linkedin_url: formattedUrl }));
+      
+      if (!validateLinkedInUrl(formattedUrl)) {
+        setLinkedinError('Inserisci un URL LinkedIn valido (es: https://linkedin.com/in/nomeutente)');
+      }
+    }
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +115,12 @@ export const ProfileEditForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!authState.user) return;
+
+    // Validate LinkedIn URL before submitting
+    if (formData.linkedin_url && !validateLinkedInUrl(formData.linkedin_url)) {
+      setLinkedinError('Inserisci un URL LinkedIn valido prima di salvare');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -282,9 +328,20 @@ export const ProfileEditForm = () => {
                 id="linkedin_url"
                 value={formData.linkedin_url}
                 onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                placeholder="https://linkedin.com/in/username"
-                type="url"
+                onBlur={(e) => handleLinkedInBlur(e.target.value)}
+                placeholder="nomeutente oppure https://linkedin.com/in/nomeutente"
+                type="text"
+                className={linkedinError ? 'border-red-500' : ''}
               />
+              {linkedinError && (
+                <div className="flex items-center gap-2 mt-1 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4" />
+                  {linkedinError}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Puoi inserire solo il nome utente (es: "nomeutente") o l'URL completo
+              </p>
             </div>
             <div>
               <Label htmlFor="website">Sito Web</Label>
@@ -298,7 +355,7 @@ export const ProfileEditForm = () => {
             </div>
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Button type="submit" disabled={loading || !!linkedinError} className="w-full">
             <Save className="h-4 w-4 mr-2" />
             {loading ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>

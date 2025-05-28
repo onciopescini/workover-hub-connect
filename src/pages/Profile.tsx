@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, MapPin, Briefcase, Heart, Edit, LinkIcon } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
 const Profile = () => {
   const { authState } = useAuth();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
   if (!authState.profile) {
@@ -33,6 +35,12 @@ const Profile = () => {
     const firstName = authState.profile?.first_name || "";
     const lastName = authState.profile?.last_name || "";
     return `${firstName} ${lastName}`.trim() || "Utente";
+  };
+
+  const getDashboardUrl = () => {
+    if (authState.profile?.role === "admin") return "/admin";
+    if (authState.profile?.role === "host") return "/host/dashboard";
+    return "/app/spaces"; // Coworker ora va agli spazi autenticati
   };
 
   const getJobTypeLabel = (type: string) => {
@@ -76,6 +84,16 @@ const Profile = () => {
   return (
     <AppLayout title="Profilo" subtitle="Il tuo profilo personale">
       <div className="max-w-4xl mx-auto p-4 md:p-6">
+        {/* Navigation buttons */}
+        <div className="mb-6 flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate(getDashboardUrl())}
+          >
+            ← Torna al Dashboard
+          </Button>
+        </div>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
