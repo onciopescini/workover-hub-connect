@@ -53,11 +53,11 @@ const PublicEvents = () => {
       }
 
       if (filters.dateRange?.from) {
-        query = query.gte('date', filters.dateRange.from.toISOString());
+        query = query.gte('date', filters.dateRange.from);
       }
 
       if (filters.dateRange?.to) {
-        query = query.lte('date', filters.dateRange.to.toISOString());
+        query = query.lte('date', filters.dateRange.to);
       }
 
       const { data, error } = await query.order('date', { ascending: true });

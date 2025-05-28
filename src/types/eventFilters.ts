@@ -2,7 +2,7 @@
 export interface EventFilters {
   city: string;
   category: string;
-  dateRange: { from: Date; to?: Date } | null;
+  dateRange: { from: string; to?: string } | null;
 }
 
 export interface EventFiltersProps {

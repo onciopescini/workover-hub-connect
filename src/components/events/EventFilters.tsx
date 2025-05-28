@@ -28,17 +28,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
-    let dateRange: { from: Date; to?: Date } | null = null;
+    let dateRange: { from: string; to?: string } | null = null;
 
     switch (range) {
       case 'today':
-        dateRange = { from: today };
+        dateRange = { from: today.toISOString() };
         break;
       case 'tomorrow':
-        dateRange = { from: tomorrow };
+        dateRange = { from: tomorrow.toISOString() };
         break;
       case 'week':
-        dateRange = { from: today, to: nextWeek };
+        dateRange = { from: today.toISOString(), to: nextWeek.toISOString() };
         break;
       default:
         dateRange = null;
@@ -56,6 +56,17 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
   };
 
   const hasActiveFilters = filters.city || filters.category || filters.dateRange;
+
+  const formatDateRange = () => {
+    if (!filters.dateRange) return 'Tutte le date';
+    
+    const from = new Date(filters.dateRange.from);
+    if (filters.dateRange.to) {
+      const to = new Date(filters.dateRange.to);
+      return `${from.toLocaleDateString('it-IT')} - ${to.toLocaleDateString('it-IT')}`;
+    }
+    return from.toLocaleDateString('it-IT');
+  };
 
   return (
     <div className="space-y-4">
@@ -115,13 +126,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-start">
-              {filters.dateRange ? 
-                (filters.dateRange.to ? 
-                  `${filters.dateRange.from.toLocaleDateString('it-IT')} - ${filters.dateRange.to.toLocaleDateString('it-IT')}` :
-                  filters.dateRange.from.toLocaleDateString('it-IT')
-                ) : 
-                'Tutte le date'
-              }
+              {formatDateRange()}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
