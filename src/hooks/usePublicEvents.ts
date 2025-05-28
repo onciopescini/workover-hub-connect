@@ -36,7 +36,8 @@ interface SimpleEvent {
   } | null;
 }
 
-const fetchPublicEvents = async (filters: UsePublicEventsParams): Promise<SimpleEvent[]> => {
+// Raw Supabase query function with aggressive type elimination
+const fetchEventsRaw = async (filters: UsePublicEventsParams): Promise<any> => {
   try {
     console.log('Fetching events with filters:', filters);
     
@@ -44,25 +45,25 @@ const fetchPublicEvents = async (filters: UsePublicEventsParams): Promise<Simple
       .from('events')
       .select('*')
       .eq('status', 'active')
-      .gte('date', new Date().toISOString());
+      .gte('date', new Date().toISOString()) as any;
 
     if (filters.cityFilter) {
-      query = query.ilike('city', `%${filters.cityFilter}%`);
+      query = query.ilike('city', `%${filters.cityFilter}%`) as any;
     }
 
     if (filters.categoryFilter) {
-      query = query.eq('category', filters.categoryFilter);
+      query = query.eq('category', filters.categoryFilter) as any;
     }
 
     if (filters.dateFromFilter) {
-      query = query.gte('date', filters.dateFromFilter);
+      query = query.gte('date', filters.dateFromFilter) as any;
     }
 
     if (filters.dateToFilter) {
-      query = query.lte('date', filters.dateToFilter);
+      query = query.lte('date', filters.dateToFilter) as any;
     }
 
-    const { data: eventsData, error: eventsError } = await query.order('date', { ascending: true });
+    const { data: eventsData, error: eventsError } = await query.order('date', { ascending: true }) as any;
     
     if (eventsError) {
       console.error('Error fetching events:', eventsError);
@@ -75,76 +76,86 @@ const fetchPublicEvents = async (filters: UsePublicEventsParams): Promise<Simple
     }
 
     console.log('Found events:', eventsData.length);
-
-    const enrichedEvents: SimpleEvent[] = [];
-    
-    for (const event of eventsData) {
-      const enrichedEvent: SimpleEvent = {
-        ...event,
-        spaces: null,
-        profiles: null
-      };
-
-      if (event.space_id) {
-        try {
-          const { data: spaceData, error: spaceError } = await supabase
-            .from('spaces')
-            .select('title, address, latitude, longitude')
-            .eq('id', event.space_id)
-            .maybeSingle();
-          
-          if (!spaceError && spaceData && spaceData.title) {
-            enrichedEvent.spaces = {
-              title: spaceData.title || '',
-              address: spaceData.address || '',
-              latitude: spaceData.latitude || null,
-              longitude: spaceData.longitude || null,
-              city: ''
-            };
-          }
-        } catch (error) {
-          console.warn('Failed to fetch space data for event', event.id, ':', error);
-        }
-      }
-
-      if (event.created_by) {
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, profile_photo_url')
-            .eq('id', event.created_by)
-            .maybeSingle();
-          
-          if (!profileError && profileData) {
-            enrichedEvent.profiles = {
-              first_name: profileData.first_name || '',
-              last_name: profileData.last_name || '',
-              profile_photo_url: profileData.profile_photo_url || null
-            };
-          }
-        } catch (error) {
-          console.warn('Failed to fetch profile data for event', event.id, ':', error);
-        }
-      }
-
-      enrichedEvents.push(enrichedEvent);
-    }
-    
-    console.log('Enriched events:', enrichedEvents.length);
-    return enrichedEvents;
+    return eventsData;
   } catch (error) {
     console.error('Error in events query:', error);
     return [];
   }
 };
 
+// Data transformation function
+const transformEvents = async (rawEvents: any[]): Promise<SimpleEvent[]> => {
+  const enrichedEvents: SimpleEvent[] = [];
+  
+  for (const event of rawEvents) {
+    const enrichedEvent: SimpleEvent = {
+      ...event,
+      spaces: null,
+      profiles: null
+    };
+
+    if (event.space_id) {
+      try {
+        const { data: spaceData, error: spaceError } = await supabase
+          .from('spaces')
+          .select('title, address, latitude, longitude')
+          .eq('id', event.space_id)
+          .maybeSingle() as any;
+        
+        if (!spaceError && spaceData && spaceData.title) {
+          enrichedEvent.spaces = {
+            title: spaceData.title || '',
+            address: spaceData.address || '',
+            latitude: spaceData.latitude || null,
+            longitude: spaceData.longitude || null,
+            city: ''
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to fetch space data for event', event.id, ':', error);
+      }
+    }
+
+    if (event.created_by) {
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, profile_photo_url')
+          .eq('id', event.created_by)
+          .maybeSingle() as any;
+        
+        if (!profileError && profileData) {
+          enrichedEvent.profiles = {
+            first_name: profileData.first_name || '',
+            last_name: profileData.last_name || '',
+            profile_photo_url: profileData.profile_photo_url || null
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to fetch profile data for event', event.id, ':', error);
+      }
+    }
+
+    enrichedEvents.push(enrichedEvent);
+  }
+  
+  console.log('Enriched events:', enrichedEvents.length);
+  return enrichedEvents;
+};
+
+// Main fetch function
+const fetchPublicEvents = async (filters: UsePublicEventsParams): Promise<SimpleEvent[]> => {
+  const rawEvents = await fetchEventsRaw(filters);
+  return await transformEvents(rawEvents);
+};
+
 export const usePublicEvents = (filters: UsePublicEventsParams) => {
   const filtersKey = `${filters.cityFilter}|${filters.categoryFilter}|${filters.dateFromFilter}|${filters.dateToFilter}`;
 
-  return useQuery<SimpleEvent[], Error>({
+  return useQuery({
     queryKey: ['public-events', filtersKey],
     queryFn: () => fetchPublicEvents(filters),
-  });
+  } as any);
 };
 
 export type { SimpleEvent };

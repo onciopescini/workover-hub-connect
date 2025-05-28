@@ -23,7 +23,7 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
   useEffect(() => {
     const fetchMapboxToken = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token') as any;
         
         if (error) {
           console.error('Error fetching Mapbox token:', error);
