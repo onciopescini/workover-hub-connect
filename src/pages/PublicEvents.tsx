@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,11 +11,17 @@ import { Map, Grid } from 'lucide-react';
 import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import type { EventFilters as IEventFilters } from '@/types/eventFilters';
+
+// Define types locally to avoid any import recursion
+type LocalEventFilters = {
+  city: string;
+  category: string;
+  dateRange: { from: string; to?: string } | null;
+};
 
 const PublicEvents = () => {
   const { authState } = useAuth();
-  const [filters, setFilters] = useState<IEventFilters>({
+  const [filters, setFilters] = useState<LocalEventFilters>({
     city: '',
     category: '',
     dateRange: null,
@@ -71,7 +78,7 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFiltersChange = (newFilters: IEventFilters) => {
+  const handleFiltersChange = (newFilters: LocalEventFilters) => {
     setFilters(newFilters);
   };
 

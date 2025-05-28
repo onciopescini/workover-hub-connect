@@ -9,9 +9,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Filter, Calendar, MapPin } from 'lucide-react';
-import { EventFiltersProps } from '@/types/eventFilters';
 
-export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
+// Define types locally to avoid any import recursion
+type LocalEventFilters = {
+  city: string;
+  category: string;
+  dateRange: { from: string; to?: string } | null;
+};
+
+interface LocalEventFiltersProps {
+  filters: LocalEventFilters;
+  onFiltersChange: (filters: LocalEventFilters) => void;
+}
+
+export const EventFilters: React.FC<LocalEventFiltersProps> = ({ filters, onFiltersChange }) => {
   const updateCity = (city: string) => {
     onFiltersChange({ ...filters, city });
   };
