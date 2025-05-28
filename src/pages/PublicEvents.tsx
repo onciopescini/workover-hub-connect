@@ -9,8 +9,8 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Map, Grid } from 'lucide-react';
 
-// Simplified types to avoid TypeScript recursion
-type BasicEvent = {
+// Tipi semplificati per evitare ricorsione infinita
+type SimpleEvent = {
   id: string;
   title: string;
   description: string | null;
@@ -23,14 +23,14 @@ type BasicEvent = {
   image_url: string | null;
   status: string | null;
   city: string | null;
-  spaces?: {
+  spaces: {
     title: string;
     address: string;
     latitude: number | null;
     longitude: number | null;
     city: string;
   } | null;
-  profiles?: {
+  profiles: {
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
@@ -53,31 +53,18 @@ const PublicEvents = () => {
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['public-events', filters],
-    queryFn: async (): Promise<BasicEvent[]> => {
+    queryFn: async (): Promise<SimpleEvent[]> => {
       try {
         console.log('Fetching events with filters:', filters);
         
-        // Get basic events data
+        // Query base per gli eventi
         let query = supabase
           .from('events')
-          .select(`
-            id,
-            title,
-            description,
-            date,
-            space_id,
-            created_by,
-            created_at,
-            max_participants,
-            current_participants,
-            image_url,
-            status,
-            city
-          `)
+          .select('*')
           .eq('status', 'active')
           .gte('date', new Date().toISOString());
 
-        // Apply filters
+        // Applica filtri
         if (filters.city) {
           query = query.ilike('city', `%${filters.city}%`);
         }
@@ -98,7 +85,7 @@ const PublicEvents = () => {
         
         if (eventsError) {
           console.error('Error fetching events:', eventsError);
-          throw eventsError;
+          return [];
         }
 
         if (!eventsData || eventsData.length === 0) {
@@ -108,13 +95,17 @@ const PublicEvents = () => {
 
         console.log('Found events:', eventsData.length);
 
-        // Enrich events with additional data
-        const enrichedEvents: BasicEvent[] = [];
+        // Arricchisci gli eventi con dati aggiuntivi
+        const enrichedEvents: SimpleEvent[] = [];
         
         for (const event of eventsData) {
-          const enrichedEvent: BasicEvent = { ...event };
+          const enrichedEvent: SimpleEvent = {
+            ...event,
+            spaces: null,
+            profiles: null
+          };
 
-          // Get space data
+          // Ottieni dati dello spazio
           if (event.space_id) {
             try {
               const { data: spaceData } = await supabase
@@ -124,14 +115,20 @@ const PublicEvents = () => {
                 .maybeSingle();
               
               if (spaceData) {
-                enrichedEvent.spaces = spaceData;
+                enrichedEvent.spaces = {
+                  title: spaceData.title || '',
+                  address: spaceData.address || '',
+                  latitude: spaceData.latitude,
+                  longitude: spaceData.longitude,
+                  city: spaceData.city || ''
+                };
               }
             } catch (error) {
               console.warn('Failed to fetch space data for event', event.id, ':', error);
             }
           }
 
-          // Get creator profile
+          // Ottieni profilo del creatore
           if (event.created_by) {
             try {
               const { data: profileData } = await supabase
@@ -141,7 +138,11 @@ const PublicEvents = () => {
                 .maybeSingle();
               
               if (profileData) {
-                enrichedEvent.profiles = profileData;
+                enrichedEvent.profiles = {
+                  first_name: profileData.first_name || '',
+                  last_name: profileData.last_name || '',
+                  profile_photo_url: profileData.profile_photo_url
+                };
               }
             } catch (error) {
               console.warn('Failed to fetch profile data for event', event.id, ':', error);
@@ -155,7 +156,7 @@ const PublicEvents = () => {
         return enrichedEvents;
       } catch (error) {
         console.error('Error in events query:', error);
-        throw error;
+        return [];
       }
     },
   });

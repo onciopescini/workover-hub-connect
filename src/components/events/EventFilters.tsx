@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Filter, Calendar, MapPin } from 'lucide-react';
 
-// Local types to avoid circular dependencies
+// Tipi semplificati per evitare dipendenze circolari
 type FilterState = {
   city: string;
   category: string;
