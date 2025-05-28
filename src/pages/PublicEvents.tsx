@@ -9,50 +9,42 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Map, Grid } from 'lucide-react';
 
-// Eliminazione totale dei tipi complessi per evitare ricorsione
-type FilterState = {
-  city: string;
-  category: string;
-  dateRange: { from: string; to?: string } | null;
-};
-
 const PublicEvents = () => {
-  const [filters, setFilters] = useState<FilterState>({
-    city: '',
-    category: '',
-    dateRange: null,
-  });
+  const [cityFilter, setCityFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
   const [showMap, setShowMap] = useState(false);
 
-  // Utilizzo any[] per eliminare completamente i problemi TypeScript
+  // Serialize filters for queryKey to avoid complex type inference
+  const filtersKey = `${cityFilter}|${categoryFilter}|${dateFromFilter}|${dateToFilter}`;
+
   const { data: events, isLoading, error } = useQuery({
-    queryKey: ['public-events', filters],
-    queryFn: async (): Promise<any[]> => {
+    queryKey: ['public-events', filtersKey],
+    queryFn: async () => {
       try {
-        console.log('Fetching events with filters:', filters);
+        console.log('Fetching events with filters:', { cityFilter, categoryFilter, dateFromFilter, dateToFilter });
         
-        // Query basilare per eventi
         let query = supabase
           .from('events')
           .select('*')
           .eq('status', 'active')
           .gte('date', new Date().toISOString());
 
-        // Applica filtri solo se esistenti
-        if (filters.city) {
-          query = query.ilike('city', `%${filters.city}%`);
+        if (cityFilter) {
+          query = query.ilike('city', `%${cityFilter}%`);
         }
 
-        if (filters.category) {
-          query = query.eq('category', filters.category);
+        if (categoryFilter) {
+          query = query.eq('category', categoryFilter);
         }
 
-        if (filters.dateRange?.from) {
-          query = query.gte('date', filters.dateRange.from);
+        if (dateFromFilter) {
+          query = query.gte('date', dateFromFilter);
         }
 
-        if (filters.dateRange?.to) {
-          query = query.lte('date', filters.dateRange.to);
+        if (dateToFilter) {
+          query = query.lte('date', dateToFilter);
         }
 
         const { data: eventsData, error: eventsError } = await query.order('date', { ascending: true });
@@ -69,18 +61,15 @@ const PublicEvents = () => {
 
         console.log('Found events:', eventsData.length);
 
-        // Arricchimento dati con gestione errori robusta
-        const enrichedEvents: any[] = [];
+        const enrichedEvents = [];
         
         for (const event of eventsData) {
-          // Struttura base evento con fallback
-          const enrichedEvent: any = {
+          const enrichedEvent = {
             ...event,
             spaces: null,
             profiles: null
           };
 
-          // Query spazio con colonne esistenti (NO city)
           if (event.space_id) {
             try {
               const { data: spaceData, error: spaceError } = await supabase
@@ -89,23 +78,20 @@ const PublicEvents = () => {
                 .eq('id', event.space_id)
                 .maybeSingle();
               
-              // Controllo che sia davvero dati e non errore
-              if (!spaceError && spaceData && typeof spaceData === 'object' && spaceData.title) {
+              if (!spaceError && spaceData && spaceData.title) {
                 enrichedEvent.spaces = {
                   title: spaceData.title || '',
                   address: spaceData.address || '',
                   latitude: spaceData.latitude || null,
                   longitude: spaceData.longitude || null,
-                  city: '' // Non esiste nel database, lasciamo vuoto
+                  city: ''
                 };
               }
             } catch (error) {
               console.warn('Failed to fetch space data for event', event.id, ':', error);
-              // Continua senza interrompere
             }
           }
 
-          // Query profilo con controlli robusi
           if (event.created_by) {
             try {
               const { data: profileData, error: profileError } = await supabase
@@ -114,8 +100,7 @@ const PublicEvents = () => {
                 .eq('id', event.created_by)
                 .maybeSingle();
               
-              // Controllo che sia davvero dati e non errore
-              if (!profileError && profileData && typeof profileData === 'object') {
+              if (!profileError && profileData) {
                 enrichedEvent.profiles = {
                   first_name: profileData.first_name || '',
                   last_name: profileData.last_name || '',
@@ -124,7 +109,6 @@ const PublicEvents = () => {
               }
             } catch (error) {
               console.warn('Failed to fetch profile data for event', event.id, ':', error);
-              // Continua senza interrompere
             }
           }
 
@@ -135,19 +119,35 @@ const PublicEvents = () => {
         return enrichedEvents;
       } catch (error) {
         console.error('Error in events query:', error);
-        return []; // Sempre ritorna array vuoto in caso di errore
+        return [];
       }
     },
   });
 
-  const handleFiltersChange = (newFilters: FilterState) => {
+  const handleFiltersChange = (newFilters: any) => {
     console.log('Filters changed:', newFilters);
-    setFilters(newFilters);
+    setCityFilter(newFilters.city || '');
+    setCategoryFilter(newFilters.category || '');
+    
+    if (newFilters.dateRange) {
+      setDateFromFilter(newFilters.dateRange.from || '');
+      setDateToFilter(newFilters.dateRange.to || '');
+    } else {
+      setDateFromFilter('');
+      setDateToFilter('');
+    }
   };
 
   const handleEventClick = (eventId: string) => {
     console.log('Event clicked:', eventId);
     window.open(`/events/${eventId}`, '_blank');
+  };
+
+  // Build current filters object for EventFilters component
+  const currentFilters = {
+    city: cityFilter,
+    category: categoryFilter,
+    dateRange: dateFromFilter ? { from: dateFromFilter, to: dateToFilter || undefined } : null,
   };
 
   if (error) {
@@ -177,7 +177,7 @@ const PublicEvents = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <EventFilters filters={filters} onFiltersChange={handleFiltersChange} />
+            <EventFilters filters={currentFilters} onFiltersChange={handleFiltersChange} />
           </div>
 
           <div className="lg:w-3/4">
