@@ -44,10 +44,10 @@ const PublicSpaces = () => {
         query = query.ilike('address', `%${filters.city}%`);
       }
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.eq('category', filters.category as 'home' | 'outdoor' | 'professional');
       }
       if (filters.workEnvironment) {
-        query = query.eq('work_environment', filters.workEnvironment);
+        query = query.eq('work_environment', filters.workEnvironment as 'silent' | 'controlled' | 'dynamic');
       }
       if (filters.priceRange[1] < 200) {
         query = query.lte('price_per_hour', filters.priceRange[1]);
