@@ -12,14 +12,7 @@ import { MarketplaceLayout } from '@/components/layout/MarketplaceLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Define types locally to avoid any import recursion
-type LocalEventFilters = {
-  city: string;
-  category: string;
-  dateRange: { from: string; to?: string } | null;
-};
-
-// Simple event type to avoid deep type instantiation
+// Simple, explicit types to avoid TypeScript recursion
 type SimpleEvent = {
   id: string;
   title: string;
@@ -47,9 +40,15 @@ type SimpleEvent = {
   } | null;
 };
 
+type EventFilters = {
+  city: string;
+  category: string;
+  dateRange: { from: string; to?: string } | null;
+};
+
 const PublicEvents = () => {
   const { authState } = useAuth();
-  const [filters, setFilters] = useState<LocalEventFilters>({
+  const [filters, setFilters] = useState<EventFilters>({
     city: '',
     category: '',
     dateRange: null,
@@ -60,13 +59,29 @@ const PublicEvents = () => {
     queryKey: ['public-events', filters],
     queryFn: async (): Promise<SimpleEvent[]> => {
       try {
-        // Simplified query without complex joins to avoid type issues
+        console.log('Fetching events with filters:', filters);
+        
+        // Step 1: Get basic events data only
         let query = supabase
           .from('events')
-          .select('*')
+          .select(`
+            id,
+            title,
+            description,
+            date,
+            space_id,
+            created_by,
+            created_at,
+            max_participants,
+            current_participants,
+            image_url,
+            status,
+            city
+          `)
           .eq('status', 'active')
           .gte('date', new Date().toISOString());
 
+        // Apply filters
         if (filters.city) {
           query = query.ilike('city', `%${filters.city}%`);
         }
@@ -90,46 +105,62 @@ const PublicEvents = () => {
           throw eventsError;
         }
 
-        if (!eventsData) {
+        if (!eventsData || eventsData.length === 0) {
+          console.log('No events found');
           return [];
         }
 
-        // Fetch additional data separately to avoid complex joins
-        const eventsWithDetails: SimpleEvent[] = [];
+        console.log('Found events:', eventsData.length);
+
+        // Step 2: Enrich events with additional data
+        const enrichedEvents: SimpleEvent[] = [];
         
         for (const event of eventsData) {
-          const eventWithDetails: SimpleEvent = { ...event };
+          const enrichedEvent: SimpleEvent = { ...event };
 
-          // Fetch space data if needed
+          // Get space data if space_id exists
           if (event.space_id) {
-            const { data: spaceData } = await supabase
-              .from('spaces')
-              .select('title, address, latitude, longitude, city')
-              .eq('id', event.space_id)
-              .single();
-            
-            if (spaceData) {
-              eventWithDetails.spaces = spaceData;
+            try {
+              const { data: spaceData, error: spaceError } = await supabase
+                .from('spaces')
+                .select('title, address, latitude, longitude, city')
+                .eq('id', event.space_id)
+                .maybeSingle();
+              
+              if (!spaceError && spaceData) {
+                enrichedEvent.spaces = spaceData;
+              } else if (spaceError) {
+                console.warn('Error fetching space for event', event.id, ':', spaceError);
+              }
+            } catch (error) {
+              console.warn('Failed to fetch space data for event', event.id, ':', error);
             }
           }
 
-          // Fetch creator data if needed
+          // Get creator profile if created_by exists
           if (event.created_by) {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('first_name, last_name, profile_photo_url')
-              .eq('id', event.created_by)
-              .single();
-            
-            if (profileData) {
-              eventWithDetails.profiles = profileData;
+            try {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('first_name, last_name, profile_photo_url')
+                .eq('id', event.created_by)
+                .maybeSingle();
+              
+              if (!profileError && profileData) {
+                enrichedEvent.profiles = profileData;
+              } else if (profileError) {
+                console.warn('Error fetching profile for event', event.id, ':', profileError);
+              }
+            } catch (error) {
+              console.warn('Failed to fetch profile data for event', event.id, ':', error);
             }
           }
 
-          eventsWithDetails.push(eventWithDetails);
+          enrichedEvents.push(enrichedEvent);
         }
         
-        return eventsWithDetails;
+        console.log('Enriched events:', enrichedEvents.length);
+        return enrichedEvents;
       } catch (error) {
         console.error('Error in events query:', error);
         throw error;
@@ -137,20 +168,24 @@ const PublicEvents = () => {
     },
   });
 
-  const handleFiltersChange = (newFilters: LocalEventFilters) => {
+  const handleFiltersChange = (newFilters: EventFilters) => {
+    console.log('Filters changed:', newFilters);
     setFilters(newFilters);
   };
 
   const handleEventClick = (eventId: string) => {
+    console.log('Event clicked:', eventId);
     window.open(`/event/${eventId}`, '_blank');
   };
 
   if (error) {
+    console.error('Query error:', error);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Errore nel caricamento</h2>
           <p className="text-gray-600">Si è verificato un errore durante il caricamento degli eventi.</p>
+          <p className="text-sm text-gray-500 mt-2">Dettagli: {error.message}</p>
         </div>
       </div>
     );

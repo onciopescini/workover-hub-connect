@@ -10,19 +10,19 @@ import {
 import { Input } from '@/components/ui/input';
 import { Filter, Calendar, MapPin } from 'lucide-react';
 
-// Define types locally to avoid any import recursion
-type LocalEventFilters = {
+// Local types to avoid circular dependencies
+type EventFilters = {
   city: string;
   category: string;
   dateRange: { from: string; to?: string } | null;
 };
 
-interface LocalEventFiltersProps {
-  filters: LocalEventFilters;
-  onFiltersChange: (filters: LocalEventFilters) => void;
+interface EventFiltersProps {
+  filters: EventFilters;
+  onFiltersChange: (filters: EventFilters) => void;
 }
 
-export const EventFilters: React.FC<LocalEventFiltersProps> = ({ filters, onFiltersChange }) => {
+export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
   const updateCity = (city: string) => {
     onFiltersChange({ ...filters, city });
   };
