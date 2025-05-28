@@ -48,6 +48,10 @@ const PublicEvents = () => {
         query = query.ilike('city', `%${filters.city}%`);
       }
 
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      }
+
       if (filters.dateRange?.from) {
         query = query.gte('date', filters.dateRange.from.toISOString());
       }
@@ -100,7 +104,7 @@ const PublicEvents = () => {
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/4">
-            <EventFilters onFiltersChange={handleFiltersChange} />
+            <EventFilters filters={filters} onFiltersChange={handleFiltersChange} />
           </div>
 
           <div className="lg:w-3/4">

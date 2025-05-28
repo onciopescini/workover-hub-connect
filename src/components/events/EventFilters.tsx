@@ -6,17 +6,21 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
-import { Filter, Calendar, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Filter, Calendar, MapPin } from 'lucide-react';
 
 interface EventFiltersProps {
   filters: {
-    dateRange: string;
-    eventType: string;
-    hasAvailability: boolean;
+    city: string;
+    category: string;
+    dateRange: { from: Date; to?: Date } | null;
   };
-  onFiltersChange: (filters: any) => void;
+  onFiltersChange: (filters: {
+    city: string;
+    category: string;
+    dateRange: { from: Date; to?: Date } | null;
+  }) => void;
 }
 
 export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
@@ -24,53 +28,129 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     onFiltersChange({ ...filters, [key]: value });
   };
 
-  return (
-    <div className="flex items-center gap-2">
-      {/* Date Range Filter */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
-            {filters.dateRange ? 
-              (filters.dateRange === 'today' ? 'Oggi' :
-               filters.dateRange === 'tomorrow' ? 'Domani' :
-               filters.dateRange === 'week' ? 'Questa settimana' : 'Data') 
-              : 'Data'}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={() => updateFilter('dateRange', '')}>
-            Tutte le date
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => updateFilter('dateRange', 'today')}>
-            Oggi
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => updateFilter('dateRange', 'tomorrow')}>
-            Domani
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => updateFilter('dateRange', 'week')}>
-            Questa settimana
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+  const setDateRange = (range: string) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
 
-      {/* Availability Filter */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Users className="h-4 w-4 mr-2" />
-            Disponibilità
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuCheckboxItem
-            checked={filters.hasAvailability}
-            onCheckedChange={(checked) => updateFilter('hasAvailability', checked)}
-          >
-            Solo eventi con posti disponibili
-          </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    switch (range) {
+      case 'today':
+        updateFilter('dateRange', { from: today });
+        break;
+      case 'tomorrow':
+        updateFilter('dateRange', { from: tomorrow });
+        break;
+      case 'week':
+        updateFilter('dateRange', { from: today, to: nextWeek });
+        break;
+      default:
+        updateFilter('dateRange', null);
+    }
+  };
+
+  const clearAllFilters = () => {
+    onFiltersChange({
+      city: '',
+      category: '',
+      dateRange: null
+    });
+  };
+
+  const hasActiveFilters = filters.city || filters.category || filters.dateRange;
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold text-lg">Filtri</h3>
+      
+      {/* City Filter */}
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          <MapPin className="h-4 w-4 inline mr-1" />
+          Città
+        </label>
+        <Input
+          placeholder="Cerca per città..."
+          value={filters.city}
+          onChange={(e) => updateFilter('city', e.target.value)}
+        />
+      </div>
+
+      {/* Category Filter */}
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          <Filter className="h-4 w-4 inline mr-1" />
+          Categoria
+        </label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full justify-start">
+              {filters.category || 'Tutte le categorie'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-full">
+            <DropdownMenuItem onClick={() => updateFilter('category', '')}>
+              Tutte le categorie
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => updateFilter('category', 'networking')}>
+              Networking
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => updateFilter('category', 'workshop')}>
+              Workshop
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => updateFilter('category', 'conference')}>
+              Conference
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => updateFilter('category', 'social')}>
+              Social
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Date Range Filter */}
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          <Calendar className="h-4 w-4 inline mr-1" />
+          Data
+        </label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-full justify-start">
+              {filters.dateRange ? 
+                (filters.dateRange.to ? 
+                  `${filters.dateRange.from.toLocaleDateString('it-IT')} - ${filters.dateRange.to.toLocaleDateString('it-IT')}` :
+                  filters.dateRange.from.toLocaleDateString('it-IT')
+                ) : 
+                'Tutte le date'
+              }
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setDateRange('')}>
+              Tutte le date
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setDateRange('today')}>
+              Oggi
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setDateRange('tomorrow')}>
+              Domani
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setDateRange('week')}>
+              Prossimi 7 giorni
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Clear All Filters */}
+      {hasActiveFilters && (
+        <Button variant="ghost" onClick={clearAllFilters} className="w-full">
+          Rimuovi tutti i filtri
+        </Button>
+      )}
     </div>
   );
 };
