@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState } from '@/types/auth';
@@ -25,6 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
     isAuthenticated: false,
   });
+
+  const validateLinkedInUrl = (url: string): boolean => {
+    if (!url || !url.trim()) return true; // Empty is valid
+    
+    // Strict LinkedIn URL validation matching database constraint
+    const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/i;
+    return linkedinRegex.test(url);
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -172,12 +179,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Validate LinkedIn URL if provided
+      // Validate LinkedIn URL if provided with strict validation
       if (userData.linkedin_url && userData.linkedin_url.trim()) {
         const linkedinUrl = userData.linkedin_url.trim();
+        
+        // Format URL if needed
+        let formattedUrl = linkedinUrl;
         if (!linkedinUrl.startsWith('http://') && !linkedinUrl.startsWith('https://')) {
-          userData.linkedin_url = `https://${linkedinUrl}`;
+          formattedUrl = `https://linkedin.com/in/${linkedinUrl}`;
         }
+        
+        // Validate against database constraint
+        if (!validateLinkedInUrl(formattedUrl)) {
+          throw new Error('URL LinkedIn non valido. Deve essere nel formato: https://linkedin.com/in/nomeutente');
+        }
+        
+        userData.linkedin_url = formattedUrl;
+      } else {
+        // Set to null if empty to avoid constraint violations
+        userData.linkedin_url = null;
       }
 
       const { data, error } = await supabase
@@ -192,6 +212,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Profile update error:', error);
+        if (error.message.includes('profiles_linkedin_url_check')) {
+          throw new Error('URL LinkedIn non valido. Controlla il formato dell\'URL.');
+        }
         throw error;
       }
 
@@ -204,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success('Profilo aggiornato con successo');
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error('Errore nell\'aggiornamento del profilo');
+      toast.error(error.message || 'Errore nell\'aggiornamento del profilo');
       throw error;
     }
   };
