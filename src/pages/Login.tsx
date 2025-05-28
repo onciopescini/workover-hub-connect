@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +18,20 @@ const Login = () => {
   const { signIn, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
 
+  // Debug logging
+  useEffect(() => {
+    console.log('Login component mounted, authState:', {
+      isLoading: authState.isLoading,
+      isAuthenticated: authState.isAuthenticated,
+      userEmail: authState.user?.email
+    });
+  }, [authState]);
+
   // Handle post-login redirect based on user role
   useEffect(() => {
     if (!authState.isLoading && authState.isAuthenticated && authState.profile) {
+      console.log('User authenticated, redirecting based on role:', authState.profile.role);
+      
       if (authState.profile.onboarding_completed) {
         // Redirect based on role
         switch (authState.profile.role) {
@@ -32,7 +42,7 @@ const Login = () => {
             navigate("/host/dashboard", { replace: true });
             break;
           case 'coworker':
-            navigate("/app/spaces", { replace: true }); // Changed to authenticated spaces route
+            navigate("/app/spaces", { replace: true });
             break;
           default:
             navigate("/app/spaces", { replace: true });
@@ -55,13 +65,21 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!signIn) {
+      setError("Servizio di autenticazione non disponibile");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
     
     try {
+      console.log('Attempting sign in with email:', formData.email);
       await signIn(formData.email, formData.password);
       // Navigation will be handled by the useEffect above
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message || "Failed to sign in. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
@@ -69,17 +87,36 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!signInWithGoogle) {
+      setError("Servizio di autenticazione Google non disponibile");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
     
     try {
+      console.log('Attempting Google sign in');
       await signInWithGoogle();
       // No navigation needed here as OAuth redirects the browser
     } catch (err: any) {
+      console.error('Google login error:', err);
       setError(err.message || "Failed to sign in with Google.");
       setIsSubmitting(false);
     }
   };
+
+  // Show loading if auth state is still loading
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span>Caricamento...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-emerald-50 flex items-center justify-center p-4">

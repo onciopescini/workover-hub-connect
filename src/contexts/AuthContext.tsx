@@ -5,6 +5,8 @@ import type { AuthState } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType extends AuthState {
+  signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -51,6 +53,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }));
     } catch (error) {
       console.error('Error refreshing profile:', error);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      console.log('Sign in successful:', data.user?.email);
+    } catch (error) {
+      console.error('Sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+
+      console.log('Google sign in initiated');
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
     }
   };
 
@@ -101,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         
+        console.log('Initial session check:', session?.user?.email || 'No session');
         await updateAuthState(session?.user || null, session);
       } catch (error) {
         console.error('Error getting initial session:', error);
@@ -125,6 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value: AuthContextType = {
     ...authState,
+    signIn,
+    signInWithGoogle,
     signOut,
     refreshProfile,
   };
