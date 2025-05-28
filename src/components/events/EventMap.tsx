@@ -3,34 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
-
-// Simple event type to match the one used in PublicEvents
-type SimpleEvent = {
-  id: string;
-  title: string;
-  description: string | null;
-  date: string;
-  space_id: string;
-  created_by: string | null;
-  created_at: string | null;
-  max_participants: number | null;
-  current_participants: number | null;
-  image_url: string | null;
-  status: string | null;
-  city: string | null;
-  spaces?: {
-    title: string;
-    address: string;
-    latitude: number | null;
-    longitude: number | null;
-    city: string;
-  } | null;
-  profiles?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-};
+import { SimpleEvent } from '@/hooks/usePublicEvents';
 
 interface EventMapProps {
   events: SimpleEvent[];

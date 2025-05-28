@@ -3,35 +3,8 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Clock } from 'lucide-react';
-
-// Simple event type to match the one used in PublicEvents
-type SimpleEvent = {
-  id: string;
-  title: string;
-  description: string | null;
-  date: string;
-  space_id: string;
-  created_by: string | null;
-  created_at: string | null;
-  max_participants: number | null;
-  current_participants: number | null;
-  image_url: string | null;
-  status: string | null;
-  city: string | null;
-  spaces?: {
-    title: string;
-    address: string;
-    latitude: number | null;
-    longitude: number | null;
-    city: string;
-  } | null;
-  profiles?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-};
+import { Calendar, MapPin, Users } from 'lucide-react';
+import { SimpleEvent } from '@/hooks/usePublicEvents';
 
 interface EventCardProps {
   event: SimpleEvent;
