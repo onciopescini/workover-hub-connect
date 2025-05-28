@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,7 +44,7 @@ const Messages = () => {
   });
 
   const handleBookingClick = (bookingId: string) => {
-    navigate(`/message/${bookingId}`);
+    navigate(`/messages/${bookingId}`);
   };
 
   const getStatusColor = (status: string) => {

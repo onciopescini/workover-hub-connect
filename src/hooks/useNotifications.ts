@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { UserNotification, NotificationCounts } from "@/types/notification";
 import { getUserNotifications, getNotificationCounts } from "@/lib/notification-utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,18 +11,25 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [counts, setCounts] = useState<NotificationCounts>({ total: 0, unread: 0, byType: {} });
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Anti-loop flags
+  const isUpdatingRef = useRef(false);
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
+  const subscriptionRef = useRef<any>(null);
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!authState.user) {
-      setNotifications([]);
-      setCounts({ total: 0, unread: 0, byType: {} });
-      setIsLoading(false);
-      return;
+  // Debounced fetch function
+  const debouncedFetch = useCallback(async () => {
+    if (!authState.user || isUpdatingRef.current) return;
+    
+    isUpdatingRef.current = true;
+    
+    // Clear any existing timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
     
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const [notificationsData, countsData] = await Promise.all([
         getUserNotifications(50),
         getNotificationCounts()
@@ -35,21 +42,33 @@ export const useNotifications = () => {
       toast.error("Errore nel caricamento delle notifiche");
     } finally {
       setIsLoading(false);
+      
+      // Reset flag after delay to prevent rapid successive calls
+      updateTimeoutRef.current = setTimeout(() => {
+        isUpdatingRef.current = false;
+      }, 1000);
     }
-  };
+  }, [authState.user?.id]); // Only depend on user id
 
   useEffect(() => {
-    fetchNotifications();
-  }, [authState.user]);
+    debouncedFetch();
+  }, [debouncedFetch]);
 
-  // Real-time subscription
+  // Real-time subscription with proper cleanup
   useEffect(() => {
-    if (!authState.user) return;
+    if (!authState.user) {
+      // Clean up existing subscription
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+      return;
+    }
 
     console.log('🔔 Setting up notifications real-time subscription for user:', authState.user.id);
 
     const channel = supabase
-      .channel('user-notifications')
+      .channel(`user-notifications-${authState.user.id}`)
       .on(
         'postgres_changes',
         {
@@ -59,15 +78,15 @@ export const useNotifications = () => {
           filter: `user_id=eq.${authState.user.id}`
         },
         (payload) => {
+          // Debounce real-time updates
+          if (isUpdatingRef.current) return;
+          
           console.log('🔔 Notification change received:', payload);
           
           if (payload.eventType === 'INSERT') {
             const newNotification = payload.new as UserNotification;
             
-            // Aggiungi la nuova notifica in cima alla lista
             setNotifications(prev => [newNotification, ...prev]);
-            
-            // Aggiorna i contatori
             setCounts(prev => ({
               total: prev.total + 1,
               unread: prev.unread + 1,
@@ -77,11 +96,13 @@ export const useNotifications = () => {
               }
             }));
             
-            // Mostra toast per nuova notifica
-            toast.success(newNotification.title, {
-              description: newNotification.content,
-              duration: 5000,
-            });
+            // Show toast with rate limiting
+            if (!isUpdatingRef.current) {
+              toast.success(newNotification.title, {
+                description: newNotification.content,
+                duration: 5000,
+              });
+            }
           } else if (payload.eventType === 'UPDATE') {
             const updatedNotification = payload.new as UserNotification;
             
@@ -89,7 +110,6 @@ export const useNotifications = () => {
               prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
             );
             
-            // Se la notifica è stata marcata come letta, aggiorna i contatori
             if (updatedNotification.is_read && payload.old && !payload.old.is_read) {
               setCounts(prev => ({
                 ...prev,
@@ -101,7 +121,6 @@ export const useNotifications = () => {
             
             setNotifications(prev => prev.filter(n => n.id !== deletedId));
             
-            // Aggiorna i contatori
             if (!payload.old.is_read) {
               setCounts(prev => ({
                 total: prev.total - 1,
@@ -119,13 +138,21 @@ export const useNotifications = () => {
         console.log('🔔 Notifications subscription status:', status);
       });
 
+    subscriptionRef.current = channel;
+
     return () => {
       console.log('🔔 Cleaning up notifications subscription');
-      supabase.removeChannel(channel);
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
     };
-  }, [authState.user]);
+  }, [authState.user?.id]); // Only depend on user id
 
-  const markAsRead = (notificationId: string) => {
+  const markAsRead = useCallback((notificationId: string) => {
     setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
     );
@@ -133,12 +160,16 @@ export const useNotifications = () => {
       ...prev, 
       unread: Math.max(0, prev.unread - 1) 
     }));
-  };
+  }, []);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setCounts(prev => ({ ...prev, unread: 0 }));
-  };
+  }, []);
+
+  const fetchNotifications = useCallback(() => {
+    debouncedFetch();
+  }, [debouncedFetch]);
 
   return {
     notifications,

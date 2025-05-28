@@ -1,304 +1,176 @@
 
-import { useAuth } from "@/contexts/AuthContext";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, MapPin, Briefcase, Heart, Edit, LinkIcon } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
+import React, { useState } from 'react';
+import { useProfile } from '@/hooks/useProfile';
+import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
+import { SocialMediaSection } from '@/components/profile/SocialMediaSection';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Edit, MapPin, Calendar, Mail, Phone } from 'lucide-react';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 const Profile = () => {
-  const { authState, refreshProfile } = useAuth();
-  const navigate = useNavigate();
+  const { profile, isLoading } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Refresh profile data when component mounts
-  useEffect(() => {
-    if (authState.isAuthenticated && refreshProfile) {
-      refreshProfile();
-    }
-  }, [authState.isAuthenticated, refreshProfile]);
-
-  if (!authState.profile) {
+  if (isLoading) {
     return (
-      <AppLayout title="Profilo" subtitle="Il tuo profilo personale">
-        <div className="max-w-4xl mx-auto p-4 md:p-6">
-          <p>Caricamento profilo...</p>
+      <AppLayout title="Profilo">
+        <div className="flex justify-center items-center h-64">
+          <LoadingSpinner />
         </div>
       </AppLayout>
     );
   }
 
+  if (!profile) {
+    return (
+      <AppLayout title="Profilo">
+        <div className="text-center py-12">
+          <p className="text-gray-500">Profilo non trovato</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const handleEditComplete = () => {
+    setIsEditing(false);
+  };
+
   const getUserInitials = () => {
-    const firstName = authState.profile?.first_name || "";
-    const lastName = authState.profile?.last_name || "";
+    const firstName = profile.first_name || "";
+    const lastName = profile.last_name || "";
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "U";
   };
 
-  const getUserFullName = () => {
-    const firstName = authState.profile?.first_name || "";
-    const lastName = authState.profile?.last_name || "";
-    return `${firstName} ${lastName}`.trim() || "Utente";
-  };
-
-  const getDashboardUrl = () => {
-    if (authState.profile?.role === "admin") return "/admin";
-    if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/app/spaces"; // Coworker ora va agli spazi autenticati
-  };
-
-  const handleDashboardNavigation = async () => {
-    // Force refresh profile before navigation to ensure header updates correctly
-    if (refreshProfile) {
-      await refreshProfile();
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'coworker':
+        return 'Coworker';
+      case 'host':
+        return 'Host';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
     }
-    
-    const dashboardUrl = getDashboardUrl();
-    navigate(dashboardUrl);
-    
-    // Small delay to ensure state is updated before potential page refresh
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
   };
 
-  const getJobTypeLabel = (type: string) => {
-    const labels = {
-      'aziendale': 'Aziendale',
-      'freelance': 'Freelance',
-      'studente': 'Studente'
-    };
-    return labels[type as keyof typeof labels] || type;
-  };
-
-  const getWorkStyleLabel = (style: string) => {
-    const labels = {
-      'silenzioso': 'Silenzioso',
-      'collaborativo': 'Collaborativo',
-      'flessibile': 'Flessibile',
-      'strutturato': 'Strutturato',
-      'creativo': 'Creativo'
-    };
-    return labels[style as keyof typeof labels] || style;
-  };
-
-  const handleEditComplete = async () => {
-    setIsEditing(false);
-    // Refresh profile data after editing
-    if (refreshProfile) {
-      await refreshProfile();
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'coworker':
+        return 'bg-blue-100 text-blue-800';
+      case 'host':
+        return 'bg-green-100 text-green-800';
+      case 'admin':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   if (isEditing) {
     return (
-      <AppLayout title="Modifica Profilo" subtitle="Aggiorna le tue informazioni">
+      <AppLayout title="Modifica Profilo">
         <div className="max-w-4xl mx-auto p-4 md:p-6">
-          <div className="mb-4">
-            <Button
-              variant="outline"
-              onClick={handleEditComplete}
-            >
-              ← Torna al Profilo
-            </Button>
-          </div>
-          <ProfileEditForm />
+          <ProfileEditForm 
+            profile={profile} 
+            onEditComplete={handleEditComplete}
+          />
         </div>
       </AppLayout>
     );
   }
 
   return (
-    <AppLayout title="Profilo" subtitle="Il tuo profilo personale">
-      <div className="max-w-4xl mx-auto p-4 md:p-6">
-        {/* Navigation buttons */}
-        <div className="mb-6 flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleDashboardNavigation}
-          >
-            ← Torna al Dashboard
-          </Button>
-        </div>
-
+    <AppLayout title="Il tuo Profilo">
+      <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+        {/* Header Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={authState.profile?.profile_photo_url || ""} />
-                  <AvatarFallback className="text-xl">
+                  <AvatarImage src={profile.profile_photo_url || ""} />
+                  <AvatarFallback className="text-lg">
                     {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-2xl">{getUserFullName()}</CardTitle>
-                  {authState.profile.job_title && (
-                    <p className="text-lg text-gray-600 mt-1">{authState.profile.job_title}</p>
+                  <h1 className="text-2xl font-bold">
+                    {profile.first_name} {profile.last_name}
+                  </h1>
+                  <Badge className={getRoleBadgeColor(profile.role)}>
+                    {getRoleLabel(profile.role)}
+                  </Badge>
+                  {profile.bio && (
+                    <p className="text-gray-600 mt-2">{profile.bio}</p>
                   )}
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Badge variant="secondary">
-                      {authState.profile.role === "host" ? "Host" : 
-                       authState.profile.role === "admin" ? "Admin" : "Coworker"}
-                    </Badge>
-                    {authState.profile.job_type && (
-                      <Badge variant="outline">
-                        {getJobTypeLabel(authState.profile.job_type)}
-                      </Badge>
-                    )}
-                    {authState.profile.work_style && (
-                      <Badge variant="outline">
-                        {getWorkStyleLabel(authState.profile.work_style)}
-                      </Badge>
-                    )}
-                    {authState.profile.nickname && (
-                      <span className="text-sm text-gray-600">
-                        @{authState.profile.nickname}
-                      </span>
-                    )}
-                  </div>
                 </div>
               </div>
-              <Button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Modifica Profilo
+              <Button onClick={() => setIsEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Modifica
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Basic Info */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Informazioni Personali
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p className="text-sm">{authState.user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Data di registrazione</p>
-                  <p className="text-sm">
-                    {authState.profile.created_at ? 
-                      new Date(authState.profile.created_at).toLocaleDateString('it-IT') : 
-                      'Non disponibile'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Info */}
-            {(authState.profile.job_title || authState.profile.job_type || authState.profile.work_style) && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  Informazioni Professionali
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {authState.profile.job_title && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Titolo di Lavoro</p>
-                      <p className="text-sm">{authState.profile.job_title}</p>
-                    </div>
-                  )}
-                  {authState.profile.job_type && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">Tipo di Lavoro</p>
-                      <p className="text-sm">{getJobTypeLabel(authState.profile.job_type)}</p>
-                    </div>
-                  )}
-                  {authState.profile.work_style && (
-                    <div className="md:col-span-2">
-                      <p className="text-sm font-medium text-gray-500">Stile di Lavoro</p>
-                      <p className="text-sm">{getWorkStyleLabel(authState.profile.work_style)}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Location */}
-            {authState.profile.location && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Posizione
-                </h3>
-                <p className="text-sm">{authState.profile.location}</p>
-              </div>
-            )}
-
-            {/* Skills - Only for coworkers */}
-            {authState.profile.role === "coworker" && authState.profile.skills && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  Competenze
-                </h3>
-                <p className="text-sm">{authState.profile.skills}</p>
-              </div>
-            )}
-
-            {/* Interests - Only for coworkers */}
-            {authState.profile.role === "coworker" && authState.profile.interests && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <Heart className="h-5 w-5 mr-2" />
-                  Interessi
-                </h3>
-                <p className="text-sm">{authState.profile.interests}</p>
-              </div>
-            )}
-
-            {/* Bio */}
-            {authState.profile.bio && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Bio</h3>
-                <p className="text-sm">{authState.profile.bio}</p>
-              </div>
-            )}
-
-            {/* Links */}
-            {(authState.profile.linkedin_url || authState.profile.website) && (
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center">
-                  <LinkIcon className="h-5 w-5 mr-2" />
-                  Collegamenti
-                </h3>
-                <div className="space-y-2">
-                  {authState.profile.linkedin_url && (
-                    <a 
-                      href={authState.profile.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm block"
-                    >
-                      Profilo LinkedIn
-                    </a>
-                  )}
-                  {authState.profile.website && (
-                    <a 
-                      href={authState.profile.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm block"
-                    >
-                      Sito Web
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Informazioni Personali */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informazioni Personali</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profile.email && (
+                <div className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4 text-gray-500" />
+                  <span>{profile.email}</span>
+                </div>
+              )}
+              {profile.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4 text-gray-500" />
+                  <span>{profile.phone}</span>
+                </div>
+              )}
+              {(profile.city || profile.country) && (
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-gray-500" />
+                  <span>{[profile.city, profile.country].filter(Boolean).join(', ')}</span>
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span>Iscritto il {new Date(profile.created_at).toLocaleDateString('it-IT')}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Interessi */}
+          {profile.interests && profile.interests.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Interessi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {profile.interests.map((interest, index) => (
+                    <Badge key={index} variant="outline">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Social Media */}
+        <SocialMediaSection profile={profile} />
       </div>
     </AppLayout>
   );
