@@ -4,10 +4,37 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Clock } from 'lucide-react';
-import { EventWithDetails } from '@/types/event';
+
+// Simple event type to match the one used in PublicEvents
+type SimpleEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string;
+  space_id: string;
+  created_by: string | null;
+  created_at: string | null;
+  max_participants: number | null;
+  current_participants: number | null;
+  image_url: string | null;
+  status: string | null;
+  city: string | null;
+  spaces?: {
+    title: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    city: string;
+  } | null;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  } | null;
+};
 
 interface EventCardProps {
-  event: EventWithDetails;
+  event: SimpleEvent;
   onClick: () => void;
 }
 
@@ -87,7 +114,9 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
 
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <MapPin className="h-4 w-4" />
-              <span className="line-clamp-1">{event.space?.title} - {event.space?.address}</span>
+              <span className="line-clamp-1">
+                {event.spaces?.title || 'Spazio'} - {event.spaces?.address || 'Indirizzo'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -97,15 +126,15 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
           </div>
 
           {/* Creator info */}
-          {event.creator && (
+          {event.profiles && (
             <div className="flex items-center gap-2 mb-3">
               <img
-                src={event.creator.profile_photo_url || '/placeholder.svg'}
-                alt={`${event.creator.first_name} ${event.creator.last_name}`}
+                src={event.profiles.profile_photo_url || '/placeholder.svg'}
+                alt={`${event.profiles.first_name} ${event.profiles.last_name}`}
                 className="w-6 h-6 rounded-full"
               />
               <span className="text-sm text-gray-600">
-                Organizzato da {event.creator.first_name} {event.creator.last_name}
+                Organizzato da {event.profiles.first_name} {event.profiles.last_name}
               </span>
             </div>
           )}

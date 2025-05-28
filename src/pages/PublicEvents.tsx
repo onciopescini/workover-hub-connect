@@ -19,6 +19,34 @@ type LocalEventFilters = {
   dateRange: { from: string; to?: string } | null;
 };
 
+// Simple event type to avoid deep type instantiation
+type SimpleEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string;
+  space_id: string;
+  created_by: string | null;
+  created_at: string | null;
+  max_participants: number | null;
+  current_participants: number | null;
+  image_url: string | null;
+  status: string | null;
+  city: string | null;
+  spaces?: {
+    title: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    city: string;
+  } | null;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  } | null;
+};
+
 const PublicEvents = () => {
   const { authState } = useAuth();
   const [filters, setFilters] = useState<LocalEventFilters>({
@@ -30,51 +58,82 @@ const PublicEvents = () => {
 
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['public-events', filters],
-    queryFn: async () => {
-      let query = supabase
-        .from('events')
-        .select(`
-          *,
-          spaces (
-            title,
-            address,
-            latitude,
-            longitude,
-            city
-          ),
-          profiles!events_created_by_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          )
-        `)
-        .eq('status', 'active')
-        .gte('date', new Date().toISOString());
+    queryFn: async (): Promise<SimpleEvent[]> => {
+      try {
+        // Simplified query without complex joins to avoid type issues
+        let query = supabase
+          .from('events')
+          .select('*')
+          .eq('status', 'active')
+          .gte('date', new Date().toISOString());
 
-      if (filters.city) {
-        query = query.ilike('city', `%${filters.city}%`);
-      }
+        if (filters.city) {
+          query = query.ilike('city', `%${filters.city}%`);
+        }
 
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
+        if (filters.category) {
+          query = query.eq('category', filters.category);
+        }
 
-      if (filters.dateRange?.from) {
-        query = query.gte('date', filters.dateRange.from);
-      }
+        if (filters.dateRange?.from) {
+          query = query.gte('date', filters.dateRange.from);
+        }
 
-      if (filters.dateRange?.to) {
-        query = query.lte('date', filters.dateRange.to);
-      }
+        if (filters.dateRange?.to) {
+          query = query.lte('date', filters.dateRange.to);
+        }
 
-      const { data, error } = await query.order('date', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching events:', error);
+        const { data: eventsData, error: eventsError } = await query.order('date', { ascending: true });
+        
+        if (eventsError) {
+          console.error('Error fetching events:', eventsError);
+          throw eventsError;
+        }
+
+        if (!eventsData) {
+          return [];
+        }
+
+        // Fetch additional data separately to avoid complex joins
+        const eventsWithDetails: SimpleEvent[] = [];
+        
+        for (const event of eventsData) {
+          const eventWithDetails: SimpleEvent = { ...event };
+
+          // Fetch space data if needed
+          if (event.space_id) {
+            const { data: spaceData } = await supabase
+              .from('spaces')
+              .select('title, address, latitude, longitude, city')
+              .eq('id', event.space_id)
+              .single();
+            
+            if (spaceData) {
+              eventWithDetails.spaces = spaceData;
+            }
+          }
+
+          // Fetch creator data if needed
+          if (event.created_by) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, profile_photo_url')
+              .eq('id', event.created_by)
+              .single();
+            
+            if (profileData) {
+              eventWithDetails.profiles = profileData;
+            }
+          }
+
+          eventsWithDetails.push(eventWithDetails);
+        }
+        
+        return eventsWithDetails;
+      } catch (error) {
+        console.error('Error in events query:', error);
         throw error;
       }
-      
-      return data || [];
     },
   });
 

@@ -2,11 +2,38 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { EventWithDetails } from '@/types/event';
 import { supabase } from '@/integrations/supabase/client';
 
+// Simple event type to match the one used in PublicEvents
+type SimpleEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string;
+  space_id: string;
+  created_by: string | null;
+  created_at: string | null;
+  max_participants: number | null;
+  current_participants: number | null;
+  image_url: string | null;
+  status: string | null;
+  city: string | null;
+  spaces?: {
+    title: string;
+    address: string;
+    latitude: number | null;
+    longitude: number | null;
+    city: string;
+  } | null;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  } | null;
+};
+
 interface EventMapProps {
-  events: EventWithDetails[];
+  events: SimpleEvent[];
   userLocation: {lat: number, lng: number} | null;
   onEventClick: (eventId: string) => void;
 }
@@ -73,7 +100,7 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
     markers.current = [];
 
     events.forEach(event => {
-      if (event.space?.latitude && event.space?.longitude) {
+      if (event.spaces?.latitude && event.spaces?.longitude) {
         const el = document.createElement('div');
         el.className = 'w-8 h-8 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-pointer flex items-center justify-center text-white text-xs font-bold hover:bg-purple-700 transition-colors';
         el.innerHTML = '📅';
@@ -83,13 +110,13 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
         });
 
         const marker = new mapboxgl.Marker(el)
-          .setLngLat([event.space.longitude, event.space.latitude])
+          .setLngLat([event.spaces.longitude, event.spaces.latitude])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 })
               .setHTML(`
                 <div class="p-2">
                   <h3 class="font-semibold">${event.title}</h3>
-                  <p class="text-sm text-gray-600">${event.space.address}</p>
+                  <p class="text-sm text-gray-600">${event.spaces.address}</p>
                   <p class="text-sm text-purple-600">${new Date(event.date).toLocaleDateString()}</p>
                 </div>
               `)
