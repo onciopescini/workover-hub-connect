@@ -14,3 +14,13 @@ export type AuthState = {
 };
 
 export type UserRole = "host" | "coworker" | "admin";
+
+export interface AuthContextType {
+  authState: AuthState;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+}

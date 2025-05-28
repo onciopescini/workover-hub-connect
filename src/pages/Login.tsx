@@ -15,7 +15,7 @@ const Login = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const { signIn, signInWithGoogle, authState } = useAuth();
+  const { authState, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   // Debug logging

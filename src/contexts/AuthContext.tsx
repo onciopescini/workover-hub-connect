@@ -1,15 +1,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { AuthState } from '@/types/auth';
+import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
-
-interface AuthContextType extends AuthState {
-  signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
-}
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -56,6 +49,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!authState.user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAuthState(prev => ({
+        ...prev,
+        profile: data
+      }));
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -68,6 +86,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Sign in successful:', data.user?.email);
     } catch (error) {
       console.error('Sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signUp = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      console.log('Sign up successful:', data.user?.email);
+    } catch (error) {
+      console.error('Sign up error:', error);
       throw error;
     }
   };
@@ -161,11 +195,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value: AuthContextType = {
-    ...authState,
+    authState,
     signIn,
+    signUp,
     signInWithGoogle,
     signOut,
     refreshProfile,
+    updateProfile,
   };
 
   return (
