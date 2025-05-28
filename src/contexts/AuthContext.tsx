@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
+import { cleanupAuthState, cleanSignIn } from '@/lib/auth-utils';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -93,13 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
+      const data = await cleanSignIn(email, password);
       console.log('Sign in successful:', data.user?.email);
     } catch (error) {
       console.error('Sign in error:', error);
@@ -109,6 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
+      // Clean up existing state first
+      cleanupAuthState();
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -125,6 +123,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      // Clean up existing state first
+      cleanupAuthState();
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -142,6 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateAuthState = async (user: User | null, session: Session | null) => {
+    console.log('Updating auth state:', { user: user?.email, hasSession: !!session });
+    
     if (user && session) {
       const profile = await fetchProfile(user.id);
       setAuthState({
@@ -164,8 +167,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      cleanupAuthState();
+      
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Supabase sign out error:', error);
+      }
       
       // Clear auth state immediately
       setAuthState({
@@ -175,6 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading: false,
         isAuthenticated: false,
       });
+      
+      // Force reload to ensure clean state
+      window.location.href = '/login';
     } catch (error) {
       console.error('Error during sign out:', error);
       throw error;
@@ -182,17 +192,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+          console.error('Error getting initial session:', error);
+          if (mounted) {
+            setAuthState(prev => ({ ...prev, isLoading: false }));
+          }
+          return;
+        }
         
         console.log('Initial session check:', session?.user?.email || 'No session');
-        await updateAuthState(session?.user || null, session);
+        if (mounted) {
+          await updateAuthState(session?.user || null, session);
+        }
       } catch (error) {
         console.error('Error getting initial session:', error);
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, isLoading: false }));
+        }
       }
     };
 
@@ -202,12 +224,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        await updateAuthState(session?.user || null, session);
+        
+        // Use setTimeout to defer the state update and prevent deadlocks
+        setTimeout(async () => {
+          if (mounted) {
+            await updateAuthState(session?.user || null, session);
+          }
+        }, 0);
       }
     );
 
     // Cleanup function
     return () => {
+      mounted = false;
       subscription.unsubscribe();
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);

@@ -76,3 +76,30 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
     return 0;
   }
 };
+
+// Helper function to handle login with cleanup
+export const cleanSignIn = async (email: string, password: string) => {
+  try {
+    // Clean up existing state first
+    cleanupAuthState();
+    
+    // Attempt global sign out to clear any existing sessions
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      // Continue even if this fails
+    }
+    
+    // Now attempt sign in
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error in clean sign in:", error);
+    throw error;
+  }
+};

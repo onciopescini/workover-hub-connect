@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Mail, Lock, ArrowLeft, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { cleanupAuthState } from "@/lib/auth-utils";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -23,7 +25,9 @@ const Login = () => {
     console.log('Login component mounted, authState:', {
       isLoading: authState.isLoading,
       isAuthenticated: authState.isAuthenticated,
-      userEmail: authState.user?.email
+      userEmail: authState.user?.email,
+      hasProfile: !!authState.profile,
+      profileRole: authState.profile?.role
     });
   }, [authState]);
 
@@ -71,6 +75,11 @@ const Login = () => {
       return;
     }
 
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError("Inserisci email e password");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
     
@@ -80,7 +89,17 @@ const Login = () => {
       // Navigation will be handled by the useEffect above
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || "Failed to sign in. Please check your credentials.");
+      
+      // Handle specific Supabase auth errors
+      if (err.message?.includes('Invalid login credentials')) {
+        setError("Email o password non corretti");
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError("Email non confermata. Controlla la tua casella di posta");
+      } else if (err.message?.includes('Too many requests')) {
+        setError("Troppi tentativi di login. Riprova tra qualche minuto");
+      } else {
+        setError(err.message || "Errore durante l'accesso. Riprova");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -101,9 +120,15 @@ const Login = () => {
       // No navigation needed here as OAuth redirects the browser
     } catch (err: any) {
       console.error('Google login error:', err);
-      setError(err.message || "Failed to sign in with Google.");
+      setError(err.message || "Errore durante l'accesso con Google");
       setIsSubmitting(false);
     }
+  };
+
+  // Handle logout/cleanup button for debugging
+  const handleCleanup = () => {
+    cleanupAuthState();
+    window.location.reload();
   };
 
   // Show loading if auth state is still loading
@@ -249,6 +274,17 @@ const Login = () => {
                   </svg>
                 )}
                 Continua con Google
+              </Button>
+              
+              {/* Debug button for cleanup - remove in production */}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full mt-2 text-xs"
+                onClick={handleCleanup}
+                disabled={isSubmitting}
+              >
+                Pulisci cache di autenticazione
               </Button>
             </div>
           </CardContent>

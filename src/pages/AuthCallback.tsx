@@ -11,12 +11,17 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        console.log('Auth callback started');
+        
         // Check if we have a session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
+          console.error('Session error:', sessionError);
           throw sessionError;
         }
+
+        console.log('Session found:', !!session, session?.user?.email);
 
         if (session) {
           // Check if user has completed onboarding
@@ -27,21 +32,30 @@ const AuthCallback = () => {
             .maybeSingle();
 
           if (profileError) {
+            console.error('Profile error:', profileError);
             throw profileError;
           }
 
+          console.log('Profile found:', !!profile, profile?.role, profile?.onboarding_completed);
+
           if (profile?.onboarding_completed) {
             // Redirect based on user role
-            navigate(profile.role === 'host' ? '/host/dashboard' : '/dashboard', { replace: true });
+            const redirectPath = profile.role === 'admin' ? '/admin' :
+                                profile.role === 'host' ? '/host/dashboard' : 
+                                '/app/spaces';
+            console.log('Redirecting to:', redirectPath);
+            navigate(redirectPath, { replace: true });
           } else {
+            console.log('Redirecting to onboarding');
             navigate("/onboarding", { replace: true });
           }
         } else {
+          console.log('No session, redirecting to login');
           navigate("/login", { replace: true });
         }
       } catch (error) {
         console.error("Auth callback error:", error);
-        setError("Authentication failed. Please try signing in again.");
+        setError("Errore durante l'autenticazione. Prova ad accedere di nuovo.");
         setTimeout(() => {
           navigate("/login", { replace: true });
         }, 3000);
@@ -56,10 +70,13 @@ const AuthCallback = () => {
       {error ? (
         <div className="text-center p-6 bg-white rounded-lg shadow-md">
           <p className="text-red-600 mb-4">{error}</p>
-          <p className="text-gray-600">Redirecting to login page...</p>
+          <p className="text-gray-600">Reindirizzamento alla pagina di login...</p>
         </div>
       ) : (
-        <LoadingScreen />
+        <div className="text-center">
+          <LoadingScreen />
+          <p className="mt-4 text-gray-600">Completando l'autenticazione...</p>
+        </div>
       )}
     </div>
   );
