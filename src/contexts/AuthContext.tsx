@@ -1,9 +1,9 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState } from '@/types/auth';
-import type { User, Session } from '@supabase/supabase-js';
-import { toast } from 'sonner';
+import { useAuthState } from '@/hooks/useAuthState';
+import { useProfile } from '@/hooks/useProfile';
 
 interface AuthContextType {
   authState: AuthState;
@@ -18,110 +18,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    session: null,
-    profile: null,
-    isLoading: true,
-    isAuthenticated: false,
-  });
-
-  const validateLinkedInUrl = (url: string): boolean => {
-    if (!url || !url.trim()) return true; // Empty is valid
-    
-    // Più permissivo per rispettare il constraint del database
-    const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/i;
-    return linkedinRegex.test(url);
-  };
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      console.log('Fetching profile for user:', userId);
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-
-      console.log('Profile fetched successfully:', profile);
-      return profile;
-    } catch (error) {
-      console.error('Error in fetchProfile:', error);
-      return null;
-    }
-  };
-
-  const refreshProfile = async () => {
-    if (!authState.user) return;
-    
-    try {
-      const profile = await fetchProfile(authState.user.id);
-      setAuthState(prev => ({
-        ...prev,
-        profile
-      }));
-    } catch (error) {
-      console.error('Error refreshing profile:', error);
-    }
-  };
-
-  const updateAuthState = async (user: User | null, session: Session | null) => {
-    console.log('Updating auth state:', { user: !!user, session: !!session });
-    
-    if (user && session) {
-      try {
-        // Set authenticated state first
-        setAuthState({
-          user,
-          session,
-          profile: null, // Will be set after profile fetch
-          isLoading: false,
-          isAuthenticated: true,
-        });
-
-        // Fetch profile separately with timeout
-        const profilePromise = fetchProfile(user.id);
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 5000); // 5 second timeout
-        });
-
-        const profile = await Promise.race([profilePromise, timeoutPromise]);
-        
-        setAuthState(prev => ({
-          ...prev,
-          profile
-        }));
-
-        if (!profile) {
-          console.warn('Profile fetch timed out or failed, but user is authenticated');
-        }
-      } catch (error) {
-        console.error('Error in updateAuthState:', error);
-        // Still set as authenticated even if profile fetch fails
-        setAuthState({
-          user,
-          session,
-          profile: null,
-          isLoading: false,
-          isAuthenticated: true,
-        });
-      }
-    } else {
-      console.log('Setting unauthenticated state');
-      setAuthState({
-        user: null,
-        session: null,
-        profile: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
-    }
-  };
+  const { authState, setAuthState, updateAuthState, refreshProfile } = useAuthState();
+  const { updateProfile: updateUserProfile } = useProfile();
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -179,68 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Utente non autenticato');
     }
 
-    try {
-      // Validate LinkedIn URL if provided
-      if (userData.linkedin_url && userData.linkedin_url.trim()) {
-        const linkedinUrl = userData.linkedin_url.trim();
-        
-        // Format URL if needed
-        let formattedUrl = linkedinUrl;
-        
-        // Se l'utente inserisce solo il nome utente, costruisci l'URL completo
-        if (!linkedinUrl.includes('linkedin.com') && !linkedinUrl.includes('http')) {
-          formattedUrl = `https://linkedin.com/in/${linkedinUrl}`;
-        }
-        // Se manca il protocollo, aggiungilo
-        else if (linkedinUrl.includes('linkedin.com') && !linkedinUrl.startsWith('http')) {
-          formattedUrl = `https://${linkedinUrl}`;
-        }
-        // Assicurati che sia https
-        else if (linkedinUrl.startsWith('http://linkedin.com')) {
-          formattedUrl = linkedinUrl.replace('http://', 'https://');
-        }
-        
-        // Validate against database constraint
-        if (!validateLinkedInUrl(formattedUrl)) {
-          throw new Error('URL LinkedIn non valido. Deve essere nel formato: https://linkedin.com/in/nomeutente');
-        }
-        
-        userData.linkedin_url = formattedUrl;
-      } else {
-        // Set to null if empty to avoid constraint violations
-        userData.linkedin_url = null;
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          ...userData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', authState.user.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Profile update error:', error);
-        if (error.message.includes('profiles_linkedin_url_check')) {
-          throw new Error('URL LinkedIn non valido. Controlla il formato dell\'URL.');
-        }
-        throw error;
-      }
-
-      // Update local state
-      setAuthState(prev => ({
-        ...prev,
-        profile: data
-      }));
-
-      toast.success('Profilo aggiornato con successo');
-    } catch (error: any) {
-      console.error('Error updating profile:', error);
-      toast.error(error.message || 'Errore nell\'aggiornamento del profilo');
-      throw error;
-    }
+    const updatedProfile = await updateUserProfile(authState.user.id, userData);
+    
+    // Update local state
+    setAuthState(prev => ({
+      ...prev,
+      profile: updatedProfile
+    }));
   };
 
   const signOut = async () => {
@@ -316,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(initializationTimeout);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [updateAuthState, setAuthState]);
 
   const value: AuthContextType = {
     authState,
