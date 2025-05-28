@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,13 +16,21 @@ import { useAuth } from '@/contexts/AuthContext';
 export function UnifiedHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authState, signOut } = useAuth();
+  const { authState, signOut, refreshProfile } = useAuth();
+
+  // Refresh profile when header mounts or location changes
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.user && refreshProfile) {
+      refreshProfile();
+    }
+  }, [authState.isAuthenticated, authState.user, location.pathname, refreshProfile]);
 
   const isActivePath = (path: string) => location.pathname === path;
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      navigate('/');
     } catch (error) {
       console.error("Error during logout:", error);
     }
@@ -65,6 +73,14 @@ export function UnifiedHeader() {
     return baseItems;
   };
 
+  const handleNavigation = async (path: string) => {
+    // Refresh profile before navigation to ensure consistent state
+    if (authState.isAuthenticated && refreshProfile) {
+      await refreshProfile();
+    }
+    navigate(path);
+  };
+
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -88,7 +104,7 @@ export function UnifiedHeader() {
                 <Button
                   key={item.path}
                   variant={isActivePath(item.path) ? 'default' : 'ghost'}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => handleNavigation(item.path)}
                   className={`flex items-center gap-2 ${
                     isActivePath(item.path) ? 'bg-indigo-600 text-white' : ''
                   }`}
@@ -144,7 +160,7 @@ export function UnifiedHeader() {
                   {/* Role-specific navigation */}
                   {(authState.profile?.role === "host" || authState.profile?.role === "admin") && (
                     <>
-                      <DropdownMenuItem onClick={() => navigate(getDashboardUrl())}>
+                      <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
                         <Building2 className="mr-2 h-4 w-4" />
                         <span>Dashboard</span>
                       </DropdownMenuItem>
@@ -152,7 +168,7 @@ export function UnifiedHeader() {
                     </>
                   )}
                   
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Visualizza Profilo</span>
                   </DropdownMenuItem>
@@ -160,16 +176,16 @@ export function UnifiedHeader() {
                   <DropdownMenuSeparator />
                   
                   {/* Informational pages moved from "Altro" section */}
-                  <DropdownMenuItem onClick={() => navigate('/about')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/about')}>
                     <span>Chi siamo</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/faq')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/faq')}>
                     <span>FAQ</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/terms')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/terms')}>
                     <span>Termini di servizio</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/privacy')}>
+                  <DropdownMenuItem onClick={() => handleNavigation('/privacy')}>
                     <span>Privacy Policy</span>
                   </DropdownMenuItem>
                   

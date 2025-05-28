@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Save, Upload, AlertCircle } from 'lucide-react';
+import { Save, Upload, AlertCircle, Loader2 } from 'lucide-react';
 
 export const ProfileEditForm = () => {
-  const { authState } = useAuth();
+  const { authState, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [linkedinError, setLinkedinError] = useState('');
@@ -34,22 +35,30 @@ export const ProfileEditForm = () => {
   const validateLinkedInUrl = (url: string): boolean => {
     if (!url.trim()) return true; // Empty is valid
     
-    // Check if it's a valid LinkedIn URL format
-    const linkedinRegex = /^https?:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/.+/i;
+    // More flexible LinkedIn URL validation that matches database constraint
+    const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/(in|pub|profile)\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+$/i;
     return linkedinRegex.test(url);
   };
 
   const formatLinkedInUrl = (input: string): string => {
     if (!input.trim()) return '';
     
+    // Remove any trailing slash
+    input = input.trim().replace(/\/$/, '');
+    
     // If user just entered a username (no URL), format it properly
     if (!input.includes('linkedin.com') && !input.includes('http')) {
-      return `https://linkedin.com/in/${input.trim()}`;
+      return `https://linkedin.com/in/${input}`;
     }
     
     // If missing protocol, add it
     if (input.includes('linkedin.com') && !input.startsWith('http')) {
       return `https://${input}`;
+    }
+    
+    // Ensure it's https (not http)
+    if (input.startsWith('http://linkedin.com')) {
+      return input.replace('http://', 'https://');
     }
     
     return input;
@@ -81,32 +90,67 @@ export const ProfileEditForm = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${authState.user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      console.log('Starting photo upload for user:', authState.user.id);
+      
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Il file è troppo grande. Dimensione massima: 5MB');
+      }
 
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Tipo di file non supportato. Usa JPG, PNG, WebP o GIF');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${authState.user.id}/${Date.now()}.${fileExt}`;
+
+      console.log('Uploading file to path:', fileName);
+
+      // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
+      console.log('File uploaded successfully');
+
+      // Get public URL
       const { data } = supabase.storage
         .from('avatars')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
+      console.log('Public URL:', data.publicUrl);
+
+      // Update profile with new photo URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ profile_photo_url: data.publicUrl })
         .eq('id', authState.user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw updateError;
+      }
 
+      console.log('Profile updated successfully');
       toast.success('Foto profilo aggiornata con successo');
-      window.location.reload();
-    } catch (error) {
+      
+      // Refresh the profile data
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (error: any) {
       console.error('Error uploading photo:', error);
-      toast.error('Errore nel caricamento della foto');
+      toast.error(error.message || 'Errore nel caricamento della foto');
     } finally {
       setUploading(false);
     }
@@ -124,17 +168,28 @@ export const ProfileEditForm = () => {
 
     setLoading(true);
     try {
+      console.log('Saving profile data:', formData);
+
       const { error } = await supabase
         .from('profiles')
         .update(formData)
         .eq('id', authState.user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
+      console.log('Profile saved successfully');
       toast.success('Profilo aggiornato con successo');
-    } catch (error) {
+      
+      // Refresh the profile data
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error('Errore nell\'aggiornamento del profilo');
+      toast.error(error.message || 'Errore nell\'aggiornamento del profilo');
     } finally {
       setLoading(false);
     }
@@ -171,7 +226,11 @@ export const ProfileEditForm = () => {
                   asChild
                 >
                   <span>
-                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
                     {uploading ? 'Caricamento...' : 'Cambia Foto'}
                   </span>
                 </Button>
@@ -179,10 +238,14 @@ export const ProfileEditForm = () => {
               <input
                 id="photo-upload"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handlePhotoUpload}
                 className="hidden"
+                disabled={uploading}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                JPG, PNG, WebP o GIF. Max 5MB.
+              </p>
             </div>
           </div>
 
@@ -356,7 +419,11 @@ export const ProfileEditForm = () => {
           </div>
 
           <Button type="submit" disabled={loading || !!linkedinError} className="w-full">
-            <Save className="h-4 w-4 mr-2" />
+            {loading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
             {loading ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>
         </form>

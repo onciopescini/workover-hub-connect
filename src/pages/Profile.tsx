@@ -6,14 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, MapPin, Briefcase, Heart, Edit, LinkIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
 const Profile = () => {
-  const { authState } = useAuth();
+  const { authState, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+
+  // Refresh profile data when component mounts
+  useEffect(() => {
+    if (authState.isAuthenticated && refreshProfile) {
+      refreshProfile();
+    }
+  }, [authState.isAuthenticated, refreshProfile]);
 
   if (!authState.profile) {
     return (
@@ -43,6 +50,21 @@ const Profile = () => {
     return "/app/spaces"; // Coworker ora va agli spazi autenticati
   };
 
+  const handleDashboardNavigation = async () => {
+    // Force refresh profile before navigation to ensure header updates correctly
+    if (refreshProfile) {
+      await refreshProfile();
+    }
+    
+    const dashboardUrl = getDashboardUrl();
+    navigate(dashboardUrl);
+    
+    // Small delay to ensure state is updated before potential page refresh
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+  };
+
   const getJobTypeLabel = (type: string) => {
     const labels = {
       'aziendale': 'Aziendale',
@@ -63,6 +85,14 @@ const Profile = () => {
     return labels[style as keyof typeof labels] || style;
   };
 
+  const handleEditComplete = async () => {
+    setIsEditing(false);
+    // Refresh profile data after editing
+    if (refreshProfile) {
+      await refreshProfile();
+    }
+  };
+
   if (isEditing) {
     return (
       <AppLayout title="Modifica Profilo" subtitle="Aggiorna le tue informazioni">
@@ -70,7 +100,7 @@ const Profile = () => {
           <div className="mb-4">
             <Button
               variant="outline"
-              onClick={() => setIsEditing(false)}
+              onClick={handleEditComplete}
             >
               ← Torna al Profilo
             </Button>
@@ -88,7 +118,7 @@ const Profile = () => {
         <div className="mb-6 flex gap-2">
           <Button
             variant="outline"
-            onClick={() => navigate(getDashboardUrl())}
+            onClick={handleDashboardNavigation}
           >
             ← Torna al Dashboard
           </Button>
