@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,17 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+interface BookingWithSpace {
+  id: string;
+  booking_date: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  space: {
+    id: string;
+    title: string;
+    host_id: string;
+  } | null;
+}
+
 const Messages = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
@@ -19,26 +31,85 @@ const Messages = () => {
     queryFn: async () => {
       if (!authState.user?.id) return [];
 
-      const { data, error } = await supabase
+      // Prima prendo i bookings dell'utente come coworker
+      const { data: coworkerBookings, error: coworkerError } = await supabase
         .from('bookings')
         .select(`
           id,
           booking_date,
           status,
-          spaces (
-            id,
-            title,
-            host_id
-          )
+          space_id
         `)
-        .or(`user_id.eq.${authState.user.id},spaces.host_id.eq.${authState.user.id}`);
+        .eq('user_id', authState.user.id);
 
-      if (error) {
-        console.error('Error fetching bookings:', error);
-        throw error;
+      if (coworkerError) {
+        console.error('Error fetching coworker bookings:', coworkerError);
+        throw coworkerError;
       }
 
-      return data || [];
+      // Poi prendo i bookings dove l'utente è host
+      const { data: userSpaces, error: spacesError } = await supabase
+        .from('spaces')
+        .select('id')
+        .eq('host_id', authState.user.id);
+
+      if (spacesError) {
+        console.error('Error fetching user spaces:', spacesError);
+        throw spacesError;
+      }
+
+      let hostBookings: any[] = [];
+      if (userSpaces && userSpaces.length > 0) {
+        const spaceIds = userSpaces.map(s => s.id);
+        const { data: hostBookingsData, error: hostError } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            booking_date,
+            status,
+            space_id
+          `)
+          .in('space_id', spaceIds)
+          .neq('user_id', authState.user.id);
+
+        if (hostError) {
+          console.error('Error fetching host bookings:', hostError);
+          throw hostError;
+        }
+
+        hostBookings = hostBookingsData || [];
+      }
+
+      // Combino tutti i bookings
+      const allBookings = [...(coworkerBookings || []), ...hostBookings];
+
+      // Ora prendo i dettagli degli spazi per tutti i bookings
+      if (allBookings.length === 0) return [];
+
+      const spaceIds = [...new Set(allBookings.map(b => b.space_id))];
+      const { data: spacesData, error: spacesDataError } = await supabase
+        .from('spaces')
+        .select(`
+          id,
+          title,
+          host_id
+        `)
+        .in('id', spaceIds);
+
+      if (spacesDataError) {
+        console.error('Error fetching spaces data:', spacesDataError);
+        throw spacesDataError;
+      }
+
+      // Combino bookings con dati spazi
+      const bookingsWithSpaces: BookingWithSpace[] = allBookings.map(booking => ({
+        id: booking.id,
+        booking_date: booking.booking_date,
+        status: booking.status,
+        space: spacesData?.find(space => space.id === booking.space_id) || null
+      }));
+
+      return bookingsWithSpaces;
     },
     enabled: !!authState.user?.id,
   });
@@ -125,7 +196,7 @@ const Messages = () => {
                       </div>
                       <div>
                         <CardTitle className="text-lg">
-                          {booking.spaces?.title || 'Spazio non disponibile'}
+                          {booking.space?.title || 'Spazio non disponibile'}
                         </CardTitle>
                         <div className="flex items-center space-x-2 mt-1">
                           <Calendar className="h-4 w-4 text-gray-500" />

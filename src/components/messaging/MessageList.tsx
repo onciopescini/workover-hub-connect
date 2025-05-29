@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
@@ -23,54 +23,83 @@ export function MessageList({ bookingId }: MessageListProps) {
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+
+  // Memoize the message loading function
+  const loadMessages = useCallback(async () => {
+    if (!bookingId || !isMountedRef.current) return;
+    
+    setIsLoading(true);
+    try {
+      const data = await fetchBookingMessages(bookingId);
+      if (isMountedRef.current) {
+        setMessages(data);
+        
+        // Mark new messages as read
+        data.forEach(msg => {
+          if (!msg.is_read && msg.sender_id !== authState.user?.id) {
+            markMessageAsRead(msg.id);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      if (isMountedRef.current) {
+        toast({
+          title: "Errore nel caricamento messaggi",
+          description: "Riprova più tardi",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [bookingId, authState.user?.id]);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      setIsLoading(true);
-      const data = await fetchBookingMessages(bookingId);
-      setMessages(data);
-      setIsLoading(false);
-      
-      // Mark new messages as read
-      data.forEach(msg => {
-        if (!msg.is_read && msg.sender_id !== authState.user?.id) {
-          markMessageAsRead(msg.id);
-        }
-      });
-    };
-
+    isMountedRef.current = true;
     loadMessages();
 
     // Set up real-time listener for new messages
     const channel = supabase
-      .channel('messages-changes')
+      .channel(`messages-${bookingId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `booking_id=eq.${bookingId}`,
       }, (payload) => {
+        if (!isMountedRef.current) return;
+        
         const newMsg = payload.new as Message;
-        // Only add if we don't already have this message
-        if (!messages.some(m => m.id === newMsg.id)) {
-          setMessages(prev => [...prev, newMsg]);
-          
-          // Mark as read if from someone else
-          if (newMsg.sender_id !== authState.user?.id && !newMsg.is_read) {
-            markMessageAsRead(newMsg.id);
+        setMessages(prev => {
+          // Check if message already exists to avoid duplicates
+          if (prev.some(m => m.id === newMsg.id)) {
+            return prev;
           }
+          return [...prev, newMsg];
+        });
+        
+        // Mark as read if from someone else
+        if (newMsg.sender_id !== authState.user?.id && !newMsg.is_read) {
+          markMessageAsRead(newMsg.id);
         }
       })
       .subscribe();
 
     return () => {
+      isMountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [bookingId, authState.user?.id]);
+  }, [bookingId, loadMessages]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    // Scroll to bottom on new messages
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   const handleAttachment = () => {
@@ -82,8 +111,8 @@ export function MessageList({ bookingId }: MessageListProps) {
       const file = e.target.files[0];
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
-          title: "File too large",
-          description: "Maximum file size is 5MB",
+          title: "File troppo grande",
+          description: "Dimensione massima file: 5MB",
           variant: "destructive",
         });
         return;
@@ -107,20 +136,25 @@ export function MessageList({ bookingId }: MessageListProps) {
         }
       }
       
-      await sendBookingMessage(
+      const result = await sendBookingMessage(
         bookingId, 
         newMessage.trim(), 
         attachments
       );
       
-      setNewMessage("");
-      setAttachment(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (result) {
+        setNewMessage("");
+        setAttachment(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        
+        // Refresh messages to show the new one
+        await loadMessages();
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
-        title: "Failed to send message",
-        description: "Please try again later",
+        title: "Errore nell'invio del messaggio",
+        description: "Riprova più tardi",
         variant: "destructive",
       });
     } finally {
@@ -128,15 +162,14 @@ export function MessageList({ bookingId }: MessageListProps) {
     }
   };
 
-  // Helper to get initials from name
+  // Helper functions
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Helper to format dates
   const formatMessageTime = (dateStr: string) => {
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat('it-IT', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -144,12 +177,10 @@ export function MessageList({ bookingId }: MessageListProps) {
     }).format(date);
   };
 
-  // Helper to determine if message is from current user
   const isCurrentUserMessage = (message: Message) => {
     return message.sender_id === authState.user?.id;
   };
 
-  // Helper to determine attachment type
   const getAttachmentType = (url: string) => {
     if (!url) return null;
     const extension = url.split('.').pop()?.toLowerCase();
@@ -168,7 +199,7 @@ export function MessageList({ bookingId }: MessageListProps) {
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
-            No messages yet. Start the conversation!
+            Nessun messaggio ancora. Inizia la conversazione!
           </div>
         ) : (
           messages.map((message) => {
@@ -222,7 +253,7 @@ export function MessageList({ bookingId }: MessageListProps) {
                                   className={`flex items-center gap-2 py-1 px-2 rounded-md ${isCurrentUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                                 >
                                   <FileIcon className="h-4 w-4" />
-                                  <span className="text-sm truncate">Attachment</span>
+                                  <span className="text-sm truncate">Allegato</span>
                                   <Download className="h-4 w-4" />
                                 </a>
                               )
@@ -233,8 +264,8 @@ export function MessageList({ bookingId }: MessageListProps) {
                     </Card>
                     
                     <div className={`text-xs text-gray-500 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                      {!isCurrentUser && (
-                        <span>{sender?.first_name} • </span>
+                      {!isCurrentUser && sender && (
+                        <span>{sender.first_name} • </span>
                       )}
                       <span>{formatMessageTime(message.created_at)}</span>
                     </div>
@@ -277,7 +308,7 @@ export function MessageList({ bookingId }: MessageListProps) {
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder="Scrivi un messaggio..."
             className="resize-none"
             disabled={isLoading}
             onKeyDown={(e) => {

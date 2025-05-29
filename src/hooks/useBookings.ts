@@ -55,8 +55,6 @@ export const useBookings = () => {
         throw coworkerError;
       }
 
-      console.log('Raw coworker bookings:', coworkerBookingsRaw);
-
       // Get space details for coworker bookings
       let coworkerBookings: BookingWithDetails[] = [];
       if (coworkerBookingsRaw && coworkerBookingsRaw.length > 0) {
@@ -80,8 +78,6 @@ export const useBookings = () => {
           throw spacesError;
         }
 
-        console.log('Spaces data:', spacesData);
-
         // Combine booking and space data
         coworkerBookings = coworkerBookingsRaw.map(booking => ({
           ...booking,
@@ -97,8 +93,6 @@ export const useBookings = () => {
         })) as BookingWithDetails[];
       }
 
-      console.log('Processed coworker bookings:', coworkerBookings);
-
       // If user is a host, also fetch bookings for their spaces
       let hostBookings: BookingWithDetails[] = [];
       if (authState.profile?.role === "host" || authState.profile?.role === "admin") {
@@ -112,12 +106,7 @@ export const useBookings = () => {
 
         if (spacesError) {
           console.error('User spaces error:', spacesError);
-          throw spacesError;
-        }
-
-        console.log('User spaces:', userSpaces);
-
-        if (userSpaces && userSpaces.length > 0) {
+        } else if (userSpaces && userSpaces.length > 0) {
           const spaceIds = userSpaces.map(s => s.id);
           
           // Get bookings for host's spaces
@@ -139,63 +128,40 @@ export const useBookings = () => {
               cancellation_reason
             `)
             .in("space_id", spaceIds)
-            .neq("user_id", authState.user.id) // Exclude own bookings as coworker
+            .neq("user_id", authState.user.id)
             .order("booking_date", { ascending: false });
 
           if (signal.aborted) return;
 
           if (hostError) {
             console.error('Host bookings error:', hostError);
-            throw hostError;
-          }
-
-          console.log('Raw host bookings:', hostBookingsRaw);
-
-          if (hostBookingsRaw && hostBookingsRaw.length > 0) {
-            // Get space details
-            const { data: hostSpacesData, error: hostSpacesError } = await supabase
-              .from("spaces")
-              .select(`
-                id,
-                title,
-                address,
-                photos,
-                host_id,
-                price_per_day
-              `)
-              .in("id", spaceIds);
+          } else if (hostBookingsRaw && hostBookingsRaw.length > 0) {
+            // Get space and coworker details
+            const [spacesResponse, coworkersResponse] = await Promise.all([
+              supabase
+                .from("spaces")
+                .select(`id, title, address, photos, host_id, price_per_day`)
+                .in("id", spaceIds),
+              supabase
+                .from("profiles")
+                .select(`id, first_name, last_name, profile_photo_url`)
+                .in("id", hostBookingsRaw.map(b => b.user_id))
+            ]);
 
             if (signal.aborted) return;
 
-            if (hostSpacesError) {
-              console.error('Host spaces fetch error:', hostSpacesError);
-              throw hostSpacesError;
+            if (spacesResponse.error) {
+              console.error('Host spaces fetch error:', spacesResponse.error);
             }
 
-            // Get coworker details
-            const coworkerIds = hostBookingsRaw.map(b => b.user_id);
-            const { data: coworkersData, error: coworkersError } = await supabase
-              .from("profiles")
-              .select(`
-                id,
-                first_name,
-                last_name,
-                profile_photo_url
-              `)
-              .in("id", coworkerIds);
-
-            if (signal.aborted) return;
-
-            if (coworkersError) {
-              console.error('Coworkers fetch error:', coworkersError);
+            if (coworkersResponse.error) {
+              console.error('Coworkers fetch error:', coworkersResponse.error);
             }
-
-            console.log('Coworkers data:', coworkersData);
 
             // Combine host booking data
             hostBookings = hostBookingsRaw.map(booking => ({
               ...booking,
-              space: hostSpacesData?.find(space => space.id === booking.space_id) || {
+              space: spacesResponse.data?.find(space => space.id === booking.space_id) || {
                 id: booking.space_id,
                 title: 'Spazio non trovato',
                 address: '',
@@ -203,21 +169,17 @@ export const useBookings = () => {
                 host_id: authState.user?.id || '',
                 price_per_day: 0
               },
-              coworker: coworkersData?.find(coworker => coworker.id === booking.user_id) || null
+              coworker: coworkersResponse.data?.find(coworker => coworker.id === booking.user_id) || null
             })) as BookingWithDetails[];
           }
         }
       }
-
-      console.log('Processed host bookings:', hostBookings);
 
       // Combine all bookings and remove duplicates
       const allBookings = [...coworkerBookings, ...hostBookings];
       const uniqueBookings = allBookings.filter((booking, index, self) => 
         index === self.findIndex(b => b.id === booking.id)
       );
-
-      console.log('All unique bookings:', uniqueBookings);
 
       if (!signal.aborted) {
         setBookings(uniqueBookings);
@@ -233,7 +195,7 @@ export const useBookings = () => {
         setIsLoading(false);
       }
     }
-  }, [authState.user?.id, authState.profile?.role]); // More specific dependencies
+  }, [authState.user?.id, authState.profile?.role]);
 
   useEffect(() => {
     fetchBookings();

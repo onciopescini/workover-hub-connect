@@ -26,12 +26,13 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       .order("created_at");
 
     if (error) {
+      console.error("Error fetching messages:", error);
       throw error;
     }
     
     return data as unknown as Message[];
   } catch (error) {
-    console.error("Error fetching messages:", error);
+    console.error("Error in fetchBookingMessages:", error);
     return [];
   }
 };
@@ -57,26 +58,40 @@ export const sendBookingMessage = async (
         content,
         attachments
       })
-      .select()
+      .select(`
+        id,
+        booking_id,
+        sender_id,
+        content,
+        attachments,
+        is_read,
+        created_at,
+        sender:profiles!sender_id (
+          first_name,
+          last_name,
+          profile_photo_url
+        )
+      `)
       .single();
     
     if (error) {
+      console.error("Error sending message:", error);
       throw error;
     }
     
     return data as unknown as Message;
   } catch (error) {
-    console.error("Error sending message:", error);
+    console.error("Error in sendBookingMessage:", error);
     toast({
-      title: "Error sending message",
-      description: "Please try again later",
+      title: "Errore nell'invio del messaggio",
+      description: "Riprova più tardi",
       variant: "destructive"
     });
     return null;
   }
 };
 
-// Upload an image attachment for a message
+// Upload an attachment for a message
 export const uploadMessageAttachment = async (file: File): Promise<string | null> => {
   try {
     const { data: user } = await supabase.auth.getUser();
@@ -96,6 +111,7 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       .upload(filePath, file);
       
     if (uploadError) {
+      console.error("Upload error:", uploadError);
       throw uploadError;
     }
     
@@ -106,10 +122,10 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       
     return data.publicUrl;
   } catch (error) {
-    console.error("Error uploading attachment:", error);
+    console.error("Error in uploadMessageAttachment:", error);
     toast({
-      title: "Error uploading file",
-      description: "Please try again with a smaller file or different format",
+      title: "Errore nell'upload del file",
+      description: "Riprova con un file più piccolo o formato diverso",
       variant: "destructive"
     });
     return null;
@@ -125,9 +141,10 @@ export const markMessageAsRead = async (messageId: string): Promise<void> => {
       .eq("id", messageId);
       
     if (error) {
+      console.error("Error marking message as read:", error);
       throw error;
     }
   } catch (error) {
-    console.error("Error marking message as read:", error);
+    console.error("Error in markMessageAsRead:", error);
   }
 };
