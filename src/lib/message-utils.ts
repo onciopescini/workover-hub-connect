@@ -2,6 +2,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
 import { toast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to safely convert Json array to string array
+const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
+  if (!jsonArray) return [];
+  
+  if (Array.isArray(jsonArray)) {
+    return jsonArray.filter((item): item is string => typeof item === 'string');
+  }
+  
+  return [];
+};
 
 // Fetch messages for a specific booking
 export const fetchBookingMessages = async (bookingId: string): Promise<Message[]> => {
@@ -44,13 +56,13 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       // Non lanciamo errore qui, continuiamo senza i profili
     }
 
-    // Combiniamo i dati
+    // Combiniamo i dati con conversione sicura degli attachments
     const messages: Message[] = messagesData.map(msg => ({
       id: msg.id,
       booking_id: msg.booking_id,
       sender_id: msg.sender_id,
       content: msg.content,
-      attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
+      attachments: jsonArrayToStringArray(msg.attachments),
       is_read: msg.is_read,
       created_at: msg.created_at,
       sender: profilesData?.find(profile => profile.id === msg.sender_id) || undefined
@@ -82,7 +94,7 @@ export const sendBookingMessage = async (
         booking_id: bookingId,
         sender_id: user.user.id,
         content,
-        attachments
+        attachments: attachments as Json[]
       })
       .select(`
         id,
@@ -116,7 +128,7 @@ export const sendBookingMessage = async (
       booking_id: data.booking_id,
       sender_id: data.sender_id,
       content: data.content,
-      attachments: Array.isArray(data.attachments) ? data.attachments : [],
+      attachments: jsonArrayToStringArray(data.attachments),
       is_read: data.is_read,
       created_at: data.created_at,
       sender: senderProfile || undefined

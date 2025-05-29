@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
+import { Json } from "@/integrations/supabase/types";
 import { fetchBookingMessages, sendBookingMessage, uploadMessageAttachment, markMessageAsRead } from "@/lib/message-utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,17 @@ import { Card, CardContent } from "@/components/ui/card";
 interface MessageListProps {
   bookingId: string;
 }
+
+// Helper function to safely convert Json array to string array
+const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
+  if (!jsonArray) return [];
+  
+  if (Array.isArray(jsonArray)) {
+    return jsonArray.filter((item): item is string => typeof item === 'string');
+  }
+  
+  return [];
+};
 
 export function MessageList({ bookingId }: MessageListProps) {
   const { authState } = useAuth();
@@ -89,7 +100,7 @@ export function MessageList({ bookingId }: MessageListProps) {
               booking_id: newMsg.booking_id,
               sender_id: newMsg.sender_id,
               content: newMsg.content,
-              attachments: Array.isArray(newMsg.attachments) ? newMsg.attachments : [],
+              attachments: jsonArrayToStringArray(newMsg.attachments),
               is_read: newMsg.is_read,
               created_at: newMsg.created_at,
               sender: senderProfile || undefined
