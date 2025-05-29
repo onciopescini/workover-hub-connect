@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BookingWithDetails, RawBookingData } from "@/types/booking";
+import { BookingWithDetails } from "@/types/booking";
 
 export const useBookings = () => {
   const { authState } = useAuth();
@@ -12,7 +12,10 @@ export const useBookings = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    if (!authState.user) return;
+    if (!authState.user) {
+      setIsLoading(false);
+      return;
+    }
 
     // Cancel any existing request
     if (abortControllerRef.current) {
@@ -55,48 +58,9 @@ export const useBookings = () => {
         throw coworkerError;
       }
 
-      // Get space details for coworker bookings
-      let coworkerBookings: BookingWithDetails[] = [];
-      if (coworkerBookingsRaw && coworkerBookingsRaw.length > 0) {
-        const spaceIds = coworkerBookingsRaw.map(b => b.space_id);
-        const { data: spacesData, error: spacesError } = await supabase
-          .from("spaces")
-          .select(`
-            id,
-            title,
-            address,
-            photos,
-            host_id,
-            price_per_day
-          `)
-          .in("id", spaceIds);
-
-        if (signal.aborted) return;
-
-        if (spacesError) {
-          console.error('Spaces fetch error:', spacesError);
-          throw spacesError;
-        }
-
-        // Combine booking and space data
-        coworkerBookings = coworkerBookingsRaw.map(booking => ({
-          ...booking,
-          space: spacesData?.find(space => space.id === booking.space_id) || {
-            id: booking.space_id,
-            title: 'Spazio non trovato',
-            address: '',
-            photos: [],
-            host_id: '',
-            price_per_day: 0
-          },
-          coworker: null
-        })) as BookingWithDetails[];
-      }
-
-      // If user is a host, also fetch bookings for their spaces
-      let hostBookings: BookingWithDetails[] = [];
+      // Get user's spaces for host bookings
+      let hostBookings: any[] = [];
       if (authState.profile?.role === "host" || authState.profile?.role === "admin") {
-        // First get host's spaces
         const { data: userSpaces, error: spacesError } = await supabase
           .from("spaces")
           .select("id")
@@ -109,7 +73,6 @@ export const useBookings = () => {
         } else if (userSpaces && userSpaces.length > 0) {
           const spaceIds = userSpaces.map(s => s.id);
           
-          // Get bookings for host's spaces
           const { data: hostBookingsRaw, error: hostError } = await supabase
             .from("bookings")
             .select(`
@@ -133,51 +96,65 @@ export const useBookings = () => {
 
           if (signal.aborted) return;
 
-          if (hostError) {
+          if (!hostError && hostBookingsRaw) {
+            hostBookings = hostBookingsRaw;
+          } else if (hostError) {
             console.error('Host bookings error:', hostError);
-          } else if (hostBookingsRaw && hostBookingsRaw.length > 0) {
-            // Get space and coworker details
-            const [spacesResponse, coworkersResponse] = await Promise.all([
-              supabase
-                .from("spaces")
-                .select(`id, title, address, photos, host_id, price_per_day`)
-                .in("id", spaceIds),
-              supabase
-                .from("profiles")
-                .select(`id, first_name, last_name, profile_photo_url`)
-                .in("id", hostBookingsRaw.map(b => b.user_id))
-            ]);
-
-            if (signal.aborted) return;
-
-            if (spacesResponse.error) {
-              console.error('Host spaces fetch error:', spacesResponse.error);
-            }
-
-            if (coworkersResponse.error) {
-              console.error('Coworkers fetch error:', coworkersResponse.error);
-            }
-
-            // Combine host booking data
-            hostBookings = hostBookingsRaw.map(booking => ({
-              ...booking,
-              space: spacesResponse.data?.find(space => space.id === booking.space_id) || {
-                id: booking.space_id,
-                title: 'Spazio non trovato',
-                address: '',
-                photos: [],
-                host_id: authState.user?.id || '',
-                price_per_day: 0
-              },
-              coworker: coworkersResponse.data?.find(coworker => coworker.id === booking.user_id) || null
-            })) as BookingWithDetails[];
           }
         }
       }
 
-      // Combine all bookings and remove duplicates
-      const allBookings = [...coworkerBookings, ...hostBookings];
-      const uniqueBookings = allBookings.filter((booking, index, self) => 
+      // Combine all bookings
+      const allBookings = [...(coworkerBookingsRaw || []), ...hostBookings];
+
+      if (allBookings.length === 0) {
+        if (!signal.aborted) {
+          setBookings([]);
+        }
+        return;
+      }
+
+      // Get space and coworker details
+      const spaceIds = [...new Set(allBookings.map(b => b.space_id))];
+      const coworkerIds = [...new Set(allBookings.map(b => b.user_id))];
+
+      const [spacesResponse, coworkersResponse] = await Promise.all([
+        supabase
+          .from("spaces")
+          .select(`id, title, address, photos, host_id, price_per_day`)
+          .in("id", spaceIds),
+        supabase
+          .from("profiles")
+          .select(`id, first_name, last_name, profile_photo_url`)
+          .in("id", coworkerIds)
+      ]);
+
+      if (signal.aborted) return;
+
+      if (spacesResponse.error) {
+        console.error('Spaces fetch error:', spacesResponse.error);
+      }
+
+      if (coworkersResponse.error) {
+        console.error('Coworkers fetch error:', coworkersResponse.error);
+      }
+
+      // Combine all data
+      const bookingsWithDetails: BookingWithDetails[] = allBookings.map(booking => ({
+        ...booking,
+        space: spacesResponse.data?.find(space => space.id === booking.space_id) || {
+          id: booking.space_id,
+          title: 'Spazio non trovato',
+          address: '',
+          photos: [],
+          host_id: '',
+          price_per_day: 0
+        },
+        coworker: coworkersResponse.data?.find(coworker => coworker.id === booking.user_id) || null
+      }));
+
+      // Remove duplicates
+      const uniqueBookings = bookingsWithDetails.filter((booking, index, self) => 
         index === self.findIndex(b => b.id === booking.id)
       );
 

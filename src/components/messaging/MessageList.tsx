@@ -29,17 +29,15 @@ export function MessageList({ bookingId }: MessageListProps) {
   const loadMessages = useCallback(async () => {
     if (!bookingId || !isMountedRef.current) return;
     
-    setIsLoading(true);
     try {
       const data = await fetchBookingMessages(bookingId);
       if (isMountedRef.current) {
         setMessages(data);
         
         // Mark new messages as read
-        data.forEach(msg => {
-          if (!msg.is_read && msg.sender_id !== authState.user?.id) {
-            markMessageAsRead(msg.id);
-          }
+        const unreadMessages = data.filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id);
+        unreadMessages.forEach(msg => {
+          markMessageAsRead(msg.id);
         });
       }
     } catch (error) {
@@ -51,16 +49,18 @@ export function MessageList({ bookingId }: MessageListProps) {
           variant: "destructive",
         });
       }
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
     }
   }, [bookingId, authState.user?.id]);
 
   useEffect(() => {
     isMountedRef.current = true;
-    loadMessages();
+    setIsLoading(true);
+    
+    loadMessages().finally(() => {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
+    });
 
     // Set up real-time listener for new messages
     const channel = supabase
@@ -73,19 +73,40 @@ export function MessageList({ bookingId }: MessageListProps) {
       }, (payload) => {
         if (!isMountedRef.current) return;
         
-        const newMsg = payload.new as Message;
-        setMessages(prev => {
-          // Check if message already exists to avoid duplicates
-          if (prev.some(m => m.id === newMsg.id)) {
-            return prev;
-          }
-          return [...prev, newMsg];
-        });
+        const newMsg = payload.new as any;
         
-        // Mark as read if from someone else
-        if (newMsg.sender_id !== authState.user?.id && !newMsg.is_read) {
-          markMessageAsRead(newMsg.id);
-        }
+        // Fetch sender profile for the new message
+        supabase
+          .from("profiles")
+          .select("id, first_name, last_name, profile_photo_url")
+          .eq("id", newMsg.sender_id)
+          .single()
+          .then(({ data: senderProfile }) => {
+            if (!isMountedRef.current) return;
+            
+            const messageWithSender: Message = {
+              id: newMsg.id,
+              booking_id: newMsg.booking_id,
+              sender_id: newMsg.sender_id,
+              content: newMsg.content,
+              attachments: Array.isArray(newMsg.attachments) ? newMsg.attachments : [],
+              is_read: newMsg.is_read,
+              created_at: newMsg.created_at,
+              sender: senderProfile || undefined
+            };
+            
+            setMessages(prev => {
+              const exists = prev.some(m => m.id === messageWithSender.id);
+              if (!exists) {
+                // Mark as read if from someone else
+                if (messageWithSender.sender_id !== authState.user?.id && !messageWithSender.is_read) {
+                  markMessageAsRead(messageWithSender.id);
+                }
+                return [...prev, messageWithSender];
+              }
+              return prev;
+            });
+          });
       })
       .subscribe();
 
@@ -93,7 +114,7 @@ export function MessageList({ bookingId }: MessageListProps) {
       isMountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [bookingId, loadMessages]);
+  }, [bookingId, loadMessages, authState.user?.id]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -147,8 +168,7 @@ export function MessageList({ bookingId }: MessageListProps) {
         setAttachment(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
         
-        // Refresh messages to show the new one
-        await loadMessages();
+        // The message will be added via real-time subscription
       }
     } catch (error) {
       console.error("Error sending message:", error);

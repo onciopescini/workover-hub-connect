@@ -27,89 +27,82 @@ const Messages = () => {
   const navigate = useNavigate();
 
   const { data: bookings, isLoading } = useQuery({
-    queryKey: ['user-bookings-with-messages', authState.user?.id],
+    queryKey: ['user-bookings-messages', authState.user?.id],
     queryFn: async () => {
       if (!authState.user?.id) return [];
 
-      // Prima prendo i bookings dell'utente come coworker
-      const { data: coworkerBookings, error: coworkerError } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          booking_date,
-          status,
-          space_id
-        `)
-        .eq('user_id', authState.user.id);
-
-      if (coworkerError) {
-        console.error('Error fetching coworker bookings:', coworkerError);
-        throw coworkerError;
-      }
-
-      // Poi prendo i bookings dove l'utente è host
-      const { data: userSpaces, error: spacesError } = await supabase
-        .from('spaces')
-        .select('id')
-        .eq('host_id', authState.user.id);
-
-      if (spacesError) {
-        console.error('Error fetching user spaces:', spacesError);
-        throw spacesError;
-      }
-
-      let hostBookings: any[] = [];
-      if (userSpaces && userSpaces.length > 0) {
-        const spaceIds = userSpaces.map(s => s.id);
-        const { data: hostBookingsData, error: hostError } = await supabase
+      try {
+        // Prima, otteniamo tutti i bookings dell'utente come coworker
+        const { data: coworkerBookings, error: coworkerError } = await supabase
           .from('bookings')
-          .select(`
-            id,
-            booking_date,
-            status,
-            space_id
-          `)
-          .in('space_id', spaceIds)
-          .neq('user_id', authState.user.id);
+          .select('id, booking_date, status, space_id')
+          .eq('user_id', authState.user.id)
+          .order('booking_date', { ascending: false });
 
-        if (hostError) {
-          console.error('Error fetching host bookings:', hostError);
-          throw hostError;
+        if (coworkerError) {
+          console.error('Error fetching coworker bookings:', coworkerError);
+          throw coworkerError;
         }
 
-        hostBookings = hostBookingsData || [];
+        // Poi, otteniamo gli spazi dell'utente per trovare i bookings come host
+        const { data: userSpaces, error: spacesError } = await supabase
+          .from('spaces')
+          .select('id')
+          .eq('host_id', authState.user.id);
+
+        if (spacesError) {
+          console.error('Error fetching user spaces:', spacesError);
+          throw spacesError;
+        }
+
+        let hostBookings: any[] = [];
+        if (userSpaces && userSpaces.length > 0) {
+          const spaceIds = userSpaces.map(s => s.id);
+          const { data: hostBookingsData, error: hostError } = await supabase
+            .from('bookings')
+            .select('id, booking_date, status, space_id')
+            .in('space_id', spaceIds)
+            .neq('user_id', authState.user.id)
+            .order('booking_date', { ascending: false });
+
+          if (hostError) {
+            console.error('Error fetching host bookings:', hostError);
+            throw hostError;
+          }
+
+          hostBookings = hostBookingsData || [];
+        }
+
+        // Combiniamo tutti i bookings
+        const allBookings = [...(coworkerBookings || []), ...hostBookings];
+
+        if (allBookings.length === 0) return [];
+
+        // Otteniamo i dettagli degli spazi
+        const spaceIds = [...new Set(allBookings.map(b => b.space_id))];
+        const { data: spacesData, error: spacesDataError } = await supabase
+          .from('spaces')
+          .select('id, title, host_id')
+          .in('id', spaceIds);
+
+        if (spacesDataError) {
+          console.error('Error fetching spaces data:', spacesDataError);
+          throw spacesDataError;
+        }
+
+        // Combiniamo i dati
+        const bookingsWithSpaces: BookingWithSpace[] = allBookings.map(booking => ({
+          id: booking.id,
+          booking_date: booking.booking_date,
+          status: booking.status,
+          space: spacesData?.find(space => space.id === booking.space_id) || null
+        }));
+
+        return bookingsWithSpaces;
+      } catch (error) {
+        console.error('Error in Messages query:', error);
+        return [];
       }
-
-      // Combino tutti i bookings
-      const allBookings = [...(coworkerBookings || []), ...hostBookings];
-
-      // Ora prendo i dettagli degli spazi per tutti i bookings
-      if (allBookings.length === 0) return [];
-
-      const spaceIds = [...new Set(allBookings.map(b => b.space_id))];
-      const { data: spacesData, error: spacesDataError } = await supabase
-        .from('spaces')
-        .select(`
-          id,
-          title,
-          host_id
-        `)
-        .in('id', spaceIds);
-
-      if (spacesDataError) {
-        console.error('Error fetching spaces data:', spacesDataError);
-        throw spacesDataError;
-      }
-
-      // Combino bookings con dati spazi
-      const bookingsWithSpaces: BookingWithSpace[] = allBookings.map(booking => ({
-        id: booking.id,
-        booking_date: booking.booking_date,
-        status: booking.status,
-        space: spacesData?.find(space => space.id === booking.space_id) || null
-      }));
-
-      return bookingsWithSpaces;
     },
     enabled: !!authState.user?.id,
   });

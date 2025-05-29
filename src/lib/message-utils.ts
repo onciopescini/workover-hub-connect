@@ -6,7 +6,8 @@ import { toast } from "@/hooks/use-toast";
 // Fetch messages for a specific booking
 export const fetchBookingMessages = async (bookingId: string): Promise<Message[]> => {
   try {
-    const { data, error } = await supabase
+    // Prima prendiamo i messaggi
+    const { data: messagesData, error: messagesError } = await supabase
       .from("messages")
       .select(`
         id,
@@ -15,22 +16,47 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
         content,
         attachments,
         is_read,
-        created_at,
-        sender:profiles!sender_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        )
+        created_at
       `)
       .eq("booking_id", bookingId)
-      .order("created_at");
+      .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching messages:", error);
-      throw error;
+    if (messagesError) {
+      console.error("Error fetching messages:", messagesError);
+      throw messagesError;
     }
+
+    if (!messagesData || messagesData.length === 0) {
+      return [];
+    }
+
+    // Prendiamo gli ID dei sender
+    const senderIds = [...new Set(messagesData.map(msg => msg.sender_id))];
     
-    return data as unknown as Message[];
+    // Prendiamo i profili dei sender
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, profile_photo_url")
+      .in("id", senderIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      // Non lanciamo errore qui, continuiamo senza i profili
+    }
+
+    // Combiniamo i dati
+    const messages: Message[] = messagesData.map(msg => ({
+      id: msg.id,
+      booking_id: msg.booking_id,
+      sender_id: msg.sender_id,
+      content: msg.content,
+      attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
+      is_read: msg.is_read,
+      created_at: msg.created_at,
+      sender: profilesData?.find(profile => profile.id === msg.sender_id) || undefined
+    }));
+    
+    return messages;
   } catch (error) {
     console.error("Error in fetchBookingMessages:", error);
     return [];
@@ -65,12 +91,7 @@ export const sendBookingMessage = async (
         content,
         attachments,
         is_read,
-        created_at,
-        sender:profiles!sender_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        )
+        created_at
       `)
       .single();
     
@@ -78,8 +99,28 @@ export const sendBookingMessage = async (
       console.error("Error sending message:", error);
       throw error;
     }
+
+    // Prendi il profilo del sender
+    const { data: senderProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, first_name, last_name, profile_photo_url")
+      .eq("id", user.user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching sender profile:", profileError);
+    }
     
-    return data as unknown as Message;
+    return {
+      id: data.id,
+      booking_id: data.booking_id,
+      sender_id: data.sender_id,
+      content: data.content,
+      attachments: Array.isArray(data.attachments) ? data.attachments : [],
+      is_read: data.is_read,
+      created_at: data.created_at,
+      sender: senderProfile || undefined
+    };
   } catch (error) {
     console.error("Error in sendBookingMessage:", error);
     toast({
