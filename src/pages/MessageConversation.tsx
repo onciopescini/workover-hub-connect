@@ -26,30 +26,66 @@ export default function MessageConversation() {
 
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
+        
+        // Prima fetchiamo i dati della prenotazione
+        const { data: bookingData, error: bookingError } = await supabase
           .from("bookings")
           .select(`
-            *,
-            space:space_id (
-              title,
-              address,
-              photos,
-              host_id
-            ),
-            coworker:user_id (
-              first_name,
-              last_name,
-              profile_photo_url
-            )
+            id,
+            space_id,
+            user_id,
+            booking_date,
+            start_time,
+            end_time,
+            status,
+            created_at,
+            updated_at,
+            cancelled_at,
+            cancellation_fee,
+            cancelled_by_host,
+            cancellation_reason
           `)
           .eq("id", bookingId)
           .single();
 
-        if (error) throw error;
+        if (bookingError) throw bookingError;
+
+        // Poi fetchiamo i dati dello spazio
+        const { data: spaceData, error: spaceError } = await supabase
+          .from("spaces")
+          .select(`
+            id,
+            title,
+            address,
+            photos,
+            host_id,
+            price_per_day
+          `)
+          .eq("id", bookingData.space_id)
+          .single();
+
+        if (spaceError) throw spaceError;
+
+        // Infine fetchiamo i dati del profilo del coworker
+        const { data: coworkerData, error: coworkerError } = await supabase
+          .from("profiles")
+          .select(`
+            id,
+            first_name,
+            last_name,
+            profile_photo_url
+          `)
+          .eq("id", bookingData.user_id)
+          .single();
+
+        if (coworkerError) {
+          console.error('Error fetching coworker profile:', coworkerError);
+          // Non lanciamo errore qui, continuiamo senza il profilo
+        }
 
         // Verify user has access to this conversation
-        const isHost = authState.user.id === data.space?.host_id;
-        const isCoworker = authState.user.id === data.user_id;
+        const isHost = authState.user.id === spaceData.host_id;
+        const isCoworker = authState.user.id === bookingData.user_id;
         
         if (!isHost && !isCoworker) {
           toast.error("Non hai accesso a questa conversazione");
@@ -57,7 +93,14 @@ export default function MessageConversation() {
           return;
         }
 
-        setBooking(data as unknown as BookingWithDetails);
+        // Combiniamo tutti i dati
+        const combinedBooking: BookingWithDetails = {
+          ...bookingData,
+          space: spaceData,
+          coworker: coworkerData || null
+        };
+
+        setBooking(combinedBooking);
       } catch (error) {
         console.error("Error fetching booking:", error);
         toast.error("Errore nel caricamento della conversazione");
