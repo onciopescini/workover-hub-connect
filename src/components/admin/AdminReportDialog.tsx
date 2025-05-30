@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
       
       if (revisionSuccess) {
         toast.success("Spazio riapprovato e riattivato con successo");
+        // Refresh space info dopo l'approvazione
+        refresh();
       }
     }
 
@@ -147,8 +150,8 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
               </div>
             </div>
 
-            {/* Sezione informazioni spazio aggiornata con refresh */}
-            {spaceInfo && !spaceLoading && (
+            {/* Sezione informazioni spazio - Mostra loading o errore se necessario */}
+            {report.target_type === 'space' && (
               <div className="border rounded-lg p-3 bg-blue-50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-medium text-blue-800">Stato Spazio</div>
@@ -158,47 +161,64 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
                       size="sm"
                       onClick={handleRefreshSpaceInfo}
                       className="text-xs flex items-center gap-1"
+                      disabled={spaceLoading}
                     >
-                      <RefreshCw className="w-3 h-3" />
+                      <RefreshCw className={`w-3 h-3 ${spaceLoading ? 'animate-spin' : ''}`} />
                       Aggiorna
                     </Button>
                   </div>
                 </div>
                 
-                {lastUpdated && (
-                  <div className="text-xs text-blue-600 mb-2">
-                    Ultimo aggiornamento: {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: it })}
+                {spaceLoading && (
+                  <div className="text-xs text-blue-600">
+                    Caricamento informazioni spazio...
                   </div>
                 )}
                 
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span>Titolo:</span>
-                    <span className="font-medium">{spaceInfo.title}</span>
+                {!spaceLoading && !spaceInfo && (
+                  <div className="text-xs text-red-600">
+                    Impossibile caricare le informazioni dello spazio
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>Sospeso:</span>
-                    <span className={spaceInfo.is_suspended ? "text-red-600" : "text-green-600"}>
-                      {spaceInfo.is_suspended ? "Sì" : "No"}
-                    </span>
-                  </div>
-                  {hasRevisionRequest && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                      <div className="flex items-center gap-2 text-green-800">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="font-medium">Richiesta di revisione inviata</span>
+                )}
+                
+                {!spaceLoading && spaceInfo && (
+                  <>
+                    {lastUpdated && (
+                      <div className="text-xs text-blue-600 mb-2">
+                        Ultimo aggiornamento: {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: it })}
                       </div>
-                      {spaceInfo.revision_notes && (
-                        <div className="mt-2">
-                          <div className="text-xs font-medium text-green-700">Note dell'host:</div>
-                          <div className="text-xs text-green-600 mt-1 p-2 bg-white rounded border">
-                            {spaceInfo.revision_notes}
+                    )}
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>Titolo:</span>
+                        <span className="font-medium">{spaceInfo.title}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Sospeso:</span>
+                        <span className={spaceInfo.is_suspended ? "text-red-600" : "text-green-600"}>
+                          {spaceInfo.is_suspended ? "Sì" : "No"}
+                        </span>
+                      </div>
+                      {hasRevisionRequest && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-2 text-green-800">
+                            <CheckCircle className="w-4 h-4" />
+                            <span className="font-medium">Richiesta di revisione inviata</span>
                           </div>
+                          {spaceInfo.revision_notes && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-green-700">Note dell'host:</div>
+                              <div className="text-xs text-green-600 mt-1 p-2 bg-white rounded border">
+                                {spaceInfo.revision_notes}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             )}
             
@@ -233,7 +253,7 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
             </div>
 
             {/* Sezione Azione Punitiva aggiornata */}
-            {report.target_type === 'space' && (
+            {report.target_type === 'space' && spaceInfo && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-yellow-600" />
