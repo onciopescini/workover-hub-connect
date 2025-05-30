@@ -84,17 +84,18 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces - FIX: use correct field name
+          // 2. Fetch active bookings for host's spaces - Correzione della query
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
               *,
-              space:space_id (
+              spaces!inner (
                 title,
                 address,
-                photos
+                photos,
+                host_id
               ),
-              profile:user_id (
+              profiles!inner (
                 first_name,
                 last_name,
                 profile_photo_url
@@ -107,28 +108,58 @@ const HostDashboard = () => {
 
           if (bookingsError) {
             console.error('🔴 Error fetching bookings:', bookingsError);
-            // Don't throw, just log and continue with empty bookings
-            console.log('⚠️ Continuing without bookings data');
             setActiveBookings(0);
             setRecentBookings([]);
           } else {
-            setActiveBookings(bookingsData?.length || 0);
-            setRecentBookings(bookingsData as unknown as BookingWithDetails[] || []);
-            console.log('🔵 Found active bookings:', bookingsData?.length || 0);
+            // Transform data to match BookingWithDetails interface
+            const transformedBookings: BookingWithDetails[] = (bookingsData || []).map(booking => ({
+              id: booking.id,
+              space_id: booking.space_id,
+              user_id: booking.user_id,
+              booking_date: booking.booking_date,
+              start_time: booking.start_time,
+              end_time: booking.end_time,
+              status: booking.status,
+              created_at: booking.created_at,
+              updated_at: booking.updated_at,
+              cancelled_at: booking.cancelled_at,
+              cancellation_fee: booking.cancellation_fee,
+              cancelled_by_host: booking.cancelled_by_host,
+              cancellation_reason: booking.cancellation_reason,
+              space: {
+                id: booking.space_id,
+                title: booking.spaces?.title || 'Spazio non trovato',
+                address: booking.spaces?.address || '',
+                photos: booking.spaces?.photos || [],
+                host_id: booking.spaces?.host_id || '',
+                price_per_day: booking.spaces?.price_per_day
+              },
+              coworker: booking.profiles ? {
+                id: booking.user_id,
+                first_name: booking.profiles.first_name,
+                last_name: booking.profiles.last_name,
+                profile_photo_url: booking.profiles.profile_photo_url
+              } : null
+            }));
+
+            setActiveBookings(transformedBookings.length);
+            setRecentBookings(transformedBookings);
+            console.log('🔵 Found active bookings:', transformedBookings.length);
 
             // 3. Fetch recent messages for host's bookings
-            if (bookingsData && bookingsData.length > 0) {
+            if (transformedBookings.length > 0) {
+              const bookingIds = transformedBookings.map(b => b.id);
               const { data: messagesData, error: messagesError } = await supabase
                 .from("messages")
                 .select(`
                   *,
-                  sender:sender_id (
+                  profiles!inner (
                     first_name,
                     last_name,
                     profile_photo_url
                   )
                 `)
-                .in("booking_id", bookingsData.map(b => b.id))
+                .in("booking_id", bookingIds)
                 .neq("sender_id", authState.user.id)
                 .order("created_at", { ascending: false })
                 .limit(10);
@@ -138,10 +169,24 @@ const HostDashboard = () => {
                 setRecentMessages([]);
                 setUnreadMessages(0);
               } else {
-                const messages = messagesData as unknown as Message[] || [];
-                setRecentMessages(messages);
-                setUnreadMessages(messages.filter(m => !m.is_read).length);
-                console.log('🔵 Found messages:', messages.length);
+                const transformedMessages: Message[] = (messagesData || []).map(msg => ({
+                  id: msg.id,
+                  booking_id: msg.booking_id,
+                  sender_id: msg.sender_id,
+                  content: msg.content,
+                  attachments: msg.attachments,
+                  is_read: msg.is_read,
+                  created_at: msg.created_at,
+                  sender: msg.profiles ? {
+                    first_name: msg.profiles.first_name,
+                    last_name: msg.profiles.last_name,
+                    profile_photo_url: msg.profiles.profile_photo_url
+                  } : undefined
+                }));
+
+                setRecentMessages(transformedMessages);
+                setUnreadMessages(transformedMessages.filter(m => !m.is_read).length);
+                console.log('🔵 Found messages:', transformedMessages.length);
               }
             }
 
@@ -192,6 +237,11 @@ const HostDashboard = () => {
     fetchDashboardData();
   }, [authState.user]);
 
+  // Function to refresh bookings after updates
+  const handleBookingUpdate = () => {
+    window.location.reload(); // Simple refresh for now
+  };
+
   // Show loading screen while data is being fetched
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
@@ -237,7 +287,10 @@ const HostDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
-            <RecentBookings bookings={recentBookings} />
+            <RecentBookings 
+              bookings={recentBookings} 
+              onBookingUpdate={handleBookingUpdate}
+            />
             <RecentMessages messages={recentMessages} />
           </div>
 
