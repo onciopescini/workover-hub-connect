@@ -12,6 +12,8 @@ export const createReport = async (reportData: Omit<ReportInsert, 'reporter_id'>
       return false;
     }
 
+    console.log("Creating report:", { ...reportData, reporter_id: user.user.id });
+
     const { error } = await supabase
       .from('reports')
       .insert({
@@ -19,7 +21,10 @@ export const createReport = async (reportData: Omit<ReportInsert, 'reporter_id'>
         reporter_id: user.user.id
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating report:", error);
+      throw error;
+    }
     
     toast.success("Segnalazione inviata con successo");
     return true;
@@ -50,15 +55,28 @@ export const getUserReports = async (): Promise<Report[]> => {
   }
 };
 
-// Admin function to get all reports
+// Admin function to get all reports with reporter information
 export const getAllReports = async (): Promise<Report[]> => {
   try {
+    console.log("Fetching all reports for admin...");
+    
     const { data, error } = await supabase
       .from('reports')
-      .select('*')
+      .select(`
+        *,
+        reporter:profiles!reporter_id(
+          first_name,
+          last_name
+        )
+      `)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching reports:", error);
+      throw error;
+    }
+    
+    console.log("Fetched reports:", data);
     return data || [];
   } catch (error) {
     console.error("Error fetching all reports:", error);
@@ -73,13 +91,18 @@ export const reviewReport = async (
   adminNotes?: string
 ): Promise<boolean> => {
   try {
+    console.log("Reviewing report:", { reportId, status, adminNotes });
+    
     const { data, error } = await supabase.rpc('review_report', {
       report_id: reportId,
       new_status: status,
       admin_notes: adminNotes
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error reviewing report:", error);
+      throw error;
+    }
     
     const result = data as { success?: boolean; error?: string };
     

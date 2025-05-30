@@ -25,10 +25,17 @@ const AdminReportManagement = () => {
   }, []);
 
   const fetchReports = async () => {
+    console.log("AdminReportManagement: Starting to fetch reports...");
     setIsLoading(true);
-    const data = await getAllReports();
-    setReports(data);
-    setIsLoading(false);
+    try {
+      const data = await getAllReports();
+      console.log("AdminReportManagement: Received reports:", data);
+      setReports(data);
+    } catch (error) {
+      console.error("AdminReportManagement: Error fetching reports:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReviewReport = async (reportId: string) => {
@@ -115,6 +122,16 @@ const AdminReportManagement = () => {
                   )}
                   
                   <div>
+                    <div className="text-sm font-medium">Segnalato da:</div>
+                    <div className="text-sm text-gray-600">
+                      {report.reporter ? 
+                        `${report.reporter.first_name} ${report.reporter.last_name}` : 
+                        'Utente non disponibile'
+                      }
+                    </div>
+                  </div>
+                  
+                  <div>
                     <label className="text-sm font-medium">Stato:</label>
                     <Select value={newStatus} onValueChange={setNewStatus}>
                       <SelectTrigger>
@@ -168,9 +185,16 @@ const AdminReportManagement = () => {
             </span>
           )}
         </div>
+        {report.reporter && (
+          <div className="text-sm text-gray-500 mt-1">
+            Segnalato da: {report.reporter.first_name} {report.reporter.last_name}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
+
+  console.log("AdminReportManagement: Rendering with reports:", reports);
 
   return (
     <div className="space-y-6">

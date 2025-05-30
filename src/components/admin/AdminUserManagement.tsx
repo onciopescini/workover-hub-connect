@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { getAllUsers, suspendUser, reactivateUser, createWarning, getUserWarnings } from "@/lib/admin-utils";
 import { AdminProfile, AdminWarning, WARNING_TYPES, WARNING_SEVERITY } from "@/types/admin";
@@ -46,11 +45,14 @@ export function AdminUserManagement() {
   }, [users, searchTerm, filterRole, filterStatus]);
 
   const fetchUsers = async () => {
+    console.log("AdminUserManagement: Starting to fetch users...");
+    setIsLoading(true);
     try {
       const usersData = await getAllUsers();
+      console.log("AdminUserManagement: Received users:", usersData);
       setUsers(usersData);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("AdminUserManagement: Error fetching users:", error);
       toast.error("Errore nel caricamento degli utenti");
     } finally {
       setIsLoading(false);
@@ -72,6 +74,7 @@ export function AdminUserManagement() {
       return matchesSearch && matchesRole && matchesStatus;
     });
 
+    console.log("AdminUserManagement: Filtered users:", filtered);
     setFilteredUsers(filtered);
   };
 
@@ -160,11 +163,14 @@ export function AdminUserManagement() {
     return <div className="text-center py-8">Caricamento utenti...</div>;
   }
 
+  console.log("AdminUserManagement: Rendering with users:", users.length, "filtered:", filteredUsers.length);
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestione Utenti</h2>
         <p className="text-gray-600">Gestisci utenti, sospensioni e warning</p>
+        <p className="text-sm text-gray-500">Totale utenti: {users.length} | Filtrati: {filteredUsers.length}</p>
       </div>
 
       {/* Filters */}
