@@ -94,5 +94,8 @@ export const ACTION_TYPES = {
   tag_approve: "Tag approvato",
   tag_merge: "Tag uniti",
   ticket_update: "Ticket aggiornato",
-  warning_issued: "Warning emesso"
+  warning_issued: "Warning emesso",
+  report_review: "Segnalazione rivista",
+  admin_panel_access: "Accesso pannello admin",
+  admin_panel_view: "Visualizzazione sezione admin"
 } as const;
