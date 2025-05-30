@@ -96,7 +96,7 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces - Query corretta con price_per_day
+          // 2. Fetch active bookings for host's spaces - Query corretta con single relation
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
@@ -109,7 +109,7 @@ const HostDashboard = () => {
                 host_id,
                 price_per_day
               ),
-              profiles!inner (
+              profiles!bookings_user_id_fkey (
                 id,
                 first_name,
                 last_name,
@@ -149,12 +149,12 @@ const HostDashboard = () => {
                 host_id: booking.spaces.host_id,
                 price_per_day: booking.spaces.price_per_day
               },
-              coworker: {
+              coworker: booking.profiles ? {
                 id: booking.profiles.id,
                 first_name: booking.profiles.first_name,
                 last_name: booking.profiles.last_name,
                 profile_photo_url: booking.profiles.profile_photo_url
-              }
+              } : null
             }));
 
             setActiveBookings(transformedBookings.length);
