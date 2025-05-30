@@ -96,8 +96,8 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces - Using correct foreign key constraint
-          const { data: bookingsData, error: bookingsError } = await supabase
+          // 2. Fetch bookings without profile joins
+          const { data: rawBookings, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
               *,
@@ -108,12 +108,6 @@ const HostDashboard = () => {
                 photos,
                 host_id,
                 price_per_day
-              ),
-              profiles!bookings_user_id_fkey (
-                id,
-                first_name,
-                last_name,
-                profile_photo_url
               )
             `)
             .in("space_id", spaceIds)
@@ -125,74 +119,88 @@ const HostDashboard = () => {
             console.error('🔴 Error fetching bookings:', bookingsError);
             setActiveBookings(0);
             setRecentBookings([]);
-          } else {
-            // Transform data to match BookingWithDetails interface
-            const transformedBookings: BookingWithDetails[] = (bookingsData || []).map(booking => ({
-              id: booking.id,
-              space_id: booking.space_id,
-              user_id: booking.user_id,
-              booking_date: booking.booking_date,
-              start_time: booking.start_time,
-              end_time: booking.end_time,
-              status: booking.status,
-              created_at: booking.created_at,
-              updated_at: booking.updated_at,
-              cancelled_at: booking.cancelled_at,
-              cancellation_fee: booking.cancellation_fee,
-              cancelled_by_host: booking.cancelled_by_host,
-              cancellation_reason: booking.cancellation_reason,
-              space: {
-                id: booking.spaces.id,
-                title: booking.spaces.title,
-                address: booking.spaces.address,
-                photos: booking.spaces.photos,
-                host_id: booking.spaces.host_id,
-                price_per_day: booking.spaces.price_per_day
-              },
-              coworker: booking.profiles ? {
-                id: booking.profiles.id,
-                first_name: booking.profiles.first_name,
-                last_name: booking.profiles.last_name,
-                profile_photo_url: booking.profiles.profile_photo_url
-              } : null
-            }));
+          } else if (rawBookings && rawBookings.length > 0) {
+            // 3. Fetch profiles for coworkers separately
+            const userIds = [...new Set(rawBookings.map(b => b.user_id))];
+            const { data: coworkerProfiles, error: profilesError } = await supabase
+              .from("profiles")
+              .select("id, first_name, last_name, profile_photo_url")
+              .in("id", userIds);
+
+            if (profilesError) {
+              console.error('🔴 Error fetching coworker profiles:', profilesError);
+            }
+
+            // 4. Combine bookings with profile data
+            const transformedBookings: BookingWithDetails[] = rawBookings.map(booking => {
+              const coworkerProfile = coworkerProfiles?.find(p => p.id === booking.user_id);
+              
+              return {
+                id: booking.id,
+                space_id: booking.space_id,
+                user_id: booking.user_id,
+                booking_date: booking.booking_date,
+                start_time: booking.start_time,
+                end_time: booking.end_time,
+                status: booking.status,
+                created_at: booking.created_at,
+                updated_at: booking.updated_at,
+                cancelled_at: booking.cancelled_at,
+                cancellation_fee: booking.cancellation_fee,
+                cancelled_by_host: booking.cancelled_by_host,
+                cancellation_reason: booking.cancellation_reason,
+                space: {
+                  id: booking.spaces.id,
+                  title: booking.spaces.title,
+                  address: booking.spaces.address,
+                  photos: booking.spaces.photos,
+                  host_id: booking.spaces.host_id,
+                  price_per_day: booking.spaces.price_per_day
+                },
+                coworker: coworkerProfile ? {
+                  id: coworkerProfile.id,
+                  first_name: coworkerProfile.first_name,
+                  last_name: coworkerProfile.last_name,
+                  profile_photo_url: coworkerProfile.profile_photo_url
+                } : null
+              };
+            });
 
             setActiveBookings(transformedBookings.length);
             setRecentBookings(transformedBookings);
             console.log('🔵 Found active bookings:', transformedBookings.length);
 
-            // 3. Fetch recent messages for host's bookings using correct foreign key constraint
-            if (transformedBookings.length > 0) {
-              const bookingIds = transformedBookings.map(b => b.id);
-              const { data: messagesData, error: messagesError } = await supabase
-                .from("messages")
-                .select(`
-                  id,
-                  booking_id,
-                  sender_id,
-                  content,
-                  attachments,
-                  is_read,
-                  created_at,
-                  profiles!messages_sender_id_fkey (
-                    id,
-                    first_name,
-                    last_name,
-                    profile_photo_url
-                  )
-                `)
-                .in("booking_id", bookingIds)
-                .neq("sender_id", authState.user.id)
-                .order("created_at", { ascending: false })
-                .limit(10);
+            // 5. Fetch messages without profile joins
+            const bookingIds = transformedBookings.map(b => b.id);
+            const { data: rawMessages, error: messagesError } = await supabase
+              .from("messages")
+              .select("*")
+              .in("booking_id", bookingIds)
+              .neq("sender_id", authState.user.id)
+              .order("created_at", { ascending: false })
+              .limit(10);
 
-              if (messagesError) {
-                console.error('🔴 Error fetching messages:', messagesError);
-                setRecentMessages([]);
-                setUnreadMessages(0);
-              } else {
-                // Transform messages with correct type checking
-                const transformedMessages: Message[] = (messagesData || []).map(msg => ({
+            if (messagesError) {
+              console.error('🔴 Error fetching messages:', messagesError);
+              setRecentMessages([]);
+              setUnreadMessages(0);
+            } else if (rawMessages && rawMessages.length > 0) {
+              // 6. Fetch sender profiles separately
+              const senderIds = [...new Set(rawMessages.map(m => m.sender_id))];
+              const { data: senderProfiles, error: senderProfilesError } = await supabase
+                .from("profiles")
+                .select("id, first_name, last_name, profile_photo_url")
+                .in("id", senderIds);
+
+              if (senderProfilesError) {
+                console.error('🔴 Error fetching sender profiles:', senderProfilesError);
+              }
+
+              // 7. Combine messages with sender data
+              const transformedMessages: Message[] = rawMessages.map(msg => {
+                const senderProfile = senderProfiles?.find(p => p.id === msg.sender_id);
+                
+                return {
                   id: msg.id,
                   booking_id: msg.booking_id,
                   sender_id: msg.sender_id,
@@ -200,20 +208,23 @@ const HostDashboard = () => {
                   attachments: jsonArrayToStringArray(msg.attachments),
                   is_read: msg.is_read,
                   created_at: msg.created_at,
-                  sender: msg.profiles ? {
-                    first_name: msg.profiles.first_name,
-                    last_name: msg.profiles.last_name,
-                    profile_photo_url: msg.profiles.profile_photo_url
+                  sender: senderProfile ? {
+                    first_name: senderProfile.first_name,
+                    last_name: senderProfile.last_name,
+                    profile_photo_url: senderProfile.profile_photo_url
                   } : undefined
-                }));
+                };
+              });
 
-                setRecentMessages(transformedMessages);
-                setUnreadMessages(transformedMessages.filter(m => !m.is_read).length);
-                console.log('🔵 Found messages:', transformedMessages.length);
-              }
+              setRecentMessages(transformedMessages);
+              setUnreadMessages(transformedMessages.filter(m => !m.is_read).length);
+              console.log('🔵 Found messages:', transformedMessages.length);
+            } else {
+              setRecentMessages([]);
+              setUnreadMessages(0);
             }
 
-            // 4. Fetch checklist status for first space (demo)
+            // 8. Fetch checklist status for first space (demo)
             const { data: checklistData, error: checklistError } = await supabase
               .from("checklists")
               .select("*")
@@ -225,6 +236,12 @@ const HostDashboard = () => {
             } else {
               setChecklists(checklistData || []);
             }
+          } else {
+            // No bookings found
+            setActiveBookings(0);
+            setRecentBookings([]);
+            setRecentMessages([]);
+            setUnreadMessages(0);
           }
         } else {
           // No spaces, set empty data
@@ -235,7 +252,7 @@ const HostDashboard = () => {
           setChecklists([]);
         }
 
-        // 5. Fetch reviews and average rating for host
+        // 9. Fetch reviews and average rating for host
         try {
           const reviewsData = await getUserReviews(authState.user.id);
           setRecentReviews(reviewsData.received);
