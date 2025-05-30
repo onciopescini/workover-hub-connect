@@ -26,11 +26,14 @@ export function AdminActionsLog() {
   }, [logs, searchTerm, filterActionType, filterTargetType]);
 
   const fetchLogs = async () => {
+    console.log("AdminActionsLog: Starting to fetch logs...");
+    setIsLoading(true);
     try {
       const logsData = await getAdminActionsLog();
+      console.log("AdminActionsLog: Received logs:", logsData.length, "entries");
       setLogs(logsData);
     } catch (error) {
-      console.error("Error fetching admin logs:", error);
+      console.error("AdminActionsLog: Error fetching admin logs:", error);
       toast.error("Errore nel caricamento dei log");
     } finally {
       setIsLoading(false);
@@ -61,6 +64,7 @@ export function AdminActionsLog() {
       case "event_cancel": return "bg-yellow-100 text-yellow-800";
       case "tag_approve": return "bg-purple-100 text-purple-800";
       case "warning_issued": return "bg-pink-100 text-pink-800";
+      case "report_review": return "bg-indigo-100 text-indigo-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -72,6 +76,7 @@ export function AdminActionsLog() {
       case "event": return "bg-purple-100 text-purple-800";
       case "tag": return "bg-orange-100 text-orange-800";
       case "ticket": return "bg-yellow-100 text-yellow-800";
+      case "report": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -80,12 +85,28 @@ export function AdminActionsLog() {
     return <div className="text-center py-8">Caricamento log azioni...</div>;
   }
 
+  console.log("AdminActionsLog: Rendering with logs:", logs.length, "entries");
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Log Azioni Amministrative</h2>
         <p className="text-gray-600">Visualizza tutte le azioni eseguite dagli amministratori</p>
+        <p className="text-sm text-gray-500">Totale log: {logs.length} | Filtrati: {filteredLogs.length}</p>
       </div>
+
+      {/* Debug Info */}
+      {logs.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-orange-600">⚠️ Nessun log di azioni trovato</p>
+            <p className="text-sm text-gray-500 mt-2">
+              I log vengono creati automaticamente quando gli admin eseguono azioni.
+              Se non vedi log, potrebbero esserci problemi con le funzioni del database.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card>
@@ -124,6 +145,7 @@ export function AdminActionsLog() {
                 <SelectItem value="event">Evento</SelectItem>
                 <SelectItem value="tag">Tag</SelectItem>
                 <SelectItem value="ticket">Ticket</SelectItem>
+                <SelectItem value="report">Report</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,10 +193,10 @@ export function AdminActionsLog() {
         ))}
       </div>
 
-      {filteredLogs.length === 0 && !isLoading && (
+      {filteredLogs.length === 0 && !isLoading && logs.length > 0 && (
         <div className="text-center py-8">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">Nessun log trovato</p>
+          <p className="text-gray-500">Nessun log corrisponde ai filtri applicati</p>
         </div>
       )}
 

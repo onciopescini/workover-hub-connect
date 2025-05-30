@@ -49,7 +49,8 @@ export function AdminUserManagement() {
     setIsLoading(true);
     try {
       const usersData = await getAllUsers();
-      console.log("AdminUserManagement: Received users:", usersData);
+      console.log("AdminUserManagement: Received users:", usersData.length, "users");
+      console.log("AdminUserManagement: Users data:", usersData);
       setUsers(usersData);
     } catch (error) {
       console.error("AdminUserManagement: Error fetching users:", error);
@@ -60,10 +61,16 @@ export function AdminUserManagement() {
   };
 
   const filterUsers = () => {
+    console.log("AdminUserManagement: Filtering users...");
+    console.log("AdminUserManagement: Search term:", searchTerm);
+    console.log("AdminUserManagement: Filter role:", filterRole);
+    console.log("AdminUserManagement: Filter status:", filterStatus);
+    console.log("AdminUserManagement: Total users to filter:", users.length);
+    
     let filtered = users.filter(user => {
       const matchesSearch = 
-        user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesRole = filterRole === "all" || user.role === filterRole;
@@ -71,10 +78,18 @@ export function AdminUserManagement() {
         (filterStatus === "suspended" && user.is_suspended) ||
         (filterStatus === "active" && !user.is_suspended);
 
+      console.log(`User ${user.first_name} ${user.last_name}:`, {
+        matchesSearch,
+        matchesRole,
+        matchesStatus,
+        role: user.role,
+        suspended: user.is_suspended
+      });
+
       return matchesSearch && matchesRole && matchesStatus;
     });
 
-    console.log("AdminUserManagement: Filtered users:", filtered);
+    console.log("AdminUserManagement: Filtered users:", filtered.length, "users");
     setFilteredUsers(filtered);
   };
 
@@ -212,6 +227,29 @@ export function AdminUserManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Debug Info */}
+      {users.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-red-600">⚠️ Nessun utente trovato nel database</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Verifica che ci siano utenti registrati nel sistema
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {users.length > 0 && filteredUsers.length === 0 && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-orange-600">⚠️ Nessun utente corrisponde ai filtri applicati</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Prova a modificare i filtri di ricerca
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Users List */}
       <div className="grid gap-4">

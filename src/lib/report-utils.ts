@@ -60,6 +60,29 @@ export const getAllReports = async (): Promise<Report[]> => {
   try {
     console.log("Fetching all reports for admin...");
     
+    // Check if current user is admin first
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user) {
+      console.log("No authenticated user");
+      return [];
+    }
+
+    console.log("Current user ID:", currentUser.user.id);
+
+    // Verify admin status
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_suspended')
+      .eq('id', currentUser.user.id)
+      .single();
+
+    console.log("User profile:", profile);
+
+    if (!profile || profile.role !== 'admin' || profile.is_suspended) {
+      console.log("User is not admin or is suspended");
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('reports')
       .select(`
@@ -77,6 +100,7 @@ export const getAllReports = async (): Promise<Report[]> => {
     }
     
     console.log("Fetched reports:", data);
+    console.log("Number of reports found:", data?.length || 0);
     return data || [];
   } catch (error) {
     console.error("Error fetching all reports:", error);

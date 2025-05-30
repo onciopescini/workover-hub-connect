@@ -54,7 +54,8 @@ const AdminReportManagement = () => {
     setIsUpdating(false);
   };
 
-  const pendingReports = reports.filter(r => r.status === 'pending');
+  // Updated filtering logic with correct status mapping
+  const openReports = reports.filter(r => r.status === 'open');
   const reviewingReports = reports.filter(r => r.status === 'under_review');
   const resolvedReports = reports.filter(r => r.status === 'resolved');
   const dismissedReports = reports.filter(r => r.status === 'dismissed');
@@ -138,7 +139,7 @@ const AdminReportManagement = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">In attesa</SelectItem>
+                        <SelectItem value="open">In attesa</SelectItem>
                         <SelectItem value="under_review">In revisione</SelectItem>
                         <SelectItem value="resolved">Risolto</SelectItem>
                         <SelectItem value="dismissed">Archiviato</SelectItem>
@@ -201,7 +202,7 @@ const AdminReportManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
-            <div className="text-2xl font-bold text-yellow-600">{pendingReports.length}</div>
+            <div className="text-2xl font-bold text-yellow-600">{openReports.length}</div>
             <div className="text-sm text-gray-600">In attesa</div>
           </CardContent>
         </Card>
@@ -225,11 +226,11 @@ const AdminReportManagement = () => {
         </Card>
       </div>
 
-      {pendingReports.length > 0 && (
+      {openReports.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3 text-yellow-700">Segnalazioni in attesa</h3>
           <div className="space-y-3">
-            {pendingReports.map(report => <ReportCard key={report.id} report={report} />)}
+            {openReports.map(report => <ReportCard key={report.id} report={report} />)}
           </div>
         </div>
       )}
