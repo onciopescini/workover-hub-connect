@@ -3,22 +3,17 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { getAllReports, reviewReport } from "@/lib/report-utils";
+import { getAllReports } from "@/lib/report-utils";
 import { Report, REPORT_REASONS, REPORT_STATUS, REPORT_STATUS_COLORS, REPORT_TARGET_TYPES } from "@/types/report";
+import { AdminReportDialog } from "./AdminReportDialog";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { Eye, MessageSquare } from "lucide-react";
+import { Eye } from "lucide-react";
 
 const AdminReportManagement = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [newStatus, setNewStatus] = useState("");
-  const [adminNotes, setAdminNotes] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     fetchReports();
@@ -38,20 +33,8 @@ const AdminReportManagement = () => {
     }
   };
 
-  const handleReviewReport = async (reportId: string) => {
-    if (!newStatus) return;
-    
-    setIsUpdating(true);
-    const success = await reviewReport(reportId, newStatus, adminNotes.trim() || undefined);
-    
-    if (success) {
-      await fetchReports();
-      setSelectedReport(null);
-      setNewStatus("");
-      setAdminNotes("");
-    }
-    
-    setIsUpdating(false);
+  const handleCloseDialog = () => {
+    setSelectedReport(null);
   };
 
   // Updated filtering logic with correct status mapping
@@ -81,93 +64,14 @@ const AdminReportManagement = () => {
             <Badge className={REPORT_STATUS_COLORS[report.status as keyof typeof REPORT_STATUS_COLORS]}>
               {REPORT_STATUS[report.status as keyof typeof REPORT_STATUS]}
             </Badge>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedReport(report);
-                    setNewStatus(report.status);
-                    setAdminNotes(report.admin_notes || "");
-                  }}
-                >
-                  <Eye className="w-4 h-4 mr-1" />
-                  Gestisci
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Gestione Segnalazione</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-sm font-medium">Target:</div>
-                    <div className="text-sm text-gray-600">
-                      {REPORT_TARGET_TYPES[report.target_type as keyof typeof REPORT_TARGET_TYPES]} (ID: {report.target_id})
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm font-medium">Motivo:</div>
-                    <div className="text-sm text-gray-600">
-                      {REPORT_REASONS[report.reason as keyof typeof REPORT_REASONS]}
-                    </div>
-                  </div>
-                  
-                  {report.description && (
-                    <div>
-                      <div className="text-sm font-medium">Descrizione:</div>
-                      <div className="text-sm text-gray-600">{report.description}</div>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <div className="text-sm font-medium">Segnalato da:</div>
-                    <div className="text-sm text-gray-600">
-                      {report.reporter ? 
-                        `${report.reporter.first_name} ${report.reporter.last_name}` : 
-                        'Utente non disponibile'
-                      }
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Stato:</label>
-                    <Select value={newStatus} onValueChange={setNewStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">In attesa</SelectItem>
-                        <SelectItem value="under_review">In revisione</SelectItem>
-                        <SelectItem value="resolved">Risolto</SelectItem>
-                        <SelectItem value="dismissed">Archiviato</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Note amministratore:</label>
-                    <Textarea
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Aggiungi note per il reporter..."
-                      className="min-h-[80px]"
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      onClick={() => handleReviewReport(report.id)}
-                      disabled={isUpdating || newStatus === report.status}
-                    >
-                      {isUpdating ? "Aggiornamento..." : "Aggiorna"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedReport(report)}
+            >
+              <Eye className="w-4 h-4 mr-1" />
+              Gestisci
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -259,6 +163,15 @@ const AdminReportManagement = () => {
             Nessuna segnalazione presente nel sistema
           </CardContent>
         </Card>
+      )}
+
+      {selectedReport && (
+        <AdminReportDialog
+          report={selectedReport}
+          isOpen={!!selectedReport}
+          onClose={handleCloseDialog}
+          onUpdate={fetchReports}
+        />
       )}
     </div>
   );
