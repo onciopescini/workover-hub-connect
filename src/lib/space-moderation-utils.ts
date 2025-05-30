@@ -39,7 +39,7 @@ export const suspendSpaceWithBookings = async (
       return false;
     }
 
-    const response = data as SuspendSpaceResponse;
+    const response = data as unknown as SuspendSpaceResponse;
     if (response?.success) {
       toast.success(`Spazio sospeso con successo. ${response.cancelled_bookings || 0} prenotazioni cancellate.`);
       return true;
@@ -77,7 +77,7 @@ export const requestSpaceRevision = async (
       return false;
     }
 
-    const response = data as RevisionResponse;
+    const response = data as unknown as RevisionResponse;
     if (response?.success) {
       toast.success("Richiesta di revisione inviata con successo");
       return true;
@@ -117,7 +117,7 @@ export const reviewSpaceRevision = async (
       return false;
     }
 
-    const response = data as RevisionResponse;
+    const response = data as unknown as RevisionResponse;
     if (response?.success) {
       toast.success(approved ? "Revisione approvata" : "Revisione rifiutata");
       return true;
