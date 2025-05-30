@@ -104,16 +104,16 @@ serve(async (req) => {
         break;
       }
 
-      case 'payment_intent.refunded': {
+      case 'refund.created': {
         // Gestione rimborsi da spazi sospesi
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        console.log('🔵 Payment refunded:', paymentIntent.id);
+        const refund = event.data.object as Stripe.Refund;
+        console.log('🔵 Refund created:', refund.id);
         
-        // Cerca il pagamento corrispondente
+        // Cerca il pagamento corrispondente usando il payment_intent
         const { data: payment, error: paymentError } = await supabaseAdmin
           .from('payments')
           .select('booking_id, user_id')
-          .eq('stripe_session_id', paymentIntent.id)
+          .eq('stripe_session_id', refund.payment_intent)
           .single();
           
         if (paymentError) {
@@ -126,7 +126,7 @@ serve(async (req) => {
           await supabaseAdmin
             .from('payments')
             .update({ payment_status: 'refunded' })
-            .eq('stripe_session_id', paymentIntent.id);
+            .eq('stripe_session_id', refund.payment_intent);
           
           // Notifica l'utente del rimborso completato
           await supabaseAdmin
@@ -138,8 +138,8 @@ serve(async (req) => {
               content: 'Il rimborso per la prenotazione cancellata è stato elaborato con successo',
               metadata: {
                 booking_id: payment.booking_id,
-                refund_amount: paymentIntent.amount_refunded / 100,
-                currency: paymentIntent.currency
+                refund_amount: refund.amount / 100,
+                currency: refund.currency
               }
             });
           
@@ -230,7 +230,17 @@ serve(async (req) => {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         console.error('🔴 Payment failed:', paymentIntent.id, paymentIntent.last_payment_error?.message);
         
-        // Puoi aggiungere gestione errori di pagamento qui
+        // Update payment status to failed
+        const { error: paymentError } = await supabaseAdmin
+          .from('payments')
+          .update({ payment_status: 'failed' })
+          .eq('stripe_session_id', paymentIntent.id);
+
+        if (paymentError) {
+          console.error('🔴 Error updating failed payment:', paymentError);
+        } else {
+          console.log('✅ Payment status updated to failed');
+        }
         break;
       }
 
