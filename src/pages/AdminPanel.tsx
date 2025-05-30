@@ -1,7 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isCurrentUserAdmin } from "@/lib/admin-utils";
+import { testAdminActionLogging, logAdminSectionView } from "@/lib/admin-test-utils";
 import LoadingScreen from "@/components/LoadingScreen";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
@@ -12,13 +14,15 @@ import { AdminActionsLog } from "@/components/admin/AdminActionsLog";
 import AdminReportManagement from "@/components/admin/AdminReportManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag } from "lucide-react";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, TestTube } from "lucide-react";
+import { toast } from "sonner";
 
 const AdminPanel = () => {
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -34,6 +38,14 @@ const AdminPanel = () => {
           return;
         }
         setIsAdmin(true);
+        
+        // Test del sistema di logging
+        const loggingTest = await testAdminActionLogging();
+        if (loggingTest) {
+          console.log("✅ Admin logging system is working correctly");
+        } else {
+          console.warn("⚠️ Admin logging system test failed");
+        }
       } catch (error) {
         console.error("Error checking admin access:", error);
         navigate("/dashboard", { replace: true });
@@ -50,6 +62,20 @@ const AdminPanel = () => {
       await signOut();
     } catch (error) {
       console.error("Error signing out:", error);
+    }
+  };
+
+  const handleTabChange = async (value: string) => {
+    setActiveTab(value);
+    await logAdminSectionView(value);
+  };
+
+  const handleTestLogging = async () => {
+    const result = await testAdminActionLogging();
+    if (result) {
+      toast.success("Test log creato con successo! Controlla la sezione Log.");
+    } else {
+      toast.error("Errore nella creazione del test log");
     }
   };
 
@@ -81,6 +107,16 @@ const AdminPanel = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={handleTestLogging}
+                className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <TestTube className="w-4 h-4" />
+                Test Log
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => navigate("/")}
                 className="flex items-center gap-2"
               >
@@ -103,7 +139,7 @@ const AdminPanel = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="dashboard" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
