@@ -7,9 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { reviewReport } from "@/lib/report-utils";
+import { reviewSpaceRevision } from "@/lib/space-moderation-utils";
 import { Report, REPORT_REASONS, REPORT_STATUS, REPORT_TARGET_TYPES } from "@/types/report";
 import { AdminSuspendSpaceDialog } from "./AdminSuspendSpaceDialog";
-import { ExternalLink, AlertTriangle } from "lucide-react";
+import { useSpaceRevisionStatus } from "@/hooks/useSpaceRevisionStatus";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { toast } from "sonner";
 
 interface AdminReportDialogProps {
   report: Report;
@@ -25,10 +28,25 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
 
+  // Ottieni informazioni di revisione se è un report per uno spazio
+  const { spaceInfo, isLoading: spaceLoading } = useSpaceRevisionStatus(
+    report.target_type === 'space' ? report.target_id : null
+  );
+
   const handleReviewReport = async () => {
     if (!newStatus) return;
     
     setIsUpdating(true);
+
+    // Se lo spazio ha una richiesta di revisione e lo stato passa a "resolved", approva automaticamente
+    if (spaceInfo?.revision_requested && newStatus === 'resolved' && report.target_type === 'space') {
+      const revisionSuccess = await reviewSpaceRevision(report.target_id, true, adminNotes.trim() || undefined);
+      
+      if (revisionSuccess) {
+        toast.success("Spazio riapprovato e riattivato con successo");
+      }
+    }
+
     const success = await reviewReport(report.id, newStatus, adminNotes.trim() || undefined);
     
     if (success) {
@@ -45,7 +63,6 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
 
   const handleSuspendConfirm = () => {
     setShowSuspendDialog(false);
-    // Aggiorna automaticamente lo status a resolved
     setNewStatus('resolved');
     setTimeout(() => {
       handleReviewReport();
@@ -63,7 +80,10 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
   };
 
   const canSuspendSpace = report.target_type === 'space' && 
+                         !spaceInfo?.is_suspended &&
                          (newStatus === 'resolved' || newStatus === 'under_review');
+
+  const hasRevisionRequest = spaceInfo?.revision_requested && spaceInfo?.is_suspended;
 
   return (
     <>
@@ -119,6 +139,41 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
                 {report.reporter?.first_name || 'N/A'} {report.reporter?.last_name || ''}
               </div>
             </div>
+
+            {/* Mostra informazioni di revisione se applicabile */}
+            {spaceInfo && !spaceLoading && (
+              <div className="border rounded-lg p-3 bg-blue-50">
+                <div className="text-sm font-medium text-blue-800 mb-2">Stato Spazio</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span>Titolo:</span>
+                    <span className="font-medium">{spaceInfo.title}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Sospeso:</span>
+                    <span className={spaceInfo.is_suspended ? "text-red-600" : "text-green-600"}>
+                      {spaceInfo.is_suspended ? "Sì" : "No"}
+                    </span>
+                  </div>
+                  {hasRevisionRequest && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center gap-2 text-green-800">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="font-medium">Richiesta di revisione inviata</span>
+                      </div>
+                      {spaceInfo.revision_notes && (
+                        <div className="mt-2">
+                          <div className="text-xs font-medium text-green-700">Note dell'host:</div>
+                          <div className="text-xs text-green-600 mt-1 p-2 bg-white rounded border">
+                            {spaceInfo.revision_notes}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             
             <div>
               <Label className="text-sm font-medium">Stato:</Label>
@@ -150,24 +205,54 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
               />
             </div>
 
-            {canSuspendSpace && (
+            {/* Sezione Azione Punitiva aggiornata */}
+            {report.target_type === 'space' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-yellow-600" />
                   <span className="text-sm font-medium text-yellow-800">Azione Punitiva</span>
                 </div>
-                <p className="text-sm text-yellow-700 mb-3">
-                  Se la segnalazione è fondata, puoi sospendere lo spazio:
-                </p>
-                <Button
-                  onClick={handleSuspendSpace}
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                >
-                  <AlertTriangle className="w-4 h-4 mr-1" />
-                  Sospendi Spazio
-                </Button>
+                
+                {hasRevisionRequest ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm font-medium">Host ha inviato richiesta di revisione</span>
+                    </div>
+                    <p className="text-sm text-green-600">
+                      L'host ha modificato lo spazio e richiesto una revisione. 
+                      Visualizza lo spazio per verificare le modifiche, poi cambia lo stato a "Risolto" per riattivare lo spazio.
+                    </p>
+                    <Button
+                      onClick={handleViewTarget}
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-green-300 text-green-700 hover:bg-green-100"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Visualizza Modifiche Spazio
+                    </Button>
+                  </div>
+                ) : canSuspendSpace ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-yellow-700">
+                      Se la segnalazione è fondata, puoi sospendere lo spazio:
+                    </p>
+                    <Button
+                      onClick={handleSuspendSpace}
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Sospendi Spazio
+                    </Button>
+                  </div>
+                ) : spaceInfo?.is_suspended ? (
+                  <p className="text-sm text-gray-600">
+                    Lo spazio è già sospeso. In attesa di richiesta di revisione dall'host.
+                  </p>
+                ) : null}
               </div>
             )}
             
@@ -179,7 +264,8 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
                 onClick={handleReviewReport}
                 disabled={isUpdating || newStatus === report.status}
               >
-                {isUpdating ? "Aggiornamento..." : "Aggiorna"}
+                {isUpdating ? "Aggiornamento..." : 
+                 hasRevisionRequest && newStatus === 'resolved' ? "Approva Revisione" : "Aggiorna"}
               </Button>
             </div>
           </div>
