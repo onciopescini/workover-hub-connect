@@ -5,27 +5,39 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { PlusCircle, Edit, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Eye, EyeOff, Loader2, AlertTriangle } from "lucide-react";
+import { SuspendedSpaceBanner } from "@/components/host/SuspendedSpaceBanner";
+import { RevisionRequestDialog } from "@/components/host/RevisionRequestDialog";
+import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
 import type { Space } from "@/types/space";
+
+interface ExtendedSpace extends Space {
+  is_suspended?: boolean;
+  suspension_reason?: string;
+  revision_requested?: boolean;
+  revision_notes?: string;
+}
 
 const SpacesManage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spaces, setSpaces] = useState<ExtendedSpace[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [revisionDialog, setRevisionDialog] = useState<{isOpen: boolean, spaceId: string, spaceTitle: string}>({
+    isOpen: false,
+    spaceId: '',
+    spaceTitle: ''
+  });
 
-  // Redirect non-hosts to their dashboard
   useEffect(() => {
     if (authState.profile?.role !== "host") {
       navigate("/dashboard", { replace: true });
     }
   }, [authState.profile, navigate]);
 
-  // Fetch spaces
   useEffect(() => {
     const fetchSpaces = async () => {
       if (!authState.user) return;
@@ -52,6 +64,13 @@ const SpacesManage = () => {
 
     fetchSpaces();
   }, [authState.user]);
+
+  const handleCreateSpace = async () => {
+    const isRestricted = await checkSpaceCreationRestriction();
+    if (!isRestricted) {
+      navigate("/spaces/new");
+    }
+  };
 
   const handleDeleteSpace = async (spaceId: string) => {
     if (!confirm("Are you sure you want to delete this space? This action cannot be undone.")) {
@@ -80,7 +99,12 @@ const SpacesManage = () => {
     }
   };
 
-  const togglePublishStatus = async (space: Space) => {
+  const togglePublishStatus = async (space: ExtendedSpace) => {
+    if (space.is_suspended) {
+      toast.error("Non puoi pubblicare uno spazio sospeso");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("spaces")
@@ -108,9 +132,22 @@ const SpacesManage = () => {
     }
   };
 
+  const handleRequestRevision = (spaceId: string, spaceTitle: string) => {
+    setRevisionDialog({ isOpen: true, spaceId, spaceTitle });
+  };
+
+  const handleRevisionSuccess = () => {
+    setRevisionDialog({ isOpen: false, spaceId: '', spaceTitle: '' });
+    // Refresh spaces
+    window.location.reload();
+  };
+
   if (authState.profile?.role !== "host") {
     return null;
   }
+
+  const suspendedSpaces = spaces.filter(space => space.is_suspended);
+  const activeSpaces = spaces.filter(space => !space.is_suspended);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -118,13 +155,51 @@ const SpacesManage = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Manage Your Spaces</h1>
           <Button
-            onClick={() => navigate("/spaces/new")}
+            onClick={handleCreateSpace}
             className="bg-blue-500 hover:bg-blue-600"
           >
             <PlusCircle className="w-4 h-4 mr-2" />
             Add New Space
           </Button>
         </div>
+
+        {suspendedSpaces.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-red-700 mb-4">
+              <AlertTriangle className="w-5 h-5 inline mr-2" />
+              Spazi Sospesi
+            </h2>
+            <div className="space-y-4">
+              {suspendedSpaces.map(space => (
+                <Card key={space.id} className="border-red-200 overflow-hidden">
+                  <CardContent className="pt-6">
+                    <SuspendedSpaceBanner
+                      spaceTitle={space.title}
+                      suspensionReason={space.suspension_reason || "Violazione dei termini di servizio"}
+                      revisionRequested={space.revision_requested}
+                      onEditSpace={() => navigate(`/spaces/${space.id}/edit`)}
+                      onRequestRevision={() => handleRequestRevision(space.id, space.title)}
+                    />
+                    
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-lg">{space.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{space.address}</p>
+                      </div>
+                      <Button
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/spaces/${space.id}/edit`)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" /> Modifica
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center p-12">
@@ -138,7 +213,7 @@ const SpacesManage = () => {
                 Create your first space to start hosting coworkers
               </p>
               <Button
-                onClick={() => navigate("/spaces/new")}
+                onClick={handleCreateSpace}
                 className="bg-blue-500 hover:bg-blue-600"
               >
                 <PlusCircle className="w-4 h-4 mr-2" />
@@ -148,7 +223,7 @@ const SpacesManage = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {spaces.map((space) => (
+            {activeSpaces.map((space) => (
               <Card key={space.id} className="overflow-hidden bg-white h-full flex flex-col">
                 <div
                   className="h-40 bg-gray-200 bg-center bg-cover"
@@ -224,6 +299,14 @@ const SpacesManage = () => {
           </div>
         )}
       </div>
+
+      <RevisionRequestDialog
+        isOpen={revisionDialog.isOpen}
+        onClose={() => setRevisionDialog({...revisionDialog, isOpen: false})}
+        onSuccess={handleRevisionSuccess}
+        spaceId={revisionDialog.spaceId}
+        spaceTitle={revisionDialog.spaceTitle}
+      />
     </div>
   );
 };

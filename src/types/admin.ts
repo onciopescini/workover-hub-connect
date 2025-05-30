@@ -1,4 +1,3 @@
-
 import { Database } from "@/integrations/supabase/types";
 
 // Admin warnings types
@@ -55,6 +54,12 @@ export type AdminSpace = {
   price_per_day: number;
   category: string;
   max_capacity: number;
+  is_suspended?: boolean;
+  suspension_reason?: string;
+  suspended_by?: string;
+  suspended_at?: string;
+  revision_requested?: boolean;
+  revision_notes?: string;
 };
 
 // Admin dashboard stats
@@ -90,6 +95,8 @@ export const ACTION_TYPES = {
   space_approve: "Spazio approvato",
   space_reject: "Spazio rifiutato",
   space_suspend: "Spazio sospeso",
+  space_revision_approved: "Revisione spazio approvata",
+  space_revision_rejected: "Revisione spazio rifiutata",
   event_cancel: "Evento cancellato",
   tag_approve: "Tag approvato",
   tag_merge: "Tag uniti",

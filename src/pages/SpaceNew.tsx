@@ -1,33 +1,53 @@
 
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import SpaceForm from "@/components/spaces/SpaceForm";
+import { SpaceForm } from "@/components/spaces/SpaceForm";
+import { toast } from "sonner";
+import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
 
 const SpaceNew = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect non-hosts to their dashboard
+  // Verifico se l'host può creare spazi o è limitato
   useEffect(() => {
-    if (authState.profile?.role !== "host") {
-      navigate("/dashboard", { replace: true });
+    const checkRestriction = async () => {
+      if (authState.user && authState.profile?.role === 'host') {
+        const isRestricted = await checkSpaceCreationRestriction();
+        if (isRestricted) {
+          toast.error("Non puoi creare nuovi spazi. Hai uno spazio sospeso che richiede la tua attenzione.");
+          navigate('/spaces/manage');
+        }
+      }
+    };
+    
+    checkRestriction();
+  }, [authState.user, authState.profile]);
+
+  // Garantisco che solo gli host possano accedere
+  useEffect(() => {
+    if (authState.profile && authState.profile.role !== "host") {
+      toast.error("Solo gli host possono creare spazi");
+      navigate("/dashboard");
     }
   }, [authState.profile, navigate]);
 
-  if (authState.profile?.role !== "host") {
+  if (authState.isLoading) {
+    return <div className="flex justify-center items-center h-screen">Caricamento...</div>;
+  }
+
+  if (!authState.user || authState.profile?.role !== "host") {
     return null;
   }
 
   return (
-    <AppLayout 
-      title="Crea Nuovo Spazio" 
-      subtitle="Compila il form per pubblicare il tuo spazio per coworker"
+    <AppLayout
+      title="Add New Space"
+      subtitle="Create a new space for coworkers to use"
     >
-      <div className="max-w-4xl mx-auto p-4 md:p-6">
-        <SpaceForm />
-      </div>
+      <SpaceForm />
     </AppLayout>
   );
 };

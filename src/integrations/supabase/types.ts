@@ -788,8 +788,10 @@ export type Database = {
           nickname: string | null
           onboarding_completed: boolean | null
           profile_photo_url: string | null
+          restriction_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
           skills: string | null
+          space_creation_restricted: boolean | null
           stripe_account_id: string | null
           stripe_connected: boolean | null
           suspended_at: string | null
@@ -821,8 +823,10 @@ export type Database = {
           nickname?: string | null
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
+          restriction_reason?: string | null
           role: Database["public"]["Enums"]["user_role"]
           skills?: string | null
+          space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
           suspended_at?: string | null
@@ -854,8 +858,10 @@ export type Database = {
           nickname?: string | null
           onboarding_completed?: boolean | null
           profile_photo_url?: string | null
+          restriction_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string | null
+          space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
           suspended_at?: string | null
@@ -1012,6 +1018,7 @@ export type Database = {
           host_id: string
           id: string
           ideal_guest_tags: string[] | null
+          is_suspended: boolean | null
           latitude: number | null
           longitude: number | null
           max_capacity: number
@@ -1021,8 +1028,13 @@ export type Database = {
           price_per_hour: number
           published: boolean
           rejection_reason: string | null
+          revision_notes: string | null
+          revision_requested: boolean | null
           rules: string | null
           seating_types: string[]
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
           title: string
           updated_at: string
           work_environment: Database["public"]["Enums"]["work_environment"]
@@ -1043,6 +1055,7 @@ export type Database = {
           host_id: string
           id?: string
           ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
           max_capacity: number
@@ -1052,8 +1065,13 @@ export type Database = {
           price_per_hour: number
           published?: boolean
           rejection_reason?: string | null
+          revision_notes?: string | null
+          revision_requested?: boolean | null
           rules?: string | null
           seating_types?: string[]
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           title: string
           updated_at?: string
           work_environment: Database["public"]["Enums"]["work_environment"]
@@ -1074,6 +1092,7 @@ export type Database = {
           host_id?: string
           id?: string
           ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
           max_capacity?: number
@@ -1083,8 +1102,13 @@ export type Database = {
           price_per_hour?: number
           published?: boolean
           rejection_reason?: string | null
+          revision_notes?: string | null
+          revision_requested?: boolean | null
           rules?: string | null
           seating_types?: string[]
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
           title?: string
           updated_at?: string
           work_environment?: Database["public"]["Enums"]["work_environment"]
@@ -1349,8 +1373,25 @@ export type Database = {
         Args: { target_user_id: string; reactivated_by_admin: string }
         Returns: Json
       }
+      request_space_revision: {
+        Args: { space_id: string; host_id: string; revision_notes: string }
+        Returns: Json
+      }
       review_report: {
         Args: { report_id: string; new_status: string; admin_notes?: string }
+        Returns: Json
+      }
+      review_space_revision: {
+        Args: {
+          space_id: string
+          admin_id: string
+          approved: boolean
+          admin_notes?: string
+        }
+        Returns: Json
+      }
+      suspend_space_with_bookings: {
+        Args: { space_id: string; admin_id: string; suspension_reason: string }
         Returns: Json
       }
       suspend_user: {

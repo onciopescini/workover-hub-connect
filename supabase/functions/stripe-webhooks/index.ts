@@ -104,6 +104,50 @@ serve(async (req) => {
         break;
       }
 
+      case 'payment_intent.refunded': {
+        // Gestione rimborsi da spazi sospesi
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log('🔵 Payment refunded:', paymentIntent.id);
+        
+        // Cerca il pagamento corrispondente
+        const { data: payment, error: paymentError } = await supabaseAdmin
+          .from('payments')
+          .select('booking_id, user_id')
+          .eq('stripe_session_id', paymentIntent.id)
+          .single();
+          
+        if (paymentError) {
+          console.error('🔴 Error finding payment:', paymentError);
+          break;
+        }
+        
+        if (payment) {
+          // Aggiorna lo stato del pagamento
+          await supabaseAdmin
+            .from('payments')
+            .update({ payment_status: 'refunded' })
+            .eq('stripe_session_id', paymentIntent.id);
+          
+          // Notifica l'utente del rimborso completato
+          await supabaseAdmin
+            .from('user_notifications')
+            .insert({
+              user_id: payment.user_id,
+              type: 'booking',
+              title: 'Rimborso completato',
+              content: 'Il rimborso per la prenotazione cancellata è stato elaborato con successo',
+              metadata: {
+                booking_id: payment.booking_id,
+                refund_amount: paymentIntent.amount_refunded / 100,
+                currency: paymentIntent.currency
+              }
+            });
+          
+          console.log('✅ Refund processed and user notified');
+        }
+        break;
+      }
+
       case 'account.updated': {
         const account = event.data.object as Stripe.Account;
         console.log('🔵 Stripe account updated:', account.id);
@@ -178,6 +222,15 @@ serve(async (req) => {
             }
           }
         }
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        // Gestione errori di pagamento
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.error('🔴 Payment failed:', paymentIntent.id, paymentIntent.last_payment_error?.message);
+        
+        // Puoi aggiungere gestione errori di pagamento qui
         break;
       }
 
