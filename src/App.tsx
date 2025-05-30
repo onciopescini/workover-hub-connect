@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import Index from './pages/Index';
@@ -101,6 +101,8 @@ function App() {
                 <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/host" element={<HostDashboard />} />
                   <Route path="/host/dashboard" element={<HostDashboard />} />
+                  {/* Fallback route for old Stripe redirect URL */}
+                  <Route path="/host-dashboard" element={<Navigate to="/host/dashboard" replace />} />
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
                   <Route path="/spaces/:id/edit" element={<SpaceEdit />} />

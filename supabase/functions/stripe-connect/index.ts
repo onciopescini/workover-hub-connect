@@ -127,7 +127,7 @@ serve(async (req) => {
       console.log('🔵 Using existing Stripe account:', accountId);
     }
 
-    // Crea Account Link per onboarding
+    // Crea Account Link per onboarding - FIXED URL
     console.log('🔵 Creating account link');
     
     const accountLink = await stripe.accountLinks.create({

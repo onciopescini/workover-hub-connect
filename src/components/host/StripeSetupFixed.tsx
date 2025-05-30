@@ -55,6 +55,34 @@ export function StripeSetupFixed() {
     fetchStripeStatus();
   }, [authState.user]);
 
+  // Check URL parameters for Stripe setup completion
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('stripe_setup') === 'success') {
+      console.log('🔵 Detected Stripe setup success from URL');
+      toast.success("Setup Stripe completato! Aggiornamento stato...");
+      
+      // Clean the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Refresh status multiple times to catch webhook updates
+      setTimeout(() => {
+        fetchStripeStatus();
+        refreshProfile();
+      }, 1000);
+      
+      setTimeout(() => {
+        fetchStripeStatus();
+        refreshProfile();
+      }, 3000);
+      
+      setTimeout(() => {
+        fetchStripeStatus();
+        refreshProfile();
+      }, 5000);
+    }
+  }, [refreshProfile]);
+
   // Listen for page focus to refresh status after Stripe setup
   useEffect(() => {
     const handleFocus = () => {
@@ -76,7 +104,8 @@ export function StripeSetupFixed() {
       const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: { 
           user_id: authState.user?.id,
-          return_url: window.location.origin + '/host-dashboard'
+          return_url: window.location.origin + '/host/dashboard?stripe_setup=success',
+          refresh_url: window.location.origin + '/host/dashboard?stripe_setup=refresh'
         }
       });
 
