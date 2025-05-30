@@ -96,7 +96,7 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces - Query corretta con single relation
+          // 2. Fetch active bookings for host's spaces - Using correct foreign key constraint
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
@@ -161,7 +161,7 @@ const HostDashboard = () => {
             setRecentBookings(transformedBookings);
             console.log('🔵 Found active bookings:', transformedBookings.length);
 
-            // 3. Fetch recent messages for host's bookings con JOIN corretto
+            // 3. Fetch recent messages for host's bookings using correct foreign key constraint
             if (transformedBookings.length > 0) {
               const bookingIds = transformedBookings.map(b => b.id);
               const { data: messagesData, error: messagesError } = await supabase
@@ -191,7 +191,7 @@ const HostDashboard = () => {
                 setRecentMessages([]);
                 setUnreadMessages(0);
               } else {
-                // Transform messages con conversione corretta degli attachments
+                // Transform messages with correct type checking
                 const transformedMessages: Message[] = (messagesData || []).map(msg => ({
                   id: msg.id,
                   booking_id: msg.booking_id,
