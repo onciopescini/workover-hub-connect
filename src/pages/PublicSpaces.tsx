@@ -1,6 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
@@ -10,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Map, Grid } from 'lucide-react';
 
 const PublicSpaces = () => {
+  const navigate = useNavigate();
+  const { authState } = useAuth();
   const [filters, setFilters] = useState({
     category: '',
     priceRange: [0, 200],
@@ -85,7 +88,12 @@ const PublicSpaces = () => {
   };
 
   const handleSpaceClick = (spaceId: string) => {
-    window.open(`/spaces/${spaceId}`, '_blank');
+    // Navigate to the correct route based on authentication status
+    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
+      navigate(`/app/spaces/${spaceId}`);
+    } else {
+      navigate(`/spaces/${spaceId}`);
+    }
   };
 
   if (error) {

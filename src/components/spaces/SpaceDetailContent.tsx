@@ -193,9 +193,9 @@ export const SpaceDetailContent = () => {
 
   const handleBackClick = useCallback(() => {
     if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
-      navigate('/app/spaces'); // Unified navigation
+      navigate('/app/spaces'); // Unified navigation for authenticated users
     } else {
-      navigate('/spaces');
+      navigate('/spaces'); // Public navigation for non-authenticated users
     }
   }, [authState.isAuthenticated, authState.profile?.onboarding_completed, navigate]);
 
