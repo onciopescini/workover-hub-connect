@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +12,7 @@ import { RevisionRequestDialog } from "@/components/host/RevisionRequestDialog";
 import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
 import type { Space } from "@/types/space";
 
-interface ExtendedSpace extends Space {
+interface ExtendedSpace extends Omit<Space, 'is_suspended' | 'suspension_reason' | 'revision_requested' | 'revision_notes'> {
   is_suspended?: boolean;
   suspension_reason?: string;
   revision_requested?: boolean;

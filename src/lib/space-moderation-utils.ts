@@ -2,6 +2,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Interfacce per le risposte delle funzioni database
+interface SuspendSpaceResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  cancelled_bookings?: number;
+}
+
+interface RevisionResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
 export const suspendSpaceWithBookings = async (
   spaceId: string,
   suspensionReason: string
@@ -25,11 +39,12 @@ export const suspendSpaceWithBookings = async (
       return false;
     }
 
-    if (data?.success) {
-      toast.success(`Spazio sospeso con successo. ${data.cancelled_bookings} prenotazioni cancellate.`);
+    const response = data as SuspendSpaceResponse;
+    if (response?.success) {
+      toast.success(`Spazio sospeso con successo. ${response.cancelled_bookings || 0} prenotazioni cancellate.`);
       return true;
     } else {
-      toast.error(data?.error || "Errore nella sospensione dello spazio");
+      toast.error(response?.error || "Errore nella sospensione dello spazio");
       return false;
     }
   } catch (error) {
@@ -62,11 +77,12 @@ export const requestSpaceRevision = async (
       return false;
     }
 
-    if (data?.success) {
+    const response = data as RevisionResponse;
+    if (response?.success) {
       toast.success("Richiesta di revisione inviata con successo");
       return true;
     } else {
-      toast.error(data?.error || "Errore nella richiesta di revisione");
+      toast.error(response?.error || "Errore nella richiesta di revisione");
       return false;
     }
   } catch (error) {
@@ -101,11 +117,12 @@ export const reviewSpaceRevision = async (
       return false;
     }
 
-    if (data?.success) {
+    const response = data as RevisionResponse;
+    if (response?.success) {
       toast.success(approved ? "Revisione approvata" : "Revisione rifiutata");
       return true;
     } else {
-      toast.error(data?.error || "Errore nella revisione");
+      toast.error(response?.error || "Errore nella revisione");
       return false;
     }
   } catch (error) {

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { SpaceForm } from "@/components/spaces/SpaceForm";
+import SpaceForm from "@/components/spaces/SpaceForm";
 import { toast } from "sonner";
 import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
 
