@@ -6,28 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { reviewReport } from "@/lib/report-utils";
-import { REPORT_REASONS, REPORT_STATUS, REPORT_TARGET_TYPES } from "@/types/report";
-import { Eye, ExternalLink } from "lucide-react";
-
-interface Report {
-  id: string;
-  target_type: string;
-  target_id: string;
-  reason: string;
-  description: string;
-  status: string;
-  created_at: string;
-  reporter_id: string;
-  admin_notes?: string;
-  reviewed_at?: string;
-  reviewed_by?: string;
-  reporter: {
-    first_name: string;
-    last_name: string;
-  };
-}
+import { Report, REPORT_REASONS, REPORT_STATUS, REPORT_TARGET_TYPES } from "@/types/report";
+import { ExternalLink } from "lucide-react";
 
 interface AdminReportDialogProps {
   report: Report;
@@ -117,7 +98,7 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
           <div>
             <div className="text-sm font-medium">Segnalato da:</div>
             <div className="text-sm text-gray-600">
-              {report.reporter.first_name} {report.reporter.last_name}
+              {report.reporter?.first_name || 'N/A'} {report.reporter?.last_name || ''}
             </div>
           </div>
           
