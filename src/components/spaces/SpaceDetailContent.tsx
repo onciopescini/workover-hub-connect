@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ReportDialog from '@/components/reports/ReportDialog';
 import { 
   MapPin, 
   Star, 
@@ -54,6 +55,14 @@ export const SpaceDetailContent = () => {
            authState.profile?.onboarding_completed && 
            authState.profile?.role === 'coworker';
   }, [authState.isAuthenticated, authState.profile?.onboarding_completed, authState.profile?.role]);
+
+  // Check if current user can report this space (authenticated coworker who is not the space owner)
+  const canReportSpace = useMemo(() => {
+    return authState.isAuthenticated && 
+           authState.profile?.role === 'coworker' && 
+           space && 
+           authState.user?.id !== space.host_id;
+  }, [authState.isAuthenticated, authState.profile?.role, authState.user?.id, space?.host_id]);
 
   // Fetch space details
   useEffect(() => {
@@ -286,9 +295,20 @@ export const SpaceDetailContent = () => {
           {/* Space info */}
           <div className="space-y-6">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">{getCategoryLabel()}</Badge>
-                <Badge variant="outline">{getWorkEnvironmentLabel()}</Badge>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{getCategoryLabel()}</Badge>
+                  <Badge variant="outline">{getWorkEnvironmentLabel()}</Badge>
+                </div>
+                {/* Report button - only visible to authenticated coworkers who are not the space owner */}
+                {canReportSpace && (
+                  <ReportDialog
+                    targetType="space"
+                    targetId={space.id}
+                    triggerText="Segnala"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  />
+                )}
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{space.title}</h1>
               <div className="flex items-center text-gray-600 mb-4">
