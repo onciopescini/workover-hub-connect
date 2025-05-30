@@ -12,18 +12,30 @@ import { RecentBookings } from "@/components/host/RecentBookings";
 import { RecentMessages } from "@/components/host/RecentMessages";
 import { RecentReviews } from "@/components/host/RecentReviews";
 import { SpaceChecklist } from "@/components/host/SpaceChecklist";
-import { StripeSetup } from "@/components/host/StripeSetup";
+import { StripeSetupFixed } from "@/components/host/StripeSetupFixed";
 import { WelcomeMessage } from "@/components/host/WelcomeMessage";
 import { BookingWithDetails } from "@/types/booking";
 import { ReviewWithDetails } from "@/types/review";
 import { Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
+import { Json } from "@/integrations/supabase/types";
 
 interface ChecklistItem {
   id: string;
   section: string;
   completed: boolean;
 }
+
+// Helper function to safely convert Json array to string array
+const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
+  if (!jsonArray) return [];
+  
+  if (Array.isArray(jsonArray)) {
+    return jsonArray.filter((item): item is string => typeof item === 'string');
+  }
+  
+  return [];
+};
 
 const HostDashboard = () => {
   const { authState } = useAuth();
@@ -84,18 +96,21 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch active bookings for host's spaces - Correzione della query
+          // 2. Fetch active bookings for host's spaces - Query corretta con price_per_day
           const { data: bookingsData, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
               *,
               spaces!inner (
+                id,
                 title,
                 address,
                 photos,
-                host_id
+                host_id,
+                price_per_day
               ),
               profiles!inner (
+                id,
                 first_name,
                 last_name,
                 profile_photo_url
@@ -127,33 +142,40 @@ const HostDashboard = () => {
               cancelled_by_host: booking.cancelled_by_host,
               cancellation_reason: booking.cancellation_reason,
               space: {
-                id: booking.space_id,
-                title: booking.spaces?.title || 'Spazio non trovato',
-                address: booking.spaces?.address || '',
-                photos: booking.spaces?.photos || [],
-                host_id: booking.spaces?.host_id || '',
-                price_per_day: booking.spaces?.price_per_day
+                id: booking.spaces.id,
+                title: booking.spaces.title,
+                address: booking.spaces.address,
+                photos: booking.spaces.photos,
+                host_id: booking.spaces.host_id,
+                price_per_day: booking.spaces.price_per_day
               },
-              coworker: booking.profiles ? {
-                id: booking.user_id,
+              coworker: {
+                id: booking.profiles.id,
                 first_name: booking.profiles.first_name,
                 last_name: booking.profiles.last_name,
                 profile_photo_url: booking.profiles.profile_photo_url
-              } : null
+              }
             }));
 
             setActiveBookings(transformedBookings.length);
             setRecentBookings(transformedBookings);
             console.log('🔵 Found active bookings:', transformedBookings.length);
 
-            // 3. Fetch recent messages for host's bookings
+            // 3. Fetch recent messages for host's bookings con JOIN corretto
             if (transformedBookings.length > 0) {
               const bookingIds = transformedBookings.map(b => b.id);
               const { data: messagesData, error: messagesError } = await supabase
                 .from("messages")
                 .select(`
-                  *,
-                  profiles!inner (
+                  id,
+                  booking_id,
+                  sender_id,
+                  content,
+                  attachments,
+                  is_read,
+                  created_at,
+                  profiles!messages_sender_id_fkey (
+                    id,
                     first_name,
                     last_name,
                     profile_photo_url
@@ -169,12 +191,13 @@ const HostDashboard = () => {
                 setRecentMessages([]);
                 setUnreadMessages(0);
               } else {
+                // Transform messages con conversione corretta degli attachments
                 const transformedMessages: Message[] = (messagesData || []).map(msg => ({
                   id: msg.id,
                   booking_id: msg.booking_id,
                   sender_id: msg.sender_id,
                   content: msg.content,
-                  attachments: msg.attachments,
+                  attachments: jsonArrayToStringArray(msg.attachments),
                   is_read: msg.is_read,
                   created_at: msg.created_at,
                   sender: msg.profiles ? {
@@ -264,7 +287,7 @@ const HostDashboard = () => {
 
         {/* Stripe Setup Section */}
         <div data-stripe-setup>
-          <StripeSetup />
+          <StripeSetupFixed />
         </div>
 
         {/* Statistics Cards */}
