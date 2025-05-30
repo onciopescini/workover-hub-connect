@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,8 +10,10 @@ import { reviewSpaceRevision } from "@/lib/space-moderation-utils";
 import { Report, REPORT_REASONS, REPORT_STATUS, REPORT_TARGET_TYPES } from "@/types/report";
 import { AdminSuspendSpaceDialog } from "./AdminSuspendSpaceDialog";
 import { useSpaceRevisionStatus } from "@/hooks/useSpaceRevisionStatus";
-import { ExternalLink, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
 
 interface AdminReportDialogProps {
   report: Report;
@@ -28,9 +29,10 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
 
-  // Ottieni informazioni di revisione se è un report per uno spazio
-  const { spaceInfo, isLoading: spaceLoading } = useSpaceRevisionStatus(
-    report.target_type === 'space' ? report.target_id : null
+  // Ottieni informazioni di revisione con auto-refresh abilitato per spazi segnalati
+  const { spaceInfo, isLoading: spaceLoading, lastUpdated, refresh } = useSpaceRevisionStatus(
+    report.target_type === 'space' ? report.target_id : null,
+    true // Abilita auto-refresh
   );
 
   const handleReviewReport = async () => {
@@ -73,6 +75,11 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
     if (report.target_type === 'space') {
       navigate(`/spaces/${report.target_id}`);
     }
+  };
+
+  const handleRefreshSpaceInfo = () => {
+    refresh();
+    toast.success("Informazioni spazio aggiornate");
   };
 
   const handleDialogContentClick = (e: React.MouseEvent) => {
@@ -140,10 +147,30 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
               </div>
             </div>
 
-            {/* Mostra informazioni di revisione se applicabile */}
+            {/* Sezione informazioni spazio aggiornata con refresh */}
             {spaceInfo && !spaceLoading && (
               <div className="border rounded-lg p-3 bg-blue-50">
-                <div className="text-sm font-medium text-blue-800 mb-2">Stato Spazio</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium text-blue-800">Stato Spazio</div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefreshSpaceInfo}
+                      className="text-xs flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Aggiorna
+                    </Button>
+                  </div>
+                </div>
+                
+                {lastUpdated && (
+                  <div className="text-xs text-blue-600 mb-2">
+                    Ultimo aggiornamento: {formatDistanceToNow(lastUpdated, { addSuffix: true, locale: it })}
+                  </div>
+                )}
+                
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Titolo:</span>
