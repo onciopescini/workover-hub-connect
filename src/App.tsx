@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -95,25 +94,21 @@ function App() {
                 <Route path="/app/spaces/:id" element={<SpaceDetail />} />
                 <Route path="/app/events/:id" element={<EventDetail />} />
 
-                {/* Host routes - now using MarketplaceLayout to avoid duplication */}
+                {/* Host routes - now all using MarketplaceLayout for consistent header */}
                 <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
                   <Route path="/host" element={<HostDashboard />} />
                   <Route path="/host/dashboard" element={<HostDashboard />} />
                   {/* Fallback route for old Stripe redirect URL */}
                   <Route path="/host-dashboard" element={<Navigate to="/host/dashboard" replace />} />
-                </Route>
-              </Route>
-
-              {/* Host space management routes - using AppLayout for forms */}
-              <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
-                <Route element={<AppLayout><Outlet /></AppLayout>}>
+                  
+                  {/* Host space management routes - moved to MarketplaceLayout */}
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
                   <Route path="/spaces/:id/edit" element={<SpaceEdit />} />
                 </Route>
               </Route>
 
-              {/* Admin routes */}
+              {/* Admin routes - keep AppLayout only for admin panel */}
               <Route element={<RoleProtected allowedRoles={['admin']}><Outlet /></RoleProtected>}>
                 <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/admin" element={<AdminPanel />} />
