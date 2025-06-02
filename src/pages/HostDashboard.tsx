@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LoadingScreen from "@/components/LoadingScreen";
-import { AppLayout } from "@/components/layout/AppLayout";
+import { MarketplaceLayout } from "@/components/layout/MarketplaceLayout";
 import { DashboardStats } from "@/components/host/DashboardStats";
 import { QuickActions } from "@/components/host/QuickActions";
 import { RecentBookings } from "@/components/host/RecentBookings";
@@ -293,12 +293,14 @@ const HostDashboard = () => {
   }
 
   return (
-    <AppLayout 
-      title="Dashboard Host" 
-      subtitle={`Benvenuto, ${authState.profile?.first_name || "Host"}`}
-      showBackButton={false}
-    >
+    <MarketplaceLayout showFooter={false}>
       <div className="max-w-7xl mx-auto p-4 md:p-6">
+        {/* Page Title */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Host</h1>
+          <p className="text-gray-600">Benvenuto, {authState.profile?.first_name || "Host"}</p>
+        </div>
+
         {/* Welcome Message for New Hosts */}
         {isNewHost && <WelcomeMessage />}
 
@@ -343,7 +345,7 @@ const HostDashboard = () => {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </MarketplaceLayout>
   );
 };
 

@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users } from "lucide-react";
+import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users, Settings } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationIcon } from "@/components/notifications/NotificationIcon";
 
 export function UnifiedHeader() {
   const navigate = useNavigate();
@@ -47,23 +48,42 @@ export function UnifiedHeader() {
     return "/app/spaces"; // Unified redirect for coworkers
   }, [authState.profile?.role]);
 
+  // Role-specific navigation items
   const getMainNavItems = useMemo(() => {
-    const baseItems = [
-      { path: '/app/spaces', label: 'Spazi', icon: Building2 },
-      { path: '/app/events', label: 'Eventi', icon: Calendar },
-    ];
-
-    // Add coworker-specific navigation items when authenticated
-    if (authState.isAuthenticated && authState.profile?.role === "coworker") {
+    if (!authState.isAuthenticated) {
       return [
-        ...baseItems,
-        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
-        { path: '/messages', label: 'Messaggi', icon: MessageSquare }, // Fixed route
-        { path: '/networking', label: 'Networking', icon: Users },
+        { path: '/spaces', label: 'Spazi', icon: Building2 },
+        { path: '/events', label: 'Eventi', icon: Calendar },
       ];
     }
 
-    return baseItems;
+    const role = authState.profile?.role;
+
+    if (role === "host") {
+      return [
+        { path: '/host/dashboard', label: 'Dashboard Host', icon: Building2 },
+        { path: '/spaces/manage', label: 'Gestisci Spazi', icon: Building2 },
+        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
+        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+      ];
+    }
+
+    if (role === "admin") {
+      return [
+        { path: '/admin', label: 'Dashboard Admin', icon: Settings },
+        { path: '/spaces/manage', label: 'Gestione Spazi', icon: Building2 },
+        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+      ];
+    }
+
+    // Coworker navigation
+    return [
+      { path: '/app/spaces', label: 'Spazi', icon: Building2 },
+      { path: '/app/events', label: 'Eventi', icon: Calendar },
+      { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
+      { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+      { path: '/networking', label: 'Networking', icon: Users },
+    ];
   }, [authState.isAuthenticated, authState.profile?.role]);
 
   const handleNavigation = useCallback((path: string) => {
@@ -124,52 +144,57 @@ export function UnifiedHeader() {
                 </Button>
               </>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 h-auto p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={authState.profile?.profile_photo_url || ""} />
-                      <AvatarFallback className="text-xs">
-                        {getUserInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-gray-700 hidden md:inline">
-                      {getUserFullName}
-                    </span>
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{getUserFullName}</p>
-                    <p className="text-xs text-gray-500">{authState.user?.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  
-                  {/* Role-specific navigation */}
-                  {(authState.profile?.role === "host" || authState.profile?.role === "admin") && (
-                    <>
-                      <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
-                        <Building2 className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  
-                  <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Visualizza Profilo</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center space-x-3">
+                {/* Notifications Icon - Only for authenticated users */}
+                <NotificationIcon />
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 h-auto p-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={authState.profile?.profile_photo_url || ""} />
+                        <AvatarFallback className="text-xs">
+                          {getUserInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-gray-700 hidden md:inline">
+                        {getUserFullName}
+                      </span>
+                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium">{getUserFullName}</p>
+                      <p className="text-xs text-gray-500">{authState.user?.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+                    
+                    {/* Role-specific navigation */}
+                    {(authState.profile?.role === "host" || authState.profile?.role === "admin") && (
+                      <>
+                        <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
+                          <Building2 className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
+                    
+                    <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Visualizza Profilo</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
         </div>

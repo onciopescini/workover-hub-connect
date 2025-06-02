@@ -94,15 +94,19 @@ function App() {
                 <Route path="/app/events" element={<PublicEvents />} />
                 <Route path="/app/spaces/:id" element={<SpaceDetail />} />
                 <Route path="/app/events/:id" element={<EventDetail />} />
-              </Route>
 
-              {/* Host routes */}
-              <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
-                <Route element={<AppLayout><Outlet /></AppLayout>}>
+                {/* Host routes - now using MarketplaceLayout to avoid duplication */}
+                <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
                   <Route path="/host" element={<HostDashboard />} />
                   <Route path="/host/dashboard" element={<HostDashboard />} />
                   {/* Fallback route for old Stripe redirect URL */}
                   <Route path="/host-dashboard" element={<Navigate to="/host/dashboard" replace />} />
+                </Route>
+              </Route>
+
+              {/* Host space management routes - using AppLayout for forms */}
+              <Route element={<RoleProtected allowedRoles={['host', 'admin']}><Outlet /></RoleProtected>}>
+                <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
                   <Route path="/spaces/:id/edit" element={<SpaceEdit />} />
