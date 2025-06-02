@@ -145,78 +145,83 @@ const Messages = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Messaggi</h1>
-        <p className="text-gray-600">I tuoi messaggi di prenotazione</p>
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/private-chats')}
-            className="flex items-center gap-2"
-          >
-            <Users className="h-4 w-4" />
-            Chat Private
-          </Button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Messaggi
+          </h1>
+          <p className="text-gray-600 mt-1">I tuoi messaggi di prenotazione</p>
         </div>
-      </div>
 
-      {!bookings || bookings.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nessun messaggio
-          </h3>
-          <p className="text-gray-600">
-            Non hai ancora messaggi relativi alle prenotazioni.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {bookings.map((booking) => (
-            <Card 
-              key={booking.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleBookingClick(booking.id)}
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/private-chats')}
+              className="flex items-center gap-2"
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Building className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {booking.space?.title || 'Spazio non disponibile'}
-                      </CardTitle>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">
-                          {new Date(booking.booking_date).toLocaleDateString('it-IT')}
-                        </span>
+              <Users className="h-4 w-4" />
+              Chat Private
+            </Button>
+          </div>
+        </div>
+
+        {!bookings || bookings.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nessun messaggio
+            </h3>
+            <p className="text-gray-600">
+              Non hai ancora messaggi relativi alle prenotazioni.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {bookings.map((booking) => (
+              <Card 
+                key={booking.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleBookingClick(booking.id)}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Building className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">
+                          {booking.space?.title || 'Spazio non disponibile'}
+                        </CardTitle>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">
+                            {new Date(booking.booking_date).toLocaleDateString('it-IT')}
+                          </span>
+                        </div>
                       </div>
                     </div>
+                    <Badge className={getStatusColor(booking.status)}>
+                      {getStatusLabel(booking.status)}
+                    </Badge>
                   </div>
-                  <Badge className={getStatusColor(booking.status)}>
-                    {getStatusLabel(booking.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
-                    Clicca per visualizzare i messaggi
-                  </span>
-                  <MessageSquare className="h-4 w-4 text-gray-400" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">
+                      Clicca per visualizzare i messaggi
+                    </span>
+                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
