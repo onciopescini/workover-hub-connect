@@ -302,7 +302,7 @@ const HostDashboard = () => {
         {/* Welcome Message for New Hosts */}
         {isNewHost && <WelcomeMessage />}
 
-        {/* Stripe Setup Section */}
+        {/* Stripe Setup Section - Using the new StripeSetupFixed component */}
         <div data-stripe-setup>
           <StripeSetupFixed />
         </div>

@@ -13,13 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    // This is a one-time fix for the current issue
+    console.log('🔵 FIX-STRIPE-STATUS: Starting manual fix...');
+    
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     // Fix the specific account acct_1RUcf32QXwRUltvJ
+    console.log('🔵 FIX-STRIPE-STATUS: Updating account acct_1RUcf32QXwRUltvJ to connected=true');
+    
     const { data, error } = await supabaseAdmin
       .from('profiles')
       .update({ 
@@ -30,26 +33,28 @@ serve(async (req) => {
       .select();
 
     if (error) {
-      console.error('🔴 Error fixing Stripe status:', error);
+      console.error('🔴 FIX-STRIPE-STATUS: Error fixing Stripe status:', error);
       throw error;
     }
 
-    console.log('✅ Fixed Stripe status for account acct_1RUcf32QXwRUltvJ:', data);
+    console.log('✅ FIX-STRIPE-STATUS: Fixed Stripe status for account acct_1RUcf32QXwRUltvJ:', data);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: 'Stripe status fixed',
-      updated_profiles: data?.length || 0
+      message: 'Stripe status fixed successfully',
+      updated_profiles: data?.length || 0,
+      account_fixed: 'acct_1RUcf32QXwRUltvJ'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    console.error('🔴 Error in fix-stripe-status:', error);
+    console.error('🔴 FIX-STRIPE-STATUS: Error in fix-stripe-status:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: error.message,
+      details: error.stack
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

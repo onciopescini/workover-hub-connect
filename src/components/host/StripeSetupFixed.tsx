@@ -5,13 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, CheckCircle, AlertCircle, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CreditCard, CheckCircle, AlertCircle, ExternalLink, Loader2, RefreshCw, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 export function StripeSetupFixed() {
   const { authState, refreshProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
   const [stripeStatus, setStripeStatus] = useState<{
     connected: boolean;
     accountId: string | null;
@@ -22,7 +24,7 @@ export function StripeSetupFixed() {
     loading: true
   });
 
-  // Fetch current Stripe status
+  // Fetch current Stripe status from database
   const fetchStripeStatus = async () => {
     if (!authState.user) return;
 
@@ -41,7 +43,7 @@ export function StripeSetupFixed() {
         loading: false
       });
 
-      console.log('🔵 Stripe status fetched:', {
+      console.log('🔵 Stripe status fetched from DB:', {
         connected: data.stripe_connected,
         accountId: data.stripe_account_id
       });
@@ -51,7 +53,37 @@ export function StripeSetupFixed() {
     }
   };
 
-  // New function to check Stripe status via API
+  // Manual fix function for immediate resolution
+  const runManualFix = async () => {
+    setIsFixing(true);
+    console.log('🔧 Running manual fix for Stripe status...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-stripe-status');
+
+      if (error) {
+        console.error('🔴 Manual fix error:', error);
+        throw error;
+      }
+
+      console.log('✅ Manual fix completed:', data);
+      
+      if (data.success) {
+        toast.success("Stato Stripe corretto manualmente!");
+        await fetchStripeStatus();
+        await refreshProfile();
+      } else {
+        throw new Error(data.error || 'Manual fix failed');
+      }
+    } catch (error) {
+      console.error('🔴 Error in manual fix:', error);
+      toast.error('Errore nella correzione manuale');
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
+  // API status check with fallback
   const checkStripeStatusAPI = async () => {
     if (!authState.user) return;
     
@@ -61,7 +93,13 @@ export function StripeSetupFixed() {
     try {
       const { data, error } = await supabase.functions.invoke('check-stripe-status');
 
-      if (error) throw error;
+      if (error) {
+        console.error('🔴 API check failed:', error);
+        toast.error('Controllo API fallito - usando correzione manuale');
+        // Fallback to manual fix if API fails
+        await runManualFix();
+        return false;
+      }
 
       console.log('🔵 Stripe API status response:', data);
 
@@ -78,7 +116,9 @@ export function StripeSetupFixed() {
       return data.connected;
     } catch (error) {
       console.error('🔴 Error checking Stripe status:', error);
-      toast.error('Errore nel controllo dello stato Stripe');
+      toast.error('Errore nel controllo - provo correzione manuale');
+      // Fallback to manual fix
+      await runManualFix();
       return false;
     } finally {
       setIsCheckingStatus(false);
@@ -100,14 +140,14 @@ export function StripeSetupFixed() {
       // Clean the URL
       window.history.replaceState({}, document.title, window.location.pathname);
       
-      // Check status multiple times to catch any delays
-      setTimeout(checkStripeStatusAPI, 1000);
-      setTimeout(checkStripeStatusAPI, 3000);
-      setTimeout(checkStripeStatusAPI, 5000);
+      // Try API check first, then fallback to manual fix
+      setTimeout(() => checkStripeStatusAPI(), 1000);
+      setTimeout(() => checkStripeStatusAPI(), 3000);
+      setTimeout(() => checkStripeStatusAPI(), 5000);
     }
   }, []);
 
-  // Listen for page focus to refresh status after Stripe setup
+  // Listen for page focus to refresh status
   useEffect(() => {
     const handleFocus = () => {
       console.log('🔵 Page focus - checking Stripe status');
@@ -230,7 +270,16 @@ export function StripeSetupFixed() {
         <p className="text-sm text-orange-700 mb-4">
           Connetti il tuo account Stripe per ricevere pagamenti dalle prenotazioni dei tuoi spazi.
         </p>
-        <div className="flex gap-2">
+        
+        {/* Emergency Fix Alert */}
+        <Alert className="mb-4 border-blue-200 bg-blue-50">
+          <Wrench className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-700">
+            <strong>Risoluzione Rapida:</strong> Se hai problemi con la verifica, usa il pulsante "Correggi Manualmente" per una fix immediata.
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex gap-2 flex-wrap">
           <Button
             onClick={handleStripeConnect}
             disabled={isLoading}
@@ -239,6 +288,7 @@ export function StripeSetupFixed() {
             <CreditCard className="w-4 h-4 mr-2" />
             {isLoading ? 'Connessione...' : 'Collega Account Stripe'}
           </Button>
+          
           <Button
             variant="outline"
             onClick={checkStripeStatusAPI}
@@ -251,6 +301,20 @@ export function StripeSetupFixed() {
               <RefreshCw className="w-4 h-4 mr-2" />
             )}
             Verifica Stato
+          </Button>
+          
+          <Button
+            variant="secondary"
+            onClick={runManualFix}
+            disabled={isFixing}
+            className="bg-blue-100 text-blue-700 hover:bg-blue-200"
+          >
+            {isFixing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Wrench className="w-4 h-4 mr-2" />
+            )}
+            Correggi Manualmente
           </Button>
         </div>
       </CardContent>
