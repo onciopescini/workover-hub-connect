@@ -29,10 +29,12 @@ export const createPaymentSession = async (
       return null;
     }
 
+    console.log('🔵 Sending amount to edge function (in euros):', amount);
+
     const { data, error } = await supabase.functions.invoke('create-payment-session', {
       body: {
         booking_id: bookingId,
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: amount, // Invia l'importo in euro, non in centesimi
         currency,
         user_id: user.user.id
       }

@@ -70,6 +70,10 @@ serve(async (req) => {
       throw new Error('Missing required parameters: booking_id, amount, user_id');
     }
 
+    // Log degli importi per debug
+    console.log('🔵 Amount received from frontend (in euros):', amount);
+    console.log('🔵 Amount to send to Stripe (in cents):', amount * 100);
+
     console.log('🔵 Creating payment session for:', { booking_id, amount, currency });
 
     // Verifica che la prenotazione esista e appartenga all'utente
@@ -112,7 +116,7 @@ serve(async (req) => {
       console.log('🔵 New Stripe customer created:', customerId);
     }
 
-    // Crea sessione di checkout
+    // Crea sessione di checkout - FIX: l'importo arriva già in euro dal frontend
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -123,7 +127,7 @@ serve(async (req) => {
               name: `Prenotazione: ${booking.spaces.title}`,
               description: `Prenotazione per il ${booking.booking_date}`,
             },
-            unit_amount: Math.round(amount * 100), // Convert to cents
+            unit_amount: Math.round(amount * 100), // Converte euro in centesimi UNA SOLA VOLTA
           },
           quantity: 1,
         },
@@ -138,6 +142,7 @@ serve(async (req) => {
     });
 
     console.log('🔵 Checkout session created:', session.id);
+    console.log('🔵 Session amount total (in cents):', session.amount_total);
 
     // Registra il pagamento nel database come pending
     const { error: paymentError } = await supabaseAdmin
@@ -145,7 +150,7 @@ serve(async (req) => {
       .insert({
         user_id: user_id,
         booking_id: booking_id,
-        amount: amount,
+        amount: amount, // Salva l'importo in euro
         currency: currency || 'EUR',
         payment_status: 'pending',
         method: 'stripe',

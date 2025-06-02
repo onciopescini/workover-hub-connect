@@ -1,7 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Loader2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreditCard, Loader2, Info } from "lucide-react";
 import { createPaymentSession, validatePayment } from "@/lib/payment-utils";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ const PaymentButton = ({
     
     try {
       console.log('🔵 Starting payment process for booking:', bookingId);
+      console.log('🔵 Amount to be charged (in euros):', amount);
       
       const session = await createPaymentSession(bookingId, amount, currency);
       
@@ -83,18 +85,41 @@ const PaymentButton = ({
   };
 
   return (
-    <Button
-      onClick={handlePayment}
-      disabled={disabled || isLoading}
-      className={className}
-    >
-      {isLoading ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <CreditCard className="w-4 h-4 mr-2" />
-      )}
-      {isLoading ? "Elaborazione..." : `Paga €${amount.toFixed(2)}`}
-    </Button>
+    <div className="space-y-2">
+      <Button
+        onClick={handlePayment}
+        disabled={disabled || isLoading}
+        className={className}
+      >
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <CreditCard className="w-4 h-4 mr-2" />
+        )}
+        {isLoading ? "Elaborazione..." : `Paga €${amount.toFixed(2)}`}
+      </Button>
+      
+      {/* Tooltip con carte test Stripe */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center justify-center text-xs text-gray-500 cursor-help">
+              <Info className="w-3 h-3 mr-1" />
+              Modalità test - Carte test disponibili
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-sm">
+            <div className="text-xs space-y-1">
+              <p className="font-semibold">Carte test Stripe:</p>
+              <p>• Visa: 4242 4242 4242 4242</p>
+              <p>• Mastercard: 5555 5555 5555 4444</p>
+              <p>• Scadenza: qualsiasi data futura</p>
+              <p>• CVC: qualsiasi 3 cifre</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
   );
 };
 
