@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,7 +71,6 @@ const HostDashboard = () => {
     }
   }, [authState.profile]);
 
-  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!authState.user) return;
@@ -293,59 +291,57 @@ const HostDashboard = () => {
   }
 
   return (
-    <MarketplaceLayout showFooter={false}>
-      <div className="max-w-7xl mx-auto p-4 md:p-6">
-        {/* Page Title */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard Host</h1>
-          <p className="text-gray-600">Benvenuto, {authState.profile?.first_name || "Host"}</p>
+    <div className="container mx-auto py-6 px-4">
+      {/* Page Title */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard Host</h1>
+        <p className="text-gray-600">Benvenuto, {authState.profile?.first_name || "Host"}</p>
+      </div>
+
+      {/* Welcome Message for New Hosts */}
+      {isNewHost && <WelcomeMessage />}
+
+      {/* Stripe Setup Section - Using the new StripeSetupFixed component */}
+      <div data-stripe-setup>
+        <StripeSetupFixed />
+      </div>
+
+      {/* Statistics Cards */}
+      <DashboardStats 
+        totalSpaces={totalSpaces}
+        activeBookings={activeBookings}
+        averageRating={averageRating}
+        unreadMessages={unreadMessages}
+      />
+
+      {/* Quick Actions Section */}
+      <QuickActions />
+
+      {/* Space Checklist - Show only if there are checklist items */}
+      {checklists.length > 0 && (
+        <SpaceChecklist checklists={checklists} />
+      )}
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-6">
+          <RecentBookings 
+            bookings={recentBookings} 
+            onBookingUpdate={handleBookingUpdate}
+          />
+          <RecentMessages messages={recentMessages} />
         </div>
 
-        {/* Welcome Message for New Hosts */}
-        {isNewHost && <WelcomeMessage />}
-
-        {/* Stripe Setup Section - Using the new StripeSetupFixed component */}
-        <div data-stripe-setup>
-          <StripeSetupFixed />
-        </div>
-
-        {/* Statistics Cards */}
-        <DashboardStats 
-          totalSpaces={totalSpaces}
-          activeBookings={activeBookings}
-          averageRating={averageRating}
-          unreadMessages={unreadMessages}
-        />
-
-        {/* Quick Actions Section */}
-        <QuickActions />
-
-        {/* Space Checklist - Show only if there are checklist items */}
-        {checklists.length > 0 && (
-          <SpaceChecklist checklists={checklists} />
-        )}
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <RecentBookings 
-              bookings={recentBookings} 
-              onBookingUpdate={handleBookingUpdate}
-            />
-            <RecentMessages messages={recentMessages} />
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            <RecentReviews 
-              reviews={recentReviews} 
-              averageRating={averageRating} 
-            />
-          </div>
+        {/* Right Column */}
+        <div className="space-y-6">
+          <RecentReviews 
+            reviews={recentReviews} 
+            averageRating={averageRating} 
+          />
         </div>
       </div>
-    </MarketplaceLayout>
+    </div>
   );
 };
 
