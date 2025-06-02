@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +44,7 @@ export const SpaceDetailContent = () => {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [existingBookings, setExistingBookings] = useState<any[]>([]);
 
   // Generate time slots (9 AM to 6 PM in 1-hour intervals)
   const timeSlots = useMemo(() => 
@@ -66,6 +68,39 @@ export const SpaceDetailContent = () => {
            space && 
            authState.user?.id !== space.host_id;
   }, [authState.isAuthenticated, authState.profile?.role, authState.user?.id, space?.host_id]);
+
+  // Check for existing bookings on selected date
+  const checkExistingBookings = useCallback(async () => {
+    if (!selectedDate || !space || !authState.user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_id', authState.user.id)
+        .eq('space_id', space.id)
+        .eq('booking_date', format(selectedDate, 'yyyy-MM-dd'))
+        .in('status', ['pending', 'confirmed']);
+
+      if (error) throw error;
+      setExistingBookings(data || []);
+    } catch (error) {
+      console.error('Error checking existing bookings:', error);
+    }
+  }, [selectedDate, space, authState.user]);
+
+  // Check if selected time conflicts with existing bookings
+  const hasTimeConflict = useMemo(() => {
+    if (!selectedStartTime || !selectedEndTime || existingBookings.length === 0) return false;
+
+    return existingBookings.some(booking => {
+      const existingStart = booking.start_time;
+      const existingEnd = booking.end_time;
+      
+      // Check for overlap
+      return (selectedStartTime < existingEnd && selectedEndTime > existingStart);
+    });
+  }, [selectedStartTime, selectedEndTime, existingBookings]);
 
   // Fetch space details
   useEffect(() => {
@@ -126,6 +161,11 @@ export const SpaceDetailContent = () => {
     fetchSpaceDetails();
   }, [id]);
 
+  // Check existing bookings when date changes
+  useEffect(() => {
+    checkExistingBookings();
+  }, [checkExistingBookings]);
+
   // Calculate booking cost
   const calculateBookingCost = useCallback(() => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime || !space) return 0;
@@ -162,6 +202,12 @@ export const SpaceDetailContent = () => {
       return;
     }
 
+    // Check for time conflicts
+    if (hasTimeConflict) {
+      toast.error('Hai già una prenotazione che si sovrappone con questo orario');
+      return;
+    }
+
     // Simplified authorization check
     if (!canUserBook) {
       if (!authState.profile?.onboarding_completed) {
@@ -178,7 +224,7 @@ export const SpaceDetailContent = () => {
     setBookingLoading(true);
 
     try {
-      console.log('Creating booking with payment pending status:', {
+      console.log('Creating booking with data:', {
         space_id: space.id,
         user_id: authState.user.id,
         booking_date: format(selectedDate, 'yyyy-MM-dd'),
@@ -203,19 +249,37 @@ export const SpaceDetailContent = () => {
 
       if (error) {
         console.error('Booking creation error:', error);
-        throw error;
+        
+        // Handle specific constraint errors
+        if (error.code === '23505') {
+          if (error.message.includes('unique_active_booking_per_user_time')) {
+            toast.error('Hai già una prenotazione attiva per questo orario. Scegli un orario diverso.');
+          } else {
+            toast.error('Prenotazione duplicata. Verifica i tuoi orari.');
+          }
+        } else {
+          toast.error('Errore nella creazione della prenotazione');
+        }
+        
+        // Refresh existing bookings to update UI
+        checkExistingBookings();
+        return;
       }
 
-      console.log('Booking created successfully, proceeding to payment:', data);
+      console.log('Booking created successfully:', data);
       setPendingBookingId(data.id);
+      
+      // Refresh existing bookings
+      checkExistingBookings();
       
       toast.success('Prenotazione creata! Procedi con il pagamento per confermare.');
     } catch (error) {
       console.error('Error creating booking:', error);
       toast.error('Errore nella creazione della prenotazione');
+    } finally {
       setBookingLoading(false);
     }
-  }, [selectedDate, space, authState.user, selectedStartTime, selectedEndTime, canUserBook, authState.profile, navigate]);
+  }, [selectedDate, space, authState.user, selectedStartTime, selectedEndTime, canUserBook, authState.profile, navigate, hasTimeConflict, checkExistingBookings]);
 
   const handlePaymentSuccess = useCallback(() => {
     toast.success('Pagamento completato! Prenotazione confermata.');
@@ -497,6 +561,29 @@ export const SpaceDetailContent = () => {
                     </div>
                   </div>
 
+                  {/* Show warning if time conflict */}
+                  {hasTimeConflict && selectedStartTime && selectedEndTime && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <p className="text-sm text-yellow-800">
+                        ⚠️ Hai già una prenotazione che si sovrappone con questo orario. Scegli un orario diverso.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show existing bookings for selected date */}
+                  {existingBookings.length > 0 && selectedDate && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-blue-800 mb-2">
+                        Prenotazioni esistenti per {format(selectedDate, "dd/MM/yyyy")}:
+                      </p>
+                      {existingBookings.map((booking, index) => (
+                        <div key={index} className="text-xs text-blue-700">
+                          {booking.start_time} - {booking.end_time} ({booking.status})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Booking cost calculator */}
                   <BookingCalculator 
                     space={space}
@@ -509,7 +596,7 @@ export const SpaceDetailContent = () => {
                   {!pendingBookingId ? (
                     <Button
                       onClick={handleBookingCreation}
-                      disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading}
+                      disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading || hasTimeConflict}
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                     >
                       {bookingLoading ? 'Creazione prenotazione...' : 'Crea prenotazione'}
