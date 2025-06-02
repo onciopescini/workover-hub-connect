@@ -10,6 +10,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ReportDialog from '@/components/reports/ReportDialog';
+import PaymentButton from '@/components/payments/PaymentButton';
+import { BookingCalculator } from './BookingCalculator';
 import { 
   MapPin, 
   Star, 
@@ -23,7 +25,7 @@ import {
   Euro
 } from 'lucide-react';
 import { Space } from '@/types/space';
-import { format } from 'date-fns';
+import { format, differenceInHours } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +42,7 @@ export const SpaceDetailContent = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
 
   // Generate time slots (9 AM to 6 PM in 1-hour intervals)
   const timeSlots = useMemo(() => 
@@ -123,7 +126,27 @@ export const SpaceDetailContent = () => {
     fetchSpaceDetails();
   }, [id]);
 
-  const handleBooking = useCallback(async () => {
+  // Calculate booking cost
+  const calculateBookingCost = useCallback(() => {
+    if (!selectedDate || !selectedStartTime || !selectedEndTime || !space) return 0;
+
+    const startDateTime = new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedStartTime}:00`);
+    const endDateTime = new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedEndTime}:00`);
+    
+    const hours = differenceInHours(endDateTime, startDateTime);
+    
+    // Se è un'intera giornata (8+ ore) e c'è un prezzo giornaliero, usa quello
+    if (hours >= 8 && space.price_per_day) {
+      return space.price_per_day;
+    }
+    
+    // Altrimenti calcola per ore
+    return hours * space.price_per_hour;
+  }, [selectedDate, selectedStartTime, selectedEndTime, space]);
+
+  const bookingCost = calculateBookingCost();
+
+  const handleBookingCreation = useCallback(async () => {
     if (!selectedDate || !space || !authState.user) {
       toast.error('Seleziona una data per prenotare');
       return;
@@ -155,15 +178,16 @@ export const SpaceDetailContent = () => {
     setBookingLoading(true);
 
     try {
-      console.log('Creating booking with data:', {
+      console.log('Creating booking with payment pending status:', {
         space_id: space.id,
         user_id: authState.user.id,
         booking_date: format(selectedDate, 'yyyy-MM-dd'),
         start_time: selectedStartTime,
         end_time: selectedEndTime,
-        status: space.confirmation_type === 'instant' ? 'confirmed' : 'pending'
+        status: 'pending'
       });
 
+      // Crea la prenotazione con status pending per il pagamento
       const { data, error } = await supabase
         .from('bookings')
         .insert({
@@ -172,33 +196,33 @@ export const SpaceDetailContent = () => {
           booking_date: format(selectedDate, 'yyyy-MM-dd'),
           start_time: selectedStartTime,
           end_time: selectedEndTime,
-          status: space.confirmation_type === 'instant' ? 'confirmed' : 'pending'
+          status: 'pending' // Always pending until payment is completed
         })
         .select()
         .single();
 
       if (error) {
-        console.error('Booking error:', error);
+        console.error('Booking creation error:', error);
         throw error;
       }
 
-      console.log('Booking created successfully:', data);
-
-      toast.success(
-        space.confirmation_type === 'instant' 
-          ? 'Prenotazione confermata!' 
-          : 'Richiesta di prenotazione inviata all\'host'
-      );
+      console.log('Booking created successfully, proceeding to payment:', data);
+      setPendingBookingId(data.id);
       
-      // Navigate to bookings page
-      navigate('/bookings');
+      toast.success('Prenotazione creata! Procedi con il pagamento per confermare.');
     } catch (error) {
       console.error('Error creating booking:', error);
-      toast.error('Errore nella prenotazione');
-    } finally {
+      toast.error('Errore nella creazione della prenotazione');
       setBookingLoading(false);
     }
   }, [selectedDate, space, authState.user, selectedStartTime, selectedEndTime, canUserBook, authState.profile, navigate]);
+
+  const handlePaymentSuccess = useCallback(() => {
+    toast.success('Pagamento completato! Prenotazione confermata.');
+    setPendingBookingId(null);
+    setBookingLoading(false);
+    navigate('/bookings');
+  }, [navigate]);
 
   const handleBackClick = useCallback(() => {
     if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
@@ -473,20 +497,35 @@ export const SpaceDetailContent = () => {
                     </div>
                   </div>
 
-                  <Button
-                    onClick={handleBooking}
-                    disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    {bookingLoading ? 'Prenotazione...' : 
-                     space.confirmation_type === 'instant' ? 'Prenota ora' : 'Richiedi prenotazione'}
-                  </Button>
+                  {/* Booking cost calculator */}
+                  <BookingCalculator 
+                    space={space}
+                    selectedDate={selectedDate}
+                    selectedStartTime={selectedStartTime}
+                    selectedEndTime={selectedEndTime}
+                  />
+
+                  {/* Booking/Payment button */}
+                  {!pendingBookingId ? (
+                    <Button
+                      onClick={handleBookingCreation}
+                      disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {bookingLoading ? 'Creazione prenotazione...' : 'Crea prenotazione'}
+                    </Button>
+                  ) : (
+                    <PaymentButton
+                      bookingId={pendingBookingId}
+                      amount={bookingCost}
+                      currency="EUR"
+                      onPaymentSuccess={handlePaymentSuccess}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    />
+                  )}
 
                   <div className="text-xs text-gray-500 text-center">
-                    {space.confirmation_type === 'instant' 
-                      ? 'Prenotazione immediata - nessuna attesa'
-                      : 'L\'host dovrà approvare la tua richiesta'
-                    }
+                    Il pagamento è richiesto per confermare la prenotazione
                   </div>
                 </div>
               ) : authState.isAuthenticated ? (
