@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
+import { ReviewButton } from "./ReviewButton";
 
 interface BookingCardProps {
   booking: BookingWithDetails;
@@ -26,13 +27,15 @@ export const BookingCard = ({
     if (userRole === "host") {
       // Show coworker info
       return {
+        id: booking.user_id,
         name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
         photo: booking.coworker?.profile_photo_url,
         role: "Coworker"
       };
     } else {
-      // For coworker view, show space title as host identifier
+      // For coworker view, show host info
       return {
+        id: booking.space?.host_id || '',
         name: booking.space?.title || "Spazio",
         photo: null,
         role: "Host"
@@ -98,7 +101,7 @@ export const BookingCard = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex space-x-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-4">
           <Button
             variant="outline"
             size="sm"
@@ -108,6 +111,16 @@ export const BookingCard = ({
             <MessageSquare className="w-4 h-4 mr-1" />
             Messaggi
           </Button>
+          
+          {/* Review button - only show for completed bookings */}
+          {booking.status === 'confirmed' && otherParty.id && (
+            <ReviewButton
+              booking={booking}
+              targetUserId={otherParty.id}
+              targetUserName={otherParty.name}
+            />
+          )}
+          
           {canCancelBooking() && (
             <Button
               variant="destructive"

@@ -64,17 +64,21 @@ serve(async (req) => {
     console.log('🔵 User authenticated:', user.id);
 
     // Parse request body
-    const { booking_id, amount, currency, user_id } = await req.json();
+    const { booking_id, base_amount, platform_fee, total_amount, currency, user_id } = await req.json();
 
-    if (!booking_id || !amount || !user_id) {
-      throw new Error('Missing required parameters: booking_id, amount, user_id');
+    if (!booking_id || !total_amount || !user_id) {
+      throw new Error('Missing required parameters: booking_id, total_amount, user_id');
     }
 
     // Log degli importi per debug
-    console.log('🔵 Amount received from frontend (in euros):', amount);
-    console.log('🔵 Amount to send to Stripe (in cents):', amount * 100);
+    console.log('🔵 Payment breakdown received:', {
+      base_amount,
+      platform_fee,
+      total_amount,
+      currency
+    });
 
-    console.log('🔵 Creating payment session for:', { booking_id, amount, currency });
+    console.log('🔵 Creating payment session for:', { booking_id, total_amount, currency });
 
     // Verifica che la prenotazione esista e appartenga all'utente
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -116,7 +120,7 @@ serve(async (req) => {
       console.log('🔵 New Stripe customer created:', customerId);
     }
 
-    // Crea sessione di checkout - FIX: l'importo arriva già in euro dal frontend
+    // Crea sessione di checkout con breakdown dettagliato
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -127,7 +131,7 @@ serve(async (req) => {
               name: `Prenotazione: ${booking.spaces.title}`,
               description: `Prenotazione per il ${booking.booking_date}`,
             },
-            unit_amount: Math.round(amount * 100), // Converte euro in centesimi UNA SOLA VOLTA
+            unit_amount: Math.round(total_amount * 100), // Converte euro in centesimi
           },
           quantity: 1,
         },
@@ -137,7 +141,9 @@ serve(async (req) => {
       cancel_url: `${req.headers.get('origin')}/bookings?payment=cancelled`,
       metadata: {
         booking_id: booking_id,
-        user_id: user_id
+        user_id: user_id,
+        base_amount: base_amount.toString(),
+        platform_fee: platform_fee.toString()
       }
     });
 
@@ -150,7 +156,7 @@ serve(async (req) => {
       .insert({
         user_id: user_id,
         booking_id: booking_id,
-        amount: amount, // Salva l'importo in euro
+        amount: total_amount, // Salva l'importo totale in euro
         currency: currency || 'EUR',
         payment_status: 'pending',
         method: 'stripe',
@@ -168,7 +174,9 @@ serve(async (req) => {
       session_id: session.id,
       payment_url: session.url,
       booking_id: booking_id,
-      amount: amount
+      total_amount: total_amount,
+      base_amount: base_amount,
+      platform_fee: platform_fee
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

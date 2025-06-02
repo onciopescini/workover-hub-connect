@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
@@ -16,10 +15,10 @@ type Payment = {
   created_at: string;
 };
 
-// Create payment session for booking
+// Create payment session for booking with 5% platform fee
 export const createPaymentSession = async (
   bookingId: string,
-  amount: number,
+  baseCost: number,
   currency: string = "EUR"
 ): Promise<PaymentSession | null> => {
   try {
@@ -29,12 +28,23 @@ export const createPaymentSession = async (
       return null;
     }
 
-    console.log('🔵 Sending amount to edge function (in euros):', amount);
+    // Calcola commissione 5% e totale
+    const platformFee = baseCost * 0.05;
+    const totalAmount = baseCost + platformFee;
+
+    console.log('🔵 Payment breakdown:', {
+      baseCost,
+      platformFee,
+      totalAmount,
+      currency
+    });
 
     const { data, error } = await supabase.functions.invoke('create-payment-session', {
       body: {
         booking_id: bookingId,
-        amount: amount, // Invia l'importo in euro, non in centesimi
+        base_amount: baseCost,
+        platform_fee: platformFee,
+        total_amount: totalAmount,
         currency,
         user_id: user.user.id
       }

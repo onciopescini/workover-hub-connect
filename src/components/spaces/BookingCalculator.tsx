@@ -28,7 +28,10 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
     return hours * space.price_per_hour;
   };
 
-  const cost = calculateBookingCost();
+  const baseCost = calculateBookingCost();
+  const platformFee = baseCost * 0.05; // 5% commissione piattaforma
+  const totalCost = baseCost + platformFee;
+  
   const hours = selectedStartTime && selectedEndTime ? 
     differenceInHours(
       new Date(`2000-01-01T${selectedEndTime}:00`),
@@ -45,7 +48,11 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
       <div className="space-y-1 text-sm">
         <div className="flex justify-between">
           <span>{hours} ore ({selectedStartTime} - {selectedEndTime})</span>
-          <span>€{cost.toFixed(2)}</span>
+          <span>€{baseCost.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Commissione piattaforma (5%)</span>
+          <span>€{platformFee.toFixed(2)}</span>
         </div>
         {hours >= 8 && space.price_per_day && (
           <div className="text-green-600 text-xs">
@@ -55,7 +62,7 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
       </div>
       <div className="border-t pt-2 mt-2 font-semibold flex justify-between">
         <span>Totale</span>
-        <span>€{cost.toFixed(2)}</span>
+        <span>€{totalCost.toFixed(2)}</span>
       </div>
     </div>
   );

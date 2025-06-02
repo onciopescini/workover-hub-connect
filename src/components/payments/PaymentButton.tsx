@@ -25,12 +25,20 @@ const PaymentButton = ({
 }: PaymentButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
+  // Calcola breakdown del prezzo
+  const platformFee = amount * 0.05;
+  const totalAmount = amount + platformFee;
+
   const handlePayment = async () => {
     setIsLoading(true);
     
     try {
       console.log('🔵 Starting payment process for booking:', bookingId);
-      console.log('🔵 Amount to be charged (in euros):', amount);
+      console.log('🔵 Payment breakdown:', {
+        baseCost: amount,
+        platformFee,
+        totalAmount
+      });
       
       const session = await createPaymentSession(bookingId, amount, currency);
       
@@ -85,18 +93,34 @@ const PaymentButton = ({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Breakdown del prezzo */}
+      <div className="bg-gray-50 p-3 rounded-lg text-sm">
+        <div className="flex justify-between items-center mb-1">
+          <span>Costo base:</span>
+          <span>€{amount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center mb-1 text-gray-600">
+          <span>Commissione piattaforma (5%):</span>
+          <span>€{platformFee.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between items-center font-semibold pt-1 border-t">
+          <span>Totale:</span>
+          <span>€{totalAmount.toFixed(2)}</span>
+        </div>
+      </div>
+
       <Button
         onClick={handlePayment}
         disabled={disabled || isLoading}
-        className={className}
+        className={`w-full ${className}`}
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
         ) : (
           <CreditCard className="w-4 h-4 mr-2" />
         )}
-        {isLoading ? "Elaborazione..." : `Paga €${amount.toFixed(2)}`}
+        {isLoading ? "Elaborazione..." : `Paga €${totalAmount.toFixed(2)}`}
       </Button>
       
       {/* Tooltip con carte test Stripe */}
