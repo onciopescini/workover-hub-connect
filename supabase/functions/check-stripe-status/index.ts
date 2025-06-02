@@ -28,8 +28,8 @@ serve(async (req) => {
 
     // Initialize Supabase client with service role key
     const supabaseAdmin = createClient(
-      Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-      Deno.env.get('SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     const authHeader = req.headers.get('Authorization');
@@ -67,7 +67,7 @@ serve(async (req) => {
 
     logStep("Checking Stripe account status", { accountId: profile.stripe_account_id });
 
-    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
+    const stripe = new Stripe(stripeKey, { apiVersion: '2025-05-28.basil' });
 
     // Get account details from Stripe API
     const account = await stripe.accounts.retrieve(profile.stripe_account_id);

@@ -15,8 +15,8 @@ serve(async (req) => {
   try {
     // This is a one-time fix for the current issue
     const supabaseAdmin = createClient(
-      Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-      Deno.env.get('SERVICE_ROLE_KEY')!
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
     // Fix the specific account acct_1RUcf32QXwRUltvJ

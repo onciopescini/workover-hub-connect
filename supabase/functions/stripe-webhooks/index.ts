@@ -9,12 +9,12 @@ const corsHeaders = {
 };
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-05-28.basil',
 });
 
 const supabaseAdmin = createClient(
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-  Deno.env.get('SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
 serve(async (req) => {

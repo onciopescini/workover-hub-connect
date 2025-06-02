@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log('🔵 Environment variables verified');
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-05-28.basil',
     });
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
