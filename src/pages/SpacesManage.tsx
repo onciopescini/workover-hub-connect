@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -149,44 +150,121 @@ const SpacesManage = () => {
   const activeSpaces = spaces.filter(space => !space.is_suspended);
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestisci i Tuoi Spazi</h1>
-          <p className="text-gray-600">Amministra e modifica i tuoi spazi di lavoro</p>
+    <>
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gestisci i Tuoi Spazi</h1>
+            <p className="text-gray-600">Amministra e modifica i tuoi spazi di lavoro</p>
+          </div>
+          <Button
+            onClick={handleCreateSpace}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Aggiungi Nuovo Spazio
+          </Button>
         </div>
-        <Button
-          onClick={handleCreateSpace}
-          className="bg-blue-500 hover:bg-blue-600"
-        >
-          <PlusCircle className="w-4 h-4 mr-2" />
-          Aggiungi Nuovo Spazio
-        </Button>
-      </div>
 
-      {suspendedSpaces.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-red-700 mb-4">
-            <AlertTriangle className="w-5 h-5 inline mr-2" />
-            Spazi Sospesi
-          </h2>
-          <div className="space-y-4">
-            {suspendedSpaces.map(space => (
-              <Card key={space.id} className="border-red-200 overflow-hidden">
-                <CardContent className="pt-6">
-                  <SuspendedSpaceBanner
-                    spaceTitle={space.title}
-                    suspensionReason={space.suspension_reason || "Violazione dei termini di servizio"}
-                    revisionRequested={space.revision_requested}
-                    onEditSpace={() => navigate(`/spaces/${space.id}/edit`)}
-                    onRequestRevision={() => handleRequestRevision(space.id, space.title)}
-                  />
-                  
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-lg">{space.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{space.address}</p>
+        {suspendedSpaces.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-red-700 mb-4">
+              <AlertTriangle className="w-5 h-5 inline mr-2" />
+              Spazi Sospesi
+            </h2>
+            <div className="space-y-4">
+              {suspendedSpaces.map(space => (
+                <Card key={space.id} className="border-red-200 overflow-hidden">
+                  <CardContent className="pt-6">
+                    <SuspendedSpaceBanner
+                      spaceTitle={space.title}
+                      suspensionReason={space.suspension_reason || "Violazione dei termini di servizio"}
+                      revisionRequested={space.revision_requested}
+                      onEditSpace={() => navigate(`/spaces/${space.id}/edit`)}
+                      onRequestRevision={() => handleRequestRevision(space.id, space.title)}
+                    />
+                    
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-lg">{space.title}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{space.address}</p>
+                      </div>
+                      <Button
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/spaces/${space.id}/edit`)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" /> Modifica
+                      </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex justify-center p-12">
+            <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          </div>
+        ) : spaces.length === 0 ? (
+          <Card className="bg-white border-dashed border-2 border-gray-300">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <h2 className="text-xl font-medium text-gray-600 mb-2">Nessuno Spazio Ancora</h2>
+              <p className="text-gray-500 text-center mb-6">
+                Crea il tuo primo spazio per iniziare ad ospitare coworker
+              </p>
+              <Button
+                onClick={handleCreateSpace}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Crea il Tuo Primo Spazio
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeSpaces.map((space) => (
+              <Card key={space.id} className="overflow-hidden bg-white h-full flex flex-col">
+                <div
+                  className="h-40 bg-gray-200 bg-center bg-cover"
+                  style={{
+                    backgroundImage: space.photos && space.photos.length > 0
+                      ? `url(${space.photos[0]})`
+                      : "url(/placeholder.svg)",
+                  }}
+                />
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg truncate">{space.title}</CardTitle>
+                    <Badge 
+                      variant="default" 
+                      className={space.published ? "bg-green-100 text-green-800" : "text-gray-500"}
+                    >
+                      {space.published ? "Pubblicato" : "Bozza"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-2">
+                  <p className="text-gray-500 text-sm line-clamp-2">{space.description}</p>
+                  <div className="flex items-center mt-2">
+                    <Badge variant="secondary" className="mr-2">
+                      {space.category}
+                    </Badge>
+                    <span className="text-sm text-gray-500">
+                      Max {space.max_capacity} {space.max_capacity === 1 ? "persona" : "persone"}
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-blue-600 font-medium">
+                      €{space.price_per_hour}/ora · €{space.price_per_day}/giorno
+                    </span>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between mt-auto pt-2">
+                  <div className="flex space-x-2">
                     <Button
                       variant="outline" 
                       size="sm"
@@ -194,120 +272,45 @@ const SpacesManage = () => {
                     >
                       <Edit className="w-4 h-4 mr-1" /> Modifica
                     </Button>
+                    <Button
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleDeleteSpace(space.id)}
+                      disabled={!!deleting}
+                    >
+                      {deleting === space.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <><Trash2 className="w-4 h-4 mr-1" /> Elimina</>
+                      )}
+                    </Button>
                   </div>
-                </CardContent>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => togglePublishStatus(space)}
+                  >
+                    {space.published ? (
+                      <><EyeOff className="w-4 h-4 mr-1" /> Nascondi</>
+                    ) : (
+                      <><Eye className="w-4 h-4 mr-1" /> Pubblica</>
+                    )}
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {loading ? (
-        <div className="flex justify-center p-12">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        </div>
-      ) : spaces.length === 0 ? (
-        <Card className="bg-white border-dashed border-2 border-gray-300">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <h2 className="text-xl font-medium text-gray-600 mb-2">Nessuno Spazio Ancora</h2>
-            <p className="text-gray-500 text-center mb-6">
-              Crea il tuo primo spazio per iniziare ad ospitare coworker
-            </p>
-            <Button
-              onClick={handleCreateSpace}
-              className="bg-blue-500 hover:bg-blue-600"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Crea il Tuo Primo Spazio
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeSpaces.map((space) => (
-            <Card key={space.id} className="overflow-hidden bg-white h-full flex flex-col">
-              <div
-                className="h-40 bg-gray-200 bg-center bg-cover"
-                style={{
-                  backgroundImage: space.photos && space.photos.length > 0
-                    ? `url(${space.photos[0]})`
-                    : "url(/placeholder.svg)",
-                }}
-              />
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg truncate">{space.title}</CardTitle>
-                  <Badge 
-                    variant="default" 
-                    className={space.published ? "bg-green-100 text-green-800" : "text-gray-500"}
-                  >
-                    {space.published ? "Pubblicato" : "Bozza"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <p className="text-gray-500 text-sm line-clamp-2">{space.description}</p>
-                <div className="flex items-center mt-2">
-                  <Badge variant="secondary" className="mr-2">
-                    {space.category}
-                  </Badge>
-                  <span className="text-sm text-gray-500">
-                    Max {space.max_capacity} {space.max_capacity === 1 ? "persona" : "persone"}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="text-blue-600 font-medium">
-                    €{space.price_per_hour}/ora · €{space.price_per_day}/giorno
-                  </span>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between mt-auto pt-2">
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate(`/spaces/${space.id}/edit`)}
-                  >
-                    <Edit className="w-4 h-4 mr-1" /> Modifica
-                  </Button>
-                  <Button
-                    variant="destructive" 
-                    size="sm"
-                    onClick={() => handleDeleteSpace(space.id)}
-                    disabled={!!deleting}
-                  >
-                    {deleting === space.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <><Trash2 className="w-4 h-4 mr-1" /> Elimina</>
-                    )}
-                  </Button>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => togglePublishStatus(space)}
-                >
-                  {space.published ? (
-                    <><EyeOff className="w-4 h-4 mr-1" /> Nascondi</>
-                  ) : (
-                    <><Eye className="w-4 h-4 mr-1" /> Pubblica</>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-
-    <RevisionRequestDialog
-      isOpen={revisionDialog.isOpen}
-      onClose={() => setRevisionDialog({...revisionDialog, isOpen: false})}
-      onSuccess={handleRevisionSuccess}
-      spaceId={revisionDialog.spaceId}
-      spaceTitle={revisionDialog.spaceTitle}
-    />
+      <RevisionRequestDialog
+        isOpen={revisionDialog.isOpen}
+        onClose={() => setRevisionDialog({...revisionDialog, isOpen: false})}
+        onSuccess={handleRevisionSuccess}
+        spaceId={revisionDialog.spaceId}
+        spaceTitle={revisionDialog.spaceTitle}
+      />
+    </>
   );
 };
 
