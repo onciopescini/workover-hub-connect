@@ -102,7 +102,7 @@ export function useLoadingState(
         logger.error('Operation failed', {
           action: 'operation_failure',
           duration,
-          context,
+          contextInfo: context,
           errorMessage
         }, error instanceof Error ? error : new Error(errorMessage));
       }
