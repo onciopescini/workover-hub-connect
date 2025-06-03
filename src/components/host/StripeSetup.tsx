@@ -8,6 +8,7 @@ import { CreditCard, AlertTriangle, CheckCircle, ExternalLink, Loader2, Info } f
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 export function StripeSetup() {
   const { authState } = useAuth();
@@ -15,11 +16,22 @@ export function StripeSetup() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   
+  // Initialize logger for this component
+  const logger = useLogger({
+    context: 'StripeSetup',
+    enablePerformanceTracking: true,
+    metadata: {
+      componentType: 'stripe-setup',
+      userId: authState.user?.id
+    }
+  });
+  
   // Leggi lo stato direttamente dal profilo autenticato con fallback sicuri
   const stripeConnected = authState.profile?.stripe_connected || false;
   const stripeAccountId = authState.profile?.stripe_account_id || null;
 
-  console.log("🔵 StripeSetup - Stato corrente:", {
+  logger.debug("StripeSetup component state", {
+    action: 'state_check',
     userId: authState.user?.id,
     stripeConnected,
     stripeAccountId,
@@ -30,7 +42,10 @@ export function StripeSetup() {
   useEffect(() => {
     const handleFocus = () => {
       if (authState.user && !stripeConnected) {
-        console.log("🔵 Page focus - checking Stripe status");
+        logger.info("Page focus detected - checking Stripe status", {
+          action: 'page_focus',
+          userId: authState.user?.id
+        });
         handleRefreshStatus();
       }
     };
@@ -43,7 +58,10 @@ export function StripeSetup() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('stripe_setup') === 'success') {
-      console.log("🔵 Detected Stripe setup success from URL");
+      logger.info("Detected Stripe setup success from URL", {
+        action: 'stripe_redirect_success',
+        urlParams: Object.fromEntries(urlParams.entries())
+      });
       toast.success("Setup Stripe completato! Controllo stato...");
       handleRefreshStatus();
       // Pulisci l'URL
@@ -55,8 +73,13 @@ export function StripeSetup() {
     setIsLoading(true);
     setLastError(null);
     
+    const timer = logger.startTimer('stripe_connect_process');
+    
     try {
-      console.log("🔵 Iniziando connessione Stripe...");
+      logger.info("Starting Stripe connection process", {
+        action: 'stripe_connect_start',
+        userId: authState.user?.id
+      });
       
       const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: {
@@ -66,33 +89,55 @@ export function StripeSetup() {
       });
 
       if (error) {
-        console.error("🔴 Errore Stripe Connect:", error);
+        logger.error("Stripe Connect API error", error, {
+          action: 'stripe_connect_error',
+          errorType: 'api_error'
+        });
         setLastError(error.message);
         throw error;
       }
 
       if (data?.success && data?.url) {
-        console.log("🔵 URL Stripe ricevuto:", data.url);
+        logger.info("Stripe Connect URL received successfully", {
+          action: 'stripe_connect_url_received',
+          hasUrl: !!data.url,
+          urlLength: data.url?.length
+        });
         // Apri Stripe Connect in una nuova finestra
         window.open(data.url, '_blank');
         toast.success("Reindirizzamento a Stripe Connect...");
       } else {
         const errorMsg = data?.error || "URL di reindirizzamento non ricevuto";
+        logger.warn("Stripe Connect response invalid", {
+          action: 'stripe_connect_invalid_response',
+          hasSuccess: !!data?.success,
+          hasUrl: !!data?.url,
+          hasError: !!data?.error,
+          errorMsg
+        });
         setLastError(errorMsg);
         throw new Error(errorMsg);
       }
       
     } catch (error: any) {
-      console.error("🔴 Errore nel collegamento Stripe:", error);
+      logger.error("Stripe connection process failed", error, {
+        action: 'stripe_connect_failed',
+        errorMessage: error.message
+      });
       const errorMessage = error.message || "Errore nel collegamento con Stripe";
       setLastError(errorMessage);
       toast.error(errorMessage);
     } finally {
+      timer.end();
       setIsLoading(false);
     }
   };
 
   const handleStripeManage = () => {
+    logger.info("User redirected to Stripe dashboard", {
+      action: 'stripe_dashboard_redirect',
+      stripeAccountId
+    });
     // Reindirizza al dashboard Stripe
     window.open("https://dashboard.stripe.com", "_blank");
   };
@@ -101,8 +146,13 @@ export function StripeSetup() {
     setIsCheckingStatus(true);
     setLastError(null);
     
+    const timer = logger.startTimer('refresh_stripe_status');
+    
     try {
-      console.log("🔵 Refreshing profile status...");
+      logger.info("Starting profile status refresh", {
+        action: 'refresh_status_start',
+        userId: authState.user?.id
+      });
       
       // Forza refresh del profilo dal server
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,36 +164,60 @@ export function StripeSetup() {
           .single();
 
         if (error) {
-          console.error("🔴 Errore fetch profilo:", error);
+          logger.error("Profile fetch error during status refresh", error, {
+            action: 'refresh_status_profile_error',
+            userId: user.id
+          });
           setLastError("Errore nel caricamento del profilo");
           throw error;
         }
 
-        console.log("🔵 Profilo aggiornato:", {
+        logger.info("Profile updated successfully", {
+          action: 'refresh_status_success',
           stripeConnected: profile?.stripe_connected,
-          stripeAccountId: profile?.stripe_account_id
+          stripeAccountId: profile?.stripe_account_id,
+          profileId: profile?.id
         });
 
         if (profile?.stripe_connected && !stripeConnected) {
+          logger.info("Stripe status changed to connected", {
+            action: 'stripe_status_changed',
+            previousStatus: stripeConnected,
+            newStatus: profile.stripe_connected
+          });
           toast.success("Stato Stripe aggiornato!");
           // Trigger refresh del context
           window.location.reload();
         } else if (!profile?.stripe_connected) {
+          logger.info("Stripe setup still in progress", {
+            action: 'stripe_setup_pending',
+            stripeConnected: profile?.stripe_connected
+          });
           toast.info("Setup Stripe ancora in corso...");
         }
       }
     } catch (error: any) {
-      console.error("🔴 Errore nel refresh dello stato:", error);
+      logger.error("Status refresh process failed", error, {
+        action: 'refresh_status_failed',
+        errorMessage: error.message
+      });
       const errorMessage = error.message || "Errore nel controllo dello stato";
       setLastError(errorMessage);
       toast.error(errorMessage);
     } finally {
+      timer.end();
       setIsCheckingStatus(false);
     }
   };
 
   // Show loading if profile is not yet loaded
   if (authState.isLoading || !authState.profile) {
+    logger.debug("Component in loading state", {
+      action: 'component_loading',
+      authLoading: authState.isLoading,
+      hasProfile: !!authState.profile
+    });
+    
     return (
       <Card className="mb-6">
         <CardHeader>
@@ -159,6 +233,9 @@ export function StripeSetup() {
       </Card>
     );
   }
+
+  // Log component render
+  logger.trackRender('StripeSetup');
 
   return (
     <Card className="mb-6">
