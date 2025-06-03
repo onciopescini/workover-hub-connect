@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -185,7 +184,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
     console.log('📍 Adding user location marker...');
     const userMarkerEl = document.createElement('div');
     userMarkerEl.innerHTML = `
-      <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg pulse"></div>
+      <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
     `;
     
     new mapboxgl.Marker(userMarkerEl)
@@ -241,24 +240,6 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
           <span className="text-sm text-gray-700">{spaces.length} spazi disponibili</span>
         </div>
       )}
-
-      <style jsx>{`
-        .pulse {
-          animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-          }
-          70% {
-            box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
