@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
 
   const fetchProfile = async (userId: string) => {
-    const timer = authLogger.startTimer('fetchProfile');
+    const stopTimer = authLogger.startTimer('fetchProfile');
     
     try {
       authLogger.debug('Starting profile fetch', {
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       return null;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(refreshTimeoutRef.current);
     }
     
-    const timer = authLogger.startTimer('refreshProfile');
+    const stopTimer = authLogger.startTimer('refreshProfile');
     
     try {
       authLogger.info('Starting profile refresh', {
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: authState.user?.id
       });
     } finally {
-      timer.end();
+      stopTimer();
       // Reset flag after a delay to prevent rapid successive calls
       refreshTimeoutRef.current = setTimeout(() => {
         isRefreshingRef.current = false;
@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
 
-    const timer = authLogger.startTimer('updateProfile');
+    const stopTimer = authLogger.startTimer('updateProfile');
 
     try {
       authLogger.info('Starting profile update', {
@@ -169,12 +169,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       throw error;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const timer = authLogger.startTimer('signIn');
+    const stopTimer = authLogger.startTimer('signIn');
     
     try {
       authLogger.info('Starting sign in process', {
@@ -199,12 +199,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       throw error;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
   const signUp = async (email: string, password: string) => {
-    const timer = authLogger.startTimer('signUp');
+    const stopTimer = authLogger.startTimer('signUp');
     
     try {
       authLogger.info('Starting sign up process', {
@@ -237,12 +237,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       throw error;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
   const signInWithGoogle = async () => {
-    const timer = authLogger.startTimer('signInWithGoogle');
+    const stopTimer = authLogger.startTimer('signInWithGoogle');
     
     try {
       authLogger.info('Starting Google sign in', {
@@ -275,12 +275,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       throw error;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
   const updateAuthState = async (user: User | null, session: Session | null) => {
-    const timer = authLogger.startTimer('updateAuthState');
+    const stopTimer = authLogger.startTimer('updateAuthState');
     
     authLogger.info('Updating auth state', {
       action: 'auth_state_update',
@@ -320,11 +320,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     }
     
-    timer.end();
+    stopTimer();
   };
 
   const signOut = async () => {
-    const timer = authLogger.startTimer('signOut');
+    const stopTimer = authLogger.startTimer('signOut');
     
     try {
       authLogger.info('Starting sign out process', {
@@ -366,7 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       throw error;
     } finally {
-      timer.end();
+      stopTimer();
     }
   };
 
@@ -380,7 +380,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Get initial session
     const getInitialSession = async () => {
-      const timer = authLogger.startTimer('getInitialSession');
+      const stopTimer = authLogger.startTimer('getInitialSession');
       
       try {
         authLogger.debug('Getting initial session', {
@@ -416,7 +416,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuthState(prev => ({ ...prev, isLoading: false }));
         }
       } finally {
-        timer.end();
+        stopTimer();
       }
     };
 
