@@ -79,16 +79,27 @@ export function PaymentsDashboard() {
           .eq('bookings.spaces.host_id', authState.user.id)
           .order('created_at', { ascending: false });
 
-        if (hostError) throw hostError;
+        if (hostError) {
+          console.error('Host payments fetch error:', hostError);
+          throw hostError;
+        }
 
         // Get user profiles
         const userIds = hostPayments?.map(p => p.user_id) || [];
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name')
-          .in('id', userIds);
+        let profiles: any[] = [];
+        
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name')
+            .in('id', userIds);
 
-        if (profilesError) throw profilesError;
+          if (profilesError) {
+            console.error('Profiles fetch error:', profilesError);
+            throw profilesError;
+          }
+          profiles = profilesData || [];
+        }
 
         // Transform data
         const transformedPayments: PaymentWithDetails[] = (hostPayments || []).map(payment => {
@@ -183,7 +194,10 @@ export function PaymentsDashboard() {
           .gte('created_at', dateThreshold.toISOString())
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Coworker payments fetch error:', error);
+          throw error;
+        }
 
         const transformedPayments: PaymentWithDetails[] = (data || []).map(payment => ({
           id: payment.id,

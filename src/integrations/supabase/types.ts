@@ -656,11 +656,14 @@ export type Database = {
           booking_id: string
           created_at: string | null
           currency: string
+          host_amount: number | null
           id: string
           method: string | null
           payment_status: string
+          platform_fee: number | null
           receipt_url: string | null
           stripe_session_id: string | null
+          stripe_transfer_id: string | null
           user_id: string
         }
         Insert: {
@@ -668,11 +671,14 @@ export type Database = {
           booking_id: string
           created_at?: string | null
           currency?: string
+          host_amount?: number | null
           id?: string
           method?: string | null
           payment_status?: string
+          platform_fee?: number | null
           receipt_url?: string | null
           stripe_session_id?: string | null
+          stripe_transfer_id?: string | null
           user_id: string
         }
         Update: {
@@ -680,11 +686,14 @@ export type Database = {
           booking_id?: string
           created_at?: string | null
           currency?: string
+          host_amount?: number | null
           id?: string
           method?: string | null
           payment_status?: string
+          platform_fee?: number | null
           receipt_url?: string | null
           stripe_session_id?: string | null
+          stripe_transfer_id?: string | null
           user_id?: string
         }
         Relationships: [
