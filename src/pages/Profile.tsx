@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MapPin, Calendar, Mail } from 'lucide-react';
+import { Edit, MapPin, Calendar, Mail, Users, UserCheck, UserX } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -151,6 +152,20 @@ const Profile = () => {
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span>Iscritto il {new Date(profile.created_at).toLocaleDateString('it-IT')}</span>
+              </div>
+              {/* Networking Status */}
+              <div className="flex items-center space-x-2">
+                {profile.networking_enabled ? (
+                  <>
+                    <UserCheck className="h-4 w-4 text-green-500" />
+                    <span className="text-green-600">Disponibile per il networking</span>
+                  </>
+                ) : (
+                  <>
+                    <UserX className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-500">Non disponibile per il networking</span>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

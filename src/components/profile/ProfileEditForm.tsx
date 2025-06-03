@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Save, Upload, AlertCircle, Loader2 } from 'lucide-react';
+import { Save, Upload, AlertCircle, Loader2, Users } from 'lucide-react';
 
 export const ProfileEditForm = () => {
   const { authState, refreshProfile } = useAuth();
@@ -37,6 +38,7 @@ export const ProfileEditForm = () => {
     interests: parseInterests(authState.profile?.interests),
     linkedin_url: authState.profile?.linkedin_url || '',
     website: authState.profile?.website || '',
+    networking_enabled: authState.profile?.networking_enabled || false,
   });
 
   const validateLinkedInUrl = (url: string): boolean => {
@@ -71,7 +73,7 @@ export const ProfileEditForm = () => {
     return input;
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear LinkedIn error when user starts typing
@@ -388,6 +390,29 @@ export const ProfileEditForm = () => {
               </div>
             </>
           )}
+
+          {/* Networking Preferences */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Preferenze Networking
+            </h3>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="networking_enabled" className="text-base font-medium">
+                  Disponibile per il Networking
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Permetti ad altri utenti di trovarti e connettersi con te
+                </p>
+              </div>
+              <Switch
+                id="networking_enabled"
+                checked={formData.networking_enabled}
+                onCheckedChange={(checked) => handleInputChange('networking_enabled', checked)}
+              />
+            </div>
+          </div>
 
           {/* Social Links */}
           <div className="space-y-4">
