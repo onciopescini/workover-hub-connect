@@ -39,7 +39,7 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
       blockCookiesWithoutConsent((category) => normalizeConsentValue(false));
     } else {
       // Apply current consent settings
-      applyConsentSettings((category) => normalizeConsentValue(hasConsent(category)));
+      applyConsentSettings((category) => normalizeConsentValue(hasConsent(category as keyof Omit<CookieConsent, 'timestamp' | 'version'>)));
     }
   }, [shouldShowBanner, hasConsent]);
 
