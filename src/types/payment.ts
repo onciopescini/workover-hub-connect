@@ -12,9 +12,8 @@ export interface PaymentSession {
 }
 
 export interface PaymentWithStripe extends Payment {
-  stripe_transfer_id?: string;
-  host_amount?: number;
-  platform_fee?: number;
+  // Remove duplicate fields since they're now in the base Payment type
+  // stripe_transfer_id, host_amount, and platform_fee are already included
 }
 
 export interface PaymentWithDetails {
@@ -24,12 +23,12 @@ export interface PaymentWithDetails {
   amount: number;
   currency: string;
   payment_status: string;
-  method?: string;
-  receipt_url?: string;
-  stripe_session_id?: string;
-  stripe_transfer_id?: string;
-  host_amount?: number;
-  platform_fee?: number;
+  method?: string | null;
+  receipt_url?: string | null;
+  stripe_session_id?: string | null;
+  stripe_transfer_id?: string | null;
+  host_amount?: number | null;
+  platform_fee?: number | null;
   created_at: string;
   booking: {
     booking_date: string;
