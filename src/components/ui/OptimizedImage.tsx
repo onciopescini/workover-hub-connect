@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const imageLogger = createContextualLogger('OptimizedImage');
 
 interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
-  src: string;
+  src?: string;
   alt: string;
   fallbackSrc?: string;
   enableWebP?: boolean;
@@ -40,6 +40,10 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     const [hasError, setHasError] = useState(false);
     const [currentSrc, setCurrentSrc] = useState<string>('');
 
+    // Central placeholder configuration
+    const DEFAULT_PLACEHOLDER = '/placeholder.svg';
+    const finalSrc = src ?? DEFAULT_PLACEHOLDER;
+
     const handleLoadStart = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
       setIsLoading(true);
       setHasError(false);
@@ -47,10 +51,10 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       
       imageLogger.debug('Image load started', {
         action: 'load_start',
-        src,
+        src: finalSrc,
         alt
       });
-    }, [src, alt, onLoadStart]);
+    }, [finalSrc, alt, onLoadStart]);
 
     const handleLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
       setIsLoading(false);
@@ -89,26 +93,40 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
         return;
       }
 
+      // Try default placeholder if not already used
+      if (currentSrc !== DEFAULT_PLACEHOLDER && !fallbackSrc) {
+        imageLogger.info('Attempting default placeholder', {
+          action: 'default_placeholder_attempt',
+          originalSrc: currentSrc,
+          placeholder: DEFAULT_PLACEHOLDER
+        });
+        
+        setCurrentSrc(DEFAULT_PLACEHOLDER);
+        setHasError(false);
+        setIsLoading(true);
+        return;
+      }
+
       onError?.(event);
       onErrorCustom?.('Image failed to load');
     }, [currentSrc, alt, fallbackSrc, onError, onErrorCustom]);
 
     // Generate optimized URLs
     const generateOptimizedSrc = useCallback(() => {
-      if (!src) return '';
+      if (!finalSrc) return DEFAULT_PLACEHOLDER;
 
       const webpSupported = enableWebP && isWebPSupported();
-      const urls = generateImageUrls(src, webpSupported);
+      const urls = generateImageUrls(finalSrc, webpSupported);
       
       imageLogger.debug('Generated optimized URLs', {
         action: 'urls_generated',
-        originalSrc: src,
+        originalSrc: finalSrc,
         webpSupported,
         optimizedUrl: urls.primary
       });
 
       return urls.primary;
-    }, [src, enableWebP]);
+    }, [finalSrc, enableWebP]);
 
     // Set initial src
     React.useEffect(() => {
