@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -217,10 +216,15 @@ export const ProfileEditForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Photo Upload Section */}
+          {/* Photo Upload Section with Optimized Avatar */}
           <div className="flex items-center space-x-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src={authState.profile?.profile_photo_url || ""} />
+              <AvatarImage 
+                src={authState.profile?.profile_photo_url || ""} 
+                enableWebP={true}
+                priority={true}
+                fallbackSrc="/placeholder.svg"
+              />
               <AvatarFallback className="text-xl">
                 {getUserInitials()}
               </AvatarFallback>

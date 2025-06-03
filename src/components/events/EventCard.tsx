@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users } from 'lucide-react';
+import { ProgressiveImage } from '@/components/ui/ProgressiveImage';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { SimpleEvent } from '@/hooks/usePublicEvents';
 
 interface EventCardProps {
@@ -47,12 +49,17 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
   return (
     <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
       <CardContent className="p-0">
-        {/* Image */}
+        {/* Image with Progressive Loading */}
         <div className="relative h-32 overflow-hidden rounded-t-lg">
-          <img
+          <ProgressiveImage
             src={getEventImage()}
             alt={event.title}
-            className="w-full h-full object-cover"
+            aspectRatio="video"
+            enableWebP={true}
+            enableResponsive={true}
+            priority={false}
+            className="w-full h-full"
+            onLoadComplete={() => console.log(`Event card image loaded: ${event.title}`)}
           />
           <div className="absolute top-2 left-2">
             <Badge className="bg-purple-600">
@@ -98,13 +105,17 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
             </div>
           </div>
 
-          {/* Creator info */}
+          {/* Creator info with optimized avatar */}
           {event.profiles && (
             <div className="flex items-center gap-2 mb-3">
-              <img
+              <OptimizedImage
                 src={event.profiles.profile_photo_url || '/placeholder.svg'}
                 alt={`${event.profiles.first_name} ${event.profiles.last_name}`}
-                className="w-6 h-6 rounded-full"
+                enableWebP={true}
+                enableResponsive={false}
+                priority={false}
+                className="w-6 h-6 rounded-full object-cover"
+                onLoadComplete={() => console.log('Event creator avatar loaded')}
               />
               <span className="text-sm text-gray-600">
                 Organizzato da {event.profiles.first_name} {event.profiles.last_name}

@@ -1,6 +1,7 @@
+
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
-
+import { OptimizedImage } from "./OptimizedImage"
 import { cn } from "@/lib/utils"
 
 const Avatar = React.forwardRef<
@@ -20,11 +21,21 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
+    enableWebP?: boolean;
+    priority?: boolean;
+    fallbackSrc?: string;
+  }
+>(({ className, enableWebP = true, priority = false, fallbackSrc, ...props }, ref) => (
+  <OptimizedImage
     ref={ref}
-    className={cn("aspect-square h-full w-full", className)}
+    enableWebP={enableWebP}
+    enableResponsive={true}
+    priority={priority}
+    fallbackSrc={fallbackSrc}
+    quality={0.9}
+    className={cn("aspect-square h-full w-full rounded-full", className)}
+    onLoadComplete={() => console.log('Avatar image loaded')}
     {...props}
   />
 ))
