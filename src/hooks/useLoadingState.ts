@@ -49,9 +49,10 @@ export function useLoadingState(
   const setError = useCallback((error: string | null) => {
     setState(prev => ({ ...prev, error, isLoading: false }));
     if (logger && error) {
-      logger.error('Loading error occurred', new Error(error), context, {
+      logger.error('Loading error occurred', {
         action: 'loading_error',
-        errorMessage: error
+        errorMessage: error,
+        context
       });
     }
   }, [logger, context]);
@@ -83,7 +84,7 @@ export function useLoadingState(
       
       const duration = Date.now() - startTime;
       if (logger) {
-        logger.info('Operation completed successfully', context, {
+        logger.info('Operation completed successfully', {
           action: 'operation_success',
           duration,
           context
@@ -98,10 +99,11 @@ export function useLoadingState(
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       if (logger) {
-        logger.error('Operation failed', error instanceof Error ? error : new Error(errorMessage), context, {
+        logger.error('Operation failed', {
           action: 'operation_failure',
           duration,
-          context
+          context,
+          errorMessage
         });
       }
       

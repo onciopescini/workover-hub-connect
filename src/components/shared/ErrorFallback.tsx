@@ -33,19 +33,21 @@ export function ErrorFallback({
   className
 }: ErrorFallbackProps) {
   const handleRetry = () => {
-    logger.info('User retried from error fallback', context, {
+    logger.info('User retried from error fallback', {
       action: 'error_retry',
       errorId,
-      level
+      level,
+      context
     });
     onRetry?.();
   };
 
   const handleGoHome = () => {
-    logger.info('User navigated home from error fallback', context, {
+    logger.info('User navigated home from error fallback', {
       action: 'error_navigate_home',
       errorId,
-      level
+      level,
+      context
     });
     if (onGoHome) {
       onGoHome();
@@ -55,10 +57,11 @@ export function ErrorFallback({
   };
 
   const handleReportBug = () => {
-    logger.info('User reported bug from error fallback', context, {
+    logger.info('User reported bug from error fallback', {
       action: 'error_report_bug',
       errorId,
-      level
+      level,
+      context
     });
     
     if (onReportBug) {
