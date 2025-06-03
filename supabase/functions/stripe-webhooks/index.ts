@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0";
+import Stripe from "https://esm.sh/stripe@15.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2025-05-28.basil',
+  apiVersion: '2023-10-16',
 });
 
 const supabaseAdmin = createClient(
@@ -22,26 +22,37 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.text();
+    // Fix: Read raw body as ArrayBuffer to preserve exact bytes for signature validation
+    const rawBody = await req.arrayBuffer();
+    const body = new TextDecoder("utf-8").decode(rawBody);
+    
     const signature = req.headers.get('stripe-signature');
     
     if (!signature) {
-      console.error('Missing stripe-signature header');
+      console.error('❌ Missing stripe-signature header');
       return new Response('Missing signature', { status: 400 });
     }
 
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
-      console.error('Missing STRIPE_WEBHOOK_SECRET');
+      console.error('❌ Missing STRIPE_WEBHOOK_SECRET environment variable');
       return new Response('Webhook secret not configured', { status: 500 });
     }
 
-    // Verify webhook signature
+    console.log('🔵 Validating webhook signature...');
+
+    // Verify webhook signature with corrected body reading
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      console.log('✅ Webhook signature validated successfully');
     } catch (err) {
-      console.error('Webhook signature verification failed:', err);
+      console.error('❌ Webhook signature verification failed:', err.message);
+      console.error('Debug info:', {
+        bodyLength: body.length,
+        signaturePresent: !!signature,
+        secretConfigured: !!webhookSecret
+      });
       return new Response('Invalid signature', { status: 400 });
     }
 
@@ -226,6 +237,24 @@ serve(async (req) => {
         break;
       }
 
+      case 'checkout.session.expired': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('⚠️ Checkout session expired:', session.id);
+        
+        // Update payment status to failed/expired
+        const { error: paymentError } = await supabaseAdmin
+          .from('payments')
+          .update({ payment_status: 'failed' })
+          .eq('stripe_session_id', session.id);
+
+        if (paymentError) {
+          console.error('🔴 Error updating expired payment:', paymentError);
+        } else {
+          console.log('✅ Expired payment status updated');
+        }
+        break;
+      }
+
       case 'refund.created': {
         // Gestione rimborsi da spazi sospesi
         const refund = event.data.object as Stripe.Refund;
@@ -377,8 +406,17 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('🔴 Webhook error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(
-      JSON.stringify({ error: 'Webhook processing failed' }),
+      JSON.stringify({ 
+        error: 'Webhook processing failed',
+        details: error.message 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
