@@ -15,6 +15,14 @@ interface CookieConsentBannerProps {
   className?: string;
 }
 
+// Helper function to normalize consent values to boolean
+const normalizeConsentValue = (value: string | number | boolean | undefined): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  if (typeof value === 'number') return value > 0;
+  return false;
+};
+
 export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
   const { shouldShowBanner, handleConsent, hasConsent } = useConsent();
   const [showCustomize, setShowCustomize] = useState(false);
@@ -28,10 +36,10 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
   useEffect(() => {
     if (shouldShowBanner) {
       // Block all non-essential cookies initially
-      blockCookiesWithoutConsent(() => false);
+      blockCookiesWithoutConsent((category) => normalizeConsentValue(false));
     } else {
       // Apply current consent settings
-      applyConsentSettings(hasConsent);
+      applyConsentSettings((category) => normalizeConsentValue(hasConsent(category)));
     }
   }, [shouldShowBanner, hasConsent]);
 
@@ -54,7 +62,7 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
     setShowCustomize(false);
     applyConsentSettings((category) => {
       if (category === 'necessary') return true;
-      return customConsent[category as keyof typeof customConsent] || false;
+      return normalizeConsentValue(customConsent[category as keyof typeof customConsent]);
     });
   };
 
@@ -181,7 +189,7 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
                       )}
                     </div>
                     <Switch
-                      checked={category.required || customConsent[category.id] || false}
+                      checked={category.required || normalizeConsentValue(customConsent[category.id])}
                       onCheckedChange={(checked) => !category.required && toggleCustomConsent(category.id, checked)}
                       disabled={category.required}
                     />
