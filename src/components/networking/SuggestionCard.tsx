@@ -3,10 +3,11 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, X, MapPin, Calendar, Users } from "lucide-react";
+import { UserPlus, X, MapPin, Calendar, Users, Eye } from "lucide-react";
 import { ConnectionSuggestion } from "@/types/networking";
 import { sendConnectionRequest } from "@/lib/networking-utils";
 import { useNetworking } from "@/hooks/useNetworking";
+import { useNavigate } from "react-router-dom";
 
 interface SuggestionCardProps {
   suggestion: ConnectionSuggestion;
@@ -14,6 +15,7 @@ interface SuggestionCardProps {
 
 export function SuggestionCard({ suggestion }: SuggestionCardProps) {
   const { fetchSuggestions, hasConnectionRequest } = useNetworking();
+  const navigate = useNavigate();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isIgnored, setIsIgnored] = useState(false);
 
@@ -33,6 +35,12 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
 
   const handleIgnore = () => {
     setIsIgnored(true);
+  };
+
+  const handleViewProfile = () => {
+    if (user) {
+      navigate(`/profile/${user.id}`);
+    }
   };
 
   const getInitials = (firstName: string = '', lastName: string = '') => {
@@ -108,33 +116,45 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
               </div>
             </div>
             
-            <div className="flex gap-2 ml-4">
-              {hasExistingRequest ? (
-                <Badge variant="outline" className="px-4 py-2">
-                  Richiesta già inviata
-                </Badge>
-              ) : (
-                <>
-                  <Button
-                    onClick={handleConnect}
-                    disabled={isConnecting}
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    {isConnecting ? 'Connessione...' : 'Connetti'}
-                  </Button>
-                  <Button
-                    onClick={handleIgnore}
-                    variant="outline"
-                    size="sm"
-                    className="text-gray-600 hover:text-gray-700"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Ignora
-                  </Button>
-                </>
-              )}
+            <div className="flex flex-col gap-2 ml-4">
+              <Button
+                onClick={handleViewProfile}
+                variant="outline"
+                size="sm"
+                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Visualizza Profilo
+              </Button>
+              
+              <div className="flex gap-2">
+                {hasExistingRequest ? (
+                  <Badge variant="outline" className="px-4 py-2">
+                    Richiesta già inviata
+                  </Badge>
+                ) : (
+                  <>
+                    <Button
+                      onClick={handleConnect}
+                      disabled={isConnecting}
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      {isConnecting ? 'Connessione...' : 'Connetti'}
+                    </Button>
+                    <Button
+                      onClick={handleIgnore}
+                      variant="outline"
+                      size="sm"
+                      className="text-gray-600 hover:text-gray-700"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Ignora
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

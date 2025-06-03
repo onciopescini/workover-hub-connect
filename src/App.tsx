@@ -12,6 +12,7 @@ import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import HostDashboard from './pages/HostDashboard';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import Bookings from './pages/Bookings';
 import Favorites from './pages/Favorites';
 import Reviews from './pages/Reviews';
