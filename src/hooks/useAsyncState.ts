@@ -333,6 +333,3 @@ export function useAsyncStateWithRetry<T>(
 ) {
   return useAsyncState<T>({ ...options, maxRetries, retryDelay });
 }
-
-// Type exports for external use
-export type { UseAsyncStateOptions };
