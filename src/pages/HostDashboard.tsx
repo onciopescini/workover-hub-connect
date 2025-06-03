@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -163,10 +164,13 @@ const HostDashboard = () => {
               };
             });
 
-            // Count only confirmed bookings for active bookings stat
+            // Count only confirmed bookings for active bookings stat - FIXED DATE COMPARISON
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
             const confirmedBookings = transformedBookings.filter(
               booking => booking.status === 'confirmed' && 
-              new Date(booking.booking_date) >= new Date().setHours(0, 0, 0, 0)
+              new Date(booking.booking_date) >= today
             );
             
             setActiveBookings(confirmedBookings.length);
