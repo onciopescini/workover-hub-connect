@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ProgressiveImage } from '@/components/ui/ProgressiveImage';
 import ReportDialog from '@/components/reports/ReportDialog';
 import PaymentButton from '@/components/payments/PaymentButton';
 import { BookingCalculator } from './BookingCalculator';
@@ -356,25 +356,36 @@ export const SpaceDetailContent = () => {
           {/* Image gallery */}
           <div className="mb-6">
             <div className="relative h-96 rounded-lg overflow-hidden mb-4">
-              <img
+              <ProgressiveImage
                 src={space.photos?.[selectedImage] || '/placeholder.svg'}
                 alt={space.title}
-                className="w-full h-full object-cover"
+                aspectRatio="photo"
+                priority={true}
+                enableWebP={true}
+                enableResponsive={true}
+                onLoadComplete={() => console.log(`Main gallery image loaded: ${space.title}`)}
+                className="w-full h-full"
               />
             </div>
             {space.photos && space.photos.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
                 {space.photos.map((photo, index) => (
-                  <img
-                    key={index}
-                    src={photo}
-                    alt={`${space.title} ${index + 1}`}
-                    className={cn(
-                      "w-20 h-20 object-cover rounded cursor-pointer",
-                      selectedImage === index ? "ring-2 ring-indigo-600" : ""
-                    )}
-                    onClick={() => setSelectedImage(index)}
-                  />
+                  <div key={index} className="relative flex-shrink-0">
+                    <ProgressiveImage
+                      src={photo}
+                      alt={`${space.title} ${index + 1}`}
+                      aspectRatio="square"
+                      enableWebP={true}
+                      enableResponsive={false} // Thumbnails don't need responsive
+                      priority={index < 3} // Priority for first 3 thumbnails
+                      onLoadComplete={() => console.log(`Gallery thumbnail ${index + 1} loaded`)}
+                      className={cn(
+                        "w-20 h-20 object-cover rounded cursor-pointer transition-all",
+                        selectedImage === index ? "ring-2 ring-indigo-600 opacity-100" : "opacity-70 hover:opacity-100"
+                      )}
+                      onClick={() => setSelectedImage(index)}
+                    />
+                  </div>
                 ))}
               </div>
             )}

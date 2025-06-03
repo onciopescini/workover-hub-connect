@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users, Wifi } from 'lucide-react';
+import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
 import { Space } from '@/types/space';
 
 interface SpaceCardProps {
@@ -42,10 +43,15 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
       <CardContent className="p-0">
         {/* Image */}
         <div className="relative h-48 overflow-hidden rounded-t-lg">
-          <img
+          <ResponsiveImage
             src={getMainPhoto()}
             alt={space.title}
-            className="w-full h-full object-cover"
+            aspectRatio="photo"
+            objectFit="cover"
+            enableWebP={true}
+            priority={false}
+            onLoadComplete={() => console.log(`Space card image loaded: ${space.title}`)}
+            className="w-full h-full"
           />
           <div className="absolute top-2 left-2">
             <Badge variant="secondary" className="bg-white/90">

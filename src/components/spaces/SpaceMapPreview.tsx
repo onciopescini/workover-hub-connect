@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users } from 'lucide-react';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
 
 interface SpaceMapPreviewProps {
@@ -33,10 +34,15 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
       <CardContent className="p-0">
         {/* Image */}
         <div className="relative h-32 overflow-hidden rounded-t-lg">
-          <img
+          <OptimizedImage
             src={getMainPhoto()}
             alt={space.title}
             className="w-full h-full object-cover"
+            enableWebP={true}
+            enableResponsive={true}
+            priority={true} // Map previews are immediately visible
+            quality={0.9} // Higher quality for preview cards
+            onLoadComplete={() => console.log(`Map preview loaded: ${space.title}`)}
           />
           <div className="absolute top-2 left-2">
             <Badge variant="secondary" className="bg-white/90 text-xs">

@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Image } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/OptimizedImage";
 
 interface PhotosProps {
   photoPreviewUrls: string[];
@@ -27,10 +28,14 @@ export const Photos = ({
           {photoPreviewUrls.map((url, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square bg-gray-100 rounded-md overflow-hidden border border-gray-200">
-                <img
+                <OptimizedImage
                   src={url}
                   alt={`Space photo ${index + 1}`}
                   className="h-full w-full object-cover"
+                  enableWebP={true}
+                  enableResponsive={true}
+                  priority={index < 4} // Priority for first 4 images
+                  onLoadComplete={() => console.log(`Space photo ${index + 1} loaded`)}
                 />
               </div>
               <button
