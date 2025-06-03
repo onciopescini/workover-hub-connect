@@ -41,7 +41,7 @@ export function useLoadingState(
     if (logger) {
       logger.debug(loading ? 'Loading started' : 'Loading ended', {
         action: loading ? 'loading_start' : 'loading_end',
-        context
+        contextInfo: context
       });
     }
   }, [logger, context]);
@@ -52,7 +52,7 @@ export function useLoadingState(
       logger.error('Loading error occurred', {
         action: 'loading_error',
         errorMessage: error,
-        context
+        contextInfo: context
       }, new Error(error));
     }
   }, [logger, context]);
@@ -63,7 +63,7 @@ export function useLoadingState(
       logger.debug('Loading progress updated', {
         action: 'loading_progress',
         progress,
-        context
+        contextInfo: context
       });
     }
   }, [logger, context]);
@@ -87,7 +87,7 @@ export function useLoadingState(
         logger.info('Operation completed successfully', {
           action: 'operation_success',
           duration,
-          context
+          contextInfo: context
         });
       }
       
@@ -121,7 +121,7 @@ export function useLoadingState(
     if (logger) {
       logger.debug('Loading state reset', {
         action: 'state_reset',
-        context
+        contextInfo: context
       });
     }
   }, [logger, context]);
