@@ -1,10 +1,11 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
-import { cleanupAuthState, cleanSignIn } from '@/lib/auth-utils';
+import { cleanupAuthState } from '@/lib/auth-utils';
 import { createContextualLogger } from '@/lib/logger';
+import { useAuthOperations, UseAuthOperationsOptions } from '@/hooks/useAuthOperations';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -20,110 +21,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
 
-  // Anti-loop flags
-  const isRefreshingRef = useRef(false);
-  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
-
-  const fetchProfile = async (userId: string) => {
-    const stopTimer = authLogger.startTimer('fetchProfile');
-    
-    try {
-      authLogger.debug('Starting profile fetch', {
-        action: 'profile_fetch_start',
-        userId,
-        timestamp: Date.now()
+  // Configure auth operations with context-specific callbacks
+  const authOperationsOptions: UseAuthOperationsOptions = {
+    onProfileSuccess: (profile: Profile) => {
+      authLogger.info('Profile loaded successfully via useAuthOperations', {
+        action: 'profile_context_success',
+        userId: authState.user?.id,
+        profileId: profile?.id
       });
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        authLogger.error('Error fetching profile', error, {
-          action: 'profile_fetch_error',
-          userId,
-          errorCode: error.code,
-          errorMessage: error.message
-        });
-        return null;
-      }
-
-      authLogger.info('Profile fetched successfully', {
-        action: 'profile_fetch_success',
-        userId,
-        profileId: profile?.id,
-        hasProfile: !!profile
+    },
+    onProfileError: (error: Error) => {
+      authLogger.error('Profile operation failed in context', error, {
+        action: 'profile_context_error',
+        userId: authState.user?.id
       });
-
-      return profile;
-    } catch (error) {
-      authLogger.error('Exception in fetchProfile', error instanceof Error ? error : new Error('Unknown error'), {
-        action: 'profile_fetch_exception',
-        userId
+    },
+    onAuthSuccess: (data) => {
+      authLogger.info('Auth operation successful in context', {
+        action: 'auth_context_success',
+        userId: data.user?.id,
+        hasSession: !!data.session
       });
-      return null;
-    } finally {
-      stopTimer();
-    }
+    },
+    onAuthError: (error: Error) => {
+      authLogger.error('Auth operation failed in context', error, {
+        action: 'auth_context_error'
+      });
+    },
+    enableRetry: true,
+    enableToasts: true,
+    debounceMs: 1000
   };
 
-  // Debounced refresh profile to prevent infinite loops
+  // Initialize auth operations hook
+  const {
+    fetchProfile,
+    refreshProfile: refreshProfileOp,
+    updateProfile: updateProfileOp,
+    signIn: signInOp,
+    signUp: signUpOp,
+    signInWithGoogle: signInWithGoogleOp,
+    signOut: signOutOp,
+    profileState
+  } = useAuthOperations(authOperationsOptions);
+
+  // Update auth state when profile state changes
+  useEffect(() => {
+    if (profileState.data && authState.user) {
+      setAuthState(prev => ({
+        ...prev,
+        profile: profileState.data
+      }));
+    }
+  }, [profileState.data, authState.user?.id]);
+
+  // Wrapper functions to maintain existing API
   const refreshProfile = useCallback(async () => {
-    if (!authState.user || isRefreshingRef.current) {
-      authLogger.debug('Skipping profile refresh', {
-        action: 'profile_refresh_skip',
-        hasUser: !!authState.user,
-        isRefreshing: isRefreshingRef.current
+    if (!authState.user) {
+      authLogger.debug('Skipping profile refresh - no user', {
+        action: 'profile_refresh_skip'
       });
       return;
     }
-    
-    isRefreshingRef.current = true;
-    
-    // Clear any existing timeout
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
-    }
-    
+
     const stopTimer = authLogger.startTimer('refreshProfile');
     
     try {
-      authLogger.info('Starting profile refresh', {
-        action: 'profile_refresh_start',
+      authLogger.info('Starting profile refresh via context', {
+        action: 'profile_refresh_context_start',
         userId: authState.user.id
       });
 
-      const profile = await fetchProfile(authState.user.id);
-      setAuthState(prev => ({
-        ...prev,
-        profile
-      }));
+      await refreshProfileOp(authState.user.id);
 
-      authLogger.info('Profile refresh completed', {
-        action: 'profile_refresh_complete',
-        userId: authState.user.id,
-        profileUpdated: !!profile
+      authLogger.info('Profile refresh completed via context', {
+        action: 'profile_refresh_context_complete',
+        userId: authState.user.id
       });
     } catch (error) {
-      authLogger.error('Error refreshing profile', error instanceof Error ? error : new Error('Profile refresh failed'), {
-        action: 'profile_refresh_error',
+      authLogger.error('Error in context profile refresh', error instanceof Error ? error : new Error('Profile refresh failed'), {
+        action: 'profile_refresh_context_error',
         userId: authState.user?.id
       });
     } finally {
       stopTimer();
-      // Reset flag after a delay to prevent rapid successive calls
-      refreshTimeoutRef.current = setTimeout(() => {
-        isRefreshingRef.current = false;
-        authLogger.debug('Profile refresh flag reset', {
-          action: 'profile_refresh_flag_reset'
-        });
-      }, 1000);
     }
-  }, [authState.user?.id]); // Only depend on user id, not entire authState
+  }, [authState.user?.id, refreshProfileOp]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
+  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     if (!authState.user) {
       const error = new Error('User not authenticated');
       authLogger.error('Profile update attempted without authentication', error, {
@@ -136,34 +121,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const stopTimer = authLogger.startTimer('updateProfile');
 
     try {
-      authLogger.info('Starting profile update', {
-        action: 'profile_update_start',
+      authLogger.info('Starting profile update via context', {
+        action: 'profile_update_context_start',
         userId: authState.user.id,
         updateFields: Object.keys(updates)
       });
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', authState.user.id)
-        .select()
-        .single();
+      const updatedProfile = await updateProfileOp(updates, authState.user.id);
 
-      if (error) throw error;
-
+      // Update local state immediately
       setAuthState(prev => ({
         ...prev,
-        profile: data
+        profile: updatedProfile
       }));
 
-      authLogger.info('Profile update successful', {
-        action: 'profile_update_success',
+      authLogger.info('Profile update successful via context', {
+        action: 'profile_update_context_success',
         userId: authState.user.id,
         updatedFields: Object.keys(updates)
       });
     } catch (error) {
-      authLogger.error('Profile update failed', error instanceof Error ? error : new Error('Profile update error'), {
-        action: 'profile_update_error',
+      authLogger.error('Profile update failed in context', error instanceof Error ? error : new Error('Profile update error'), {
+        action: 'profile_update_context_error',
         userId: authState.user.id,
         updateFields: Object.keys(updates)
       });
@@ -171,29 +150,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       stopTimer();
     }
-  };
+  }, [authState.user?.id, updateProfileOp]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const stopTimer = authLogger.startTimer('signIn');
     
     try {
-      authLogger.info('Starting sign in process', {
-        action: 'sign_in_start',
+      authLogger.info('Starting sign in process via context', {
+        action: 'sign_in_context_start',
         email,
         timestamp: Date.now()
       });
 
-      const data = await cleanSignIn(email, password);
+      await signInOp(email, password);
       
-      authLogger.info('Sign in successful', {
-        action: 'sign_in_success',
-        email: data.user?.email,
-        userId: data.user?.id,
-        hasSession: !!data.session
+      authLogger.info('Sign in successful via context', {
+        action: 'sign_in_context_success',
+        email
       });
     } catch (error) {
-      authLogger.error('Sign in error', error instanceof Error ? error : new Error('Sign in failed'), {
-        action: 'sign_in_error',
+      authLogger.error('Sign in error in context', error instanceof Error ? error : new Error('Sign in failed'), {
+        action: 'sign_in_context_error',
         email,
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -201,37 +178,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       stopTimer();
     }
-  };
+  }, [signInOp]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string) => {
     const stopTimer = authLogger.startTimer('signUp');
     
     try {
-      authLogger.info('Starting sign up process', {
-        action: 'sign_up_start',
+      authLogger.info('Starting sign up process via context', {
+        action: 'sign_up_context_start',
         email,
         timestamp: Date.now()
       });
 
-      // Clean up existing state first
-      cleanupAuthState();
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      await signUpOp(email, password);
 
-      if (error) throw error;
-
-      authLogger.info('Sign up successful', {
-        action: 'sign_up_success',
-        email: data.user?.email,
-        userId: data.user?.id,
-        needsConfirmation: !data.session
+      authLogger.info('Sign up successful via context', {
+        action: 'sign_up_context_success',
+        email
       });
     } catch (error) {
-      authLogger.error('Sign up error', error instanceof Error ? error : new Error('Sign up failed'), {
-        action: 'sign_up_error',
+      authLogger.error('Sign up error in context', error instanceof Error ? error : new Error('Sign up failed'), {
+        action: 'sign_up_context_error',
         email,
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -239,47 +206,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       stopTimer();
     }
-  };
+  }, [signUpOp]);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     const stopTimer = authLogger.startTimer('signInWithGoogle');
     
     try {
-      authLogger.info('Starting Google sign in', {
-        action: 'google_sign_in_start',
+      authLogger.info('Starting Google sign in via context', {
+        action: 'google_sign_in_context_start',
         redirectUrl: `${window.location.origin}/auth/callback`,
         timestamp: Date.now()
       });
 
-      // Clean up existing state first
-      cleanupAuthState();
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      await signInWithGoogleOp();
 
-      if (error) throw error;
-
-      authLogger.info('Google sign in initiated', {
-        action: 'google_sign_in_initiated',
-        hasUrl: !!data.url,
-        provider: data.provider
+      authLogger.info('Google sign in initiated via context', {
+        action: 'google_sign_in_context_initiated'
       });
     } catch (error) {
-      authLogger.error('Google sign in error', error instanceof Error ? error : new Error('Google sign in failed'), {
-        action: 'google_sign_in_error',
+      authLogger.error('Google sign in error in context', error instanceof Error ? error : new Error('Google sign in failed'), {
+        action: 'google_sign_in_context_error',
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
       });
       throw error;
     } finally {
       stopTimer();
     }
-  };
+  }, [signInWithGoogleOp]);
 
-  const updateAuthState = async (user: User | null, session: Session | null) => {
+  const signOut = useCallback(async () => {
+    const stopTimer = authLogger.startTimer('signOut');
+    
+    try {
+      authLogger.info('Starting sign out process via context', {
+        action: 'sign_out_context_start',
+        userId: authState.user?.id,
+        email: authState.user?.email
+      });
+
+      await signOutOp();
+      
+      authLogger.info('Sign out completed via context', {
+        action: 'sign_out_context_complete'
+      });
+    } catch (error) {
+      authLogger.error('Error during sign out in context', error instanceof Error ? error : new Error('Sign out failed'), {
+        action: 'sign_out_context_error',
+        userId: authState.user?.id
+      });
+      throw error;
+    } finally {
+      stopTimer();
+    }
+  }, [authState.user?.id, signOutOp]);
+
+  const updateAuthState = useCallback(async (user: User | null, session: Session | null) => {
     const stopTimer = authLogger.startTimer('updateAuthState');
     
     authLogger.info('Updating auth state', {
@@ -291,7 +272,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     if (user && session) {
+      // Fetch profile using the new hook
       const profile = await fetchProfile(user.id);
+      
       setAuthState({
         user,
         session,
@@ -321,54 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     stopTimer();
-  };
-
-  const signOut = async () => {
-    const stopTimer = authLogger.startTimer('signOut');
-    
-    try {
-      authLogger.info('Starting sign out process', {
-        action: 'sign_out_start',
-        userId: authState.user?.id,
-        email: authState.user?.email
-      });
-
-      cleanupAuthState();
-      
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) {
-        authLogger.error('Supabase sign out error', error, {
-          action: 'supabase_sign_out_error',
-          errorCode: error.message
-        });
-      }
-      
-      // Clear auth state immediately
-      setAuthState({
-        user: null,
-        session: null,
-        profile: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
-      
-      authLogger.info('Sign out completed, redirecting to login', {
-        action: 'sign_out_complete',
-        redirectUrl: '/login'
-      });
-
-      // Force reload to ensure clean state
-      window.location.href = '/login';
-    } catch (error) {
-      authLogger.error('Error during sign out', error instanceof Error ? error : new Error('Sign out failed'), {
-        action: 'sign_out_error',
-        userId: authState.user?.id
-      });
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  };
+  }, [fetchProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -446,15 +382,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
       
       authLogger.info('AuthProvider cleanup completed', {
         action: 'auth_provider_cleanup'
       });
     };
-  }, []);
+  }, [updateAuthState]);
 
   const value: AuthContextType = {
     authState,
