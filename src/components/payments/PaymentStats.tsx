@@ -1,7 +1,6 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Euro, Clock, CheckCircle, XCircle, TrendingUp, Percent } from "lucide-react";
 
 interface PaymentStatsProps {
   stats: {
@@ -9,57 +8,117 @@ interface PaymentStatsProps {
     pendingPayments: number;
     completedPayments: number;
     failedPayments: number;
+    hostEarnings?: number;
+    platformFees?: number;
   };
   timeRange: string;
   userRole?: string;
 }
 
 export function PaymentStats({ stats, timeRange, userRole }: PaymentStatsProps) {
+  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
+  
+  const getTimeRangeText = () => {
+    switch (timeRange) {
+      case '7': return 'ultimi 7 giorni';
+      case '30': return 'ultimi 30 giorni';
+      case '90': return 'ultimi 3 mesi';
+      default: return 'periodo selezionato';
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            {userRole === 'host' ? 'Ricavi Totali' : 'Speso Totale'}
-          </CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">€{stats.totalRevenue.toFixed(2)}</div>
-          <Badge variant="secondary" className="mt-1">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            Ultimi {timeRange} giorni
-          </Badge>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                {userRole === 'host' ? 'Fatturato Totale' : 'Speso Totale'}
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatCurrency(stats.totalRevenue)}
+              </p>
+            </div>
+            <Euro className="w-8 h-8 text-green-500" />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">{getTimeRangeText()}</p>
+        </CardContent>
+      </Card>
+
+      {userRole === 'host' && (
+        <>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Guadagni Host</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(stats.hostEarnings || 0)}
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-green-500" />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">95% dei pagamenti</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Commissioni</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(stats.platformFees || 0)}
+                  </p>
+                </div>
+                <Percent className="w-8 h-8 text-blue-500" />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">5% piattaforma + 5% host</p>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">In Attesa</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {stats.pendingPayments}
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-yellow-500" />
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Pagamenti Completati</CardTitle>
-          <CheckCircle className="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.completedPayments}</div>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Completati</p>
+              <p className="text-2xl font-bold text-green-600">
+                {stats.completedPayments}
+              </p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">In Sospeso</CardTitle>
-          <Clock className="h-4 w-4 text-yellow-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.pendingPayments}</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Falliti</CardTitle>
-          <XCircle className="h-4 w-4 text-red-500" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.failedPayments}</div>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Falliti</p>
+              <p className="text-2xl font-bold text-red-600">
+                {stats.failedPayments}
+              </p>
+            </div>
+            <XCircle className="w-8 h-8 text-red-500" />
+          </div>
         </CardContent>
       </Card>
     </div>

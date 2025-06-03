@@ -52,15 +52,20 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('🔵 Checkout session completed:', session.id);
         
-        // Update payment status
         if (session.metadata?.booking_id) {
+          const bookingId = session.metadata.booking_id;
+          const totalAmount = session.amount_total || 0;
+          const platformFeeAmount = Math.round(totalAmount * 0.05); // 5% platform fee
+          const hostAmount = totalAmount - platformFeeAmount;
+
+          // Update payment status
           const { error: paymentError } = await supabaseAdmin
             .from('payments')
             .update({ 
               payment_status: 'completed',
               receipt_url: session.receipt_url 
             })
-            .eq('id', session.metadata.booking_id);
+            .eq('stripe_session_id', session.id);
 
           if (paymentError) {
             console.error('🔴 Error updating payment:', paymentError);
@@ -68,7 +73,7 @@ serve(async (req) => {
             console.log('✅ Payment updated successfully');
           }
 
-          // Get booking details to determine confirmation type
+          // Get booking details
           const { data: booking, error: bookingFetchError } = await supabaseAdmin
             .from('bookings')
             .select(`
@@ -82,7 +87,7 @@ serve(async (req) => {
                 title
               )
             `)
-            .eq('id', session.metadata.booking_id)
+            .eq('id', bookingId)
             .single();
 
           if (bookingFetchError) {
@@ -112,12 +117,63 @@ serve(async (req) => {
           const { error: bookingError } = await supabaseAdmin
             .from('bookings')
             .update({ status: newStatus })
-            .eq('id', session.metadata.booking_id);
+            .eq('id', bookingId);
 
           if (bookingError) {
             console.error('🔴 Error updating booking:', bookingError);
           } else {
             console.log(`✅ Booking ${newStatus} successfully`);
+          }
+
+          // Get host's Stripe account for transfer
+          const { data: hostProfile, error: hostError } = await supabaseAdmin
+            .from('profiles')
+            .select('stripe_account_id, stripe_connected')
+            .eq('id', booking.spaces.host_id)
+            .single();
+
+          if (hostProfile?.stripe_connected && hostProfile.stripe_account_id) {
+            try {
+              // Create transfer to host (95% of payment minus platform fee)
+              const hostTransferAmount = Math.round(hostAmount * 0.95); // Host gets 95% of their portion
+              const platformTotalFee = totalAmount - hostTransferAmount; // Platform gets 5% + 5% of host portion
+
+              console.log('💰 Transfer breakdown:', {
+                totalAmount: totalAmount / 100,
+                hostTransferAmount: hostTransferAmount / 100,
+                platformTotalFee: platformTotalFee / 100
+              });
+
+              const transfer = await stripe.transfers.create({
+                amount: hostTransferAmount,
+                currency: 'eur',
+                destination: hostProfile.stripe_account_id,
+                description: `Pagamento per prenotazione ${bookingId}`,
+                metadata: {
+                  booking_id: bookingId,
+                  space_id: booking.space_id,
+                  host_id: booking.spaces.host_id
+                }
+              });
+
+              console.log('✅ Transfer created successfully:', transfer.id);
+
+              // Record transfer in database
+              await supabaseAdmin
+                .from('payments')
+                .update({
+                  stripe_transfer_id: transfer.id,
+                  host_amount: hostTransferAmount / 100,
+                  platform_fee: platformTotalFee / 100
+                })
+                .eq('stripe_session_id', session.id);
+
+            } catch (transferError) {
+              console.error('🔴 Error creating transfer:', transferError);
+              // Continue with notifications even if transfer fails
+            }
+          } else {
+            console.log('⚠️ Host Stripe account not connected, skipping transfer');
           }
 
           // Send notification to coworker
@@ -150,27 +206,21 @@ serve(async (req) => {
                   action_required: 'approve_booking'
                 }
               });
-          }
-
-          // Send confirmation email
-          if (session.customer_email) {
-            try {
-              await supabaseAdmin.functions.invoke('send-email', {
-                body: {
-                  type: 'booking_confirmation',
-                  to: session.customer_email,
-                  data: {
-                    booking_id: session.metadata.booking_id,
-                    amount: session.amount_total,
-                    currency: session.currency,
-                    status: newStatus
-                  }
+          } else {
+            // Notify host of confirmed booking and payment
+            await supabaseAdmin
+              .from('user_notifications')
+              .insert({
+                user_id: booking.spaces.host_id,
+                type: 'booking',
+                title: 'Nuova prenotazione confermata',
+                content: `Hai ricevuto una prenotazione per "${booking.spaces.title}". Il pagamento è stato elaborato con successo.`,
+                metadata: {
+                  booking_id: booking.id,
+                  space_title: booking.spaces.title,
+                  payment_received: true
                 }
               });
-              console.log('✅ Confirmation email sent');
-            } catch (emailError) {
-              console.error('🔴 Failed to send confirmation email:', emailError);
-            }
           }
         }
         break;

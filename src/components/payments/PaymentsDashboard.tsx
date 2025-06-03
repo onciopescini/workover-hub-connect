@@ -10,31 +10,7 @@ import { LoadingCard } from "@/components/shared/LoadingCard";
 import { PaymentStats } from "./PaymentStats";
 import { PaymentFilters } from "./PaymentFilters";
 import { PaymentsList } from "./PaymentsList";
-
-interface PaymentWithDetails {
-  id: string;
-  user_id: string;
-  booking_id: string;
-  amount: number;
-  currency: string;
-  payment_status: string;
-  method?: string;
-  receipt_url?: string;
-  stripe_session_id?: string;
-  created_at: string;
-  booking: {
-    booking_date: string;
-    status: string;
-    space: {
-      title: string;
-      host_id: string;
-    };
-  } | null;
-  user: {
-    first_name: string;
-    last_name: string;
-  } | null;
-}
+import { PaymentWithDetails } from "@/types/payment";
 
 export function PaymentsDashboard() {
   const { authState } = useAuth();
@@ -46,7 +22,9 @@ export function PaymentsDashboard() {
     totalRevenue: 0,
     pendingPayments: 0,
     completedPayments: 0,
-    failedPayments: 0
+    failedPayments: 0,
+    hostEarnings: 0,
+    platformFees: 0
   });
 
   const { execute: executeWithLoading } = useAsyncOperation({
@@ -71,6 +49,7 @@ export function PaymentsDashboard() {
       dateThreshold.setDate(dateThreshold.getDate() - parseInt(timeRange));
 
       if (authState.profile?.role === 'host') {
+        // Query per host: mostra pagamenti per i suoi spazi
         const { data: hostPayments, error: hostError } = await supabase
           .from('payments')
           .select(`
@@ -83,6 +62,9 @@ export function PaymentsDashboard() {
             method,
             receipt_url,
             stripe_session_id,
+            stripe_transfer_id,
+            host_amount,
+            platform_fee,
             created_at,
             bookings!inner(
               booking_date,
@@ -99,7 +81,7 @@ export function PaymentsDashboard() {
 
         if (hostError) throw hostError;
 
-        // Get user profiles separately for host payments
+        // Get user profiles
         const userIds = hostPayments?.map(p => p.user_id) || [];
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
@@ -108,7 +90,7 @@ export function PaymentsDashboard() {
 
         if (profilesError) throw profilesError;
 
-        // Transform the data to match our interface
+        // Transform data
         const transformedPayments: PaymentWithDetails[] = (hostPayments || []).map(payment => {
           const userProfile = profiles?.find(p => p.id === payment.user_id);
           return {
@@ -121,6 +103,9 @@ export function PaymentsDashboard() {
             method: payment.method,
             receipt_url: payment.receipt_url,
             stripe_session_id: payment.stripe_session_id,
+            stripe_transfer_id: payment.stripe_transfer_id,
+            host_amount: payment.host_amount,
+            platform_fee: payment.platform_fee,
             created_at: payment.created_at,
             booking: payment.bookings ? {
               booking_date: payment.bookings.booking_date,
@@ -144,11 +129,13 @@ export function PaymentsDashboard() {
 
         setPayments(finalPayments);
         
-        // Calculate stats
+        // Calculate stats for hosts
         const statsResult = transformedPayments.reduce((acc, payment) => {
           if (payment.payment_status === 'completed') {
             acc.totalRevenue += payment.amount;
             acc.completedPayments++;
+            acc.hostEarnings += payment.host_amount || 0;
+            acc.platformFees += payment.platform_fee || 0;
           } else if (payment.payment_status === 'pending') {
             acc.pendingPayments++;
           } else if (payment.payment_status === 'failed') {
@@ -159,11 +146,14 @@ export function PaymentsDashboard() {
           totalRevenue: 0,
           pendingPayments: 0,
           completedPayments: 0,
-          failedPayments: 0
+          failedPayments: 0,
+          hostEarnings: 0,
+          platformFees: 0
         });
 
         setStats(statsResult);
       } else {
+        // Query per coworker: mostra i loro pagamenti
         const { data, error } = await supabase
           .from('payments')
           .select(`
@@ -176,6 +166,9 @@ export function PaymentsDashboard() {
             method,
             receipt_url,
             stripe_session_id,
+            stripe_transfer_id,
+            host_amount,
+            platform_fee,
             created_at,
             bookings(
               booking_date,
@@ -192,7 +185,6 @@ export function PaymentsDashboard() {
 
         if (error) throw error;
 
-        // Transform the data to match our interface
         const transformedPayments: PaymentWithDetails[] = (data || []).map(payment => ({
           id: payment.id,
           user_id: payment.user_id,
@@ -203,6 +195,9 @@ export function PaymentsDashboard() {
           method: payment.method,
           receipt_url: payment.receipt_url,
           stripe_session_id: payment.stripe_session_id,
+          stripe_transfer_id: payment.stripe_transfer_id,
+          host_amount: payment.host_amount,
+          platform_fee: payment.platform_fee,
           created_at: payment.created_at,
           booking: payment.bookings ? {
             booking_date: payment.bookings.booking_date,
@@ -212,7 +207,7 @@ export function PaymentsDashboard() {
               host_id: payment.bookings.spaces?.host_id || ''
             }
           } : null,
-          user: null // Users don't need to see their own profile info
+          user: null
         }));
 
         let finalPayments = transformedPayments;
@@ -222,7 +217,7 @@ export function PaymentsDashboard() {
 
         setPayments(finalPayments);
         
-        // Calculate stats
+        // Calculate stats for coworkers
         const statsResult = transformedPayments.reduce((acc, payment) => {
           if (payment.payment_status === 'completed') {
             acc.totalRevenue += payment.amount;
@@ -237,7 +232,9 @@ export function PaymentsDashboard() {
           totalRevenue: 0,
           pendingPayments: 0,
           completedPayments: 0,
-          failedPayments: 0
+          failedPayments: 0,
+          hostEarnings: 0,
+          platformFees: 0
         });
 
         setStats(statsResult);
@@ -251,7 +248,9 @@ export function PaymentsDashboard() {
       const { data, error } = await supabase.functions.invoke('create-payment-session', {
         body: {
           booking_id: bookingId,
-          amount: Math.round(amount * 100),
+          base_amount: amount,
+          platform_fee: amount * 0.05,
+          total_amount: amount + (amount * 0.05),
           currency: 'EUR',
           user_id: authState.user?.id
         }

@@ -12,19 +12,51 @@ export interface PaymentSession {
 }
 
 export interface PaymentWithStripe extends Payment {
-  // stripe_session_id is already in the base Payment type, no need to override
+  stripe_transfer_id?: string;
+  host_amount?: number;
+  platform_fee?: number;
+}
+
+export interface PaymentWithDetails {
+  id: string;
+  user_id: string;
+  booking_id: string;
+  amount: number;
+  currency: string;
+  payment_status: string;
+  method?: string;
+  receipt_url?: string;
+  stripe_session_id?: string;
+  stripe_transfer_id?: string;
+  host_amount?: number;
+  platform_fee?: number;
+  created_at: string;
+  booking: {
+    booking_date: string;
+    status: string;
+    space: {
+      title: string;
+      host_id: string;
+    };
+  } | null;
+  user: {
+    first_name: string;
+    last_name: string;
+  } | null;
 }
 
 export const PAYMENT_STATUS = {
   pending: "In attesa",
   completed: "Completato", 
   failed: "Fallito",
-  cancelled: "Cancellato"
+  cancelled: "Cancellato",
+  refunded: "Rimborsato"
 } as const;
 
 export const PAYMENT_STATUS_COLORS = {
   pending: "bg-yellow-100 text-yellow-800",
   completed: "bg-green-100 text-green-800",
   failed: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-100 text-gray-800"
+  cancelled: "bg-gray-100 text-gray-800",
+  refunded: "bg-blue-100 text-blue-800"
 } as const;
