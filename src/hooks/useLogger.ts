@@ -67,21 +67,14 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
 
   // Enhanced metadata with hook-specific info
   const getEnhancedMetadata = useCallback((additionalMetadata?: Record<string, any>) => {
-    const baseMetadata = {
+    return {
       ...metadataRef.current,
       hookContext: contextRef.current,
       componentMountTime: mountTimeRef.current,
       timestamp: Date.now(),
       ...additionalMetadata
     };
-
-    if (enableDebugMode) {
-      baseMetadata.debugMode = true;
-      baseMetadata.reactVersion = React.version;
-    }
-
-    return baseMetadata;
-  }, [enableDebugMode]);
+  }, []);
 
   // Basic logging methods with enhanced metadata
   const debug = useCallback((message: string, metadata?: Record<string, any>) => {
