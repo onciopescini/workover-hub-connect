@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MapPin, Calendar, Mail, Users, UserCheck, UserX } from 'lucide-react';
+import { Edit, MapPin, Calendar, Mail, Users, UserCheck, UserX, Briefcase, User, Lightbulb, Target } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -73,6 +73,36 @@ const Profile = () => {
     }
   };
 
+  const getJobTypeLabel = (jobType: string) => {
+    switch (jobType) {
+      case 'aziendale':
+        return 'Aziendale';
+      case 'freelance':
+        return 'Freelance';
+      case 'studente':
+        return 'Studente';
+      default:
+        return jobType;
+    }
+  };
+
+  const getWorkStyleLabel = (workStyle: string) => {
+    switch (workStyle) {
+      case 'silenzioso':
+        return 'Silenzioso';
+      case 'collaborativo':
+        return 'Collaborativo';
+      case 'flessibile':
+        return 'Flessibile';
+      case 'strutturato':
+        return 'Strutturato';
+      case 'creativo':
+        return 'Creativo';
+      default:
+        return workStyle;
+    }
+  };
+
   // Helper function to parse interests from string to array
   const parseInterests = (interests: string | null): string[] => {
     if (!interests || interests.trim() === '') return [];
@@ -95,6 +125,7 @@ const Profile = () => {
   }
 
   const parsedInterests = parseInterests(profile.interests);
+  const hasJobInfo = profile.job_title || profile.job_type || profile.work_style;
 
   return (
     <AppLayout title="Il tuo Profilo">
@@ -113,6 +144,11 @@ const Profile = () => {
                 <div>
                   <h1 className="text-2xl font-bold">
                     {profile.first_name} {profile.last_name}
+                    {profile.nickname && (
+                      <span className="text-gray-500 text-lg font-normal ml-2">
+                        ({profile.nickname})
+                      </span>
+                    )}
                   </h1>
                   <Badge className={getRoleBadgeColor(profile.role)}>
                     {getRoleLabel(profile.role)}
@@ -134,7 +170,10 @@ const Profile = () => {
           {/* Informazioni Personali */}
           <Card>
             <CardHeader>
-              <CardTitle>Informazioni Personali</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Informazioni Personali
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {authState.user?.email && (
@@ -170,11 +209,61 @@ const Profile = () => {
             </CardContent>
           </Card>
 
+          {/* Informazioni Professionali */}
+          {hasJobInfo && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5" />
+                  Informazioni Professionali
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {profile.job_title && (
+                  <div>
+                    <p className="text-sm text-gray-500">Titolo di Lavoro</p>
+                    <p className="font-medium">{profile.job_title}</p>
+                  </div>
+                )}
+                {profile.job_type && (
+                  <div>
+                    <p className="text-sm text-gray-500">Tipo di Lavoro</p>
+                    <p className="font-medium">{getJobTypeLabel(profile.job_type)}</p>
+                  </div>
+                )}
+                {profile.work_style && (
+                  <div>
+                    <p className="text-sm text-gray-500">Stile di Lavoro</p>
+                    <p className="font-medium">{getWorkStyleLabel(profile.work_style)}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Competenze */}
+          {profile.skills && profile.skills.trim() && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Competenze
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700">{profile.skills}</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Interessi */}
           {parsedInterests.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Interessi</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5" />
+                  Interessi
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
