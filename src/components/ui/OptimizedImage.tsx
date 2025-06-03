@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 
 const imageLogger = createContextualLogger('OptimizedImage');
 
-interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> {
+interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
   src?: string;
-  alt: string;
+  alt?: string;
   fallbackSrc?: string;
   enableWebP?: boolean;
   enableResponsive?: boolean;
@@ -22,7 +22,7 @@ interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElem
 export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageProps>(
   ({
     src,
-    alt,
+    alt = '',
     fallbackSrc,
     enableWebP = true,
     enableResponsive = true,
