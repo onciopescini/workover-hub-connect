@@ -53,7 +53,7 @@ export function useLoadingState(
         action: 'loading_error',
         errorMessage: error,
         context
-      });
+      }, new Error(error));
     }
   }, [logger, context]);
 
@@ -104,7 +104,7 @@ export function useLoadingState(
           duration,
           context,
           errorMessage
-        });
+        }, error instanceof Error ? error : new Error(errorMessage));
       }
       
       setError(errorMessage);
