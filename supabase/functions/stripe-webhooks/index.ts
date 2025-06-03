@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
@@ -69,16 +68,88 @@ serve(async (req) => {
             console.log('✅ Payment updated successfully');
           }
 
+          // Get booking details to determine confirmation type
+          const { data: booking, error: bookingFetchError } = await supabaseAdmin
+            .from('bookings')
+            .select(`
+              id,
+              space_id,
+              user_id,
+              spaces!inner (
+                id,
+                confirmation_type,
+                host_id,
+                title
+              )
+            `)
+            .eq('id', session.metadata.booking_id)
+            .single();
+
+          if (bookingFetchError) {
+            console.error('🔴 Error fetching booking details:', bookingFetchError);
+            return new Response(JSON.stringify({ received: true }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200,
+            });
+          }
+
+          // Determine booking status based on confirmation type
+          let newStatus = 'pending';
+          let notificationTitle = '';
+          let notificationContent = '';
+
+          if (booking.spaces.confirmation_type === 'instant') {
+            newStatus = 'confirmed';
+            notificationTitle = 'Prenotazione confermata!';
+            notificationContent = `La tua prenotazione presso "${booking.spaces.title}" è stata confermata automaticamente. Buon lavoro!`;
+          } else {
+            newStatus = 'pending';
+            notificationTitle = 'Prenotazione in attesa di approvazione';
+            notificationContent = `La tua prenotazione presso "${booking.spaces.title}" è in attesa di approvazione dall'host. Riceverai una notifica appena verrà confermata.`;
+          }
+
           // Update booking status
           const { error: bookingError } = await supabaseAdmin
             .from('bookings')
-            .update({ status: 'confirmed' })
+            .update({ status: newStatus })
             .eq('id', session.metadata.booking_id);
 
           if (bookingError) {
             console.error('🔴 Error updating booking:', bookingError);
           } else {
-            console.log('✅ Booking confirmed successfully');
+            console.log(`✅ Booking ${newStatus} successfully`);
+          }
+
+          // Send notification to coworker
+          await supabaseAdmin
+            .from('user_notifications')
+            .insert({
+              user_id: booking.user_id,
+              type: 'booking',
+              title: notificationTitle,
+              content: notificationContent,
+              metadata: {
+                booking_id: booking.id,
+                space_title: booking.spaces.title,
+                confirmation_type: booking.spaces.confirmation_type
+              }
+            });
+
+          // If booking requires host approval, notify the host
+          if (booking.spaces.confirmation_type === 'host_approval') {
+            await supabaseAdmin
+              .from('user_notifications')
+              .insert({
+                user_id: booking.spaces.host_id,
+                type: 'booking',
+                title: 'Nuova richiesta di prenotazione',
+                content: `Hai ricevuto una nuova richiesta di prenotazione per "${booking.spaces.title}". Vai alla dashboard per approvarla.`,
+                metadata: {
+                  booking_id: booking.id,
+                  space_title: booking.spaces.title,
+                  action_required: 'approve_booking'
+                }
+              });
           }
 
           // Send confirmation email
@@ -91,7 +162,8 @@ serve(async (req) => {
                   data: {
                     booking_id: session.metadata.booking_id,
                     amount: session.amount_total,
-                    currency: session.currency
+                    currency: session.currency,
+                    status: newStatus
                   }
                 }
               });

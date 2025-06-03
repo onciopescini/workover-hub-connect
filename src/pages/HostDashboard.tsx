@@ -8,6 +8,7 @@ import { MarketplaceLayout } from "@/components/layout/MarketplaceLayout";
 import { DashboardStats } from "@/components/host/DashboardStats";
 import { QuickActions } from "@/components/host/QuickActions";
 import { RecentBookings } from "@/components/host/RecentBookings";
+import { PendingBookings } from "@/components/host/PendingBookings";
 import { RecentMessages } from "@/components/host/RecentMessages";
 import { RecentReviews } from "@/components/host/RecentReviews";
 import { SpaceChecklist } from "@/components/host/SpaceChecklist";
@@ -94,7 +95,7 @@ const HostDashboard = () => {
         console.log('🔵 Found spaces:', spaceIds.length);
 
         if (spaceIds.length > 0) {
-          // 2. Fetch bookings without profile joins
+          // 2. Fetch ALL bookings for host spaces (not just confirmed ones)
           const { data: rawBookings, error: bookingsError } = await supabase
             .from("bookings")
             .select(`
@@ -109,8 +110,6 @@ const HostDashboard = () => {
               )
             `)
             .in("space_id", spaceIds)
-            .eq("status", "confirmed")
-            .gte("booking_date", new Date().toISOString().split('T')[0])
             .order("booking_date", { ascending: true });
 
           if (bookingsError) {
@@ -164,9 +163,16 @@ const HostDashboard = () => {
               };
             });
 
-            setActiveBookings(transformedBookings.length);
+            // Count only confirmed bookings for active bookings stat
+            const confirmedBookings = transformedBookings.filter(
+              booking => booking.status === 'confirmed' && 
+              new Date(booking.booking_date) >= new Date().setHours(0, 0, 0, 0)
+            );
+            
+            setActiveBookings(confirmedBookings.length);
             setRecentBookings(transformedBookings);
-            console.log('🔵 Found active bookings:', transformedBookings.length);
+            console.log('🔵 Found total bookings:', transformedBookings.length);
+            console.log('🔵 Found active confirmed bookings:', confirmedBookings.length);
 
             // 5. Fetch messages without profile joins
             const bookingIds = transformedBookings.map(b => b.id);
@@ -317,6 +323,14 @@ const HostDashboard = () => {
       {/* Quick Actions Section */}
       <QuickActions />
 
+      {/* Pending Bookings Section - New Addition */}
+      <div className="mb-6">
+        <PendingBookings 
+          bookings={recentBookings} 
+          onApprovalUpdate={handleBookingUpdate}
+        />
+      </div>
+
       {/* Space Checklist - Show only if there are checklist items */}
       {checklists.length > 0 && (
         <SpaceChecklist checklists={checklists} />
@@ -327,7 +341,7 @@ const HostDashboard = () => {
         {/* Left Column */}
         <div className="space-y-6">
           <RecentBookings 
-            bookings={recentBookings} 
+            bookings={recentBookings.filter(booking => booking.status !== 'pending')} 
             onBookingUpdate={handleBookingUpdate}
           />
           <RecentMessages messages={recentMessages} />
