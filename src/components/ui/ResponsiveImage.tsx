@@ -16,7 +16,7 @@ interface ResponsiveImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageEle
   enableWebP?: boolean;
   fallbackSrc?: string;
   onLoadComplete?: () => void;
-  onError?: (error: string) => void;
+  onErrorCustom?: (error: string) => void;
 }
 
 const ASPECT_RATIOS = {
@@ -38,7 +38,10 @@ export function ResponsiveImage({
   fallbackSrc,
   className,
   onLoadComplete,
+  onErrorCustom,
+  onLoad,
   onError,
+  onLoadStart,
   ...props
 }: ResponsiveImageProps) {
   // Generate responsive attributes
@@ -69,7 +72,10 @@ export function ResponsiveImage({
         enableResponsive={false} // We're handling it manually here
         fallbackSrc={fallbackSrc}
         onLoadComplete={onLoadComplete}
+        onErrorCustom={onErrorCustom}
+        onLoad={onLoad}
         onError={onError}
+        onLoadStart={onLoadStart}
         className={cn(
           'w-full h-full',
           objectFit === 'cover' && 'object-cover',

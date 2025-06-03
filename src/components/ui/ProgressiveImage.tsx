@@ -16,7 +16,7 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   enableResponsive?: boolean;
   aspectRatio?: string;
   onLoadComplete?: () => void;
-  onError?: (error: string) => void;
+  onErrorCustom?: (error: string) => void;
 }
 
 export function ProgressiveImage({
@@ -30,7 +30,10 @@ export function ProgressiveImage({
   aspectRatio,
   className,
   onLoadComplete,
+  onErrorCustom,
+  onLoad,
   onError,
+  onLoadStart,
   ...props
 }: ProgressiveImageProps) {
   const [isInView, setIsInView] = useState(priority);
@@ -97,16 +100,16 @@ export function ProgressiveImage({
     });
   }, [src, alt, onLoadComplete]);
 
-  const handleError = useCallback((error: string) => {
+  const handleImageError = useCallback((error: string) => {
     setHasError(true);
-    onError?.(error);
+    onErrorCustom?.(error);
     
     progressiveLogger.error('Progressive image load failed', new Error(error), {
       action: 'progressive_load_error',
       src,
       alt
     });
-  }, [src, alt, onError]);
+  }, [src, alt, onErrorCustom]);
 
   // Calculate container style with aspect ratio
   const containerStyle: React.CSSProperties = {
@@ -148,7 +151,7 @@ export function ProgressiveImage({
           enableWebP={false} // Usually already optimized
           enableResponsive={false}
           onLoadComplete={handleLowQualityLoad}
-          onError={handleError}
+          onErrorCustom={handleImageError}
           className={cn(
             'absolute inset-0 w-full h-full object-cover',
             'transition-opacity duration-300',
@@ -166,7 +169,10 @@ export function ProgressiveImage({
           enableWebP={enableWebP}
           enableResponsive={enableResponsive}
           onLoadComplete={handleHighQualityLoad}
-          onError={handleError}
+          onErrorCustom={handleImageError}
+          onLoad={onLoad}
+          onError={onError}
+          onLoadStart={onLoadStart}
           className={cn(
             'w-full h-full object-cover',
             'transition-opacity duration-500',

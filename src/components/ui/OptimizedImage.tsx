@@ -15,9 +15,8 @@ interface OptimizedImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElem
   enableResponsive?: boolean;
   priority?: boolean;
   quality?: number;
-  onLoadStart?: () => void;
   onLoadComplete?: () => void;
-  onError?: (error: string) => void;
+  onErrorCustom?: (error: string) => void;
 }
 
 export function OptimizedImage({
@@ -29,19 +28,21 @@ export function OptimizedImage({
   priority = false,
   quality = 0.85,
   className,
-  onLoadStart,
   onLoadComplete,
+  onErrorCustom,
+  onLoad,
   onError,
+  onLoadStart,
   ...props
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState<string>('');
 
-  const handleLoadStart = useCallback(() => {
+  const handleLoadStart = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(true);
     setHasError(false);
-    onLoadStart?.();
+    onLoadStart?.(event);
     
     imageLogger.debug('Image load started', {
       action: 'load_start',
@@ -50,8 +51,9 @@ export function OptimizedImage({
     });
   }, [src, alt, onLoadStart]);
 
-  const handleLoad = useCallback(() => {
+  const handleLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
+    onLoad?.(event);
     onLoadComplete?.();
     
     imageLogger.debug('Image loaded successfully', {
@@ -59,9 +61,9 @@ export function OptimizedImage({
       src: currentSrc,
       alt
     });
-  }, [currentSrc, alt, onLoadComplete]);
+  }, [currentSrc, alt, onLoad, onLoadComplete]);
 
-  const handleError = useCallback(() => {
+  const handleError = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
     setHasError(true);
     
@@ -86,8 +88,9 @@ export function OptimizedImage({
       return;
     }
 
-    onError?.('Image failed to load');
-  }, [currentSrc, alt, fallbackSrc, onError]);
+    onError?.(event);
+    onErrorCustom?.('Image failed to load');
+  }, [currentSrc, alt, fallbackSrc, onError, onErrorCustom]);
 
   // Generate optimized URLs
   const generateOptimizedSrc = useCallback(() => {
@@ -110,8 +113,7 @@ export function OptimizedImage({
   React.useEffect(() => {
     const optimizedSrc = generateOptimizedSrc();
     setCurrentSrc(optimizedSrc);
-    handleLoadStart();
-  }, [generateOptimizedSrc, handleLoadStart]);
+  }, [generateOptimizedSrc]);
 
   // Generate srcSet for responsive images
   const srcSet = enableResponsive && currentSrc ? generateSrcSet(currentSrc) : undefined;
