@@ -4,12 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
 import { cleanupAuthState, cleanSignIn } from '@/lib/auth-utils';
-import { createContextualLogger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 // Create contextual logger for AuthContext
-const authLogger = createContextualLogger('AuthContext');
+const authLogger = logger.withComponent('AuthContext');
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
 
   const fetchProfile = async (userId: string) => {
-    const timer = authLogger.startTimer('fetchProfile');
+    const startTime = performance.now();
     
     try {
       authLogger.debug('Starting profile fetch', {
@@ -54,18 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'profile_fetch_success',
         userId,
         profileId: profile?.id,
-        hasProfile: !!profile
+        hasProfile: !!profile,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
 
       return profile;
     } catch (error) {
       authLogger.error('Exception in fetchProfile', error instanceof Error ? error : new Error('Unknown error'), {
         action: 'profile_fetch_exception',
-        userId
+        userId,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       return null;
-    } finally {
-      timer.end();
     }
   };
 
@@ -87,6 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(refreshTimeoutRef.current);
     }
     
+    const startTime = performance.now();
+    
     try {
       authLogger.info('Starting profile refresh', {
         action: 'profile_refresh_start',
@@ -102,12 +104,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authLogger.info('Profile refresh completed', {
         action: 'profile_refresh_complete',
         userId: authState.user.id,
-        profileUpdated: !!profile
+        profileUpdated: !!profile,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } catch (error) {
       authLogger.error('Error refreshing profile', error instanceof Error ? error : new Error('Profile refresh failed'), {
         action: 'profile_refresh_error',
-        userId: authState.user?.id
+        userId: authState.user?.id,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } finally {
       // Reset flag after a delay to prevent rapid successive calls
@@ -130,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
 
-    const timer = authLogger.startTimer('updateProfile');
+    const startTime = performance.now();
 
     try {
       authLogger.info('Starting profile update', {
@@ -156,22 +160,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authLogger.info('Profile update successful', {
         action: 'profile_update_success',
         userId: authState.user.id,
-        updatedFields: Object.keys(updates)
+        updatedFields: Object.keys(updates),
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } catch (error) {
       authLogger.error('Profile update failed', error instanceof Error ? error : new Error('Profile update error'), {
         action: 'profile_update_error',
         userId: authState.user.id,
-        updateFields: Object.keys(updates)
+        updateFields: Object.keys(updates),
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       throw error;
-    } finally {
-      timer.end();
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const timer = authLogger.startTimer('signIn');
+    const startTime = performance.now();
     
     try {
       authLogger.info('Starting sign in process', {
@@ -186,22 +190,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'sign_in_success',
         email: data.user?.email,
         userId: data.user?.id,
-        hasSession: !!data.session
+        hasSession: !!data.session,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } catch (error) {
       authLogger.error('Sign in error', error instanceof Error ? error : new Error('Sign in failed'), {
         action: 'sign_in_error',
         email,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       throw error;
-    } finally {
-      timer.end();
     }
   };
 
   const signUp = async (email: string, password: string) => {
-    const timer = authLogger.startTimer('signUp');
+    const startTime = performance.now();
     
     try {
       authLogger.info('Starting sign up process', {
@@ -224,22 +228,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'sign_up_success',
         email: data.user?.email,
         userId: data.user?.id,
-        needsConfirmation: !data.session
+        needsConfirmation: !data.session,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } catch (error) {
       authLogger.error('Sign up error', error instanceof Error ? error : new Error('Sign up failed'), {
         action: 'sign_up_error',
         email,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       throw error;
-    } finally {
-      timer.end();
     }
   };
 
   const signInWithGoogle = async () => {
-    const timer = authLogger.startTimer('signInWithGoogle');
+    const startTime = performance.now();
     
     try {
       authLogger.info('Starting Google sign in', {
@@ -263,21 +267,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authLogger.info('Google sign in initiated', {
         action: 'google_sign_in_initiated',
         hasUrl: !!data.url,
-        provider: data.provider
+        provider: data.provider,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } catch (error) {
       authLogger.error('Google sign in error', error instanceof Error ? error : new Error('Google sign in failed'), {
         action: 'google_sign_in_error',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       throw error;
-    } finally {
-      timer.end();
     }
   };
 
   const updateAuthState = async (user: User | null, session: Session | null) => {
-    const timer = authLogger.startTimer('updateAuthState');
+    const startTime = performance.now();
     
     authLogger.info('Updating auth state', {
       action: 'auth_state_update',
@@ -301,7 +305,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'auth_state_authenticated',
         userId: user.id,
         email: user.email,
-        hasProfile: !!profile
+        hasProfile: !!profile,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     } else {
       setAuthState({
@@ -313,15 +318,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       authLogger.info('Auth state updated - unauthenticated', {
-        action: 'auth_state_unauthenticated'
+        action: 'auth_state_unauthenticated',
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
     }
-    
-    timer.end();
   };
 
   const signOut = async () => {
-    const timer = authLogger.startTimer('signOut');
+    const startTime = performance.now();
     
     try {
       authLogger.info('Starting sign out process', {
@@ -351,7 +355,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       authLogger.info('Sign out completed, redirecting to login', {
         action: 'sign_out_complete',
-        redirectUrl: '/login'
+        redirectUrl: '/login',
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
 
       // Force reload to ensure clean state
@@ -359,11 +364,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       authLogger.error('Error during sign out', error instanceof Error ? error : new Error('Sign out failed'), {
         action: 'sign_out_error',
-        userId: authState.user?.id
+        userId: authState.user?.id,
+        duration: `${(performance.now() - startTime).toFixed(2)}ms`
       });
       throw error;
-    } finally {
-      timer.end();
     }
   };
 
@@ -377,7 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Get initial session
     const getInitialSession = async () => {
-      const timer = authLogger.startTimer('getInitialSession');
+      const startTime = performance.now();
       
       try {
         authLogger.debug('Getting initial session', {
@@ -399,7 +403,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         authLogger.info('Initial session check completed', {
           action: 'initial_session_complete',
           hasSession: !!session,
-          userEmail: session?.user?.email || 'No session'
+          userEmail: session?.user?.email || 'No session',
+          duration: `${(performance.now() - startTime).toFixed(2)}ms`
         });
 
         if (mounted) {
@@ -407,13 +412,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         authLogger.error('Exception getting initial session', error instanceof Error ? error : new Error('Initial session exception'), {
-          action: 'initial_session_exception'
+          action: 'initial_session_exception',
+          duration: `${(performance.now() - startTime).toFixed(2)}ms`
         });
         if (mounted) {
           setAuthState(prev => ({ ...prev, isLoading: false }));
         }
-      } finally {
-        timer.end();
       }
     };
 
