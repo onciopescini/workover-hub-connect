@@ -104,11 +104,11 @@ export function ProgressiveImage({
     setHasError(true);
     onErrorCustom?.(error);
     
-    progressiveLogger.error('Progressive image load failed', new Error(error), {
+    progressiveLogger.error('Progressive image load failed', {
       action: 'progressive_load_error',
       src,
       alt
-    });
+    }, new Error(error));
   }, [src, alt, onErrorCustom]);
 
   // Calculate container style with aspect ratio

@@ -31,10 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     },
     onProfileError: (error: Error) => {
-      authLogger.error('Profile operation failed in context', error, {
+      authLogger.error('Profile operation failed in context', {
         action: 'profile_context_error',
         userId: authState.user?.id
-      });
+      }, error);
     },
     onAuthSuccess: (data) => {
       authLogger.info('Auth operation successful in context', {
@@ -44,9 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     },
     onAuthError: (error: Error) => {
-      authLogger.error('Auth operation failed in context', error, {
+      authLogger.error('Auth operation failed in context', {
         action: 'auth_context_error'
-      });
+      }, error);
     },
     enableRetry: true,
     enableToasts: true,
@@ -99,10 +99,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: authState.user.id
       });
     } catch (error) {
-      authLogger.error('Error in context profile refresh', error instanceof Error ? error : new Error('Profile refresh failed'), {
+      const normalizedError = error instanceof Error ? error : new Error('Profile refresh failed');
+      authLogger.error('Error in context profile refresh', {
         action: 'profile_refresh_context_error',
         userId: authState.user?.id
-      });
+      }, normalizedError);
     } finally {
       stopTimer();
     }
@@ -111,10 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
     if (!authState.user) {
       const error = new Error('User not authenticated');
-      authLogger.error('Profile update attempted without authentication', error, {
+      authLogger.error('Profile update attempted without authentication', {
         action: 'profile_update_unauthorized',
         updates: Object.keys(updates)
-      });
+      }, error);
       throw error;
     }
 
@@ -141,11 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updatedFields: Object.keys(updates)
       });
     } catch (error) {
-      authLogger.error('Profile update failed in context', error instanceof Error ? error : new Error('Profile update error'), {
+      const normalizedError = error instanceof Error ? error : new Error('Profile update error');
+      authLogger.error('Profile update failed in context', {
         action: 'profile_update_context_error',
         userId: authState.user.id,
         updateFields: Object.keys(updates)
-      });
+      }, normalizedError);
       throw error;
     } finally {
       stopTimer();
@@ -169,11 +171,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email
       });
     } catch (error) {
-      authLogger.error('Sign in error in context', error instanceof Error ? error : new Error('Sign in failed'), {
+      const normalizedError = error instanceof Error ? error : new Error('Sign in failed');
+      authLogger.error('Sign in error in context', {
         action: 'sign_in_context_error',
         email,
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, normalizedError);
       throw error;
     } finally {
       stopTimer();
@@ -197,11 +200,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email
       });
     } catch (error) {
-      authLogger.error('Sign up error in context', error instanceof Error ? error : new Error('Sign up failed'), {
+      const normalizedError = error instanceof Error ? error : new Error('Sign up failed');
+      authLogger.error('Sign up error in context', {
         action: 'sign_up_context_error',
         email,
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, normalizedError);
       throw error;
     } finally {
       stopTimer();
@@ -224,10 +228,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'google_sign_in_context_initiated'
       });
     } catch (error) {
-      authLogger.error('Google sign in error in context', error instanceof Error ? error : new Error('Google sign in failed'), {
+      const normalizedError = error instanceof Error ? error : new Error('Google sign in failed');
+      authLogger.error('Google sign in error in context', {
         action: 'google_sign_in_context_error',
         errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      });
+      }, normalizedError);
       throw error;
     } finally {
       stopTimer();
@@ -250,10 +255,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'sign_out_context_complete'
       });
     } catch (error) {
-      authLogger.error('Error during sign out in context', error instanceof Error ? error : new Error('Sign out failed'), {
+      const normalizedError = error instanceof Error ? error : new Error('Sign out failed');
+      authLogger.error('Error during sign out in context', {
         action: 'sign_out_context_error',
         userId: authState.user?.id
-      });
+      }, normalizedError);
       throw error;
     } finally {
       stopTimer();
@@ -325,10 +331,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          authLogger.error('Error getting initial session', error, {
+          authLogger.error('Error getting initial session', {
             action: 'initial_session_error',
             errorMessage: error.message
-          });
+          }, error);
           if (mounted) {
             setAuthState(prev => ({ ...prev, isLoading: false }));
           }
@@ -345,9 +351,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await updateAuthState(session?.user || null, session);
         }
       } catch (error) {
-        authLogger.error('Exception getting initial session', error instanceof Error ? error : new Error('Initial session exception'), {
+        const normalizedError = error instanceof Error ? error : new Error('Initial session exception');
+        authLogger.error('Exception getting initial session', {
           action: 'initial_session_exception'
-        });
+        }, normalizedError);
         if (mounted) {
           setAuthState(prev => ({ ...prev, isLoading: false }));
         }

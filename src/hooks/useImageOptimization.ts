@@ -171,10 +171,11 @@ export const useImageOptimization = (options: UseImageOptimizationOptions = {}) 
         error: errorMessage
       }));
 
-      optimizationLogger.error('Image processing failed', error instanceof Error ? error : new Error(errorMessage), {
+      const normalizedError = error instanceof Error ? error : new Error(errorMessage);
+      optimizationLogger.error('Image processing failed', {
         action: 'process_error',
         fileName: file.name
-      });
+      }, normalizedError);
 
       throw error;
     } finally {
@@ -204,7 +205,7 @@ export const useImageOptimization = (options: UseImageOptimizationOptions = {}) 
   useEffect(() => {
     if (config.autoOptimize && state.originalFile && !state.isProcessing && !state.optimizedBlob) {
       processImage(state.originalFile).catch((error) => {
-        optimizationLogger.error('Auto-optimization failed', error);
+        optimizationLogger.error('Auto-optimization failed', {}, error);
       });
     }
   }, [config.autoOptimize, state.originalFile, state.isProcessing, state.optimizedBlob, processImage]);

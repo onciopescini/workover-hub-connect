@@ -107,12 +107,12 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
         .single();
 
       if (error) {
-        authLogger.error('Error fetching profile', error, {
+        authLogger.error('Error fetching profile', {
           action: 'profile_fetch_error',
           userId,
           errorCode: error.code,
           errorMessage: error.message
-        });
+        }, error);
         throw new Error(`Errore nel caricamento del profilo: ${error.message}`);
       }
 
@@ -154,11 +154,11 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
         .single();
 
       if (error) {
-        authLogger.error('Profile update failed', error, {
+        authLogger.error('Profile update failed', {
           action: 'profile_update_error',
           userId,
           updateFields: Object.keys(updates)
-        });
+        }, error);
         throw new Error(`Errore nell'aggiornamento del profilo: ${error.message}`);
       }
 
@@ -284,10 +284,10 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
       
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
-        authLogger.error('Supabase sign out error', error, {
+        authLogger.error('Supabase sign out error', {
           action: 'supabase_sign_out_error',
           errorCode: error.message
-        });
+        }, error);
       }
       
       authLogger.info('Sign out completed', {

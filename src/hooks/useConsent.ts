@@ -54,9 +54,10 @@ export const useConsent = () => {
         }
       }
     } catch (error) {
-      consentLogger.error('Error loading consent from storage', error instanceof Error ? error : new Error('Unknown error'), {
+      const normalizedError = error instanceof Error ? error : new Error('Unknown error');
+      consentLogger.error('Error loading consent from storage', {
         action: 'consent_load_error'
-      });
+      }, normalizedError);
       setSettings(DEFAULT_SETTINGS);
     }
     setIsLoaded(true);
@@ -76,9 +77,10 @@ export const useConsent = () => {
         ).map(([key]) => key)
       });
     } catch (error) {
-      consentLogger.error('Error saving consent', error instanceof Error ? error : new Error('Unknown error'), {
+      const normalizedError = error instanceof Error ? error : new Error('Unknown error');
+      consentLogger.error('Error saving consent', {
         action: 'consent_save_error'
-      });
+      }, normalizedError);
     }
   }, []);
 

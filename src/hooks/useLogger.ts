@@ -92,11 +92,11 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
   }, [contextualLogger, getEnhancedMetadata]);
 
   const error = useCallback((message: string, error?: Error, metadata?: Record<string, any>) => {
-    contextualLogger.error(message, error, getEnhancedMetadata(metadata));
+    contextualLogger.error(message, getEnhancedMetadata(metadata), error);
   }, [contextualLogger, getEnhancedMetadata]);
 
   const critical = useCallback((message: string, error?: Error, metadata?: Record<string, any>) => {
-    contextualLogger.critical(message, error, getEnhancedMetadata(metadata));
+    contextualLogger.critical(message, getEnhancedMetadata(metadata), error);
   }, [contextualLogger, getEnhancedMetadata]);
 
   // Performance tracking methods
