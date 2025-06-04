@@ -152,21 +152,30 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
       return profile;
     };
 
-    // Control toast display based on first load
-    const originalShowToasts = profileAsyncState.showToasts;
-    if (isFirstProfileLoad.current && suppressInitialProfileToast) {
-      // Temporarily disable toasts for first load
-      profileAsyncState.showToasts = false;
-    }
+    // Control toast display based on first load using a temporary config
+    const currentSuccessMessage = isFirstProfileLoad.current && suppressInitialProfileToast ? undefined : 'Profilo caricato con successo';
+    
+    // Create a temporary state with modified config for first load
+    const tempProfileState = useAsyncState<Profile>({
+      successMessage: currentSuccessMessage,
+      errorMessage: 'Errore nel caricamento del profilo',
+      onSuccess: (profile) => {
+        if (!isFirstProfileLoad.current && !suppressInitialProfileToast) {
+          // Toast will be handled by useAsyncState
+        }
+        isFirstProfileLoad.current = false;
+        onProfileSuccess?.(profile);
+      },
+      onError: onProfileError,
+      debounceMs,
+      maxRetries: enableRetry ? 3 : 0,
+      retryDelay: 1000,
+      showToasts: enableToasts && (!isFirstProfileLoad.current || !suppressInitialProfileToast),
+      resetOnExecute: false
+    });
 
-    try {
-      const result = await profileAsyncState.execute(operation);
-      return result;
-    } finally {
-      // Restore original toast setting
-      profileAsyncState.showToasts = originalShowToasts;
-    }
-  }, [profileAsyncState, suppressInitialProfileToast]);
+    return await tempProfileState.execute(operation);
+  }, [onProfileSuccess, onProfileError, enableRetry, debounceMs, enableToasts, suppressInitialProfileToast]);
 
   const refreshProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     authLogger.info('Starting profile refresh', {
