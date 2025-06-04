@@ -49,7 +49,8 @@ export function useLoadingState(
   const setError = useCallback((error: string | null) => {
     setState(prev => ({ ...prev, error, isLoading: false }));
     if (logger && error) {
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      // Since error is string | null, we know it's always a string here (due to the && error check)
+      const normalizedError = new Error(String(error));
       logger.error('Loading error occurred', {
         action: 'loading_error',
         errorMessage: String(error),
@@ -100,7 +101,8 @@ export function useLoadingState(
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       if (logger) {
-        const normalizedError = error instanceof Error ? error : new Error(String(errorMessage));
+        // Use safe instanceof check for unknown type from catch
+        const normalizedError = (typeof error === 'object' && error instanceof Error) ? error : new Error(String(errorMessage));
         logger.error('Operation failed', {
           action: 'operation_failure',
           duration,
