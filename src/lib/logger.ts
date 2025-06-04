@@ -18,6 +18,18 @@ export interface LogEntry {
   sessionId?: string;
 }
 
+export interface LogContext {
+  component?: string;
+  userId?: string;
+  action?: string;
+  duration?: number;
+  contextInfo?: any;
+  errorMessage?: string;
+  metadata?: Record<string, any>;
+  timestamp?: string;
+  sessionId?: string;
+}
+
 export interface LoggerConfig {
   level: LogLevel;
   enableConsole: boolean;
