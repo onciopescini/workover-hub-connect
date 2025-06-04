@@ -112,7 +112,7 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
           userId,
           errorCode: error.code,
           errorMessage: error.message
-        }, error);
+        }, new Error(`Errore nel caricamento del profilo: ${error.message}`));
         throw new Error(`Errore nel caricamento del profilo: ${error.message}`);
       }
 
@@ -158,7 +158,7 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
           action: 'profile_update_error',
           userId,
           updateFields: Object.keys(updates)
-        }, error);
+        }, new Error(`Errore nell'aggiornamento del profilo: ${error.message}`));
         throw new Error(`Errore nell'aggiornamento del profilo: ${error.message}`);
       }
 
@@ -287,7 +287,7 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
         authLogger.error('Supabase sign out error', {
           action: 'supabase_sign_out_error',
           errorCode: error.message
-        }, error);
+        }, new Error(error.message));
       }
       
       authLogger.info('Sign out completed', {

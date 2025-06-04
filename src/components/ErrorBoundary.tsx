@@ -1,351 +1,130 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { logger } from '@/lib/logger';
+import { createErrorReport } from '@/lib/admin-utils';
 
-interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
-  errorId: string | null;
-  retryCount: number;
-  lastErrorTime: number;
-}
-
-interface ErrorBoundaryProps {
+interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo, errorId: string) => void;
-  maxRetries?: number;
-  resetTimeoutMs?: number;
-  showErrorDetails?: boolean;
-  level?: 'page' | 'component' | 'critical';
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
-interface ErrorReport {
-  errorId: string;
-  message: string;
-  stack?: string;
-  componentStack: string;
-  timestamp: string;
-  url: string;
-  userAgent: string;
-  retryCount: number;
-  level: string;
-  userId?: string;
-  sessionId: string;
+interface State {
+  hasError: boolean;
+  error?: Error;
+  errorInfo?: ErrorInfo;
+  errorId?: string;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  private resetTimeoutId: NodeJS.Timeout | null = null;
-
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-    
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null,
-      errorId: null,
-      retryCount: 0,
-      lastErrorTime: 0,
-    };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // Update state so the next render will show the fallback UI
+  static getDerivedStateFromError(error: Error): State {
     return {
       hasError: true,
       error,
-      lastErrorTime: Date.now(),
+      errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const errorId = this.generateErrorId();
-    const currentTime = Date.now();
-    const timeSinceLastError = currentTime - this.state.lastErrorTime;
+    const errorId = this.state.errorId || `error_${Date.now()}`;
     
-    // Increment retry count if error happened within reset timeout
-    const retryCount = timeSinceLastError < (this.props.resetTimeoutMs || 5000) 
-      ? this.state.retryCount + 1 
-      : 1;
-
-    this.setState({
-      error,
-      errorInfo,
+    // Log the error with normalized signature
+    logger.critical("Error Boundary caught error", {
+      action: "ErrorBoundary-Reporting",
       errorId,
-      retryCount,
-      lastErrorTime: currentTime,
+      componentStack: errorInfo.componentStack,
+      errorMessage: error.message
+    }, error);
+
+    // Create admin error report
+    createErrorReport({
+      type: 'runtime_error',
+      message: error.message,
+      metadata: {
+        errorId,
+        componentStack: errorInfo.componentStack,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      }
+    }).catch((reportError) => {
+      logger.error("Failed to create error report", {
+        action: "error_report_creation_failed",
+        originalErrorId: errorId
+      }, reportError instanceof Error ? reportError : new Error(String(reportError)));
     });
 
-    // Log the error with appropriate level
-    const level = this.props.level || 'component';
-    const context = `ErrorBoundary-${level}`;
+    this.setState({ errorInfo });
     
-    if (retryCount >= (this.props.maxRetries || 3)) {
-      logger.critical(
-        `Critical error in ${level}: Maximum retries exceeded`,
-        {
-          component: context,
-          action: 'critical_error_max_retries',
-          errorId,
-          componentStack: errorInfo.componentStack,
-          retryCount,
-          level,
-        },
-        error
-      );
-    } else {
-      logger.error(
-        `Error caught in ${level} boundary`,
-        {
-          component: context,
-          action: 'error_caught',
-          errorId,
-          componentStack: errorInfo.componentStack,
-          retryCount,
-          level,
-        },
-        error
-      );
-    }
-
-    // Create detailed error report
-    const errorReport = this.createErrorReport(error, errorInfo, errorId, retryCount);
-    
-    // Call custom error handler if provided
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo, errorId);
-    }
-
-    // Send error report to monitoring service (placeholder)
-    this.sendErrorReport(errorReport);
-
-    // Set up automatic reset timer
-    this.setupResetTimer();
-  }
-
-  private generateErrorId(): string {
-    return `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private createErrorReport(
-    error: Error, 
-    errorInfo: ErrorInfo, 
-    errorId: string, 
-    retryCount: number
-  ): ErrorReport {
-    return {
-      errorId,
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-      retryCount,
-      level: this.props.level || 'component',
-      sessionId: logger.getBufferSize().toString(), // Using buffer size as session indicator
-    };
-  }
-
-  private async sendErrorReport(errorReport: ErrorReport): Promise<void> {
-    try {
-      // Placeholder for error reporting service
-      // This could integrate with Supabase Edge Functions or external services
-      logger.info(
-        'Error report generated',
-        {
-          component: 'ErrorBoundary-Reporting',
-          action: 'error_report_generated',
-          errorReport
-        }
-      );
-      
-      // In a real implementation, this would send to your error tracking service
-      // await fetch('/api/errors', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(errorReport)
-      // });
-    } catch (reportingError) {
-      logger.error(
-        'Failed to send error report',
-        {
-          component: 'ErrorBoundary-Reporting',
-          action: 'error_report_failed'
-        },
-        reportingError instanceof Error ? reportingError : new Error('Unknown reporting error')
-      );
-    }
-  }
-
-  private setupResetTimer(): void {
-    if (this.resetTimeoutId) {
-      clearTimeout(this.resetTimeoutId);
-    }
-
-    const resetTimeout = this.props.resetTimeoutMs || 10000; // 10 seconds default
-    
-    this.resetTimeoutId = setTimeout(() => {
-      this.setState({
-        hasError: false,
-        error: null,
-        errorInfo: null,
-        errorId: null,
-        retryCount: 0,
-        lastErrorTime: 0,
-      });
-    }, resetTimeout);
-  }
-
-  private handleRetry = (): void => {
-    const maxRetries = this.props.maxRetries || 3;
-    
-    if (this.state.retryCount < maxRetries) {
-      logger.info(
-        `User initiated retry (${this.state.retryCount + 1}/${maxRetries})`,
-        {
-          component: 'ErrorBoundary-Retry',
-          action: 'user_retry',
-          errorId: this.state.errorId
-        }
-      );
-      
-      this.setState({
-        hasError: false,
-        error: null,
-        errorInfo: null,
-        errorId: null,
-      });
-    }
-  };
-
-  private handleGoHome = (): void => {
-    logger.info(
-      'User navigated to home from error boundary',
-      {
-        component: 'ErrorBoundary-Navigation',
-        action: 'navigate_home',
-        errorId: this.state.errorId
-      }
-    );
-    
-    window.location.href = '/';
-  };
-
-  private handleReportBug = (): void => {
-    const { error, errorInfo, errorId } = this.state;
-    
-    logger.info(
-      'User initiated bug report',
-      {
-        component: 'ErrorBoundary-BugReport',
-        action: 'bug_report_initiated',
-        errorId
-      }
-    );
-
-    // Create bug report URL with error details
-    const bugReportData = {
-      errorId,
-      message: error?.message,
-      stack: error?.stack,
-      componentStack: errorInfo?.componentStack,
-      url: window.location.href,
-      timestamp: new Date().toISOString(),
-    };
-
-    const reportUrl = `/support?error=${encodeURIComponent(JSON.stringify(bugReportData))}`;
-    window.open(reportUrl, '_blank');
-  };
-
-  componentWillUnmount() {
-    if (this.resetTimeoutId) {
-      clearTimeout(this.resetTimeoutId);
-    }
+    // Call optional onError prop
+    this.props.onError?.(error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      // Custom fallback UI if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      const { error, errorId, retryCount } = this.state;
-      const maxRetries = this.props.maxRetries || 3;
-      const canRetry = retryCount < maxRetries;
-      const level = this.props.level || 'component';
-      const showDetails = this.props.showErrorDetails ?? (process.env.NODE_ENV === 'development');
-
       return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-          <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-            <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-              <div className="flex flex-col items-center">
-                <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-                
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {level === 'critical' ? 'Critical System Error' : 
-                   level === 'page' ? 'Page Error' : 'Something went wrong'}
-                </h2>
-                
-                <p className="text-sm text-gray-600 text-center mb-6">
-                  {level === 'critical' 
-                    ? 'A critical error has occurred. Please contact support immediately.'
-                    : 'We encountered an unexpected error. Our team has been notified.'
-                  }
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <svg className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Si è verificato un errore
+                </h3>
+                <p className="text-sm text-gray-500">
+                  ID Errore: {this.state.errorId}
                 </p>
-
-                {showDetails && (
-                  <Alert className="mb-6 w-full">
-                    <Bug className="h-4 w-4" />
-                    <AlertTitle>Error Details (Development)</AlertTitle>
-                    <AlertDescription className="text-xs font-mono mt-2 break-all">
-                      <div><strong>ID:</strong> {errorId}</div>
-                      <div><strong>Message:</strong> {error?.message}</div>
-                      {retryCount > 0 && (
-                        <div><strong>Retries:</strong> {retryCount}/{maxRetries}</div>
-                      )}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="flex flex-col space-y-3 w-full">
-                  {canRetry && (
-                    <Button 
-                      onClick={this.handleRetry}
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Try Again ({maxRetries - retryCount} left)
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline"
-                    onClick={this.handleGoHome}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <Home className="h-4 w-4" />
-                    Go to Homepage
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    onClick={this.handleReportBug}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <Bug className="h-4 w-4" />
-                    Report Bug
-                  </Button>
-                </div>
               </div>
             </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                Si è verificato un errore inaspettato. Il nostro team è stato notificato automaticamente.
+              </p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Ricarica la pagina
+              </button>
+              <button
+                onClick={() => window.history.back()}
+                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Torna indietro
+              </button>
+            </div>
+
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-medium text-gray-700">
+                  Dettagli tecnici (solo in sviluppo)
+                </summary>
+                <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                  {this.state.error.stack}
+                </pre>
+                {this.state.errorInfo && (
+                  <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-auto max-h-40">
+                    {this.state.errorInfo.componentStack}
+                  </pre>
+                )}
+              </details>
+            )}
           </div>
         </div>
       );
@@ -354,41 +133,3 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return this.props.children;
   }
 }
-
-// Convenience wrapper for functional components
-export const withErrorBoundary = <P extends object>(
-  Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
-) => {
-  const WrappedComponent = (props: P) => (
-    <ErrorBoundary {...errorBoundaryProps}>
-      <Component {...props} />
-    </ErrorBoundary>
-  );
-  
-  WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-  return WrappedComponent;
-};
-
-// Hook for error reporting from functional components
-export const useErrorHandler = () => {
-  const handleError = React.useCallback((error: Error, context?: string) => {
-    logger.error(
-      'Manual error report from component',
-      {
-        component: context || 'useErrorHandler',
-        action: 'manual_error_report',
-        manualReport: true,
-        timestamp: new Date().toISOString(),
-      },
-      error
-    );
-
-    // Re-throw to trigger error boundary if needed
-    throw error;
-  }, []);
-
-  return { handleError };
-};
-
-export default ErrorBoundary;

@@ -49,7 +49,6 @@ export function useLoadingState(
   const setError = useCallback((error: string | null) => {
     setState(prev => ({ ...prev, error, isLoading: false }));
     if (logger && error) {
-      // Since error is string | null, we know it's always a string here (due to the && error check)
       const normalizedError = new Error(String(error));
       logger.error('Loading error occurred', {
         action: 'loading_error',
@@ -75,7 +74,6 @@ export function useLoadingState(
     setLoading(true);
     setState(prev => ({ ...prev, error: null, progress: undefined }));
 
-    // Setup timeout
     const timeoutId = setTimeout(() => {
       setError(`Operation timed out after ${timeout}ms`);
     }, timeout);
@@ -101,8 +99,7 @@ export function useLoadingState(
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       if (logger) {
-        // Use safe instanceof check for unknown type from catch
-        const normalizedError = (typeof error === 'object' && error instanceof Error) ? error : new Error(String(errorMessage));
+        const normalizedError = error instanceof Error ? error : new Error(String(errorMessage));
         logger.error('Operation failed', {
           action: 'operation_failure',
           duration,
