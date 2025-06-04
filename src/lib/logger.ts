@@ -1,3 +1,4 @@
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -219,7 +220,8 @@ class Logger {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      this.info(`Performance: ${label} completed`, context, {
+      this.info(`Performance: ${label} completed`, {
+        component: context,
         performanceLabel: label,
         duration: `${duration.toFixed(2)}ms`,
         startTime,
@@ -279,15 +281,15 @@ export const createLogger = (config: Partial<LoggerConfig>) => new Logger(config
 export const createContextualLogger = (context: string, baseLogger: Logger = logger) => {
   return {
     debug: (message: string, metadata?: Record<string, any>) => 
-      baseLogger.debug(message, context, metadata),
+      baseLogger.debug(message, { component: context, ...metadata }),
     info: (message: string, metadata?: Record<string, any>) => 
-      baseLogger.info(message, context, metadata),
+      baseLogger.info(message, { component: context, ...metadata }),
     warn: (message: string, metadata?: Record<string, any>) => 
-      baseLogger.warn(message, context, metadata),
+      baseLogger.warn(message, { component: context, ...metadata }),
     error: (message: string, error?: Error, metadata?: Record<string, any>) => 
-      baseLogger.error(message, error, context, metadata),
+      baseLogger.error(message, { component: context, ...metadata }, error),
     critical: (message: string, error?: Error, metadata?: Record<string, any>) => 
-      baseLogger.critical(message, error, context, metadata),
+      baseLogger.critical(message, { component: context, ...metadata }, error),
     startTimer: (label: string) => baseLogger.startPerformanceTimer(label, context)
   };
 };
