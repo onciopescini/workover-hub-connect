@@ -28,6 +28,16 @@ export interface LogContext {
   metadata?: Record<string, any>;
   timestamp?: string;
   sessionId?: string;
+  performanceLabel?: string;
+  startTime?: number;
+  endTime?: number;
+  progress?: number;
+  errorReport?: any;
+  errorId?: string | null;
+  componentStack?: string;
+  retryCount?: number;
+  level?: string;
+  manualReport?: boolean;
 }
 
 export interface LoggerConfig {
@@ -123,17 +133,16 @@ class Logger {
   private createLogEntry(
     level: LogLevel,
     message: string,
-    context?: string,
-    metadata?: Record<string, any>,
+    context?: LogContext,
     error?: Error
   ): LogEntry {
     return {
       timestamp: new Date(),
       level,
       message,
-      context,
+      context: context?.component,
       metadata: {
-        ...metadata,
+        ...context,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
         userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
       },
@@ -152,7 +161,7 @@ class Logger {
   public debug(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.DEBUG)) return;
 
-    const entry = this.createLogEntry(LogLevel.DEBUG, message, context?.component, context, error);
+    const entry = this.createLogEntry(LogLevel.DEBUG, message, context, error);
     
     if (this.config.enableConsole) {
       console.debug(this.formatMessage(entry), entry.metadata);
@@ -164,7 +173,7 @@ class Logger {
   public info(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
-    const entry = this.createLogEntry(LogLevel.INFO, message, context?.component, context, error);
+    const entry = this.createLogEntry(LogLevel.INFO, message, context, error);
     
     if (this.config.enableConsole) {
       console.info(this.formatMessage(entry), entry.metadata);
@@ -176,7 +185,7 @@ class Logger {
   public warn(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.WARN)) return;
 
-    const entry = this.createLogEntry(LogLevel.WARN, message, context?.component, context, error);
+    const entry = this.createLogEntry(LogLevel.WARN, message, context, error);
     
     if (this.config.enableConsole) {
       console.warn(this.formatMessage(entry), entry.metadata);
@@ -188,7 +197,7 @@ class Logger {
   public error(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.ERROR)) return;
 
-    const entry = this.createLogEntry(LogLevel.ERROR, message, context?.component, context, error);
+    const entry = this.createLogEntry(LogLevel.ERROR, message, context, error);
     
     if (this.config.enableConsole) {
       console.error(this.formatMessage(entry), entry.metadata, error);
@@ -198,7 +207,7 @@ class Logger {
   }
 
   public critical(message: string, context?: LogContext, error?: Error): void {
-    const entry = this.createLogEntry(LogLevel.CRITICAL, message, context?.component, context, error);
+    const entry = this.createLogEntry(LogLevel.CRITICAL, message, context, error);
     
     if (this.config.enableConsole) {
       console.error(`🚨 CRITICAL: ${this.formatMessage(entry)}`, entry.metadata, error);
@@ -223,7 +232,7 @@ class Logger {
       this.info(`Performance: ${label} completed`, {
         component: context,
         performanceLabel: label,
-        duration: `${duration.toFixed(2)}ms`,
+        duration: duration,
         startTime,
         endTime
       });
@@ -286,9 +295,9 @@ export const createContextualLogger = (context: string, baseLogger: Logger = log
       baseLogger.info(message, { component: context, ...metadata }),
     warn: (message: string, metadata?: Record<string, any>) => 
       baseLogger.warn(message, { component: context, ...metadata }),
-    error: (message: string, error?: Error, metadata?: Record<string, any>) => 
+    error: (message: string, metadata?: Record<string, any>, error?: Error) => 
       baseLogger.error(message, { component: context, ...metadata }, error),
-    critical: (message: string, error?: Error, metadata?: Record<string, any>) => 
+    critical: (message: string, metadata?: Record<string, any>, error?: Error) => 
       baseLogger.critical(message, { component: context, ...metadata }, error),
     startTimer: (label: string) => baseLogger.startPerformanceTimer(label, context)
   };

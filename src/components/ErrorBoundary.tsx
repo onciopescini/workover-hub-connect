@@ -88,26 +88,28 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (retryCount >= (this.props.maxRetries || 3)) {
       logger.critical(
         `Critical error in ${level}: Maximum retries exceeded`,
-        error,
-        context,
         {
+          component: context,
+          action: 'critical_error_max_retries',
           errorId,
           componentStack: errorInfo.componentStack,
           retryCount,
           level,
-        }
+        },
+        error
       );
     } else {
       logger.error(
         `Error caught in ${level} boundary`,
-        error,
-        context,
         {
+          component: context,
+          action: 'error_caught',
           errorId,
           componentStack: errorInfo.componentStack,
           retryCount,
           level,
-        }
+        },
+        error
       );
     }
 
@@ -156,8 +158,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       // This could integrate with Supabase Edge Functions or external services
       logger.info(
         'Error report generated',
-        'ErrorBoundary-Reporting',
-        { errorReport }
+        {
+          component: 'ErrorBoundary-Reporting',
+          action: 'error_report_generated',
+          errorReport
+        }
       );
       
       // In a real implementation, this would send to your error tracking service
@@ -169,8 +174,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     } catch (reportingError) {
       logger.error(
         'Failed to send error report',
-        reportingError instanceof Error ? reportingError : new Error('Unknown reporting error'),
-        'ErrorBoundary-Reporting'
+        {
+          component: 'ErrorBoundary-Reporting',
+          action: 'error_report_failed'
+        },
+        reportingError instanceof Error ? reportingError : new Error('Unknown reporting error')
       );
     }
   }
@@ -200,8 +208,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.retryCount < maxRetries) {
       logger.info(
         `User initiated retry (${this.state.retryCount + 1}/${maxRetries})`,
-        'ErrorBoundary-Retry',
-        { errorId: this.state.errorId }
+        {
+          component: 'ErrorBoundary-Retry',
+          action: 'user_retry',
+          errorId: this.state.errorId
+        }
       );
       
       this.setState({
@@ -216,8 +227,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   private handleGoHome = (): void => {
     logger.info(
       'User navigated to home from error boundary',
-      'ErrorBoundary-Navigation',
-      { errorId: this.state.errorId }
+      {
+        component: 'ErrorBoundary-Navigation',
+        action: 'navigate_home',
+        errorId: this.state.errorId
+      }
     );
     
     window.location.href = '/';
@@ -228,8 +242,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     
     logger.info(
       'User initiated bug report',
-      'ErrorBoundary-BugReport',
-      { errorId }
+      {
+        component: 'ErrorBoundary-BugReport',
+        action: 'bug_report_initiated',
+        errorId
+      }
     );
 
     // Create bug report URL with error details
@@ -358,12 +375,13 @@ export const useErrorHandler = () => {
   const handleError = React.useCallback((error: Error, context?: string) => {
     logger.error(
       'Manual error report from component',
-      error,
-      context || 'useErrorHandler',
       {
+        component: context || 'useErrorHandler',
+        action: 'manual_error_report',
         manualReport: true,
         timestamp: new Date().toISOString(),
-      }
+      },
+      error
     );
 
     // Re-throw to trigger error boundary if needed
