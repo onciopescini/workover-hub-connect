@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Space } from '@/types/space';
@@ -21,6 +22,14 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [isLoadingMarkers, setIsLoadingMarkers] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const lastMarkersUpdate = useRef<number>(0);
+  const markersUpdateTimeout = useRef<NodeJS.Timeout>();
+
+  // Memoize spaces to prevent unnecessary re-renders
+  const memoizedSpaces = useMemo(() => {
+    return spaces.filter(space => space.latitude && space.longitude);
+  }, [spaces.map(s => `${s.id}-${s.latitude}-${s.longitude}`).join(',')]);
 
   // Fetch Mapbox token from Supabase Edge Function
   useEffect(() => {
@@ -75,72 +84,100 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
       popups.current = [];
     });
 
+    // Set map ready state when style is loaded
+    map.current.on('style.load', () => {
+      console.log('✅ Map style loaded and ready');
+      setMapReady(true);
+    });
+
     console.log('✅ Map initialized');
 
     return () => {
       console.log('🧹 Cleaning up map...');
+      setMapReady(false);
       map.current?.remove();
     };
   }, [userLocation, mapboxToken]);
 
-  // Add markers for spaces with optimized loading
-  useEffect(() => {
-    if (!map.current || !spaces.length) return;
+  // Debounced function to add markers
+  const addMarkersDebounced = useCallback(() => {
+    if (!map.current || !mapReady || !memoizedSpaces.length) {
+      console.log('🚫 Map not ready for markers', { mapExists: !!map.current, mapReady, spacesCount: memoizedSpaces.length });
+      return;
+    }
 
-    console.log(`🏢 Adding ${spaces.length} space markers...`);
-    setIsLoadingMarkers(true);
+    // Debounce marker updates - don't update if last update was less than 1 second ago
+    const now = Date.now();
+    if (now - lastMarkersUpdate.current < 1000) {
+      console.log('🚫 Markers update debounced');
+      return;
+    }
 
-    // Clear existing markers and popups
-    markers.current.forEach(marker => marker.remove());
-    markers.current = [];
-    popups.current.forEach(popup => popup.remove());
-    popups.current = [];
+    // Clear any pending timeout
+    if (markersUpdateTimeout.current) {
+      clearTimeout(markersUpdateTimeout.current);
+    }
 
-    // Add markers with a small delay to improve perceived performance
-    const addMarkersWithDelay = () => {
-      spaces.forEach((space, index) => {
-        if (space.latitude && space.longitude) {
-          setTimeout(() => {
-            // Create enhanced marker element with price
-            const markerEl = document.createElement('div');
-            markerEl.className = 'space-marker';
-            markerEl.innerHTML = `
-              <div class="w-auto min-w-[60px] h-8 bg-white rounded-full border-2 border-indigo-600 shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 hover:scale-110">
-                €${space.price_per_hour}
-              </div>
-            `;
+    markersUpdateTimeout.current = setTimeout(() => {
+      if (!map.current || !mapReady) return;
+
+      console.log(`🏢 Adding ${memoizedSpaces.length} space markers...`);
+      setIsLoadingMarkers(true);
+      lastMarkersUpdate.current = Date.now();
+
+      // Clear existing markers and popups
+      markers.current.forEach(marker => marker.remove());
+      markers.current = [];
+      popups.current.forEach(popup => popup.remove());
+      popups.current = [];
+
+      // Add markers with validation
+      memoizedSpaces.forEach((space, index) => {
+        if (!map.current || !mapReady) return;
+
+        try {
+          // Create enhanced marker element with price
+          const markerEl = document.createElement('div');
+          markerEl.className = 'space-marker';
+          markerEl.innerHTML = `
+            <div class="w-auto min-w-[60px] h-8 bg-white rounded-full border-2 border-indigo-600 shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 hover:scale-110">
+              €${space.price_per_hour}
+            </div>
+          `;
+          
+          // Create popup container
+          const popupContainer = document.createElement('div');
+          
+          // Add click handler to show preview
+          markerEl.addEventListener('click', (e) => {
+            e.stopPropagation();
             
-            // Create popup container
-            const popupContainer = document.createElement('div');
+            // Close existing popups
+            popups.current.forEach(popup => popup.remove());
+            popups.current = [];
             
-            // Add click handler to show preview
-            markerEl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              
-              // Close existing popups
-              popups.current.forEach(popup => popup.remove());
-              popups.current = [];
-              
-              // Create React root for the popup content
-              const root = createRoot(popupContainer);
-              root.render(
-                <SpaceMapPreview 
-                  space={space} 
-                  onViewDetails={onSpaceClick}
-                />
-              );
+            // Create React root for the popup content
+            const root = createRoot(popupContainer);
+            root.render(
+              <SpaceMapPreview 
+                space={space} 
+                onViewDetails={onSpaceClick}
+              />
+            );
 
-              // Create and show popup
-              const popup = new mapboxgl.Popup({
-                offset: 25,
-                closeButton: true,
-                closeOnClick: false,
-                maxWidth: 'none'
-              })
-                .setDOMContent(popupContainer)
-                .setLngLat([space.longitude!, space.latitude!])
-                .addTo(map.current!);
+            // Create and show popup
+            const popup = new mapboxgl.Popup({
+              offset: 25,
+              closeButton: true,
+              closeOnClick: false,
+              maxWidth: 'none'
+            })
+              .setDOMContent(popupContainer)
+              .setLngLat([space.longitude!, space.latitude!]);
 
+            // Ensure map is still ready before adding popup
+            if (map.current && mapReady) {
+              popup.addTo(map.current);
               popups.current.push(popup);
 
               // Clean up React root when popup is closed
@@ -151,35 +188,36 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
                   popups.current.splice(index, 1);
                 }
               });
-            });
-
-            const marker = new mapboxgl.Marker(markerEl)
-              .setLngLat([space.longitude, space.latitude])
-              .addTo(map.current!);
-
-            markers.current.push(marker);
-
-            // Mark loading as complete when last marker is added
-            if (index === spaces.length - 1) {
-              console.log('✅ All space markers added');
-              setIsLoadingMarkers(false);
             }
-          }, index * 50); // Stagger marker creation for smooth loading
+          });
+
+          // Create and add marker with validation
+          const marker = new mapboxgl.Marker(markerEl)
+            .setLngLat([space.longitude!, space.latitude!]);
+
+          // Ensure map is still ready before adding marker
+          if (map.current && mapReady) {
+            marker.addTo(map.current);
+            markers.current.push(marker);
+          }
+        } catch (error) {
+          console.error(`Failed to add marker for space ${space.id}:`, error);
         }
       });
-    };
 
-    // Wait for map to be ready before adding markers
-    if (map.current.isStyleLoaded()) {
-      addMarkersWithDelay();
-    } else {
-      map.current.on('style.load', addMarkersWithDelay);
-    }
-  }, [spaces, onSpaceClick]);
+      console.log('✅ All space markers added');
+      setIsLoadingMarkers(false);
+    }, 100); // Small delay to batch rapid updates
+  }, [memoizedSpaces, mapReady, onSpaceClick]);
+
+  // Add markers when spaces change and map is ready
+  useEffect(() => {
+    addMarkersDebounced();
+  }, [addMarkersDebounced]);
 
   // Add user location marker
   useEffect(() => {
-    if (!map.current || !userLocation) return;
+    if (!map.current || !mapReady || !userLocation) return;
 
     console.log('📍 Adding user location marker...');
     const userMarkerEl = document.createElement('div');
@@ -196,7 +234,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
       .addTo(map.current);
 
     console.log('✅ User location marker added');
-  }, [userLocation]);
+  }, [userLocation, mapReady]);
 
   if (isLoadingToken) {
     return (
@@ -235,9 +273,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
       )}
 
       {/* Spaces count indicator */}
-      {!isLoadingMarkers && spaces.length > 0 && (
+      {!isLoadingMarkers && memoizedSpaces.length > 0 && (
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <span className="text-sm text-gray-700">{spaces.length} spazi disponibili</span>
+          <span className="text-sm text-gray-700">{memoizedSpaces.length} spazi disponibili</span>
         </div>
       )}
     </div>

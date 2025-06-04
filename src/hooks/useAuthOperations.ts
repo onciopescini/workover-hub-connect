@@ -1,4 +1,3 @@
-
 import { useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Profile } from '@/types/auth';
@@ -6,6 +5,7 @@ import type { User, Session } from '@supabase/supabase-js';
 import { cleanupAuthState, cleanSignIn } from '@/lib/auth-utils';
 import { createContextualLogger } from '@/lib/logger';
 import { useAsyncState } from './useAsyncState';
+import { toast } from 'sonner';
 
 // Create contextual logger for auth operations
 const authLogger = createContextualLogger('AuthOperations');
@@ -21,7 +21,7 @@ export interface UseAuthOperationsOptions {
   enableRetry?: boolean;
   enableToasts?: boolean;
   debounceMs?: number;
-  suppressInitialProfileToast?: boolean; // New option to control toast behavior
+  suppressInitialProfileToast?: boolean;
 }
 
 export interface UseAuthOperationsReturn {
@@ -68,47 +68,56 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
     suppressInitialProfileToast = false
   } = options;
 
-  // Track if this is the first profile load to control toast behavior
+  // Track if this is the first profile load and last fetch time for aggressive debouncing
   const isFirstProfileLoad = useRef(true);
   const lastProfileFetchTime = useRef<number>(0);
 
   // Profile operations async state with controlled toasts
   const profileAsyncState = useAsyncState<Profile>({
-    successMessage: suppressInitialProfileToast ? undefined : 'Profilo caricato con successo',
-    errorMessage: 'Errore nel caricamento del profilo',
     onSuccess: (profile) => {
       // Only show toast for subsequent loads, not initial load
       if (!isFirstProfileLoad.current && !suppressInitialProfileToast && enableToasts) {
-        // This will be handled by useAsyncState if successMessage is defined
+        toast.success('Profilo caricato con successo');
       }
       isFirstProfileLoad.current = false;
       onProfileSuccess?.(profile);
     },
-    onError: onProfileError,
+    onError: (error) => {
+      if (enableToasts) {
+        toast.error('Errore nel caricamento del profilo');
+      }
+      onProfileError?.(error);
+    },
     debounceMs,
     maxRetries: enableRetry ? 3 : 0,
     retryDelay: 1000,
-    showToasts: enableToasts,
     resetOnExecute: false
   });
 
   // Authentication operations async state
   const authAsyncState = useAsyncState<{ user: User; session: Session }>({
-    successMessage: 'Accesso effettuato con successo',
-    errorMessage: 'Errore durante l\'autenticazione',
-    onSuccess: onAuthSuccess,
-    onError: onAuthError,
+    onSuccess: (data) => {
+      if (enableToasts) {
+        toast.success('Accesso effettuato con successo');
+      }
+      onAuthSuccess?.(data);
+    },
+    onError: (error) => {
+      if (enableToasts) {
+        toast.error('Errore durante l\'autenticazione');
+      }
+      onAuthError?.(error);
+    },
     maxRetries: enableRetry ? 2 : 0,
     retryDelay: 1500,
-    showToasts: enableToasts,
     resetOnExecute: true
   });
 
-  // Profile operations with debouncing
+  // Profile operations with aggressive debouncing
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    // Debounce profile fetches - don't fetch if last fetch was less than 3 seconds ago
+    // Aggressive debounce - don't fetch if last fetch was less than 5 seconds ago
     const now = Date.now();
-    if (now - lastProfileFetchTime.current < 3000) {
+    if (now - lastProfileFetchTime.current < 5000) {
       authLogger.debug('Profile fetch debounced', {
         action: 'profile_fetch_debounced',
         userId,
@@ -152,30 +161,8 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
       return profile;
     };
 
-    // Control toast display based on first load using a temporary config
-    const currentSuccessMessage = isFirstProfileLoad.current && suppressInitialProfileToast ? undefined : 'Profilo caricato con successo';
-    
-    // Create a temporary state with modified config for first load
-    const tempProfileState = useAsyncState<Profile>({
-      successMessage: currentSuccessMessage,
-      errorMessage: 'Errore nel caricamento del profilo',
-      onSuccess: (profile) => {
-        if (!isFirstProfileLoad.current && !suppressInitialProfileToast) {
-          // Toast will be handled by useAsyncState
-        }
-        isFirstProfileLoad.current = false;
-        onProfileSuccess?.(profile);
-      },
-      onError: onProfileError,
-      debounceMs,
-      maxRetries: enableRetry ? 3 : 0,
-      retryDelay: 1000,
-      showToasts: enableToasts && (!isFirstProfileLoad.current || !suppressInitialProfileToast),
-      resetOnExecute: false
-    });
-
-    return await tempProfileState.execute(operation);
-  }, [onProfileSuccess, onProfileError, enableRetry, debounceMs, enableToasts, suppressInitialProfileToast]);
+    return await profileAsyncState.execute(operation);
+  }, [profileAsyncState, onProfileSuccess, onProfileError, enableRetry, debounceMs, enableToasts, suppressInitialProfileToast]);
 
   const refreshProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     authLogger.info('Starting profile refresh', {
@@ -221,8 +208,12 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
       return data;
     };
 
-    return await profileAsyncState.execute(operation) as Profile;
-  }, [profileAsyncState]);
+    const result = await profileAsyncState.execute(operation);
+    if (enableToasts) {
+      toast.success('Profilo aggiornato con successo');
+    }
+    return result as Profile;
+  }, [profileAsyncState, enableToasts]);
 
   // Authentication operations
   const signIn = useCallback(async (email: string, password: string): Promise<{ user: User; session: Session }> => {

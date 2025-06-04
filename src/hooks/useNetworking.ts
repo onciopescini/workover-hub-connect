@@ -11,36 +11,71 @@ export const useNetworking = () => {
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [lastSuggestionsTime, setLastSuggestionsTime] = useState<number>(0);
 
   // Memoize user ID to prevent unnecessary re-renders
   const userId = useMemo(() => authState.user?.id, [authState.user?.id]);
 
-  // Stable fetch functions with debouncing
+  // Stable fetch functions with aggressive debouncing
   const fetchConnections = useCallback(async () => {
     if (!userId) return;
     
     const now = Date.now();
-    // Debounce: don't fetch if last fetch was less than 5 seconds ago
-    if (now - lastFetchTime < 5000) return;
+    // Aggressive debounce: don't fetch if last fetch was less than 10 seconds ago
+    if (now - lastFetchTime < 10000) {
+      console.log('[useNetworking] Connections fetch debounced');
+      return;
+    }
     
+    console.log('[useNetworking] Fetching connections...');
     setLastFetchTime(now);
-    const data = await getUserConnections();
-    setConnections(data);
+    
+    try {
+      const data = await getUserConnections();
+      setConnections(data);
+      console.log('[useNetworking] Connections fetched successfully:', data.length);
+    } catch (error) {
+      console.error('[useNetworking] Error fetching connections:', error);
+    }
   }, [userId, lastFetchTime]);
 
   const fetchSuggestions = useCallback(async () => {
     if (!userId) return;
-    const data = await getConnectionSuggestions();
-    setSuggestions(data);
-  }, [userId]);
+    
+    const now = Date.now();
+    // Debounce suggestions: don't fetch if last fetch was less than 30 seconds ago
+    if (now - lastSuggestionsTime < 30000) {
+      console.log('[useNetworking] Suggestions fetch debounced');
+      return;
+    }
+    
+    console.log('[useNetworking] Fetching suggestions...');
+    setLastSuggestionsTime(now);
+    
+    try {
+      const data = await getConnectionSuggestions();
+      setSuggestions(data);
+      console.log('[useNetworking] Suggestions fetched successfully:', data.length);
+    } catch (error) {
+      console.error('[useNetworking] Error fetching suggestions:', error);
+    }
+  }, [userId, lastSuggestionsTime]);
 
   const refreshSuggestions = useCallback(async () => {
     if (!userId) return;
-    await generateSuggestions();
-    await fetchSuggestions();
+    
+    console.log('[useNetworking] Refreshing suggestions...');
+    try {
+      await generateSuggestions();
+      // Reset timer to force fresh fetch
+      setLastSuggestionsTime(0);
+      await fetchSuggestions();
+    } catch (error) {
+      console.error('[useNetworking] Error refreshing suggestions:', error);
+    }
   }, [userId, fetchSuggestions]);
 
-  // Initial data load with proper cleanup
+  // Initial data load with proper cleanup and debouncing
   useEffect(() => {
     let isMounted = true;
     
@@ -52,11 +87,34 @@ export const useNetworking = () => {
         return;
       }
 
+      // Check if we already have recent data
+      const now = Date.now();
+      const hasRecentConnections = now - lastFetchTime < 10000;
+      const hasRecentSuggestions = now - lastSuggestionsTime < 30000;
+      
+      if (hasRecentConnections && hasRecentSuggestions && connections.length > 0) {
+        console.log('[useNetworking] Using cached data');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('[useNetworking] Loading networking data...');
       setIsLoading(true);
+      
       try {
-        await Promise.all([fetchConnections(), fetchSuggestions()]);
+        const promises = [];
+        
+        if (!hasRecentConnections) {
+          promises.push(fetchConnections());
+        }
+        
+        if (!hasRecentSuggestions) {
+          promises.push(fetchSuggestions());
+        }
+        
+        await Promise.all(promises);
       } catch (error) {
-        console.error('Error loading networking data:', error);
+        console.error('[useNetworking] Error loading networking data:', error);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -69,12 +127,14 @@ export const useNetworking = () => {
     return () => {
       isMounted = false;
     };
-  }, [userId]); // Only depend on userId, not the fetch functions
+  }, [userId]); // Only depend on userId to prevent infinite loops
 
-  // Real-time updates with proper cleanup
+  // Real-time updates with proper cleanup and debouncing
   useEffect(() => {
     if (!userId) return;
 
+    console.log('[useNetworking] Setting up real-time subscriptions...');
+    
     const channel = supabase
       .channel('networking-updates')
       .on(
@@ -85,8 +145,10 @@ export const useNetworking = () => {
           table: 'connections',
           filter: `or(sender_id.eq.${userId},receiver_id.eq.${userId})`
         },
-        () => {
-          // Only refetch connections, not suggestions
+        (payload) => {
+          console.log('[useNetworking] Connections table changed:', payload);
+          // Reset debounce timer to allow immediate fetch
+          setLastFetchTime(0);
           fetchConnections();
         }
       )
@@ -98,13 +160,17 @@ export const useNetworking = () => {
           table: 'connection_suggestions',
           filter: `user_id.eq.${userId}`
         },
-        () => {
+        (payload) => {
+          console.log('[useNetworking] Suggestions table changed:', payload);
+          // Reset debounce timer to allow immediate fetch
+          setLastSuggestionsTime(0);
           fetchSuggestions();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('[useNetworking] Cleaning up real-time subscriptions...');
       supabase.removeChannel(channel);
     };
   }, [userId, fetchConnections, fetchSuggestions]);

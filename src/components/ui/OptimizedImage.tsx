@@ -43,20 +43,39 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     // Central placeholder configuration
     const DEFAULT_PLACEHOLDER = '/placeholder.svg';
     
-    // Validate and determine final src
-    const isValidSrc = (url: string | undefined): boolean => {
-      if (!url || url.trim() === '') return false;
+    // Enhanced validation for src
+    const isValidSrc = (url: string | undefined | null): boolean => {
+      if (!url || typeof url !== 'string' || url.trim() === '') {
+        return false;
+      }
+      
+      const trimmedUrl = url.trim();
+      
+      // Check for common invalid patterns
+      if (trimmedUrl === 'undefined' || trimmedUrl === 'null') {
+        return false;
+      }
+      
       try {
         // Check if it's a valid URL or relative path
-        return url.startsWith('/') || url.startsWith('http') || url.startsWith('data:');
+        return trimmedUrl.startsWith('/') || 
+               trimmedUrl.startsWith('http') || 
+               trimmedUrl.startsWith('https') || 
+               trimmedUrl.startsWith('data:') ||
+               trimmedUrl.startsWith('blob:');
       } catch {
         return false;
       }
     };
 
     const determineFinalSrc = useCallback(() => {
-      if (isValidSrc(src)) return src!;
-      if (isValidSrc(fallbackSrc)) return fallbackSrc!;
+      // Priority: src -> fallbackSrc -> default placeholder
+      if (isValidSrc(src)) {
+        return src!.trim();
+      }
+      if (isValidSrc(fallbackSrc)) {
+        return fallbackSrc!.trim();
+      }
       return DEFAULT_PLACEHOLDER;
     }, [src, fallbackSrc]);
 
@@ -70,9 +89,10 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       imageLogger.debug('Image load started', {
         action: 'load_start',
         src: finalSrc,
-        alt
+        alt,
+        isValidSrc: isValidSrc(src)
       });
-    }, [finalSrc, alt, onLoadStart]);
+    }, [finalSrc, alt, src, onLoadStart]);
 
     const handleLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
       setIsLoading(false);
@@ -94,11 +114,13 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
         action: 'load_error',
         src: currentSrc,
         alt,
-        hasFallback: !!fallbackSrc
+        originalSrc: src,
+        hasFallback: !!fallbackSrc,
+        isValidOriginalSrc: isValidSrc(src)
       });
 
-      // Try fallback if available and not already used
-      if (fallbackSrc && currentSrc !== fallbackSrc && isValidSrc(fallbackSrc)) {
+      // Try fallback if available and not already used and different from current
+      if (fallbackSrc && currentSrc !== fallbackSrc && isValidSrc(fallbackSrc) && fallbackSrc !== src) {
         imageLogger.info('Attempting fallback image', {
           action: 'fallback_attempt',
           originalSrc: currentSrc,
@@ -125,33 +147,51 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
         return;
       }
 
+      // If even placeholder fails, show error
       onError?.(event);
       onErrorCustom?.('Image failed to load');
-    }, [currentSrc, alt, fallbackSrc, onError, onErrorCustom]);
+    }, [currentSrc, alt, src, fallbackSrc, onError, onErrorCustom]);
 
     // Generate optimized URLs only for valid sources
     const generateOptimizedSrc = useCallback(() => {
-      if (!isValidSrc(finalSrc)) {
+      const srcToUse = finalSrc;
+      
+      if (!isValidSrc(srcToUse)) {
+        imageLogger.warn('Invalid src provided, using placeholder', {
+          action: 'invalid_src_fallback',
+          providedSrc: src,
+          fallbackSrc,
+          finalSrc: DEFAULT_PLACEHOLDER
+        });
         return DEFAULT_PLACEHOLDER;
       }
 
       // Don't optimize placeholder or data URLs
-      if (finalSrc === DEFAULT_PLACEHOLDER || finalSrc.startsWith('data:')) {
-        return finalSrc;
+      if (srcToUse === DEFAULT_PLACEHOLDER || srcToUse.startsWith('data:') || srcToUse.startsWith('blob:')) {
+        return srcToUse;
       }
 
-      const webpSupported = enableWebP && isWebPSupported();
-      const urls = generateImageUrls(finalSrc, webpSupported);
-      
-      imageLogger.debug('Generated optimized URLs', {
-        action: 'urls_generated',
-        originalSrc: finalSrc,
-        webpSupported,
-        optimizedUrl: urls.primary
-      });
+      try {
+        const webpSupported = enableWebP && isWebPSupported();
+        const urls = generateImageUrls(srcToUse, webpSupported);
+        
+        imageLogger.debug('Generated optimized URLs', {
+          action: 'urls_generated',
+          originalSrc: srcToUse,
+          webpSupported,
+          optimizedUrl: urls.primary
+        });
 
-      return urls.primary;
-    }, [finalSrc, enableWebP]);
+        return urls.primary;
+      } catch (error) {
+        imageLogger.warn('Failed to generate optimized URL, using original', {
+          action: 'optimization_failed',
+          src: srcToUse,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        return srcToUse;
+      }
+    }, [finalSrc, src, fallbackSrc, enableWebP]);
 
     // Set initial src when component mounts or finalSrc changes
     useEffect(() => {
@@ -161,8 +201,15 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       setIsLoading(true);
     }, [generateOptimizedSrc]);
 
-    // Early return for completely invalid sources
+    // Early return for completely invalid sources that can't be recovered
     if (!currentSrc) {
+      imageLogger.warn('No valid src available, showing fallback UI', {
+        action: 'no_src_fallback',
+        providedSrc: src,
+        fallbackSrc,
+        alt
+      });
+      
       return (
         <div
           className={cn(
@@ -179,7 +226,8 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     // Generate srcSet for responsive images (only for valid, non-placeholder images)
     const srcSet = enableResponsive && 
                    currentSrc !== DEFAULT_PLACEHOLDER && 
-                   !currentSrc.startsWith('data:') 
+                   !currentSrc.startsWith('data:') &&
+                   !currentSrc.startsWith('blob:')
                    ? generateSrcSet(currentSrc) 
                    : undefined;
     
