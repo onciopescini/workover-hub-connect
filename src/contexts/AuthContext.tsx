@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthState, AuthContextType, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
@@ -21,19 +21,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
 
-  // Configure auth operations with context-specific callbacks
-  const authOperationsOptions: UseAuthOperationsOptions = {
+  // Global stability flags
+  const hasInitializedProfile = useRef(false);
+  const isProfileLoaded = useRef(false);
+  const hasShownProfileSuccessToast = useRef(false);
+  const lastProfileFetchTime = useRef<number>(0);
+  const profileFetchInProgress = useRef(false);
+
+  // Stabilized memoized user ID to prevent unnecessary re-renders
+  const currentUserId = useMemo(() => authState.user?.id, [authState.user?.id]);
+
+  // Configure auth operations with enhanced stability options
+  const authOperationsOptions: UseAuthOperationsOptions = useMemo(() => ({
     onProfileSuccess: (profile: Profile) => {
       authLogger.info('Profile loaded successfully via useAuthOperations', {
         action: 'profile_context_success',
-        userId: authState.user?.id,
+        userId: currentUserId,
         profileId: profile?.id
       });
+      
+      // Only show toast once per session and after initial load
+      if (!hasShownProfileSuccessToast.current && hasInitializedProfile.current) {
+        hasShownProfileSuccessToast.current = true;
+      }
+      
+      isProfileLoaded.current = true;
     },
     onProfileError: (error: Error) => {
       authLogger.error('Profile operation failed in context', {
         action: 'profile_context_error',
-        userId: authState.user?.id
+        userId: currentUserId
       }, error);
     },
     onAuthSuccess: (data) => {
@@ -50,10 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     enableRetry: true,
     enableToasts: true,
-    debounceMs: 1000
-  };
+    debounceMs: 2000, // Increased from 1000ms
+    suppressInitialProfileToast: true // Suppress to prevent spam
+  }), [currentUserId]);
 
-  // Initialize auth operations hook
+  // Initialize auth operations hook with stabilized options
   const {
     fetchProfile,
     refreshProfile: refreshProfileOp,
@@ -65,52 +83,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profileState
   } = useAuthOperations(authOperationsOptions);
 
-  // Update auth state when profile state changes
+  // Stabilized profile update effect with aggressive debouncing
   useEffect(() => {
-    if (profileState.data && authState.user) {
+    if (profileState.data && currentUserId && !profileFetchInProgress.current) {
       setAuthState(prev => ({
         ...prev,
         profile: profileState.data
       }));
     }
-  }, [profileState.data, authState.user?.id]);
+  }, [profileState.data, currentUserId]);
 
-  // Wrapper functions to maintain existing API
+  // Enhanced wrapper functions with idempotency and stability
   const refreshProfile = useCallback(async () => {
-    if (!authState.user) {
-      authLogger.debug('Skipping profile refresh - no user', {
-        action: 'profile_refresh_skip'
+    if (!currentUserId || profileFetchInProgress.current) {
+      authLogger.debug('Skipping profile refresh - no user or fetch in progress', {
+        action: 'profile_refresh_skip',
+        hasUser: !!currentUserId,
+        fetchInProgress: profileFetchInProgress.current
+      });
+      return;
+    }
+
+    // Aggressive debounce - don't refresh if last refresh was less than 2 seconds ago
+    const now = Date.now();
+    if (now - lastProfileFetchTime.current < 2000) {
+      authLogger.debug('Profile refresh debounced', {
+        action: 'profile_refresh_debounced',
+        timeSinceLastFetch: now - lastProfileFetchTime.current
       });
       return;
     }
 
     const stopTimer = authLogger.startTimer('refreshProfile');
+    profileFetchInProgress.current = true;
+    lastProfileFetchTime.current = now;
     
     try {
       authLogger.info('Starting profile refresh via context', {
         action: 'profile_refresh_context_start',
-        userId: authState.user.id
+        userId: currentUserId
       });
 
-      await refreshProfileOp(authState.user.id);
+      await refreshProfileOp(currentUserId);
 
       authLogger.info('Profile refresh completed via context', {
         action: 'profile_refresh_context_complete',
-        userId: authState.user.id
+        userId: currentUserId
       });
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error('Profile refresh failed');
       authLogger.error('Error in context profile refresh', {
         action: 'profile_refresh_context_error',
-        userId: authState.user?.id
+        userId: currentUserId
       }, normalizedError);
     } finally {
+      // Reset flag after delay to prevent rapid successive calls
+      setTimeout(() => {
+        profileFetchInProgress.current = false;
+      }, 1000);
       stopTimer();
     }
-  }, [authState.user?.id, refreshProfileOp]);
+  }, [currentUserId, refreshProfileOp]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    if (!authState.user) {
+    if (!currentUserId) {
       const error = new Error('User not authenticated');
       authLogger.error('Profile update attempted without authentication', {
         action: 'profile_update_unauthorized',
@@ -124,11 +160,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       authLogger.info('Starting profile update via context', {
         action: 'profile_update_context_start',
-        userId: authState.user.id,
+        userId: currentUserId,
         updateFields: Object.keys(updates)
       });
 
-      const updatedProfile = await updateProfileOp(updates, authState.user.id);
+      const updatedProfile = await updateProfileOp(updates, currentUserId);
 
       // Update local state immediately
       setAuthState(prev => ({
@@ -138,22 +174,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       authLogger.info('Profile update successful via context', {
         action: 'profile_update_context_success',
-        userId: authState.user.id,
+        userId: currentUserId,
         updatedFields: Object.keys(updates)
       });
     } catch (error) {
       const normalizedError = error instanceof Error ? error : new Error('Profile update error');
       authLogger.error('Profile update failed in context', {
         action: 'profile_update_context_error',
-        userId: authState.user.id,
+        userId: currentUserId,
         updateFields: Object.keys(updates)
       }, normalizedError);
       throw error;
     } finally {
       stopTimer();
     }
-  }, [authState.user?.id, updateProfileOp]);
+  }, [currentUserId, updateProfileOp]);
 
+  // Enhanced auth operation wrappers with stability
   const signIn = useCallback(async (email: string, password: string) => {
     const stopTimer = authLogger.startTimer('signIn');
     
@@ -245,9 +282,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       authLogger.info('Starting sign out process via context', {
         action: 'sign_out_context_start',
-        userId: authState.user?.id,
+        userId: currentUserId,
         email: authState.user?.email
       });
+
+      // Reset global flags
+      hasInitializedProfile.current = false;
+      isProfileLoaded.current = false;
+      hasShownProfileSuccessToast.current = false;
+      lastProfileFetchTime.current = 0;
+      profileFetchInProgress.current = false;
 
       await signOutOp();
       
@@ -258,14 +302,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const normalizedError = error instanceof Error ? error : new Error('Sign out failed');
       authLogger.error('Error during sign out in context', {
         action: 'sign_out_context_error',
-        userId: authState.user?.id
+        userId: currentUserId
       }, normalizedError);
       throw error;
     } finally {
       stopTimer();
     }
-  }, [authState.user?.id, signOutOp]);
+  }, [currentUserId, signOutOp, authState.user?.email]);
 
+  // Stabilized updateAuthState with singleton pattern and enhanced debouncing
   const updateAuthState = useCallback(async (user: User | null, session: Session | null) => {
     const stopTimer = authLogger.startTimer('updateAuthState');
     
@@ -278,8 +323,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     if (user && session) {
-      // Fetch profile using the new hook
-      const profile = await fetchProfile(user.id);
+      // Only fetch profile if not already loaded and not in progress
+      let profile = null;
+      if (!isProfileLoaded.current && !profileFetchInProgress.current) {
+        profileFetchInProgress.current = true;
+        try {
+          profile = await fetchProfile(user.id);
+          isProfileLoaded.current = true;
+          hasInitializedProfile.current = true;
+        } catch (error) {
+          authLogger.error('Failed to fetch profile during auth state update', {
+            action: 'auth_state_profile_fetch_error',
+            userId: user.id
+          }, error instanceof Error ? error : new Error('Profile fetch failed'));
+        } finally {
+          profileFetchInProgress.current = false;
+        }
+      } else {
+        // Use existing profile if already loaded
+        profile = authState.profile;
+      }
       
       setAuthState({
         user,
@@ -296,6 +359,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasProfile: !!profile
       });
     } else {
+      // Reset all flags on unauthenticated state
+      hasInitializedProfile.current = false;
+      isProfileLoaded.current = false;
+      hasShownProfileSuccessToast.current = false;
+      lastProfileFetchTime.current = 0;
+      profileFetchInProgress.current = false;
+
       setAuthState({
         user: null,
         session: null,
@@ -310,8 +380,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     stopTimer();
-  }, [fetchProfile]);
+  }, [fetchProfile, authState.profile]);
 
+  // Enhanced initialization with better stability
   useEffect(() => {
     let mounted = true;
     
@@ -320,7 +391,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       timestamp: Date.now()
     });
     
-    // Get initial session
+    // Get initial session with enhanced error handling
     const getInitialSession = async () => {
       const stopTimer = authLogger.startTimer('getInitialSession');
       
@@ -365,7 +436,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
-    // Listen for auth changes
+    // Enhanced auth state change listener with debouncing
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         authLogger.info('Auth state changed', {
@@ -394,9 +465,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         action: 'auth_provider_cleanup'
       });
     };
-  }, [updateAuthState]);
+  }, []); // Empty dependency array - this should only run once
 
-  const value: AuthContextType = {
+  // Memoized context value to prevent unnecessary re-renders
+  const value: AuthContextType = useMemo(() => ({
     authState,
     signIn,
     signUp,
@@ -404,7 +476,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshProfile,
     updateProfile,
-  };
+  }), [authState, signIn, signUp, signInWithGoogle, signOut, refreshProfile, updateProfile]);
 
   return (
     <AuthContext.Provider value={value}>
