@@ -1,4 +1,3 @@
-
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -149,10 +148,10 @@ class Logger {
     return undefined;
   }
 
-  public debug(message: string, context?: string, metadata?: Record<string, any>): void {
+  public debug(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.DEBUG)) return;
 
-    const entry = this.createLogEntry(LogLevel.DEBUG, message, context, metadata);
+    const entry = this.createLogEntry(LogLevel.DEBUG, message, context?.component, context, error);
     
     if (this.config.enableConsole) {
       console.debug(this.formatMessage(entry), entry.metadata);
@@ -161,10 +160,10 @@ class Logger {
     this.addToBuffer(entry);
   }
 
-  public info(message: string, context?: string, metadata?: Record<string, any>): void {
+  public info(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
-    const entry = this.createLogEntry(LogLevel.INFO, message, context, metadata);
+    const entry = this.createLogEntry(LogLevel.INFO, message, context?.component, context, error);
     
     if (this.config.enableConsole) {
       console.info(this.formatMessage(entry), entry.metadata);
@@ -173,10 +172,10 @@ class Logger {
     this.addToBuffer(entry);
   }
 
-  public warn(message: string, context?: string, metadata?: Record<string, any>): void {
+  public warn(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.WARN)) return;
 
-    const entry = this.createLogEntry(LogLevel.WARN, message, context, metadata);
+    const entry = this.createLogEntry(LogLevel.WARN, message, context?.component, context, error);
     
     if (this.config.enableConsole) {
       console.warn(this.formatMessage(entry), entry.metadata);
@@ -185,10 +184,10 @@ class Logger {
     this.addToBuffer(entry);
   }
 
-  public error(message: string, error?: Error, context?: string, metadata?: Record<string, any>): void {
+  public error(message: string, context?: LogContext, error?: Error): void {
     if (!this.shouldLog(LogLevel.ERROR)) return;
 
-    const entry = this.createLogEntry(LogLevel.ERROR, message, context, metadata, error);
+    const entry = this.createLogEntry(LogLevel.ERROR, message, context?.component, context, error);
     
     if (this.config.enableConsole) {
       console.error(this.formatMessage(entry), entry.metadata, error);
@@ -197,8 +196,8 @@ class Logger {
     this.addToBuffer(entry);
   }
 
-  public critical(message: string, error?: Error, context?: string, metadata?: Record<string, any>): void {
-    const entry = this.createLogEntry(LogLevel.CRITICAL, message, context, metadata, error);
+  public critical(message: string, context?: LogContext, error?: Error): void {
+    const entry = this.createLogEntry(LogLevel.CRITICAL, message, context?.component, context, error);
     
     if (this.config.enableConsole) {
       console.error(`🚨 CRITICAL: ${this.formatMessage(entry)}`, entry.metadata, error);
