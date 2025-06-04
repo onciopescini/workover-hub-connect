@@ -53,7 +53,7 @@ export function useLoadingState(
         action: 'loading_error',
         errorMessage: error,
         contextInfo: context
-      }, new Error(error));
+      }, error instanceof Error ? error : new Error(String(error)));
     }
   }, [logger, context]);
 
@@ -104,7 +104,7 @@ export function useLoadingState(
           duration,
           contextInfo: context,
           errorMessage
-        }, error instanceof Error ? error : new Error(errorMessage));
+        }, error instanceof Error ? error : new Error(String(errorMessage)));
       }
       
       setError(errorMessage);
