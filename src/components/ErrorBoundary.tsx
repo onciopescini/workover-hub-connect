@@ -1,7 +1,6 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '@/lib/logger';
-import { createErrorReport } from '@/lib/admin-utils';
 
 interface Props {
   children: ReactNode;
@@ -41,22 +40,8 @@ export class ErrorBoundary extends Component<Props, State> {
       errorMessage: error.message
     }, error);
 
-    // Create admin error report
-    createErrorReport({
-      type: 'runtime_error',
-      message: error.message,
-      metadata: {
-        errorId,
-        componentStack: errorInfo.componentStack,
-        stack: error.stack,
-        timestamp: new Date().toISOString()
-      }
-    }).catch((reportError) => {
-      logger.error("Failed to create error report", {
-        action: "error_report_creation_failed",
-        originalErrorId: errorId
-      }, reportError instanceof Error ? reportError : new Error(String(reportError)));
-    });
+    // Note: createErrorReport functionality will be implemented later
+    // For now, we rely on the logger for error tracking
 
     this.setState({ errorInfo });
     
