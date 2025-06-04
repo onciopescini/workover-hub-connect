@@ -13,16 +13,16 @@ export const useNetworking = () => {
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [lastSuggestionsTime, setLastSuggestionsTime] = useState<number>(0);
 
-  // Memoize user ID to prevent unnecessary re-renders
+  // Stabilized memoization of user ID to prevent unnecessary re-renders
   const userId = useMemo(() => authState.user?.id, [authState.user?.id]);
 
-  // Stable fetch functions with aggressive debouncing
+  // Stable fetch functions with more aggressive debouncing
   const fetchConnections = useCallback(async () => {
     if (!userId) return;
     
     const now = Date.now();
-    // Aggressive debounce: don't fetch if last fetch was less than 10 seconds ago
-    if (now - lastFetchTime < 10000) {
+    // More aggressive debounce: don't fetch if last fetch was less than 15 seconds ago
+    if (now - lastFetchTime < 15000) {
       console.log('[useNetworking] Connections fetch debounced');
       return;
     }
@@ -37,14 +37,14 @@ export const useNetworking = () => {
     } catch (error) {
       console.error('[useNetworking] Error fetching connections:', error);
     }
-  }, [userId, lastFetchTime]);
+  }, [userId]);
 
   const fetchSuggestions = useCallback(async () => {
     if (!userId) return;
     
     const now = Date.now();
-    // Debounce suggestions: don't fetch if last fetch was less than 30 seconds ago
-    if (now - lastSuggestionsTime < 30000) {
+    // More aggressive debounce: don't fetch if last fetch was less than 60 seconds ago
+    if (now - lastSuggestionsTime < 60000) {
       console.log('[useNetworking] Suggestions fetch debounced');
       return;
     }
@@ -59,7 +59,7 @@ export const useNetworking = () => {
     } catch (error) {
       console.error('[useNetworking] Error fetching suggestions:', error);
     }
-  }, [userId, lastSuggestionsTime]);
+  }, [userId]);
 
   const refreshSuggestions = useCallback(async () => {
     if (!userId) return;
@@ -75,7 +75,7 @@ export const useNetworking = () => {
     }
   }, [userId, fetchSuggestions]);
 
-  // Initial data load with proper cleanup and debouncing
+  // Initial data load with proper cleanup and enhanced debouncing
   useEffect(() => {
     let isMounted = true;
     
@@ -87,10 +87,10 @@ export const useNetworking = () => {
         return;
       }
 
-      // Check if we already have recent data
+      // Check if we already have recent data with more aggressive thresholds
       const now = Date.now();
-      const hasRecentConnections = now - lastFetchTime < 10000;
-      const hasRecentSuggestions = now - lastSuggestionsTime < 30000;
+      const hasRecentConnections = now - lastFetchTime < 15000;
+      const hasRecentSuggestions = now - lastSuggestionsTime < 60000;
       
       if (hasRecentConnections && hasRecentSuggestions && connections.length > 0) {
         console.log('[useNetworking] Using cached data');
@@ -129,7 +129,7 @@ export const useNetworking = () => {
     };
   }, [userId]); // Only depend on userId to prevent infinite loops
 
-  // Real-time updates with proper cleanup and debouncing
+  // Real-time updates with proper cleanup and enhanced debouncing
   useEffect(() => {
     if (!userId) return;
 
@@ -175,7 +175,7 @@ export const useNetworking = () => {
     };
   }, [userId, fetchConnections, fetchSuggestions]);
 
-  // Memoized filter functions to prevent re-creation
+  // Stabilized memoized filter functions to prevent re-creation
   const getConnectionsByStatus = useCallback((status: 'pending' | 'accepted' | 'rejected') => {
     return connections.filter(conn => conn.status === status);
   }, [connections]);

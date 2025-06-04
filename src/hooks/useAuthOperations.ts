@@ -64,26 +64,28 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
     onAuthError,
     enableRetry = true,
     enableToasts = true,
-    debounceMs = 1000,
+    debounceMs = 2000, // Increased from 1000
     suppressInitialProfileToast = false
   } = options;
 
   // Track if this is the first profile load and last fetch time for aggressive debouncing
   const isFirstProfileLoad = useRef(true);
   const lastProfileFetchTime = useRef<number>(0);
+  const hasShownProfileSuccessToast = useRef(false);
 
   // Profile operations async state with controlled toasts
   const profileAsyncState = useAsyncState<Profile>({
     onSuccess: (profile) => {
-      // Only show toast for subsequent loads, not initial load
-      if (!isFirstProfileLoad.current && !suppressInitialProfileToast && enableToasts) {
+      // Only show toast once per session and not on initial load
+      if (!isFirstProfileLoad.current && !suppressInitialProfileToast && enableToasts && !hasShownProfileSuccessToast.current) {
         toast.success('Profilo caricato con successo');
+        hasShownProfileSuccessToast.current = true;
       }
       isFirstProfileLoad.current = false;
       onProfileSuccess?.(profile);
     },
     onError: (error) => {
-      if (enableToasts) {
+      if (enableToasts && !suppressInitialProfileToast) {
         toast.error('Errore nel caricamento del profilo');
       }
       onProfileError?.(error);
@@ -115,9 +117,9 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
 
   // Profile operations with aggressive debouncing
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    // Aggressive debounce - don't fetch if last fetch was less than 5 seconds ago
+    // Aggressive debounce - don't fetch if last fetch was less than 10 seconds ago
     const now = Date.now();
-    if (now - lastProfileFetchTime.current < 5000) {
+    if (now - lastProfileFetchTime.current < 10000) {
       authLogger.debug('Profile fetch debounced', {
         action: 'profile_fetch_debounced',
         userId,
@@ -162,7 +164,7 @@ export const useAuthOperations = (options: UseAuthOperationsOptions = {}): UseAu
     };
 
     return await profileAsyncState.execute(operation);
-  }, [profileAsyncState, onProfileSuccess, onProfileError, enableRetry, debounceMs, enableToasts, suppressInitialProfileToast]);
+  }, [profileAsyncState]);
 
   const refreshProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     authLogger.info('Starting profile refresh', {

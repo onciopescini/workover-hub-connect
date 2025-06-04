@@ -25,11 +25,14 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
   const [mapReady, setMapReady] = useState(false);
   const lastMarkersUpdate = useRef<number>(0);
   const markersUpdateTimeout = useRef<NodeJS.Timeout>();
+  const hasLoggedMarkersRef = useRef(false);
 
-  // Memoize spaces to prevent unnecessary re-renders
+  // Stable memoization of spaces with proper key generation
   const memoizedSpaces = useMemo(() => {
-    return spaces.filter(space => space.latitude && space.longitude);
-  }, [spaces.map(s => `${s.id}-${s.latitude}-${s.longitude}`).join(',')]);
+    const validSpaces = spaces.filter(space => space.latitude && space.longitude);
+    console.log(`[SpaceMap] Memoizing ${validSpaces.length} valid spaces`);
+    return validSpaces;
+  }, [spaces.length, spaces.map(s => `${s.id}-${s.latitude}-${s.longitude}-${s.price_per_hour}`).join(',')]);
 
   // Fetch Mapbox token from Supabase Edge Function
   useEffect(() => {
@@ -95,21 +98,36 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
     return () => {
       console.log('🧹 Cleaning up map...');
       setMapReady(false);
+      if (markersUpdateTimeout.current) {
+        clearTimeout(markersUpdateTimeout.current);
+      }
       map.current?.remove();
     };
   }, [userLocation, mapboxToken]);
 
-  // Debounced function to add markers
+  // Stabilized function to add markers with comprehensive validation
   const addMarkersDebounced = useCallback(() => {
+    // Comprehensive validation before proceeding
     if (!map.current || !mapReady || !memoizedSpaces.length) {
-      console.log('🚫 Map not ready for markers', { mapExists: !!map.current, mapReady, spacesCount: memoizedSpaces.length });
+      console.log('🚫 Map not ready for markers', { 
+        mapExists: !!map.current, 
+        mapReady, 
+        spacesCount: memoizedSpaces.length,
+        mapContainer: !!mapContainer.current
+      });
       return;
     }
 
-    // Debounce marker updates - don't update if last update was less than 1 second ago
+    // Validate map container is still attached to DOM
+    if (!mapContainer.current || !mapContainer.current.isConnected) {
+      console.log('🚫 Map container not attached to DOM');
+      return;
+    }
+
+    // Aggressive debounce - don't update if last update was less than 3 seconds ago
     const now = Date.now();
-    if (now - lastMarkersUpdate.current < 1000) {
-      console.log('🚫 Markers update debounced');
+    if (now - lastMarkersUpdate.current < 3000) {
+      console.log('🚫 Markers update debounced - too frequent');
       return;
     }
 
@@ -119,121 +137,169 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({ spaces, userLocation, onSpac
     }
 
     markersUpdateTimeout.current = setTimeout(() => {
-      if (!map.current || !mapReady) return;
+      // Double-check conditions again after timeout
+      if (!map.current || !mapReady || !mapContainer.current?.isConnected) {
+        console.log('🚫 Map conditions changed during timeout');
+        return;
+      }
 
-      console.log(`🏢 Adding ${memoizedSpaces.length} space markers...`);
+      // Only log once per session to prevent spam
+      if (!hasLoggedMarkersRef.current) {
+        console.log(`🏢 Adding ${memoizedSpaces.length} space markers...`);
+        hasLoggedMarkersRef.current = true;
+      }
+      
       setIsLoadingMarkers(true);
       lastMarkersUpdate.current = Date.now();
 
-      // Clear existing markers and popups
-      markers.current.forEach(marker => marker.remove());
-      markers.current = [];
-      popups.current.forEach(popup => popup.remove());
-      popups.current = [];
+      try {
+        // Clear existing markers and popups
+        markers.current.forEach(marker => {
+          try {
+            marker.remove();
+          } catch (error) {
+            console.warn('Error removing marker:', error);
+          }
+        });
+        markers.current = [];
+        
+        popups.current.forEach(popup => {
+          try {
+            popup.remove();
+          } catch (error) {
+            console.warn('Error removing popup:', error);
+          }
+        });
+        popups.current = [];
 
-      // Add markers with validation
-      memoizedSpaces.forEach((space, index) => {
-        if (!map.current || !mapReady) return;
+        // Add markers with comprehensive error handling
+        memoizedSpaces.forEach((space) => {
+          // Validate map and space data before each marker
+          if (!map.current || !mapReady || !space.latitude || !space.longitude) {
+            return;
+          }
 
-        try {
-          // Create enhanced marker element with price
-          const markerEl = document.createElement('div');
-          markerEl.className = 'space-marker';
-          markerEl.innerHTML = `
-            <div class="w-auto min-w-[60px] h-8 bg-white rounded-full border-2 border-indigo-600 shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 hover:scale-110">
-              €${space.price_per_hour}
-            </div>
-          `;
-          
-          // Create popup container
-          const popupContainer = document.createElement('div');
-          
-          // Add click handler to show preview
-          markerEl.addEventListener('click', (e) => {
-            e.stopPropagation();
+          try {
+            // Create enhanced marker element with price
+            const markerEl = document.createElement('div');
+            markerEl.className = 'space-marker';
+            markerEl.innerHTML = `
+              <div class="w-auto min-w-[60px] h-8 bg-white rounded-full border-2 border-indigo-600 shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 hover:scale-110">
+                €${space.price_per_hour}
+              </div>
+            `;
             
-            // Close existing popups
-            popups.current.forEach(popup => popup.remove());
-            popups.current = [];
+            // Create popup container
+            const popupContainer = document.createElement('div');
             
-            // Create React root for the popup content
-            const root = createRoot(popupContainer);
-            root.render(
-              <SpaceMapPreview 
-                space={space} 
-                onViewDetails={onSpaceClick}
-              />
-            );
-
-            // Create and show popup
-            const popup = new mapboxgl.Popup({
-              offset: 25,
-              closeButton: true,
-              closeOnClick: false,
-              maxWidth: 'none'
-            })
-              .setDOMContent(popupContainer)
-              .setLngLat([space.longitude!, space.latitude!]);
-
-            // Ensure map is still ready before adding popup
-            if (map.current && mapReady) {
-              popup.addTo(map.current);
-              popups.current.push(popup);
-
-              // Clean up React root when popup is closed
-              popup.on('close', () => {
-                root.unmount();
-                const index = popups.current.indexOf(popup);
-                if (index > -1) {
-                  popups.current.splice(index, 1);
+            // Add click handler to show preview
+            markerEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              
+              // Close existing popups
+              popups.current.forEach(popup => {
+                try {
+                  popup.remove();
+                } catch (error) {
+                  console.warn('Error closing popup:', error);
                 }
               });
+              popups.current = [];
+              
+              try {
+                // Create React root for the popup content
+                const root = createRoot(popupContainer);
+                root.render(
+                  <SpaceMapPreview 
+                    space={space} 
+                    onViewDetails={onSpaceClick}
+                  />
+                );
+
+                // Create and show popup
+                const popup = new mapboxgl.Popup({
+                  offset: 25,
+                  closeButton: true,
+                  closeOnClick: false,
+                  maxWidth: 'none'
+                })
+                  .setDOMContent(popupContainer)
+                  .setLngLat([space.longitude!, space.latitude!]);
+
+                // Final validation before adding popup
+                if (map.current && mapReady && mapContainer.current?.isConnected) {
+                  popup.addTo(map.current);
+                  popups.current.push(popup);
+
+                  // Clean up React root when popup is closed
+                  popup.on('close', () => {
+                    try {
+                      root.unmount();
+                      const index = popups.current.indexOf(popup);
+                      if (index > -1) {
+                        popups.current.splice(index, 1);
+                      }
+                    } catch (error) {
+                      console.warn('Error cleaning up popup:', error);
+                    }
+                  });
+                }
+              } catch (error) {
+                console.error('Error creating popup:', error);
+              }
+            });
+
+            // Create and add marker with comprehensive validation
+            const marker = new mapboxgl.Marker(markerEl)
+              .setLngLat([space.longitude!, space.latitude!]);
+
+            // Final validation before adding marker to map
+            if (map.current && mapReady && mapContainer.current?.isConnected) {
+              marker.addTo(map.current);
+              markers.current.push(marker);
             }
-          });
-
-          // Create and add marker with validation
-          const marker = new mapboxgl.Marker(markerEl)
-            .setLngLat([space.longitude!, space.latitude!]);
-
-          // Ensure map is still ready before adding marker
-          if (map.current && mapReady) {
-            marker.addTo(map.current);
-            markers.current.push(marker);
+          } catch (error) {
+            console.error(`Failed to add marker for space ${space.id}:`, error);
           }
-        } catch (error) {
-          console.error(`Failed to add marker for space ${space.id}:`, error);
-        }
-      });
+        });
 
-      console.log('✅ All space markers added');
-      setIsLoadingMarkers(false);
-    }, 100); // Small delay to batch rapid updates
-  }, [memoizedSpaces, mapReady, onSpaceClick]);
+        console.log(`✅ Successfully added ${markers.current.length} markers`);
+      } catch (error) {
+        console.error('Error in markers update:', error);
+      } finally {
+        setIsLoadingMarkers(false);
+      }
+    }, 500); // Increased delay to ensure stability
+  }, [memoizedSpaces, mapReady, onSpaceClick]); // Stable dependencies only
 
-  // Add markers when spaces change and map is ready
+  // Add markers when conditions are met
   useEffect(() => {
     addMarkersDebounced();
   }, [addMarkersDebounced]);
 
   // Add user location marker
   useEffect(() => {
-    if (!map.current || !mapReady || !userLocation) return;
+    if (!map.current || !mapReady || !userLocation || !mapContainer.current?.isConnected) return;
 
     console.log('📍 Adding user location marker...');
-    const userMarkerEl = document.createElement('div');
-    userMarkerEl.innerHTML = `
-      <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-    `;
-    
-    new mapboxgl.Marker(userMarkerEl)
-      .setLngLat([userLocation.lng, userLocation.lat])
-      .setPopup(
-        new mapboxgl.Popup({ offset: 25 })
-          .setHTML('<div class="p-2"><p class="text-sm font-medium">La tua posizione</p></div>')
-      )
-      .addTo(map.current);
+    try {
+      const userMarkerEl = document.createElement('div');
+      userMarkerEl.innerHTML = `
+        <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+      `;
+      
+      new mapboxgl.Marker(userMarkerEl)
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .setPopup(
+          new mapboxgl.Popup({ offset: 25 })
+            .setHTML('<div class="p-2"><p class="text-sm font-medium">La tua posizione</p></div>')
+        )
+        .addTo(map.current);
 
-    console.log('✅ User location marker added');
+      console.log('✅ User location marker added');
+    } catch (error) {
+      console.error('Error adding user location marker:', error);
+    }
   }, [userLocation, mapReady]);
 
   if (isLoadingToken) {

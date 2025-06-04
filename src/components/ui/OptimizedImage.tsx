@@ -43,16 +43,17 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     // Central placeholder configuration
     const DEFAULT_PLACEHOLDER = '/placeholder.svg';
     
-    // Enhanced validation for src
+    // Enhanced validation for src with early falsy detection
     const isValidSrc = (url: string | undefined | null): boolean => {
-      if (!url || typeof url !== 'string' || url.trim() === '') {
+      // Early return for clearly invalid values
+      if (!url || typeof url !== 'string') {
         return false;
       }
       
       const trimmedUrl = url.trim();
       
-      // Check for common invalid patterns
-      if (trimmedUrl === 'undefined' || trimmedUrl === 'null') {
+      // Early return for empty or invalid string patterns
+      if (trimmedUrl === '' || trimmedUrl === 'undefined' || trimmedUrl === 'null') {
         return false;
       }
       
@@ -69,9 +70,19 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     };
 
     const determineFinalSrc = useCallback(() => {
+      // Early return for falsy src values to prevent any processing
+      if (!src || src === '' || src === 'undefined' || src === 'null') {
+        imageLogger.debug('Src is falsy, using placeholder immediately', {
+          action: 'falsy_src_detected',
+          src,
+          fallbackSrc
+        });
+        return DEFAULT_PLACEHOLDER;
+      }
+      
       // Priority: src -> fallbackSrc -> default placeholder
       if (isValidSrc(src)) {
-        return src!.trim();
+        return src.trim();
       }
       if (isValidSrc(fallbackSrc)) {
         return fallbackSrc!.trim();
@@ -156,18 +167,13 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
     const generateOptimizedSrc = useCallback(() => {
       const srcToUse = finalSrc;
       
-      if (!isValidSrc(srcToUse)) {
-        imageLogger.warn('Invalid src provided, using placeholder', {
-          action: 'invalid_src_fallback',
-          providedSrc: src,
-          fallbackSrc,
-          finalSrc: DEFAULT_PLACEHOLDER
-        });
-        return DEFAULT_PLACEHOLDER;
+      // Early return for placeholder or invalid sources
+      if (!isValidSrc(srcToUse) || srcToUse === DEFAULT_PLACEHOLDER) {
+        return srcToUse;
       }
 
-      // Don't optimize placeholder or data URLs
-      if (srcToUse === DEFAULT_PLACEHOLDER || srcToUse.startsWith('data:') || srcToUse.startsWith('blob:')) {
+      // Don't optimize data URLs or blob URLs
+      if (srcToUse.startsWith('data:') || srcToUse.startsWith('blob:')) {
         return srcToUse;
       }
 
@@ -191,22 +197,31 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
         });
         return srcToUse;
       }
-    }, [finalSrc, src, fallbackSrc, enableWebP]);
+    }, [finalSrc, enableWebP]);
 
-    // Set initial src when component mounts or finalSrc changes
+    // Set initial src when component mounts or finalSrc changes - with falsy protection
     useEffect(() => {
+      // Prevent setting empty or invalid src
+      if (!finalSrc || finalSrc === '' || finalSrc === 'undefined' || finalSrc === 'null') {
+        setCurrentSrc(DEFAULT_PLACEHOLDER);
+        setHasError(false);
+        setIsLoading(true);
+        return;
+      }
+      
       const optimizedSrc = generateOptimizedSrc();
       setCurrentSrc(optimizedSrc);
       setHasError(false);
       setIsLoading(true);
-    }, [generateOptimizedSrc]);
+    }, [generateOptimizedSrc, finalSrc]);
 
     // Early return for completely invalid sources that can't be recovered
-    if (!currentSrc) {
+    if (!currentSrc || currentSrc === '' || currentSrc === 'undefined' || currentSrc === 'null') {
       imageLogger.warn('No valid src available, showing fallback UI', {
         action: 'no_src_fallback',
         providedSrc: src,
         fallbackSrc,
+        currentSrc,
         alt
       });
       

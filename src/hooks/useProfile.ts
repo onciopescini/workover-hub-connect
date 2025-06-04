@@ -7,6 +7,7 @@ export const useProfile = () => {
   const isRefreshingRef = useRef(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
   const lastRefreshTimeRef = useRef<number>(0);
+  const hasLoggedSuccessRef = useRef(false);
 
   // Memoize profile data to prevent unnecessary re-renders
   const memoizedProfile = useMemo(() => authState.profile, [authState.profile?.id, authState.profile?.updated_at]);
@@ -14,9 +15,9 @@ export const useProfile = () => {
   const debouncedRefreshProfile = useCallback(async () => {
     if (isRefreshingRef.current || !authState.user) return;
     
-    // Add stronger debounce - don't refresh if last refresh was less than 5 seconds ago
+    // Add stronger debounce - don't refresh if last refresh was less than 10 seconds ago
     const now = Date.now();
-    if (now - lastRefreshTimeRef.current < 5000) {
+    if (now - lastRefreshTimeRef.current < 10000) {
       console.log('[useProfile] Refresh debounced - too soon after last refresh');
       return;
     }
@@ -31,16 +32,21 @@ export const useProfile = () => {
     
     try {
       await refreshProfile();
-      console.log('[useProfile] Profile refreshed successfully');
+      
+      // Only log success once per session to prevent spam
+      if (!hasLoggedSuccessRef.current) {
+        console.log('[useProfile] Profile refreshed successfully');
+        hasLoggedSuccessRef.current = true;
+      }
     } catch (error) {
       console.error('[useProfile] Error refreshing profile:', error);
     } finally {
-      // Reset flag after delay to prevent rapid successive calls
+      // Reset flag after longer delay to prevent rapid successive calls
       refreshTimeoutRef.current = setTimeout(() => {
         isRefreshingRef.current = false;
-      }, 3000); // Increased debounce time to 3 seconds
+      }, 5000); // Increased debounce time to 5 seconds
     }
-  }, [refreshProfile, authState.user?.id]);
+  }, [refreshProfile]); // Removed authState.user?.id dependency to prevent loops
 
   return {
     profile: memoizedProfile,
