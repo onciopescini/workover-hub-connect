@@ -25,7 +25,7 @@ export const useProfile = () => {
       // Reset flag after delay to prevent rapid successive calls
       refreshTimeoutRef.current = setTimeout(() => {
         isRefreshingRef.current = false;
-      }, 1000);
+      }, 2000); // Increased debounce time
     }
   }, [refreshProfile, authState.user?.id]);
 

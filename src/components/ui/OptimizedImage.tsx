@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { generateImageUrls, isWebPSupported } from '@/lib/webp-conversion-utils';
 import { generateSrcSet, generateSizes } from '@/lib/image-processing-utils';
 import { createContextualLogger } from '@/lib/logger';
@@ -42,7 +42,25 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
 
     // Central placeholder configuration
     const DEFAULT_PLACEHOLDER = '/placeholder.svg';
-    const finalSrc = src ?? DEFAULT_PLACEHOLDER;
+    
+    // Validate and determine final src
+    const isValidSrc = (url: string | undefined): boolean => {
+      if (!url || url.trim() === '') return false;
+      try {
+        // Check if it's a valid URL or relative path
+        return url.startsWith('/') || url.startsWith('http') || url.startsWith('data:');
+      } catch {
+        return false;
+      }
+    };
+
+    const determineFinalSrc = useCallback(() => {
+      if (isValidSrc(src)) return src!;
+      if (isValidSrc(fallbackSrc)) return fallbackSrc!;
+      return DEFAULT_PLACEHOLDER;
+    }, [src, fallbackSrc]);
+
+    const finalSrc = determineFinalSrc();
 
     const handleLoadStart = useCallback((event: React.SyntheticEvent<HTMLImageElement, Event>) => {
       setIsLoading(true);
@@ -80,7 +98,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       });
 
       // Try fallback if available and not already used
-      if (fallbackSrc && currentSrc !== fallbackSrc) {
+      if (fallbackSrc && currentSrc !== fallbackSrc && isValidSrc(fallbackSrc)) {
         imageLogger.info('Attempting fallback image', {
           action: 'fallback_attempt',
           originalSrc: currentSrc,
@@ -94,7 +112,7 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       }
 
       // Try default placeholder if not already used
-      if (currentSrc !== DEFAULT_PLACEHOLDER && !fallbackSrc) {
+      if (currentSrc !== DEFAULT_PLACEHOLDER) {
         imageLogger.info('Attempting default placeholder', {
           action: 'default_placeholder_attempt',
           originalSrc: currentSrc,
@@ -111,9 +129,16 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       onErrorCustom?.('Image failed to load');
     }, [currentSrc, alt, fallbackSrc, onError, onErrorCustom]);
 
-    // Generate optimized URLs
+    // Generate optimized URLs only for valid sources
     const generateOptimizedSrc = useCallback(() => {
-      if (!finalSrc) return DEFAULT_PLACEHOLDER;
+      if (!isValidSrc(finalSrc)) {
+        return DEFAULT_PLACEHOLDER;
+      }
+
+      // Don't optimize placeholder or data URLs
+      if (finalSrc === DEFAULT_PLACEHOLDER || finalSrc.startsWith('data:')) {
+        return finalSrc;
+      }
 
       const webpSupported = enableWebP && isWebPSupported();
       const urls = generateImageUrls(finalSrc, webpSupported);
@@ -128,15 +153,37 @@ export const OptimizedImage = React.forwardRef<HTMLImageElement, OptimizedImageP
       return urls.primary;
     }, [finalSrc, enableWebP]);
 
-    // Set initial src
-    React.useEffect(() => {
+    // Set initial src when component mounts or finalSrc changes
+    useEffect(() => {
       const optimizedSrc = generateOptimizedSrc();
       setCurrentSrc(optimizedSrc);
+      setHasError(false);
+      setIsLoading(true);
     }, [generateOptimizedSrc]);
 
-    // Generate srcSet for responsive images
-    const srcSet = enableResponsive && currentSrc ? generateSrcSet(currentSrc) : undefined;
-    const sizes = enableResponsive ? generateSizes() : undefined;
+    // Early return for completely invalid sources
+    if (!currentSrc) {
+      return (
+        <div
+          className={cn(
+            'flex items-center justify-center bg-gray-100 text-gray-400',
+            className
+          )}
+          {...props}
+        >
+          <span className="text-sm">No image available</span>
+        </div>
+      );
+    }
+
+    // Generate srcSet for responsive images (only for valid, non-placeholder images)
+    const srcSet = enableResponsive && 
+                   currentSrc !== DEFAULT_PLACEHOLDER && 
+                   !currentSrc.startsWith('data:') 
+                   ? generateSrcSet(currentSrc) 
+                   : undefined;
+    
+    const sizes = enableResponsive && srcSet ? generateSizes() : undefined;
 
     return (
       <img
