@@ -53,8 +53,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 <ul className="space-y-2 text-gray-400">
                   <li><button onClick={() => navigate('/about')} className="hover:text-white transition-colors">Chi siamo</button></li>
                   <li><button onClick={() => navigate('/faq')} className="hover:text-white transition-colors">FAQ</button></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Contatti</a></li>
+                  <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Contatti</button></li>
                 </ul>
               </div>
               
@@ -63,7 +62,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 <ul className="space-y-2 text-gray-400">
                   <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Termini di servizio</button></li>
                   <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Supporto</a></li>
+                  <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Supporto</button></li>
                 </ul>
               </div>
             </div>
@@ -183,8 +182,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               <ul className="space-y-2 text-gray-400">
                 <li><button onClick={() => navigate('/about')} className="hover:text-white transition-colors">Chi siamo</button></li>
                 <li><button onClick={() => navigate('/faq')} className="hover:text-white transition-colors">FAQ</button></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contatti</a></li>
+                <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Contatti</button></li>
               </ul>
             </div>
             
@@ -193,7 +191,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
               <ul className="space-y-2 text-gray-400">
                 <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Termini di servizio</button></li>
                 <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
-                <li><a href="#" className="hover:text-white transition-colors">Supporto</a></li>
+                <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Supporto</button></li>
               </ul>
             </div>
           </div>

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UnifiedHeader } from './UnifiedHeader';
 
 interface MarketplaceLayoutProps {
@@ -8,6 +9,8 @@ interface MarketplaceLayoutProps {
 }
 
 export function MarketplaceLayout({ children, showFooter = true }: MarketplaceLayoutProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <UnifiedHeader />
@@ -36,19 +39,18 @@ export function MarketplaceLayout({ children, showFooter = true }: MarketplaceLa
               <div>
                 <h4 className="text-white font-semibold mb-4">Azienda</h4>
                 <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors">Chi siamo</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Contatti</a></li>
+                  <li><button onClick={() => navigate('/about')} className="hover:text-white transition-colors">Chi siamo</button></li>
+                  <li><button onClick={() => navigate('/faq')} className="hover:text-white transition-colors">FAQ</button></li>
+                  <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Contatti</button></li>
                 </ul>
               </div>
               
               <div>
                 <h4 className="text-white font-semibold mb-4">Legale</h4>
                 <ul className="space-y-2 text-gray-400">
-                  <li><a href="#" className="hover:text-white transition-colors">Termini di servizio</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                  <li><a href="#" className="hover:text-white transition-colors">Supporto</a></li>
+                  <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Termini di servizio</button></li>
+                  <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+                  <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Supporto</button></li>
                 </ul>
               </div>
             </div>
