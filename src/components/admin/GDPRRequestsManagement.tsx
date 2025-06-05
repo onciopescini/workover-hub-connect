@@ -10,15 +10,21 @@ import { Download, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type GDPRRequestType = "data_export" | "data_deletion" | "data_rectification";
+type GDPRRequestStatus = "pending" | "processing" | "completed" | "failed";
+
 interface GDPRRequest {
   id: string;
   user_id: string;
-  request_type: 'data_export' | 'data_deletion' | 'data_rectification';
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  request_type: GDPRRequestType;
+  status: GDPRRequestStatus;
   requested_at: string;
   completed_at?: string;
   notes?: string;
   export_file_url?: string;
+  processed_by?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const GDPRRequestsManagement = () => {
@@ -38,7 +44,7 @@ export const GDPRRequestsManagement = () => {
         .order('requested_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      setRequests((data || []) as GDPRRequest[]);
     } catch (error) {
       console.error("Error fetching GDPR requests:", error);
       toast.error("Errore nel caricamento delle richieste GDPR");
@@ -47,7 +53,7 @@ export const GDPRRequestsManagement = () => {
     }
   };
 
-  const updateRequestStatus = async (requestId: string, status: string) => {
+  const updateRequestStatus = async (requestId: string, status: GDPRRequestStatus) => {
     try {
       const { error } = await supabase
         .from('gdpr_requests')
@@ -67,7 +73,7 @@ export const GDPRRequestsManagement = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: GDPRRequestStatus) => {
     const variants = {
       pending: "bg-yellow-100 text-yellow-800",
       processing: "bg-blue-100 text-blue-800",
@@ -83,19 +89,19 @@ export const GDPRRequestsManagement = () => {
     };
 
     return (
-      <Badge className={variants[status as keyof typeof variants]}>
-        {labels[status as keyof typeof labels]}
+      <Badge className={variants[status]}>
+        {labels[status]}
       </Badge>
     );
   };
 
-  const getRequestTypeLabel = (type: string) => {
+  const getRequestTypeLabel = (type: GDPRRequestType) => {
     const labels = {
       data_export: "Esportazione Dati",
       data_deletion: "Cancellazione Dati",
       data_rectification: "Rettifica Dati"
     };
-    return labels[type as keyof typeof labels] || type;
+    return labels[type];
   };
 
   const filteredRequests = selectedStatus === "all" 

@@ -19,6 +19,13 @@ interface DAC7Report {
   report_generated_at?: string;
   report_file_url?: string;
   created_at: string;
+  updated_at: string;
+}
+
+interface CalculateDAC7ThresholdsResponse {
+  total_income: number;
+  total_transactions: number;
+  threshold_met: boolean;
 }
 
 export const DAC7ReportsManagement = () => {
@@ -45,7 +52,7 @@ export const DAC7ReportsManagement = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setReports(data || []);
+      setReports((data || []) as DAC7Report[]);
     } catch (error) {
       console.error("Error fetching DAC7 reports:", error);
       toast.error("Errore nel caricamento dei report DAC7");

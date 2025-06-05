@@ -12,6 +12,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface ExportUserDataResponse {
+  error?: string;
+  profile?: any;
+  bookings?: any[];
+  spaces?: any[];
+  messages?: any[];
+  reviews_given?: any[];
+  reviews_received?: any[];
+  connections?: any[];
+  payments?: any[];
+  notifications?: any[];
+  gdpr_requests?: any[];
+  exported_at?: string;
+}
+
+interface RequestDataDeletionResponse {
+  error?: string;
+  success?: boolean;
+  request_id?: string;
+}
+
 const PrivacyCenter = () => {
   const { authState } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
@@ -29,13 +50,15 @@ const PrivacyCenter = () => {
 
       if (error) throw error;
 
-      if (data.error) {
-        toast.error(data.error);
+      const exportResult = data as ExportUserDataResponse;
+      
+      if (exportResult.error) {
+        toast.error(exportResult.error);
         return;
       }
 
       // Create and download the JSON file
-      const blob = new Blob([JSON.stringify(data, null, 2)], { 
+      const blob = new Blob([JSON.stringify(exportResult, null, 2)], { 
         type: 'application/json' 
       });
       const url = URL.createObjectURL(blob);
@@ -76,8 +99,10 @@ const PrivacyCenter = () => {
 
       if (error) throw error;
 
-      if (data.error) {
-        toast.error(data.error);
+      const deletionResult = data as RequestDataDeletionResponse;
+      
+      if (deletionResult.error) {
+        toast.error(deletionResult.error);
         return;
       }
 

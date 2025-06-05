@@ -8,14 +8,22 @@ import { Trash2, Clock, Database, RefreshCw, AlertTriangle } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type RetentionActionType = "anonymize" | "delete" | "archive";
+
 interface RetentionLog {
   id: string;
-  action_type: string;
+  action_type: RetentionActionType;
   table_name: string;
   record_count: number;
   criteria_used: string;
   executed_at: string;
   executed_by: string;
+}
+
+interface CleanupInactiveDataResponse {
+  deleted_profiles: number;
+  anonymized_bookings: number;
+  deleted_messages: number;
 }
 
 export const DataRetentionManagement = () => {
@@ -36,7 +44,7 @@ export const DataRetentionManagement = () => {
         .limit(50);
 
       if (error) throw error;
-      setRetentionLogs(data || []);
+      setRetentionLogs((data || []) as RetentionLog[]);
     } catch (error) {
       console.error("Error fetching retention logs:", error);
       toast.error("Errore nel caricamento dei log di retention");
@@ -52,7 +60,8 @@ export const DataRetentionManagement = () => {
 
       if (error) throw error;
 
-      toast.success(`Pulizia completata: ${data.deleted_profiles} profili eliminati, ${data.anonymized_bookings} prenotazioni anonimizzate, ${data.deleted_messages} messaggi eliminati`);
+      const cleanupResult = data as CleanupInactiveDataResponse;
+      toast.success(`Pulizia completata: ${cleanupResult.deleted_profiles} profili eliminati, ${cleanupResult.anonymized_bookings} prenotazioni anonimizzate, ${cleanupResult.deleted_messages} messaggi eliminati`);
       fetchRetentionLogs();
     } catch (error) {
       console.error("Error running data cleanup:", error);
@@ -62,7 +71,7 @@ export const DataRetentionManagement = () => {
     }
   };
 
-  const getActionTypeIcon = (actionType: string) => {
+  const getActionTypeIcon = (actionType: RetentionActionType) => {
     switch (actionType) {
       case 'delete':
         return <Trash2 className="h-4 w-4 text-red-500" />;
@@ -75,13 +84,13 @@ export const DataRetentionManagement = () => {
     }
   };
 
-  const getActionTypeLabel = (actionType: string) => {
+  const getActionTypeLabel = (actionType: RetentionActionType) => {
     const labels = {
       delete: "Eliminazione",
       anonymize: "Anonimizzazione",
       archive: "Archiviazione"
     };
-    return labels[actionType as keyof typeof labels] || actionType;
+    return labels[actionType];
   };
 
   if (isLoading) {
