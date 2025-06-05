@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -60,6 +59,17 @@ const AdminTagsPage = lazy(() => import('./pages/admin/AdminTagsPage'));
 const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
 const AdminRouteCompletionPage = lazy(() => import('./pages/admin/AdminRouteCompletionPage'));
 
+// Lazy loaded new user pages
+const Settings = lazy(() => import('./pages/Settings'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Help = lazy(() => import('./pages/Help'));
+const Search = lazy(() => import('./pages/Search'));
+
+// Lazy loaded host pages
+const HostAnalytics = lazy(() => import('./pages/host/HostAnalytics'));
+const HostPayments = lazy(() => import('./pages/host/HostPayments'));
+const HostCalendar = lazy(() => import('./pages/host/HostCalendar'));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -119,6 +129,12 @@ function App() {
                 <Route path="/waitlists" element={<WaitlistsPage />} />
                 <Route path="/bidirectional-reviews" element={<BidirectionalReviews />} />
                 
+                {/* New user routes with lazy loading */}
+                <Route path="/settings" element={<Suspense fallback={<LoadingScreen />}><Settings /></Suspense>} />
+                <Route path="/notifications" element={<Suspense fallback={<LoadingScreen />}><Notifications /></Suspense>} />
+                <Route path="/help" element={<Suspense fallback={<LoadingScreen />}><Help /></Suspense>} />
+                <Route path="/search" element={<Suspense fallback={<LoadingScreen />}><Search /></Suspense>} />
+                
                 {/* Authenticated routes for spaces and events - unified coworker experience */}
                 <Route path="/app/spaces" element={<PublicSpaces />} />
                 <Route path="/app/events" element={<PublicEvents />} />
@@ -136,6 +152,11 @@ function App() {
                   <Route path="/spaces/manage" element={<SpacesManage />} />
                   <Route path="/spaces/new" element={<SpaceNew />} />
                   <Route path="/spaces/:id/edit" element={<SpaceEdit />} />
+                  
+                  {/* New host-specific routes with lazy loading */}
+                  <Route path="/host/analytics" element={<Suspense fallback={<LoadingScreen />}><HostAnalytics /></Suspense>} />
+                  <Route path="/host/payments" element={<Suspense fallback={<LoadingScreen />}><HostPayments /></Suspense>} />
+                  <Route path="/host/calendar" element={<Suspense fallback={<LoadingScreen />}><HostCalendar /></Suspense>} />
                 </Route>
               </Route>
 
