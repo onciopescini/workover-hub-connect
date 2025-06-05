@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
+import LoadingScreen from './components/LoadingScreen';
 import Index from './pages/Index';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthCallback from './pages/AuthCallback';
 import AuthProtected from './components/auth/AuthProtected';
 import RoleProtected from './components/auth/RoleProtected';
+import AdminProtected from './components/auth/AdminProtected';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import HostDashboard from './pages/HostDashboard';
@@ -30,7 +32,6 @@ import NotFound from './pages/NotFound';
 import Support from './pages/Support';
 import Networking from './pages/Networking';
 import NetworkingDiscover from './pages/NetworkingDiscover';
-import AdminPanel from './pages/AdminPanel';
 import { Toaster } from "@/components/ui/sonner"
 import PublicSpaces from './pages/PublicSpaces';
 import PublicEvents from './pages/PublicEvents';
@@ -41,14 +42,23 @@ import PrivateChats from './pages/PrivateChats';
 import UserReportsPage from './pages/UserReportsPage';
 import WaitlistsPage from './pages/WaitlistsPage';
 
-// New route completion and static pages
-import RouteCompletion from './pages/RouteCompletion';
+// Static pages
 import About from './pages/About';
 import FAQ from './pages/FAQ';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Unauthorized from './pages/Unauthorized';
+
+// Lazy loaded admin pages
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminSpacesPage = lazy(() => import('./pages/admin/AdminSpacesPage'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
+const AdminTicketsPage = lazy(() => import('./pages/admin/AdminTicketsPage'));
+const AdminTagsPage = lazy(() => import('./pages/admin/AdminTagsPage'));
+const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
+const AdminRouteCompletionPage = lazy(() => import('./pages/admin/AdminRouteCompletionPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -129,13 +139,16 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Admin routes - keep AppLayout only for admin panel */}
-              <Route element={<RoleProtected allowedRoles={['admin']}><Outlet /></RoleProtected>}>
-                <Route element={<AppLayout><Outlet /></AppLayout>}>
-                  <Route path="/admin" element={<AdminPanel />} />
-                  {/* Admin-only route completion dashboard */}
-                  <Route path="/route-completion" element={<RouteCompletion />} />
-                </Route>
+              {/* Admin routes - now with AdminProtected and lazy loading */}
+              <Route element={<AdminProtected><Suspense fallback={<LoadingScreen />}><Outlet /></Suspense></AdminProtected>}>
+                <Route path="/admin" element={<AdminDashboardPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/spaces" element={<AdminSpacesPage />} />
+                <Route path="/admin/reports" element={<AdminReportsPage />} />
+                <Route path="/admin/tickets" element={<AdminTicketsPage />} />
+                <Route path="/admin/tags" element={<AdminTagsPage />} />
+                <Route path="/admin/logs" element={<AdminLogsPage />} />
+                <Route path="/route-completion" element={<AdminRouteCompletionPage />} />
               </Route>
             </Route>
 
