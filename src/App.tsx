@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -49,6 +50,10 @@ import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
 import Unauthorized from './pages/Unauthorized';
 
+// Lazy loaded error and status pages
+const Maintenance = lazy(() => import('./pages/Maintenance'));
+const Offline = lazy(() => import('./pages/Offline'));
+
 // Lazy loaded admin pages
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
@@ -86,6 +91,11 @@ function App() {
         <Toaster />
         <BrowserRouter>
           <Routes>
+            {/* Error and Status Pages */}
+            <Route path="/maintenance" element={<Suspense fallback={<LoadingScreen />}><Maintenance /></Suspense>} />
+            <Route path="/offline" element={<Suspense fallback={<LoadingScreen />}><Offline /></Suspense>} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+
             {/* Public routes - for non-authenticated users */}
             <Route path="/" element={<PublicLayout><Outlet /></PublicLayout>}>
               <Route index element={<Index />} />
@@ -102,9 +112,6 @@ function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/contact" element={<Contact />} />
             </Route>
-
-            {/* Unauthorized page - accessible to all */}
-            <Route path="/unauthorized" element={<Unauthorized />} />
 
             {/* Protected routes */}
             <Route element={<AuthProtected><Outlet /></AuthProtected>}>
@@ -173,7 +180,7 @@ function App() {
               </Route>
             </Route>
 
-            {/* 404 */}
+            {/* 404 - Must be last to catch all unmatched routes */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
