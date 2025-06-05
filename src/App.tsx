@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import HostDashboard from './pages/HostDashboard';
 import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
+import UserProfileView from './pages/UserProfileView';
 import Bookings from './pages/Bookings';
 import Favorites from './pages/Favorites';
 import Reviews from './pages/Reviews';
@@ -38,6 +39,14 @@ import { AppLayout } from './components/layout/AppLayout';
 import PrivateChats from './pages/PrivateChats';
 import UserReportsPage from './pages/UserReportsPage';
 import WaitlistsPage from './pages/WaitlistsPage';
+
+// New route completion and static pages
+import RouteCompletion from './pages/RouteCompletion';
+import About from './pages/About';
+import FAQ from './pages/FAQ';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import Contact from './pages/Contact';
 
 const queryClient = new QueryClient({
   defaultOptions: {
