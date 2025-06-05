@@ -23,7 +23,64 @@ export interface CookieCategory {
   cookies: string[];
 }
 
-// Accessibility Audit types
+// Data Breach types
+export interface DataBreach {
+  id: string;
+  breach_date: string;
+  detected_at: string;
+  nature_of_breach: string;
+  affected_users_count: number;
+  affected_data_types: string[];
+  status: 'open' | 'investigating' | 'contained' | 'closed';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  authority_notified_at?: string;
+  authority_notification_required: boolean;
+  containment_measures?: string;
+  impact_assessment?: string;
+  reported_by?: string;
+  resolved_by?: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Cookie Consent Log types
+export interface CookieConsentLog {
+  id: string;
+  user_id?: string;
+  session_id?: string;
+  consent_version: string;
+  necessary_consent: boolean;
+  analytics_consent: boolean;
+  marketing_consent: boolean;
+  preferences_consent: boolean;
+  consent_method: 'banner' | 'settings' | 'withdrawal';
+  ip_address?: string;
+  user_agent?: string;
+  consent_given_at: string;
+  withdrawn_at?: string;
+  is_active: boolean;
+}
+
+// Data Minimization Audit types
+export interface DataMinimizationAudit {
+  id: string;
+  audit_date: string;
+  table_name: string;
+  column_name?: string;
+  data_type: string;
+  record_count: number;
+  last_accessed_date?: string;
+  usage_frequency: 'never' | 'rare' | 'occasional' | 'frequent' | 'constant';
+  retention_recommendation: 'keep' | 'anonymize' | 'delete' | 'archive';
+  business_justification?: string;
+  legal_basis?: string;
+  audit_notes?: string;
+  created_by?: string;
+  created_at: string;
+}
+
+// Accessibility Audit types (keeping existing ones)
 export type AccessibilityAuditType = "automated" | "manual";
 
 export interface AccessibilityAudit {
@@ -45,7 +102,7 @@ export interface AccessibilityViolation {
   nodes?: any[];
 }
 
-// Retention Exemption types
+// Retention Exemption types (keeping existing ones)
 export interface ProfileWithExemption {
   id: string;
   first_name: string;

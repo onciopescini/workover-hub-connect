@@ -382,6 +382,57 @@ export type Database = {
           },
         ]
       }
+      cookie_consent_log: {
+        Row: {
+          analytics_consent: boolean
+          consent_given_at: string
+          consent_method: string
+          consent_version: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          marketing_consent: boolean
+          necessary_consent: boolean
+          preferences_consent: boolean
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          withdrawn_at: string | null
+        }
+        Insert: {
+          analytics_consent?: boolean
+          consent_given_at?: string
+          consent_method?: string
+          consent_version?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          marketing_consent?: boolean
+          necessary_consent?: boolean
+          preferences_consent?: boolean
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          withdrawn_at?: string | null
+        }
+        Update: {
+          analytics_consent?: boolean
+          consent_given_at?: string
+          consent_method?: string
+          consent_version?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          marketing_consent?: boolean
+          necessary_consent?: boolean
+          preferences_consent?: boolean
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
       dac7_reports: {
         Row: {
           created_at: string | null
@@ -418,6 +469,117 @@ export type Database = {
           total_income?: number | null
           total_transactions?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      data_breach_log: {
+        Row: {
+          affected_data_types: string[]
+          affected_users_count: number
+          authority_notification_required: boolean
+          authority_notified_at: string | null
+          breach_date: string
+          containment_measures: string | null
+          created_at: string
+          detected_at: string
+          id: string
+          impact_assessment: string | null
+          nature_of_breach: string
+          reported_by: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affected_data_types?: string[]
+          affected_users_count?: number
+          authority_notification_required?: boolean
+          authority_notified_at?: string | null
+          breach_date: string
+          containment_measures?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact_assessment?: string | null
+          nature_of_breach: string
+          reported_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affected_data_types?: string[]
+          affected_users_count?: number
+          authority_notification_required?: boolean
+          authority_notified_at?: string | null
+          breach_date?: string
+          containment_measures?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          impact_assessment?: string | null
+          nature_of_breach?: string
+          reported_by?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      data_minimization_audit: {
+        Row: {
+          audit_date: string
+          audit_notes: string | null
+          business_justification: string | null
+          column_name: string | null
+          created_at: string
+          created_by: string | null
+          data_type: string
+          id: string
+          last_accessed_date: string | null
+          legal_basis: string | null
+          record_count: number
+          retention_recommendation: string | null
+          table_name: string
+          usage_frequency: string | null
+        }
+        Insert: {
+          audit_date?: string
+          audit_notes?: string | null
+          business_justification?: string | null
+          column_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_type: string
+          id?: string
+          last_accessed_date?: string | null
+          legal_basis?: string | null
+          record_count?: number
+          retention_recommendation?: string | null
+          table_name: string
+          usage_frequency?: string | null
+        }
+        Update: {
+          audit_date?: string
+          audit_notes?: string | null
+          business_justification?: string | null
+          column_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          id?: string
+          last_accessed_date?: string | null
+          legal_basis?: string | null
+          record_count?: number
+          retention_recommendation?: string | null
+          table_name?: string
+          usage_frequency?: string | null
         }
         Relationships: []
       }
@@ -1530,6 +1692,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      detect_data_breach: {
+        Args: {
+          breach_nature: string
+          affected_count?: number
+          affected_data_types?: string[]
+          breach_severity?: string
+          manual_report?: boolean
+        }
+        Returns: Json
+      }
       expire_pending_connections: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1563,6 +1735,15 @@ export type Database = {
         }
         Returns: Json
       }
+      process_data_rectification: {
+        Args: {
+          request_id: string
+          approved: boolean
+          admin_notes?: string
+          corrections_applied?: Json
+        }
+        Returns: Json
+      }
       reactivate_user: {
         Args: { target_user_id: string; reactivated_by_admin: string }
         Returns: Json
@@ -1586,6 +1767,10 @@ export type Database = {
           approved: boolean
           admin_notes?: string
         }
+        Returns: Json
+      }
+      run_data_minimization_audit: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       suspend_space_with_bookings: {

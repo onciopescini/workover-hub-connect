@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CookieConsentBanner } from './CookieConsentBanner';
+import { CookieConsentManager } from './CookieConsentManager';
 
 interface GDPRProviderProps {
   children: React.ReactNode;
@@ -10,7 +10,7 @@ export function GDPRProvider({ children }: GDPRProviderProps) {
   return (
     <>
       {children}
-      <CookieConsentBanner />
+      <CookieConsentManager />
     </>
   );
 }

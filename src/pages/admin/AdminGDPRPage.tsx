@@ -7,6 +7,9 @@ import { DAC7ReportsManagement } from "@/components/admin/DAC7ReportsManagement"
 import { DataRetentionManagement } from "@/components/admin/DataRetentionManagement";
 import { AccessibilityAuditManagement } from "@/components/admin/AccessibilityAuditManagement";
 import { RetentionExemptionManagement } from "@/components/admin/RetentionExemptionManagement";
+import { DataRectificationManagement } from "@/components/admin/DataRectificationManagement";
+import { DataBreachManagement } from "@/components/admin/DataBreachManagement";
+import { DataMinimizationAuditDashboard } from "@/components/admin/DataMinimizationAuditDashboard";
 
 const AdminGDPRPage = () => {
   return (
@@ -22,8 +25,11 @@ const AdminGDPRPage = () => {
         </div>
 
         <Tabs defaultValue="gdpr" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="gdpr">Richieste GDPR</TabsTrigger>
+            <TabsTrigger value="rectification">Rettifiche</TabsTrigger>
+            <TabsTrigger value="breaches">Violazioni</TabsTrigger>
+            <TabsTrigger value="minimization">Minimizzazione</TabsTrigger>
             <TabsTrigger value="dac7">Report DAC7</TabsTrigger>
             <TabsTrigger value="retention">Data Retention</TabsTrigger>
             <TabsTrigger value="accessibility">Accessibilità</TabsTrigger>
@@ -32,6 +38,18 @@ const AdminGDPRPage = () => {
 
           <TabsContent value="gdpr" className="space-y-6">
             <GDPRRequestsManagement />
+          </TabsContent>
+
+          <TabsContent value="rectification" className="space-y-6">
+            <DataRectificationManagement />
+          </TabsContent>
+
+          <TabsContent value="breaches" className="space-y-6">
+            <DataBreachManagement />
+          </TabsContent>
+
+          <TabsContent value="minimization" className="space-y-6">
+            <DataMinimizationAuditDashboard />
           </TabsContent>
 
           <TabsContent value="dac7" className="space-y-6">
