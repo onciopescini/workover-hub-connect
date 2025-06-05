@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +32,7 @@ export const CookieConsentManager = () => {
       try {
         const parsed = JSON.parse(stored);
         setConsent(parsed);
-        applyConsentSettings((category: string) => parsed[category] || false);
+        applyConsentSettings((category: string) => Boolean(parsed[category] || false));
       } catch (error) {
         console.error('Error parsing stored consent:', error);
         setIsVisible(true);
@@ -56,7 +55,7 @@ export const CookieConsentManager = () => {
     setConsent(updatedConsent);
 
     // Apply consent settings to third-party services
-    applyConsentSettings((category: string) => updatedConsent[category as keyof CookieConsent] || false);
+    applyConsentSettings((category: string) => Boolean(updatedConsent[category as keyof CookieConsent] || false));
 
     // Log consent to database
     try {
