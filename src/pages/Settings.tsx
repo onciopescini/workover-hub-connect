@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Shield, FileText, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { authState } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <AppLayout
@@ -86,6 +89,48 @@ const Settings = () => {
         </div>
 
         <Separator />
+
+        {/* Privacy & GDPR Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Privacy e Protezione Dati
+            </CardTitle>
+            <CardDescription>
+              Gestisci i tuoi diritti privacy e conformità GDPR
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Centro Privacy</p>
+                  <p className="text-sm text-gray-600">
+                    Esporta i tuoi dati, richiedi cancellazione account
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate('/privacy-center')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Gestisci
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Cronologia Privacy</p>
+                  <p className="text-sm text-gray-600">
+                    Visualizza le tue richieste GDPR precedenti
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => navigate('/privacy-center')}>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Visualizza
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Notification Preferences */}
         <Card>

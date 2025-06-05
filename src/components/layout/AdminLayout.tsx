@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard } from "lucide-react";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -29,6 +29,7 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
     { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" /> },
     { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" /> },
     { label: "Supporto", path: "/admin/tickets", icon: <Headphones className="w-4 h-4" /> },
+    { label: "GDPR & Compliance", path: "/admin/gdpr", icon: <Scale className="w-4 h-4" /> },
     { label: "Log", path: "/admin/logs", icon: <FileText className="w-4 h-4" /> },
   ];
 

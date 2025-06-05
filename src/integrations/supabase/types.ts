@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accessibility_audits: {
+        Row: {
+          audit_type: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          page_url: string
+          score: number | null
+          violations: Json | null
+        }
+        Insert: {
+          audit_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          page_url: string
+          score?: number | null
+          violations?: Json | null
+        }
+        Update: {
+          audit_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          page_url?: string
+          score?: number | null
+          violations?: Json | null
+        }
+        Relationships: []
+      }
       admin_actions_log: {
         Row: {
           action_type: string
@@ -352,6 +382,75 @@ export type Database = {
           },
         ]
       }
+      dac7_reports: {
+        Row: {
+          created_at: string | null
+          host_id: string
+          id: string
+          report_file_url: string | null
+          report_generated_at: string | null
+          reporting_threshold_met: boolean | null
+          reporting_year: number
+          total_income: number | null
+          total_transactions: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          host_id: string
+          id?: string
+          report_file_url?: string | null
+          report_generated_at?: string | null
+          reporting_threshold_met?: boolean | null
+          reporting_year: number
+          total_income?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          host_id?: string
+          id?: string
+          report_file_url?: string | null
+          report_generated_at?: string | null
+          reporting_threshold_met?: boolean | null
+          reporting_year?: number
+          total_income?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      data_retention_log: {
+        Row: {
+          action_type: string
+          criteria_used: string | null
+          executed_at: string | null
+          executed_by: string | null
+          id: string
+          record_count: number | null
+          table_name: string
+        }
+        Insert: {
+          action_type: string
+          criteria_used?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          record_count?: number | null
+          table_name: string
+        }
+        Update: {
+          action_type?: string
+          criteria_used?: string | null
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          record_count?: number | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       event_participants: {
         Row: {
           event_id: string
@@ -531,6 +630,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gdpr_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          export_file_url: string | null
+          id: string
+          notes: string | null
+          processed_by: string | null
+          request_type: string
+          requested_at: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          export_file_url?: string | null
+          id?: string
+          notes?: string | null
+          processed_by?: string | null
+          request_type: string
+          requested_at?: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          export_file_url?: string | null
+          id?: string
+          notes?: string | null
+          processed_by?: string | null
+          request_type?: string
+          requested_at?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       global_tags: {
         Row: {
@@ -793,8 +934,10 @@ export type Database = {
       profiles: {
         Row: {
           admin_notes: string | null
+          age_confirmed: boolean | null
           bio: string | null
           created_at: string
+          data_retention_exempt: boolean | null
           facebook_url: string | null
           first_name: string
           github_url: string | null
@@ -804,6 +947,7 @@ export type Database = {
           is_suspended: boolean | null
           job_title: string | null
           job_type: string | null
+          last_login_at: string | null
           last_name: string
           linkedin_url: string | null
           location: string | null
@@ -820,16 +964,21 @@ export type Database = {
           suspended_at: string | null
           suspended_by: string | null
           suspension_reason: string | null
+          tax_country: string | null
+          tax_id: string | null
           twitter_url: string | null
           updated_at: string
+          vat_number: string | null
           website: string | null
           work_style: string | null
           youtube_url: string | null
         }
         Insert: {
           admin_notes?: string | null
+          age_confirmed?: boolean | null
           bio?: string | null
           created_at?: string
+          data_retention_exempt?: boolean | null
           facebook_url?: string | null
           first_name: string
           github_url?: string | null
@@ -839,6 +988,7 @@ export type Database = {
           is_suspended?: boolean | null
           job_title?: string | null
           job_type?: string | null
+          last_login_at?: string | null
           last_name: string
           linkedin_url?: string | null
           location?: string | null
@@ -855,16 +1005,21 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          tax_country?: string | null
+          tax_id?: string | null
           twitter_url?: string | null
           updated_at?: string
+          vat_number?: string | null
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
         }
         Update: {
           admin_notes?: string | null
+          age_confirmed?: boolean | null
           bio?: string | null
           created_at?: string
+          data_retention_exempt?: boolean | null
           facebook_url?: string | null
           first_name?: string
           github_url?: string | null
@@ -874,6 +1029,7 @@ export type Database = {
           is_suspended?: boolean | null
           job_title?: string | null
           job_type?: string | null
+          last_login_at?: string | null
           last_name?: string
           linkedin_url?: string | null
           location?: string | null
@@ -890,8 +1046,11 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          tax_country?: string | null
+          tax_id?: string | null
           twitter_url?: string | null
           updated_at?: string
+          vat_number?: string | null
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
@@ -1355,6 +1514,10 @@ export type Database = {
         Args: { booking_date: string; price_amount: number }
         Returns: number
       }
+      calculate_dac7_thresholds: {
+        Args: { host_id_param: string; year_param: number }
+        Returns: Json
+      }
       cancel_booking: {
         Args: {
           booking_id: string
@@ -1363,9 +1526,17 @@ export type Database = {
         }
         Returns: Json
       }
+      cleanup_inactive_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       expire_pending_connections: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      export_user_data: {
+        Args: { target_user_id: string }
+        Returns: Json
       }
       generate_connection_suggestions: {
         Args: Record<PropertyKey, never>
@@ -1394,6 +1565,10 @@ export type Database = {
       }
       reactivate_user: {
         Args: { target_user_id: string; reactivated_by_admin: string }
+        Returns: Json
+      }
+      request_data_deletion: {
+        Args: { target_user_id: string; deletion_reason?: string }
         Returns: Json
       }
       request_space_revision: {

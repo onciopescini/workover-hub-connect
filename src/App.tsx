@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -63,12 +62,14 @@ const AdminTicketsPage = lazy(() => import('./pages/admin/AdminTicketsPage'));
 const AdminTagsPage = lazy(() => import('./pages/admin/AdminTagsPage'));
 const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
 const AdminRouteCompletionPage = lazy(() => import('./pages/admin/AdminRouteCompletionPage'));
+const AdminGDPRPage = lazy(() => import('./pages/admin/AdminGDPRPage'));
 
 // Lazy loaded new user pages
 const Settings = lazy(() => import('./pages/Settings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Help = lazy(() => import('./pages/Help'));
 const Search = lazy(() => import('./pages/Search'));
+const PrivacyCenter = lazy(() => import('./pages/PrivacyCenter'));
 
 // Lazy loaded host pages
 const HostAnalytics = lazy(() => import('./pages/host/HostAnalytics'));
@@ -141,6 +142,7 @@ function App() {
                 <Route path="/notifications" element={<Suspense fallback={<LoadingScreen />}><Notifications /></Suspense>} />
                 <Route path="/help" element={<Suspense fallback={<LoadingScreen />}><Help /></Suspense>} />
                 <Route path="/search" element={<Suspense fallback={<LoadingScreen />}><Search /></Suspense>} />
+                <Route path="/privacy-center" element={<Suspense fallback={<LoadingScreen />}><PrivacyCenter /></Suspense>} />
                 
                 {/* Authenticated routes for spaces and events - unified coworker experience */}
                 <Route path="/app/spaces" element={<PublicSpaces />} />
@@ -176,6 +178,7 @@ function App() {
                 <Route path="/admin/tickets" element={<AdminTicketsPage />} />
                 <Route path="/admin/tags" element={<AdminTagsPage />} />
                 <Route path="/admin/logs" element={<AdminLogsPage />} />
+                <Route path="/admin/gdpr" element={<AdminGDPRPage />} />
                 <Route path="/route-completion" element={<AdminRouteCompletionPage />} />
               </Route>
             </Route>
