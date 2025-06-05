@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -47,6 +48,7 @@ import FAQ from './pages/FAQ';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
+import Unauthorized from './pages/Unauthorized';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,7 +76,15 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/contact" element={<Contact />} />
             </Route>
+
+            {/* Unauthorized page - accessible to all */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
             {/* Protected routes */}
             <Route element={<AuthProtected><Outlet /></AuthProtected>}>
@@ -84,6 +94,7 @@ function App() {
               <Route element={<MarketplaceLayout><Outlet /></MarketplaceLayout>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<UserProfileView />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/reviews" element={<Reviews />} />
@@ -122,6 +133,8 @@ function App() {
               <Route element={<RoleProtected allowedRoles={['admin']}><Outlet /></RoleProtected>}>
                 <Route element={<AppLayout><Outlet /></AppLayout>}>
                   <Route path="/admin" element={<AdminPanel />} />
+                  {/* Admin-only route completion dashboard */}
+                  <Route path="/route-completion" element={<RouteCompletion />} />
                 </Route>
               </Route>
             </Route>
