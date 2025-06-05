@@ -50,7 +50,7 @@ const PrivacyCenter = () => {
 
       if (error) throw error;
 
-      const exportResult = data as ExportUserDataResponse;
+      const exportResult = data as unknown as ExportUserDataResponse;
       
       if (exportResult.error) {
         toast.error(exportResult.error);
@@ -99,7 +99,7 @@ const PrivacyCenter = () => {
 
       if (error) throw error;
 
-      const deletionResult = data as RequestDataDeletionResponse;
+      const deletionResult = data as unknown as RequestDataDeletionResponse;
       
       if (deletionResult.error) {
         toast.error(deletionResult.error);

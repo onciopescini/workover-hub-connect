@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +59,7 @@ export const DataRetentionManagement = () => {
 
       if (error) throw error;
 
-      const cleanupResult = data as CleanupInactiveDataResponse;
+      const cleanupResult = data as unknown as CleanupInactiveDataResponse;
       toast.success(`Pulizia completata: ${cleanupResult.deleted_profiles} profili eliminati, ${cleanupResult.anonymized_bookings} prenotazioni anonimizzate, ${cleanupResult.deleted_messages} messaggi eliminati`);
       fetchRetentionLogs();
     } catch (error) {
