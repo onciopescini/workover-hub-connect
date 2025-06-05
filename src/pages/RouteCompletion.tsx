@@ -164,7 +164,7 @@ const RouteCompletion = () => {
                         <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
                           {route.path}
                         </code>
-                        <Badge variant={getPriorityColor(route.priority)} size="sm">
+                        <Badge variant={getPriorityColor(route.priority)}>
                           {route.priority}
                         </Badge>
                       </div>
