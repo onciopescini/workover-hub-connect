@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -39,6 +40,8 @@ import PrivateChats from './pages/PrivateChats';
 import HostEvents from './pages/host/HostEvents';
 import HostEventNew from './pages/host/HostEventNew';
 import HostRevenue from './pages/host/HostRevenue';
+import PrivacyExportRequest from './pages/PrivacyExportRequest';
+import PrivacyDeletionRequest from './pages/PrivacyDeletionRequest';
 
 function App() {
   const { authState } = useAuth();
@@ -110,6 +113,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/privacy/export-request" element={<PrivacyExportRequest />} />
+            <Route path="/privacy/deletion-request" element={<PrivacyDeletionRequest />} />
             <Route path="/help" element={<Help />} />
             <Route path="/events" element={<PublicEvents />} />
             <Route path="/events/:id" element={<EventDetail />} />

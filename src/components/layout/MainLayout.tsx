@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { UnifiedHeader } from './UnifiedHeader';
+import { CookieConsentBanner } from '@/components/gdpr/CookieConsentBanner';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
           {children}
         </div>
       </main>
+      <CookieConsentBanner />
     </div>
   );
 }

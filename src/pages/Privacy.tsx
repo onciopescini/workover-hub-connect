@@ -1,227 +1,253 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield } from 'lucide-react';
+import React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Shield, Download, Trash2, Cookie, FileText, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useGDPRRequests } from "@/hooks/useGDPRRequests";
+import { useConsent } from "@/hooks/useConsent";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const Privacy = () => {
+  const { requests, isLoading } = useGDPRRequests();
+  const { consent, handleConsent, resetConsent } = useConsent();
+
+  const pendingExportRequest = requests.find(r => r.request_type === 'data_export' && r.status === 'pending');
+  const completedExportRequest = requests.find(r => r.request_type === 'data_export' && r.status === 'completed');
+  const pendingDeletionRequest = requests.find(r => r.request_type === 'data_deletion' && r.status === 'pending');
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">In elaborazione</Badge>;
+      case 'completed':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Completata</Badge>;
+      case 'rejected':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">Rifiutata</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Shield className="h-8 w-8 text-indigo-600" />
+    <MainLayout>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <Shield className="mx-auto h-12 w-12 text-indigo-600 mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Centro Privacy e Dati
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Gestisci i tuoi dati personali e le tue preferenze sulla privacy secondo i tuoi diritti GDPR
+            </p>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Privacy Policy
-          </h1>
-          <p className="text-lg text-gray-600">
-            Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}
-          </p>
-        </div>
 
-        {/* Privacy Content */}
-        <div className="space-y-8">
-          <Card>
+          {/* Quick Actions */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Download className="h-5 w-5" />
+                  Esporta i Tuoi Dati
+                </CardTitle>
+                <CardDescription>
+                  Scarica una copia completa dei tuoi dati
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingExportRequest ? (
+                  <div className="space-y-2">
+                    {getStatusBadge(pendingExportRequest.status)}
+                    <p className="text-sm text-gray-600">
+                      Richiesta inviata il {new Date(pendingExportRequest.requested_at).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                ) : completedExportRequest && completedExportRequest.export_file_url ? (
+                  <div className="space-y-3">
+                    {getStatusBadge(completedExportRequest.status)}
+                    <Button asChild className="w-full">
+                      <a href={completedExportRequest.export_file_url} download>
+                        <Download className="h-4 w-4 mr-2" />
+                        Scarica Dati
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <Button asChild className="w-full">
+                    <Link to="/privacy/export-request">
+                      <Download className="h-4 w-4 mr-2" />
+                      Richiedi Esportazione
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Trash2 className="h-5 w-5" />
+                  Cancella Account
+                </CardTitle>
+                <CardDescription>
+                  Richiedi la cancellazione permanente dei dati
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pendingDeletionRequest ? (
+                  <div className="space-y-2">
+                    {getStatusBadge(pendingDeletionRequest.status)}
+                    <p className="text-sm text-gray-600">
+                      Richiesta inviata il {new Date(pendingDeletionRequest.requested_at).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                ) : (
+                  <Button asChild variant="destructive" className="w-full">
+                    <Link to="/privacy/deletion-request">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Richiedi Cancellazione
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Cookie className="h-5 w-5" />
+                  Preferenze Cookie
+                </CardTitle>
+                <CardDescription>
+                  Gestisci le tue preferenze sui cookie
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Analytics:</span>
+                    <span className={consent.analytics ? "text-green-600" : "text-red-600"}>
+                      {consent.analytics ? "Abilitati" : "Disabilitati"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Marketing:</span>
+                    <span className={consent.marketing ? "text-green-600" : "text-red-600"}>
+                      {consent.marketing ? "Abilitati" : "Disabilitati"}
+                    </span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={resetConsent}
+                  >
+                    Modifica Preferenze
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Request History */}
+          <Card className="mb-8">
             <CardHeader>
-              <CardTitle>1. Introduzione</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Cronologia Richieste
+              </CardTitle>
+              <CardDescription>
+                Visualizza lo stato delle tue richieste GDPR
+              </CardDescription>
             </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                La privacy dei nostri utenti è fondamentale per Workover. Questa Privacy Policy 
-                spiega come raccogliamo, utilizziamo, proteggiamo e condividiamo le tue informazioni 
-                personali quando utilizzi il nostro servizio.
-              </p>
+            <CardContent>
+              {isLoading ? (
+                <p className="text-gray-600">Caricamento...</p>
+              ) : requests.length === 0 ? (
+                <p className="text-gray-600">Nessuna richiesta effettuata</p>
+              ) : (
+                <div className="space-y-4">
+                  {requests.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1">
+                        <h4 className="font-medium">
+                          {request.request_type === 'data_export' ? 'Esportazione Dati' : 'Cancellazione Account'}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          Richiesta inviata il {new Date(request.requested_at).toLocaleDateString('it-IT')}
+                        </p>
+                        {request.notes && (
+                          <p className="text-sm text-gray-500">{request.notes}</p>
+                        )}
+                      </div>
+                      <div className="text-right space-y-2">
+                        {getStatusBadge(request.status)}
+                        {request.status === 'completed' && request.completed_at && (
+                          <p className="text-xs text-gray-500">
+                            Completata il {new Date(request.completed_at).toLocaleDateString('it-IT')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
+          {/* GDPR Information */}
           <Card>
             <CardHeader>
-              <CardTitle>2. Informazioni che Raccogliamo</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                I Tuoi Diritti secondo il GDPR
+              </CardTitle>
             </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <h4 className="font-semibold">Informazioni fornite direttamente:</h4>
-              <ul>
-                <li>Dati di registrazione (nome, email, password)</li>
-                <li>Informazioni del profilo (biografia, foto, interessi)</li>
-                <li>Contenuti pubblicati (descrizioni spazi, messaggi, recensioni)</li>
-                <li>Informazioni di pagamento (elaborate tramite Stripe)</li>
-              </ul>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <h4 className="font-semibold mb-2">Diritto di Accesso (Art. 15)</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Hai il diritto di ottenere una copia dei tuoi dati personali e informazioni sul loro trattamento.
+                  </p>
+                  
+                  <h4 className="font-semibold mb-2">Diritto di Rettifica (Art. 16)</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Puoi richiedere la correzione di dati personali inesatti o incompleti tramite le impostazioni del profilo.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Diritto alla Cancellazione (Art. 17)</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Puoi richiedere la cancellazione dei tuoi dati personali in determinate circostanze.
+                  </p>
+                  
+                  <h4 className="font-semibold mb-2">Diritto alla Portabilità (Art. 20)</h4>
+                  <p className="text-sm text-gray-600">
+                    Hai il diritto di ricevere i tuoi dati in un formato strutturato e leggibile.
+                  </p>
+                </div>
+              </div>
 
-              <h4 className="font-semibold mt-6">Informazioni raccolte automaticamente:</h4>
-              <ul>
-                <li>Dati di utilizzo (pagine visitate, tempo di permanenza)</li>
-                <li>Informazioni del dispositivo (browser, sistema operativo)</li>
-                <li>Dati di localizzazione (se autorizzati)</li>
-                <li>Cookie e tecnologie simili</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>3. Come Utilizziamo le Informazioni</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>Utilizziamo le tue informazioni per:</p>
-              <ul>
-                <li>Fornire e migliorare i nostri servizi</li>
-                <li>Facilitare le prenotazioni e i pagamenti</li>
-                <li>Comunicare con te riguardo al tuo account</li>
-                <li>Personalizzare la tua esperienza</li>
-                <li>Garantire la sicurezza della piattaforma</li>
-                <li>Rispettare obblighi legali</li>
-                <li>Inviare aggiornamenti sul servizio (con il tuo consenso)</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>4. Condivisione delle Informazioni</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>Condividiamo le tue informazioni solo nelle seguenti circostanze:</p>
-              <ul>
-                <li><strong>Con altri utenti:</strong> informazioni del profilo visibili pubblicamente</li>
-                <li><strong>Con fornitori di servizi:</strong> per elaborare pagamenti e fornire supporto</li>
-                <li><strong>Per motivi legali:</strong> quando richiesto dalla legge</li>
-                <li><strong>Con il tuo consenso:</strong> in altri casi specifici</li>
-              </ul>
-              <p>
-                Non vendiamo mai le tue informazioni personali a terze parti per scopi commerciali.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>5. Sicurezza dei Dati</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>Proteggiamo le tue informazioni attraverso:</p>
-              <ul>
-                <li>Crittografia dei dati in transito e a riposo</li>
-                <li>Accesso limitato ai dati personali</li>
-                <li>Monitoraggio regolare della sicurezza</li>
-                <li>Aggiornamenti di sicurezza costanti</li>
-                <li>Formazione del personale sulla privacy</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>6. I Tuoi Diritti</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>Secondo il GDPR, hai il diritto di:</p>
-              <ul>
-                <li><strong>Accesso:</strong> ottenere una copia dei tuoi dati personali</li>
-                <li><strong>Rettifica:</strong> correggere informazioni inesatte</li>
-                <li><strong>Cancellazione:</strong> richiedere l'eliminazione dei tuoi dati</li>
-                <li><strong>Portabilità:</strong> trasferire i tuoi dati ad altro servizio</li>
-                <li><strong>Limitazione:</strong> limitare il trattamento dei tuoi dati</li>
-                <li><strong>Opposizione:</strong> opporti a determinati trattamenti</li>
-              </ul>
-              <p>
-                Per esercitare questi diritti, contattaci all'indirizzo privacy@workover.it
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>7. Cookie e Tecnologie di Tracciamento</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>Utilizziamo cookie per:</p>
-              <ul>
-                <li>Mantenere la sessione di login</li>
-                <li>Ricordare le tue preferenze</li>
-                <li>Analizzare l'utilizzo del sito</li>
-                <li>Personalizzare i contenuti</li>
-              </ul>
-              <p>
-                Puoi gestire le preferenze sui cookie dalle impostazioni del browser.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>8. Conservazione dei Dati</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                Conserviamo i tuoi dati personali solo per il tempo necessario agli scopi 
-                per cui sono stati raccolti, in conformità con:
-              </p>
-              <ul>
-                <li>Le nostre necessità operative</li>
-                <li>I requisiti legali applicabili</li>
-                <li>La risoluzione di controversie</li>
-                <li>L'applicazione dei nostri accordi</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>9. Trasferimenti Internazionali</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                I tuoi dati possono essere trasferiti e elaborati in paesi diversi dall'Italia. 
-                Garantiamo che tali trasferimenti rispettino le normative applicabili e che 
-                i tuoi dati ricevano un livello di protezione adeguato.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>10. Minori</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                I nostri servizi non sono destinati a minori di 18 anni. Non raccogliamo 
-                consapevolmente informazioni personali da minori. Se diventiamo consapevoli 
-                di aver raccolto dati di un minore, li cancelleremo immediatamente.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>11. Modifiche alla Privacy Policy</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                Potremmo aggiornare questa Privacy Policy periodicamente. Ti notificheremo 
-                eventuali modifiche significative tramite email o tramite avviso sulla piattaforma.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>12. Contatti</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-gray max-w-none">
-              <p>
-                Per domande sulla privacy o per esercitare i tuoi diritti, contattaci:
-              </p>
-              <ul>
-                <li>Email: privacy@workover.it</li>
-                <li>Data Protection Officer: dpo@workover.it</li>
-                <li>Indirizzo: [Indirizzo della società]</li>
-              </ul>
+              <Separator className="my-6" />
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-600">
+                  Per ulteriori informazioni sui tuoi diritti privacy o per contattare il nostro Data Protection Officer, 
+                  scrivi a{" "}
+                  <a href="mailto:privacy@workover.it" className="text-indigo-600 hover:underline">
+                    privacy@workover.it
+                  </a>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
