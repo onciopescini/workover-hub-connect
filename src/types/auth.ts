@@ -3,7 +3,14 @@ import type { User, Session } from "@supabase/supabase-js";
 import { Database } from "@/integrations/supabase/types";
 
 // Use the actual database schema for Profile type
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
+  // Add missing fields that may not be in the generated types yet
+  phone?: string;
+  city?: string;
+  profession?: string;
+  competencies?: string[];
+  industries?: string[];
+};
 
 export type AuthState = {
   user: User | null;

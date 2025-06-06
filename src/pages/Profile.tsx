@@ -90,24 +90,27 @@ const Profile = () => {
                   </div>
                 )}
                 
-                {profile.phone && (
+                {/* Handle phone field safely */}
+                {(profile as any).phone && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Phone className="h-4 w-4" />
-                    <span>{profile.phone}</span>
+                    <span>{(profile as any).phone}</span>
                   </div>
                 )}
                 
-                {profile.city && (
+                {/* Handle city field safely - use location if city is not available */}
+                {((profile as any).city || profile.location) && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <MapPin className="h-4 w-4" />
-                    <span>{profile.city}</span>
+                    <span>{(profile as any).city || profile.location}</span>
                   </div>
                 )}
                 
-                {profile.profession && (
+                {/* Handle profession field safely - use job_title if profession is not available */}
+                {((profile as any).profession || profile.job_title) && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Briefcase className="h-4 w-4" />
-                    <span>{profile.profession}</span>
+                    <span>{(profile as any).profession || profile.job_title}</span>
                   </div>
                 )}
               </div>
@@ -117,34 +120,56 @@ const Profile = () => {
       </Card>
 
       {/* Professional Information */}
-      {(profile.competencies || profile.industries) && (
+      {(((profile as any).competencies && (profile as any).competencies.length > 0) || 
+        ((profile as any).industries && (profile as any).industries.length > 0) ||
+        (profile.skills && profile.skills.trim())) && (
         <Card>
           <CardHeader>
             <CardTitle>Informazioni Professionali</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {profile.competencies && (
+            {/* Handle competencies field safely - use skills as fallback */}
+            {(((profile as any).competencies && (profile as any).competencies.length > 0) || 
+              (profile.skills && profile.skills.trim())) && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Competenze</h4>
                 <div className="flex flex-wrap gap-2">
-                  {profile.competencies.map((competency, index) => (
-                    <Badge key={index} variant="outline">
-                      {competency}
-                    </Badge>
-                  ))}
+                  {(profile as any).competencies && (profile as any).competencies.length > 0 ? (
+                    (profile as any).competencies.map((competency: string, index: number) => (
+                      <Badge key={index} variant="outline">
+                        {competency}
+                      </Badge>
+                    ))
+                  ) : (
+                    profile.skills && profile.skills.split(',').map((skill, index) => (
+                      <Badge key={index} variant="outline">
+                        {skill.trim()}
+                      </Badge>
+                    ))
+                  )}
                 </div>
               </div>
             )}
             
-            {profile.industries && (
+            {/* Handle industries field safely - use interests as fallback */}
+            {(((profile as any).industries && (profile as any).industries.length > 0) ||
+              (profile.interests && profile.interests.trim())) && (
               <div>
                 <h4 className="font-medium text-gray-900 mb-2">Settori</h4>
                 <div className="flex flex-wrap gap-2">
-                  {profile.industries.map((industry, index) => (
-                    <Badge key={index} variant="outline">
-                      {industry}
-                    </Badge>
-                  ))}
+                  {(profile as any).industries && (profile as any).industries.length > 0 ? (
+                    (profile as any).industries.map((industry: string, index: number) => (
+                      <Badge key={index} variant="outline">
+                        {industry}
+                      </Badge>
+                    ))
+                  ) : (
+                    profile.interests && profile.interests.split(',').map((interest, index) => (
+                      <Badge key={index} variant="outline">
+                        {interest.trim()}
+                      </Badge>
+                    ))
+                  )}
                 </div>
               </div>
             )}
