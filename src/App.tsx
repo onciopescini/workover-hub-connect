@@ -42,6 +42,7 @@ import HostEventNew from './pages/host/HostEventNew';
 import HostRevenue from './pages/host/HostRevenue';
 import PrivacyExportRequest from './pages/PrivacyExportRequest';
 import PrivacyDeletionRequest from './pages/PrivacyDeletionRequest';
+import RegressionValidation from './pages/RegressionValidation';
 
 function App() {
   const { authState } = useAuth();
@@ -132,6 +133,9 @@ function App() {
 
             {/* Payment validation route - Admin only */}
             <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />
+            
+            {/* Regression validation route - Admin only */}
+            <Route path="/regression-validation" element={<AdminProtected><RegressionValidation /></AdminProtected>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
