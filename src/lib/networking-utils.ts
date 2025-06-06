@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Connection, ConnectionSuggestion, PrivateChat, PrivateMessage } from "@/types/networking";
 import { toast } from "sonner";
@@ -184,7 +183,7 @@ export const generateSuggestions = async (): Promise<void> => {
   }
 };
 
-// Get user's private chats
+// Get user's private chats - ensure this function is properly exported
 export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
   try {
     const { data: user } = await supabase.auth.getUser();
@@ -217,6 +216,9 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
     return [];
   }
 };
+
+// Alias for backward compatibility - export the same function with the expected name
+export const fetchUserPrivateChats = getUserPrivateChats;
 
 // Create or get private chat
 export const createOrGetPrivateChat = async (otherUserId: string): Promise<string | null> => {

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Send, Search, ArrowLeft } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PrivateChat, PrivateMessage } from "@/types/networking";
-import { fetchUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/networking-utils";
+import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/networking-utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const PrivateChats = () => {
@@ -37,7 +37,7 @@ const PrivateChats = () => {
 
   const loadChats = async () => {
     try {
-      const userChats = await fetchUserPrivateChats();
+      const userChats = await getUserPrivateChats();
       setChats(userChats);
     } catch (error) {
       console.error("Error loading chats:", error);

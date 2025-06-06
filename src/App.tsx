@@ -4,15 +4,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { default as ProtectedRoute } from '@/components/auth/AuthProtected';
 
 // Public pages
-import LandingPage from '@/pages/LandingPage';
+import LandingPage from '@/pages/Index';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import Spaces from '@/pages/Spaces';
+import Spaces from '@/pages/PublicSpaces';
 import SpaceDetail from '@/pages/SpaceDetail';
-import Events from '@/pages/Events';
+import Events from '@/pages/PublicEvents';
 import EventDetail from '@/pages/EventDetail';
 
 // Protected pages
@@ -27,17 +27,17 @@ import NetworkingDiscover from '@/pages/NetworkingDiscover';
 import PrivateChats from '@/pages/PrivateChats';
 
 // Host pages
-import HostDashboard from '@/pages/host/HostDashboard';
-import HostSpaceManagement from '@/pages/host/HostSpaceManagement';
-import CreateSpace from '@/pages/host/CreateSpace';
-import EditSpace from '@/pages/host/EditSpace';
+import HostDashboard from '@/pages/HostDashboard';
+import HostSpaceManagement from '@/pages/SpacesManage';
+import CreateSpace from '@/pages/SpaceNew';
+import EditSpace from '@/pages/SpaceEdit';
 import HostBookings from '@/pages/host/HostBookings';
 import HostRevenue from '@/pages/host/HostRevenue';
 import HostEvents from '@/pages/host/HostEvents';
-import CreateEvent from '@/pages/host/CreateEvent';
+import CreateEvent from '@/pages/host/HostEventNew';
 
 // Admin pages
-import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminDashboard from '@/pages/admin/AdminDashboardPage';
 import AdminUsersPage from '@/pages/admin/AdminUsersPage';
 import AdminLogsPage from '@/pages/admin/AdminLogsPage';
 import AdminGDPRPage from '@/pages/admin/AdminGDPRPage';
