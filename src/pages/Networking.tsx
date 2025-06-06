@@ -1,208 +1,262 @@
 
 import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, MessageCircle, Search } from "lucide-react";
-import { useNetworking } from "@/hooks/useNetworking";
-import { ConnectionCard } from "@/components/networking/ConnectionCard";
-import { ConnectionRequestCard } from "@/components/networking/ConnectionRequestCard";
-import LoadingScreen from "@/components/LoadingScreen";
-import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Users, Search, UserPlus, MessageCircle, Calendar, MapPin } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function Networking() {
-  const navigate = useNavigate();
-  const { 
-    isLoading, 
-    getActiveConnections, 
-    getSentRequests, 
-    getReceivedRequests 
-  } = useNetworking();
-  
-  const [activeTab, setActiveTab] = useState("connections");
+const Networking = () => {
+  const { authState } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const activeConnections = getActiveConnections();
-  const sentRequests = getSentRequests();
-  const receivedRequests = getReceivedRequests();
+  // Mock data for demonstration - in real app this would come from your networking service
+  const connections = [
+    {
+      id: "1",
+      name: "Marco Rossi",
+      profession: "Designer",
+      location: "Milano",
+      avatar: "",
+      status: "accepted",
+      shared_spaces: 2,
+      last_active: "2 giorni fa"
+    },
+    {
+      id: "2", 
+      name: "Sara Bianchi",
+      profession: "Developer",
+      location: "Roma",
+      avatar: "",
+      status: "pending",
+      shared_spaces: 1,
+      last_active: "1 settimana fa"
+    }
+  ];
 
-  if (isLoading) {
-    return <LoadingScreen />;
+  const suggestions = [
+    {
+      id: "3",
+      name: "Luca Verdi",
+      profession: "Marketing Manager",
+      location: "Torino",
+      avatar: "",
+      shared_context: "Ha prenotato nello stesso spazio",
+      match_score: 85
+    },
+    {
+      id: "4",
+      name: "Elena Neri",
+      profession: "Architetto",
+      location: "Firenze", 
+      avatar: "",
+      shared_context: "Partecipa agli stessi eventi",
+      match_score: 92
+    }
+  ];
+
+  const filteredConnections = connections.filter(conn =>
+    conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    conn.profession.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredSuggestions = suggestions.filter(sugg =>
+    sugg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    sugg.profession.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!authState.isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Accedi per il networking
+            </h3>
+            <p className="text-gray-600">
+              Devi effettuare l'accesso per connetterti con altri professionisti.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-6 h-6 text-indigo-600" />
-                Networking
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Connettiti con altri coworker e costruisci la tua rete professionale
-              </p>
-            </div>
-            <Button 
-              onClick={() => navigate("/networking/discover")}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Search className="w-4 h-4 mr-2" />
-              Scopri Coworker
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-indigo-50 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600" />
-                <span className="font-medium text-indigo-900">Connessioni Attive</span>
-              </div>
-              <p className="text-2xl font-bold text-indigo-600 mt-1">
-                {activeConnections.length}
-              </p>
-            </div>
-            
-            <div className="bg-orange-50 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-orange-600" />
-                <span className="font-medium text-orange-900">Richieste Inviate</span>
-              </div>
-              <p className="text-2xl font-bold text-orange-600 mt-1">
-                {sentRequests.length}
-              </p>
-            </div>
-            
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-900">Richieste Ricevute</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-2xl font-bold text-green-600">
-                  {receivedRequests.length}
-                </p>
-                {receivedRequests.length > 0 && (
-                  <Badge variant="destructive" className="text-xs">
-                    Nuove
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Networking</h1>
+          <p className="text-gray-600">
+            Connettiti con professionisti che condividono i tuoi spazi ed eventi
+          </p>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        {/* Search */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Cerca per nome o professione..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="connections" className="space-y-6">
+          <TabsList>
             <TabsTrigger value="connections" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Connessioni Attive
-              {activeConnections.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {activeConnections.length}
-                </Badge>
-              )}
+              <Users className="h-4 w-4" />
+              Le mie connessioni
             </TabsTrigger>
-            <TabsTrigger value="sent" className="flex items-center gap-2">
-              <UserPlus className="w-4 h-4" />
-              Richieste Inviate
-              {sentRequests.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {sentRequests.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="received" className="flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              Richieste Ricevute
-              {receivedRequests.length > 0 && (
-                <Badge variant="destructive" className="ml-1">
-                  {receivedRequests.length}
-                </Badge>
-              )}
+            <TabsTrigger value="suggestions" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Suggerimenti
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="connections" className="space-y-4">
-            {activeConnections.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nessuna connessione attiva
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Inizia a connetterti con altri coworker per espandere la tua rete
-                </p>
-                <Button 
-                  onClick={() => navigate("/networking/discover")}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Scopri Coworker
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {activeConnections.map((connection) => (
-                  <ConnectionCard 
-                    key={connection.id} 
-                    connection={connection} 
-                  />
-                ))}
-              </div>
-            )}
+          {/* Connections Tab */}
+          <TabsContent value="connections">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredConnections.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nessuna connessione trovata
+                  </h3>
+                  <p className="text-gray-600">
+                    {searchQuery ? "Prova a modificare la ricerca" : "Inizia a connetterti con altri professionisti"}
+                  </p>
+                </div>
+              ) : (
+                filteredConnections.map((connection) => (
+                  <Card key={connection.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={connection.avatar} />
+                          <AvatarFallback>
+                            {connection.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {connection.name}
+                            </h3>
+                            <Badge variant={connection.status === 'accepted' ? 'default' : 'secondary'}>
+                              {connection.status === 'accepted' ? 'Connesso' : 'In attesa'}
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 mb-1">{connection.profession}</p>
+                          
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+                            <MapPin className="h-3 w-3" />
+                            {connection.location}
+                          </div>
+                          
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
+                            <Calendar className="h-3 w-3" />
+                            {connection.shared_spaces} spazi condivisi • Attivo {connection.last_active}
+                          </div>
+                          
+                          {connection.status === 'accepted' && (
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1">
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                Messaggio
+                              </Button>
+                              <Button size="sm" variant="outline">
+                                Profilo
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
 
-          <TabsContent value="sent" className="space-y-4">
-            {sentRequests.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <UserPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nessuna richiesta inviata
-                </h3>
-                <p className="text-gray-600">
-                  Le richieste di connessione che invii appariranno qui
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {sentRequests.map((connection) => (
-                  <ConnectionRequestCard 
-                    key={connection.id} 
-                    connection={connection} 
-                    type="sent"
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="received" className="space-y-4">
-            {receivedRequests.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nessuna richiesta ricevuta
-                </h3>
-                <p className="text-gray-600">
-                  Le richieste di connessione che ricevi appariranno qui
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {receivedRequests.map((connection) => (
-                  <ConnectionRequestCard 
-                    key={connection.id} 
-                    connection={connection} 
-                    type="received"
-                  />
-                ))}
-              </div>
-            )}
+          {/* Suggestions Tab */}
+          <TabsContent value="suggestions">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSuggestions.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <UserPlus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nessun suggerimento trovato
+                  </h3>
+                  <p className="text-gray-600">
+                    {searchQuery ? "Prova a modificare la ricerca" : "I suggerimenti appariranno man mano che utilizzi la piattaforma"}
+                  </p>
+                </div>
+              ) : (
+                filteredSuggestions.map((suggestion) => (
+                  <Card key={suggestion.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={suggestion.avatar} />
+                          <AvatarFallback>
+                            {suggestion.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-gray-900 truncate">
+                              {suggestion.name}
+                            </h3>
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              {suggestion.match_score}% match
+                            </Badge>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 mb-1">{suggestion.profession}</p>
+                          
+                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+                            <MapPin className="h-3 w-3" />
+                            {suggestion.location}
+                          </div>
+                          
+                          <p className="text-xs text-blue-600 mb-4">
+                            {suggestion.shared_context}
+                          </p>
+                          
+                          <div className="flex gap-2">
+                            <Button size="sm" className="flex-1">
+                              <UserPlus className="h-3 w-3 mr-1" />
+                              Connetti
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              Profilo
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
     </div>
   );
-}
+};
+
+export default Networking;

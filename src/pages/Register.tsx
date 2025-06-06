@@ -10,14 +10,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, signInWithGoogle, authState } = useAuth();
+  const { signUp, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already authenticated
@@ -32,28 +34,44 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
+    if (password !== confirmPassword) {
+      setError('Le password non coincidono');
+      setIsLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('La password deve essere di almeno 6 caratteri');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await signIn(email, password);
-      toast.success('Accesso effettuato con successo!');
-      navigate('/dashboard');
+      await signUp(email, password);
+      toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
+      navigate('/login');
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Errore durante l\'accesso. Verifica le credenziali.');
+      console.error('Registration error:', err);
+      if (err.message?.includes('already registered')) {
+        setError('Questo indirizzo email è già registrato. Prova ad accedere.');
+      } else {
+        setError(err.message || 'Errore durante la registrazione. Riprova.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
     setIsLoading(true);
     setError('');
 
     try {
       await signInWithGoogle();
-      toast.success('Accesso con Google effettuato!');
+      toast.success('Registrazione con Google completata!');
     } catch (err: any) {
-      console.error('Google sign in error:', err);
-      setError(err.message || 'Errore durante l\'accesso con Google.');
+      console.error('Google sign up error:', err);
+      setError(err.message || 'Errore durante la registrazione con Google.');
     } finally {
       setIsLoading(false);
     }
@@ -68,12 +86,12 @@ const Login = () => {
             <Building2 className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Workover</h1>
-          <p className="mt-2 text-gray-600">Accedi al tuo account</p>
+          <p className="mt-2 text-gray-600">Crea il tuo account</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Accedi</CardTitle>
+            <CardTitle>Registrati</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
@@ -106,7 +124,7 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
-                    placeholder="La tua password"
+                    placeholder="Almeno 6 caratteri"
                   />
                   <button
                     type="button"
@@ -122,12 +140,38 @@ const Login = () => {
                 </div>
               </div>
 
+              <div>
+                <Label htmlFor="confirmPassword">Conferma Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    placeholder="Ripeti la password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? 'Accesso in corso...' : 'Accedi'}
+                {isLoading ? 'Registrazione in corso...' : 'Registrati'}
               </Button>
             </form>
 
@@ -143,17 +187,17 @@ const Login = () => {
             <Button
               variant="outline"
               className="w-full"
-              onClick={handleGoogleSignIn}
+              onClick={handleGoogleSignUp}
               disabled={isLoading}
             >
-              Continua con Google
+              Registrati con Google
             </Button>
 
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600">
-                Non hai ancora un account?{' '}
-                <Link to="/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
-                  Registrati
+                Hai già un account?{' '}
+                <Link to="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                  Accedi
                 </Link>
               </p>
               <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
@@ -167,4 +211,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

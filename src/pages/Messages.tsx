@@ -1,226 +1,274 @@
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Users, Calendar, Building } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-
-interface BookingWithSpace {
-  id: string;
-  booking_date: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
-  space: {
-    id: string;
-    title: string;
-    host_id: string;
-  } | null;
-}
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Search, Send, Paperclip } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
+import { fetchBookingMessages } from "@/lib/message-utils";
+import { useBookings } from "@/hooks/useBookings";
+import { formatDistanceToNow } from "date-fns";
+import { it } from "date-fns/locale";
 
 const Messages = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate();
+  const { bookings } = useBookings();
+  const [selectedBookingId, setSelectedBookingId] = useState<string>("");
+  const [newMessage, setNewMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: bookings, isLoading } = useQuery({
-    queryKey: ['user-bookings-messages', authState.user?.id],
-    queryFn: async () => {
-      if (!authState.user?.id) return [];
-
-      try {
-        // Prima, otteniamo tutti i bookings dell'utente come coworker
-        const { data: coworkerBookings, error: coworkerError } = await supabase
-          .from('bookings')
-          .select('id, booking_date, status, space_id')
-          .eq('user_id', authState.user.id)
-          .order('booking_date', { ascending: false });
-
-        if (coworkerError) {
-          console.error('Error fetching coworker bookings:', coworkerError);
-          throw coworkerError;
-        }
-
-        // Poi, otteniamo gli spazi dell'utente per trovare i bookings come host
-        const { data: userSpaces, error: spacesError } = await supabase
-          .from('spaces')
-          .select('id')
-          .eq('host_id', authState.user.id);
-
-        if (spacesError) {
-          console.error('Error fetching user spaces:', spacesError);
-          throw spacesError;
-        }
-
-        let hostBookings: any[] = [];
-        if (userSpaces && userSpaces.length > 0) {
-          const spaceIds = userSpaces.map(s => s.id);
-          const { data: hostBookingsData, error: hostError } = await supabase
-            .from('bookings')
-            .select('id, booking_date, status, space_id')
-            .in('space_id', spaceIds)
-            .neq('user_id', authState.user.id)
-            .order('booking_date', { ascending: false });
-
-          if (hostError) {
-            console.error('Error fetching host bookings:', hostError);
-            throw hostError;
-          }
-
-          hostBookings = hostBookingsData || [];
-        }
-
-        // Combiniamo tutti i bookings
-        const allBookings = [...(coworkerBookings || []), ...hostBookings];
-
-        if (allBookings.length === 0) return [];
-
-        // Otteniamo i dettagli degli spazi
-        const spaceIds = [...new Set(allBookings.map(b => b.space_id))];
-        const { data: spacesData, error: spacesDataError } = await supabase
-          .from('spaces')
-          .select('id, title, host_id')
-          .in('id', spaceIds);
-
-        if (spacesDataError) {
-          console.error('Error fetching spaces data:', spacesDataError);
-          throw spacesDataError;
-        }
-
-        // Combiniamo i dati
-        const bookingsWithSpaces: BookingWithSpace[] = allBookings.map(booking => ({
-          id: booking.id,
-          booking_date: booking.booking_date,
-          status: booking.status,
-          space: spacesData?.find(space => space.id === booking.space_id) || null
-        }));
-
-        return bookingsWithSpaces;
-      } catch (error) {
-        console.error('Error in Messages query:', error);
-        return [];
-      }
-    },
-    enabled: !!authState.user?.id,
+  // Get messages for selected booking
+  const { data: messages = [], isLoading } = useQuery({
+    queryKey: ['booking-messages', selectedBookingId],
+    queryFn: () => selectedBookingId ? fetchBookingMessages(selectedBookingId) : Promise.resolve([]),
+    enabled: !!selectedBookingId,
+    refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
   });
 
-  const handleBookingClick = (bookingId: string) => {
-    navigate(`/messages/${bookingId}`);
+  // Filter bookings for message view
+  const messageableBookings = bookings.filter(booking => 
+    booking.status === 'confirmed' || booking.status === 'pending'
+  );
+
+  // Filter bookings by search
+  const filteredBookings = messageableBookings.filter(booking =>
+    booking.space?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (booking.space?.profiles?.first_name + ' ' + booking.space?.profiles?.last_name)
+      .toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Auto-select first booking if none selected
+  useEffect(() => {
+    if (!selectedBookingId && filteredBookings.length > 0) {
+      setSelectedBookingId(filteredBookings[0].id);
+    }
+  }, [selectedBookingId, filteredBookings]);
+
+  const selectedBooking = bookings.find(b => b.id === selectedBookingId);
+
+  const getUserRole = (booking: any) => {
+    return authState.user?.id === booking.space?.host_id ? "host" : "coworker";
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const getOtherPartyName = (booking: any) => {
+    const userRole = getUserRole(booking);
+    if (userRole === "host") {
+      // Host sees coworker's name - we need to get coworker profile
+      return "Coworker"; // Simplified for now
+    } else {
+      // Coworker sees host's name
+      const host = booking.space?.profiles;
+      return host ? `${host.first_name} ${host.last_name}` : "Host";
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Confermata';
-      case 'pending':
-        return 'In attesa';
-      case 'cancelled':
-        return 'Cancellata';
-      default:
-        return status;
-    }
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedBookingId) return;
+    
+    // Here you would implement sendBookingMessage
+    console.log('Sending message:', newMessage, 'to booking:', selectedBookingId);
+    setNewMessage("");
   };
 
-  if (isLoading) {
+  if (!authState.isAuthenticated) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="p-8 text-center">
+            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Accedi per vedere i messaggi
+            </h3>
+            <p className="text-gray-600">
+              Devi effettuare l'accesso per visualizzare e inviare messaggi.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Messaggi
-          </h1>
-          <p className="text-gray-600 mt-1">I tuoi messaggi di prenotazione</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Messaggi</h1>
+          <p className="text-gray-600">
+            Comunica con host e coworker per le tue prenotazioni
+          </p>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/private-chats')}
-              className="flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Chat Private
-            </Button>
-          </div>
-        </div>
-
-        {!bookings || bookings.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nessun messaggio
-            </h3>
-            <p className="text-gray-600">
-              Non hai ancora messaggi relativi alle prenotazioni.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <Card 
-                key={booking.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleBookingClick(booking.id)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Building className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">
-                          {booking.space?.title || 'Spazio non disponibile'}
-                        </CardTitle>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm text-gray-600">
-                            {new Date(booking.booking_date).toLocaleDateString('it-IT')}
-                          </span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+          {/* Conversations List */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Conversazioni
+              </CardTitle>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Cerca conversazioni..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-96">
+                {filteredBookings.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p>Nessuna conversazione attiva</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {filteredBookings.map((booking) => (
+                      <div
+                        key={booking.id}
+                        className={`p-4 cursor-pointer border-b hover:bg-gray-50 ${
+                          selectedBookingId === booking.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                        }`}
+                        onClick={() => setSelectedBookingId(booking.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={booking.space?.profiles?.profile_photo_url || ""} />
+                            <AvatarFallback>
+                              {getOtherPartyName(booking).charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-gray-900 truncate">
+                                {getOtherPartyName(booking)}
+                              </p>
+                              <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
+                                {booking.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600 truncate">
+                              {booking.space?.title}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatDistanceToNow(new Date(booking.booking_date), {
+                                addSuffix: true,
+                                locale: it
+                              })}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Messages Area */}
+          <Card className="lg:col-span-2">
+            {selectedBooking ? (
+              <>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={selectedBooking.space?.profiles?.profile_photo_url || ""} />
+                      <AvatarFallback>
+                        {getOtherPartyName(selectedBooking).charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-lg">
+                        {getOtherPartyName(selectedBooking)}
+                      </CardTitle>
+                      <p className="text-sm text-gray-600">
+                        {selectedBooking.space?.title}
+                      </p>
                     </div>
-                    <Badge className={getStatusColor(booking.status)}>
-                      {getStatusLabel(booking.status)}
-                    </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      Clicca per visualizzare i messaggi
-                    </span>
-                    <MessageSquare className="h-4 w-4 text-gray-400" />
+                
+                <CardContent className="flex flex-col h-96">
+                  {/* Messages */}
+                  <ScrollArea className="flex-1 mb-4">
+                    {isLoading ? (
+                      <div className="text-center py-8 text-gray-500">
+                        Caricamento messaggi...
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                        <p>Nessun messaggio ancora</p>
+                        <p className="text-sm">Inizia la conversazione!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 p-4">
+                        {messages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${
+                              message.sender_id === authState.user?.id ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            <div
+                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                message.sender_id === authState.user?.id
+                                  ? 'bg-blue-500 text-white'
+                                  : 'bg-gray-200 text-gray-900'
+                              }`}
+                            >
+                              <p>{message.content}</p>
+                              <p className={`text-xs mt-1 ${
+                                message.sender_id === authState.user?.id ? 'text-blue-100' : 'text-gray-500'
+                              }`}>
+                                {formatDistanceToNow(new Date(message.created_at), {
+                                  addSuffix: true,
+                                  locale: it
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+
+                  {/* Message Input */}
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon">
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      placeholder="Scrivi un messaggio..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      className="flex-1"
+                    />
+                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+              </>
+            ) : (
+              <CardContent className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-500">
+                  <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">Seleziona una conversazione</p>
+                  <p>Scegli una prenotazione per iniziare a chattare</p>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        </div>
       </div>
     </div>
   );

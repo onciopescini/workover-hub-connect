@@ -25,7 +25,9 @@ export function MainLayout({ children, title, subtitle }: MainLayoutProps) {
             </div>
           </div>
         )}
-        {children}
+        <div className="w-full">
+          {children}
+        </div>
       </main>
     </div>
   );

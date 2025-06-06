@@ -5,7 +5,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Calendar, Users, Building2 } from "lucide-react";
+import { MapPin, Calendar, Users, Building2, MessageSquare, Bell } from "lucide-react";
 
 const Dashboard = () => {
   const { authState } = useAuth();
@@ -25,9 +25,14 @@ const Dashboard = () => {
           <p className="text-gray-600 mb-6">
             Accedi per visualizzare la tua dashboard personalizzata
           </p>
-          <Button onClick={() => navigate('/login')}>
-            Accedi
-          </Button>
+          <div className="space-x-4">
+            <Button onClick={() => navigate('/login')}>
+              Accedi
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/register')}>
+              Registrati
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -85,6 +90,48 @@ const Dashboard = () => {
           <CardContent>
             <p className="text-gray-600 text-sm">
               Gestisci le tue prenotazioni attive
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/messages')}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+              Messaggi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-sm">
+              Comunica con host e coworker
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/networking')}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5 text-orange-600" />
+              Networking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-sm">
+              Connettiti con altri professionisti
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/notifications')}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bell className="h-5 w-5 text-red-600" />
+              Notifiche
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-sm">
+              Rimani aggiornato su tutte le attività
             </p>
           </CardContent>
         </Card>

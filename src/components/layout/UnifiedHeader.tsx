@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users, Settings } from "lucide-react";
+import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users, Settings, Bell } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationIcon } from "@/components/notifications/NotificationIcon";
 
@@ -43,7 +43,7 @@ export function UnifiedHeader() {
   }, [authState.profile?.first_name, authState.profile?.last_name]);
 
   const getDashboardUrl = useCallback(() => {
-    if (authState.profile?.role === "admin") return "/admin";
+    if (authState.profile?.role === "admin") return "/dashboard";
     if (authState.profile?.role === "host") return "/dashboard";
     return "/dashboard";
   }, [authState.profile?.role]);
@@ -59,26 +59,31 @@ export function UnifiedHeader() {
 
     const role = authState.profile?.role;
 
-    if (role === "host") {
-      return [
-        { path: '/dashboard', label: 'Dashboard', icon: Building2 },
-        { path: '/manage-space', label: 'Gestisci Spazi', icon: Building2 },
-        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
-        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
-      ];
-    }
-
     if (role === "admin") {
       return [
         { path: '/dashboard', label: 'Dashboard', icon: Settings },
         { path: '/spaces', label: 'Spazi', icon: Building2 },
+        { path: '/events', label: 'Eventi', icon: Calendar },
         { path: '/admin/users', label: 'Utenti', icon: Users },
         { path: '/validation', label: 'Validazione', icon: Settings },
       ];
     }
 
+    if (role === "host") {
+      return [
+        { path: '/dashboard', label: 'Dashboard', icon: Building2 },
+        { path: '/spaces', label: 'Spazi', icon: Building2 },
+        { path: '/events', label: 'Eventi', icon: Calendar },
+        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
+        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+        { path: '/networking', label: 'Networking', icon: Users },
+        { path: '/manage-space', label: 'Gestisci Spazi', icon: Settings },
+      ];
+    }
+
     // Coworker navigation
     return [
+      { path: '/dashboard', label: 'Dashboard', icon: Building2 },
       { path: '/spaces', label: 'Spazi', icon: Building2 },
       { path: '/events', label: 'Eventi', icon: Calendar },
       { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
@@ -107,19 +112,20 @@ export function UnifiedHeader() {
           </div>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-4">
             {getMainNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Button
                   key={item.path}
                   variant={isActivePath(item.path) ? 'default' : 'ghost'}
+                  size="sm"
                   onClick={() => handleNavigation(item.path)}
-                  className={`flex items-center gap-2 ${
+                  className={`flex items-center gap-1 text-sm ${
                     isActivePath(item.path) ? 'bg-indigo-600 text-white' : ''
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3 w-3" />
                   {item.label}
                 </Button>
               );
@@ -132,13 +138,15 @@ export function UnifiedHeader() {
               <>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => navigate('/login')}
                   className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
                 >
                   Accedi
                 </Button>
                 <Button
-                  onClick={() => navigate('/signup')}
+                  size="sm"
+                  onClick={() => navigate('/register')}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
                   Registrati
@@ -179,6 +187,11 @@ export function UnifiedHeader() {
                     <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
                       <User className="mr-2 h-4 w-4" />
                       <span>Visualizza Profilo</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={() => handleNavigation('/notifications')}>
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Notifiche</span>
                     </DropdownMenuItem>
                     
                     <DropdownMenuSeparator />

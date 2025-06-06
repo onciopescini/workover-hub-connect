@@ -5,11 +5,15 @@ import { useAuth } from './contexts/AuthContext';
 import { MainLayout } from './components/layout/MainLayout';
 import AdminProtected from './components/auth/AdminProtected';
 import Index from './pages/Index';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import PublicSpaces from './pages/PublicSpaces';
 import SpaceDetail from './pages/SpaceDetail';
 import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
 import Bookings from './pages/Bookings';
+import Messages from './pages/Messages';
+import Networking from './pages/Networking';
 import SpacesManage from './pages/SpacesManage';
 import SpaceNew from './pages/SpaceNew';
 import SpaceEdit from './pages/SpaceEdit';
@@ -72,41 +76,52 @@ function App() {
   }, [location, navigate, toast]);
 
   return (
-    <MainLayout>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/spaces" element={<PublicSpaces />} />
-        <Route path="/spaces/:id" element={<SpaceDetail />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/edit" element={<ProfileEdit />} />
-        <Route path="/profile/become-host" element={<Onboarding />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
-        <Route path="/manage-space" element={<SpacesManage />} />
-        <Route path="/create-space" element={<SpaceNew />} />
-        <Route path="/update-space/:id" element={<SpaceEdit />} />
-        <Route path="/stripe/callback" element={<AuthCallback />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/events" element={<PublicEvents />} />
-        <Route path="/events/:id" element={<EventDetail />} />
-        
-        {/* Admin routes */}
-        <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
-        <Route path="/admin/spaces" element={<AdminProtected><AdminSpacesPage /></AdminProtected>} />
-        <Route path="/admin/logs" element={<AdminProtected><AdminLogsPage /></AdminProtected>} />
+    <Routes>
+      {/* Public routes without main layout */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      
+      {/* Routes with main layout */}
+      <Route path="/*" element={
+        <MainLayout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/spaces" element={<PublicSpaces />} />
+            <Route path="/spaces/:id" element={<SpaceDetail />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/edit" element={<ProfileEdit />} />
+            <Route path="/profile/become-host" element={<Onboarding />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/networking" element={<Networking />} />
+            <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
+            <Route path="/manage-space" element={<SpacesManage />} />
+            <Route path="/create-space" element={<SpaceNew />} />
+            <Route path="/update-space/:id" element={<SpaceEdit />} />
+            <Route path="/stripe/callback" element={<AuthCallback />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/events" element={<PublicEvents />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
+            <Route path="/admin/spaces" element={<AdminProtected><AdminSpacesPage /></AdminProtected>} />
+            <Route path="/admin/logs" element={<AdminProtected><AdminLogsPage /></AdminProtected>} />
 
-        {/* Payment validation route - Admin only */}
-        <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </MainLayout>
+            {/* Payment validation route - Admin only */}
+            <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </MainLayout>
+      } />
+    </Routes>
   );
 }
 
