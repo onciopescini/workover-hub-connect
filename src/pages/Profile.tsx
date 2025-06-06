@@ -1,118 +1,200 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Mail, Phone, MapPin, Calendar } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Briefcase, 
+  Edit,
+  Calendar,
+  Globe
+} from "lucide-react";
+import LoadingScreen from "@/components/LoadingScreen";
 
 const Profile = () => {
-  const navigate = useNavigate();
   const { authState } = useAuth();
+  const navigate = useNavigate();
 
-  if (!authState.profile) {
+  if (authState.isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!authState.isAuthenticated || !authState.profile) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center">
-          <p className="text-gray-600">Caricamento profilo...</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Profilo non disponibile
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Devi effettuare l'accesso per visualizzare il profilo
+          </p>
+          <Button onClick={() => navigate('/login')}>
+            Accedi
+          </Button>
         </div>
       </div>
     );
   }
 
-  const { profile, user } = authState;
+  const { profile } = authState;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Il Mio Profilo
-          </h1>
-          <p className="text-gray-600">
-            Visualizza le tue informazioni personali e professionali
-          </p>
-        </div>
-        <Button onClick={() => navigate('/profile/edit')} className="flex items-center gap-2">
-          <Edit className="h-4 w-4" />
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Il Mio Profilo</h1>
+        <Button onClick={() => navigate('/profile/edit')}>
+          <Edit className="h-4 w-4 mr-2" />
           Modifica Profilo
         </Button>
       </div>
-      
+
+      {/* Profile Header */}
       <Card>
-        <CardHeader>
-          <CardTitle>Informazioni Personali</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-20 w-20">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-6">
+            <Avatar className="h-24 w-24">
               <AvatarImage src={profile.profile_photo_url || ""} />
-              <AvatarFallback className="text-lg">
-                {profile.first_name?.charAt(0) || ""}{profile.last_name?.charAt(0) || ""}
+              <AvatarFallback className="text-xl">
+                {profile.first_name?.charAt(0)}{profile.last_name?.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h2 className="text-2xl font-semibold">
-                {profile.first_name} {profile.last_name}
-              </h2>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={profile.role === 'host' ? 'default' : 'secondary'}>
-                  {profile.role === 'host' ? 'Host' : profile.role === 'admin' ? 'Admin' : 'Coworker'}
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {profile.first_name} {profile.last_name}
+                </h2>
+                <Badge variant={profile.role === 'admin' ? 'destructive' : 'default'}>
+                  {profile.role === 'admin' ? 'Admin' : 
+                   profile.role === 'host' ? 'Host' : 'Coworker'}
                 </Badge>
               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-900">{user?.email}</span>
-              </div>
               
-              {/* Handle optional phone field */}
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-900">
-                  {(profile as any).phone || "Non specificato"}
-                </span>
-              </div>
-              
-              {/* Handle optional city field */}
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-900">
-                  {(profile as any).city || "Non specificata"}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-gray-900">
-                  Membro da {new Date(profile.created_at).toLocaleDateString('it-IT')}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
               {profile.bio && (
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Biografia</h3>
-                  <p className="text-gray-600">{profile.bio}</p>
-                </div>
+                <p className="text-gray-600 mb-4">{profile.bio}</p>
               )}
               
-              {/* Handle optional profession field */}
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Professione</h3>
-                <p className="text-gray-600">
-                  {(profile as any).profession || "Non specificata"}
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {authState.user?.email && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Mail className="h-4 w-4" />
+                    <span>{authState.user.email}</span>
+                  </div>
+                )}
+                
+                {profile.phone && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Phone className="h-4 w-4" />
+                    <span>{profile.phone}</span>
+                  </div>
+                )}
+                
+                {profile.city && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span>{profile.city}</span>
+                  </div>
+                )}
+                
+                {profile.profession && (
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Briefcase className="h-4 w-4" />
+                    <span>{profile.profession}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Professional Information */}
+      {(profile.competencies || profile.industries) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Informazioni Professionali</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profile.competencies && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Competenze</h4>
+                <div className="flex flex-wrap gap-2">
+                  {profile.competencies.map((competency, index) => (
+                    <Badge key={index} variant="outline">
+                      {competency}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {profile.industries && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Settori</h4>
+                <div className="flex flex-wrap gap-2">
+                  {profile.industries.map((industry, index) => (
+                    <Badge key={index} variant="outline">
+                      {industry}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Social Links */}
+      {profile.linkedin_url && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Link Social</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-gray-600" />
+              <a 
+                href={profile.linkedin_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800"
+              >
+                LinkedIn
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Account Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informazioni Account</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Data registrazione:</span>
+            <span className="font-medium">
+              {new Date(profile.created_at).toLocaleDateString('it-IT')}
+            </span>
+          </div>
+          
+          {profile.last_login_at && (
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">Ultimo accesso:</span>
+              <span className="font-medium">
+                {new Date(profile.last_login_at).toLocaleDateString('it-IT')}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -36,6 +35,7 @@ import { checkAndUpdateStripeStatus } from './lib/stripe-status-utils';
 import Dashboard from './pages/Dashboard';
 import Notifications from './pages/Notifications';
 import PaymentValidation from './pages/PaymentValidation';
+import PrivateChats from './pages/PrivateChats';
 
 function App() {
   const { authState } = useAuth();
@@ -93,12 +93,14 @@ function App() {
             <Route path="/profile/become-host" element={<Onboarding />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/messages" element={<Messages />} />
+            <Route path="/private-chats/:chatId" element={<PrivateChats />} />
             <Route path="/networking" element={<Networking />} />
             <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
             <Route path="/manage-space" element={<SpacesManage />} />
             <Route path="/create-space" element={<SpaceNew />} />
             <Route path="/update-space/:id" element={<SpaceEdit />} />
             <Route path="/stripe/callback" element={<AuthCallback />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/about" element={<About />} />
