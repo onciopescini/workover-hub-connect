@@ -2,12 +2,13 @@
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { AppLayout } from './components/layout/AppLayout';
+import { MainLayout } from './components/layout/MainLayout';
 import AdminProtected from './components/auth/AdminProtected';
 import Index from './pages/Index';
 import PublicSpaces from './pages/PublicSpaces';
 import SpaceDetail from './pages/SpaceDetail';
 import Profile from './pages/Profile';
+import ProfileEdit from './pages/ProfileEdit';
 import Bookings from './pages/Bookings';
 import SpacesManage from './pages/SpacesManage';
 import SpaceNew from './pages/SpaceNew';
@@ -39,9 +40,9 @@ function App() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Redirect user to home page after login
+    // Redirect user to dashboard after login, not home page
     if (authState.isAuthenticated && location.pathname === '/login') {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [authState.isAuthenticated, location, navigate]);
 
@@ -60,10 +61,10 @@ function App() {
 
     if (toastMessage) {
       toast({
-      title: toastType === 'success' ? 'Successo!' : 'Attenzione!',
+        title: toastType === 'success' ? 'Successo!' : 'Attenzione!',
         description: toastMessage,
         variant: toastType === 'success' ? 'default' : 'destructive',
-    })
+      })
       // Clear the toast message from the URL
       const newUrl = location.pathname;
       navigate(newUrl, { replace: true });
@@ -71,12 +72,13 @@ function App() {
   }, [location, navigate, toast]);
 
   return (
-    <AppLayout>
+    <MainLayout>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/spaces" element={<PublicSpaces />} />
         <Route path="/spaces/:id" element={<SpaceDetail />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/edit" element={<ProfileEdit />} />
         <Route path="/profile/become-host" element={<Onboarding />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
@@ -104,7 +106,7 @@ function App() {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AppLayout>
+    </MainLayout>
   );
 }
 

@@ -44,8 +44,8 @@ export function UnifiedHeader() {
 
   const getDashboardUrl = useCallback(() => {
     if (authState.profile?.role === "admin") return "/admin";
-    if (authState.profile?.role === "host") return "/host/dashboard";
-    return "/app/spaces"; // Unified redirect for coworkers
+    if (authState.profile?.role === "host") return "/dashboard";
+    return "/dashboard";
   }, [authState.profile?.role]);
 
   // Role-specific navigation items
@@ -61,8 +61,8 @@ export function UnifiedHeader() {
 
     if (role === "host") {
       return [
-        { path: '/host/dashboard', label: 'Dashboard Host', icon: Building2 },
-        { path: '/spaces/manage', label: 'Gestisci Spazi', icon: Building2 },
+        { path: '/dashboard', label: 'Dashboard', icon: Building2 },
+        { path: '/manage-space', label: 'Gestisci Spazi', icon: Building2 },
         { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
         { path: '/messages', label: 'Messaggi', icon: MessageSquare },
       ];
@@ -70,16 +70,17 @@ export function UnifiedHeader() {
 
     if (role === "admin") {
       return [
-        { path: '/admin', label: 'Dashboard Admin', icon: Settings },
-        { path: '/spaces/manage', label: 'Gestione Spazi', icon: Building2 },
-        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
+        { path: '/dashboard', label: 'Dashboard', icon: Settings },
+        { path: '/spaces', label: 'Spazi', icon: Building2 },
+        { path: '/admin/users', label: 'Utenti', icon: Users },
+        { path: '/validation', label: 'Validazione', icon: Settings },
       ];
     }
 
     // Coworker navigation
     return [
-      { path: '/app/spaces', label: 'Spazi', icon: Building2 },
-      { path: '/app/events', label: 'Eventi', icon: Calendar },
+      { path: '/spaces', label: 'Spazi', icon: Building2 },
+      { path: '/events', label: 'Eventi', icon: Calendar },
       { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
       { path: '/messages', label: 'Messaggi', icon: MessageSquare },
       { path: '/networking', label: 'Networking', icon: Users },
@@ -97,7 +98,7 @@ export function UnifiedHeader() {
           {/* Logo */}
           <div 
             className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(authState.isAuthenticated ? '/dashboard' : '/')}
           >
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-5 h-5 text-white" />
@@ -170,16 +171,10 @@ export function UnifiedHeader() {
                     </div>
                     <DropdownMenuSeparator />
                     
-                    {/* Role-specific navigation */}
-                    {(authState.profile?.role === "host" || authState.profile?.role === "admin") && (
-                      <>
-                        <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
-                          <Building2 className="mr-2 h-4 w-4" />
-                          <span>Dashboard</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
+                    <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
                     
                     <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
                       <User className="mr-2 h-4 w-4" />
