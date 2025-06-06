@@ -72,19 +72,21 @@ const Profile = () => {
                 <span className="text-gray-900">{user?.email}</span>
               </div>
               
-              {profile.phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-900">{profile.phone}</span>
-                </div>
-              )}
+              {/* Handle optional phone field */}
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-900">
+                  {(profile as any).phone || "Non specificato"}
+                </span>
+              </div>
               
-              {profile.city && (
-                <div className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-900">{profile.city}</span>
-                </div>
-              )}
+              {/* Handle optional city field */}
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span className="text-gray-900">
+                  {(profile as any).city || "Non specificata"}
+                </span>
+              </div>
               
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
@@ -102,12 +104,13 @@ const Profile = () => {
                 </div>
               )}
               
-              {profile.profession && (
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Professione</h3>
-                  <p className="text-gray-600">{profile.profession}</p>
-                </div>
-              )}
+              {/* Handle optional profession field */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Professione</h3>
+                <p className="text-gray-600">
+                  {(profile as any).profession || "Non specificata"}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>

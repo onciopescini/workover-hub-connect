@@ -16,7 +16,6 @@ interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement
   enableResponsive?: boolean;
   aspectRatio?: string;
   onLoadComplete?: () => void;
-  onErrorCustom?: (error: string) => void;
 }
 
 export function ProgressiveImage({
@@ -30,7 +29,6 @@ export function ProgressiveImage({
   aspectRatio,
   className,
   onLoadComplete,
-  onErrorCustom,
   onLoad,
   onError,
   onLoadStart,
@@ -100,16 +98,16 @@ export function ProgressiveImage({
     });
   }, [src, alt, onLoadComplete]);
 
-  const handleImageError = useCallback((error: string) => {
+  const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
     setHasError(true);
-    onErrorCustom?.(error);
+    onError?.(event);
     
     progressiveLogger.error('Progressive image load failed', {
       action: 'progressive_load_error',
       src,
       alt
-    }, new Error(error));
-  }, [src, alt, onErrorCustom]);
+    }, new Error('Image failed to load'));
+  }, [src, alt, onError]);
 
   // Calculate container style with aspect ratio
   const containerStyle: React.CSSProperties = {
@@ -151,7 +149,7 @@ export function ProgressiveImage({
           enableWebP={false} // Usually already optimized
           enableResponsive={false}
           onLoadComplete={handleLowQualityLoad}
-          onErrorCustom={handleImageError}
+          onError={handleImageError}
           className={cn(
             'absolute inset-0 w-full h-full object-cover',
             'transition-opacity duration-300',
@@ -169,9 +167,8 @@ export function ProgressiveImage({
           enableWebP={enableWebP}
           enableResponsive={enableResponsive}
           onLoadComplete={handleHighQualityLoad}
-          onErrorCustom={handleImageError}
           onLoad={onLoad}
-          onError={onError}
+          onError={handleImageError}
           onLoadStart={onLoadStart}
           className={cn(
             'w-full h-full object-cover',
