@@ -258,6 +258,13 @@ export type Database = {
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       checklists: {
@@ -1098,12 +1105,15 @@ export type Database = {
           admin_notes: string | null
           age_confirmed: boolean | null
           bio: string | null
+          city: string | null
+          competencies: string[] | null
           created_at: string
           data_retention_exempt: boolean | null
           facebook_url: string | null
           first_name: string
           github_url: string | null
           id: string
+          industries: string[] | null
           instagram_url: string | null
           interests: string | null
           is_suspended: boolean | null
@@ -1116,6 +1126,8 @@ export type Database = {
           networking_enabled: boolean | null
           nickname: string | null
           onboarding_completed: boolean | null
+          phone: string | null
+          profession: string | null
           profile_photo_url: string | null
           restriction_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -1139,12 +1151,15 @@ export type Database = {
           admin_notes?: string | null
           age_confirmed?: boolean | null
           bio?: string | null
+          city?: string | null
+          competencies?: string[] | null
           created_at?: string
           data_retention_exempt?: boolean | null
           facebook_url?: string | null
           first_name: string
           github_url?: string | null
           id: string
+          industries?: string[] | null
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
@@ -1157,6 +1172,8 @@ export type Database = {
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
+          phone?: string | null
+          profession?: string | null
           profile_photo_url?: string | null
           restriction_reason?: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -1180,12 +1197,15 @@ export type Database = {
           admin_notes?: string | null
           age_confirmed?: boolean | null
           bio?: string | null
+          city?: string | null
+          competencies?: string[] | null
           created_at?: string
           data_retention_exempt?: boolean | null
           facebook_url?: string | null
           first_name?: string
           github_url?: string | null
           id?: string
+          industries?: string[] | null
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
@@ -1198,6 +1218,8 @@ export type Database = {
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
+          phone?: string | null
+          profession?: string | null
           profile_photo_url?: string | null
           restriction_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]

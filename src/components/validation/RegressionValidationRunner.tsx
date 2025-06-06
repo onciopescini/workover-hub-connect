@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, XCircle, AlertTriangle, Play, Zap } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Play, Zap, Database } from "lucide-react";
 import { regressionValidator } from "@/lib/regression-validation";
 
 export const RegressionValidationRunner = () => {
@@ -15,6 +15,33 @@ export const RegressionValidationRunner = () => {
     errors: string[];
     summary: string;
   } | null>(null);
+
+  // Auto-run validation on component mount to verify schema fixes
+  useEffect(() => {
+    const autoRunValidation = async () => {
+      console.log('🔄 Auto-running regression validation to verify schema fixes...');
+      setIsRunning(true);
+      
+      try {
+        const validationResults = await regressionValidator.runFullRegression();
+        setResults(validationResults);
+      } catch (error) {
+        console.error('❌ Auto-run regression validation failed:', error);
+        setResults({
+          passed: [],
+          warnings: [],
+          errors: [`Auto-run validation failure: ${error}`],
+          summary: '🔴 AUTO-RUN REGRESSION VALIDATION FAILED'
+        });
+      } finally {
+        setIsRunning(false);
+      }
+    };
+
+    // Run after a short delay to ensure component is mounted
+    const timer = setTimeout(autoRunValidation, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const runFullRegression = async () => {
     setIsRunning(true);
@@ -52,6 +79,19 @@ export const RegressionValidationRunner = () => {
 
   return (
     <div className="space-y-6">
+      {/* Schema Fixes Alert */}
+      <Alert className="border-blue-200 bg-blue-50">
+        <Database className="w-4 h-4" />
+        <AlertDescription>
+          <div className="font-semibold mb-2">✅ Schema Fixes Applied Successfully:</div>
+          <div className="text-sm space-y-1">
+            <div>• Added foreign key constraint: bookings.user_id → profiles.id</div>
+            <div>• Added profile fields: phone, city, profession, competencies, industries</div>
+            <div>• Auto-running validation to verify fixes...</div>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -75,10 +115,10 @@ export const RegressionValidationRunner = () => {
               <h4 className="font-semibold mb-2">Validation Scope:</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>• Payments & Stripe Integration</div>
-                <div>• Bookings System</div>
+                <div>• Bookings System + New FK</div>
                 <div>• Events Management</div>
                 <div>• GDPR Compliance</div>
-                <div>• User Profiles</div>
+                <div>• User Profiles + New Fields</div>
                 <div>• Messaging & Networking</div>
                 <div>• Admin Panel</div>
                 <div>• Navigation & Routes</div>
@@ -166,7 +206,7 @@ export const RegressionValidationRunner = () => {
             )}
 
             <div className="text-xs text-gray-500">
-              <p>Check browser console for detailed validation logs and results.</p>
+              <p>Auto-validation runs on page load to verify schema fixes. Check browser console for detailed validation logs and results.</p>
             </div>
           </div>
         </CardContent>
