@@ -13,13 +13,70 @@ import { fetchBookingMessages } from "@/lib/message-utils";
 import { useBookings } from "@/hooks/useBookings";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+
+interface BookingWithHost {
+  id: string;
+  status: string;
+  booking_date: string;
+  space_id: string;
+  user_id: string;
+  space?: {
+    id: string;
+    title: string;
+    host_id: string;
+    host?: {
+      id: string;
+      first_name: string;
+      last_name: string;
+      profile_photo_url?: string;
+    };
+  };
+}
 
 const Messages = () => {
   const { authState } = useAuth();
-  const { bookings } = useBookings();
   const [selectedBookingId, setSelectedBookingId] = useState<string>("");
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [bookingsWithHosts, setBookingsWithHosts] = useState<BookingWithHost[]>([]);
+
+  // Fetch bookings with host information
+  useEffect(() => {
+    const fetchBookingsWithHosts = async () => {
+      if (!authState.user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("bookings")
+          .select(`
+            *,
+            space:spaces (
+              id,
+              title,
+              host_id,
+              host:profiles!host_id (
+                id,
+                first_name,
+                last_name,
+                profile_photo_url
+              )
+            )
+          `)
+          .eq("user_id", authState.user.id)
+          .in("status", ["confirmed", "pending"])
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        setBookingsWithHosts(data || []);
+      } catch (error) {
+        console.error("Error fetching bookings with hosts:", error);
+      }
+    };
+
+    fetchBookingsWithHosts();
+  }, [authState.user?.id]);
 
   // Get messages for selected booking
   const { data: messages = [], isLoading } = useQuery({
@@ -29,15 +86,10 @@ const Messages = () => {
     refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
   });
 
-  // Filter bookings for message view
-  const messageableBookings = bookings.filter(booking => 
-    booking.status === 'confirmed' || booking.status === 'pending'
-  );
-
   // Filter bookings by search
-  const filteredBookings = messageableBookings.filter(booking =>
+  const filteredBookings = bookingsWithHosts.filter(booking =>
     booking.space?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (booking.space?.profiles?.first_name + ' ' + booking.space?.profiles?.last_name)
+    (booking.space?.host?.first_name + ' ' + booking.space?.host?.last_name)
       .toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -48,20 +100,20 @@ const Messages = () => {
     }
   }, [selectedBookingId, filteredBookings]);
 
-  const selectedBooking = bookings.find(b => b.id === selectedBookingId);
+  const selectedBooking = bookingsWithHosts.find(b => b.id === selectedBookingId);
 
-  const getUserRole = (booking: any) => {
+  const getUserRole = (booking: BookingWithHost) => {
     return authState.user?.id === booking.space?.host_id ? "host" : "coworker";
   };
 
-  const getOtherPartyName = (booking: any) => {
+  const getOtherPartyName = (booking: BookingWithHost) => {
     const userRole = getUserRole(booking);
     if (userRole === "host") {
       // Host sees coworker's name - we need to get coworker profile
       return "Coworker"; // Simplified for now
     } else {
       // Coworker sees host's name
-      const host = booking.space?.profiles;
+      const host = booking.space?.host;
       return host ? `${host.first_name} ${host.last_name}` : "Host";
     }
   };
@@ -139,7 +191,7 @@ const Messages = () => {
                       >
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={booking.space?.profiles?.profile_photo_url || ""} />
+                            <AvatarImage src={booking.space?.host?.profile_photo_url || ""} />
                             <AvatarFallback>
                               {getOtherPartyName(booking).charAt(0)}
                             </AvatarFallback>
@@ -179,7 +231,7 @@ const Messages = () => {
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={selectedBooking.space?.profiles?.profile_photo_url || ""} />
+                      <AvatarImage src={selectedBooking.space?.host?.profile_photo_url || ""} />
                       <AvatarFallback>
                         {getOtherPartyName(selectedBooking).charAt(0)}
                       </AvatarFallback>
