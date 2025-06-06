@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
+import AdminProtected from './components/auth/AdminProtected';
 import Index from './pages/Index';
 import PublicSpaces from './pages/PublicSpaces';
 import SpaceDetail from './pages/SpaceDetail';
@@ -94,11 +95,13 @@ function App() {
         <Route path="/events/:id" element={<EventDetail />} />
         
         {/* Admin routes */}
-        <Route path="/admin/users" element={<AdminUsersPage />} />
-        <Route path="/admin/spaces" element={<AdminSpacesPage />} />
-        <Route path="/admin/logs" element={<AdminLogsPage />} />
+        <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
+        <Route path="/admin/spaces" element={<AdminProtected><AdminSpacesPage /></AdminProtected>} />
+        <Route path="/admin/logs" element={<AdminProtected><AdminLogsPage /></AdminProtected>} />
 
-        <Route path="/validation" element={<PaymentValidation />} />
+        {/* Payment validation route - Admin only */}
+        <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />
+        
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>

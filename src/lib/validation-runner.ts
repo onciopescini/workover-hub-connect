@@ -2,7 +2,7 @@
 import { runPaymentValidation, formatValidationReport } from './payment-validation';
 import { runStripeValidationSuite } from './stripe-validation';
 
-// Auto-run validation suite when this module is imported
+// Validation suite execution function - only runs when manually called
 export const executeValidationSuite = () => {
   console.log('🎯 WORKOVER PAYMENT VALIDATION SUITE');
   console.log('====================================');
@@ -40,5 +40,5 @@ export const executeValidationSuite = () => {
   };
 };
 
-// Execute validation suite immediately
-executeValidationSuite();
+// Export the function but don't auto-execute
+// This allows manual execution from the validation dashboard

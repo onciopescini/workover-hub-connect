@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Calculator, DollarSign } from "lucide-react";
+import { CheckCircle, XCircle, Calculator, DollarSign, Play } from "lucide-react";
 import { 
   runPaymentValidation, 
   formatValidationReport, 
@@ -12,11 +12,13 @@ import {
   type ValidationResult 
 } from "@/lib/payment-validation";
 import { calculatePaymentBreakdown } from "@/lib/payment-utils";
+import { executeValidationSuite } from "@/lib/validation-runner";
 
 export const PaymentValidationDashboard = () => {
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [reportText, setReportText] = useState<string>("");
+  const [fullSuiteRun, setFullSuiteRun] = useState(false);
 
   const runValidation = async () => {
     setIsRunning(true);
@@ -27,6 +29,21 @@ export const PaymentValidationDashboard = () => {
     const results = runPaymentValidation();
     setValidationResults(results);
     setReportText(formatValidationReport(results));
+    setIsRunning(false);
+  };
+
+  const runFullValidationSuite = async () => {
+    setIsRunning(true);
+    setFullSuiteRun(true);
+    
+    // Run the full validation suite including console logging
+    const suiteResults = executeValidationSuite();
+    
+    // Also update the UI state
+    const results = runPaymentValidation();
+    setValidationResults(results);
+    setReportText(formatValidationReport(results));
+    
     setIsRunning(false);
   };
 
@@ -47,10 +64,6 @@ export const PaymentValidationDashboard = () => {
     });
   };
 
-  useEffect(() => {
-    testUICalculations();
-  }, []);
-
   const passedCount = validationResults.filter(r => r.passed).length;
   const totalCount = validationResults.length;
 
@@ -65,12 +78,40 @@ export const PaymentValidationDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <div className="flex gap-4">
+              <Button 
+                onClick={runValidation} 
+                disabled={isRunning}
+                className="flex-1"
+              >
+                {isRunning ? "Running Validation..." : "Run Payment Validation Tests"}
+              </Button>
+              
+              <Button 
+                onClick={runFullValidationSuite} 
+                disabled={isRunning}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                {isRunning ? "Running..." : "Run Full Suite"}
+              </Button>
+            </div>
+
+            {fullSuiteRun && (
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-sm text-blue-800">
+                  ✅ Full validation suite executed! Check the browser console for detailed logs and Stripe integration validation.
+                </p>
+              </div>
+            )}
+
             <Button 
-              onClick={runValidation} 
-              disabled={isRunning}
-              className="w-full"
+              onClick={testUICalculations} 
+              variant="secondary"
+              size="sm"
             >
-              {isRunning ? "Running Validation..." : "Run Payment Validation Tests"}
+              Test UI Calculations (Check Console)
             </Button>
 
             {validationResults.length > 0 && (
