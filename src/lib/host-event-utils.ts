@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { EventWithDetails, EventParticipant, WaitlistEntry } from "@/types/event";
 
@@ -34,17 +33,17 @@ export const getHostEvents = async (hostId: string): Promise<EventWithDetails[]>
   // Transform the data to match EventWithDetails type
   const transformedData: EventWithDetails[] = (data || []).map(event => ({
     ...event,
-    participants: (event.participants || []).map((p: { user_id: string }) => ({
+    participants: (event.participants || []).map((p: { user_id: string }): EventParticipant => ({
       event_id: event.id,
       user_id: p.user_id,
-      joined_at: null, // This will be null since we're only selecting user_id
-    } as EventParticipant)),
-    waitlist: (event.waitlist || []).map((w: { user_id: string }) => ({
-      id: '', // This will be empty since we're only selecting user_id
+      joined_at: null, // Set to null when not available from the query
+    })),
+    waitlist: (event.waitlist || []).map((w: { user_id: string }): WaitlistEntry => ({
+      id: '', // Set to empty string when not available from the query
       event_id: event.id,
       user_id: w.user_id,
-      created_at: null,
-    } as WaitlistEntry)),
+      created_at: null, // Set to null when not available from the query
+    })),
   }));
 
   return transformedData;
