@@ -11,6 +11,10 @@ function calculatePaymentBreakdown(baseAmount: number) {
   const hostNetPayout = baseAmount - hostFeeAmount;
   
   const platformRevenue = buyerFeeAmount + hostFeeAmount;
+  
+  // For Stripe Connect: application fee includes both commissions
+  const stripeApplicationFee = Math.round(baseAmount * 0.10 * 100) / 100;
+  const stripeTransferAmount = hostNetPayout;
 
   return {
     baseAmount,
@@ -18,7 +22,9 @@ function calculatePaymentBreakdown(baseAmount: number) {
     buyerTotalAmount,
     hostFeeAmount,
     hostNetPayout,
-    platformRevenue
+    platformRevenue,
+    stripeApplicationFee,
+    stripeTransferAmount
   };
 }
 
@@ -30,9 +36,15 @@ export async function handleCheckoutSessionCompleted(
   
   if (session.metadata?.booking_id) {
     const bookingId = session.metadata.booking_id;
-    const buyerTotalAmount = session.amount_total || 0; // Amount paid by buyer (in cents)
     const baseAmount = parseFloat(session.metadata.base_amount || '0');
     const breakdown = calculatePaymentBreakdown(baseAmount);
+
+    console.log('🔵 Processing payment with destination charge model:', {
+      sessionAmount: session.amount_total,
+      expectedAmount: breakdown.buyerTotalAmount * 100,
+      applicationFee: breakdown.stripeApplicationFee * 100,
+      transferAmount: breakdown.stripeTransferAmount * 100
+    });
 
     // Update payment status
     const { error: paymentError } = await supabaseAdmin
@@ -100,8 +112,8 @@ export async function handleCheckoutSessionCompleted(
       console.log(`✅ Booking ${newStatus} successfully`);
     }
 
-    // Handle host transfers and notifications with new payment model
-    await handleHostTransferAndNotifications(booking, breakdown, session, supabaseAdmin);
+    // Handle notifications with destination charge model
+    await handleDestinationChargeNotifications(booking, breakdown, session, supabaseAdmin);
   }
 }
 
@@ -124,65 +136,15 @@ export async function handleCheckoutSessionExpired(
   }
 }
 
-async function handleHostTransferAndNotifications(
+async function handleDestinationChargeNotifications(
   booking: any,
   breakdown: ReturnType<typeof calculatePaymentBreakdown>,
   session: Stripe.Checkout.Session,
   supabaseAdmin: SupabaseClient
 ): Promise<void> {
-  // Get host's Stripe account for transfer
-  const { data: hostProfile, error: hostError } = await supabaseAdmin
-    .from('profiles')
-    .select('stripe_account_id, stripe_connected')
-    .eq('id', booking.spaces.host_id)
-    .single();
+  console.log('📧 Sending notifications for destination charge payment');
 
-  if (hostProfile?.stripe_connected && hostProfile.stripe_account_id) {
-    try {
-      console.log('💰 Transfer breakdown:', {
-        buyerTotalAmount: breakdown.buyerTotalAmount,
-        hostNetPayout: breakdown.hostNetPayout,
-        platformRevenue: breakdown.platformRevenue
-      });
-
-      const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-        apiVersion: '2023-10-16',
-      });
-
-      // Transfer the host net payout amount
-      const transfer = await stripe.transfers.create({
-        amount: Math.round(breakdown.hostNetPayout * 100), // Convert to cents
-        currency: 'eur',
-        destination: hostProfile.stripe_account_id,
-        description: `Pagamento per prenotazione ${booking.id}`,
-        metadata: {
-          booking_id: booking.id,
-          space_id: booking.space_id,
-          host_id: booking.spaces.host_id,
-          base_amount: breakdown.baseAmount.toString(),
-          host_fee: breakdown.hostFeeAmount.toString()
-        }
-      });
-
-      console.log('✅ Transfer created successfully:', transfer.id);
-
-      // Record transfer in database
-      await supabaseAdmin
-        .from('payments')
-        .update({
-          stripe_transfer_id: transfer.id
-        })
-        .eq('stripe_session_id', session.id);
-
-    } catch (transferError) {
-      console.error('🔴 Error creating transfer:', transferError);
-      // Continue with notifications even if transfer fails
-    }
-  } else {
-    console.log('⚠️ Host Stripe account not connected, skipping transfer');
-  }
-
-  // Send notifications
+  // Send notifications (transfer is handled automatically by Stripe)
   await sendBookingNotifications(booking, breakdown, supabaseAdmin);
 }
 
@@ -232,19 +194,20 @@ async function sendBookingNotifications(
         }
       });
   } else {
-    // Notify host of confirmed booking and payment
+    // Notify host of confirmed booking and payment (destination charge automatically handled)
     await supabaseAdmin
       .from('user_notifications')
       .insert({
         user_id: booking.spaces.host_id,
         type: 'booking',
         title: 'Nuova prenotazione confermata',
-        content: `Hai ricevuto una prenotazione per "${booking.spaces.title}". Riceverai €${breakdown.hostNetPayout.toFixed(2)} come pagamento.`,
+        content: `Hai ricevuto una prenotazione per "${booking.spaces.title}". Riceverai €${breakdown.hostNetPayout.toFixed(2)} come pagamento automatico.`,
         metadata: {
           booking_id: booking.id,
           space_title: booking.spaces.title,
           payment_received: true,
-          host_payout: breakdown.hostNetPayout
+          host_payout: breakdown.hostNetPayout,
+          transfer_method: 'destination_charge'
         }
       });
   }

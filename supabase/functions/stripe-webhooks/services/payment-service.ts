@@ -41,33 +41,24 @@ export class PaymentService {
     spaceId: string,
     hostId: string
   ): Promise<string | null> {
+    // With destination charges, the transfer is handled automatically by Stripe
+    // We just need to log the transfer details for our records
     if (!hostProfile?.stripe_connected || !hostProfile.stripe_account_id) {
-      ErrorHandler.logWarning('Host Stripe account not connected, skipping transfer');
+      ErrorHandler.logWarning('Host Stripe account not connected');
       return null;
     }
 
     try {
-      const stripe = StripeConfig.getInstance();
-      
-      // Transfer the host net payout amount
-      const transfer = await stripe.transfers.create({
-        amount: Math.round(breakdown.hostNetPayout * 100), // Convert to cents
-        currency: 'eur',
-        destination: hostProfile.stripe_account_id,
-        description: `Pagamento per prenotazione ${bookingId}`,
-        metadata: {
-          booking_id: bookingId,
-          space_id: spaceId,
-          host_id: hostId,
-          base_amount: breakdown.baseAmount.toString(),
-          host_fee: breakdown.hostFeeAmount.toString()
-        }
+      ErrorHandler.logSuccess('Destination charge transfer will be handled automatically by Stripe', {
+        hostAccount: hostProfile.stripe_account_id,
+        transferAmount: breakdown.stripeTransferAmount,
+        applicationFee: breakdown.stripeApplicationFee
       });
-
-      ErrorHandler.logSuccess('Transfer created successfully', { transferId: transfer.id });
-      return transfer.id;
+      
+      // Return a placeholder transfer ID since Stripe handles this automatically
+      return `auto_transfer_${bookingId}`;
     } catch (error) {
-      ErrorHandler.logError('Error creating transfer', error);
+      ErrorHandler.logError('Error in transfer logging', error);
       return null;
     }
   }
