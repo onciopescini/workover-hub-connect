@@ -1,197 +1,178 @@
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { getConnectionSuggestions, sendConnectionRequest, generateSuggestions } from "@/lib/networking-utils";
-import { ConnectionSuggestion } from "@/types/networking";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, UserPlus, RefreshCw, MapPin, Calendar, Heart } from "lucide-react";
-import LoadingScreen from "@/components/LoadingScreen";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserPlus, MapPin, Calendar, Users, RefreshCw } from "lucide-react";
+import { useNetworking } from "@/hooks/useNetworking";
+import { sendConnectionRequest } from "@/lib/networking-utils";
 
-export function ConnectionSuggestions() {
-  const { authState } = useAuth();
-  const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    loadSuggestions();
-  }, [authState.user]);
-
-  const loadSuggestions = async () => {
-    if (!authState.user) return;
-    
-    try {
-      setIsLoading(true);
-      const data = await getConnectionSuggestions();
-      setSuggestions(data);
-    } catch (error) {
-      console.error("Error loading suggestions:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerateSuggestions = async () => {
-    setIsGenerating(true);
-    try {
-      await generateSuggestions();
-      await loadSuggestions();
-    } catch (error) {
-      console.error("Error generating suggestions:", error);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+export const ConnectionSuggestions = () => {
+  const { suggestions, refreshSuggestions, fetchConnections, hasConnectionRequest } = useNetworking();
 
   const handleSendRequest = async (userId: string) => {
     const success = await sendConnectionRequest(userId);
     if (success) {
-      setSentRequests(prev => new Set([...prev, userId]));
+      await fetchConnections();
+      await refreshSuggestions();
+    }
+  };
+
+  const handleRefresh = async () => {
+    await refreshSuggestions();
+  };
+
+  const getUserInitials = (firstName?: string, lastName?: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase() || 'U';
+  };
+
+  const getReasonLabel = (reason: string) => {
+    switch (reason) {
+      case 'shared_space':
+        return 'Spazio condiviso';
+      case 'shared_event':
+        return 'Evento condiviso';
+      case 'similar_interests':
+        return 'Interessi simili';
+      default:
+        return reason;
+    }
+  };
+
+  const getReasonColor = (reason: string) => {
+    switch (reason) {
+      case 'shared_space':
+        return 'bg-blue-100 text-blue-800';
+      case 'shared_event':
+        return 'bg-green-100 text-green-800';
+      case 'similar_interests':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getReasonIcon = (reason: string) => {
     switch (reason) {
       case 'shared_space':
-        return <MapPin className="w-4 h-4" />;
+        return <MapPin className="w-3 h-3" />;
       case 'shared_event':
-        return <Calendar className="w-4 h-4" />;
+        return <Calendar className="w-3 h-3" />;
       case 'similar_interests':
-        return <Heart className="w-4 h-4" />;
+        return <Users className="w-3 h-3" />;
       default:
-        return <User className="w-4 h-4" />;
+        return <Users className="w-3 h-3" />;
     }
   };
-
-  const getReasonText = (reason: string, context: any) => {
-    switch (reason) {
-      case 'shared_space':
-        return `Avete frequentato lo stesso spazio: ${context?.space_name || 'Spazio condiviso'}`;
-      case 'shared_event':
-        return `Avete partecipato allo stesso evento: ${context?.event_name || 'Evento condiviso'}`;
-      case 'similar_interests':
-        return 'Avete interessi simili';
-      default:
-        return 'Suggerimento basato sul profilo';
-    }
-  };
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
-            Persone che Potresti Conoscere
-          </CardTitle>
-          
-          <Button
-            onClick={handleGenerateSuggestions}
-            disabled={isGenerating}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-            {isGenerating ? 'Generando...' : 'Aggiorna'}
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Suggerimenti di Connessione</h2>
+          <p className="text-gray-600 mt-1">
+            Persone che potresti conoscere basate sui tuoi spazi ed eventi
+          </p>
         </div>
-      </CardHeader>
-      
-      <CardContent>
-        {suggestions.length === 0 ? (
-          <div className="text-center py-8">
+        <Button onClick={handleRefresh} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Aggiorna
+        </Button>
+      </div>
+
+      {suggestions.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
             <UserPlus className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
               Nessun suggerimento disponibile
             </h3>
             <p className="text-gray-600 mb-4">
-              Prova a generare nuovi suggerimenti o partecipa a più eventi e spazi
+              Partecipa a più spazi ed eventi per ricevere suggerimenti personalizzati
             </p>
-            <Button onClick={handleGenerateSuggestions} disabled={isGenerating}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-              Genera Suggerimenti
+            <Button onClick={handleRefresh} variant="outline">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Controlla di nuovo
             </Button>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {suggestions.map((suggestion) => {
-              const user = suggestion.suggested_user;
-              if (!user) return null;
-
-              const isRequestSent = sentRequests.has(user.id);
-
-              return (
-                <div key={suggestion.id} className="border rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <Avatar>
-                      <AvatarImage src={user.profile_photo_url || undefined} />
-                      <AvatarFallback>
-                        <User className="w-4 h-4" />
-                      </AvatarFallback>
-                    </Avatar>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {suggestions.map((suggestion) => {
+            const user = suggestion.suggested_user;
+            const hasRequest = hasConnectionRequest(suggestion.suggested_user_id);
+            
+            return (
+              <Card key={suggestion.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={user?.profile_photo_url || ""} />
+                        <AvatarFallback className="text-lg">
+                          {getUserInitials(user?.first_name, user?.last_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {user?.first_name} {user?.last_name}
+                          </h3>
+                          <Badge className={getReasonColor(suggestion.reason)}>
+                            <div className="flex items-center gap-1">
+                              {getReasonIcon(suggestion.reason)}
+                              {getReasonLabel(suggestion.reason)}
+                            </div>
+                          </Badge>
+                        </div>
+                        
+                        {user?.bio && (
+                          <p className="text-gray-600 mb-3 line-clamp-2">{user.bio}</p>
+                        )}
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            Score: {suggestion.score}
+                          </div>
+                          {suggestion.shared_context?.space_title && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {suggestion.shared_context.space_title}
+                            </div>
+                          )}
+                          {suggestion.shared_context?.event_title && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {suggestion.shared_context.event_title}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">
-                        {user.first_name} {user.last_name}
-                      </h4>
-                      {user.bio && (
-                        <p className="text-sm text-gray-600 truncate">{user.bio}</p>
+                    <div className="flex flex-col gap-2">
+                      {hasRequest ? (
+                        <Badge variant="outline">Richiesta inviata</Badge>
+                      ) : (
+                        <Button 
+                          onClick={() => handleSendRequest(suggestion.suggested_user_id)}
+                          size="sm"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Connetti
+                        </Button>
                       )}
                     </div>
                   </div>
-                  
-                  <div className="mb-3">
-                    <Badge variant="secondary" className="text-xs">
-                      <span className="mr-1">{getReasonIcon(suggestion.reason)}</span>
-                      {getReasonText(suggestion.reason, suggestion.shared_context)}
-                    </Badge>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Compatibilità</span>
-                      <span className="font-medium">{Math.round(suggestion.score * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-                      <div 
-                        className="bg-indigo-600 h-2 rounded-full" 
-                        style={{ width: `${suggestion.score * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={() => handleSendRequest(user.id)}
-                    disabled={isRequestSent}
-                    size="sm"
-                    className="w-full"
-                  >
-                    {isRequestSent ? (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Richiesta Inviata
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Connetti
-                      </>
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
-}
+};

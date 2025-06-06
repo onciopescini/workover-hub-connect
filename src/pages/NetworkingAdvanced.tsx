@@ -1,11 +1,15 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { ConnectionsList } from "@/components/networking/ConnectionsList";
 import { ConnectionSuggestions } from "@/components/networking/ConnectionSuggestions";
 import { Users, UserPlus, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function NetworkingAdvanced() {
+  const navigate = useNavigate();
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="mb-8">
@@ -51,15 +55,15 @@ export default function NetworkingAdvanced() {
               Chat Private
             </h3>
             <p className="text-gray-600 mb-4">
-              Le tue conversazioni private sono disponibili in una sezione dedicata
+              Gestisci le tue conversazioni private con altri professionisti
             </p>
-            <a 
-              href="/private-chats"
+            <Button 
+              onClick={() => navigate("/private-chats")}
               className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
               Vai alle Chat Private
-            </a>
+            </Button>
           </div>
         </TabsContent>
       </Tabs>

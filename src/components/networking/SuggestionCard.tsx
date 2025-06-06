@@ -1,50 +1,58 @@
 
-import React, { useState } from "react";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, X, MapPin, Calendar, Users, Eye } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserPlus, MapPin, Calendar, Users } from "lucide-react";
 import { ConnectionSuggestion } from "@/types/networking";
 import { sendConnectionRequest } from "@/lib/networking-utils";
 import { useNetworking } from "@/hooks/useNetworking";
-import { useNavigate } from "react-router-dom";
 
 interface SuggestionCardProps {
   suggestion: ConnectionSuggestion;
 }
 
-export function SuggestionCard({ suggestion }: SuggestionCardProps) {
-  const { fetchSuggestions, hasConnectionRequest } = useNetworking();
-  const navigate = useNavigate();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isIgnored, setIsIgnored] = useState(false);
-
+export const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion }) => {
+  const { fetchConnections, hasConnectionRequest } = useNetworking();
   const user = suggestion.suggested_user;
-  const hasExistingRequest = hasConnectionRequest(suggestion.suggested_user_id);
+  const hasRequest = hasConnectionRequest(suggestion.suggested_user_id);
 
-  const handleConnect = async () => {
-    if (!user || hasExistingRequest) return;
-    
-    setIsConnecting(true);
-    const success = await sendConnectionRequest(user.id);
+  const handleSendRequest = async () => {
+    const success = await sendConnectionRequest(suggestion.suggested_user_id);
     if (success) {
-      await fetchSuggestions();
-    }
-    setIsConnecting(false);
-  };
-
-  const handleIgnore = () => {
-    setIsIgnored(true);
-  };
-
-  const handleViewProfile = () => {
-    if (user) {
-      navigate(`/profile/${user.id}`);
+      await fetchConnections();
     }
   };
 
-  const getInitials = (firstName: string = '', lastName: string = '') => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const getUserInitials = () => {
+    return `${user?.first_name?.charAt(0) || ''}${user?.last_name?.charAt(0) || ''}`.toUpperCase() || 'U';
+  };
+
+  const getReasonLabel = () => {
+    switch (suggestion.reason) {
+      case 'shared_space':
+        return 'Spazio condiviso';
+      case 'shared_event':
+        return 'Evento condiviso';
+      case 'similar_interests':
+        return 'Interessi simili';
+      default:
+        return suggestion.reason;
+    }
+  };
+
+  const getReasonColor = () => {
+    switch (suggestion.reason) {
+      case 'shared_space':
+        return 'bg-blue-100 text-blue-800';
+      case 'shared_event':
+        return 'bg-green-100 text-green-800';
+      case 'similar_interests':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const getReasonIcon = () => {
@@ -53,112 +61,78 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
         return <MapPin className="w-3 h-3" />;
       case 'shared_event':
         return <Calendar className="w-3 h-3" />;
+      case 'similar_interests':
+        return <Users className="w-3 h-3" />;
       default:
         return <Users className="w-3 h-3" />;
     }
   };
 
-  const getReasonText = () => {
-    switch (suggestion.reason) {
-      case 'shared_space':
-        return `Spazio condiviso: ${suggestion.shared_context?.space_title || 'Sconosciuto'}`;
-      case 'shared_event':
-        return `Evento condiviso: ${suggestion.shared_context?.event_title || 'Sconosciuto'}`;
-      default:
-        return 'Interessi simili';
-    }
-  };
-
-  const getReasonColor = () => {
-    switch (suggestion.reason) {
-      case 'shared_space':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'shared_event':
-        return 'bg-green-50 text-green-700 border-green-200';
-      default:
-        return 'bg-purple-50 text-purple-700 border-purple-200';
-    }
-  };
-
-  if (isIgnored || !user) return null;
-
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <div className="flex items-start gap-4">
-        <Avatar className="w-16 h-16">
-          <AvatarImage src={user.profile_photo_url || undefined} />
-          <AvatarFallback>
-            {getInitials(user.first_name, user.last_name)}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900 text-lg">
-                {user.first_name} {user.last_name}
-              </h3>
-              {user.bio && (
-                <p className="text-gray-600 mt-1 text-sm line-clamp-2">
-                  {user.bio}
-                </p>
-              )}
-              
-              <div className="flex items-center gap-2 mt-3">
-                <Badge className={`border ${getReasonColor()}`}>
-                  {getReasonIcon()}
-                  <span className="ml-1">{getReasonText()}</span>
-                </Badge>
-                
-                <Badge variant="outline" className="text-xs">
-                  Punteggio: {suggestion.score}
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start space-x-4">
+            <Avatar className="h-14 w-14">
+              <AvatarImage src={user?.profile_photo_url || ""} />
+              <AvatarFallback className="text-lg">
+                {getUserInitials()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {user?.first_name} {user?.last_name}
+                </h3>
+                <Badge className={getReasonColor()}>
+                  <div className="flex items-center gap-1">
+                    {getReasonIcon()}
+                    {getReasonLabel()}
+                  </div>
                 </Badge>
               </div>
-            </div>
-            
-            <div className="flex flex-col gap-2 ml-4">
-              <Button
-                onClick={handleViewProfile}
-                variant="outline"
-                size="sm"
-                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Visualizza Profilo
-              </Button>
               
-              <div className="flex gap-2">
-                {hasExistingRequest ? (
-                  <Badge variant="outline" className="px-4 py-2">
-                    Richiesta già inviata
-                  </Badge>
-                ) : (
-                  <>
-                    <Button
-                      onClick={handleConnect}
-                      disabled={isConnecting}
-                      size="sm"
-                      className="bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      {isConnecting ? 'Connessione...' : 'Connetti'}
-                    </Button>
-                    <Button
-                      onClick={handleIgnore}
-                      variant="outline"
-                      size="sm"
-                      className="text-gray-600 hover:text-gray-700"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Ignora
-                    </Button>
-                  </>
+              {user?.bio && (
+                <p className="text-gray-600 mb-3 line-clamp-2">{user.bio}</p>
+              )}
+              
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  Score: {suggestion.score}
+                </div>
+                {suggestion.shared_context?.space_title && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    {suggestion.shared_context.space_title}
+                  </div>
+                )}
+                {suggestion.shared_context?.event_title && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {suggestion.shared_context.event_title}
+                  </div>
                 )}
               </div>
             </div>
           </div>
+          
+          <div>
+            {hasRequest ? (
+              <Badge variant="outline">Richiesta inviata</Badge>
+            ) : (
+              <Button 
+                onClick={handleSendRequest}
+                size="sm"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Connetti
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-}
+};

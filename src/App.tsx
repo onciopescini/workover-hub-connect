@@ -1,147 +1,283 @@
-import { useEffect } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import { MainLayout } from './components/layout/MainLayout';
-import AdminProtected from './components/auth/AdminProtected';
-import Index from './pages/Index';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import PublicSpaces from './pages/PublicSpaces';
-import SpaceDetail from './pages/SpaceDetail';
-import Profile from './pages/Profile';
-import ProfileEdit from './pages/ProfileEdit';
-import Bookings from './pages/Bookings';
-import Messages from './pages/Messages';
-import Networking from './pages/Networking';
-import SpacesManage from './pages/SpacesManage';
-import SpaceNew from './pages/SpaceNew';
-import SpaceEdit from './pages/SpaceEdit';
-import AuthCallback from './pages/AuthCallback';
-import NotFound from './pages/NotFound';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import Help from './pages/Help';
-import PublicEvents from './pages/PublicEvents';
-import EventDetail from './pages/EventDetail';
-import { PaymentsDashboard } from './components/payments/PaymentsDashboard';
-import Onboarding from './pages/Onboarding';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminSpacesPage from './pages/admin/AdminSpacesPage';
-import AdminLogsPage from './pages/admin/AdminLogsPage';
-import ValidationDashboard from './pages/ValidationDashboard';
-import { useToast } from "./components/ui/use-toast"
-import { checkAndUpdateStripeStatus } from './lib/stripe-status-utils';
-import Dashboard from './pages/Dashboard';
-import Notifications from './pages/Notifications';
-import PaymentValidation from './pages/PaymentValidation';
-import PrivateChats from './pages/PrivateChats';
-import HostEvents from './pages/host/HostEvents';
-import HostEventNew from './pages/host/HostEventNew';
-import HostRevenue from './pages/host/HostRevenue';
-import PrivacyExportRequest from './pages/PrivacyExportRequest';
-import PrivacyDeletionRequest from './pages/PrivacyDeletionRequest';
-import RegressionValidation from './pages/RegressionValidation';
+
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+
+// Public pages
+import LandingPage from '@/pages/LandingPage';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import Spaces from '@/pages/Spaces';
+import SpaceDetail from '@/pages/SpaceDetail';
+import Events from '@/pages/Events';
+import EventDetail from '@/pages/EventDetail';
+
+// Protected pages
+import Dashboard from '@/pages/Dashboard';
+import Profile from '@/pages/Profile';
+import UserProfile from '@/pages/UserProfile';
+import Bookings from '@/pages/Bookings';
+import BookingDetail from '@/pages/BookingDetail';
+import Messages from '@/pages/Messages';
+import NetworkingAdvanced from '@/pages/NetworkingAdvanced';
+import NetworkingDiscover from '@/pages/NetworkingDiscover';
+import PrivateChats from '@/pages/PrivateChats';
+
+// Host pages
+import HostDashboard from '@/pages/host/HostDashboard';
+import HostSpaceManagement from '@/pages/host/HostSpaceManagement';
+import CreateSpace from '@/pages/host/CreateSpace';
+import EditSpace from '@/pages/host/EditSpace';
+import HostBookings from '@/pages/host/HostBookings';
+import HostRevenue from '@/pages/host/HostRevenue';
+import HostEvents from '@/pages/host/HostEvents';
+import CreateEvent from '@/pages/host/CreateEvent';
+
+// Admin pages
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import AdminUsersPage from '@/pages/admin/AdminUsersPage';
+import AdminLogsPage from '@/pages/admin/AdminLogsPage';
+import AdminGDPRPage from '@/pages/admin/AdminGDPRPage';
+import AdminPanel from '@/pages/AdminPanel';
+
+// Validation pages
+import ValidationDashboard from '@/pages/ValidationDashboard';
+import RegressionValidation from '@/pages/RegressionValidation';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+    },
+  },
+});
 
 function App() {
-  const { authState } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { toast } = useToast()
-
-  useEffect(() => {
-    // Redirect user to dashboard after login, not home page
-    if (authState.isAuthenticated && location.pathname === '/login') {
-      navigate('/dashboard');
-    }
-  }, [authState.isAuthenticated, location, navigate]);
-
-  useEffect(() => {
-    // Check Stripe status on profile load
-    if (authState.profile?.id && authState.profile?.role === 'host') {
-      checkAndUpdateStripeStatus(authState.profile.id);
-    }
-  }, [authState.profile]);
-
-  useEffect(() => {
-    // Display toast message from URL params
-    const params = new URLSearchParams(location.search);
-    const toastMessage = params.get('toast');
-    const toastType = params.get('toastType') || 'success';
-
-    if (toastMessage) {
-      toast({
-        title: toastType === 'success' ? 'Successo!' : 'Attenzione!',
-        description: toastMessage,
-        variant: toastType === 'success' ? 'default' : 'destructive',
-      })
-      // Clear the toast message from the URL
-      const newUrl = location.pathname;
-      navigate(newUrl, { replace: true });
-    }
-  }, [location, navigate, toast]);
-
   return (
-    <Routes>
-      {/* Public routes without main layout */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      
-      {/* Routes with main layout */}
-      <Route path="/*" element={
-        <MainLayout>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <Toaster />
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/spaces" element={<PublicSpaces />} />
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/spaces" element={<Spaces />} />
             <Route path="/spaces/:id" element={<SpaceDetail />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/profile/edit" element={<ProfileEdit />} />
-            <Route path="/profile/become-host" element={<Onboarding />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/private-chats/:chatId" element={<PrivateChats />} />
-            <Route path="/networking" element={<Networking />} />
-            <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
-            <Route path="/manage-space" element={<SpacesManage />} />
-            <Route path="/create-space" element={<SpaceNew />} />
-            <Route path="/update-space/:id" element={<SpaceEdit />} />
-            <Route path="/stripe/callback" element={<AuthCallback />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/privacy/export-request" element={<PrivacyExportRequest />} />
-            <Route path="/privacy/deletion-request" element={<PrivacyDeletionRequest />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/events" element={<PublicEvents />} />
+            <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
-            
-            {/* Host event routes */}
-            <Route path="/host/events" element={<HostEvents />} />
-            <Route path="/host/events/new" element={<HostEventNew />} />
-            <Route path="/host/revenue" element={<HostRevenue />} />
-            
-            {/* Admin routes */}
-            <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
-            <Route path="/admin/spaces" element={<AdminProtected><AdminSpacesPage /></AdminProtected>} />
-            <Route path="/admin/logs" element={<AdminProtected><AdminLogsPage /></AdminProtected>} />
-            <Route path="/admin/validation" element={<AdminProtected><ValidationDashboard /></AdminProtected>} />
 
-            {/* Payment validation route - Admin only */}
-            <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />
-            
-            {/* Regression validation route - Admin only */}
-            <Route path="/regression-validation" element={<AdminProtected><RegressionValidation /></AdminProtected>} />
-            
-            <Route path="*" element={<NotFound />} />
+            {/* Protected routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user/:userId"
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings"
+              element={
+                <ProtectedRoute>
+                  <Bookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bookings/:id"
+              element={
+                <ProtectedRoute>
+                  <BookingDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <Messages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/networking"
+              element={
+                <ProtectedRoute>
+                  <NetworkingAdvanced />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/networking-discover"
+              element={
+                <ProtectedRoute>
+                  <NetworkingDiscover />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/private-chats"
+              element={
+                <ProtectedRoute>
+                  <PrivateChats />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/private-chats/:chatId"
+              element={
+                <ProtectedRoute>
+                  <PrivateChats />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Host routes */}
+            <Route
+              path="/host"
+              element={
+                <ProtectedRoute>
+                  <HostDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces"
+              element={
+                <ProtectedRoute>
+                  <HostSpaceManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces/new"
+              element={
+                <ProtectedRoute>
+                  <CreateSpace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditSpace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/bookings"
+              element={
+                <ProtectedRoute>
+                  <HostBookings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/revenue"
+              element={
+                <ProtectedRoute>
+                  <HostRevenue />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/events"
+              element={
+                <ProtectedRoute>
+                  <HostEvents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/events/new"
+              element={
+                <ProtectedRoute>
+                  <CreateEvent />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/logs"
+              element={
+                <ProtectedRoute>
+                  <AdminLogsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/gdpr"
+              element={
+                <ProtectedRoute>
+                  <AdminGDPRPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Validation routes */}
+            <Route
+              path="/validation"
+              element={
+                <ProtectedRoute>
+                  <ValidationDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/regression-validation"
+              element={
+                <ProtectedRoute>
+                  <RegressionValidation />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Legacy redirect */}
+            <Route path="/admin-panel" element={<AdminPanel />} />
           </Routes>
-        </MainLayout>
-      } />
-    </Routes>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
