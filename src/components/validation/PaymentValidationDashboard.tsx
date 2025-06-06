@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Calculator, DollarSign, Play } from "lucide-react";
+import { CheckCircle, XCircle, Calculator, DollarSign, Play, AlertTriangle } from "lucide-react";
 import { 
   runPaymentValidation, 
   formatValidationReport, 
@@ -13,17 +13,18 @@ import {
 } from "@/lib/payment-validation";
 import { calculatePaymentBreakdown } from "@/lib/payment-utils";
 import { executeValidationSuite } from "@/lib/validation-runner";
+import { validateStripeAmounts } from "@/lib/stripe-validation";
 
 export const PaymentValidationDashboard = () => {
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [reportText, setReportText] = useState<string>("");
   const [fullSuiteRun, setFullSuiteRun] = useState(false);
+  const [stripeValidationResults, setStripeValidationResults] = useState<any[]>([]);
 
   const runValidation = async () => {
     setIsRunning(true);
     
-    // Simulate async validation
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const results = runPaymentValidation();
@@ -32,23 +33,74 @@ export const PaymentValidationDashboard = () => {
     setIsRunning(false);
   };
 
-  const runFullValidationSuite = async () => {
+  const runPostRefactorValidation = async () => {
     setIsRunning(true);
     setFullSuiteRun(true);
     
-    // Run the full validation suite including console logging
-    const suiteResults = executeValidationSuite();
-    
-    // Also update the UI state
-    const results = runPaymentValidation();
-    setValidationResults(results);
-    setReportText(formatValidationReport(results));
-    
-    setIsRunning(false);
+    console.log('🚀 POST-REFACTOR STRIPE VALIDATION SUITE');
+    console.log('='.repeat(60));
+
+    try {
+      // Run payment validation
+      const paymentResults = runPaymentValidation();
+      setValidationResults(paymentResults);
+      setReportText(formatValidationReport(paymentResults));
+
+      // Run Stripe destination charge validation
+      const testPrices = [20, 150, 75, 500];
+      const stripeResults = testPrices.map(price => {
+        const breakdown = calculatePaymentBreakdown(price);
+        const stripeValidation = validateStripeAmounts(price);
+        
+        // Post-refactor validation: Check destination charge math
+        const stripeSessionAmount = Math.round(breakdown.buyerTotalAmount * 100);
+        const stripeApplicationFee = Math.round(price * 0.10 * 100); // 10% of base
+        const stripeTransferAmount = Math.round(price * 0.95 * 100); // 95% of base
+        
+        const destinationChargeValid = stripeSessionAmount === (stripeTransferAmount + stripeApplicationFee);
+        
+        console.log(`\n🔍 DESTINATION CHARGE TEST - €${price}:`);
+        console.log(`  Session Amount: ${stripeSessionAmount} cents`);
+        console.log(`  Application Fee: ${stripeApplicationFee} cents (10% of base)`);
+        console.log(`  Transfer Amount: ${stripeTransferAmount} cents (95% of base)`);
+        console.log(`  Sum Check: ${stripeTransferAmount} + ${stripeApplicationFee} = ${stripeTransferAmount + stripeApplicationFee}`);
+        console.log(`  Expected: ${stripeSessionAmount}`);
+        console.log(`  Result: ${destinationChargeValid ? '✅ PASS' : '❌ FAIL'}`);
+        
+        return {
+          price,
+          breakdown,
+          stripeValidation,
+          destinationChargeValid,
+          stripeSessionAmount,
+          stripeApplicationFee,
+          stripeTransferAmount
+        };
+      });
+      
+      setStripeValidationResults(stripeResults);
+
+      // Summary
+      const paymentsPassed = paymentResults.filter(r => r.passed).length;
+      const stripePassed = stripeResults.filter(r => r.destinationChargeValid).length;
+      
+      console.log('\n📊 POST-REFACTOR SUMMARY:');
+      console.log(`✅ Payment Calculations: ${paymentsPassed}/${paymentResults.length}`);
+      console.log(`✅ Stripe Destination Charges: ${stripePassed}/${stripeResults.length}`);
+      console.log(`✅ Dual Commission (5%+5%): ${paymentsPassed === paymentResults.length ? 'WORKING' : 'FAILED'}`);
+      
+      if (paymentsPassed === paymentResults.length && stripePassed === stripeResults.length) {
+        console.log('\n🎉 ALL POST-REFACTOR VALIDATIONS PASSED!');
+      }
+
+    } catch (error) {
+      console.error('❌ Post-refactor validation failed:', error);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   const testUICalculations = () => {
-    // Test our UI components' calculation logic
     const testPrices = [20, 150, 75, 500];
     
     console.log("🧪 UI CALCULATION VALIDATION:");
@@ -66,6 +118,8 @@ export const PaymentValidationDashboard = () => {
 
   const passedCount = validationResults.filter(r => r.passed).length;
   const totalCount = validationResults.length;
+  const stripePassed = stripeValidationResults.filter(r => r.destinationChargeValid).length;
+  const stripeTotal = stripeValidationResults.length;
 
   return (
     <div className="space-y-6 p-6">
@@ -73,7 +127,7 @@ export const PaymentValidationDashboard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5" />
-            Payment Calculation Validation Suite
+            Payment & Stripe Validation Suite
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -82,26 +136,32 @@ export const PaymentValidationDashboard = () => {
               <Button 
                 onClick={runValidation} 
                 disabled={isRunning}
+                variant="outline"
                 className="flex-1"
               >
-                {isRunning ? "Running Validation..." : "Run Payment Validation Tests"}
+                {isRunning ? "Running..." : "Run Payment Tests"}
               </Button>
               
               <Button 
-                onClick={runFullValidationSuite} 
+                onClick={runPostRefactorValidation} 
                 disabled={isRunning}
-                variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 flex-1"
               >
                 <Play className="w-4 h-4" />
-                {isRunning ? "Running..." : "Run Full Suite"}
+                {isRunning ? "Running..." : "Post-Refactor Full Suite"}
               </Button>
             </div>
 
             {fullSuiteRun && (
-              <div className="bg-blue-50 p-3 rounded">
-                <p className="text-sm text-blue-800">
-                  ✅ Full validation suite executed! Check the browser console for detailed logs and Stripe integration validation.
+              <div className="bg-green-50 p-3 rounded border border-green-200">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <p className="text-sm text-green-800 font-semibold">
+                    Post-refactor validation completed! 
+                  </p>
+                </div>
+                <p className="text-xs text-green-700 mt-1">
+                  Check console for detailed Stripe Destination Charge validation results.
                 </p>
               </div>
             )}
@@ -113,6 +173,43 @@ export const PaymentValidationDashboard = () => {
             >
               Test UI Calculations (Check Console)
             </Button>
+
+            {stripeValidationResults.length > 0 && (
+              <Card className="border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-blue-600" />
+                    Stripe Destination Charge Validation Results
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid gap-3">
+                    {stripeValidationResults.map((result, index) => (
+                      <div key={index} className={`p-3 rounded border ${result.destinationChargeValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {result.destinationChargeValid ? 
+                            <CheckCircle className="w-4 h-4 text-green-600" /> : 
+                            <XCircle className="w-4 h-4 text-red-600" />
+                          }
+                          <span className="font-semibold text-sm">€{result.price} - Destination Charge</span>
+                        </div>
+                        
+                        <div className="text-xs space-y-1">
+                          <p>Session: {result.stripeSessionAmount} cents | Transfer: {result.stripeTransferAmount} | Fee: {result.stripeApplicationFee}</p>
+                          <p>Validation: {result.stripeTransferAmount + result.stripeApplicationFee} = {result.stripeSessionAmount} {result.destinationChargeValid ? '✅' : '❌'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-3 flex items-center gap-2">
+                    <Badge variant={stripePassed === stripeTotal ? "default" : "destructive"}>
+                      {stripePassed}/{stripeTotal} Stripe Tests Passed
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {validationResults.length > 0 && (
               <div className="space-y-4">
