@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -39,6 +38,7 @@ import PaymentValidation from './pages/PaymentValidation';
 import PrivateChats from './pages/PrivateChats';
 import HostEvents from './pages/host/HostEvents';
 import HostEventNew from './pages/host/HostEventNew';
+import HostRevenue from './pages/host/HostRevenue';
 
 function App() {
   const { authState } = useAuth();
@@ -117,6 +117,7 @@ function App() {
             {/* Host event routes */}
             <Route path="/host/events" element={<HostEvents />} />
             <Route path="/host/events/new" element={<HostEventNew />} />
+            <Route path="/host/revenue" element={<HostRevenue />} />
             
             {/* Admin routes */}
             <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
