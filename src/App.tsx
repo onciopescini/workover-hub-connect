@@ -1,34 +1,35 @@
+
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Layout } from '@/components/layout/Layout';
-import { Home } from '@/pages/Home';
-import { Spaces } from '@/pages/spaces/Spaces';
-import { SpaceDetails } from '@/pages/spaces/SpaceDetails';
-import { Profile } from '@/pages/profile/Profile';
-import { Bookings } from '@/pages/bookings/Bookings';
+import { AppLayout } from '@/components/layout/AppLayout';
+import Index from '@/pages/Index';
+import PublicSpaces from '@/pages/PublicSpaces';
+import SpaceDetail from '@/pages/SpaceDetail';
+import Profile from '@/pages/Profile';
+import Bookings from '@/pages/Bookings';
 import { Payments } from '@/pages/payments/Payments';
-import { ManageSpace } from '@/pages/spaces/ManageSpace';
-import { CreateSpace } from '@/pages/spaces/CreateSpace';
-import { UpdateSpace } from '@/pages/spaces/UpdateSpace';
-import { StripeCallback } from '@/pages/stripe/StripeCallback';
-import { NotFound } from '@/pages/NotFound';
-import { About } from '@/pages/About';
-import { Contact } from '@/pages/Contact';
-import { Terms } from '@/pages/Terms';
-import { Privacy } from '@/pages/Privacy';
-import { Help } from '@/pages/Help';
-import { Blog } from '@/pages/Blog';
-import { BlogArticle } from '@/pages/BlogArticle';
+import SpacesManage from '@/pages/SpacesManage';
+import SpaceNew from '@/pages/SpaceNew';
+import SpaceEdit from '@/pages/SpaceEdit';
+import AuthCallback from '@/pages/AuthCallback';
+import NotFound from '@/pages/NotFound';
+import About from '@/pages/About';
+import Contact from '@/pages/Contact';
+import Terms from '@/pages/Terms';
+import Privacy from '@/pages/Privacy';
+import Help from '@/pages/Help';
+import PublicEvents from '@/pages/PublicEvents';
+import EventDetail from '@/pages/EventDetail';
 import { PaymentsDashboard } from '@/components/payments/PaymentsDashboard';
-import { BecomeHost } from '@/pages/profile/BecomeHost';
-import { Users } from '@/pages/admin/Users';
-import { SpacesAdmin } from '@/pages/admin/SpacesAdmin';
-import { BookingsAdmin } from '@/pages/admin/BookingsAdmin';
+import Onboarding from '@/pages/Onboarding';
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
+import { AdminSpacesPage } from '@/pages/admin/AdminSpacesPage';
+import { AdminLogsPage } from '@/pages/admin/AdminLogsPage';
 import { useToast } from "@/components/ui/use-toast"
 import { checkAndUpdateStripeStatus } from '@/lib/stripe-status-utils';
-import { Dashboard } from '@/pages/Dashboard';
-import { Notifications } from '@/pages/notifications/Notifications';
+import Dashboard from '@/pages/Dashboard';
+import Notifications from '@/pages/Notifications';
 import PaymentValidation from './pages/PaymentValidation';
 
 function App() {
@@ -53,7 +54,7 @@ function App() {
 
   useEffect(() => {
     // Refresh user profile on app load
-    if (authState.isAuthenticated) {
+    if (authState.isAuthenticated && refreshUserProfile) {
       refreshUserProfile();
     }
   }, [authState.isAuthenticated, refreshUserProfile]);
@@ -68,7 +69,7 @@ function App() {
       toast({
       title: toastType === 'success' ? 'Successo!' : 'Attenzione!',
         description: toastMessage,
-        variant: toastType,
+        variant: toastType === 'success' ? 'default' : 'destructive',
     })
       // Clear the toast message from the URL
       const newUrl = location.pathname;
@@ -77,20 +78,20 @@ function App() {
   }, [location, navigate, toast]);
 
   return (
-    <Layout>
+    <AppLayout>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/spaces" element={<Spaces />} />
-        <Route path="/spaces/:id" element={<SpaceDetails />} />
+        <Route path="/" element={<Index />} />
+        <Route path="/spaces" element={<PublicSpaces />} />
+        <Route path="/spaces/:id" element={<SpaceDetail />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/become-host" element={<BecomeHost />} />
+        <Route path="/profile/become-host" element={<Onboarding />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/payments" element={<Payments />} />
         <Route path="/payments-dashboard" element={<PaymentsDashboard />} />
-        <Route path="/manage-space" element={<ManageSpace />} />
-        <Route path="/create-space" element={<CreateSpace />} />
-        <Route path="/update-space/:id" element={<UpdateSpace />} />
-        <Route path="/stripe/callback" element={<StripeCallback />} />
+        <Route path="/manage-space" element={<SpacesManage />} />
+        <Route path="/create-space" element={<SpaceNew />} />
+        <Route path="/update-space/:id" element={<SpaceEdit />} />
+        <Route path="/stripe/callback" element={<AuthCallback />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/about" element={<About />} />
@@ -98,18 +99,18 @@ function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/help" element={<Help />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:id" element={<BlogArticle />} />
+        <Route path="/events" element={<PublicEvents />} />
+        <Route path="/events/:id" element={<EventDetail />} />
         
         {/* Admin routes */}
-        <Route path="/admin/users" element={<Users />} />
-        <Route path="/admin/spaces" element={<SpacesAdmin />} />
-        <Route path="/admin/bookings" element={<BookingsAdmin />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/admin/spaces" element={<AdminSpacesPage />} />
+        <Route path="/admin/logs" element={<AdminLogsPage />} />
 
         <Route path="/validation" element={<PaymentValidation />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </Layout>
+    </AppLayout>
   );
 }
 
