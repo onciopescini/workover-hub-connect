@@ -42,6 +42,7 @@ type NavigationItem = {
   href: string;
   icon: any;
   badge?: number;
+  type?: string;
 };
 
 type NavigationSeparator = {
