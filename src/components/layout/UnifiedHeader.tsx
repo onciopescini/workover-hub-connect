@@ -1,210 +1,311 @@
-
-import React, { useCallback, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown, Building2, User, LogOut, Calendar, MessageSquare, Users, Settings, Bell } from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
-import { NotificationIcon } from "@/components/notifications/NotificationIcon";
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { 
+  Menu, 
+  User, 
+  LogOut, 
+  Settings, 
+  Home, 
+  MapPin, 
+  Calendar,
+  MessageCircle,
+  Users,
+  CreditCard,
+  Building,
+  Plus,
+  BarChart3,
+  Shield,
+  Bell
+} from 'lucide-react';
+import { NotificationIcon } from '@/components/notifications/NotificationIcon';
 
 export function UnifiedHeader() {
+  const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { authState, signOut } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const isActivePath = useCallback((path: string) => location.pathname === path, [location.pathname]);
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (authState.isAuthenticated && authState.user?.id) {
+        // Fetch unread messages count
+        // Replace with your actual logic to fetch unread messages
+        // Example:
+        // const count = await getUnreadMessagesCount(authState.user.id);
+        // setUnreadCount(count);
+        setUnreadCount(0); // Placeholder
+      } else {
+        setUnreadCount(0);
+      }
+    };
+
+    fetchUnreadCount();
+  }, [authState.isAuthenticated, authState.user?.id]);
 
   const handleSignOut = async () => {
     try {
       await signOut();
       navigate('/');
     } catch (error) {
-      console.error("Error during logout:", error);
+      console.error('Error signing out:', error);
     }
   };
 
-  const getUserInitials = useMemo(() => {
-    const firstName = authState.profile?.first_name || "";
-    const lastName = authState.profile?.last_name || "";
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "U";
-  }, [authState.profile?.first_name, authState.profile?.last_name]);
+  const navItems = [
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Spazi', href: '/spaces', icon: MapPin },
+    { label: 'Eventi', href: '/events', icon: Calendar },
+  ];
 
-  const getUserFullName = useMemo(() => {
-    const firstName = authState.profile?.first_name || "";
-    const lastName = authState.profile?.last_name || "";
-    return `${firstName} ${lastName}`.trim() || "Utente";
-  }, [authState.profile?.first_name, authState.profile?.last_name]);
+  const userMenuItems = authState.isAuthenticated ? [
+    { label: 'Dashboard', href: '/dashboard', icon: Home },
+    { label: 'Profilo', href: '/profile', icon: User },
+    { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
+    { label: 'Messaggi', href: '/messages', icon: MessageCircle, badge: unreadCount > 0 ? unreadCount : undefined },
+    { label: 'Network', href: '/networking', icon: Users },
+  ] : [];
 
-  const getDashboardUrl = useCallback(() => {
-    if (authState.profile?.role === "admin") return "/dashboard";
-    if (authState.profile?.role === "host") return "/dashboard";
-    return "/dashboard";
-  }, [authState.profile?.role]);
+  const hostMenuItems = authState.profile?.role === 'host' ? [
+    { type: 'separator' as const },
+    { label: 'I Miei Spazi', href: '/manage-space', icon: Building },
+    { label: 'Crea Spazio', href: '/create-space', icon: Plus },
+    { label: 'I Miei Eventi', href: '/host/events', icon: Calendar },
+    { label: 'Pagamenti', href: '/payments-dashboard', icon: CreditCard },
+    { label: 'Analytics', href: '/host/analytics', icon: BarChart3 },
+  ] : [];
 
-  // Role-specific navigation items
-  const getMainNavItems = useMemo(() => {
-    if (!authState.isAuthenticated) {
-      return [
-        { path: '/spaces', label: 'Spazi', icon: Building2 },
-        { path: '/events', label: 'Eventi', icon: Calendar },
-      ];
-    }
+  const adminMenuItems = authState.profile?.role === 'admin' ? [
+    { type: 'separator' as const },
+    { label: 'Pannello Admin', href: '/admin/users', icon: Shield },
+  ] : [];
 
-    const role = authState.profile?.role;
+  const allMenuItems = [...userMenuItems, ...hostMenuItems, ...adminMenuItems];
 
-    if (role === "admin") {
-      return [
-        { path: '/dashboard', label: 'Dashboard', icon: Settings },
-        { path: '/spaces', label: 'Spazi', icon: Building2 },
-        { path: '/events', label: 'Eventi', icon: Calendar },
-        { path: '/admin/users', label: 'Utenti', icon: Users },
-        { path: '/validation', label: 'Validazione', icon: Settings },
-      ];
-    }
-
-    if (role === "host") {
-      return [
-        { path: '/dashboard', label: 'Dashboard', icon: Building2 },
-        { path: '/spaces', label: 'Spazi', icon: Building2 },
-        { path: '/events', label: 'Eventi', icon: Calendar },
-        { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
-        { path: '/messages', label: 'Messaggi', icon: MessageSquare },
-        { path: '/networking', label: 'Networking', icon: Users },
-        { path: '/manage-space', label: 'Gestisci Spazi', icon: Settings },
-      ];
-    }
-
-    // Coworker navigation
-    return [
-      { path: '/dashboard', label: 'Dashboard', icon: Building2 },
-      { path: '/spaces', label: 'Spazi', icon: Building2 },
-      { path: '/events', label: 'Eventi', icon: Calendar },
-      { path: '/bookings', label: 'Prenotazioni', icon: Calendar },
-      { path: '/messages', label: 'Messaggi', icon: MessageSquare },
-      { path: '/networking', label: 'Networking', icon: Users },
-    ];
-  }, [authState.isAuthenticated, authState.profile?.role]);
-
-  const handleNavigation = useCallback((path: string) => {
-    navigate(path);
-  }, [navigate]);
+  const isActivePath = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div 
-            className="flex items-center space-x-2 cursor-pointer"
-            onClick={() => navigate(authState.isAuthenticated ? '/dashboard' : '/')}
-          >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900">Workover</span>
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-orange-500 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">W</span>
           </div>
+          <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
+            Workover
+          </span>
+        </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-4">
-            {getMainNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActivePath(item.path) ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleNavigation(item.path)}
-                  className={`flex items-center gap-1 text-sm ${
-                    isActivePath(item.path) ? 'bg-indigo-600 text-white' : ''
-                  }`}
-                >
-                  <Icon className="h-3 w-3" />
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-6">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                isActivePath(item.href) ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-          {/* Auth section */}
-          <div className="flex items-center space-x-4">
-            {!authState.isAuthenticated ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/login')}
-                  className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
-                >
-                  Accedi
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/register')}
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Registrati
-                </Button>
-              </>
-            ) : (
-              <div className="flex items-center space-x-3">
-                {/* Notifications Icon - Only for authenticated users */}
-                <NotificationIcon />
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2 h-auto p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={authState.profile?.profile_photo_url || ""} />
-                        <AvatarFallback className="text-xs">
-                          {getUserInitials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium text-gray-700 hidden md:inline">
-                        {getUserFullName}
-                      </span>
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">{getUserFullName}</p>
-                      <p className="text-xs text-gray-500">{authState.user?.email}</p>
+        {/* Right Side */}
+        <div className="flex items-center space-x-4">
+          {/* Notifications */}
+          {authState.isAuthenticated && <NotificationIcon />}
+
+          {/* Desktop User Menu */}
+          {authState.isAuthenticated ? (
+            <div className="hidden md:flex items-center space-x-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage 
+                        src={authState.profile?.profile_photo_url || ''} 
+                        alt={`${authState.profile?.first_name} ${authState.profile?.last_name}`}
+                      />
+                      <AvatarFallback>
+                        {authState.profile?.first_name?.charAt(0)}
+                        {authState.profile?.last_name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">
+                        {authState.profile?.first_name} {authState.profile?.last_name}
+                      </p>
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {authState.user?.email}
+                      </p>
                     </div>
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem onClick={() => handleNavigation(getDashboardUrl())}>
-                      <Building2 className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
-                    </DropdownMenuItem>
-                    
-                    <DropdownMenuItem onClick={() => handleNavigation('/profile')}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Visualizza Profilo</span>
-                    </DropdownMenuItem>
+                  </div>
+                  <DropdownMenuSeparator />
+                  
+                  {allMenuItems.map((item, index) => 
+                    item.type === 'separator' ? (
+                      <DropdownMenuSeparator key={index} />
+                    ) : (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link to={item.href} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                          {item.badge && (
+                            <Badge variant="secondary" className="ml-auto">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </Link>
+                      </DropdownMenuItem>
+                    )
+                  )}
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile/edit" className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span>Impostazioni</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center space-x-2">
+              <Button variant="ghost" onClick={() => navigate('/login')}>
+                Accedi
+              </Button>
+              <Button onClick={() => navigate('/register')}>
+                Registrati
+              </Button>
+            </div>
+          )}
 
-                    <DropdownMenuItem onClick={() => handleNavigation('/notifications')}>
-                      <Bell className="mr-2 h-4 w-4" />
-                      <span>Notifiche</span>
-                    </DropdownMenuItem>
+          {/* Mobile Menu */}
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col space-y-4 mt-8">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
+                      isActivePath(item.href) ? 'text-primary' : 'text-muted-foreground'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+                
+                {authState.isAuthenticated && (
+                  <>
+                    <div className="border-t pt-4 mt-4" />
+                    {allMenuItems.map((item, index) => 
+                      item.type === 'separator' ? (
+                        <div key={index} className="border-t pt-2 mt-2" />
+                      ) : (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                          {item.badge && (
+                            <Badge variant="secondary" className="ml-auto">
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </Link>
+                      )
+                    )}
                     
-                    <DropdownMenuSeparator />
-                    
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
+                    <div className="border-t pt-4 mt-4" />
+                    <Link
+                      to="/profile/edit"
+                      className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Impostazioni</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary text-left"
+                    >
+                      <LogOut className="h-4 w-4" />
                       <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-          </div>
+                    </button>
+                  </>
+                )}
+                
+                {!authState.isAuthenticated && (
+                  <>
+                    <div className="border-t pt-4 mt-4" />
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => {
+                        navigate('/login');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="justify-start"
+                    >
+                      Accedi
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        navigate('/register');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="justify-start"
+                    >
+                      Registrati
+                    </Button>
+                  </>
+                )}
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
