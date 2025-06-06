@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface RevenueData {
@@ -23,6 +22,12 @@ export interface DAC7Data {
   totalTransactions: number;
   thresholdMet: boolean;
   reportingYear: number;
+}
+
+interface Dac7ThresholdResult {
+  total_income: number;
+  total_transactions: number;
+  threshold_met: boolean;
 }
 
 export const getHostRevenueData = async (
@@ -143,10 +148,12 @@ export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC
       throw calcError;
     }
 
+    const dac7: Dac7ThresholdResult = calculatedData as unknown as Dac7ThresholdResult;
+
     return {
-      totalIncome: calculatedData?.total_income || 0,
-      totalTransactions: calculatedData?.total_transactions || 0,
-      thresholdMet: calculatedData?.threshold_met || false,
+      totalIncome: dac7?.total_income || 0,
+      totalTransactions: dac7?.total_transactions || 0,
+      thresholdMet: dac7?.threshold_met || false,
       reportingYear: year
     };
   }
