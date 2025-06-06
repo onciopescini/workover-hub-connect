@@ -20,7 +20,6 @@ import Dashboard from '@/pages/Dashboard';
 import Profile from '@/pages/Profile';
 import UserProfile from '@/pages/UserProfile';
 import Bookings from '@/pages/Bookings';
-import BookingDetail from '@/pages/BookingDetail';
 import Messages from '@/pages/Messages';
 import NetworkingAdvanced from '@/pages/NetworkingAdvanced';
 import NetworkingDiscover from '@/pages/NetworkingDiscover';
@@ -31,7 +30,6 @@ import HostDashboard from '@/pages/HostDashboard';
 import HostSpaceManagement from '@/pages/SpacesManage';
 import CreateSpace from '@/pages/SpaceNew';
 import EditSpace from '@/pages/SpaceEdit';
-import HostBookings from '@/pages/host/HostBookings';
 import HostRevenue from '@/pages/host/HostRevenue';
 import HostEvents from '@/pages/host/HostEvents';
 import CreateEvent from '@/pages/host/HostEventNew';
@@ -106,14 +104,6 @@ function App() {
               }
             />
             <Route
-              path="/bookings/:id"
-              element={
-                <ProtectedRoute>
-                  <BookingDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/messages"
               element={
                 <ProtectedRoute>
@@ -184,14 +174,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EditSpace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/bookings"
-              element={
-                <ProtectedRoute>
-                  <HostBookings />
                 </ProtectedRoute>
               }
             />
