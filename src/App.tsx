@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
@@ -31,6 +30,7 @@ import Onboarding from './pages/Onboarding';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminSpacesPage from './pages/admin/AdminSpacesPage';
 import AdminLogsPage from './pages/admin/AdminLogsPage';
+import ValidationDashboard from './pages/ValidationDashboard';
 import { useToast } from "./components/ui/use-toast"
 import { checkAndUpdateStripeStatus } from './lib/stripe-status-utils';
 import Dashboard from './pages/Dashboard';
@@ -128,6 +128,7 @@ function App() {
             <Route path="/admin/users" element={<AdminProtected><AdminUsersPage /></AdminProtected>} />
             <Route path="/admin/spaces" element={<AdminProtected><AdminSpacesPage /></AdminProtected>} />
             <Route path="/admin/logs" element={<AdminProtected><AdminLogsPage /></AdminProtected>} />
+            <Route path="/admin/validation" element={<AdminProtected><ValidationDashboard /></AdminProtected>} />
 
             {/* Payment validation route - Admin only */}
             <Route path="/validation" element={<AdminProtected><PaymentValidation /></AdminProtected>} />

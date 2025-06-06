@@ -1,6 +1,7 @@
 
 import { runPaymentValidation, formatValidationReport } from './payment-validation';
 import { runStripeValidationSuite } from './stripe-validation';
+import { sprint1Validator } from './validation-suite';
 
 // Validation suite execution function - only runs when manually called
 export const executeValidationSuite = () => {
@@ -40,5 +41,17 @@ export const executeValidationSuite = () => {
   };
 };
 
-// Export the function but don't auto-execute
-// This allows manual execution from the validation dashboard
+// Run comprehensive Sprint 1 validation
+export const executeFullValidation = async () => {
+  console.log('🚀 EXECUTING FULL SPRINT 1 VALIDATION');
+  console.log('=====================================');
+  
+  // Run payment validation first
+  executeValidationSuite();
+  
+  // Then run comprehensive validation
+  await sprint1Validator.runFullValidation();
+};
+
+// Export both functions
+export { executeFullValidation };
