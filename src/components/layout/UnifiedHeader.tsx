@@ -119,6 +119,55 @@ export function UnifiedHeader() {
     return location.pathname.startsWith(path);
   };
 
+  const renderMenuItem = (item: MenuItem, index: number) => {
+    if ('type' in item && item.type === 'separator') {
+      return <DropdownMenuSeparator key={index} />;
+    }
+    
+    const navigationItem = item as NavigationItem;
+    const IconComponent = navigationItem.icon;
+    
+    return (
+      <DropdownMenuItem key={navigationItem.href} asChild>
+        <Link to={navigationItem.href} className="flex items-center gap-2">
+          <IconComponent className="h-4 w-4" />
+          <span>{navigationItem.label}</span>
+          {navigationItem.badge && (
+            <Badge variant="secondary" className="ml-auto">
+              {navigationItem.badge}
+            </Badge>
+          )}
+        </Link>
+      </DropdownMenuItem>
+    );
+  };
+
+  const renderMobileMenuItem = (item: MenuItem, index: number) => {
+    if ('type' in item && item.type === 'separator') {
+      return <div key={index} className="border-t pt-2 mt-2" />;
+    }
+    
+    const navigationItem = item as NavigationItem;
+    const IconComponent = navigationItem.icon;
+    
+    return (
+      <Link
+        key={navigationItem.href}
+        to={navigationItem.href}
+        className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        <IconComponent className="h-4 w-4" />
+        <span>{navigationItem.label}</span>
+        {navigationItem.badge && (
+          <Badge variant="secondary" className="ml-auto">
+            {navigationItem.badge}
+          </Badge>
+        )}
+      </Link>
+    );
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -183,23 +232,7 @@ export function UnifiedHeader() {
                   </div>
                   <DropdownMenuSeparator />
                   
-                  {allMenuItems.map((item, index) => 
-                    'type' in item && item.type === 'separator' ? (
-                      <DropdownMenuSeparator key={index} />
-                    ) : (
-                      <DropdownMenuItem key={(item as NavigationItem).href} asChild>
-                        <Link to={(item as NavigationItem).href} className="flex items-center gap-2">
-                          <(item as NavigationItem).icon className="h-4 w-4" />
-                          <span>{(item as NavigationItem).label}</span>
-                          {(item as NavigationItem).badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {(item as NavigationItem).badge}
-                            </Badge>
-                          )}
-                        </Link>
-                      </DropdownMenuItem>
-                    )
-                  )}
+                  {allMenuItems.map((item, index) => renderMenuItem(item, index))}
                   
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -235,43 +268,27 @@ export function UnifiedHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col space-y-4 mt-8">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
-                      isActivePath(item.href) ? 'text-primary' : 'text-muted-foreground'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={`flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary ${
+                        isActivePath(item.href) ? 'text-primary' : 'text-muted-foreground'
+                      }`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
                 
                 {authState.isAuthenticated && (
                   <>
                     <div className="border-t pt-4 mt-4" />
-                    {allMenuItems.map((item, index) => 
-                      'type' in item && item.type === 'separator' ? (
-                        <div key={index} className="border-t pt-2 mt-2" />
-                      ) : (
-                        <Link
-                          key={(item as NavigationItem).href}
-                          to={(item as NavigationItem).href}
-                          className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <(item as NavigationItem).icon className="h-4 w-4" />
-                          <span>{(item as NavigationItem).label}</span>
-                          {(item as NavigationItem).badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {(item as NavigationItem).badge}
-                            </Badge>
-                          )}
-                        </Link>
-                      )
-                    )}
+                    {allMenuItems.map((item, index) => renderMobileMenuItem(item, index))}
                     
                     <div className="border-t pt-4 mt-4" />
                     <Link
