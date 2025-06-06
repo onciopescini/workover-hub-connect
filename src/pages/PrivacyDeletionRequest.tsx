@@ -29,6 +29,11 @@ const PrivacyDeletionRequest = () => {
     setIsSubmitting(false);
   };
 
+  const handleCheckedChange = (checked: boolean | "indeterminate") => {
+    // Convert indeterminate to false for our boolean state
+    setConfirmed(checked === true);
+  };
+
   return (
     <MainLayout>
       <div className="min-h-screen bg-gray-50 py-8">
@@ -143,7 +148,7 @@ const PrivacyDeletionRequest = () => {
                   <Checkbox
                     id="confirm"
                     checked={confirmed}
-                    onCheckedChange={setConfirmed}
+                    onCheckedChange={handleCheckedChange}
                   />
                   <label htmlFor="confirm" className="text-sm text-gray-700 leading-tight">
                     Confermo di aver compreso che questa azione è irreversibile e che tutti i miei dati 

@@ -34,7 +34,15 @@ export const useGDPRRequests = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      
+      // Type cast the response to ensure proper typing
+      const typedRequests: GDPRRequest[] = (data || []).map(request => ({
+        ...request,
+        request_type: request.request_type as 'data_export' | 'data_deletion' | 'data_rectification',
+        status: request.status as 'pending' | 'completed' | 'rejected'
+      }));
+      
+      setRequests(typedRequests);
     } catch (error) {
       console.error('Error fetching GDPR requests:', error);
       toast.error('Errore nel caricamento delle richieste');
