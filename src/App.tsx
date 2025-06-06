@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -15,6 +14,7 @@ import Spaces from '@/pages/PublicSpaces';
 import SpaceDetail from '@/pages/SpaceDetail';
 import Events from '@/pages/PublicEvents';
 import EventDetail from '@/pages/EventDetail';
+import AuthCallback from '@/pages/AuthCallback';
 
 // Protected pages
 import Dashboard from '@/pages/Dashboard';
@@ -66,6 +66,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/spaces" element={<Spaces />} />
               <Route path="/spaces/:id" element={<SpaceDetail />} />
               <Route path="/events" element={<Events />} />

@@ -39,9 +39,19 @@ const AuthCallback = () => {
           console.log('Profile found:', !!profile, profile?.role, profile?.onboarding_completed);
 
           if (profile?.onboarding_completed) {
-            // Redirect to dashboard
-            console.log('Redirecting to dashboard');
-            navigate('/dashboard', { replace: true });
+            // Redirect based on role
+            switch (profile.role) {
+              case 'admin':
+                navigate('/admin', { replace: true });
+                break;
+              case 'host':
+                navigate('/host', { replace: true });
+                break;
+              case 'coworker':
+              default:
+                navigate('/dashboard', { replace: true });
+                break;
+            }
           } else {
             console.log('Redirecting to onboarding');
             navigate("/onboarding", { replace: true });

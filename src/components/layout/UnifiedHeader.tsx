@@ -90,7 +90,8 @@ export function UnifiedHeader() {
     { label: 'Eventi', href: '/events', icon: Calendar },
   ];
 
-  const userMenuItems: NavigationItem[] = authState.isAuthenticated ? [
+  // Coworker menu items
+  const coworkerMenuItems: NavigationItem[] = authState.isAuthenticated ? [
     { label: 'Dashboard', href: '/dashboard', icon: Home },
     { label: 'Profilo', href: '/profile', icon: User },
     { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
@@ -98,21 +99,27 @@ export function UnifiedHeader() {
     { label: 'Network', href: '/networking', icon: Users },
   ] : [];
 
+  // Host-specific menu items
   const hostMenuItems: MenuItem[] = authState.profile?.role === 'host' ? [
     { type: 'separator' as const },
-    { label: 'I Miei Spazi', href: '/manage-space', icon: Building },
-    { label: 'Crea Spazio', href: '/create-space', icon: Plus },
+    { label: 'Dashboard Host', href: '/host', icon: Building },
+    { label: 'I Miei Spazi', href: '/host/spaces', icon: Building },
+    { label: 'Crea Spazio', href: '/host/spaces/new', icon: Plus },
     { label: 'I Miei Eventi', href: '/host/events', icon: Calendar },
-    { label: 'Pagamenti', href: '/payments-dashboard', icon: CreditCard },
-    { label: 'Analytics', href: '/host/analytics', icon: BarChart3 },
+    { label: 'Entrate', href: '/host/revenue', icon: CreditCard },
   ] : [];
 
+  // Admin-specific menu items
   const adminMenuItems: MenuItem[] = authState.profile?.role === 'admin' ? [
     { type: 'separator' as const },
-    { label: 'Pannello Admin', href: '/admin/users', icon: Shield },
+    { label: 'Admin Dashboard', href: '/admin', icon: Shield },
+    { label: 'Gestisci Utenti', href: '/admin/users', icon: Users },
+    { label: 'Gestisci GDPR', href: '/admin/gdpr', icon: Shield },
+    { label: 'Logs di Sistema', href: '/admin/logs', icon: BarChart3 },
+    { label: 'Validazione', href: '/validation', icon: Settings },
   ] : [];
 
-  const allMenuItems: MenuItem[] = [...userMenuItems, ...hostMenuItems, ...adminMenuItems];
+  const allMenuItems: MenuItem[] = [...coworkerMenuItems, ...hostMenuItems, ...adminMenuItems];
 
   const isActivePath = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -228,6 +235,12 @@ export function UnifiedHeader() {
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
                         {authState.user?.email}
                       </p>
+                      {authState.profile?.role && (
+                        <Badge variant="outline" className="w-fit">
+                          {authState.profile.role === 'admin' ? 'Admin' : 
+                           authState.profile.role === 'host' ? 'Host' : 'Coworker'}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -236,7 +249,7 @@ export function UnifiedHeader() {
                   
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/profile/edit" className="flex items-center gap-2">
+                    <Link to="/profile" className="flex items-center gap-2">
                       <Settings className="h-4 w-4" />
                       <span>Impostazioni</span>
                     </Link>
@@ -288,11 +301,32 @@ export function UnifiedHeader() {
                 {authState.isAuthenticated && (
                   <>
                     <div className="border-t pt-4 mt-4" />
+                    <div className="flex items-center space-x-2 px-2 py-1 bg-muted rounded-md">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={authState.profile?.profile_photo_url || ''} />
+                        <AvatarFallback>
+                          {authState.profile?.first_name?.charAt(0)}
+                          {authState.profile?.last_name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {authState.profile?.first_name} {authState.profile?.last_name}
+                        </span>
+                        {authState.profile?.role && (
+                          <Badge variant="outline" className="w-fit text-xs">
+                            {authState.profile.role === 'admin' ? 'Admin' : 
+                             authState.profile.role === 'host' ? 'Host' : 'Coworker'}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
                     {allMenuItems.map((item, index) => renderMobileMenuItem(item, index))}
                     
                     <div className="border-t pt-4 mt-4" />
                     <Link
-                      to="/profile/edit"
+                      to="/profile"
                       className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >

@@ -1,18 +1,26 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import type { AuthState, AuthContextType, Profile } from '@/types/auth';
-import type { User, Session } from '@supabase/supabase-js';
-import { cleanupAuthState } from '@/lib/auth-utils';
-import { createContextualLogger } from '@/lib/logger';
-import { useAuthOperations, UseAuthOperationsOptions } from '@/hooks/useAuthOperations';
+import { AuthState, AuthContextType, Profile } from '@/types/auth';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create contextual logger for AuthContext
-const authLogger = createContextualLogger('AuthContext');
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -21,454 +29,222 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
   });
 
-  // Global stability flags
-  const hasInitializedProfile = useRef(false);
-  const isProfileLoaded = useRef(false);
-  const hasShownProfileSuccessToast = useRef(false);
-  const lastProfileFetchTime = useRef<number>(0);
-  const profileFetchInProgress = useRef(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Stabilized memoized user ID to prevent unnecessary re-renders
-  const currentUserId = useMemo(() => authState.user?.id, [authState.user?.id]);
+  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-  // Configure auth operations with enhanced stability options
-  const authOperationsOptions: UseAuthOperationsOptions = useMemo(() => ({
-    onProfileSuccess: (profile: Profile) => {
-      authLogger.info('Profile loaded successfully via useAuthOperations', {
-        action: 'profile_context_success',
-        userId: currentUserId,
-        profileId: profile?.id
-      });
-      
-      // Only show toast once per session and after initial load
-      if (!hasShownProfileSuccessToast.current && hasInitializedProfile.current) {
-        hasShownProfileSuccessToast.current = true;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
       }
-      
-      isProfileLoaded.current = true;
-    },
-    onProfileError: (error: Error) => {
-      authLogger.error('Profile operation failed in context', {
-        action: 'profile_context_error',
-        userId: currentUserId
-      }, error);
-    },
-    onAuthSuccess: (data) => {
-      authLogger.info('Auth operation successful in context', {
-        action: 'auth_context_success',
-        userId: data.user?.id,
-        hasSession: !!data.session
-      });
-    },
-    onAuthError: (error: Error) => {
-      authLogger.error('Auth operation failed in context', {
-        action: 'auth_context_error'
-      }, error);
-    },
-    enableRetry: true,
-    enableToasts: true,
-    debounceMs: 2000, // Increased from 1000ms
-    suppressInitialProfileToast: true // Suppress to prevent spam
-  }), [currentUserId]);
 
-  // Initialize auth operations hook with stabilized options
-  const {
-    fetchProfile,
-    refreshProfile: refreshProfileOp,
-    updateProfile: updateProfileOp,
-    signIn: signInOp,
-    signUp: signUpOp,
-    signInWithGoogle: signInWithGoogleOp,
-    signOut: signOutOp,
-    profileState
-  } = useAuthOperations(authOperationsOptions);
-
-  // Stabilized profile update effect with aggressive debouncing
-  useEffect(() => {
-    if (profileState.data && currentUserId && !profileFetchInProgress.current) {
-      setAuthState(prev => ({
-        ...prev,
-        profile: profileState.data
-      }));
+      return data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      return null;
     }
-  }, [profileState.data, currentUserId]);
+  };
 
-  // Enhanced wrapper functions with idempotency and stability
-  const refreshProfile = useCallback(async () => {
-    if (!currentUserId || profileFetchInProgress.current) {
-      authLogger.debug('Skipping profile refresh - no user or fetch in progress', {
-        action: 'profile_refresh_skip',
-        hasUser: !!currentUserId,
-        fetchInProgress: profileFetchInProgress.current
-      });
+  const handleRoleBasedRedirect = (profile: Profile | null, session: Session | null) => {
+    if (!session || !profile) return;
+
+    // Skip redirect if on auth-related pages
+    const authPages = ['/login', '/register', '/auth/callback'];
+    if (authPages.includes(location.pathname)) return;
+
+    // Check if onboarding is needed
+    if (!profile.onboarding_completed && profile.role !== 'admin') {
+      if (location.pathname !== '/onboarding') {
+        navigate('/onboarding');
+      }
       return;
     }
 
-    // Aggressive debounce - don't refresh if last refresh was less than 2 seconds ago
-    const now = Date.now();
-    if (now - lastProfileFetchTime.current < 2000) {
-      authLogger.debug('Profile refresh debounced', {
-        action: 'profile_refresh_debounced',
-        timeSinceLastFetch: now - lastProfileFetchTime.current
-      });
+    // Role-based dashboard redirects
+    const currentPath = location.pathname;
+    
+    // Don't redirect if user is already on an appropriate page
+    if (currentPath.startsWith('/dashboard') || 
+        (profile.role === 'host' && currentPath.startsWith('/host')) ||
+        (profile.role === 'admin' && currentPath.startsWith('/admin'))) {
       return;
     }
 
-    const stopTimer = authLogger.startTimer('refreshProfile');
-    profileFetchInProgress.current = true;
-    lastProfileFetchTime.current = now;
-    
-    try {
-      authLogger.info('Starting profile refresh via context', {
-        action: 'profile_refresh_context_start',
-        userId: currentUserId
-      });
-
-      await refreshProfileOp(currentUserId);
-
-      authLogger.info('Profile refresh completed via context', {
-        action: 'profile_refresh_context_complete',
-        userId: currentUserId
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Profile refresh failed');
-      authLogger.error('Error in context profile refresh', {
-        action: 'profile_refresh_context_error',
-        userId: currentUserId
-      }, normalizedError);
-    } finally {
-      // Reset flag after delay to prevent rapid successive calls
-      setTimeout(() => {
-        profileFetchInProgress.current = false;
-      }, 1000);
-      stopTimer();
-    }
-  }, [currentUserId, refreshProfileOp]);
-
-  const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-    if (!currentUserId) {
-      const error = new Error('User not authenticated');
-      authLogger.error('Profile update attempted without authentication', {
-        action: 'profile_update_unauthorized',
-        updates: Object.keys(updates)
-      }, error);
-      throw error;
-    }
-
-    const stopTimer = authLogger.startTimer('updateProfile');
-
-    try {
-      authLogger.info('Starting profile update via context', {
-        action: 'profile_update_context_start',
-        userId: currentUserId,
-        updateFields: Object.keys(updates)
-      });
-
-      const updatedProfile = await updateProfileOp(updates, currentUserId);
-
-      // Update local state immediately
-      setAuthState(prev => ({
-        ...prev,
-        profile: updatedProfile
-      }));
-
-      authLogger.info('Profile update successful via context', {
-        action: 'profile_update_context_success',
-        userId: currentUserId,
-        updatedFields: Object.keys(updates)
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Profile update error');
-      authLogger.error('Profile update failed in context', {
-        action: 'profile_update_context_error',
-        userId: currentUserId,
-        updateFields: Object.keys(updates)
-      }, normalizedError);
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  }, [currentUserId, updateProfileOp]);
-
-  // Enhanced auth operation wrappers with stability
-  const signIn = useCallback(async (email: string, password: string) => {
-    const stopTimer = authLogger.startTimer('signIn');
-    
-    try {
-      authLogger.info('Starting sign in process via context', {
-        action: 'sign_in_context_start',
-        email,
-        timestamp: Date.now()
-      });
-
-      await signInOp(email, password);
-      
-      authLogger.info('Sign in successful via context', {
-        action: 'sign_in_context_success',
-        email
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Sign in failed');
-      authLogger.error('Sign in error in context', {
-        action: 'sign_in_context_error',
-        email,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      }, normalizedError);
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  }, [signInOp]);
-
-  const signUp = useCallback(async (email: string, password: string) => {
-    const stopTimer = authLogger.startTimer('signUp');
-    
-    try {
-      authLogger.info('Starting sign up process via context', {
-        action: 'sign_up_context_start',
-        email,
-        timestamp: Date.now()
-      });
-
-      await signUpOp(email, password);
-
-      authLogger.info('Sign up successful via context', {
-        action: 'sign_up_context_success',
-        email
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Sign up failed');
-      authLogger.error('Sign up error in context', {
-        action: 'sign_up_context_error',
-        email,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      }, normalizedError);
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  }, [signUpOp]);
-
-  const signInWithGoogle = useCallback(async () => {
-    const stopTimer = authLogger.startTimer('signInWithGoogle');
-    
-    try {
-      authLogger.info('Starting Google sign in via context', {
-        action: 'google_sign_in_context_start',
-        redirectUrl: `${window.location.origin}/auth/callback`,
-        timestamp: Date.now()
-      });
-
-      await signInWithGoogleOp();
-
-      authLogger.info('Google sign in initiated via context', {
-        action: 'google_sign_in_context_initiated'
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Google sign in failed');
-      authLogger.error('Google sign in error in context', {
-        action: 'google_sign_in_context_error',
-        errorMessage: error instanceof Error ? error.message : 'Unknown error'
-      }, normalizedError);
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  }, [signInWithGoogleOp]);
-
-  const signOut = useCallback(async () => {
-    const stopTimer = authLogger.startTimer('signOut');
-    
-    try {
-      authLogger.info('Starting sign out process via context', {
-        action: 'sign_out_context_start',
-        userId: currentUserId,
-        email: authState.user?.email
-      });
-
-      // Reset global flags
-      hasInitializedProfile.current = false;
-      isProfileLoaded.current = false;
-      hasShownProfileSuccessToast.current = false;
-      lastProfileFetchTime.current = 0;
-      profileFetchInProgress.current = false;
-
-      await signOutOp();
-      
-      authLogger.info('Sign out completed via context', {
-        action: 'sign_out_context_complete'
-      });
-    } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Sign out failed');
-      authLogger.error('Error during sign out in context', {
-        action: 'sign_out_context_error',
-        userId: currentUserId
-      }, normalizedError);
-      throw error;
-    } finally {
-      stopTimer();
-    }
-  }, [currentUserId, signOutOp, authState.user?.email]);
-
-  // Stabilized updateAuthState with singleton pattern and enhanced debouncing
-  const updateAuthState = useCallback(async (user: User | null, session: Session | null) => {
-    const stopTimer = authLogger.startTimer('updateAuthState');
-    
-    authLogger.info('Updating auth state', {
-      action: 'auth_state_update',
-      user: user?.email,
-      hasSession: !!session,
-      userId: user?.id,
-      sessionId: session?.access_token?.slice(-8) // Last 8 chars for identification
-    });
-    
-    if (user && session) {
-      // Only fetch profile if not already loaded and not in progress
-      let profile = null;
-      if (!isProfileLoaded.current && !profileFetchInProgress.current) {
-        profileFetchInProgress.current = true;
-        try {
-          profile = await fetchProfile(user.id);
-          isProfileLoaded.current = true;
-          hasInitializedProfile.current = true;
-        } catch (error) {
-          authLogger.error('Failed to fetch profile during auth state update', {
-            action: 'auth_state_profile_fetch_error',
-            userId: user.id
-          }, error instanceof Error ? error : new Error('Profile fetch failed'));
-        } finally {
-          profileFetchInProgress.current = false;
-        }
-      } else {
-        // Use existing profile if already loaded
-        profile = authState.profile;
+    // Redirect to appropriate dashboard only if on root path
+    if (currentPath === '/') {
+      switch (profile.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'host':
+          navigate('/host');
+          break;
+        case 'coworker':
+        default:
+          navigate('/dashboard');
+          break;
       }
-      
-      setAuthState({
-        user,
-        session,
-        profile,
-        isLoading: false,
-        isAuthenticated: true,
-      });
-
-      authLogger.info('Auth state updated - authenticated', {
-        action: 'auth_state_authenticated',
-        userId: user.id,
-        email: user.email,
-        hasProfile: !!profile
-      });
-    } else {
-      // Reset all flags on unauthenticated state
-      hasInitializedProfile.current = false;
-      isProfileLoaded.current = false;
-      hasShownProfileSuccessToast.current = false;
-      lastProfileFetchTime.current = 0;
-      profileFetchInProgress.current = false;
-
-      setAuthState({
-        user: null,
-        session: null,
-        profile: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
-
-      authLogger.info('Auth state updated - unauthenticated', {
-        action: 'auth_state_unauthenticated'
-      });
     }
-    
-    stopTimer();
-  }, [fetchProfile, authState.profile]);
+  };
 
-  // Enhanced initialization with better stability
-  useEffect(() => {
-    let mounted = true;
-    
-    authLogger.info('AuthProvider initialization started', {
-      action: 'auth_provider_init',
-      timestamp: Date.now()
-    });
-    
-    // Get initial session with enhanced error handling
-    const getInitialSession = async () => {
-      const stopTimer = authLogger.startTimer('getInitialSession');
-      
-      try {
-        authLogger.debug('Getting initial session', {
-          action: 'initial_session_check'
-        });
-
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          authLogger.error('Error getting initial session', {
-            action: 'initial_session_error',
-            errorMessage: error.message
-          }, error);
-          if (mounted) {
-            setAuthState(prev => ({ ...prev, isLoading: false }));
-          }
-          return;
-        }
-        
-        authLogger.info('Initial session check completed', {
-          action: 'initial_session_complete',
-          hasSession: !!session,
-          userEmail: session?.user?.email || 'No session'
-        });
-
-        if (mounted) {
-          await updateAuthState(session?.user || null, session);
-        }
-      } catch (error) {
-        const normalizedError = error instanceof Error ? error : new Error('Initial session exception');
-        authLogger.error('Exception getting initial session', {
-          action: 'initial_session_exception'
-        }, normalizedError);
-        if (mounted) {
-          setAuthState(prev => ({ ...prev, isLoading: false }));
-        }
-      } finally {
-        stopTimer();
-      }
+  const updateAuthState = (session: Session | null, profile: Profile | null = null) => {
+    const newState: AuthState = {
+      user: session?.user || null,
+      session,
+      profile,
+      isLoading: false,
+      isAuthenticated: !!session,
     };
 
-    getInitialSession();
+    setAuthState(newState);
 
-    // Enhanced auth state change listener with debouncing
+    // Handle role-based redirect
+    if (session && profile) {
+      handleRoleBasedRedirect(profile, session);
+    }
+  };
+
+  useEffect(() => {
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        authLogger.info('Auth state changed', {
-          action: 'auth_state_change',
-          event,
-          userEmail: session?.user?.email,
-          hasSession: !!session,
-          userId: session?.user?.id
-        });
-        
-        // Use setTimeout to defer the state update and prevent deadlocks
-        setTimeout(async () => {
-          if (mounted) {
-            await updateAuthState(session?.user || null, session);
+        console.log('Auth state changed:', event, !!session);
+
+        if (session?.user) {
+          // Fetch profile for authenticated user
+          const profile = await fetchProfile(session.user.id);
+          updateAuthState(session, profile);
+        } else {
+          // No session, clear state
+          updateAuthState(null);
+          
+          // Redirect to login if on protected route
+          const protectedPaths = ['/dashboard', '/host', '/admin', '/profile', '/bookings', '/messages'];
+          if (protectedPaths.some(path => location.pathname.startsWith(path))) {
+            navigate('/login');
           }
-        }, 0);
+        }
       }
     );
 
-    // Cleanup function
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      
-      authLogger.info('AuthProvider cleanup completed', {
-        action: 'auth_provider_cleanup'
-      });
-    };
-  }, []); // Empty dependency array - this should only run once
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        updateAuthState(session, profile);
+      } else {
+        updateAuthState(null);
+      }
+    });
 
-  // Memoized context value to prevent unnecessary re-renders
-  const value: AuthContextType = useMemo(() => ({
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, location.pathname]);
+
+  const signIn = async (email: string, password: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        const profile = await fetchProfile(data.user.id);
+        updateAuthState(data.session, profile);
+        toast.success('Accesso effettuato con successo!');
+      }
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      throw new Error(error.message || 'Errore durante l\'accesso');
+    }
+  };
+
+  const signUp = async (email: string, password: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
+    } catch (error: any) {
+      console.error('Sign up error:', error);
+      throw new Error(error.message || 'Errore durante la registrazione');
+    }
+  };
+
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Google sign in error:', error);
+      throw new Error(error.message || 'Errore durante l\'accesso con Google');
+    }
+  };
+
+  const signOut = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      updateAuthState(null);
+      navigate('/');
+      toast.success('Logout effettuato con successo');
+    } catch (error: any) {
+      console.error('Sign out error:', error);
+      throw new Error(error.message || 'Errore durante il logout');
+    }
+  };
+
+  const refreshProfile = async (): Promise<void> => {
+    if (authState.user) {
+      const profile = await fetchProfile(authState.user.id);
+      setAuthState(prev => ({ ...prev, profile }));
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>): Promise<void> => {
+    if (!authState.user) throw new Error('User not authenticated');
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', authState.user.id);
+
+      if (error) throw error;
+
+      await refreshProfile();
+      toast.success('Profilo aggiornato con successo');
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw new Error(error.message || 'Errore durante l\'aggiornamento del profilo');
+    }
+  };
+
+  const contextValue: AuthContextType = {
     authState,
     signIn,
     signUp,
@@ -476,19 +252,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshProfile,
     updateProfile,
-  }), [authState, signIn, signUp, signInWithGoogle, signOut, refreshProfile, updateProfile]);
+  };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+};
