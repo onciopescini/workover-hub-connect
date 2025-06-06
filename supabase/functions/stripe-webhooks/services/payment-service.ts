@@ -49,15 +49,18 @@ export class PaymentService {
     try {
       const stripe = StripeConfig.getInstance();
       
+      // Transfer the host net payout amount
       const transfer = await stripe.transfers.create({
-        amount: breakdown.hostTransferAmount,
+        amount: Math.round(breakdown.hostNetPayout * 100), // Convert to cents
         currency: 'eur',
         destination: hostProfile.stripe_account_id,
         description: `Pagamento per prenotazione ${bookingId}`,
         metadata: {
           booking_id: bookingId,
           space_id: spaceId,
-          host_id: hostId
+          host_id: hostId,
+          base_amount: breakdown.baseAmount.toString(),
+          host_fee: breakdown.hostFeeAmount.toString()
         }
       });
 
@@ -82,8 +85,8 @@ export class PaymentService {
         .from('payments')
         .update({
           stripe_transfer_id: transferId,
-          host_amount: breakdown.hostTransferAmount / 100,
-          platform_fee: breakdown.platformTotalFee / 100
+          host_amount: breakdown.hostNetPayout,
+          platform_fee: breakdown.platformRevenue
         })
         .eq('stripe_session_id', sessionId);
 

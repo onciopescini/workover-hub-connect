@@ -2,6 +2,7 @@
 import React from 'react';
 import { Space } from '@/types/space';
 import { differenceInHours, isSameDay } from 'date-fns';
+import { calculatePaymentBreakdown } from '@/lib/payment-utils';
 
 interface BookingCalculatorProps {
   space: Space;
@@ -28,9 +29,8 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
     return hours * space.price_per_hour;
   };
 
-  const baseCost = calculateBookingCost();
-  const platformFee = baseCost * 0.05; // 5% commissione piattaforma
-  const totalCost = baseCost + platformFee;
+  const baseAmount = calculateBookingCost();
+  const breakdown = calculatePaymentBreakdown(baseAmount);
   
   const hours = selectedStartTime && selectedEndTime ? 
     differenceInHours(
@@ -48,11 +48,11 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
       <div className="space-y-1 text-sm">
         <div className="flex justify-between">
           <span>{hours} ore ({selectedStartTime} - {selectedEndTime})</span>
-          <span>€{baseCost.toFixed(2)}</span>
+          <span>€{breakdown.baseAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-gray-600">
-          <span>Commissione piattaforma (5%)</span>
-          <span>€{platformFee.toFixed(2)}</span>
+          <span>Commissione servizio (5%)</span>
+          <span>€{breakdown.buyerFeeAmount.toFixed(2)}</span>
         </div>
         {hours >= 8 && space.price_per_day && (
           <div className="text-green-600 text-xs">
@@ -61,8 +61,16 @@ export const BookingCalculator = ({ space, selectedDate, selectedStartTime, sele
         )}
       </div>
       <div className="border-t pt-2 mt-2 font-semibold flex justify-between">
-        <span>Totale</span>
-        <span>€{totalCost.toFixed(2)}</span>
+        <span>Totale da pagare</span>
+        <span>€{breakdown.buyerTotalAmount.toFixed(2)}</span>
+      </div>
+      
+      {/* Host payout information */}
+      <div className="mt-2 pt-2 border-t text-xs text-gray-500">
+        <div className="flex justify-between">
+          <span>L'host riceverà:</span>
+          <span>€{breakdown.hostNetPayout.toFixed(2)}</span>
+        </div>
       </div>
     </div>
   );

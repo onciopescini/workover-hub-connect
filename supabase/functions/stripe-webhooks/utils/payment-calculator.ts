@@ -1,28 +1,38 @@
 
 export class PaymentCalculator {
-  private static readonly PLATFORM_FEE_RATE = 0.05; // 5%
-  private static readonly HOST_RATE = 0.95; // 95%
+  private static readonly BUYER_FEE_RATE = 0.05; // 5% buyer fee
+  private static readonly HOST_FEE_RATE = 0.05; // 5% host fee
 
-  static calculateBreakdown(totalAmount: number) {
-    const platformFeeAmount = Math.round(totalAmount * this.PLATFORM_FEE_RATE);
-    const hostAmount = totalAmount - platformFeeAmount;
-    const hostTransferAmount = Math.round(hostAmount * this.HOST_RATE);
-    const platformTotalFee = totalAmount - hostTransferAmount;
+  static calculateBreakdown(baseAmount: number) {
+    // Buyer pays base amount + 5% buyer fee
+    const buyerFeeAmount = Math.round(baseAmount * this.BUYER_FEE_RATE * 100) / 100;
+    const buyerTotalAmount = baseAmount + buyerFeeAmount;
+    
+    // Host receives base amount - 5% host fee
+    const hostFeeAmount = Math.round(baseAmount * this.HOST_FEE_RATE * 100) / 100;
+    const hostNetPayout = baseAmount - hostFeeAmount;
+    
+    // Platform revenue = buyer fee + host fee
+    const platformRevenue = buyerFeeAmount + hostFeeAmount;
 
     return {
-      totalAmount,
-      platformFeeAmount,
-      hostAmount,
-      hostTransferAmount,
-      platformTotalFee
+      baseAmount,
+      buyerFeeAmount,
+      buyerTotalAmount,
+      hostFeeAmount,
+      hostNetPayout,
+      platformRevenue
     };
   }
 
   static logBreakdown(breakdown: ReturnType<typeof PaymentCalculator.calculateBreakdown>) {
-    console.log('💰 Transfer breakdown:', {
-      totalAmount: breakdown.totalAmount / 100,
-      hostTransferAmount: breakdown.hostTransferAmount / 100,
-      platformTotalFee: breakdown.platformTotalFee / 100
+    console.log('💰 Payment breakdown:', {
+      baseAmount: breakdown.baseAmount,
+      buyerFeeAmount: breakdown.buyerFeeAmount,
+      buyerTotalAmount: breakdown.buyerTotalAmount,
+      hostFeeAmount: breakdown.hostFeeAmount,
+      hostNetPayout: breakdown.hostNetPayout,
+      platformRevenue: breakdown.platformRevenue
     });
   }
 }

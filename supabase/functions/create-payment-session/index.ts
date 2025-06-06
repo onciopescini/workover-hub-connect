@@ -8,6 +8,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Payment calculator with dual commission model
+function calculatePaymentBreakdown(baseAmount: number) {
+  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% buyer fee
+  const buyerTotalAmount = baseAmount + buyerFeeAmount;
+  
+  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% host fee
+  const hostNetPayout = baseAmount - hostFeeAmount;
+  
+  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+
+  return {
+    baseAmount,
+    buyerFeeAmount,
+    buyerTotalAmount,
+    hostFeeAmount,
+    hostNetPayout,
+    platformRevenue
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -64,21 +84,18 @@ serve(async (req) => {
     console.log('🔵 User authenticated:', user.id);
 
     // Parse request body
-    const { booking_id, base_amount, platform_fee, total_amount, currency, user_id } = await req.json();
+    const { booking_id, base_amount, currency, user_id } = await req.json();
 
-    if (!booking_id || !total_amount || !user_id) {
-      throw new Error('Missing required parameters: booking_id, total_amount, user_id');
+    if (!booking_id || !base_amount || !user_id) {
+      throw new Error('Missing required parameters: booking_id, base_amount, user_id');
     }
 
-    // Log degli importi per debug
-    console.log('🔵 Payment breakdown received:', {
-      base_amount,
-      platform_fee,
-      total_amount,
-      currency
-    });
+    // Calculate payment breakdown with dual commission model
+    const breakdown = calculatePaymentBreakdown(base_amount);
 
-    console.log('🔵 Creating payment session for:', { booking_id, total_amount, currency });
+    console.log('🔵 Payment breakdown calculated:', breakdown);
+
+    console.log('🔵 Creating payment session for:', { booking_id, buyerTotalAmount: breakdown.buyerTotalAmount, currency });
 
     // Verifica che la prenotazione esista e appartenga all'utente
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -120,7 +137,7 @@ serve(async (req) => {
       console.log('🔵 New Stripe customer created:', customerId);
     }
 
-    // Crea sessione di checkout con breakdown dettagliato
+    // Crea sessione di checkout con il nuovo modello di prezzo
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -131,7 +148,7 @@ serve(async (req) => {
               name: `Prenotazione: ${booking.spaces.title}`,
               description: `Prenotazione per il ${booking.booking_date}`,
             },
-            unit_amount: Math.round(total_amount * 100), // Converte euro in centesimi
+            unit_amount: Math.round(breakdown.buyerTotalAmount * 100), // Buyer pays total amount
           },
           quantity: 1,
         },
@@ -142,21 +159,23 @@ serve(async (req) => {
       metadata: {
         booking_id: booking_id,
         user_id: user_id,
-        base_amount: base_amount.toString(),
-        platform_fee: platform_fee.toString()
+        base_amount: breakdown.baseAmount.toString(),
+        buyer_fee_amount: breakdown.buyerFeeAmount.toString(),
+        host_fee_amount: breakdown.hostFeeAmount.toString(),
+        host_net_payout: breakdown.hostNetPayout.toString()
       }
     });
 
     console.log('🔵 Checkout session created:', session.id);
     console.log('🔵 Session amount total (in cents):', session.amount_total);
 
-    // Registra il pagamento nel database come pending
+    // Registra il pagamento nel database
     const { error: paymentError } = await supabaseAdmin
       .from('payments')
       .insert({
         user_id: user_id,
         booking_id: booking_id,
-        amount: total_amount, // Salva l'importo totale in euro
+        amount: breakdown.buyerTotalAmount, // Total amount paid by buyer
         currency: currency || 'EUR',
         payment_status: 'pending',
         method: 'stripe',
@@ -174,9 +193,7 @@ serve(async (req) => {
       session_id: session.id,
       payment_url: session.url,
       booking_id: booking_id,
-      total_amount: total_amount,
-      base_amount: base_amount,
-      platform_fee: platform_fee
+      breakdown: breakdown
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

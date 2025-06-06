@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
@@ -15,10 +16,30 @@ type Payment = {
   created_at: string;
 };
 
-// Create payment session for booking with 5% platform fee
+// Calculate payment breakdown with dual commission model
+export const calculatePaymentBreakdown = (baseAmount: number) => {
+  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% buyer fee
+  const buyerTotalAmount = baseAmount + buyerFeeAmount;
+  
+  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% host fee
+  const hostNetPayout = baseAmount - hostFeeAmount;
+  
+  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+
+  return {
+    baseAmount,
+    buyerFeeAmount,
+    buyerTotalAmount,
+    hostFeeAmount,
+    hostNetPayout,
+    platformRevenue
+  };
+};
+
+// Create payment session for booking with dual commission model
 export const createPaymentSession = async (
   bookingId: string,
-  baseCost: number,
+  baseAmount: number,
   currency: string = "EUR"
 ): Promise<PaymentSession | null> => {
   try {
@@ -28,23 +49,15 @@ export const createPaymentSession = async (
       return null;
     }
 
-    // Calcola commissione 5% e totale
-    const platformFee = baseCost * 0.05;
-    const totalAmount = baseCost + platformFee;
+    // Calculate breakdown with dual commission model
+    const breakdown = calculatePaymentBreakdown(baseAmount);
 
-    console.log('🔵 Payment breakdown:', {
-      baseCost,
-      platformFee,
-      totalAmount,
-      currency
-    });
+    console.log('🔵 Payment breakdown:', breakdown);
 
     const { data, error } = await supabase.functions.invoke('create-payment-session', {
       body: {
         booking_id: bookingId,
-        base_amount: baseCost,
-        platform_fee: platformFee,
-        total_amount: totalAmount,
+        base_amount: baseAmount,
         currency,
         user_id: user.user.id
       }

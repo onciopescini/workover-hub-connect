@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreditCard, Loader2, Info } from "lucide-react";
-import { createPaymentSession, validatePayment } from "@/lib/payment-utils";
+import { createPaymentSession, validatePayment, calculatePaymentBreakdown } from "@/lib/payment-utils";
 import { toast } from "sonner";
 
 interface PaymentButtonProps {
@@ -25,20 +25,15 @@ const PaymentButton = ({
 }: PaymentButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Calcola breakdown del prezzo
-  const platformFee = amount * 0.05;
-  const totalAmount = amount + platformFee;
+  // Calculate breakdown with dual commission model
+  const breakdown = calculatePaymentBreakdown(amount);
 
   const handlePayment = async () => {
     setIsLoading(true);
     
     try {
       console.log('🔵 Starting payment process for booking:', bookingId);
-      console.log('🔵 Payment breakdown:', {
-        baseCost: amount,
-        platformFee,
-        totalAmount
-      });
+      console.log('🔵 Payment breakdown:', breakdown);
       
       const session = await createPaymentSession(bookingId, amount, currency);
       
@@ -94,19 +89,19 @@ const PaymentButton = ({
 
   return (
     <div className="space-y-3">
-      {/* Breakdown del prezzo */}
+      {/* Breakdown del prezzo con dual commission model */}
       <div className="bg-gray-50 p-3 rounded-lg text-sm">
         <div className="flex justify-between items-center mb-1">
-          <span>Costo base:</span>
-          <span>€{amount.toFixed(2)}</span>
+          <span>Prezzo base:</span>
+          <span>€{breakdown.baseAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center mb-1 text-gray-600">
-          <span>Commissione piattaforma (5%):</span>
-          <span>€{platformFee.toFixed(2)}</span>
+          <span>Commissione servizio (5%):</span>
+          <span>€{breakdown.buyerFeeAmount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between items-center font-semibold pt-1 border-t">
-          <span>Totale:</span>
-          <span>€{totalAmount.toFixed(2)}</span>
+          <span>Totale da pagare:</span>
+          <span>€{breakdown.buyerTotalAmount.toFixed(2)}</span>
         </div>
       </div>
 
@@ -120,7 +115,7 @@ const PaymentButton = ({
         ) : (
           <CreditCard className="w-4 h-4 mr-2" />
         )}
-        {isLoading ? "Elaborazione..." : `Paga €${totalAmount.toFixed(2)}`}
+        {isLoading ? "Elaborazione..." : `Paga €${breakdown.buyerTotalAmount.toFixed(2)}`}
       </Button>
       
       {/* Tooltip con carte test Stripe */}

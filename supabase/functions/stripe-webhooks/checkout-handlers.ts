@@ -2,6 +2,26 @@
 import Stripe from "https://esm.sh/stripe@15.0.0";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Payment calculator with dual commission model
+function calculatePaymentBreakdown(baseAmount: number) {
+  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
+  const buyerTotalAmount = baseAmount + buyerFeeAmount;
+  
+  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
+  const hostNetPayout = baseAmount - hostFeeAmount;
+  
+  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+
+  return {
+    baseAmount,
+    buyerFeeAmount,
+    buyerTotalAmount,
+    hostFeeAmount,
+    hostNetPayout,
+    platformRevenue
+  };
+}
+
 export async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
   supabaseAdmin: SupabaseClient
@@ -10,16 +30,18 @@ export async function handleCheckoutSessionCompleted(
   
   if (session.metadata?.booking_id) {
     const bookingId = session.metadata.booking_id;
-    const totalAmount = session.amount_total || 0;
-    const platformFeeAmount = Math.round(totalAmount * 0.05); // 5% platform fee
-    const hostAmount = totalAmount - platformFeeAmount;
+    const buyerTotalAmount = session.amount_total || 0; // Amount paid by buyer (in cents)
+    const baseAmount = parseFloat(session.metadata.base_amount || '0');
+    const breakdown = calculatePaymentBreakdown(baseAmount);
 
     // Update payment status
     const { error: paymentError } = await supabaseAdmin
       .from('payments')
       .update({ 
         payment_status: 'completed',
-        receipt_url: session.receipt_url 
+        receipt_url: session.receipt_url,
+        host_amount: breakdown.hostNetPayout,
+        platform_fee: breakdown.platformRevenue
       })
       .eq('stripe_session_id', session.id);
 
@@ -78,8 +100,8 @@ export async function handleCheckoutSessionCompleted(
       console.log(`✅ Booking ${newStatus} successfully`);
     }
 
-    // Handle host transfers and notifications
-    await handleHostTransferAndNotifications(booking, totalAmount, hostAmount, platformFeeAmount, session, supabaseAdmin);
+    // Handle host transfers and notifications with new payment model
+    await handleHostTransferAndNotifications(booking, breakdown, session, supabaseAdmin);
   }
 }
 
@@ -104,9 +126,7 @@ export async function handleCheckoutSessionExpired(
 
 async function handleHostTransferAndNotifications(
   booking: any,
-  totalAmount: number,
-  hostAmount: number,
-  platformFeeAmount: number,
+  breakdown: ReturnType<typeof calculatePaymentBreakdown>,
   session: Stripe.Checkout.Session,
   supabaseAdmin: SupabaseClient
 ): Promise<void> {
@@ -119,29 +139,28 @@ async function handleHostTransferAndNotifications(
 
   if (hostProfile?.stripe_connected && hostProfile.stripe_account_id) {
     try {
-      // Create transfer to host (95% of payment minus platform fee)
-      const hostTransferAmount = Math.round(hostAmount * 0.95); // Host gets 95% of their portion
-      const platformTotalFee = totalAmount - hostTransferAmount; // Platform gets 5% + 5% of host portion
-
       console.log('💰 Transfer breakdown:', {
-        totalAmount: totalAmount / 100,
-        hostTransferAmount: hostTransferAmount / 100,
-        platformTotalFee: platformTotalFee / 100
+        buyerTotalAmount: breakdown.buyerTotalAmount,
+        hostNetPayout: breakdown.hostNetPayout,
+        platformRevenue: breakdown.platformRevenue
       });
 
       const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
         apiVersion: '2023-10-16',
       });
 
+      // Transfer the host net payout amount
       const transfer = await stripe.transfers.create({
-        amount: hostTransferAmount,
+        amount: Math.round(breakdown.hostNetPayout * 100), // Convert to cents
         currency: 'eur',
         destination: hostProfile.stripe_account_id,
         description: `Pagamento per prenotazione ${booking.id}`,
         metadata: {
           booking_id: booking.id,
           space_id: booking.space_id,
-          host_id: booking.spaces.host_id
+          host_id: booking.spaces.host_id,
+          base_amount: breakdown.baseAmount.toString(),
+          host_fee: breakdown.hostFeeAmount.toString()
         }
       });
 
@@ -151,9 +170,7 @@ async function handleHostTransferAndNotifications(
       await supabaseAdmin
         .from('payments')
         .update({
-          stripe_transfer_id: transfer.id,
-          host_amount: hostTransferAmount / 100,
-          platform_fee: platformTotalFee / 100
+          stripe_transfer_id: transfer.id
         })
         .eq('stripe_session_id', session.id);
 
@@ -166,10 +183,14 @@ async function handleHostTransferAndNotifications(
   }
 
   // Send notifications
-  await sendBookingNotifications(booking, supabaseAdmin);
+  await sendBookingNotifications(booking, breakdown, supabaseAdmin);
 }
 
-async function sendBookingNotifications(booking: any, supabaseAdmin: SupabaseClient): Promise<void> {
+async function sendBookingNotifications(
+  booking: any, 
+  breakdown: ReturnType<typeof calculatePaymentBreakdown>,
+  supabaseAdmin: SupabaseClient
+): Promise<void> {
   // Send notification to coworker
   const notificationTitle = booking.spaces.confirmation_type === 'instant' 
     ? 'Prenotazione confermata!'
@@ -189,7 +210,8 @@ async function sendBookingNotifications(booking: any, supabaseAdmin: SupabaseCli
       metadata: {
         booking_id: booking.id,
         space_title: booking.spaces.title,
-        confirmation_type: booking.spaces.confirmation_type
+        confirmation_type: booking.spaces.confirmation_type,
+        amount_paid: breakdown.buyerTotalAmount
       }
     });
 
@@ -205,7 +227,8 @@ async function sendBookingNotifications(booking: any, supabaseAdmin: SupabaseCli
         metadata: {
           booking_id: booking.id,
           space_title: booking.spaces.title,
-          action_required: 'approve_booking'
+          action_required: 'approve_booking',
+          host_payout: breakdown.hostNetPayout
         }
       });
   } else {
@@ -216,11 +239,12 @@ async function sendBookingNotifications(booking: any, supabaseAdmin: SupabaseCli
         user_id: booking.spaces.host_id,
         type: 'booking',
         title: 'Nuova prenotazione confermata',
-        content: `Hai ricevuto una prenotazione per "${booking.spaces.title}". Il pagamento è stato elaborato con successo.`,
+        content: `Hai ricevuto una prenotazione per "${booking.spaces.title}". Riceverai €${breakdown.hostNetPayout.toFixed(2)} come pagamento.`,
         metadata: {
           booking_id: booking.id,
           space_title: booking.spaces.title,
-          payment_received: true
+          payment_received: true,
+          host_payout: breakdown.hostNetPayout
         }
       });
   }
