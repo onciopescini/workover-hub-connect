@@ -52,6 +52,3 @@ export const executeFullValidation = async () => {
   // Then run comprehensive validation
   await sprint1Validator.runFullValidation();
 };
-
-// Export both functions
-export { executeFullValidation };
