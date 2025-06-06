@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +35,20 @@ import {
   Bell
 } from 'lucide-react';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
+
+// Define proper types for navigation items
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: any;
+  badge?: number;
+};
+
+type NavigationSeparator = {
+  type: 'separator';
+};
+
+type MenuItem = NavigationItem | NavigationSeparator;
 
 export function UnifiedHeader() {
   const { authState, signOut } = useAuth();
@@ -74,7 +89,7 @@ export function UnifiedHeader() {
     { label: 'Eventi', href: '/events', icon: Calendar },
   ];
 
-  const userMenuItems = authState.isAuthenticated ? [
+  const userMenuItems: NavigationItem[] = authState.isAuthenticated ? [
     { label: 'Dashboard', href: '/dashboard', icon: Home },
     { label: 'Profilo', href: '/profile', icon: User },
     { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
@@ -82,7 +97,7 @@ export function UnifiedHeader() {
     { label: 'Network', href: '/networking', icon: Users },
   ] : [];
 
-  const hostMenuItems = authState.profile?.role === 'host' ? [
+  const hostMenuItems: MenuItem[] = authState.profile?.role === 'host' ? [
     { type: 'separator' as const },
     { label: 'I Miei Spazi', href: '/manage-space', icon: Building },
     { label: 'Crea Spazio', href: '/create-space', icon: Plus },
@@ -91,12 +106,12 @@ export function UnifiedHeader() {
     { label: 'Analytics', href: '/host/analytics', icon: BarChart3 },
   ] : [];
 
-  const adminMenuItems = authState.profile?.role === 'admin' ? [
+  const adminMenuItems: MenuItem[] = authState.profile?.role === 'admin' ? [
     { type: 'separator' as const },
     { label: 'Pannello Admin', href: '/admin/users', icon: Shield },
   ] : [];
 
-  const allMenuItems = [...userMenuItems, ...hostMenuItems, ...adminMenuItems];
+  const allMenuItems: MenuItem[] = [...userMenuItems, ...hostMenuItems, ...adminMenuItems];
 
   const isActivePath = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -168,16 +183,16 @@ export function UnifiedHeader() {
                   <DropdownMenuSeparator />
                   
                   {allMenuItems.map((item, index) => 
-                    item.type === 'separator' ? (
+                    'type' in item && item.type === 'separator' ? (
                       <DropdownMenuSeparator key={index} />
                     ) : (
-                      <DropdownMenuItem key={item.href} asChild>
-                        <Link to={item.href} className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                          {item.badge && (
+                      <DropdownMenuItem key={(item as NavigationItem).href} asChild>
+                        <Link to={(item as NavigationItem).href} className="flex items-center gap-2">
+                          <(item as NavigationItem).icon className="h-4 w-4" />
+                          <span>{(item as NavigationItem).label}</span>
+                          {(item as NavigationItem).badge && (
                             <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
+                              {(item as NavigationItem).badge}
                             </Badge>
                           )}
                         </Link>
@@ -237,20 +252,20 @@ export function UnifiedHeader() {
                   <>
                     <div className="border-t pt-4 mt-4" />
                     {allMenuItems.map((item, index) => 
-                      item.type === 'separator' ? (
+                      'type' in item && item.type === 'separator' ? (
                         <div key={index} className="border-t pt-2 mt-2" />
                       ) : (
                         <Link
-                          key={item.href}
-                          to={item.href}
+                          key={(item as NavigationItem).href}
+                          to={(item as NavigationItem).href}
                           className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                          {item.badge && (
+                          <(item as NavigationItem).icon className="h-4 w-4" />
+                          <span>{(item as NavigationItem).label}</span>
+                          {(item as NavigationItem).badge && (
                             <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
+                              {(item as NavigationItem).badge}
                             </Badge>
                           )}
                         </Link>

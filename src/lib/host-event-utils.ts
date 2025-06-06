@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { EventWithDetails } from "@/types/event";
+import { EventWithDetails, EventParticipant, WaitlistEntry } from "@/types/event";
 
 export interface CreateEventData {
   title: string;
@@ -31,7 +31,23 @@ export const getHostEvents = async (hostId: string): Promise<EventWithDetails[]>
     throw error;
   }
 
-  return data || [];
+  // Transform the data to match EventWithDetails type
+  const transformedData: EventWithDetails[] = (data || []).map(event => ({
+    ...event,
+    participants: (event.participants || []).map((p: { user_id: string }) => ({
+      event_id: event.id,
+      user_id: p.user_id,
+      joined_at: null, // This will be null since we're only selecting user_id
+    } as EventParticipant)),
+    waitlist: (event.waitlist || []).map((w: { user_id: string }) => ({
+      id: '', // This will be empty since we're only selecting user_id
+      event_id: event.id,
+      user_id: w.user_id,
+      created_at: null,
+    } as WaitlistEntry)),
+  }));
+
+  return transformedData;
 };
 
 export const createEvent = async (eventData: CreateEventData) => {
