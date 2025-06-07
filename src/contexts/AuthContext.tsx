@@ -67,28 +67,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
-    // Role-based dashboard redirects
-    const currentPath = location.pathname;
-    
-    // Don't redirect if user is already on an appropriate page
-    if (currentPath.startsWith('/dashboard') || 
-        (profile.role === 'host' && currentPath.startsWith('/host')) ||
-        (profile.role === 'admin' && currentPath.startsWith('/admin'))) {
-      return;
-    }
-
-    // Redirect to appropriate dashboard only if on root path
-    if (currentPath === '/') {
+    // Role-based dashboard redirects - only redirect if on root path
+    if (location.pathname === '/') {
       switch (profile.role) {
         case 'admin':
-          navigate('/admin');
+          navigate('/admin/users');
           break;
         case 'host':
-          navigate('/host');
+          navigate('/host/dashboard');
           break;
         case 'coworker':
         default:
-          navigate('/dashboard');
+          navigate('/spaces');
           break;
       }
     }
@@ -126,7 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updateAuthState(null);
           
           // Redirect to login if on protected route
-          const protectedPaths = ['/dashboard', '/host', '/admin', '/profile', '/bookings', '/messages'];
+          const protectedPaths = ['/dashboard', '/host', '/admin', '/profile', '/bookings', '/messages', '/networking'];
           if (protectedPaths.some(path => location.pathname.startsWith(path))) {
             navigate('/login');
           }

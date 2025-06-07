@@ -11,11 +11,22 @@ const Index = () => {
   const { authState } = useAuth();
 
   useEffect(() => {
-    // Redirect authenticated users to dashboard
-    if (authState.isAuthenticated && !authState.isLoading) {
-      navigate('/dashboard');
+    // Redirect authenticated users based on their role
+    if (authState.isAuthenticated && !authState.isLoading && authState.profile) {
+      switch (authState.profile.role) {
+        case 'admin':
+          navigate('/admin/users');
+          break;
+        case 'host':
+          navigate('/host/dashboard');
+          break;
+        case 'coworker':
+        default:
+          navigate('/spaces');
+          break;
+      }
     }
-  }, [authState.isAuthenticated, authState.isLoading, navigate]);
+  }, [authState.isAuthenticated, authState.isLoading, authState.profile, navigate]);
 
   // Show loading while checking auth
   if (authState.isLoading) {
@@ -126,7 +137,7 @@ const Index = () => {
           <Button 
             size="lg" 
             className="bg-white text-indigo-600 hover:bg-gray-100"
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate('/register')}
           >
             Inizia Gratis
           </Button>

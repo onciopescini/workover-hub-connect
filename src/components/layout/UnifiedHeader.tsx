@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,6 @@ import {
   User, 
   LogOut, 
   Settings, 
-  Home, 
   MapPin, 
   Calendar,
   MessageCircle,
@@ -32,48 +31,15 @@ import {
   Plus,
   BarChart3,
   Shield,
-  Bell
+  Home
 } from 'lucide-react';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
-
-// Define proper types for navigation items
-type NavigationItem = {
-  label: string;
-  href: string;
-  icon: any;
-  badge?: number;
-  type?: string;
-};
-
-type NavigationSeparator = {
-  type: 'separator';
-};
-
-type MenuItem = NavigationItem | NavigationSeparator;
 
 export function UnifiedHeader() {
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      if (authState.isAuthenticated && authState.user?.id) {
-        // Fetch unread messages count
-        // Replace with your actual logic to fetch unread messages
-        // Example:
-        // const count = await getUnreadMessagesCount(authState.user.id);
-        // setUnreadCount(count);
-        setUnreadCount(0); // Placeholder
-      } else {
-        setUnreadCount(0);
-      }
-    };
-
-    fetchUnreadCount();
-  }, [authState.isAuthenticated, authState.user?.id]);
 
   const handleSignOut = async () => {
     try {
@@ -84,96 +50,94 @@ export function UnifiedHeader() {
     }
   };
 
-  const navItems = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Spazi', href: '/spaces', icon: MapPin },
-    { label: 'Eventi', href: '/events', icon: Calendar },
-  ];
-
-  // Coworker menu items
-  const coworkerMenuItems: NavigationItem[] = authState.isAuthenticated ? [
-    { label: 'Dashboard', href: '/dashboard', icon: Home },
-    { label: 'Profilo', href: '/profile', icon: User },
-    { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
-    { label: 'Messaggi', href: '/messages', icon: MessageCircle, badge: unreadCount > 0 ? unreadCount : undefined },
-    { label: 'Network', href: '/networking', icon: Users },
-  ] : [];
-
-  // Host-specific menu items
-  const hostMenuItems: MenuItem[] = authState.profile?.role === 'host' ? [
-    { type: 'separator' as const },
-    { label: 'Dashboard Host', href: '/host', icon: Building },
-    { label: 'I Miei Spazi', href: '/host/spaces', icon: Building },
-    { label: 'Crea Spazio', href: '/host/spaces/new', icon: Plus },
-    { label: 'I Miei Eventi', href: '/host/events', icon: Calendar },
-    { label: 'Entrate', href: '/host/revenue', icon: CreditCard },
-  ] : [];
-
-  // Admin-specific menu items
-  const adminMenuItems: MenuItem[] = authState.profile?.role === 'admin' ? [
-    { type: 'separator' as const },
-    { label: 'Admin Dashboard', href: '/admin', icon: Shield },
-    { label: 'Gestisci Utenti', href: '/admin/users', icon: Users },
-    { label: 'Gestisci GDPR', href: '/admin/gdpr', icon: Shield },
-    { label: 'Logs di Sistema', href: '/admin/logs', icon: BarChart3 },
-    { label: 'Validazione', href: '/validation', icon: Settings },
-  ] : [];
-
-  const allMenuItems: MenuItem[] = [...coworkerMenuItems, ...hostMenuItems, ...adminMenuItems];
-
   const isActivePath = (path: string) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
   };
 
-  const renderMenuItem = (item: MenuItem, index: number) => {
-    if ('type' in item && item.type === 'separator') {
-      return <DropdownMenuSeparator key={index} />;
+  // Public navigation items (non-authenticated users)
+  const publicNavItems = [
+    { label: 'Spazi', href: '/spaces', icon: MapPin },
+    { label: 'Eventi', href: '/events', icon: Calendar },
+  ];
+
+  // Role-based navigation items
+  const getNavItemsByRole = () => {
+    if (!authState.isAuthenticated || !authState.profile?.role) return publicNavItems;
+
+    switch (authState.profile.role) {
+      case 'coworker':
+        return [
+          { label: 'Spazi', href: '/spaces', icon: MapPin },
+          { label: 'Eventi', href: '/events', icon: Calendar },
+          { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
+          { label: 'Messaggi', href: '/messages', icon: MessageCircle },
+          { label: 'Networking', href: '/networking', icon: Users },
+        ];
+      case 'host':
+        return [
+          { label: 'Dashboard Host', href: '/host', icon: Home },
+          { label: 'I Miei Spazi', href: '/host/spaces', icon: Building },
+          { label: 'I Miei Eventi', href: '/host/events', icon: Calendar },
+          { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
+          { label: 'Messaggi', href: '/messages', icon: MessageCircle },
+          { label: 'Networking', href: '/networking', icon: Users },
+        ];
+      case 'admin':
+        return [
+          { label: 'Dashboard Admin', href: '/admin', icon: Shield },
+          { label: 'Gestisci Utenti', href: '/admin/users', icon: Users },
+          { label: 'Logs di Sistema', href: '/admin/logs', icon: BarChart3 },
+          { label: 'GDPR', href: '/admin/gdpr', icon: Shield },
+        ];
+      default:
+        return publicNavItems;
     }
-    
-    const navigationItem = item as NavigationItem;
-    const IconComponent = navigationItem.icon;
-    
-    return (
-      <DropdownMenuItem key={navigationItem.href} asChild>
-        <Link to={navigationItem.href} className="flex items-center gap-2">
-          <IconComponent className="h-4 w-4" />
-          <span>{navigationItem.label}</span>
-          {navigationItem.badge && (
-            <Badge variant="secondary" className="ml-auto">
-              {navigationItem.badge}
-            </Badge>
-          )}
-        </Link>
-      </DropdownMenuItem>
-    );
   };
 
-  const renderMobileMenuItem = (item: MenuItem, index: number) => {
-    if ('type' in item && item.type === 'separator') {
-      return <div key={index} className="border-t pt-2 mt-2" />;
+  // Dropdown menu items for authenticated users
+  const getDropdownMenuItems = () => {
+    if (!authState.isAuthenticated || !authState.profile?.role) return [];
+
+    const commonItems = [
+      { label: 'Profilo', href: '/profile', icon: User },
+    ];
+
+    switch (authState.profile.role) {
+      case 'coworker':
+        return [
+          ...commonItems,
+          { label: 'Spazi', href: '/spaces', icon: MapPin },
+          { label: 'Eventi', href: '/events', icon: Calendar },
+          { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
+          { label: 'Messaggi', href: '/messages', icon: MessageCircle },
+          { label: 'Networking', href: '/networking', icon: Users },
+        ];
+      case 'host':
+        return [
+          ...commonItems,
+          { label: 'Dashboard Host', href: '/host', icon: Home },
+          { label: 'I Miei Spazi', href: '/host/spaces', icon: Building },
+          { label: 'I Miei Eventi', href: '/host/events', icon: Calendar },
+          { label: 'Prenotazioni', href: '/bookings', icon: Calendar },
+          { label: 'Messaggi', href: '/messages', icon: MessageCircle },
+          { label: 'Networking', href: '/networking', icon: Users },
+        ];
+      case 'admin':
+        return [
+          ...commonItems,
+          { label: 'Dashboard Admin', href: '/admin', icon: Shield },
+          { label: 'Gestisci Utenti', href: '/admin/users', icon: Users },
+          { label: 'Logs di Sistema', href: '/admin/logs', icon: BarChart3 },
+          { label: 'GDPR', href: '/admin/gdpr', icon: Shield },
+        ];
+      default:
+        return commonItems;
     }
-    
-    const navigationItem = item as NavigationItem;
-    const IconComponent = navigationItem.icon;
-    
-    return (
-      <Link
-        key={navigationItem.href}
-        to={navigationItem.href}
-        className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
-        onClick={() => setIsMobileMenuOpen(false)}
-      >
-        <IconComponent className="h-4 w-4" />
-        <span>{navigationItem.label}</span>
-        {navigationItem.badge && (
-          <Badge variant="secondary" className="ml-auto">
-            {navigationItem.badge}
-          </Badge>
-        )}
-      </Link>
-    );
   };
+
+  const navItems = getNavItemsByRole();
+  const dropdownItems = getDropdownMenuItems();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -205,7 +169,7 @@ export function UnifiedHeader() {
 
         {/* Right Side */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
+          {/* Notifications for authenticated users */}
           {authState.isAuthenticated && <NotificationIcon />}
 
           {/* Desktop User Menu */}
@@ -245,7 +209,17 @@ export function UnifiedHeader() {
                   </div>
                   <DropdownMenuSeparator />
                   
-                  {allMenuItems.map((item, index) => renderMenuItem(item, index))}
+                  {dropdownItems.map((item) => {
+                    const IconComponent = item.icon;
+                    return (
+                      <DropdownMenuItem key={item.href} asChild>
+                        <Link to={item.href} className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    );
+                  })}
                   
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -322,7 +296,20 @@ export function UnifiedHeader() {
                       </div>
                     </div>
                     
-                    {allMenuItems.map((item, index) => renderMobileMenuItem(item, index))}
+                    {dropdownItems.map((item) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className="flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
                     
                     <div className="border-t pt-4 mt-4" />
                     <Link

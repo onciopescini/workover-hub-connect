@@ -42,14 +42,14 @@ const AuthCallback = () => {
             // Redirect based on role
             switch (profile.role) {
               case 'admin':
-                navigate('/admin', { replace: true });
+                navigate('/admin/users', { replace: true });
                 break;
               case 'host':
-                navigate('/host', { replace: true });
+                navigate('/host/dashboard', { replace: true });
                 break;
               case 'coworker':
               default:
-                navigate('/dashboard', { replace: true });
+                navigate('/spaces', { replace: true });
                 break;
             }
           } else {
