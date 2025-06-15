@@ -26,6 +26,10 @@ import Messages from '@/pages/Messages';
 import NetworkingAdvanced from '@/pages/NetworkingAdvanced';
 import NetworkingDiscover from '@/pages/NetworkingDiscover';
 import PrivateChats from '@/pages/PrivateChats';
+import Privacy from '@/pages/Privacy';
+import PrivacyExportRequest from '@/pages/PrivacyExportRequest';
+import PrivacyDeletionRequest from '@/pages/PrivacyDeletionRequest';
+import StripeValidationTestPage from '@/pages/StripeValidationTestPage';
 
 // Host pages
 import HostDashboard from '@/pages/HostDashboard';
@@ -80,11 +84,7 @@ function App() {
 
             {/* Protected routes with MAIN LAYOUT */}
             <Route
-              element={
-                <MainLayout>
-                  {/* Il contenuto interno verrà renderizzato qui come children */}
-                </MainLayout>
-              }
+              element={<MainLayout />}
             >
               {/* Inserire qui tutte le route protette */}
               <Route
@@ -156,6 +156,54 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <PrivateChats />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/privacy"
+                element={
+                  <ProtectedRoute>
+                    <Privacy />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/privacy/export-request"
+                element={
+                  <ProtectedRoute>
+                    <PrivacyExportRequest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/privacy/deletion-request"
+                element={
+                  <ProtectedRoute>
+                    <PrivacyDeletionRequest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/regression-validation"
+                element={
+                  <ProtectedRoute>
+                    <RegressionValidation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/stripe-validation"
+                element={
+                  <ProtectedRoute>
+                    <StripeValidationTestPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/validation"
+                element={
+                  <ProtectedRoute>
+                    <ValidationDashboard />
                   </ProtectedRoute>
                 }
               />
@@ -249,24 +297,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminGDPRPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Validation routes */}
-            <Route
-              path="/validation"
-              element={
-                <ProtectedRoute>
-                  <ValidationDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/regression-validation"
-              element={
-                <ProtectedRoute>
-                  <RegressionValidation />
                 </ProtectedRoute>
               }
             />
