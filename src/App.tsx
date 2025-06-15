@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { default as ProtectedRoute } from '@/components/auth/AuthProtected';
 
 // Public pages
@@ -60,19 +61,32 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <MainLayout>
-            <Routes>
-              {/* Public routes */}
+          <Routes>
+            {/* Public routes with PUBLIC LAYOUT */}
+            <Route
+              element={<PublicLayout />}
+            >
               <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/spaces" element={<Spaces />} />
               <Route path="/spaces/:id" element={<SpaceDetail />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:id" element={<EventDetail />} />
+            </Route>
 
-              {/* Protected routes */}
+            {/* Auth pages (outside layouts, so they don't get main nav/footers) */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+
+            {/* Protected routes with MAIN LAYOUT */}
+            <Route
+              element={
+                <MainLayout>
+                  {/* Il contenuto interno verrà renderizzato qui come children */}
+                </MainLayout>
+              }
+            >
+              {/* Inserire qui tutte le route protette */}
               <Route
                 path="/dashboard"
                 element={
@@ -145,121 +159,121 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+            </Route>
 
-              {/* Host routes */}
-              <Route
-                path="/host"
-                element={
-                  <ProtectedRoute>
-                    <HostDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/spaces"
-                element={
-                  <ProtectedRoute>
-                    <HostSpaceManagement />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/spaces/new"
-                element={
-                  <ProtectedRoute>
-                    <CreateSpace />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/spaces/:id/edit"
-                element={
-                  <ProtectedRoute>
-                    <EditSpace />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/revenue"
-                element={
-                  <ProtectedRoute>
-                    <HostRevenue />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/events"
-                element={
-                  <ProtectedRoute>
-                    <HostEvents />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/host/events/new"
-                element={
-                  <ProtectedRoute>
-                    <CreateEvent />
-                  </ProtectedRoute>
-                }
-              />
+            {/* Host routes */}
+            <Route
+              path="/host"
+              element={
+                <ProtectedRoute>
+                  <HostDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces"
+              element={
+                <ProtectedRoute>
+                  <HostSpaceManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces/new"
+              element={
+                <ProtectedRoute>
+                  <CreateSpace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/spaces/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <EditSpace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/revenue"
+              element={
+                <ProtectedRoute>
+                  <HostRevenue />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/events"
+              element={
+                <ProtectedRoute>
+                  <HostEvents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/host/events/new"
+              element={
+                <ProtectedRoute>
+                  <CreateEvent />
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Admin routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <ProtectedRoute>
-                    <AdminUsersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/logs"
-                element={
-                  <ProtectedRoute>
-                    <AdminLogsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/gdpr"
-                element={
-                  <ProtectedRoute>
-                    <AdminGDPRPage />
-                  </ProtectedRoute>
-                }
-              />
+            {/* Admin routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/logs"
+              element={
+                <ProtectedRoute>
+                  <AdminLogsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/gdpr"
+              element={
+                <ProtectedRoute>
+                  <AdminGDPRPage />
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Validation routes */}
-              <Route
-                path="/validation"
-                element={
-                  <ProtectedRoute>
-                    <ValidationDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/regression-validation"
-                element={
-                  <ProtectedRoute>
-                    <RegressionValidation />
-                  </ProtectedRoute>
-                }
-              />
+            {/* Validation routes */}
+            <Route
+              path="/validation"
+              element={
+                <ProtectedRoute>
+                  <ValidationDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/regression-validation"
+              element={
+                <ProtectedRoute>
+                  <RegressionValidation />
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Legacy redirect */}
-              <Route path="/admin-panel" element={<AdminPanel />} />
-            </Routes>
-          </MainLayout>
+            {/* Legacy redirect */}
+            <Route path="/admin-panel" element={<AdminPanel />} />
+          </Routes>
           <Toaster />
         </AuthProvider>
       </Router>

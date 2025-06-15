@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,35 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Building2 } from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
-import { UnifiedHeader } from './UnifiedHeader';
 import { Footer } from './Footer';
 
-interface PublicLayoutProps {
-  children: React.ReactNode;
-}
-
-export function PublicLayout({ children }: PublicLayoutProps) {
+export function PublicLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { authState } = useAuth();
 
   const isActivePath = (path: string) => location.pathname === path;
 
-  // If user is authenticated, use UnifiedHeader
-  if (authState.isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <UnifiedHeader />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  // For non-authenticated users, show the original static header
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -44,7 +24,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div 
+            <div
               className="flex items-center space-x-2 cursor-pointer"
               onClick={() => navigate('/')}
             >
@@ -105,7 +85,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 Accedi
               </Button>
               <Button
-                onClick={() => navigate('/signup')}
+                onClick={() => navigate('/register')}
                 className="bg-indigo-600 hover:bg-indigo-700"
               >
                 Registrati
@@ -115,12 +95,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1">
-        {children}
+        <Outlet />
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
