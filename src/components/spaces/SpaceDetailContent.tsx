@@ -29,6 +29,7 @@ import { Space } from '@/types/space';
 import { format, differenceInHours } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Footer } from '@/components/layout/Footer';
 
 export const SpaceDetailContent = () => {
   const { id } = useParams<{ id: string }>();
@@ -319,358 +320,369 @@ export const SpaceDetailContent = () => {
     }
   };
 
-  if (loading) {
+  // --- BLOCCO: Se non autenticato, mostra invito login/registrazione e Footer ---
+  if (!authState.isAuthenticated) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (error || !space) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">{error || 'Spazio non trovato'}</p>
-        <Button onClick={handleBackClick} className="mt-4">
-          Torna alla ricerca
-        </Button>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="bg-white rounded-lg shadow-md p-8 text-center space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              Vuoi esplorare i dettagli di questo spazio?
+            </h2>
+            <p className="mb-6 text-gray-600">
+              Per visualizzare informazioni dettagliate e prenotare lo spazio è necessario registrarsi o accedere.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button onClick={() => navigate('/login')} className="bg-indigo-600 text-white">
+                Accedi
+              </Button>
+              <Button onClick={() => navigate('/register')} variant="outline">
+                Registrati
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      {/* Back button */}
-      <Button
-        variant="ghost"
-        onClick={handleBackClick}
-        className="mb-4"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Torna alla ricerca
-      </Button>
+    <>
+      <div className="max-w-7xl mx-auto p-4">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          onClick={handleBackClick}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Torna alla ricerca
+        </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main content */}
-        <div className="lg:col-span-2">
-          {/* Image gallery */}
-          <div className="mb-6">
-            <div className="relative h-96 rounded-lg overflow-hidden mb-4">
-              <ProgressiveImage
-                src={space.photos?.[selectedImage] || '/placeholder.svg'}
-                alt={space.title}
-                aspectRatio="photo"
-                priority={true}
-                enableWebP={true}
-                enableResponsive={true}
-                onLoadComplete={() => console.log(`Main gallery image loaded: ${space.title}`)}
-                className="w-full h-full"
-              />
-            </div>
-            {space.photos && space.photos.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
-                {space.photos.map((photo, index) => (
-                  <div key={index} className="relative flex-shrink-0">
-                    <ProgressiveImage
-                      src={photo}
-                      alt={`${space.title} ${index + 1}`}
-                      aspectRatio="square"
-                      enableWebP={true}
-                      enableResponsive={false} // Thumbnails don't need responsive
-                      priority={index < 3} // Priority for first 3 thumbnails
-                      onLoadComplete={() => console.log(`Gallery thumbnail ${index + 1} loaded`)}
-                      className={cn(
-                        "w-20 h-20 object-cover rounded cursor-pointer transition-all",
-                        selectedImage === index ? "ring-2 ring-indigo-600 opacity-100" : "opacity-70 hover:opacity-100"
-                      )}
-                      onClick={() => setSelectedImage(index)}
-                    />
-                  </div>
-                ))}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2">
+            {/* Image gallery */}
+            <div className="mb-6">
+              <div className="relative h-96 rounded-lg overflow-hidden mb-4">
+                <ProgressiveImage
+                  src={space.photos?.[selectedImage] || '/placeholder.svg'}
+                  alt={space.title}
+                  aspectRatio="photo"
+                  priority={true}
+                  enableWebP={true}
+                  enableResponsive={true}
+                  onLoadComplete={() => console.log(`Main gallery image loaded: ${space.title}`)}
+                  className="w-full h-full"
+                />
               </div>
-            )}
-          </div>
-
-          {/* Space info */}
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{getCategoryLabel()}</Badge>
-                  <Badge variant="outline">{getWorkEnvironmentLabel()}</Badge>
-                </div>
-                {/* Report button - only visible to authenticated coworkers who are not the space owner */}
-                {canReportSpace && (
-                  <ReportDialog
-                    targetType="space"
-                    targetId={space.id}
-                    triggerText="Segnala"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  />
-                )}
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{space.title}</h1>
-              <div className="flex items-center text-gray-600 mb-4">
-                <MapPin className="h-4 w-4 mr-1" />
-                {space.address}
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <Users className="h-4 w-4 mr-1" />
-                  <span>Fino a {space.max_capacity || space.capacity} persone</span>
-                </div>
-                <div className="flex items-center">
-                  <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                  <span>4.8 (12 recensioni)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <h2 className="text-xl font-semibold mb-3">Descrizione</h2>
-              <p className="text-gray-700">{space.description}</p>
-            </div>
-
-            {/* Features */}
-            {space.workspace_features && space.workspace_features.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-3">Caratteristiche dello spazio</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {space.workspace_features.map((feature, index) => (
-                    <Badge key={index} variant="outline">{feature}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Amenities */}
-            {space.amenities && space.amenities.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-3">Servizi inclusi</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {space.amenities.map((amenity, index) => (
-                    <div key={index} className="flex items-center">
-                      {amenity.includes('WiFi') && <Wifi className="h-4 w-4 mr-2" />}
-                      {amenity.includes('Coffee') && <Coffee className="h-4 w-4 mr-2" />}
-                      {amenity.includes('Parking') && <Car className="h-4 w-4 mr-2" />}
-                      <span className="text-sm">{amenity}</span>
+              {space.photos && space.photos.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto">
+                  {space.photos.map((photo, index) => (
+                    <div key={index} className="relative flex-shrink-0">
+                      <ProgressiveImage
+                        src={photo}
+                        alt={`${space.title} ${index + 1}`}
+                        aspectRatio="square"
+                        enableWebP={true}
+                        enableResponsive={false} // Thumbnails don't need responsive
+                        priority={index < 3} // Priority for first 3 thumbnails
+                        onLoadComplete={() => console.log(`Gallery thumbnail ${index + 1} loaded`)}
+                        className={cn(
+                          "w-20 h-20 object-cover rounded cursor-pointer transition-all",
+                          selectedImage === index ? "ring-2 ring-indigo-600 opacity-100" : "opacity-70 hover:opacity-100"
+                        )}
+                        onClick={() => setSelectedImage(index)}
+                      />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Rules */}
-            {space.rules && (
+            {/* Space info */}
+            <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold mb-3">Regole dello spazio</h2>
-                <p className="text-gray-700">{space.rules}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{getCategoryLabel()}</Badge>
+                    <Badge variant="outline">{getWorkEnvironmentLabel()}</Badge>
+                  </div>
+                  {/* Report button - only visible to authenticated coworkers who are not the space owner */}
+                  {canReportSpace && (
+                    <ReportDialog
+                      targetType="space"
+                      targetId={space.id}
+                      triggerText="Segnala"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    />
+                  )}
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{space.title}</h1>
+                <div className="flex items-center text-gray-600 mb-4">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {space.address}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-1" />
+                    <span>Fino a {space.max_capacity || space.capacity} persone</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
+                    <span>4.8 (12 recensioni)</span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Booking sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-4">
-            <CardContent className="p-6">
-              {/* Host info */}
-              {host && (
-                <div className="flex items-center mb-6">
-                  <Avatar className="h-12 w-12 mr-3">
-                    <AvatarImage src={host.profile_photo_url} />
-                    <AvatarFallback>
-                      {host.first_name?.[0]}{host.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">{host.first_name} {host.last_name}</p>
-                    <p className="text-sm text-gray-600">Host</p>
+              {/* Description */}
+              <div>
+                <h2 className="text-xl font-semibold mb-3">Descrizione</h2>
+                <p className="text-gray-700">{space.description}</p>
+              </div>
+
+              {/* Features */}
+              {space.workspace_features && space.workspace_features.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-semibold mb-3">Caratteristiche dello spazio</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {space.workspace_features.map((feature, index) => (
+                      <Badge key={index} variant="outline">{feature}</Badge>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Pricing */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl font-bold">€{space.price_per_hour}</span>
-                  <span className="text-gray-600">/ora</span>
+              {/* Amenities */}
+              {space.amenities && space.amenities.length > 0 && (
+                <div>
+                  <h2 className="text-xl font-semibold mb-3">Servizi inclusi</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {space.amenities.map((amenity, index) => (
+                      <div key={index} className="flex items-center">
+                        {amenity.includes('WiFi') && <Wifi className="h-4 w-4 mr-2" />}
+                        {amenity.includes('Coffee') && <Coffee className="h-4 w-4 mr-2" />}
+                        {amenity.includes('Parking') && <Car className="h-4 w-4 mr-2" />}
+                        <span className="text-sm">{amenity}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                {space.price_per_day && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg">€{space.price_per_day}</span>
-                    <span className="text-gray-600">/giorno</span>
+              )}
+
+              {/* Rules */}
+              {space.rules && (
+                <div>
+                  <h2 className="text-xl font-semibold mb-3">Regole dello spazio</h2>
+                  <p className="text-gray-700">{space.rules}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Booking sidebar */}
+          <div className="lg:col-span-1">
+            <Card className="sticky top-4">
+              <CardContent className="p-6">
+                {/* Host info */}
+                {host && (
+                  <div className="flex items-center mb-6">
+                    <Avatar className="h-12 w-12 mr-3">
+                      <AvatarImage src={host.profile_photo_url} />
+                      <AvatarFallback>
+                        {host.first_name?.[0]}{host.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold">{host.first_name} {host.last_name}</p>
+                      <p className="text-sm text-gray-600">Host</p>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {/* Booking section */}
-              {canUserBook ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Seleziona data</label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !selectedDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Scegli una data"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                          className="pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
+                {/* Pricing */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-2xl font-bold">€{space.price_per_hour}</span>
+                    <span className="text-gray-600">/ora</span>
                   </div>
-
-                  {/* Time selection */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Orario inizio</label>
-                      <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Inizio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2">Orario fine</label>
-                      <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Fine" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem 
-                              key={time} 
-                              value={time}
-                              disabled={selectedStartTime && time <= selectedStartTime}
-                            >
-                              {time}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Show warning if time conflict */}
-                  {hasTimeConflict && selectedStartTime && selectedEndTime && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
-                        ⚠️ Hai già una prenotazione che si sovrappone con questo orario. Scegli un orario diverso.
-                      </p>
+                  {space.price_per_day && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg">€{space.price_per_day}</span>
+                      <span className="text-gray-600">/giorno</span>
                     </div>
                   )}
-
-                  {/* Show existing bookings for selected date */}
-                  {existingBookings.length > 0 && selectedDate && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-blue-800 mb-2">
-                        Prenotazioni esistenti per {format(selectedDate, "dd/MM/yyyy")}:
-                      </p>
-                      {existingBookings.map((booking, index) => (
-                        <div key={index} className="text-xs text-blue-700">
-                          {booking.start_time} - {booking.end_time} ({booking.status})
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Booking cost calculator */}
-                  <BookingCalculator 
-                    space={space}
-                    selectedDate={selectedDate}
-                    selectedStartTime={selectedStartTime}
-                    selectedEndTime={selectedEndTime}
-                  />
-
-                  {/* Booking/Payment button */}
-                  {!pendingBookingId ? (
-                    <Button
-                      onClick={handleBookingCreation}
-                      disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading || hasTimeConflict}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      {bookingLoading ? 'Creazione prenotazione...' : 'Crea prenotazione'}
-                    </Button>
-                  ) : (
-                    <PaymentButton
-                      bookingId={pendingBookingId}
-                      amount={bookingCost}
-                      currency="EUR"
-                      onPaymentSuccess={handlePaymentSuccess}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    />
-                  )}
-
-                  <div className="text-xs text-gray-500 text-center">
-                    Il pagamento è richiesto per confermare la prenotazione
-                  </div>
                 </div>
-              ) : authState.isAuthenticated ? (
-                <div className="text-center">
-                  {!authState.profile?.onboarding_completed ? (
-                    <>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Completa il tuo profilo per prenotare questo spazio
-                      </p>
+
+                {/* Booking section */}
+                {canUserBook ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Seleziona data</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !selectedDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Scegli una data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    {/* Time selection */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Orario inizio</label>
+                        <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Inizio" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Orario fine</label>
+                        <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Fine" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((time) => (
+                              <SelectItem 
+                                key={time} 
+                                value={time}
+                                disabled={selectedStartTime && time <= selectedStartTime}
+                              >
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Show warning if time conflict */}
+                    {hasTimeConflict && selectedStartTime && selectedEndTime && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ Hai già una prenotazione che si sovrappone con questo orario. Scegli un orario diverso.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Show existing bookings for selected date */}
+                    {existingBookings.length > 0 && selectedDate && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-sm font-medium text-blue-800 mb-2">
+                          Prenotazioni esistenti per {format(selectedDate, "dd/MM/yyyy")}:
+                        </p>
+                        {existingBookings.map((booking, index) => (
+                          <div key={index} className="text-xs text-blue-700">
+                            {booking.start_time} - {booking.end_time} ({booking.status})
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Booking cost calculator */}
+                    <BookingCalculator 
+                      space={space}
+                      selectedDate={selectedDate}
+                      selectedStartTime={selectedStartTime}
+                      selectedEndTime={selectedEndTime}
+                    />
+
+                    {/* Booking/Payment button */}
+                    {!pendingBookingId ? (
                       <Button
-                        onClick={() => navigate('/onboarding')}
+                        onClick={handleBookingCreation}
+                        disabled={!selectedDate || !selectedStartTime || !selectedEndTime || bookingLoading || hasTimeConflict}
                         className="w-full bg-indigo-600 hover:bg-indigo-700"
                       >
-                        Completa Profilo
+                        {bookingLoading ? 'Creazione prenotazione...' : 'Crea prenotazione'}
                       </Button>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Solo i coworker possono prenotare spazi
-                      </p>
-                      <Button
-                        disabled
-                        className="w-full"
-                      >
-                        Prenotazione non disponibile
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-4">
-                    Accedi per prenotare questo spazio
-                  </p>
-                  <Button
-                    onClick={handleLoginClick}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    Accedi
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ) : (
+                      <PaymentButton
+                        bookingId={pendingBookingId}
+                        amount={bookingCost}
+                        currency="EUR"
+                        onPaymentSuccess={handlePaymentSuccess}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      />
+                    )}
+
+                    <div className="text-xs text-gray-500 text-center">
+                      Il pagamento è richiesto per confermare la prenotazione
+                    </div>
+                  </div>
+                ) : authState.isAuthenticated ? (
+                  <div className="text-center">
+                    {!authState.profile?.onboarding_completed ? (
+                      <>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Completa il tuo profilo per prenotare questo spazio
+                        </p>
+                        <Button
+                          onClick={() => navigate('/onboarding')}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        >
+                          Completa Profilo
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Solo i coworker possono prenotare spazi
+                        </p>
+                        <Button
+                          disabled
+                          className="w-full"
+                        >
+                          Prenotazione non disponibile
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Accedi per prenotare questo spazio
+                    </p>
+                    <Button
+                      onClick={handleLoginClick}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Accedi
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };

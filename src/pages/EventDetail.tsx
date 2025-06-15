@@ -12,6 +12,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { it } from "date-fns/locale";
 import LoadingScreen from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
+import { Footer } from "@/components/layout/Footer";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -191,6 +192,32 @@ export default function EventDetail() {
 
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
+  }
+
+  if (!authState.isAuthenticated && !authState.isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="bg-white rounded-lg shadow-md p-8 text-center space-y-4">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              Vuoi visualizzare i dettagli di questo evento?
+            </h2>
+            <p className="mb-6 text-gray-600">
+              Per vedere i dettagli e partecipare all'evento è necessario registrarsi o effettuare il login.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button onClick={() => navigate('/login')} className="bg-indigo-600 text-white">
+                Accedi
+              </Button>
+              <Button onClick={() => navigate('/register')} variant="outline">
+                Registrati
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   if (!event) {
@@ -377,6 +404,7 @@ export default function EventDetail() {
           </Card>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
