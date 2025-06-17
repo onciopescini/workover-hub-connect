@@ -8,13 +8,13 @@ import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
 import { BookingCard } from "@/components/bookings/BookingCard";
 import { BookingTabs } from "@/components/bookings/BookingTabs";
 import { EmptyBookingsState } from "@/components/bookings/EmptyBookingsState";
-import { useBookings } from "@/hooks/useBookings";
+import { useBookingsFixed } from "@/hooks/useBookingsFixed";
 import { cancelBooking } from "@/lib/booking-utils";
 import { toast } from "sonner";
 
 export default function Bookings() {
   const { authState } = useAuth();
-  const { bookings, setBookings, isLoading } = useBookings();
+  const { bookings, setBookings, isLoading } = useBookingsFixed();
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);

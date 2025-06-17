@@ -7,8 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Filter, Calendar, MapPin } from 'lucide-react';
+import { Filter, Calendar, X } from 'lucide-react';
+import { GeographicSearch } from '@/components/shared/GeographicSearch';
+import { Badge } from '@/components/ui/badge';
 
 // Tipi semplificati per evitare dipendenze circolari
 type FilterState = {
@@ -83,29 +84,30 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     <div className="space-y-4">
       <h3 className="font-semibold text-lg">Filtri</h3>
       
-      {/* City Filter */}
+      {/* Location Search */}
       <div>
-        <label className="block text-sm font-medium mb-2">
-          <MapPin className="h-4 w-4 inline mr-1" />
-          Città
-        </label>
-        <Input
-          placeholder="Cerca per città..."
-          value={filters.city}
-          onChange={(e) => updateCity(e.target.value)}
+        <label className="block text-sm font-medium mb-2">Posizione</label>
+        <GeographicSearch
+          placeholder="Cerca città o indirizzo..."
+          onLocationSelect={updateCity}
+          className="w-full"
         />
+        {filters.city && (
+          <Badge variant="secondary" className="mt-2 gap-1">
+            {filters.city}
+            <X className="h-3 w-3 cursor-pointer" onClick={() => updateCity('')} />
+          </Badge>
+        )}
       </div>
 
-      {/* Category Filter */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          <Filter className="h-4 w-4 inline mr-1" />
-          Categoria
-        </label>
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Category Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
-              {filters.category || 'Tutte le categorie'}
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Categoria
+              {filters.category && <Badge variant="secondary" className="ml-2">{filters.category}</Badge>}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-full">
@@ -126,17 +128,12 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
 
-      {/* Date Range Filter */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          <Calendar className="h-4 w-4 inline mr-1" />
-          Data
-        </label>
+        {/* Date Range Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" size="sm">
+              <Calendar className="h-4 w-4 mr-2" />
               {formatDateRange()}
             </Button>
           </DropdownMenuTrigger>
@@ -155,14 +152,15 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
 
-      {/* Clear All Filters */}
-      {hasActiveFilters && (
-        <Button variant="ghost" onClick={clearAllFilters} className="w-full">
-          Rimuovi tutti i filtri
-        </Button>
-      )}
+        {/* Clear All Filters */}
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+            <X className="h-4 w-4 mr-1" />
+            Rimuovi filtri
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

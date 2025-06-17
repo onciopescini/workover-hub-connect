@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -31,17 +30,16 @@ import {
   Plus,
   BarChart3,
   Shield,
-  Home,
-  Search
+  Home
 } from 'lucide-react';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
+import { GeographicSearch } from '@/components/shared/GeographicSearch';
 
 export function UnifiedHeader() {
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSignOut = async () => {
     try {
@@ -69,13 +67,6 @@ export function UnifiedHeader() {
       }
     } else {
       navigate('/');
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -181,18 +172,9 @@ export function UnifiedHeader() {
           </span>
         </button>
 
-        {/* Search Bar - visible for all users */}
+        {/* Geographic Search Bar - visible for all users */}
         <div className="hidden md:flex flex-1 max-w-sm mx-6">
-          <form onSubmit={handleSearch} className="relative w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Cerca spazi, eventi..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full"
-            />
-          </form>
+          <GeographicSearch placeholder="Cerca per città..." />
         </div>
 
         {/* Desktop Navigation */}
@@ -299,16 +281,7 @@ export function UnifiedHeader() {
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
               <nav className="flex flex-col space-y-4 mt-8">
                 {/* Mobile Search */}
-                <form onSubmit={handleSearch} className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Cerca spazi, eventi..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 w-full"
-                  />
-                </form>
+                <GeographicSearch placeholder="Cerca per città..." />
 
                 {navItems.map((item) => {
                   const IconComponent = item.icon;

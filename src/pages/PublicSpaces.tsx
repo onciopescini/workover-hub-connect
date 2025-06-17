@@ -10,15 +10,18 @@ import { SpaceCardsGrid } from '@/components/spaces/SpaceCardsGrid';
 import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
+import { useLocationParams } from '@/hooks/useLocationParams';
 
 const PublicSpaces = () => {
   const navigate = useNavigate();
   const { authState } = useAuth();
+  const { initialCity } = useLocationParams();
   const [filters, setFilters] = useState({
     category: '',
     priceRange: [0, 200],
     amenities: [] as string[],
-    workEnvironment: ''
+    workEnvironment: '',
+    location: ''
   });
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
@@ -29,6 +32,13 @@ const PublicSpaces = () => {
     handleMarkerClick,
     clearSelection
   } = useMapCardInteraction();
+
+  // Set initial city from URL params
+  useEffect(() => {
+    if (initialCity && !filters.location) {
+      setFilters(prev => ({ ...prev, location: initialCity }));
+    }
+  }, [initialCity, filters.location]);
 
   // Get user location
   useEffect(() => {
@@ -78,6 +88,9 @@ const PublicSpaces = () => {
       }
       if (filters.priceRange[0] > 0) {
         query = query.gte('price_per_day', filters.priceRange[0]);
+      }
+      if (filters.location) {
+        query = query.ilike('city', `%${filters.location}%`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });

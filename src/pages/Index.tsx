@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { MapPin, Users, Calendar, Star } from 'lucide-react';
+import { GeographicSearch } from '@/components/shared/GeographicSearch';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -53,6 +54,15 @@ const Index = () => {
             Scopri spazi di lavoro unici, connettiti con professionisti e partecipa a eventi
             che trasformeranno la tua esperienza lavorativa.
           </p>
+          
+          {/* Hero Search */}
+          <div className="max-w-md mx-auto mb-8">
+            <GeographicSearch 
+              placeholder="Trova spazi nella tua città..."
+              className="w-full"
+            />
+          </div>
+          
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               size="lg" 
