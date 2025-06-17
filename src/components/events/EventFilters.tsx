@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,8 +23,12 @@ interface EventFiltersProps {
 }
 
 export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersChange }) => {
-  const updateCity = (city: string) => {
-    onFiltersChange({ ...filters, city });
+  const handleLocationSelect = (location: string, coordinates?: { lat: number; lng: number }) => {
+    onFiltersChange({ 
+      ...filters, 
+      city: location,
+      coordinates
+    });
   };
 
   const updateCategory = (category: string) => {
@@ -89,13 +92,13 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
         <label className="block text-sm font-medium mb-2">Posizione</label>
         <GeographicSearch
           placeholder="Cerca città o indirizzo..."
-          onLocationSelect={updateCity}
+          onLocationSelect={handleLocationSelect}
           className="w-full"
         />
         {filters.city && (
           <Badge variant="secondary" className="mt-2 gap-1">
             {filters.city}
-            <X className="h-3 w-3 cursor-pointer" onClick={() => updateCity('')} />
+            <X className="h-3 w-3 cursor-pointer" onClick={() => onFiltersChange({ ...filters, city: '' })} />
           </Badge>
         )}
       </div>

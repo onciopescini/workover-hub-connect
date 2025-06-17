@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -15,13 +14,14 @@ import { useLocationParams } from '@/hooks/useLocationParams';
 const PublicSpaces = () => {
   const navigate = useNavigate();
   const { authState } = useAuth();
-  const { initialCity } = useLocationParams();
+  const { initialCity, initialCoordinates } = useLocationParams();
   const [filters, setFilters] = useState({
     category: '',
     priceRange: [0, 200],
     amenities: [] as string[],
     workEnvironment: '',
-    location: ''
+    location: '',
+    coordinates: null as { lat: number; lng: number } | null
   });
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
@@ -33,12 +33,16 @@ const PublicSpaces = () => {
     clearSelection
   } = useMapCardInteraction();
 
-  // Set initial city from URL params
+  // Set initial city and coordinates from URL params
   useEffect(() => {
     if (initialCity && !filters.location) {
-      setFilters(prev => ({ ...prev, location: initialCity }));
+      setFilters(prev => ({ 
+        ...prev, 
+        location: initialCity,
+        coordinates: initialCoordinates
+      }));
     }
-  }, [initialCity, filters.location]);
+  }, [initialCity, initialCoordinates, filters.location]);
 
   // Get user location
   useEffect(() => {
@@ -123,6 +127,9 @@ const PublicSpaces = () => {
     handleMarkerClick(spaceId);
   };
 
+  // Use coordinates for map center if available
+  const mapCenter = filters.coordinates || userLocation;
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -167,7 +174,7 @@ const PublicSpaces = () => {
       map={
         <SpaceMap 
           spaces={spaces || []} 
-          userLocation={userLocation}
+          userLocation={mapCenter}
           onSpaceClick={handleMapSpaceClick}
           highlightedSpaceId={highlightedId}
         />

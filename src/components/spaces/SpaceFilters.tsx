@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +20,7 @@ interface SpaceFiltersProps {
     amenities: string[];
     workEnvironment: string;
     location?: string;
+    coordinates?: { lat: number; lng: number };
   };
   onFiltersChange: (filters: any) => void;
 }
@@ -28,6 +28,14 @@ interface SpaceFiltersProps {
 export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersChange }) => {
   const updateFilter = (key: string, value: any) => {
     onFiltersChange({ ...filters, [key]: value });
+  };
+
+  const handleLocationSelect = (location: string, coordinates?: { lat: number; lng: number }) => {
+    onFiltersChange({ 
+      ...filters, 
+      location,
+      coordinates
+    });
   };
 
   const addAmenity = (amenity: string) => {
@@ -61,7 +69,7 @@ export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersCh
         <label className="block text-sm font-medium mb-2">Posizione</label>
         <GeographicSearch
           placeholder="Cerca città o indirizzo..."
-          onLocationSelect={(location) => updateFilter('location', location)}
+          onLocationSelect={handleLocationSelect}
           className="w-full"
         />
         {filters.location && (

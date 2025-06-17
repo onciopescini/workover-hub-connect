@@ -51,23 +51,8 @@ export function UnifiedHeader() {
   };
 
   const handleLogoClick = () => {
-    if (authState.isAuthenticated && authState.profile) {
-      // Redirect based on user role
-      switch (authState.profile.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'host':
-          navigate('/host');
-          break;
-        case 'coworker':
-        default:
-          navigate('/dashboard');
-          break;
-      }
-    } else {
-      navigate('/');
-    }
+    // Sempre reindirizza alla landing page
+    navigate('/');
   };
 
   const isActivePath = (path: string) => {
