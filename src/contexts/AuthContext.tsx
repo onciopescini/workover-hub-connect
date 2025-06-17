@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,12 +51,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const handleRoleBasedRedirect = (profile: Profile | null, session: Session | null) => {
+  const handleRoleBasedRedirect = (profile: Profile | null, session: Session | null, redirectTo?: string) => {
     if (!session || !profile) return;
 
     // Skip redirect if on auth-related pages
     const authPages = ['/login', '/register', '/auth/callback'];
     if (authPages.includes(location.pathname)) return;
+
+    // Use the redirectTo if provided (from login state)
+    if (redirectTo && redirectTo !== '/login' && redirectTo !== '/register') {
+      navigate(redirectTo);
+      return;
+    }
 
     // Check if onboarding is needed
     if (!profile.onboarding_completed && profile.role !== 'admin') {
@@ -84,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updateAuthState = (session: Session | null, profile: Profile | null = null) => {
+  const updateAuthState = (session: Session | null, profile: Profile | null = null, redirectTo?: string) => {
     const newState: AuthState = {
       user: session?.user || null,
       session,
@@ -97,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Handle role-based redirect
     if (session && profile) {
-      handleRoleBasedRedirect(profile, session);
+      handleRoleBasedRedirect(profile, session, redirectTo);
     }
   };
 
@@ -139,7 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [navigate, location.pathname]);
 
-  const signIn = async (email: string, password: string): Promise<void> => {
+  const signIn = async (email: string, password: string, redirectTo?: string): Promise<void> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -150,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.user) {
         const profile = await fetchProfile(data.user.id);
-        updateAuthState(data.session, profile);
+        updateAuthState(data.session, profile, redirectTo);
         toast.success('Accesso effettuato con successo!');
       }
     } catch (error: any) {

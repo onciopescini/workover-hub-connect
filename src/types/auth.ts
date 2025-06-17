@@ -24,7 +24,7 @@ export type UserRole = "host" | "coworker" | "admin";
 
 export interface AuthContextType {
   authState: AuthState;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, redirectTo?: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;

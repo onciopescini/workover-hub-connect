@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,13 +19,17 @@ const Login = () => {
   
   const { signIn, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   // Redirect if already authenticated
   useEffect(() => {
     if (authState.isAuthenticated && !authState.isLoading) {
-      navigate('/dashboard');
+      navigate(from);
     }
-  }, [authState.isAuthenticated, authState.isLoading, navigate]);
+  }, [authState.isAuthenticated, authState.isLoading, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +37,9 @@ const Login = () => {
     setError('');
 
     try {
-      await signIn(email, password);
+      await signIn(email, password, from);
       toast.success('Accesso effettuato con successo!');
-      navigate('/dashboard');
+      navigate(from);
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Errore durante l\'accesso. Verifica le credenziali.');

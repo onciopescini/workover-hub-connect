@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ import AuthCallback from '@/pages/AuthCallback';
 // Protected pages
 import Dashboard from '@/pages/Dashboard';
 import Profile from '@/pages/Profile';
+import ProfileEdit from '@/pages/ProfileEdit';
 import UserProfile from '@/pages/UserProfile';
 import Bookings from '@/pages/Bookings';
 import Messages from '@/pages/Messages';
@@ -66,15 +68,11 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
-            {/* Public routes with PUBLIC LAYOUT */}
+            {/* Public routes with PUBLIC LAYOUT only for non-authenticated users */}
             <Route
               element={<PublicLayout />}
             >
               <Route path="/" element={<LandingPage />} />
-              <Route path="/spaces" element={<Spaces />} />
-              <Route path="/spaces/:id" element={<SpaceDetail />} />
-              <Route path="/events" element={<Events />} />
-              <Route path="/events/:id" element={<EventDetail />} />
             </Route>
 
             {/* Auth pages (outside layouts, so they don't get main nav/footers) */}
@@ -82,11 +80,17 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Protected routes with MAIN LAYOUT */}
+            {/* Main Layout routes - both public and protected */}
             <Route
               element={<MainLayout />}
             >
-              {/* Inserire qui tutte le route protette */}
+              {/* Public accessible pages with unified header */}
+              <Route path="/spaces" element={<Spaces />} />
+              <Route path="/spaces/:id" element={<SpaceDetail />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/events/:id" element={<EventDetail />} />
+
+              {/* Protected routes */}
               <Route
                 path="/dashboard"
                 element={
@@ -100,6 +104,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/edit"
+                element={
+                  <ProtectedRoute>
+                    <ProfileEdit />
                   </ProtectedRoute>
                 }
               />
