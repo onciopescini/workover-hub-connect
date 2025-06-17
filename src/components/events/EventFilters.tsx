@@ -15,6 +15,7 @@ type FilterState = {
   city: string;
   category: string;
   dateRange: { from: string; to?: string } | null;
+  coordinates?: { lat: number; lng: number } | null;
 };
 
 interface EventFiltersProps {
@@ -27,7 +28,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     onFiltersChange({ 
       ...filters, 
       city: location,
-      coordinates
+      coordinates: coordinates || null
     });
   };
 
@@ -66,7 +67,8 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
     onFiltersChange({
       city: '',
       category: '',
-      dateRange: null
+      dateRange: null,
+      coordinates: null
     });
   };
 
@@ -98,7 +100,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({ filters, onFiltersCh
         {filters.city && (
           <Badge variant="secondary" className="mt-2 gap-1">
             {filters.city}
-            <X className="h-3 w-3 cursor-pointer" onClick={() => onFiltersChange({ ...filters, city: '' })} />
+            <X className="h-3 w-3 cursor-pointer" onClick={() => onFiltersChange({ ...filters, city: '', coordinates: null })} />
           </Badge>
         )}
       </div>
