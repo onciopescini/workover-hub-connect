@@ -147,10 +147,10 @@ const Dashboard = () => {
               Gestisci i tuoi spazi e le prenotazioni degli ospiti
             </p>
             <div className="flex gap-4">
-              <Button onClick={() => navigate('/manage-space')}>
+              <Button onClick={() => navigate('/host/spaces')}>
                 Gestisci Spazi
               </Button>
-              <Button variant="outline" onClick={() => navigate('/create-space')}>
+              <Button variant="outline" onClick={() => navigate('/host/spaces/new')}>
                 Aggiungi Nuovo Spazio
               </Button>
             </div>
@@ -171,8 +171,8 @@ const Dashboard = () => {
               <Button onClick={() => navigate('/admin/users')}>
                 Gestisci Utenti
               </Button>
-              <Button variant="outline" onClick={() => navigate('/admin/spaces')}>
-                Gestisci Spazi
+              <Button variant="outline" onClick={() => navigate('/admin/logs')}>
+                Logs di Sistema
               </Button>
               <Button variant="outline" onClick={() => navigate('/validation')}>
                 Validazione Pagamenti

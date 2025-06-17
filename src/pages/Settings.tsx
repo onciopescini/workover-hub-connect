@@ -1,166 +1,86 @@
 
-import React from "react";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Shield, FileText, Clock } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon, User, Bell, Shield, CreditCard } from 'lucide-react';
 
 const Settings = () => {
-  const { authState } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <AppLayout
-      title="Impostazioni Account"
-      subtitle="Gestisci le tue preferenze e informazioni personali"
-    >
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Profile Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informazioni Profilo</CardTitle>
-              <CardDescription>
-                Aggiorna le tue informazioni personali
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={authState.user?.email || ""}
-                  disabled
-                  className="bg-gray-50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Nome</Label>
-                <Input
-                  id="firstName"
-                  placeholder="Il tuo nome"
-                  value={authState.profile?.first_name || ""}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Cognome</Label>
-                <Input
-                  id="lastName"
-                  placeholder="Il tuo cognome"
-                  value={authState.profile?.last_name || ""}
-                />
-              </div>
-              <Button className="w-full">Salva Modifiche</Button>
-            </CardContent>
-          </Card>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Impostazioni
+        </h1>
+        <p className="text-gray-600">
+          Gestisci il tuo account e le preferenze
+        </p>
+      </div>
 
-          {/* Security Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sicurezza</CardTitle>
-              <CardDescription>
-                Gestisci password e sicurezza dell'account
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Password Attuale</Label>
-                <Input id="currentPassword" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Nuova Password</Label>
-                <Input id="newPassword" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Conferma Password</Label>
-                <Input id="confirmPassword" type="password" />
-              </div>
-              <Button variant="outline" className="w-full">
-                Cambia Password
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Separator />
-
-        {/* Privacy & GDPR Section */}
-        <Card>
+      <div className="grid gap-6">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/profile/edit')}>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="h-5 w-5 mr-2" />
-              Privacy e Protezione Dati
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-blue-600" />
+              Profilo
             </CardTitle>
-            <CardDescription>
-              Gestisci i tuoi diritti privacy e conformità GDPR
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Centro Privacy</p>
-                  <p className="text-sm text-gray-600">
-                    Esporta i tuoi dati, richiedi cancellazione account
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/privacy-center')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Gestisci
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Cronologia Privacy</p>
-                  <p className="text-sm text-gray-600">
-                    Visualizza le tue richieste GDPR precedenti
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/privacy-center')}>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Visualizza
-                </Button>
-              </div>
-            </div>
+            <p className="text-gray-600 mb-4">
+              Modifica le tue informazioni personali e professionali
+            </p>
+            <Button variant="outline">Modifica Profilo</Button>
           </CardContent>
         </Card>
 
-        {/* Notification Preferences */}
         <Card>
           <CardHeader>
-            <CardTitle>Preferenze Notifiche</CardTitle>
-            <CardDescription>
-              Scegli come ricevere le notifiche
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-green-600" />
+              Notifiche
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Notifiche Email</p>
-                  <p className="text-sm text-gray-600">Ricevi aggiornamenti via email</p>
-                </div>
-                <Button variant="outline" size="sm">Configura</Button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Notifiche Push</p>
-                  <p className="text-sm text-gray-600">Notifiche nel browser</p>
-                </div>
-                <Button variant="outline" size="sm">Configura</Button>
-              </div>
-            </div>
+            <p className="text-gray-600 mb-4">
+              Gestisci le tue preferenze di notifica
+            </p>
+            <Button variant="outline">Gestisci Notifiche</Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/privacy')}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-purple-600" />
+              Privacy e Sicurezza
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Controlla la privacy dei tuoi dati e le impostazioni di sicurezza
+            </p>
+            <Button variant="outline">Gestisci Privacy</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-orange-600" />
+              Pagamenti
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Gestisci i tuoi metodi di pagamento e fatturazione
+            </p>
+            <Button variant="outline">Gestisci Pagamenti</Button>
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </div>
   );
 };
 

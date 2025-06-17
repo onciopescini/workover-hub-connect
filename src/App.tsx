@@ -17,6 +17,12 @@ import SpaceDetail from '@/pages/SpaceDetail';
 import Events from '@/pages/PublicEvents';
 import EventDetail from '@/pages/EventDetail';
 import AuthCallback from '@/pages/AuthCallback';
+import About from '@/pages/About';
+import FAQ from '@/pages/FAQ';
+import Contact from '@/pages/Contact';
+import Terms from '@/pages/Terms';
+import Help from '@/pages/Help';
+import NotFound from '@/pages/NotFound';
 
 // Protected pages
 import Dashboard from '@/pages/Dashboard';
@@ -32,6 +38,11 @@ import Privacy from '@/pages/Privacy';
 import PrivacyExportRequest from '@/pages/PrivacyExportRequest';
 import PrivacyDeletionRequest from '@/pages/PrivacyDeletionRequest';
 import StripeValidationTestPage from '@/pages/StripeValidationTest';
+import Search from '@/pages/Search';
+import Notifications from '@/pages/Notifications';
+import Support from '@/pages/Support';
+import Settings from '@/pages/Settings';
+import Onboarding from '@/pages/Onboarding';
 
 // Host pages
 import HostDashboard from '@/pages/HostDashboard';
@@ -69,9 +80,7 @@ function App() {
         <AuthProvider>
           <Routes>
             {/* Public routes with PUBLIC LAYOUT only for non-authenticated users */}
-            <Route
-              element={<PublicLayout />}
-            >
+            <Route element={<PublicLayout />}>
               <Route path="/" element={<LandingPage />} />
             </Route>
 
@@ -81,14 +90,18 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Main Layout routes - both public and protected */}
-            <Route
-              element={<MainLayout />}
-            >
+            <Route element={<MainLayout />}>
               {/* Public accessible pages with unified header */}
               <Route path="/spaces" element={<Spaces />} />
               <Route path="/spaces/:id" element={<SpaceDetail />} />
               <Route path="/events" element={<Events />} />
               <Route path="/events/:id" element={<EventDetail />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/support" element={<Support />} />
 
               {/* Protected routes */}
               <Route
@@ -196,6 +209,38 @@ function App() {
                 }
               />
               <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute requireOnboarding={false}>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ProtectedRoute>
+                    <Search />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/regression-validation"
                 element={
                   <ProtectedRoute>
@@ -219,102 +264,113 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Host routes - now using MainLayout for consistency */}
+              <Route
+                path="/host"
+                element={
+                  <ProtectedRoute>
+                    <HostDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <HostDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/spaces"
+                element={
+                  <ProtectedRoute>
+                    <HostSpaceManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/spaces/new"
+                element={
+                  <ProtectedRoute>
+                    <CreateSpace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/spaces/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditSpace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/revenue"
+                element={
+                  <ProtectedRoute>
+                    <HostRevenue />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/events"
+                element={
+                  <ProtectedRoute>
+                    <HostEvents />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/host/events/new"
+                element={
+                  <ProtectedRoute>
+                    <CreateEvent />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin routes - now using MainLayout for consistency */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute>
+                    <AdminUsersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/logs"
+                element={
+                  <ProtectedRoute>
+                    <AdminLogsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/gdpr"
+                element={
+                  <ProtectedRoute>
+                    <AdminGDPRPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Legacy redirect */}
+              <Route path="/admin-panel" element={<AdminPanel />} />
             </Route>
 
-            {/* Host routes */}
-            <Route
-              path="/host"
-              element={
-                <ProtectedRoute>
-                  <HostDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/spaces"
-              element={
-                <ProtectedRoute>
-                  <HostSpaceManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/spaces/new"
-              element={
-                <ProtectedRoute>
-                  <CreateSpace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/spaces/:id/edit"
-              element={
-                <ProtectedRoute>
-                  <EditSpace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/revenue"
-              element={
-                <ProtectedRoute>
-                  <HostRevenue />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/events"
-              element={
-                <ProtectedRoute>
-                  <HostEvents />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/host/events/new"
-              element={
-                <ProtectedRoute>
-                  <CreateEvent />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute>
-                  <AdminUsersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/logs"
-              element={
-                <ProtectedRoute>
-                  <AdminLogsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/gdpr"
-              element={
-                <ProtectedRoute>
-                  <AdminGDPRPage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Legacy redirect */}
-            <Route path="/admin-panel" element={<AdminPanel />} />
+            {/* 404 catch-all route */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
         </AuthProvider>
