@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthState, AuthContextType, Profile } from '@/types/auth';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+import { aggressiveSignOut, cleanSignIn, cleanSignInWithGoogle } from '@/lib/auth-utils';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -148,12 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (email: string, password: string, redirectTo?: string): Promise<void> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
+      const data = await cleanSignIn(email, password);
 
       if (data.user) {
         const profile = await fetchProfile(data.user.id);
@@ -187,14 +183,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signInWithGoogle = async (): Promise<void> => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-
-      if (error) throw error;
+      await cleanSignInWithGoogle();
+      // The actual redirect happens automatically after successful OAuth initiation
     } catch (error: any) {
       console.error('Google sign in error:', error);
       throw new Error(error.message || 'Errore durante l\'accesso con Google');
@@ -203,27 +193,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async (): Promise<void> => {
     try {
-      // Clean up auth state first
-      updateAuthState(null);
-      
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
-      // Clear any remaining storage items
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Force navigation to landing page
-      navigate('/');
+      // Use the aggressive sign out method
+      await aggressiveSignOut();
       toast.success('Logout effettuato con successo');
     } catch (error: any) {
       console.error('Sign out error:', error);
-      // Even if logout fails, clear state and navigate
-      updateAuthState(null);
-      navigate('/');
+      // Even if logout fails, show success message since user expects to be logged out
+      toast.success('Logout effettuato con successo');
       throw new Error(error.message || 'Errore durante il logout');
     }
   };

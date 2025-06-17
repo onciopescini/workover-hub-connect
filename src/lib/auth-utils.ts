@@ -2,6 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const cleanupAuthState = () => {
+  console.log('Starting auth state cleanup...');
+  
   // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
   
@@ -18,23 +20,57 @@ export const cleanupAuthState = () => {
       sessionStorage.removeItem(key);
     }
   });
+
+  // Clear Google OAuth related storage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.includes('google') || key.includes('oauth') || key.includes('gapi')) {
+      localStorage.removeItem(key);
+    }
+  });
+
+  console.log('Auth state cleanup completed');
 };
 
-export const signOut = async () => {
+export const aggressiveSignOut = async () => {
   try {
+    console.log('Starting aggressive sign out...');
+    
+    // Clean up auth state first
     cleanupAuthState();
     
+    // Attempt multiple sign out scopes
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      // Continue even if this fails
+      console.warn('Global sign out failed:', err);
     }
+
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (err) {
+      console.warn('Local sign out failed:', err);
+    }
+
+    // Additional cleanup - clear any remaining session data
+    try {
+      // Force session termination
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Standard sign out failed:', err);
+    }
+
+    console.log('Aggressive sign out completed');
     
-    // Force page reload for a clean state
-    window.location.href = '/login';
+    // Force page reload to ensure clean state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
+    
   } catch (error) {
-    console.error("Error signing out:", error);
-    throw error;
+    console.error("Error in aggressive sign out:", error);
+    // Even if logout fails, force navigation
+    cleanupAuthState();
+    window.location.href = '/';
   }
 };
 
@@ -74,6 +110,47 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
   } catch (error) {
     console.error("Error getting unread message count:", error);
     return 0;
+  }
+};
+
+// Helper function to handle login with cleanup and force account picker
+export const cleanSignInWithGoogle = async () => {
+  try {
+    console.log('Starting clean Google sign in...');
+    
+    // Clean up existing state first
+    cleanupAuthState();
+    
+    // Attempt global sign out to clear any existing sessions
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      console.warn('Pre-login cleanup sign out failed:', err);
+    }
+    
+    // Small delay to ensure cleanup is complete
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Now attempt Google sign in with forced account picker
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // Force Google to show account picker even if user is already signed in
+        queryParams: {
+          prompt: 'select_account',
+          access_type: 'offline'
+        }
+      }
+    });
+    
+    if (error) throw error;
+    
+    console.log('Google sign in initiated successfully');
+    return data;
+  } catch (error) {
+    console.error("Error in clean Google sign in:", error);
+    throw error;
   }
 };
 

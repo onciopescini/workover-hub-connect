@@ -54,11 +54,11 @@ const Login = () => {
 
     try {
       await signInWithGoogle();
-      toast.success('Accesso con Google effettuato!');
+      // Note: The redirect is handled automatically by Google OAuth flow
+      toast.success('Reindirizzamento a Google...');
     } catch (err: any) {
       console.error('Google sign in error:', err);
       setError(err.message || 'Errore durante l\'accesso con Google.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -150,7 +150,7 @@ const Login = () => {
               onClick={handleGoogleSignIn}
               disabled={isLoading}
             >
-              Continua con Google
+              {isLoading ? 'Connessione...' : 'Continua con Google'}
             </Button>
 
             <div className="text-center space-y-2">
