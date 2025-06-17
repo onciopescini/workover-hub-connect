@@ -13,7 +13,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 
 // Auth protection
 import AuthProtected from "@/components/auth/AuthProtected";
-import { RoleProtected } from "@/components/auth/RoleProtected";
+import RoleProtected from "@/components/auth/RoleProtected";
 
 // Public pages
 import Index from "@/pages/Index";
@@ -95,7 +95,7 @@ import RouteCompletion from "@/pages/RouteCompletion";
 import PaymentValidation from "@/pages/PaymentValidation";
 import RegressionValidation from "@/pages/RegressionValidation";
 import StripeValidationTest from "@/pages/StripeValidationTest";
-import { ValidationDashboard as ValidationDashboardMain } from "@/pages/ValidationDashboard";
+import ValidationDashboardMain from "@/pages/ValidationDashboard";
 
 import "./App.css";
 
@@ -264,7 +264,9 @@ function App() {
                 {/* Marketplace routes */}
                 <Route path="/" element={
                   <AuthProtected>
-                    <MarketplaceLayout />
+                    <MarketplaceLayout>
+                      <div /> {/* Empty children placeholder */}
+                    </MarketplaceLayout>
                   </AuthProtected>
                 }>
                   <Route path="spaces/manage" element={<SpacesManage />} />
@@ -294,7 +296,9 @@ function App() {
                 <Route path="/admin" element={
                   <AuthProtected>
                     <RoleProtected allowedRoles={['admin']}>
-                      <AdminLayout />
+                      <AdminLayout currentPage="/admin">
+                        <div /> {/* Empty children placeholder */}
+                      </AdminLayout>
                     </RoleProtected>
                   </AuthProtected>
                 }>
