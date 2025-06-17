@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,17 +55,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const handleRoleBasedRedirect = (profile: Profile | null, session: Session | null, redirectTo?: string) => {
     if (!session || !profile) return;
 
-    // Skip redirect if on auth-related pages
-    const authPages = ['/login', '/register', '/auth/callback'];
-    if (authPages.includes(location.pathname)) return;
+    // Skip redirect if on auth-related pages or landing page
+    const skipRedirectPaths = ['/login', '/register', '/auth/callback', '/'];
+    if (skipRedirectPaths.includes(location.pathname)) return;
 
     // Use the redirectTo if provided (from login state)
-    if (redirectTo && redirectTo !== '/login' && redirectTo !== '/register') {
+    if (redirectTo && redirectTo !== '/login' && redirectTo !== '/register' && redirectTo !== '/') {
       navigate(redirectTo);
       return;
     }
 
-    // Check if onboarding is needed
+    // Check if onboarding is needed (skip for admin and skip if on root)
     if (!profile.onboarding_completed && profile.role !== 'admin') {
       if (location.pathname !== '/onboarding') {
         navigate('/onboarding');
@@ -72,8 +73,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
 
-    // Role-based dashboard redirects - only redirect if on root path
-    if (location.pathname === '/') {
+    // Role-based dashboard redirects - only redirect if explicitly requested or on specific auth pages
+    const shouldRedirectPaths = ['/login', '/register'];
+    if (shouldRedirectPaths.includes(location.pathname)) {
       switch (profile.role) {
         case 'admin':
           navigate('/admin/users');
@@ -100,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     setAuthState(newState);
 
-    // Handle role-based redirect
+    // Handle role-based redirect only when appropriate
     if (session && profile) {
       handleRoleBasedRedirect(profile, session, redirectTo);
     }
@@ -120,7 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // No session, clear state
           updateAuthState(null);
           
-          // Redirect to login if on protected route
+          // Only redirect to login if on protected route (not landing page)
           const protectedPaths = ['/dashboard', '/host', '/admin', '/profile', '/bookings', '/messages', '/networking'];
           if (protectedPaths.some(path => location.pathname.startsWith(path))) {
             navigate('/login');
@@ -201,14 +203,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async (): Promise<void> => {
     try {
+      // Clean up auth state first
+      updateAuthState(null);
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
 
-      updateAuthState(null);
+      // Clear any remaining storage items
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Force navigation to landing page
       navigate('/');
       toast.success('Logout effettuato con successo');
     } catch (error: any) {
       console.error('Sign out error:', error);
+      // Even if logout fails, clear state and navigate
+      updateAuthState(null);
+      navigate('/');
       throw new Error(error.message || 'Errore durante il logout');
     }
   };

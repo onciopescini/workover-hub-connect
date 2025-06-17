@@ -27,6 +27,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   const { geocodeAddress, reverseGeocode, isLoading } = useMapboxGeocoding();
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
@@ -43,13 +44,24 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     if (value.trim().length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
+      setIsSearching(false);
       return;
     }
 
+    setIsSearching(true);
+    
     searchTimeoutRef.current = setTimeout(async () => {
-      const results = await geocodeAddress(value);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
+      try {
+        const results = await geocodeAddress(value);
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setIsSearching(false);
+      }
     }, 300);
   }, [geocodeAddress]);
 
@@ -57,6 +69,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
   const handleSuggestionSelect = useCallback((suggestion: GeocodeResult) => {
     setSearchQuery(suggestion.place_name);
     setShowSuggestions(false);
+    setIsSearching(false);
     
     const coordinates = {
       lat: suggestion.center[1],
@@ -76,28 +89,44 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     
     if (!searchQuery.trim()) return;
 
-    // Se abbiamo suggerimenti, usa il primo
-    if (suggestions.length > 0) {
-      handleSuggestionSelect(suggestions[0]);
-      return;
-    }
+    setIsSearching(true);
 
-    // Altrimenti cerca la località
-    const results = await geocodeAddress(searchQuery.trim());
-    if (results.length > 0) {
-      handleSuggestionSelect(results[0]);
-    } else {
-      // Fallback se nessun risultato
+    try {
+      // Se abbiamo suggerimenti, usa il primo
+      if (suggestions.length > 0) {
+        handleSuggestionSelect(suggestions[0]);
+        return;
+      }
+
+      // Altrimenti cerca la località
+      const results = await geocodeAddress(searchQuery.trim());
+      if (results.length > 0) {
+        handleSuggestionSelect(results[0]);
+      } else {
+        // Fallback se nessun risultato
+        if (onLocationSelect) {
+          onLocationSelect(searchQuery.trim());
+        } else {
+          navigate(`/spaces?city=${encodeURIComponent(searchQuery.trim())}`);
+        }
+      }
+    } catch (error) {
+      console.error('Search submit error:', error);
+      // Fallback anche in caso di errore
       if (onLocationSelect) {
         onLocationSelect(searchQuery.trim());
       } else {
         navigate(`/spaces?city=${encodeURIComponent(searchQuery.trim())}`);
       }
+    } finally {
+      setIsSearching(false);
     }
   }, [searchQuery, suggestions, handleSuggestionSelect, geocodeAddress, onLocationSelect, navigate]);
 
   // Gestisce la geolocalizzazione
   const getCurrentLocation = useCallback(() => {
+    if (isGettingLocation) return; // Previeni chiamate multiple
+    
     setIsGettingLocation(true);
     
     if (!navigator.geolocation) {
@@ -131,7 +160,21 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
       },
       (error) => {
         console.error('Geolocation error:', error);
-        alert('Errore nel accedere alla posizione');
+        let errorMessage = 'Errore nel accedere alla posizione';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Permesso di geolocalizzazione negato';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Posizione non disponibile';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Timeout della richiesta di posizione';
+            break;
+        }
+        
+        alert(errorMessage);
         setIsGettingLocation(false);
       },
       {
@@ -140,7 +183,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
         maximumAge: 600000
       }
     );
-  }, [reverseGeocode, onLocationSelect, navigate]);
+  }, [reverseGeocode, onLocationSelect, navigate, isGettingLocation]);
 
   // Chiude i suggerimenti quando si clicca fuori
   useEffect(() => {
@@ -154,6 +197,17 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Cleanup del timeout quando il componente viene smontato
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const isCurrentlyLoading = isLoading || isSearching || isGettingLocation;
+
   return (
     <div className={cn("relative", className)}>
       <form onSubmit={handleSearch} className="relative flex items-center gap-2">
@@ -165,9 +219,9 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
             value={searchQuery}
             onChange={(e) => handleSearchInput(e.target.value)}
             className="pl-10 pr-4"
-            disabled={isLoading}
+            disabled={isCurrentlyLoading}
           />
-          {isLoading && (
+          {isCurrentlyLoading && (
             <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
           )}
         </div>
@@ -177,19 +231,19 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
           variant="outline"
           size="icon"
           onClick={getCurrentLocation}
-          disabled={isGettingLocation || isLoading}
+          disabled={isCurrentlyLoading}
           title="Usa la mia posizione"
         >
           <Navigation className={`h-4 w-4 ${isGettingLocation ? 'animate-spin' : ''}`} />
         </Button>
         
-        <Button type="submit" size="icon" disabled={isLoading}>
+        <Button type="submit" size="icon" disabled={isCurrentlyLoading}>
           <Search className="h-4 w-4" />
         </Button>
       </form>
 
       {/* Suggerimenti */}
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && suggestions.length > 0 && !isCurrentlyLoading && (
         <div 
           ref={suggestionsRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto"
