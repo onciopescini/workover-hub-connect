@@ -4,9 +4,36 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Users, Target, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const About = () => {
   const navigate = useNavigate();
+  const { authState } = useAuth();
+
+  const handleRegisterClick = () => {
+    // Se l'utente è già autenticato, reindirizza alla dashboard appropriata
+    if (authState.isAuthenticated && authState.profile) {
+      switch (authState.profile.role) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'host':
+          navigate('/host');
+          break;
+        case 'coworker':
+        default:
+          navigate('/dashboard');
+          break;
+      }
+    } else {
+      // Se non autenticato, vai alla pagina di registrazione
+      navigate('/register');
+    }
+  };
+
+  const handleContactClick = () => {
+    navigate('/contact');
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -126,15 +153,15 @@ const About = () => {
             <Button 
               size="lg" 
               className="bg-white text-indigo-600 hover:bg-gray-100"
-              onClick={() => navigate('/signup')}
+              onClick={handleRegisterClick}
             >
-              Registrati Ora
+              {authState.isAuthenticated ? 'Vai alla Dashboard' : 'Registrati Ora'}
             </Button>
             <Button 
               size="lg" 
               variant="outline"
               className="border-white text-white hover:bg-white hover:text-indigo-600"
-              onClick={() => navigate('/contact')}
+              onClick={handleContactClick}
             >
               Contattaci
             </Button>

@@ -290,12 +290,9 @@ export const SpaceDetailContent = () => {
   }, [navigate]);
 
   const handleBackClick = useCallback(() => {
-    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
-      navigate('/app/spaces'); // Unified navigation for authenticated users
-    } else {
-      navigate('/spaces'); // Public navigation for non-authenticated users
-    }
-  }, [authState.isAuthenticated, authState.profile?.onboarding_completed, navigate]);
+    // Sempre reindirizza a /spaces per la lista pubblica
+    navigate('/spaces');
+  }, [navigate]);
 
   const handleLoginClick = useCallback(() => {
     navigate('/login', { state: { from: `/spaces/${id}` } });
@@ -343,6 +340,42 @@ export const SpaceDetailContent = () => {
           </div>
         </div>
         <Footer />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="text-center py-12">
+          <p>Caricamento dettagli spazio...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !space) {
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <Button
+          variant="ghost"
+          onClick={handleBackClick}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Torna alla ricerca
+        </Button>
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Spazio non trovato
+          </h2>
+          <p className="text-gray-600 mb-4">
+            {error || 'Lo spazio che stai cercando non esiste o non è più disponibile.'}
+          </p>
+          <Button onClick={handleBackClick}>
+            Torna alla ricerca spazi
+          </Button>
+        </div>
       </div>
     );
   }
