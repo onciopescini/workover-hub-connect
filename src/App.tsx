@@ -29,7 +29,7 @@ import PrivateChats from '@/pages/PrivateChats';
 import Privacy from '@/pages/Privacy';
 import PrivacyExportRequest from '@/pages/PrivacyExportRequest';
 import PrivacyDeletionRequest from '@/pages/PrivacyDeletionRequest';
-import StripeValidationTestPage from '@/pages/StripeValidationTestPage';
+import StripeValidationTestPage from '@/pages/StripeValidationTest';
 
 // Host pages
 import HostDashboard from '@/pages/HostDashboard';
