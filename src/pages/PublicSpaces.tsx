@@ -1,14 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
+import { SpaceCardsGrid } from '@/components/spaces/SpaceCardsGrid';
+import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Map, Grid } from 'lucide-react';
+import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
 
 const PublicSpaces = () => {
   const navigate = useNavigate();
@@ -19,8 +20,15 @@ const PublicSpaces = () => {
     amenities: [] as string[],
     workEnvironment: ''
   });
-  const [showMap, setShowMap] = useState(false);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  
+  const {
+    selectedId,
+    highlightedId,
+    handleCardClick,
+    handleMarkerClick,
+    clearSelection
+  } = useMapCardInteraction();
 
   // Get user location
   useEffect(() => {
@@ -85,15 +93,21 @@ const PublicSpaces = () => {
 
   const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
+    clearSelection();
   };
 
   const handleSpaceClick = (spaceId: string) => {
+    handleCardClick(spaceId);
     // Navigate to the correct route based on authentication status
     if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
       navigate(`/app/spaces/${spaceId}`);
     } else {
       navigate(`/spaces/${spaceId}`);
     }
+  };
+
+  const handleMapSpaceClick = (spaceId: string) => {
+    handleMarkerClick(spaceId);
   };
 
   if (error) {
@@ -107,85 +121,52 @@ const PublicSpaces = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Trova il tuo spazio di lavoro ideale
-          </h1>
-          <p className="text-gray-600">
-            Scopri spazi di coworking, uffici privati e sale riunioni nella tua città
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-1/4">
-            <SpaceFilters filters={filters} onFiltersChange={handleFiltersChange} />
-          </div>
-
-          <div className="lg:w-3/4">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={!showMap ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowMap(false)}
-                  className="flex items-center gap-2"
-                >
-                  <Grid className="h-4 w-4" />
-                  Griglia
-                </Button>
-                <Button
-                  variant={showMap ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowMap(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Map className="h-4 w-4" />
-                  Mappa
-                </Button>
-              </div>
-              
-              {spaces && (
-                <p className="text-sm text-gray-600">
-                  {spaces.length} spazi trovati
-                </p>
-              )}
-            </div>
-
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <LoadingSpinner />
-              </div>
-            ) : showMap ? (
-              <div className="h-[600px]">
-                <SpaceMap 
-                  spaces={spaces || []} 
-                  userLocation={userLocation}
-                  onSpaceClick={handleSpaceClick}
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {spaces?.map((space) => (
-                  <SpaceCard 
-                    key={space.id} 
-                    space={space} 
-                    onClick={() => handleSpaceClick(space.id)}
-                  />
-                ))}
-                {spaces?.length === 0 && (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-gray-500">Nessuno spazio trovato con i filtri selezionati.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <SplitScreenLayout
+      filters={
+        <div>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Trova il tuo spazio di lavoro ideale
+            </h1>
+            <p className="text-gray-600">
+              Scopri spazi di coworking, uffici privati e sale riunioni nella tua città
+            </p>
+          </div>
+          <SpaceFilters filters={filters} onFiltersChange={handleFiltersChange} />
+          {spaces && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">
+                {spaces.length} spazi trovati
+              </p>
+            </div>
+          )}
+        </div>
+      }
+      map={
+        <SpaceMap 
+          spaces={spaces || []} 
+          userLocation={userLocation}
+          onSpaceClick={handleMapSpaceClick}
+          highlightedSpaceId={highlightedId}
+        />
+      }
+      cards={
+        <SpaceCardsGrid 
+          spaces={spaces || []} 
+          onSpaceClick={handleSpaceClick}
+          highlightedId={highlightedId}
+        />
+      }
+    />
   );
 };
 

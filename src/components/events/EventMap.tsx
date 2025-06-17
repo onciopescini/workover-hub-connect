@@ -9,17 +9,23 @@ interface EventMapProps {
   events: SimpleEvent[];
   userLocation: {lat: number, lng: number} | null;
   onEventClick: (eventId: string) => void;
+  highlightedEventId?: string | null;
 }
 
-export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEventClick }) => {
+export const EventMap: React.FC<EventMapProps> = ({ 
+  events, 
+  userLocation, 
+  onEventClick,
+  highlightedEventId 
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
+  const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch Mapbox token from Supabase Edge Function
+  // Fetch Mapbox token
   useEffect(() => {
     const fetchMapboxToken = async () => {
       try {
@@ -47,6 +53,7 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
     fetchMapboxToken();
   }, []);
 
+  // Initialize map
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
 
@@ -66,16 +73,24 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
     };
   }, [userLocation, mapboxToken]);
 
+  // Add/update event markers
   useEffect(() => {
     if (!map.current) return;
 
-    markers.current.forEach(marker => marker.remove());
-    markers.current = [];
+    // Clear existing markers
+    Object.values(markers.current).forEach(marker => marker.remove());
+    markers.current = {};
 
     events.forEach(event => {
       if (event.spaces?.latitude && event.spaces?.longitude) {
+        const isHighlighted = highlightedEventId === event.id;
+        
         const el = document.createElement('div');
-        el.className = 'w-8 h-8 bg-purple-600 rounded-full border-2 border-white shadow-lg cursor-pointer flex items-center justify-center text-white text-xs font-bold hover:bg-purple-700 transition-colors';
+        el.className = 'w-8 h-8 rounded-full border-2 border-white shadow-lg cursor-pointer flex items-center justify-center text-white text-xs font-bold hover:scale-110 transition-all duration-200';
+        el.style.backgroundColor = isHighlighted ? '#7c3aed' : '#8b5cf6';
+        if (isHighlighted) {
+          el.classList.add('animate-pulse', 'scale-110');
+        }
         el.innerHTML = '📅';
         
         el.addEventListener('click', () => {
@@ -96,10 +111,10 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
           )
           .addTo(map.current!);
 
-        markers.current.push(marker);
+        markers.current[event.id] = marker;
       }
     });
-  }, [events, onEventClick]);
+  }, [events, onEventClick, highlightedEventId]);
 
   if (isLoading) {
     return (
@@ -126,6 +141,12 @@ export const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onEven
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0" />
+      
+      {events.length > 0 && (
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+          <span className="text-sm text-gray-700">{events.length} eventi disponibili</span>
+        </div>
+      )}
     </div>
   );
 };
