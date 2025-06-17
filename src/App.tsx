@@ -1,10 +1,9 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 
 // Layouts
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -105,10 +104,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <GDPRProvider>
-          <Toaster />
-          <BrowserRouter>
-            <AuthProvider>
+        <Toaster />
+        <BrowserRouter>
+          <AuthProvider>
+            <GDPRProvider>
               <Routes>
                 {/* Public routes with MainLayout */}
                 <Route path="/" element={<MainLayout />}>
@@ -326,9 +325,9 @@ function App() {
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </GDPRProvider>
+            </GDPRProvider>
+          </AuthProvider>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
