@@ -52,10 +52,10 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     defaultValues: {
       title: "",
       description: "",
-      category: "home", // Must be one of the database enum values
+      category: "home", // Must be one of: home, outdoor, professional
       max_capacity: 1,
       workspace_features: [],
-      work_environment: "controlled", // Must be one of the database enum values
+      work_environment: "silent", // Must be one of: silent, controlled, dynamic
       amenities: [],
       seating_types: [],
       price_per_hour: 0,
@@ -99,7 +99,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         category: initialData.category || "home",
         max_capacity: initialData.max_capacity || 1,
         workspace_features: initialData.workspace_features || [],
-        work_environment: initialData.work_environment || "controlled",
+        work_environment: initialData.work_environment || "silent",
         amenities: initialData.amenities || [],
         seating_types: initialData.seating_types || [],
         price_per_hour: initialData.price_per_hour || 0,

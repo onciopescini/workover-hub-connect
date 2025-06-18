@@ -42,14 +42,14 @@ export const SpaceFormSchema = z.object({
   // Basic Information
   title: z.string().min(1, "Il titolo è obbligatorio").max(100, "Il titolo non può superare i 100 caratteri"),
   description: z.string().min(1, "La descrizione è obbligatoria").max(1000, "La descrizione non può superare i 1000 caratteri"),
-  // Match exact database enum values from supabase types
-  category: z.enum(['home', 'office', 'studio', 'cafe', 'coworking', 'meeting_room', 'other'], {
+  // Use EXACT database enum values
+  category: z.enum(['home', 'outdoor', 'professional'], {
     errorMap: () => ({ message: "Seleziona una categoria valida" })
   }),
 
   // Space Details
-  // Match exact database enum values from supabase types
-  work_environment: z.enum(['controlled', 'shared', 'open'], {
+  // Use EXACT database enum values
+  work_environment: z.enum(['silent', 'controlled', 'dynamic'], {
     errorMap: () => ({ message: "Seleziona un ambiente di lavoro valido" })
   }),
   max_capacity: z.number().min(1, "La capacità deve essere almeno 1").max(100, "La capacità non può superare 100"),

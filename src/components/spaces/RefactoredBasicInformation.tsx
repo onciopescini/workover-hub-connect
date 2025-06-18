@@ -7,15 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 
-// Use the correct database enum values - must match exactly with supabase types
+// Use the EXACT database enum values from Supabase types
 const CATEGORY_OPTIONS = [
   { value: "home", label: "Home", description: "Residential space" },
-  { value: "office", label: "Office", description: "Professional office space" },
-  { value: "studio", label: "Studio", description: "Creative studio space" },
-  { value: "cafe", label: "Cafe", description: "Cafe or restaurant space" },
-  { value: "coworking", label: "Coworking", description: "Shared coworking space" },
-  { value: "meeting_room", label: "Meeting Room", description: "Dedicated meeting room" },
-  { value: "other", label: "Other", description: "Other type of space" }
+  { value: "outdoor", label: "Outdoor", description: "Outdoor workspace" },
+  { value: "professional", label: "Professional", description: "Professional office space" }
 ];
 
 export const RefactoredBasicInformation = () => {

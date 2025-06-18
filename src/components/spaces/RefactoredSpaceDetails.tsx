@@ -14,11 +14,11 @@ import {
   EVENT_FRIENDLY_OPTIONS
 } from "@/types/space";
 
-// Use the correct database enum values - must match exactly with supabase types
+// Use the EXACT database enum values from Supabase types
 const WORK_ENVIRONMENT_OPTIONS = [
-  { value: "controlled", label: "Controlled", description: "Quiet conversations allowed" },
-  { value: "shared", label: "Shared", description: "Open discussions and calls welcome" },
-  { value: "open", label: "Open", description: "Flexible environment" }
+  { value: "silent", label: "Silent", description: "Quiet environment for focused work" },
+  { value: "controlled", label: "Controlled", description: "Moderate noise level with some conversations" },
+  { value: "dynamic", label: "Dynamic", description: "Active environment with collaboration and discussions" }
 ];
 
 const CONFIRMATION_TYPE_OPTIONS = [

@@ -24,7 +24,22 @@ export const RefactoredAvailabilityScheduler = () => {
               </FormLabel>
               <AvailabilityScheduler
                 availability={field.value}
-                onAvailabilityChange={field.onChange}
+                onAvailabilityChange={(availability) => {
+                  // Ensure enabled is always a boolean for each day
+                  const normalizedAvailability = {
+                    ...availability,
+                    recurring: Object.fromEntries(
+                      Object.entries(availability.recurring).map(([day, schedule]) => [
+                        day,
+                        {
+                          enabled: Boolean(schedule.enabled),
+                          slots: schedule.slots || []
+                        }
+                      ])
+                    )
+                  };
+                  field.onChange(normalizedAvailability);
+                }}
                 isSubmitting={false}
               />
               <FormMessage />
