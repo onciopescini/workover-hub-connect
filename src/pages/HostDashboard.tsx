@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +19,7 @@ import {
   useHostReviewsQuery 
 } from "@/hooks/queries/useHostDashboardQuery";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface ChecklistItem {
   id: string;
