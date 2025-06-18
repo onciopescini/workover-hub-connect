@@ -25,21 +25,21 @@ export const RefactoredAvailabilityScheduler = () => {
               </FormLabel>
               <AvailabilityScheduler
                 availability={field.value}
-                onAvailabilityChange={(availability) => {
+                onAvailabilityChange={(availability: AvailabilityData) => {
                   // Create properly typed normalized availability ensuring required properties
-                  const createDaySchedule = (dayData: any): DaySchedule => ({
+                  const createDaySchedule = (dayData: DaySchedule | undefined): DaySchedule => ({
                     enabled: Boolean(dayData?.enabled ?? false),
                     slots: dayData?.slots ?? []
                   });
 
                   const normalizedRecurring: WeeklySchedule = {
-                    monday: createDaySchedule(availability.recurring.monday),
-                    tuesday: createDaySchedule(availability.recurring.tuesday),
-                    wednesday: createDaySchedule(availability.recurring.wednesday),
-                    thursday: createDaySchedule(availability.recurring.thursday),
-                    friday: createDaySchedule(availability.recurring.friday),
-                    saturday: createDaySchedule(availability.recurring.saturday),
-                    sunday: createDaySchedule(availability.recurring.sunday)
+                    monday: createDaySchedule(availability.recurring?.monday),
+                    tuesday: createDaySchedule(availability.recurring?.tuesday),
+                    wednesday: createDaySchedule(availability.recurring?.wednesday),
+                    thursday: createDaySchedule(availability.recurring?.thursday),
+                    friday: createDaySchedule(availability.recurring?.friday),
+                    saturday: createDaySchedule(availability.recurring?.saturday),
+                    sunday: createDaySchedule(availability.recurring?.sunday)
                   };
 
                   const normalizedAvailability: AvailabilityData = {
