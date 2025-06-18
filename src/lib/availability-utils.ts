@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isWithinInterval, parseISO } from "date-fns";
+import { fetchOptimizedSpaceAvailability, validateBookingSlotWithLock as rpcValidateBookingSlot } from './availability-rpc';
 
 export interface TimeSlot {
   start: string;
@@ -47,12 +47,13 @@ export const isSlotAvailable = (
   });
 };
 
-// Recupera tutte le prenotazioni per uno spazio (con cache)
+// Enhanced fetchSpaceBookings con RPC optimization
 export const fetchSpaceBookings = async (
   spaceId: string, 
   startDate: string, 
   endDate: string,
-  useCache: boolean = true
+  useCache: boolean = true,
+  useRPC: boolean = true
 ) => {
   const cacheKey = `${spaceId}-${startDate}-${endDate}`;
   
@@ -65,17 +66,31 @@ export const fetchSpaceBookings = async (
   }
 
   try {
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('space_id', spaceId)
-      .gte('booking_date', startDate)
-      .lte('booking_date', endDate)
-      .in('status', ['pending', 'confirmed']);
-
-    if (error) throw error;
+    let bookings;
     
-    const bookings = data || [];
+    // Prova prima con RPC ottimizzato
+    if (useRPC) {
+      try {
+        bookings = await fetchOptimizedSpaceAvailability(spaceId, startDate, endDate);
+      } catch (rpcError) {
+        console.warn('RPC fallback to standard query:', rpcError);
+        useRPC = false;
+      }
+    }
+    
+    // Fallback a query standard se RPC non disponibile
+    if (!useRPC) {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('space_id', spaceId)
+        .gte('booking_date', startDate)
+        .lte('booking_date', endDate)
+        .in('status', ['pending', 'confirmed']);
+
+      if (error) throw error;
+      bookings = data || [];
+    }
     
     // Aggiorna cache
     if (useCache) {
@@ -166,18 +181,20 @@ export const calculateDayAvailability = (
 export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
   const [availability, setAvailability] = React.useState<Record<string, DayAvailability>>({});
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const fetchAvailability = React.useCallback(async (forceRefresh = false) => {
     if (!spaceId) return;
 
     setLoading(true);
+    setError(null);
     
     const startDate = format(selectedMonth, 'yyyy-MM-01');
     const endDate = format(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0), 'yyyy-MM-dd');
     
     try {
-      // Recupera le prenotazioni esistenti con cache
-      const bookings = await fetchSpaceBookings(spaceId, startDate, endDate, !forceRefresh);
+      // Recupera le prenotazioni esistenti con RPC ottimizzato
+      const bookings = await fetchSpaceBookings(spaceId, startDate, endDate, !forceRefresh, true);
       
       // Recupera la configurazione di disponibilità dello spazio
       const { data: spaceData } = await supabase
@@ -197,6 +214,7 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
       setAvailability(availabilityMap);
     } catch (error) {
       console.error('Error fetching availability:', error);
+      setError('Errore nel caricamento della disponibilità');
     } finally {
       setLoading(false);
     }
@@ -238,11 +256,12 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
   return { 
     availability, 
     loading, 
+    error,
     refreshAvailability: () => fetchAvailability(true)
   };
 };
 
-// Utility per verificare conflitti real-time prima del checkout
+// Enhanced checkRealTimeConflicts with server-side validation
 export const checkRealTimeConflicts = async (
   spaceId: string,
   date: string,
@@ -274,6 +293,36 @@ export const checkRealTimeConflicts = async (
   } catch (error) {
     console.error('Error checking real-time conflicts:', error);
     return { hasConflict: false, conflictingBookings: [] };
+  }
+};
+
+// New enhanced validation with server-side lock
+export const validateBookingSlotWithLock = async (
+  spaceId: string,
+  date: string,
+  startTime: string,
+  endTime: string,
+  userId: string
+): Promise<{ valid: boolean; conflicts: any[]; message: string }> => {
+  try {
+    const result = await rpcValidateBookingSlot(spaceId, date, startTime, endTime, userId);
+    return {
+      valid: result.valid,
+      conflicts: result.conflicts || [],
+      message: result.message
+    };
+  } catch (error) {
+    console.error('Server validation failed:', error);
+    // Fallback to client-side validation
+    const { hasConflict, conflictingBookings } = await checkRealTimeConflicts(
+      spaceId, date, startTime, endTime
+    );
+    
+    return {
+      valid: !hasConflict,
+      conflicts: conflictingBookings,
+      message: hasConflict ? 'Client-side conflict detected' : 'Available (client-side check)'
+    };
   }
 };
 
