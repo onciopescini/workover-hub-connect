@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 
-// Use the correct database enum values
+// Use the correct database enum values - must match exactly with supabase types
 const CATEGORY_OPTIONS = [
   { value: "home", label: "Home", description: "Residential space" },
   { value: "office", label: "Office", description: "Professional office space" },

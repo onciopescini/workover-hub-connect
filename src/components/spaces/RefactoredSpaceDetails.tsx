@@ -14,6 +14,7 @@ import {
   EVENT_FRIENDLY_OPTIONS
 } from "@/types/space";
 
+// Use the correct database enum values - must match exactly with supabase types
 const WORK_ENVIRONMENT_OPTIONS = [
   { value: "controlled", label: "Controlled", description: "Quiet conversations allowed" },
   { value: "shared", label: "Shared", description: "Open discussions and calls welcome" },

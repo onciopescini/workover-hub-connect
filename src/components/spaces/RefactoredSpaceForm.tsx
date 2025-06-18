@@ -52,10 +52,10 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     defaultValues: {
       title: "",
       description: "",
-      category: "home", // Database enum value
+      category: "home", // Must be one of the database enum values
       max_capacity: 1,
       workspace_features: [],
-      work_environment: "controlled", // Database enum value
+      work_environment: "controlled", // Must be one of the database enum values
       amenities: [],
       seating_types: [],
       price_per_hour: 0,
