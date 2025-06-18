@@ -881,6 +881,65 @@ export type Database = {
         }
         Relationships: []
       }
+      image_processing_jobs: {
+        Row: {
+          completed_at: string | null
+          compression_ratio: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          optimized_path: string | null
+          optimized_size: number | null
+          original_path: string
+          original_size: number | null
+          space_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          compression_ratio?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          optimized_path?: string | null
+          optimized_size?: number | null
+          original_path: string
+          original_size?: number | null
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          compression_ratio?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          optimized_path?: string | null
+          optimized_size?: number | null
+          original_path?: string
+          original_size?: number | null
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "image_processing_jobs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachments: Json | null
@@ -1714,6 +1773,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      create_image_processing_job: {
+        Args: {
+          space_id_param: string
+          original_path_param: string
+          original_size_param?: number
+        }
+        Returns: string
+      }
       detect_data_breach: {
         Args: {
           breach_nature: string
@@ -1828,6 +1895,17 @@ export type Database = {
           suspended_by_admin: string
         }
         Returns: Json
+      }
+      update_image_processing_job: {
+        Args: {
+          job_id_param: string
+          status_param: string
+          optimized_path_param?: string
+          optimized_size_param?: number
+          compression_ratio_param?: number
+          error_message_param?: string
+        }
+        Returns: boolean
       }
       update_review_visibility: {
         Args: Record<PropertyKey, never>

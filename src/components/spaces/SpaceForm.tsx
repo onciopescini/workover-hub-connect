@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +26,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [processingJobs, setProcessingJobs] = useState<string[]>([]);
   
   const defaultAvailability: AvailabilityData = {
     recurring: {
@@ -208,17 +208,84 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     });
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
-    // Convert FileList to array and add to existing files
-    const newFiles = Array.from(files);
-    setPhotoFiles(prev => [...prev, ...newFiles]);
+    setUploadingPhotos(true);
     
-    // Create preview URLs for new files
-    const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-    setPhotoPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to upload photos");
+      }
+
+      const newFiles = Array.from(files);
+      const newPreviewUrls: string[] = [];
+      const newProcessingJobs: string[] = [];
+      
+      for (const file of newFiles) {
+        try {
+          // Create preview URL
+          const previewUrl = URL.createObjectURL(file);
+          newPreviewUrls.push(previewUrl);
+          
+          // Upload file
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          
+          const { data, error } = await supabase.storage
+            .from('space_photos')
+            .upload(fileName, file, {
+              upsert: true,
+            });
+
+          if (error) {
+            console.error("Upload error:", error);
+            continue;
+          }
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('space_photos')
+            .getPublicUrl(fileName);
+
+          // Start image optimization
+          try {
+            const optimizationJobId = await startImageOptimization(
+              fileName,
+              initialData?.id, // Use space ID if editing
+              file.size
+            );
+            
+            newProcessingJobs.push(optimizationJobId);
+            console.log('Started optimization job:', optimizationJobId);
+          } catch (optimizationError) {
+            console.warn('Failed to start optimization:', optimizationError);
+          }
+
+          // Replace preview URL with actual URL
+          const urlIndex = newPreviewUrls.indexOf(previewUrl);
+          if (urlIndex !== -1) {
+            newPreviewUrls[urlIndex] = urlData.publicUrl;
+            URL.revokeObjectURL(previewUrl);
+          }
+        } catch (error) {
+          console.error("Error processing file:", file.name, error);
+        }
+      }
+      
+      // Update states
+      setPhotoFiles(prev => [...prev, ...newFiles]);
+      setPhotoPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+      setProcessingJobs(prev => [...prev, ...newProcessingJobs]);
+      
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      toast.error("Errore nel caricamento delle foto");
+    } finally {
+      setUploadingPhotos(false);
+    }
   };
 
   const removePhoto = (index: number) => {
@@ -237,49 +304,6 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         ...prev,
         photos: (prev.photos || []).filter((_, i) => i !== dbPhotoIndex)
       }));
-    }
-  };
-
-  const uploadPhotos = async (userId: string): Promise<string[]> => {
-    if (photoFiles.length === 0) {
-      return formData.photos as string[] || [];
-    }
-    
-    setUploadingPhotos(true);
-    const uploadedUrls: string[] = [];
-    
-    try {
-      for (const file of photoFiles) {
-        const fileExt = file.name.split('.').pop();
-  
-        const fileName = `${userId}/${uuidv4()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { data, error } = await supabase.storage
-          .from('space_photos')
-          .upload(filePath, file, {
-            upsert: true,
-          });
-
-        if (error) {
-          throw error;
-        }
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('space_photos')
-          .getPublicUrl(filePath);
-
-        uploadedUrls.push(urlData.publicUrl);
-      }
-      
-      // Combine with existing photos if in edit mode
-      return [...(formData.photos as string[] || []), ...uploadedUrls];
-    } catch (error) {
-      console.error("Error uploading photos:", error);
-      throw error;
-    } finally {
-      setUploadingPhotos(false);
     }
   };
 
@@ -305,8 +329,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         throw new Error("You must be logged in to create a space");
       }
 
-      // Upload photos if there are any
-      const photoUrls = await uploadPhotos(user.id);
+      // Use current photo URLs (they're already uploaded)
+      const photoUrls = photoPreviewUrls;
       
       // Prepare data for database insertion, ensuring availability is properly serialized
       const spaceData = {
@@ -329,7 +353,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
         confirmation_type: formData.confirmation_type!,
-        availability: JSON.parse(JSON.stringify(availabilityData)), // Serialize as JSON
+        availability: JSON.parse(JSON.stringify(availabilityData)),
         published: formData.published ?? false,
         host_id: user.id,
       };
@@ -423,6 +447,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         onRemovePhoto={removePhoto}
         isSubmitting={isSubmitting}
         uploadingPhotos={uploadingPhotos}
+        processingJobs={processingJobs}
       />
 
       <PublishingOptions
