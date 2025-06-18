@@ -7,7 +7,7 @@ const AvailabilitySlotSchema = z.object({
   end: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato orario non valido"),
 });
 
-// Day availability schema
+// Day availability schema - enabled is REQUIRED
 const DayAvailabilitySchema = z.object({
   enabled: z.boolean(),
   slots: z.array(AvailabilitySlotSchema),
@@ -37,7 +37,7 @@ const AvailabilitySchema = z.object({
   exceptions: z.array(ExceptionAvailabilitySchema),
 });
 
-// Main space form schema
+// Main space form schema - aligned with database types
 export const SpaceFormSchema = z.object({
   // Basic Information
   title: z.string().min(1, "Il titolo è obbligatorio").max(100, "Il titolo non può superare i 100 caratteri"),
@@ -61,7 +61,7 @@ export const SpaceFormSchema = z.object({
   event_friendly_tags: z.array(z.string()).default([]),
   rules: z.string().optional(),
 
-  // Location & Pricing
+  // Location & Pricing - address is REQUIRED
   address: z.string().min(1, "L'indirizzo è obbligatorio"),
   latitude: z.number().optional(),
   longitude: z.number().optional(),

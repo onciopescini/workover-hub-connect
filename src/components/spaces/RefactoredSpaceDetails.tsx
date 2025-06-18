@@ -3,45 +3,27 @@ import { useFormContext } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SpaceFormData } from "@/schemas/spaceSchema";
+import { 
+  WORKSPACE_FEATURES_OPTIONS, 
+  AMENITIES_OPTIONS, 
+  SEATING_TYPES_OPTIONS,
+  IDEAL_GUEST_OPTIONS,
+  EVENT_FRIENDLY_OPTIONS
+} from "@/types/space";
 
-const WORK_ENVIRONMENTS = [
-  { value: "controlled", label: "Controlled (Quiet, focused environment)" },
-  { value: "shared", label: "Shared (Some background activity)" },
-  { value: "open", label: "Open (Dynamic, social environment)" },
+const WORK_ENVIRONMENT_OPTIONS = [
+  { value: "controlled", label: "Controlled", description: "Quiet conversations allowed" },
+  { value: "shared", label: "Shared", description: "Open discussions and calls welcome" },
+  { value: "open", label: "Open", description: "Flexible environment" }
 ];
 
-const CONFIRMATION_TYPES = [
-  { value: "instant", label: "Instant Booking" },
-  { value: "host_approval", label: "Host Approval Required" },
-];
-
-const WORKSPACE_FEATURES = [
-  "High-Speed WiFi", "Printer Access", "Whiteboard", "Projector", 
-  "Video Conferencing", "Adjustable Desk", "Monitor", "Natural Light"
-];
-
-const AMENITIES = [
-  "Coffee/Tea", "Kitchen Access", "Parking", "Security", 
-  "Air Conditioning", "Heating", "Phone Booth", "Reception"
-];
-
-const SEATING_TYPES = [
-  "Desk Chair", "Standing Desk", "Lounge Chair", "Sofa", 
-  "Bean Bag", "Conference Table", "Bar Stool", "Floor Cushions"
-];
-
-const IDEAL_GUEST_TAGS = [
-  "Freelancer", "Startup", "Remote Worker", "Creative", 
-  "Developer", "Designer", "Writer", "Consultant"
-];
-
-const EVENT_FRIENDLY_TAGS = [
-  "Workshop", "Meetup", "Networking", "Training", 
-  "Presentation", "Brainstorming", "Team Building", "Conference"
+const CONFIRMATION_TYPE_OPTIONS = [
+  { value: "instant", label: "Instant", description: "Bookings are automatically confirmed" },
+  { value: "host_approval", label: "Host Approval", description: "You'll need to approve each booking" }
 ];
 
 export const RefactoredSpaceDetails = () => {
@@ -65,13 +47,16 @@ export const RefactoredSpaceDetails = () => {
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select environment" />
+                      <SelectValue placeholder="Select work environment" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {WORK_ENVIRONMENTS.map((env) => (
-                      <SelectItem key={env.value} value={env.value}>
-                        {env.label}
+                    {WORK_ENVIRONMENT_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div>
+                          <div className="font-medium">{option.label}</div>
+                          <div className="text-sm text-gray-500">{option.description}</div>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -119,9 +104,12 @@ export const RefactoredSpaceDetails = () => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {CONFIRMATION_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                  {CONFIRMATION_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div>
+                        <div className="font-medium">{option.label}</div>
+                        <div className="text-sm text-gray-500">{option.description}</div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -138,26 +126,33 @@ export const RefactoredSpaceDetails = () => {
             <FormItem>
               <FormLabel>Workspace Features</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {WORKSPACE_FEATURES.map((feature) => (
-                  <FormItem key={feature} className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(feature)}
-                        onCheckedChange={(checked) => {
-                          const updatedValue = checked
-                            ? [...(field.value || []), feature]
-                            : field.value?.filter((value) => value !== feature) || [];
-                          field.onChange(updatedValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      {feature}
-                    </FormLabel>
-                  </FormItem>
+                {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
+                  <FormField
+                    key={feature}
+                    control={form.control}
+                    name="workspace_features"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(feature)}
+                            onCheckedChange={(checked) => {
+                              return checked
+                                ? field.onChange([...field.value, feature])
+                                : field.onChange(
+                                    field.value?.filter((value) => value !== feature)
+                                  );
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          {feature}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 ))}
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -169,26 +164,33 @@ export const RefactoredSpaceDetails = () => {
             <FormItem>
               <FormLabel>Amenities</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {AMENITIES.map((amenity) => (
-                  <FormItem key={amenity} className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(amenity)}
-                        onCheckedChange={(checked) => {
-                          const updatedValue = checked
-                            ? [...(field.value || []), amenity]
-                            : field.value?.filter((value) => value !== amenity) || [];
-                          field.onChange(updatedValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      {amenity}
-                    </FormLabel>
-                  </FormItem>
+                {AMENITIES_OPTIONS.map((amenity) => (
+                  <FormField
+                    key={amenity}
+                    control={form.control}
+                    name="amenities"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(amenity)}
+                            onCheckedChange={(checked) => {
+                              return checked
+                                ? field.onChange([...field.value, amenity])
+                                : field.onChange(
+                                    field.value?.filter((value) => value !== amenity)
+                                  );
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          {amenity}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 ))}
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -200,26 +202,33 @@ export const RefactoredSpaceDetails = () => {
             <FormItem>
               <FormLabel>Seating Types</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {SEATING_TYPES.map((seating) => (
-                  <FormItem key={seating} className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(seating)}
-                        onCheckedChange={(checked) => {
-                          const updatedValue = checked
-                            ? [...(field.value || []), seating]
-                            : field.value?.filter((value) => value !== seating) || [];
-                          field.onChange(updatedValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      {seating}
-                    </FormLabel>
-                  </FormItem>
+                {SEATING_TYPES_OPTIONS.map((seating) => (
+                  <FormField
+                    key={seating}
+                    control={form.control}
+                    name="seating_types"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(seating)}
+                            onCheckedChange={(checked) => {
+                              return checked
+                                ? field.onChange([...field.value, seating])
+                                : field.onChange(
+                                    field.value?.filter((value) => value !== seating)
+                                  );
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          {seating}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 ))}
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -229,28 +238,35 @@ export const RefactoredSpaceDetails = () => {
           name="ideal_guest_tags"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Ideal for</FormLabel>
+              <FormLabel>Ideal Guest Types</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {IDEAL_GUEST_TAGS.map((tag) => (
-                  <FormItem key={tag} className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(tag)}
-                        onCheckedChange={(checked) => {
-                          const updatedValue = checked
-                            ? [...(field.value || []), tag]
-                            : field.value?.filter((value) => value !== tag) || [];
-                          field.onChange(updatedValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      {tag}
-                    </FormLabel>
-                  </FormItem>
+                {IDEAL_GUEST_OPTIONS.map((guest) => (
+                  <FormField
+                    key={guest}
+                    control={form.control}
+                    name="ideal_guest_tags"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(guest)}
+                            onCheckedChange={(checked) => {
+                              return checked
+                                ? field.onChange([...field.value, guest])
+                                : field.onChange(
+                                    field.value?.filter((value) => value !== guest)
+                                  );
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          {guest}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 ))}
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -260,28 +276,35 @@ export const RefactoredSpaceDetails = () => {
           name="event_friendly_tags"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Event Friendly</FormLabel>
+              <FormLabel>Event Friendly Tags</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {EVENT_FRIENDLY_TAGS.map((tag) => (
-                  <FormItem key={tag} className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(tag)}
-                        onCheckedChange={(checked) => {
-                          const updatedValue = checked
-                            ? [...(field.value || []), tag]
-                            : field.value?.filter((value) => value !== tag) || [];
-                          field.onChange(updatedValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="text-sm font-normal">
-                      {tag}
-                    </FormLabel>
-                  </FormItem>
+                {EVENT_FRIENDLY_OPTIONS.map((event) => (
+                  <FormField
+                    key={event}
+                    control={form.control}
+                    name="event_friendly_tags"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value?.includes(event)}
+                            onCheckedChange={(checked) => {
+                              return checked
+                                ? field.onChange([...field.value, event])
+                                : field.onChange(
+                                    field.value?.filter((value) => value !== event)
+                                  );
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">
+                          {event}
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
                 ))}
               </div>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -291,7 +314,7 @@ export const RefactoredSpaceDetails = () => {
           name="rules"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Space Rules</FormLabel>
+              <FormLabel>Space Rules (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Any specific rules or guidelines for using this space..."

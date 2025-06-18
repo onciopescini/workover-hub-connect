@@ -33,7 +33,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([]);
 
-  // Default availability data
+  // Default availability data with required enabled property
   const defaultAvailability = {
     recurring: {
       monday: { enabled: false, slots: [] },
@@ -229,11 +229,28 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         throw new Error("You must be logged in to create a space");
       }
 
-      // Prepare data for database insertion
+      // Prepare data for database insertion - ensure proper typing
       const spaceData = {
-        ...data,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        max_capacity: data.max_capacity,
+        workspace_features: data.workspace_features,
+        work_environment: data.work_environment,
+        amenities: data.amenities,
+        seating_types: data.seating_types,
+        price_per_hour: data.price_per_hour,
+        price_per_day: data.price_per_day,
+        address: data.address,
+        latitude: data.latitude,
+        longitude: data.longitude,
         photos: photoPreviewUrls,
-        availability: JSON.parse(JSON.stringify(data.availability)),
+        rules: data.rules,
+        ideal_guest_tags: data.ideal_guest_tags,
+        event_friendly_tags: data.event_friendly_tags,
+        confirmation_type: data.confirmation_type,
+        availability: JSON.stringify(data.availability),
+        published: data.published,
         host_id: user.id,
       };
       
