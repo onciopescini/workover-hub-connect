@@ -74,13 +74,17 @@ export const validateBookingSlotWithLock = async (
       throw error;
     }
 
-    // Type-safe parsing of JSON response
-    const result = data as ValidationResult;
-    return {
-      valid: result.valid,
-      conflicts: result.conflicts || [],
-      message: result.message
-    };
+    // Safe parsing of JSON response
+    if (data && typeof data === 'object') {
+      const result = data as any;
+      return {
+        valid: Boolean(result.valid),
+        conflicts: Array.isArray(result.conflicts) ? result.conflicts : [],
+        message: String(result.message || 'Unknown response')
+      };
+    }
+
+    throw new Error('Invalid response format from validation RPC');
   } catch (error) {
     console.error('Booking validation failed:', error);
     throw error;
@@ -105,7 +109,7 @@ export const getAlternativeTimeSlots = async (
       return [];
     }
 
-    return (data as string[]) || [];
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.warn('Failed to get alternative slots:', error);
     return [];
