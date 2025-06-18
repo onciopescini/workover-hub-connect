@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -47,16 +46,16 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     exceptions: []
   };
 
-  // Initialize form with react-hook-form
+  // Initialize form with react-hook-form - use correct default values that match database types
   const form = useForm<SpaceFormData>({
     resolver: zodResolver(SpaceFormSchema),
     defaultValues: {
       title: "",
       description: "",
-      category: "home",
+      category: "home", // Database enum value
       max_capacity: 1,
       workspace_features: [],
-      work_environment: "controlled",
+      work_environment: "controlled", // Database enum value
       amenities: [],
       seating_types: [],
       price_per_hour: 0,
@@ -229,7 +228,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         throw new Error("You must be logged in to create a space");
       }
 
-      // Prepare data for database insertion - ensure proper typing
+      // Prepare data for database insertion - ensure proper typing and structure
       const spaceData = {
         title: data.title,
         description: data.description,
@@ -249,7 +248,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         ideal_guest_tags: data.ideal_guest_tags,
         event_friendly_tags: data.event_friendly_tags,
         confirmation_type: data.confirmation_type,
-        availability: JSON.stringify(data.availability),
+        availability: JSON.stringify(data.availability), // Convert to JSON string for database
         published: data.published,
         host_id: user.id,
       };

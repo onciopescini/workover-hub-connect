@@ -7,14 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 
-const SPACE_CATEGORIES = [
-  { value: "home", label: "Home Office" },
-  { value: "office", label: "Office Space" },
-  { value: "studio", label: "Studio" },
-  { value: "cafe", label: "Cafe" },
-  { value: "coworking", label: "Coworking Space" },
-  { value: "meeting_room", label: "Meeting Room" },
-  { value: "other", label: "Other" },
+// Use the correct database enum values
+const CATEGORY_OPTIONS = [
+  { value: "home", label: "Home", description: "Residential space" },
+  { value: "office", label: "Office", description: "Professional office space" },
+  { value: "studio", label: "Studio", description: "Creative studio space" },
+  { value: "cafe", label: "Cafe", description: "Cafe or restaurant space" },
+  { value: "coworking", label: "Coworking", description: "Shared coworking space" },
+  { value: "meeting_room", label: "Meeting Room", description: "Dedicated meeting room" },
+  { value: "other", label: "Other", description: "Other type of space" }
 ];
 
 export const RefactoredBasicInformation = () => {
@@ -35,9 +36,9 @@ export const RefactoredBasicInformation = () => {
                 Space Title <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="Beautiful coworking space in downtown" 
-                  {...field} 
+                <Input
+                  placeholder="Enter a descriptive title for your space"
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
@@ -55,7 +56,7 @@ export const RefactoredBasicInformation = () => {
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe your space, what makes it special, and what kind of work it's perfect for..."
+                  placeholder="Describe your space, its atmosphere, and what makes it special..."
                   rows={4}
                   {...field}
                 />
@@ -76,13 +77,16 @@ export const RefactoredBasicInformation = () => {
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder="Select space category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {SPACE_CATEGORIES.map((category) => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div>
+                        <div className="font-medium">{option.label}</div>
+                        <div className="text-sm text-gray-500">{option.description}</div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
