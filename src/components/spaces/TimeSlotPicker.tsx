@@ -2,9 +2,10 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, AlertCircle } from 'lucide-react';
-import { generateTimeSlots, TimeSlot } from '@/lib/availability-utils';
+import { Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { generateTimeSlots, TimeSlot, checkRealTimeConflicts } from '@/lib/availability-utils';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface TimeSlotPickerProps {
   selectedDate: Date | undefined;
@@ -13,6 +14,8 @@ interface TimeSlotPickerProps {
   selectedEndTime: string;
   onTimeSelection: (startTime: string, endTime: string) => void;
   loading?: boolean;
+  spaceId: string;
+  onRefresh?: () => void;
 }
 
 export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
@@ -21,10 +24,13 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
   selectedStartTime,
   selectedEndTime,
   onTimeSelection,
-  loading = false
+  loading = false,
+  spaceId,
+  onRefresh
 }) => {
   const [dragStart, setDragStart] = React.useState<string | null>(null);
   const [dragEnd, setDragEnd] = React.useState<string | null>(null);
+  const [conflictCheckLoading, setConflictCheckLoading] = React.useState(false);
 
   const allTimeSlots = generateTimeSlots();
 
@@ -63,8 +69,8 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
     }
   };
 
-  const handleSlotMouseUp = () => {
-    if (dragStart && dragEnd) {
+  const handleSlotMouseUp = async () => {
+    if (dragStart && dragEnd && selectedDate) {
       const start = dragStart < dragEnd ? dragStart : dragEnd;
       const end = dragStart < dragEnd ? dragEnd : dragStart;
       
@@ -74,23 +80,73 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
       
       if (endIndex < allTimeSlots.length) {
         const actualEndTime = allTimeSlots[endIndex];
-        onTimeSelection(start, actualEndTime);
+        
+        // Real-time conflict check prima della selezione
+        setConflictCheckLoading(true);
+        try {
+          const { hasConflict } = await checkRealTimeConflicts(
+            spaceId,
+            format(selectedDate, 'yyyy-MM-dd'),
+            start,
+            actualEndTime
+          );
+
+          if (hasConflict) {
+            // Mostra notifica di conflitto
+            alert('Questo slot è stato appena prenotato da un altro utente. Aggiorna la disponibilità.');
+            if (onRefresh) {
+              onRefresh();
+            }
+          } else {
+            onTimeSelection(start, actualEndTime);
+          }
+        } catch (error) {
+          console.error('Error checking conflicts:', error);
+          // Procedi comunque con la selezione
+          onTimeSelection(start, actualEndTime);
+        } finally {
+          setConflictCheckLoading(false);
+        }
       }
     }
     setDragStart(null);
     setDragEnd(null);
   };
 
-  const handleSlotClick = (time: string) => {
+  const handleSlotClick = async (time: string) => {
     if (getSlotStatus(time) !== 'available') {
       return;
     }
 
-    // Se non c'è selezione, seleziona uno slot di 1 ora
-    if (!selectedStartTime) {
+    // Se non c'è selezione, seleziona uno slot di 1 ora con conflict check
+    if (!selectedStartTime && selectedDate) {
       const startIndex = allTimeSlots.indexOf(time);
       if (startIndex < allTimeSlots.length - 1) {
-        onTimeSelection(time, allTimeSlots[startIndex + 1]);
+        const endTime = allTimeSlots[startIndex + 1];
+        
+        setConflictCheckLoading(true);
+        try {
+          const { hasConflict } = await checkRealTimeConflicts(
+            spaceId,
+            format(selectedDate, 'yyyy-MM-dd'),
+            time,
+            endTime
+          );
+
+          if (hasConflict) {
+            alert('Questo slot è stato appena prenotato. Aggiorna la disponibilità.');
+            if (onRefresh) {
+              onRefresh();
+            }
+          } else {
+            onTimeSelection(time, endTime);
+          }
+        } catch (error) {
+          console.error('Error checking conflicts:', error);
+          onTimeSelection(time, endTime);
+        } finally {
+          setConflictCheckLoading(false);
+        }
       }
     } else {
       // Se c'è già una selezione, resetta
@@ -120,18 +176,33 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-gray-900">Seleziona orario</h3>
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-200 border border-green-300 rounded"></div>
-            <span>Disponibile</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-200 border border-red-300 rounded"></div>
-            <span>Occupato</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-indigo-200 border border-indigo-300 rounded"></div>
-            <span>Selezionato</span>
+        <div className="flex items-center gap-2">
+          {/* Refresh button for real-time updates */}
+          {onRefresh && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              className="h-8 w-8 p-0"
+              disabled={loading || conflictCheckLoading}
+            >
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </Button>
+          )}
+          
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-green-200 border border-green-300 rounded"></div>
+              <span>Disponibile</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-red-200 border border-red-300 rounded"></div>
+              <span>Occupato</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-indigo-200 border border-indigo-300 rounded"></div>
+              <span>Selezionato</span>
+            </div>
           </div>
         </div>
       </div>
@@ -154,9 +225,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
               key={time}
               variant="outline"
               size="sm"
-              disabled={!isAvailable}
+              disabled={!isAvailable || conflictCheckLoading}
               className={cn(
-                "h-10 text-xs transition-all duration-150 cursor-pointer select-none",
+                "h-10 text-xs transition-all duration-150 cursor-pointer select-none relative",
                 {
                   'bg-green-50 border-green-200 text-green-700 hover:bg-green-100': 
                     isAvailable && !isSelected && !isInDragRange,
@@ -174,6 +245,11 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
               onClick={() => handleSlotClick(time)}
             >
               {time}
+              {conflictCheckLoading && isSelected && (
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                  <div className="w-3 h-3 border border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </Button>
           );
         })}
@@ -202,7 +278,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
       )}
 
       <div className="text-xs text-gray-500">
-        💡 Trascina per selezionare un intervallo di tempo, oppure clicca per slot singoli
+        💡 Trascina per selezionare un intervallo di tempo, oppure clicca per slot singoli.
+        <br />
+        🔄 La disponibilità viene verificata in tempo reale prima della conferma.
       </div>
     </div>
   );

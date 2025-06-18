@@ -48,9 +48,9 @@ export const SpaceDetailContent = () => {
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [existingBookings, setExistingBookings] = useState<any[]>([]);
 
-  // Hook per availability in tempo reale
+  // Hook per availability in tempo reale con refresh function
   const currentMonth = selectedDate || new Date();
-  const { availability, loading: availabilityLoading } = useSpaceAvailability(
+  const { availability, loading: availabilityLoading, refreshAvailability } = useSpaceAvailability(
     id || '', 
     currentMonth
   );
@@ -528,7 +528,7 @@ export const SpaceDetailContent = () => {
             </div>
           </div>
 
-          {/* Booking sidebar - UPDATED */}
+          {/* Booking sidebar - UPDATED with spaceId and refresh */}
           <div className="lg:col-span-1">
             <Card className="sticky top-4">
               <CardContent className="p-6">
@@ -599,7 +599,7 @@ export const SpaceDetailContent = () => {
                       </Popover>
                     </div>
 
-                    {/* Interactive Time Slot Picker */}
+                    {/* Interactive Time Slot Picker with real-time updates */}
                     <TimeSlotPicker
                       selectedDate={selectedDate}
                       availableSlots={selectedDateAvailability.availableSlots}
@@ -607,6 +607,8 @@ export const SpaceDetailContent = () => {
                       selectedEndTime={selectedEndTime}
                       onTimeSelection={handleTimeSelection}
                       loading={availabilityLoading}
+                      spaceId={id || ''}
+                      onRefresh={refreshAvailability}
                     />
 
                     {/* Show warning if time conflict */}
