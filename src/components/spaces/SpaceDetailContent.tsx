@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProgressiveImage } from '@/components/ui/ProgressiveImage';
 import ReportDialog from '@/components/reports/ReportDialog';
 import PaymentButton from '@/components/payments/PaymentButton';
 import { BookingCalculator } from './BookingCalculator';
+import { TimeSlotPicker } from './TimeSlotPicker';
+import { EnhancedCalendar } from '@/components/ui/enhanced-calendar';
+import { useSpaceAvailability } from '@/lib/availability-utils';
 import { 
   MapPin, 
   Star, 
@@ -47,13 +48,20 @@ export const SpaceDetailContent = () => {
   const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
   const [existingBookings, setExistingBookings] = useState<any[]>([]);
 
-  // Generate time slots (9 AM to 6 PM in 1-hour intervals)
-  const timeSlots = useMemo(() => 
-    Array.from({ length: 10 }, (_, i) => {
-      const hour = 9 + i;
-      return `${hour.toString().padStart(2, '0')}:00`;
-    }), []
+  // Hook per availability in tempo reale
+  const currentMonth = selectedDate || new Date();
+  const { availability, loading: availabilityLoading } = useSpaceAvailability(
+    id || '', 
+    currentMonth
   );
+
+  // Ottieni availability per la data selezionata
+  const selectedDateAvailability = useMemo(() => {
+    if (!selectedDate || !space || !availability) return { availableSlots: [] };
+    
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    return availability[dateStr] || { availableSlots: [] };
+  }, [selectedDate, availability, space]);
 
   // Memoized authorization check
   const canUserBook = useMemo(() => {
@@ -186,6 +194,12 @@ export const SpaceDetailContent = () => {
   }, [selectedDate, selectedStartTime, selectedEndTime, space]);
 
   const bookingCost = calculateBookingCost();
+
+  // Handle time selection from TimeSlotPicker
+  const handleTimeSelection = useCallback((startTime: string, endTime: string) => {
+    setSelectedStartTime(startTime);
+    setSelectedEndTime(endTime);
+  }, []);
 
   const handleBookingCreation = useCallback(async () => {
     if (!selectedDate || !space || !authState.user) {
@@ -514,7 +528,7 @@ export const SpaceDetailContent = () => {
             </div>
           </div>
 
-          {/* Booking sidebar */}
+          {/* Booking sidebar - UPDATED */}
           <div className="lg:col-span-1">
             <Card className="sticky top-4">
               <CardContent className="p-6">
@@ -548,11 +562,11 @@ export const SpaceDetailContent = () => {
                   )}
                 </div>
 
-                {/* Booking section */}
+                {/* Enhanced Booking section */}
                 {canUserBook ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Seleziona data</label>
+                      <label className="block text-sm font-medium mb-3">Seleziona data</label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
@@ -567,53 +581,33 @@ export const SpaceDetailContent = () => {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
+                          <EnhancedCalendar
                             mode="single"
                             selected={selectedDate}
-                            onSelect={setSelectedDate}
+                            onSelect={(date) => {
+                              setSelectedDate(date);
+                              // Reset time selection when date changes
+                              setSelectedStartTime('');
+                              setSelectedEndTime('');
+                            }}
+                            availability={availability}
+                            loading={availabilityLoading}
                             disabled={(date) => date < new Date()}
                             initialFocus
-                            className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
                     </div>
 
-                    {/* Time selection */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Orario inizio</label>
-                        <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Inizio" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map((time) => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Orario fine</label>
-                        <Select value={selectedEndTime} onValueChange={setSelectedEndTime}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Fine" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {timeSlots.map((time) => (
-                              <SelectItem 
-                                key={time} 
-                                value={time}
-                                disabled={selectedStartTime && time <= selectedStartTime}
-                              >
-                                {time}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                    {/* Interactive Time Slot Picker */}
+                    <TimeSlotPicker
+                      selectedDate={selectedDate}
+                      availableSlots={selectedDateAvailability.availableSlots}
+                      selectedStartTime={selectedStartTime}
+                      selectedEndTime={selectedEndTime}
+                      onTimeSelection={handleTimeSelection}
+                      loading={availabilityLoading}
+                    />
 
                     {/* Show warning if time conflict */}
                     {hasTimeConflict && selectedStartTime && selectedEndTime && (
