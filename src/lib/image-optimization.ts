@@ -100,7 +100,11 @@ export const getImageProcessingJob = async (jobId: string): Promise<ImageProcess
       throw error;
     }
 
-    return data;
+    // Cast the status to the correct type
+    return {
+      ...data,
+      status: data.status as 'pending' | 'processing' | 'completed' | 'failed'
+    } as ImageProcessingJob;
   } catch (error) {
     imageLogger.error('Failed to get image processing job', error instanceof Error ? error : new Error('Unknown error'));
     return null;
@@ -118,7 +122,11 @@ export const getSpaceImageJobs = async (spaceId: string): Promise<ImageProcessin
 
     if (error) throw error;
 
-    return data || [];
+    // Cast the status to the correct type for each item
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as 'pending' | 'processing' | 'completed' | 'failed'
+    })) as ImageProcessingJob[];
   } catch (error) {
     imageLogger.error('Failed to get space image jobs', error instanceof Error ? error : new Error('Unknown error'));
     return [];
@@ -181,7 +189,14 @@ export const subscribeToImageProcessingUpdates = (
           jobId,
           status: payload.new.status
         });
-        callback(payload.new as ImageProcessingJob);
+        
+        // Cast the status to the correct type
+        const updatedJob = {
+          ...payload.new,
+          status: payload.new.status as 'pending' | 'processing' | 'completed' | 'failed'
+        } as ImageProcessingJob;
+        
+        callback(updatedJob);
       }
     )
     .subscribe();

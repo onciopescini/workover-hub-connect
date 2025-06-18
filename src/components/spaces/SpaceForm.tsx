@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ import { LocationPricing } from "./LocationPricing";
 import { AvailabilityScheduler } from "./AvailabilityScheduler";
 import { Photos } from "./Photos";
 import { PublishingOptions } from "./PublishingOptions";
+import { startImageOptimization } from "@/lib/image-optimization";
 import {
   type Space,
   type SpaceInsert
