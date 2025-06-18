@@ -26,36 +26,20 @@ export const RefactoredAvailabilityScheduler = () => {
               <AvailabilityScheduler
                 availability={field.value}
                 onAvailabilityChange={(availability) => {
-                  // Create properly typed normalized availability with explicit casting
+                  // Create properly typed normalized availability ensuring required properties
+                  const createDaySchedule = (dayData: any): DaySchedule => ({
+                    enabled: Boolean(dayData?.enabled ?? false),
+                    slots: dayData?.slots ?? []
+                  });
+
                   const normalizedRecurring: WeeklySchedule = {
-                    monday: {
-                      enabled: Boolean(availability.recurring.monday?.enabled ?? false),
-                      slots: availability.recurring.monday?.slots ?? []
-                    } as DaySchedule,
-                    tuesday: {
-                      enabled: Boolean(availability.recurring.tuesday?.enabled ?? false),
-                      slots: availability.recurring.tuesday?.slots ?? []
-                    } as DaySchedule,
-                    wednesday: {
-                      enabled: Boolean(availability.recurring.wednesday?.enabled ?? false),
-                      slots: availability.recurring.wednesday?.slots ?? []
-                    } as DaySchedule,
-                    thursday: {
-                      enabled: Boolean(availability.recurring.thursday?.enabled ?? false),
-                      slots: availability.recurring.thursday?.slots ?? []
-                    } as DaySchedule,
-                    friday: {
-                      enabled: Boolean(availability.recurring.friday?.enabled ?? false),
-                      slots: availability.recurring.friday?.slots ?? []
-                    } as DaySchedule,
-                    saturday: {
-                      enabled: Boolean(availability.recurring.saturday?.enabled ?? false),
-                      slots: availability.recurring.saturday?.slots ?? []
-                    } as DaySchedule,
-                    sunday: {
-                      enabled: Boolean(availability.recurring.sunday?.enabled ?? false),
-                      slots: availability.recurring.sunday?.slots ?? []
-                    } as DaySchedule
+                    monday: createDaySchedule(availability.recurring.monday),
+                    tuesday: createDaySchedule(availability.recurring.tuesday),
+                    wednesday: createDaySchedule(availability.recurring.wednesday),
+                    thursday: createDaySchedule(availability.recurring.thursday),
+                    friday: createDaySchedule(availability.recurring.friday),
+                    saturday: createDaySchedule(availability.recurring.saturday),
+                    sunday: createDaySchedule(availability.recurring.sunday)
                   };
 
                   const normalizedAvailability: AvailabilityData = {
