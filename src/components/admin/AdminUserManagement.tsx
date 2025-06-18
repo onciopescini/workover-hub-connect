@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { getAllUsers, suspendUser, reactivateUser, createWarning, getUserWarnings } from "@/lib/admin-utils";
+
+import { useState, useMemo } from "react";
 import { AdminProfile, AdminWarning, WARNING_TYPES, WARNING_SEVERITY } from "@/types/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Ban, CheckCircle, Search, UserX, MessageSquare, Eye } from "lucide-react";
+import { Search, Ban, CheckCircle, MessageSquare, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { 
+  useUsersQuery, 
+  useSuspendUserMutation, 
+  useReactivateUserMutation, 
+  useCreateWarningMutation,
+  useUserWarningsQuery 
+} from "@/hooks/queries/useUsersQuery";
 
 export function AdminUserManagement() {
   const { authState } = useAuth();
-  const [users, setUsers] = useState<AdminProfile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<AdminProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: users = [], isLoading, error } = useUsersQuery();
+  const suspendUserMutation = useSuspendUserMutation();
+  const reactivateUserMutation = useReactivateUserMutation();
+  const createWarningMutation = useCreateWarningMutation();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -34,40 +42,20 @@ export function AdminUserManagement() {
 
   // Warnings view dialog state
   const [warningsDialog, setWarningsDialog] = useState(false);
-  const [userWarnings, setUserWarnings] = useState<AdminWarning[]>([]);
+  const [warningsUserId, setWarningsUserId] = useState<string>("");
+  
+  // Query for user warnings (only when dialog is open)
+  const { data: userWarnings = [] } = useUserWarningsQuery(warningsUserId);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, filterRole, filterStatus]);
-
-  const fetchUsers = async () => {
-    console.log("AdminUserManagement: Starting to fetch users...");
-    setIsLoading(true);
-    try {
-      const usersData = await getAllUsers();
-      console.log("AdminUserManagement: Received users:", usersData.length, "users");
-      console.log("AdminUserManagement: Users data:", usersData);
-      setUsers(usersData);
-    } catch (error) {
-      console.error("AdminUserManagement: Error fetching users:", error);
-      toast.error("Errore nel caricamento degli utenti");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filterUsers = () => {
-    console.log("AdminUserManagement: Filtering users...");
-    console.log("AdminUserManagement: Search term:", searchTerm);
-    console.log("AdminUserManagement: Filter role:", filterRole);
-    console.log("AdminUserManagement: Filter status:", filterStatus);
-    console.log("AdminUserManagement: Total users to filter:", users.length);
+  // Filter users with useMemo for performance
+  const filteredUsers = useMemo(() => {
+    console.log("Filtering users with React Query...");
+    console.log("Search term:", searchTerm);
+    console.log("Filter role:", filterRole);
+    console.log("Filter status:", filterStatus);
+    console.log("Total users to filter:", users.length);
     
-    let filtered = users.filter(user => {
+    const filtered = users.filter(user => {
       const matchesSearch = 
         user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,81 +66,52 @@ export function AdminUserManagement() {
         (filterStatus === "suspended" && user.is_suspended) ||
         (filterStatus === "active" && !user.is_suspended);
 
-      console.log(`User ${user.first_name} ${user.last_name}:`, {
-        matchesSearch,
-        matchesRole,
-        matchesStatus,
-        role: user.role,
-        suspended: user.is_suspended
-      });
-
       return matchesSearch && matchesRole && matchesStatus;
     });
 
-    console.log("AdminUserManagement: Filtered users:", filtered.length, "users");
-    setFilteredUsers(filtered);
-  };
+    console.log("Filtered users:", filtered.length);
+    return filtered;
+  }, [users, searchTerm, filterRole, filterStatus]);
 
   const handleSuspendUser = async (userId: string) => {
     const reason = prompt("Inserisci il motivo della sospensione:");
     if (!reason) return;
 
-    try {
-      await suspendUser(userId, reason);
-      await fetchUsers();
-    } catch (error) {
-      console.error("Error suspending user:", error);
-    }
+    await suspendUserMutation.mutateAsync({ userId, reason });
   };
 
   const handleReactivateUser = async (userId: string) => {
-    try {
-      await reactivateUser(userId);
-      await fetchUsers();
-    } catch (error) {
-      console.error("Error reactivating user:", error);
-    }
+    await reactivateUserMutation.mutateAsync(userId);
   };
 
   const handleSendWarning = async () => {
     if (!selectedUserId || !warningForm.title || !warningForm.message) {
-      toast.error("Compila tutti i campi obbligatori");
       return;
     }
 
-    try {
-      await createWarning({
-        user_id: selectedUserId,
-        admin_id: authState.user!.id,
-        warning_type: warningForm.warning_type as keyof typeof WARNING_TYPES,
-        title: warningForm.title,
-        message: warningForm.message,
-        severity: warningForm.severity as keyof typeof WARNING_SEVERITY,
-        is_active: true
-      });
+    await createWarningMutation.mutateAsync({
+      user_id: selectedUserId,
+      admin_id: authState.user!.id,
+      warning_type: warningForm.warning_type,
+      title: warningForm.title,
+      message: warningForm.message,
+      severity: warningForm.severity,
+      is_active: true
+    });
 
-      setWarningDialog(false);
-      setWarningForm({
-        warning_type: "behavior",
-        title: "",
-        message: "",
-        severity: "medium"
-      });
-      setSelectedUserId("");
-    } catch (error) {
-      console.error("Error sending warning:", error);
-    }
+    setWarningDialog(false);
+    setWarningForm({
+      warning_type: "behavior",
+      title: "",
+      message: "",
+      severity: "medium"
+    });
+    setSelectedUserId("");
   };
 
-  const handleViewWarnings = async (userId: string) => {
-    try {
-      const warnings = await getUserWarnings(userId);
-      setUserWarnings(warnings);
-      setWarningsDialog(true);
-    } catch (error) {
-      console.error("Error fetching user warnings:", error);
-      toast.error("Errore nel caricamento dei warning");
-    }
+  const handleViewWarnings = (userId: string) => {
+    setWarningsUserId(userId);
+    setWarningsDialog(true);
   };
 
   const getRoleColor = (role: string) => {
@@ -178,7 +137,13 @@ export function AdminUserManagement() {
     return <div className="text-center py-8">Caricamento utenti...</div>;
   }
 
-  console.log("AdminUserManagement: Rendering with users:", users.length, "filtered:", filteredUsers.length);
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Errore nel caricamento degli utenti</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -228,7 +193,7 @@ export function AdminUserManagement() {
         </CardContent>
       </Card>
 
-      {/* Debug Info */}
+      {/* Empty states */}
       {users.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
@@ -372,8 +337,11 @@ export function AdminUserManagement() {
                         <Button variant="outline" onClick={() => setWarningDialog(false)}>
                           Annulla
                         </Button>
-                        <Button onClick={handleSendWarning}>
-                          Invia Warning
+                        <Button 
+                          onClick={handleSendWarning}
+                          disabled={createWarningMutation.isPending}
+                        >
+                          {createWarningMutation.isPending ? "Invio..." : "Invia Warning"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -384,6 +352,7 @@ export function AdminUserManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleReactivateUser(user.id)}
+                      disabled={reactivateUserMutation.isPending}
                       className="text-green-600 hover:text-green-700"
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
@@ -394,6 +363,7 @@ export function AdminUserManagement() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleSuspendUser(user.id)}
+                      disabled={suspendUserMutation.isPending}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Ban className="w-4 h-4 mr-1" />

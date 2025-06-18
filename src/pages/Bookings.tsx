@@ -8,13 +8,13 @@ import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
 import { BookingCard } from "@/components/bookings/BookingCard";
 import { BookingTabs } from "@/components/bookings/BookingTabs";
 import { EmptyBookingsState } from "@/components/bookings/EmptyBookingsState";
-import { useBookingsFixed } from "@/hooks/useBookingsFixed";
-import { cancelBooking } from "@/lib/booking-utils";
-import { toast } from "sonner";
+import { useBookingsQuery, useCancelBookingMutation } from "@/hooks/queries/useBookingsQuery";
 
 export default function Bookings() {
   const { authState } = useAuth();
-  const { bookings, setBookings, isLoading } = useBookingsFixed();
+  const { data: bookings = [], isLoading, error } = useBookingsQuery();
+  const cancelBookingMutation = useCancelBookingMutation();
+  
   const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
@@ -22,7 +22,6 @@ export default function Bookings() {
   const [selectedBookingTitle, setSelectedBookingTitle] = useState<string>("");
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<BookingWithDetails | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
 
   // Filter bookings based on active tab
   useEffect(() => {
@@ -51,39 +50,41 @@ export default function Bookings() {
     setCancelDialogOpen(true);
   };
 
-  // Handle booking cancellation
+  // Handle booking cancellation using React Query mutation
   const handleCancelBooking = async (reason?: string) => {
     if (!bookingToCancel) return;
 
-    setIsCancelling(true);
+    const userRole = getUserRole(bookingToCancel);
+    
     try {
-      const userRole = getUserRole(bookingToCancel);
-      const result = await cancelBooking(
-        bookingToCancel.id, 
-        userRole === "host", 
+      await cancelBookingMutation.mutateAsync({
+        bookingId: bookingToCancel.id,
+        isHost: userRole === "host",
         reason
-      );
-
-      if (result.success) {
-        // Update the booking in the local state
-        setBookings(prev => prev.map(booking => 
-          booking.id === bookingToCancel.id 
-            ? { ...booking, status: 'cancelled' as const }
-            : booking
-        ));
-        setCancelDialogOpen(false);
-        setBookingToCancel(null);
-      }
+      });
+      
+      setCancelDialogOpen(false);
+      setBookingToCancel(null);
     } catch (error) {
-      console.error("Error cancelling booking:", error);
-      toast.error("Errore nella cancellazione della prenotazione");
-    } finally {
-      setIsCancelling(false);
+      // Error handling is done in the mutation
     }
   };
 
   if (authState.isLoading || isLoading) {
     return <LoadingScreen />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-8">
+            <p className="text-red-600">Errore nel caricamento delle prenotazioni</p>
+            <p className="text-sm text-gray-500 mt-2">Riprova più tardi</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -140,7 +141,7 @@ export default function Bookings() {
             onOpenChange={setCancelDialogOpen}
             booking={bookingToCancel}
             onConfirm={handleCancelBooking}
-            isLoading={isCancelling}
+            isLoading={cancelBookingMutation.isPending}
           />
         )}
       </div>
