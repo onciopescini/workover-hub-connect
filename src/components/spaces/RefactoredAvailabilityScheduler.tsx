@@ -26,41 +26,41 @@ export const RefactoredAvailabilityScheduler = () => {
               <AvailabilityScheduler
                 availability={field.value}
                 onAvailabilityChange={(availability) => {
-                  // Create properly typed normalized availability
+                  // Create properly typed normalized availability with explicit casting
                   const normalizedRecurring: WeeklySchedule = {
                     monday: {
-                      enabled: Boolean(availability.recurring.monday?.enabled || false),
-                      slots: availability.recurring.monday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.monday?.enabled ?? false),
+                      slots: availability.recurring.monday?.slots ?? []
+                    } as DaySchedule,
                     tuesday: {
-                      enabled: Boolean(availability.recurring.tuesday?.enabled || false),
-                      slots: availability.recurring.tuesday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.tuesday?.enabled ?? false),
+                      slots: availability.recurring.tuesday?.slots ?? []
+                    } as DaySchedule,
                     wednesday: {
-                      enabled: Boolean(availability.recurring.wednesday?.enabled || false),
-                      slots: availability.recurring.wednesday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.wednesday?.enabled ?? false),
+                      slots: availability.recurring.wednesday?.slots ?? []
+                    } as DaySchedule,
                     thursday: {
-                      enabled: Boolean(availability.recurring.thursday?.enabled || false),
-                      slots: availability.recurring.thursday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.thursday?.enabled ?? false),
+                      slots: availability.recurring.thursday?.slots ?? []
+                    } as DaySchedule,
                     friday: {
-                      enabled: Boolean(availability.recurring.friday?.enabled || false),
-                      slots: availability.recurring.friday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.friday?.enabled ?? false),
+                      slots: availability.recurring.friday?.slots ?? []
+                    } as DaySchedule,
                     saturday: {
-                      enabled: Boolean(availability.recurring.saturday?.enabled || false),
-                      slots: availability.recurring.saturday?.slots || []
-                    },
+                      enabled: Boolean(availability.recurring.saturday?.enabled ?? false),
+                      slots: availability.recurring.saturday?.slots ?? []
+                    } as DaySchedule,
                     sunday: {
-                      enabled: Boolean(availability.recurring.sunday?.enabled || false),
-                      slots: availability.recurring.sunday?.slots || []
-                    }
+                      enabled: Boolean(availability.recurring.sunday?.enabled ?? false),
+                      slots: availability.recurring.sunday?.slots ?? []
+                    } as DaySchedule
                   };
 
                   const normalizedAvailability: AvailabilityData = {
                     recurring: normalizedRecurring,
-                    exceptions: availability.exceptions || []
+                    exceptions: availability.exceptions ?? []
                   };
 
                   field.onChange(normalizedAvailability);
