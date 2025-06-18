@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AvailabilityScheduler } from "./AvailabilityScheduler";
 import { SpaceFormData } from "@/schemas/spaceSchema";
+import { type AvailabilityData, type DaySchedule, type WeeklySchedule } from "@/types/availability";
 
 export const RefactoredAvailabilityScheduler = () => {
   const form = useFormContext<SpaceFormData>();
@@ -25,19 +26,43 @@ export const RefactoredAvailabilityScheduler = () => {
               <AvailabilityScheduler
                 availability={field.value}
                 onAvailabilityChange={(availability) => {
-                  // Ensure enabled is always a boolean for each day
-                  const normalizedAvailability = {
-                    ...availability,
-                    recurring: Object.fromEntries(
-                      Object.entries(availability.recurring).map(([day, schedule]) => [
-                        day,
-                        {
-                          enabled: Boolean(schedule.enabled),
-                          slots: schedule.slots || []
-                        }
-                      ])
-                    )
+                  // Create properly typed normalized availability
+                  const normalizedRecurring: WeeklySchedule = {
+                    monday: {
+                      enabled: Boolean(availability.recurring.monday?.enabled || false),
+                      slots: availability.recurring.monday?.slots || []
+                    },
+                    tuesday: {
+                      enabled: Boolean(availability.recurring.tuesday?.enabled || false),
+                      slots: availability.recurring.tuesday?.slots || []
+                    },
+                    wednesday: {
+                      enabled: Boolean(availability.recurring.wednesday?.enabled || false),
+                      slots: availability.recurring.wednesday?.slots || []
+                    },
+                    thursday: {
+                      enabled: Boolean(availability.recurring.thursday?.enabled || false),
+                      slots: availability.recurring.thursday?.slots || []
+                    },
+                    friday: {
+                      enabled: Boolean(availability.recurring.friday?.enabled || false),
+                      slots: availability.recurring.friday?.slots || []
+                    },
+                    saturday: {
+                      enabled: Boolean(availability.recurring.saturday?.enabled || false),
+                      slots: availability.recurring.saturday?.slots || []
+                    },
+                    sunday: {
+                      enabled: Boolean(availability.recurring.sunday?.enabled || false),
+                      slots: availability.recurring.sunday?.slots || []
+                    }
                   };
+
+                  const normalizedAvailability: AvailabilityData = {
+                    recurring: normalizedRecurring,
+                    exceptions: availability.exceptions || []
+                  };
+
                   field.onChange(normalizedAvailability);
                 }}
                 isSubmitting={false}
