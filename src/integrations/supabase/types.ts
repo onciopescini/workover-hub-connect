@@ -1736,6 +1736,28 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_alternative_time_slots: {
+        Args: {
+          space_id_param: string
+          date_param: string
+          duration_hours_param: number
+        }
+        Returns: string[]
+      }
+      get_space_availability_optimized: {
+        Args: {
+          space_id_param: string
+          start_date_param: string
+          end_date_param: string
+        }
+        Returns: {
+          booking_date: string
+          start_time: string
+          end_time: string
+          status: string
+          user_id: string
+        }[]
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -1810,6 +1832,16 @@ export type Database = {
       update_review_visibility: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_booking_slot_with_lock: {
+        Args: {
+          space_id_param: string
+          date_param: string
+          start_time_param: string
+          end_time_param: string
+          user_id_param: string
+        }
+        Returns: Json
       }
     }
     Enums: {

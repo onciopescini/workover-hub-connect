@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format, parse, isWithinInterval, parseISO } from "date-fns";
@@ -14,6 +15,13 @@ export interface DayAvailability {
   date: string;
   status: 'available' | 'partial' | 'unavailable' | 'disabled';
   availableSlots: TimeSlot[];
+}
+
+// Interface for validation result
+interface ValidationResult {
+  valid: boolean;
+  conflicts: any[];
+  message: string;
 }
 
 // Cache per ottimizzare le performance
@@ -303,7 +311,7 @@ export const validateBookingSlotWithLock = async (
   startTime: string,
   endTime: string,
   userId: string
-): Promise<{ valid: boolean; conflicts: any[]; message: string }> => {
+): Promise<ValidationResult> => {
   try {
     const result = await rpcValidateBookingSlot(spaceId, date, startTime, endTime, userId);
     return {

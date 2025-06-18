@@ -45,6 +45,13 @@ const fallbackAvailabilityQuery = async (
   return data || [];
 };
 
+// Interface for validation result
+interface ValidationResult {
+  valid: boolean;
+  conflicts: any[];
+  message: string;
+}
+
 // RPC per validazione real-time con lock
 export const validateBookingSlotWithLock = async (
   spaceId: string,
@@ -52,7 +59,7 @@ export const validateBookingSlotWithLock = async (
   startTime: string,
   endTime: string,
   userId: string
-) => {
+): Promise<ValidationResult> => {
   try {
     const { data, error } = await supabase.rpc('validate_booking_slot_with_lock', {
       space_id_param: spaceId,
@@ -67,7 +74,13 @@ export const validateBookingSlotWithLock = async (
       throw error;
     }
 
-    return data;
+    // Type-safe parsing of JSON response
+    const result = data as ValidationResult;
+    return {
+      valid: result.valid,
+      conflicts: result.conflicts || [],
+      message: result.message
+    };
   } catch (error) {
     console.error('Booking validation failed:', error);
     throw error;
@@ -79,7 +92,7 @@ export const getAlternativeTimeSlots = async (
   spaceId: string,
   date: string,
   duration: number
-) => {
+): Promise<string[]> => {
   try {
     const { data, error } = await supabase.rpc('get_alternative_time_slots', {
       space_id_param: spaceId,
@@ -92,7 +105,7 @@ export const getAlternativeTimeSlots = async (
       return [];
     }
 
-    return data || [];
+    return (data as string[]) || [];
   } catch (error) {
     console.warn('Failed to get alternative slots:', error);
     return [];
