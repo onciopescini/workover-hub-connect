@@ -115,12 +115,8 @@ const PublicSpaces = () => {
 
   const handleSpaceClick = (spaceId: string) => {
     handleCardClick(spaceId);
-    // Navigate to the correct route based on authentication status
-    if (authState.isAuthenticated && authState.profile?.onboarding_completed) {
-      navigate(`/app/spaces/${spaceId}`);
-    } else {
-      navigate(`/spaces/${spaceId}`);
-    }
+    // Always navigate to the same route regardless of authentication status
+    navigate(`/spaces/${spaceId}`);
   };
 
   const handleMapSpaceClick = (spaceId: string) => {
