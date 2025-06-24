@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, User, Calendar, MessageSquare, Globe, ExternalLink, Lock, UserX } from "lucide-react";
+import { Star, User, Calendar, MessageSquare, Globe, ExternalLink } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { supabase } from "@/integrations/supabase/client";
 import { createOrGetPrivateChat } from "@/lib/networking-utils";
 import { useProfileAccess } from "@/hooks/useProfileAccess";
+import { ProfileAccessDenied } from "@/components/profile/ProfileAccessDenied";
+import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
 
 interface UserProfile {
@@ -178,54 +180,10 @@ const UserProfileView = () => {
     );
   }
 
-  // Gestione accesso negato
-  if (!hasAccess) {
-    const getAccessDeniedContent = () => {
-      switch (accessResult?.access_reason) {
-        case 'networking_disabled':
-          return {
-            icon: <UserX className="h-16 w-16 text-gray-400" />,
-            title: "Profilo Privato",
-            description: "Questo utente ha disabilitato il networking e il suo profilo non è accessibile."
-          };
-        case 'no_shared_context':
-          return {
-            icon: <Lock className="h-16 w-16 text-gray-400" />,
-            title: "Accesso Limitato",
-            description: "Non hai una connessione o contesto condiviso con questo utente per visualizzare il suo profilo."
-          };
-        case 'user_not_found':
-          return {
-            icon: <User className="h-16 w-16 text-gray-400" />,
-            title: "Utente Non Trovato",
-            description: "L'utente che stai cercando non esiste o non è più disponibile."
-          };
-        default:
-          return {
-            icon: <Lock className="h-16 w-16 text-gray-400" />,
-            title: "Accesso Negato",
-            description: accessResult?.message || "Non hai i permessi per visualizzare questo profilo."
-          };
-      }
-    };
-
-    const accessContent = getAccessDeniedContent();
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-96">
-          <CardContent className="p-8 text-center">
-            {accessContent.icon}
-            <h3 className="text-lg font-medium text-gray-900 mb-2 mt-4">
-              {accessContent.title}
-            </h3>
-            <p className="text-gray-600">
-              {accessContent.description}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Gestione accesso negato con componente dedicato
+  if (!hasAccess && accessResult) {
+    const profileName = profile ? `${profile.first_name} ${profile.last_name}` : undefined;
+    return <ProfileAccessDenied accessResult={accessResult} profileName={profileName} />;
   }
 
   if (!profile) {
@@ -284,13 +242,13 @@ const UserProfileView = () => {
 
   return (
     <div className="container mx-auto py-8">
-      {/* Badge di accesso se limitato */}
-      {visibilityLevel === 'limited' && (
+      {/* Badge di accesso */}
+      {accessResult && (
         <div className="mb-4">
-          <Badge variant="secondary" className="flex items-center space-x-1">
-            <Lock className="w-3 h-3" />
-            <span>Visualizzazione limitata - {accessResult?.message}</span>
-          </Badge>
+          <ProfileAccessBadge 
+            accessReason={accessResult.access_reason}
+            visibilityLevel={visibilityLevel}
+          />
         </div>
       )}
 

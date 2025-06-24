@@ -34,10 +34,18 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
       };
     }
 
-    // Fix per il tipo: casting esplicito con validazione
-    if (data && typeof data === 'object' && 
-        'has_access' in data && 'access_reason' in data && 'message' in data) {
-      return data as ProfileAccessResult;
+    // Fix per il tipo: validazione più robusta
+    if (data && typeof data === 'object') {
+      // Accesso diretto alle proprietà con validazione
+      const hasAccess = Boolean(data.has_access);
+      const accessReason = String(data.access_reason || 'unknown');
+      const message = String(data.message || 'Nessun messaggio disponibile');
+      
+      return {
+        has_access: hasAccess,
+        access_reason: accessReason,
+        message: message
+      };
     }
 
     return {
