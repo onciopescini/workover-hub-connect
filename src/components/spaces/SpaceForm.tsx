@@ -9,7 +9,7 @@ import { LocationPricing } from "./LocationPricing";
 import { AvailabilityScheduler } from "./AvailabilityScheduler";
 import { Photos } from "./Photos";
 import { PublishingOptions } from "./PublishingOptions";
-import { PhotoUploadManager } from "./PhotoUploadManager";
+import { usePhotoUploadManager } from "@/hooks/usePhotoUploadManager";
 import {
   type Space
 } from "@/types/space";
@@ -42,7 +42,7 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
     handleSubmit
   } = useSpaceForm({ initialData, isEdit });
 
-  const photoUploadManager = PhotoUploadManager({
+  const { handlePhotoChange, removePhoto } = usePhotoUploadManager({
     photoFiles,
     photoPreviewUrls,
     uploadingPhotos,
@@ -103,8 +103,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
 
       <Photos
         photoPreviewUrls={photoPreviewUrls}
-        onPhotoChange={photoUploadManager.handlePhotoChange}
-        onRemovePhoto={photoUploadManager.removePhoto}
+        onPhotoChange={handlePhotoChange}
+        onRemovePhoto={removePhoto}
         isSubmitting={isSubmitting}
         uploadingPhotos={uploadingPhotos}
         processingJobs={processingJobs}

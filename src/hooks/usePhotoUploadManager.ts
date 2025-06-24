@@ -1,10 +1,9 @@
 
-import React from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { startImageOptimization } from "@/lib/image-optimization";
 
-interface PhotoUploadManagerProps {
+interface UsePhotoUploadManagerProps {
   photoFiles: File[];
   photoPreviewUrls: string[];
   uploadingPhotos: boolean;
@@ -17,7 +16,7 @@ interface PhotoUploadManagerProps {
   onPhotoPreviewUrlsChange: (urls: string[]) => void;
 }
 
-export const PhotoUploadManager = ({
+export const usePhotoUploadManager = ({
   photoFiles,
   photoPreviewUrls,
   uploadingPhotos,
@@ -28,7 +27,7 @@ export const PhotoUploadManager = ({
   onProcessingJobsChange,
   onPhotoFilesChange,
   onPhotoPreviewUrlsChange
-}: PhotoUploadManagerProps) => {
+}: UsePhotoUploadManagerProps) => {
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
