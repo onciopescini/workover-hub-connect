@@ -51,14 +51,14 @@ export const getUserReviews = async (userId: string): Promise<{
         .from('reviews')
         .select(`
           *,
-          reviewee:profiles!reviewee_id (
+          reviewee:profiles!reviews_reviewee_id_fkey (
             first_name,
             last_name,
             profile_photo_url
           ),
-          booking:bookings (
+          booking:bookings!reviews_booking_id_fkey (
             booking_date,
-            space:spaces (
+            space:spaces!bookings_space_id_fkey (
               title
             )
           )
@@ -69,14 +69,14 @@ export const getUserReviews = async (userId: string): Promise<{
         .from('reviews')
         .select(`
           *,
-          reviewer:profiles!reviewer_id (
+          reviewer:profiles!reviews_reviewer_id_fkey (
             first_name,
             last_name,
             profile_photo_url
           ),
-          booking:bookings (
+          booking:bookings!reviews_booking_id_fkey (
             booking_date,
-            space:spaces (
+            space:spaces!bookings_space_id_fkey (
               title
             )
           )

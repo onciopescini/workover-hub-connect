@@ -1,76 +1,68 @@
+
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { 
-  MapPin, 
-  Star, 
-  Calendar, 
-  MessageSquare, 
-  User, 
-  Building, 
-  Coffee, 
-  Users, 
-  Heart, 
-  Share2, 
-  MoreHorizontal, 
-  Flag, 
-  UserPlus, 
-  UserCheck,
-  Mail, 
-  Phone, 
-  Briefcase, 
-  GraduationCap, 
-  Award, 
-  Clock
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import LoadingScreen from '@/components/LoadingScreen';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Star, User, Calendar, MessageSquare, Globe, ExternalLink } from "lucide-react";
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { supabase } from "@/integrations/supabase/client";
+import { createOrGetPrivateChat } from "@/lib/networking-utils";
+import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
   first_name: string;
   last_name: string;
-  bio?: string;
   profile_photo_url?: string;
+  bio?: string;
   location?: string;
+  profession?: string;
   job_title?: string;
-  interests?: string;
-  skills?: string;
-  work_style?: string;
-  role: 'coworker' | 'host' | 'admin';
-  created_at: string;
-  networking_enabled: boolean;
   website?: string;
   linkedin_url?: string;
   twitter_url?: string;
   instagram_url?: string;
+  facebook_url?: string;
+  youtube_url?: string;
+  github_url?: string;
+  skills?: string;
+  interests?: string;
+  competencies?: string[];
+  industries?: string[];
+  created_at: string;
 }
 
-interface UserStats {
-  total_bookings: number;
-  total_reviews: number;
-  average_rating: number;
-  spaces_hosted?: number;
-  events_attended?: number;
+interface UserSpace {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  price_per_day: number;
+  photos: string[];
+  address: string;
+}
+
+interface UserReview {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  reviewer?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url?: string;
+  };
 }
 
 const UserProfileView = () => {
-  const { userId } = useParams();
-  const navigate = useNavigate();
-  const { authState } = useAuth();
+  const { userId } = useParams<{ userId: string }>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [stats, setStats] = useState<UserStats | null>(null);
+  const [spaces, setSpaces] = useState<UserSpace[]>([]);
+  const [reviews, setReviews] = useState<UserReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isReporting, setIsReporting] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -79,6 +71,9 @@ const UserProfileView = () => {
   }, [userId]);
 
   const fetchUserProfile = async () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
     try {
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
@@ -87,299 +82,353 @@ const UserProfileView = () => {
         .eq('id', userId)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return;
+      }
 
       setProfile(profileData);
 
-      // Fetch user statistics
-      const [bookingsResult, reviewsResult, spacesResult] = await Promise.allSettled([
-        supabase
-          .from('bookings')
-          .select('id, status')
-          .eq('user_id', userId)
-          .eq('status', 'confirmed'),
-        
-        supabase
-          .from('reviews')
-          .select('rating')
-          .eq('reviewee_id', userId),
-        
-        supabase
-          .from('spaces')
-          .select('id')
-          .eq('host_id', userId)
-          .eq('published', true)
-      ]);
+      // Fetch user's spaces
+      const { data: spacesData, error: spacesError } = await supabase
+        .from('spaces')
+        .select('*')
+        .eq('host_id', userId)
+        .eq('published', true);
 
-      const bookings = bookingsResult.status === 'fulfilled' ? bookingsResult.value.data || [] : [];
-      const reviews = reviewsResult.status === 'fulfilled' ? reviewsResult.value.data || [] : [];
-      const spaces = spacesResult.status === 'fulfilled' ? spacesResult.value.data || [] : [];
+      if (spacesError) {
+        console.error('Error fetching spaces:', spacesError);
+      } else {
+        setSpaces(spacesData || []);
+      }
 
-      const avgRating = reviews.length > 0 
-        ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
-        : 0;
+      // Fetch user's reviews
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          reviewer:profiles!reviews_reviewer_id_fkey (
+            first_name,
+            last_name,
+            profile_photo_url
+          )
+        `)
+        .eq('reviewee_id', userId);
 
-      setStats({
-        total_bookings: bookings.length,
-        total_reviews: reviews.length,
-        average_rating: avgRating,
-        spaces_hosted: spaces.length,
-        events_attended: 0 // Would need to query event_participants table
-      });
+      if (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError);
+      } else {
+        setReviews(reviewsData || []);
+      }
 
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      toast.error('Errore nel caricamento del profilo');
-      navigate('/404');
+      console.error('Error in fetchUserProfile:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleReport = async () => {
-    if (!authState.user || !profile) return;
+  const startPrivateChat = async () => {
+    if (!userId || startingChat) return;
 
-    setIsReporting(true);
+    setStartingChat(true);
     try {
-      const { error } = await supabase
-        .from('reports')
-        .insert({
-          reporter_id: authState.user.id,
-          target_id: profile.id,
-          target_type: 'user',
-          reason: 'Inappropriate behavior',
-          description: 'Report submitted from user profile page'
-        });
-
-      if (error) throw error;
-
-      toast.success('Segnalazione inviata con successo');
+      const chatId = await createOrGetPrivateChat(userId);
+      if (chatId) {
+        window.location.href = `/messages/private/${chatId}`;
+      } else {
+        toast.error("Impossibile avviare la chat");
+      }
     } catch (error) {
-      console.error('Error reporting user:', error);
-      toast.error('Errore nell\'invio della segnalazione');
+      console.error('Error starting private chat:', error);
+      toast.error("Errore nell'avvio della chat");
     } finally {
-      setIsReporting(false);
+      setStartingChat(false);
     }
   };
 
-  const handleStartChat = () => {
-    // Navigate to private chats and start a conversation
-    navigate('/private-chats', { state: { startChatWith: profile?.id } });
+  const calculateAverageRating = () => {
+    if (reviews.length === 0) return 0;
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return total / reviews.length;
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${
+              star <= rating
+                ? "text-yellow-400 fill-current"
+                : "text-gray-300"
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const renderSocialLinks = () => {
+    if (!profile) return null;
+
+    const socialLinks = [
+      { url: profile.website, icon: Globe, label: 'Website' },
+      { url: profile.linkedin_url, icon: ExternalLink, label: 'LinkedIn' },
+      { url: profile.twitter_url, icon: ExternalLink, label: 'Twitter' },
+      { url: profile.instagram_url, icon: ExternalLink, label: 'Instagram' },
+      { url: profile.facebook_url, icon: ExternalLink, label: 'Facebook' },
+      { url: profile.youtube_url, icon: ExternalLink, label: 'YouTube' },
+      { url: profile.github_url, icon: ExternalLink, label: 'GitHub' },
+    ].filter(link => link.url);
+
+    if (socialLinks.length === 0) return null;
+
+    return (
+      <div className="mb-4">
+        <h3 className="font-semibold mb-2">Collegamenti</h3>
+        <div className="space-y-2">
+          {socialLinks.map((link, index) => {
+            const IconComponent = link.icon;
+            return (
+              <a
+                key={index}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+              >
+                <IconComponent className="w-4 h-4" />
+                <span>{link.label}</span>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Profilo non trovato</h1>
-          <p className="text-gray-600 mb-4">L'utente che stai cercando non esiste o non è più disponibile.</p>
-          <Button onClick={() => navigate('/')}>Torna alla Home</Button>
-        </div>
+        <Card>
+          <CardContent className="p-8">
+            <h1 className="text-xl font-bold mb-2">Profilo non trovato</h1>
+            <p>L'utente che stai cercando non esiste.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const isOwnProfile = authState.user?.id === profile.id;
-  const interestsList = profile.interests ? profile.interests.split(',').map(i => i.trim()) : [];
-  const skillsList = profile.skills ? profile.skills.split(',').map(s => s.trim()) : [];
+  const averageRating = calculateAverageRating();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Profile Header */}
-        <Card className="mb-8">
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-shrink-0">
-                <Avatar className="w-32 h-32">
-                  <AvatarImage src={profile.profile_photo_url || ''} />
-                  <AvatarFallback className="text-2xl">
-                    {profile.first_name.charAt(0)}{profile.last_name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-
-              <div className="flex-1">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                      {profile.first_name} {profile.last_name}
-                    </h1>
-                    {profile.job_title && (
-                      <p className="text-lg text-gray-600 flex items-center gap-2 mt-1">
-                        <Briefcase className="h-4 w-4" />
-                        {profile.job_title}
-                      </p>
-                    )}
-                    {profile.location && (
-                      <p className="text-gray-600 flex items-center gap-2 mt-1">
-                        <MapPin className="h-4 w-4" />
-                        {profile.location}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Badge 
-                      variant={profile.role === 'host' ? 'default' : 'secondary'}
-                      className="capitalize"
-                    >
-                      {profile.role}
-                    </Badge>
-                  </div>
-                </div>
-
-                {profile.bio && (
-                  <p className="text-gray-700 mb-4">{profile.bio}</p>
-                )}
-
-                {/* Social Links */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {profile.website && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={profile.website} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-4 w-4 mr-1" />
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                  {profile.linkedin_url && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        LinkedIn
-                      </a>
-                    </Button>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-3">
-                  {isOwnProfile ? (
-                    <Button onClick={() => navigate('/profile')}>
-                      Modifica Profilo
-                    </Button>
-                  ) : (
-                    <>
-                      {profile.networking_enabled && authState.user && (
-                        <Button onClick={handleStartChat}>
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Invia Messaggio
-                        </Button>
-                      )}
-                      <Button variant="outline" onClick={handleReport} disabled={isReporting}>
-                        <Flag className="h-4 w-4 mr-2" />
-                        {isReporting ? 'Segnalando...' : 'Segnala'}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Statistics */}
+    <div className="container mx-auto py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* User Profile Card */}
+        <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle>Statistiche</CardTitle>
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                  {profile.profile_photo_url ? (
+                    <img 
+                      src={profile.profile_photo_url} 
+                      alt="Profile" 
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-8 h-8 text-gray-500" />
+                  )}
+                </div>
+                <div>
+                  <CardTitle>{profile.first_name} {profile.last_name}</CardTitle>
+                  {profile.job_title && (
+                    <p className="text-gray-600">{profile.job_title}</p>
+                  )}
+                  {profile.profession && (
+                    <p className="text-gray-600">{profile.profession}</p>
+                  )}
+                  {profile.location && (
+                    <p className="text-sm text-gray-500">{profile.location}</p>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-600">{stats?.total_bookings || 0}</div>
-                  <div className="text-sm text-gray-600">Prenotazioni</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-indigo-600">{stats?.total_reviews || 0}</div>
-                  <div className="text-sm text-gray-600">Recensioni</div>
-                </div>
-                {stats?.average_rating > 0 && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600 flex items-center justify-center gap-1">
-                      <Star className="h-5 w-5 fill-current" />
-                      {stats.average_rating.toFixed(1)}
-                    </div>
-                    <div className="text-sm text-gray-600">Valutazione</div>
-                  </div>
-                )}
-                {profile.role === 'host' && (
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-emerald-600">{stats?.spaces_hosted || 0}</div>
-                    <div className="text-sm text-gray-600">Spazi Ospitati</div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Profile Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informazioni</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {profile.work_style && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Stile di Lavoro</h4>
-                  <p className="text-gray-600">{profile.work_style}</p>
+              {profile.bio && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Bio</h3>
+                  <p className="text-gray-700">{profile.bio}</p>
                 </div>
               )}
+
+              {profile.skills && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Competenze</h3>
+                  <p className="text-gray-700">{profile.skills}</p>
+                </div>
+              )}
+
+              {profile.interests && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Interessi</h3>
+                  <p className="text-gray-700">{profile.interests}</p>
+                </div>
+              )}
+
+              {profile.competencies && profile.competencies.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Competenze Tecniche</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.competencies.map((comp, index) => (
+                      <Badge key={index} variant="secondary">{comp}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.industries && profile.industries.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Settori</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.industries.map((industry, index) => (
+                      <Badge key={index} variant="outline">{industry}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {renderSocialLinks()}
               
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Membro dal</h4>
-                <p className="text-gray-600 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {new Date(profile.created_at).toLocaleDateString('it-IT', {
-                    year: 'numeric',
-                    month: 'long'
-                  })}
+              <div className="mb-4">
+                <h3 className="font-semibold mb-2">Membro da</h3>
+                <p className="text-gray-600 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {format(new Date(profile.created_at), 'MMMM yyyy', { locale: it })}
                 </p>
               </div>
+
+              {reviews.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold mb-2">Valutazione</h3>
+                  <div className="flex items-center space-x-2">
+                    {renderStars(Math.round(averageRating))}
+                    <span className="text-lg font-semibold">{averageRating.toFixed(1)}</span>
+                    <span className="text-gray-500">({reviews.length} recensioni)</span>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={startPrivateChat}
+                disabled={startingChat}
+                className="w-full"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                {startingChat ? 'Avvio chat...' : 'Invia Messaggio'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* User Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* User's Spaces */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Spazi di {profile.first_name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {spaces.length === 0 ? (
+                <p className="text-gray-600">Questo utente non ha ancora pubblicato spazi.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {spaces.map((space) => (
+                    <div key={space.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+                      {space.photos && space.photos.length > 0 && (
+                        <img 
+                          src={space.photos[0]} 
+                          alt={space.title}
+                          className="w-full h-32 object-cover rounded mb-3"
+                        />
+                      )}
+                      <h3 className="font-semibold mb-2">{space.title}</h3>
+                      <p className="text-sm text-gray-600 mb-2 line-clamp-2">{space.description}</p>
+                      <div className="flex justify-between items-center mb-2">
+                        <Badge variant="secondary">{space.category}</Badge>
+                        <p className="font-semibold text-green-600">€{space.price_per_day}/giorno</p>
+                      </div>
+                      <p className="text-xs text-gray-500">{space.address}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Interests */}
-          {interestsList.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Interessi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {interestsList.map((interest) => (
-                    <Badge key={interest} variant="secondary">
-                      <Heart className="h-3 w-3 mr-1" />
-                      {interest}
-                    </Badge>
+          {/* Reviews */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recensioni ({reviews.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reviews.length === 0 ? (
+                <p className="text-gray-600">Nessuna recensione disponibile.</p>
+              ) : (
+                <div className="space-y-4">
+                  {reviews.slice(0, 5).map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 pb-4 last:border-b-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          {renderStars(review.rating)}
+                          <span className="text-sm text-gray-500">
+                            {format(new Date(review.created_at), 'dd MMM yyyy', { locale: it })}
+                          </span>
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-gray-700 mb-2">{review.comment}</p>
+                      )}
+                      {review.reviewer && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                            {review.reviewer.profile_photo_url ? (
+                              <img 
+                                src={review.reviewer.profile_photo_url} 
+                                alt="Reviewer" 
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                            ) : (
+                              <User className="w-3 h-3 text-gray-500" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">
+                            {review.reviewer.first_name} {review.reviewer.last_name}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   ))}
+                  {reviews.length > 5 && (
+                    <p className="text-sm text-gray-500 text-center">
+                      ... e altre {reviews.length - 5} recensioni
+                    </p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Skills */}
-          {skillsList.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Competenze</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {skillsList.map((skill) => (
-                    <Badge key={skill} variant="outline">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

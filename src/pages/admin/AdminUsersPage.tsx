@@ -1,7 +1,7 @@
 
 import React from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
-import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
+import AdminUserManagement from "@/components/admin/AdminUserManagement";
 
 const AdminUsersPage = () => {
   return (

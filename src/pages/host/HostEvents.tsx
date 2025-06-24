@@ -1,204 +1,204 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, MapPin, Plus, Edit, Trash2, DollarSign } from "lucide-react";
-import { EventWithDetails } from "@/types/event";
-import { getHostEvents, deleteEvent } from "@/lib/host-event-utils";
+import { Calendar, Users, MapPin, Edit2, Trash2, Plus } from "lucide-react";
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
-import LoadingScreen from "@/components/LoadingScreen";
+import { useNavigate } from 'react-router-dom';
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  max_participants: number;
+  current_participants: number;
+  status: string;
+  space: {
+    title: string;
+    address: string;
+  };
+}
 
 const HostEvents = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
-  const [events, setEvents] = useState<EventWithDetails[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'past'>('all');
 
   useEffect(() => {
-    if (authState.profile?.role !== "host") {
-      navigate("/dashboard", { replace: true });
-      return;
+    if (authState.user) {
+      fetchEvents();
     }
-    
-    loadEvents();
-  }, [authState.profile, navigate]);
+  }, [authState.user]);
 
-  const loadEvents = async () => {
-    if (!authState.user?.id) return;
-    
+  const fetchEvents = async () => {
+    if (!authState.user) return;
+
+    setIsLoading(true);
     try {
-      const hostEvents = await getHostEvents(authState.user.id);
-      setEvents(hostEvents);
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          space:spaces (
+            title,
+            address
+          )
+        `)
+        .eq('created_by', authState.user.id)
+        .order('date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching events:', error);
+        toast.error('Errore nel caricamento degli eventi');
+        return;
+      }
+
+      setEvents(data || []);
     } catch (error) {
-      console.error("Error loading host events:", error);
-      toast.error("Errore nel caricamento degli eventi");
+      console.error('Error in fetchEvents:', error);
+      toast.error('Errore nel caricamento degli eventi');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Sei sicuro di voler eliminare questo evento?")) return;
-    
+  const deleteEvent = async (eventId: string) => {
+    if (!window.confirm('Sei sicuro di voler eliminare questo evento?')) {
+      return;
+    }
+
     try {
-      await deleteEvent(eventId);
-      toast.success("Evento eliminato con successo");
-      loadEvents();
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) {
+        console.error('Error deleting event:', error);
+        toast.error('Errore nell\'eliminazione dell\'evento');
+        return;
+      }
+
+      toast.success('Evento eliminato con successo');
+      fetchEvents(); // Reload events
     } catch (error) {
-      console.error("Error deleting event:", error);
-      toast.error("Errore nell'eliminazione dell'evento");
+      console.error('Error in deleteEvent:', error);
+      toast.error('Errore nell\'eliminazione dell\'evento');
     }
   };
 
-  const filteredEvents = events.filter(event => {
-    const eventDate = new Date(event.date);
-    const now = new Date();
-    
-    switch (filter) {
-      case 'active':
-        return eventDate >= now && event.status === 'active';
-      case 'past':
-        return eventDate < now;
-      default:
-        return true;
-    }
-  });
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      active: { label: 'Attivo', variant: 'default' as const },
+      completed: { label: 'Completato', variant: 'secondary' as const },
+      cancelled: { label: 'Cancellato', variant: 'destructive' as const }
+    };
 
-  const getStatusBadge = (event: EventWithDetails) => {
-    const eventDate = new Date(event.date);
-    const now = new Date();
-    
-    if (eventDate < now) {
-      return <Badge variant="outline">Passato</Badge>;
-    }
-    
-    if (event.status === 'cancelled') {
-      return <Badge variant="destructive">Cancellato</Badge>;
-    }
-    
-    if (event.current_participants >= (event.max_participants || 0)) {
-      return <Badge className="bg-orange-100 text-orange-800">Completo</Badge>;
-    }
-    
-    return <Badge className="bg-green-100 text-green-800">Attivo</Badge>;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  if (authState.isLoading || isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (authState.profile?.role !== "host") {
-    return null;
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">I Miei Eventi</h1>
-          <p className="text-gray-600">Gestisci i tuoi eventi e workshop</p>
-        </div>
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">I miei Eventi</h1>
         <Button onClick={() => navigate('/host/events/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuovo Evento
+          <Plus className="w-4 h-4 mr-2" />
+          Crea Evento
         </Button>
       </div>
 
-      <Tabs value={filter} onValueChange={(value) => setFilter(value as typeof filter)} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">Tutti ({events.length})</TabsTrigger>
-          <TabsTrigger value="active">Attivi ({events.filter(e => new Date(e.date) >= new Date() && e.status === 'active').length})</TabsTrigger>
-          <TabsTrigger value="past">Passati ({events.filter(e => new Date(e.date) < new Date()).length})</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {filteredEvents.length === 0 ? (
+      {events.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
-            <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {filter === 'all' ? 'Nessun evento creato' : `Nessun evento ${filter === 'active' ? 'attivo' : 'passato'}`}
+          <CardContent className="p-8 text-center">
+            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nessun evento creato
             </h3>
             <p className="text-gray-600 mb-4">
-              {filter === 'all' ? 'Inizia creando il tuo primo evento per coinvolgere la community' : 'Cambia filtro per vedere altri eventi'}
+              Non hai ancora creato nessun evento. Inizia a organizzare il tuo primo evento!
             </p>
-            {filter === 'all' && (
-              <Button onClick={() => navigate('/host/events/new')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crea Primo Evento
-              </Button>
-            )}
+            <Button onClick={() => navigate('/host/events/new')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Crea il tuo primo evento
+            </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6">
-          {filteredEvents.map((event) => (
+        <div className="grid gap-4">
+          {events.map((event) => (
             <Card key={event.id}>
-              <CardContent className="p-6">
+              <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
-                      {getStatusBadge(event)}
+                  <div>
+                    <CardTitle className="text-lg">{event.title}</CardTitle>
+                    <p className="text-gray-500 flex items-center gap-1 mt-1">
+                      <MapPin className="w-4 h-4" />
+                      {event.space?.title} - {event.space?.address}
+                    </p>
+                  </div>
+                  {getStatusBadge(event.status)}
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span>
+                        {format(new Date(event.date), 'PPP à p', { locale: it })}
+                      </span>
                     </div>
                     
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span>
+                        {event.current_participants} / {event.max_participants} partecipanti
+                      </span>
+                    </div>
+
                     {event.description && (
-                      <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        {event.description}
+                      </p>
                     )}
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>{new Date(event.date).toLocaleDateString('it-IT', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span>{event.current_participants || 0} / {event.max_participants || 0} partecipanti</span>
-                      </div>
-                      
-                      {event.space && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span className="truncate">{event.space.title}</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex gap-2 justify-end">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => navigate(`/host/events/${event.id}/edit`)}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Modifica
                     </Button>
                     
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/events/${event.id}`)}
+                      onClick={() => deleteEvent(event.id)}
                     >
-                      Visualizza
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteEvent(event.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Elimina
                     </Button>
                   </div>
                 </div>

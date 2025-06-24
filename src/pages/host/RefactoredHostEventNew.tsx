@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
@@ -12,6 +13,9 @@ import { createEvent } from "@/lib/host-event-utils";
 import { getHostSpaces } from "@/lib/space-utils";
 import LoadingScreen from "@/components/LoadingScreen";
 import { EventFormSchema, EventFormData } from "@/schemas/eventSchema";
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface Space {
   id: string;

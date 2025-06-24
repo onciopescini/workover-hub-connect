@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Space } from "@/types/space";
 import { AppLayout } from "@/components/layout/AppLayout";
 
+// Define valid enum types
+type SpaceCategory = 'home' | 'outdoor' | 'professional';
+type WorkEnvironment = 'silent' | 'controlled' | 'dynamic';
+
 const SpaceEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -30,8 +33,8 @@ const SpaceEdit = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [category, setCategory] = useState('');
-  const [workEnvironment, setWorkEnvironment] = useState('');
+  const [category, setCategory] = useState<SpaceCategory>('home');
+  const [workEnvironment, setWorkEnvironment] = useState<WorkEnvironment>('silent');
   const [pricePerDay, setPricePerDay] = useState(0);
   const [amenities, setAmenities] = useState<string[]>([]);
   const [published, setPublished] = useState(false);
@@ -62,8 +65,9 @@ const SpaceEdit = () => {
           setTitle(data.title);
           setDescription(data.description);
           setAddress(data.address);
-          setCategory(data.category);
-          setWorkEnvironment(data.work_environment);
+          // Safe casting with validation
+          setCategory(isValidCategory(data.category) ? data.category : 'home');
+          setWorkEnvironment(isValidWorkEnvironment(data.work_environment) ? data.work_environment : 'silent');
           setPricePerDay(data.price_per_day);
           setAmenities(data.amenities || []);
           setPublished(data.published);
@@ -77,6 +81,15 @@ const SpaceEdit = () => {
       fetchSpace();
     }
   }, [id]);
+
+  // Type guard functions
+  const isValidCategory = (value: any): value is SpaceCategory => {
+    return ['home', 'outdoor', 'professional'].includes(value);
+  };
+
+  const isValidWorkEnvironment = (value: any): value is WorkEnvironment => {
+    return ['silent', 'controlled', 'dynamic'].includes(value);
+  };
 
   const handleUpdateSpace = async () => {
     if (!id) {
@@ -213,7 +226,7 @@ const SpaceEdit = () => {
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category} onValueChange={(value: SpaceCategory) => setCategory(value)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -226,7 +239,7 @@ const SpaceEdit = () => {
             </div>
             <div>
               <Label htmlFor="workEnvironment">Work Environment</Label>
-              <Select value={workEnvironment} onValueChange={setWorkEnvironment}>
+              <Select value={workEnvironment} onValueChange={(value: WorkEnvironment) => setWorkEnvironment(value)}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select work environment" />
                 </SelectTrigger>
