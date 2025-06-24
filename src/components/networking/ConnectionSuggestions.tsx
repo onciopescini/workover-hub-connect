@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, MapPin, Calendar, Users, RefreshCw } from "lucide-react";
+import { UserPlus, MapPin, Calendar, Users, RefreshCw, Eye } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { sendConnectionRequest } from "@/lib/networking-utils";
+import { useNavigate } from "react-router-dom";
 
 export const ConnectionSuggestions = () => {
   const { suggestions, refreshSuggestions, fetchConnections, hasConnectionRequest } = useNetworking();
+  const navigate = useNavigate();
 
   const handleSendRequest = async (userId: string) => {
     const success = await sendConnectionRequest(userId);
@@ -21,6 +23,10 @@ export const ConnectionSuggestions = () => {
 
   const handleRefresh = async () => {
     await refreshSuggestions();
+  };
+
+  const handleViewProfile = (userId: string) => {
+    navigate(`/profile/${userId}`);
   };
 
   const getUserInitials = (firstName?: string, lastName?: string) => {
@@ -154,6 +160,15 @@ export const ConnectionSuggestions = () => {
                     </div>
                     
                     <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => handleViewProfile(suggestion.suggested_user_id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Profilo
+                      </Button>
                       {hasRequest ? (
                         <Badge variant="outline">Richiesta inviata</Badge>
                       ) : (

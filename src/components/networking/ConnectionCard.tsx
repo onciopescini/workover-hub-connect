@@ -1,8 +1,9 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, UserMinus, User } from "lucide-react";
+import { MessageCircle, UserMinus, User, Eye } from "lucide-react";
 import { Connection } from "@/types/networking";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { removeConnection, createOrGetPrivateChat } from "@/lib/networking-utils";
@@ -41,6 +42,11 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
     }
   };
 
+  const handleViewProfile = () => {
+    if (!otherUser) return;
+    navigate(`/profile/${otherUser.id}`);
+  };
+
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -75,6 +81,15 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
             </div>
             
             <div className="flex gap-2 ml-4">
+              <Button
+                onClick={handleViewProfile}
+                variant="outline"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Profilo
+              </Button>
               <Button
                 onClick={handleStartChat}
                 size="sm"

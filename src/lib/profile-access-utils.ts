@@ -34,7 +34,17 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
       };
     }
 
-    return data as ProfileAccessResult;
+    // Fix per il tipo: casting esplicito con validazione
+    if (data && typeof data === 'object' && 
+        'has_access' in data && 'access_reason' in data && 'message' in data) {
+      return data as ProfileAccessResult;
+    }
+
+    return {
+      has_access: false,
+      access_reason: 'error',
+      message: 'Formato risposta non valido'
+    };
   } catch (error) {
     console.error('Unexpected error checking profile access:', error);
     return {
