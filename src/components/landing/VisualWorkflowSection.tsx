@@ -134,7 +134,10 @@ export function VisualWorkflowSection() {
           <div className="order-1 lg:order-2">
             <div className="max-w-lg">
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${steps[activeStep].color} text-white mb-6`}>
-                <steps[activeStep].icon className="w-5 h-5" />
+                {(() => {
+                  const Icon = steps[activeStep].icon;
+                  return <Icon className="w-5 h-5" />;
+                })()}
                 <span className="font-medium">Step {activeStep + 1}</span>
               </div>
               
