@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Users, Target, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/OptimizedAuthContext';
 
 const About = () => {
   const navigate = useNavigate();

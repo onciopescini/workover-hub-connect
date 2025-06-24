@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import LoadingScreen from "@/components/LoadingScreen";
 import { isCurrentUserAdmin } from "@/lib/admin-utils";
 
