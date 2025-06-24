@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Connection, ConnectionSuggestion, PrivateChat, PrivateMessage } from "@/types/networking";
 import { toast } from "sonner";
@@ -135,11 +136,23 @@ export const removeConnection = async (connectionId: string): Promise<boolean> =
   }
 };
 
-// Get connection suggestions
+// Get connection suggestions - AGGIORNATO con filtro networking_enabled
 export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return [];
+
+    // Verifica che l'utente corrente abbia networking_enabled
+    const { data: currentUser } = await supabase
+      .from('profiles')
+      .select('networking_enabled')
+      .eq('id', user.user.id)
+      .single();
+
+    if (!currentUser?.networking_enabled) {
+      console.log("Current user has networking disabled");
+      return [];
+    }
 
     const { data, error } = await supabase
       .from('connection_suggestions')
@@ -150,7 +163,8 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
           first_name,
           last_name,
           profile_photo_url,
-          bio
+          bio,
+          networking_enabled
         )
       `)
       .eq('user_id', user.user.id)
@@ -159,8 +173,13 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
 
     if (error) throw error;
     
+    // Filtra solo utenti con networking_enabled = true (doppio controllo)
+    const filteredData = (data || []).filter(suggestion => 
+      suggestion.suggested_user?.networking_enabled === true
+    );
+    
     // Cast esplicito e sicuro per tutti i campi
-    return (data || []).map(suggestion => ({
+    return filteredData.map(suggestion => ({
       ...suggestion,
       reason: suggestion.reason as 'shared_space' | 'shared_event' | 'similar_interests',
       shared_context: (suggestion.shared_context ?? {}) as Record<string, any>,

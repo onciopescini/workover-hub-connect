@@ -22,6 +22,20 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
     setError(null);
 
     try {
+      // Verifica che l'utente corrente abbia networking_enabled
+      const { data: currentUser } = await supabase
+        .from('profiles')
+        .select('networking_enabled')
+        .eq('id', authState.user?.id)
+        .single();
+
+      if (!currentUser?.networking_enabled) {
+        console.log("Current user has networking disabled");
+        setSuggestions([]);
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('connection_suggestions')
         .select(`
@@ -31,7 +45,8 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
             first_name,
             last_name,
             profile_photo_url,
-            bio
+            bio,
+            networking_enabled
           )
         `)
         .eq('user_id', authState.user?.id)
@@ -42,7 +57,12 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setError(error.message);
         toast.error("Failed to load connection suggestions.");
       } else {
-        const typedSuggestions: ConnectionSuggestion[] = (data || []).map(item => ({
+        // Filtra solo utenti con networking_enabled = true (doppio controllo)
+        const filteredData = (data || []).filter(item => 
+          item.suggested_user?.networking_enabled === true
+        );
+        
+        const typedSuggestions: ConnectionSuggestion[] = filteredData.map(item => ({
           ...item,
           reason: item.reason as "shared_space" | "shared_event" | "similar_interests",
           shared_context: (item.shared_context as Record<string, any>) || {}
