@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, User } from "lucide-react";
 import { Connection } from "@/types/networking";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { acceptConnectionRequest, rejectConnectionRequest } from "@/lib/networking-utils";
 import { useNetworking } from "@/hooks/useNetworking";
 import { formatDistanceToNow } from "date-fns";

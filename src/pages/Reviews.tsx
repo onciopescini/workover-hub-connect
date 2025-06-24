@@ -1,22 +1,10 @@
-
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
-import { ReviewWithDetails } from "@/types/review";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, MessageSquare, User, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import { it } from "date-fns/locale";
-import LoadingScreen from "@/components/LoadingScreen";
 
 export default function Reviews() {
   const { authState } = useAuth();
-  const navigate = useNavigate();
   const [reviews, setReviews] = useState<{
     given: ReviewWithDetails[];
     received: ReviewWithDetails[];

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { addToFavorites, isSpaceFavorited } from "@/lib/favorites-utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { toast } from "sonner";
 
 type FavoriteButtonProps = {

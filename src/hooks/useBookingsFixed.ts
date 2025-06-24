@@ -1,184 +1,120 @@
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { BookingWithDetails } from "@/types/booking";
+interface Booking {
+  id: string;
+  space_id: string;
+  user_id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Space {
+  id: string;
+  title: string;
+  address: string;
+}
+
+interface BookingWithSpace extends Booking {
+  space: Space;
+}
 
 export const useBookingsFixed = () => {
   const { authState } = useAuth();
-  const [bookings, setBookings] = useState<BookingWithDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const fetchBookings = useCallback(async () => {
-    if (!authState.user) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Cancel any existing request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Create new abort controller
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-
-    try {
-      setIsLoading(true);
-      console.log('Fetching bookings for user:', authState.user.id);
-
-      // Fetch bookings where user is the coworker - Corrected query
-      const { data: coworkerBookingsRaw, error: coworkerError } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          spaces!inner (
-            id,
-            title,
-            address,
-            photos,
-            host_id,
-            price_per_day
-          )
-        `)
-        .eq("user_id", authState.user.id)
-        .order("booking_date", { ascending: false });
-
-      if (signal.aborted) return;
-
-      if (coworkerError) {
-        console.error('Coworker bookings error:', coworkerError);
-        throw coworkerError;
-      }
-
-      // Get user's spaces for host bookings
-      let hostBookings: any[] = [];
-      if (authState.profile?.role === "host" || authState.profile?.role === "admin") {
-        const { data: hostBookingsRaw, error: hostError } = await supabase
-          .from("bookings")
-          .select(`
-            *,
-            spaces!inner (
-              id,
-              title,
-              address,
-              photos,
-              host_id,
-              price_per_day
-            ),
-            profiles!inner (
-              id,
-              first_name,
-              last_name,
-              profile_photo_url
-            )
-          `)
-          .eq("spaces.host_id", authState.user.id)
-          .neq("user_id", authState.user.id)
-          .order("booking_date", { ascending: false });
-
-        if (signal.aborted) return;
-
-        if (!hostError && hostBookingsRaw) {
-          hostBookings = hostBookingsRaw;
-        } else if (hostError) {
-          console.error('Host bookings error:', hostError);
-        }
-      }
-
-      // Transform all bookings to match BookingWithDetails interface
-      const transformCoworkerBookings = (coworkerBookingsRaw || []).map(booking => ({
-        id: booking.id,
-        space_id: booking.space_id,
-        user_id: booking.user_id,
-        booking_date: booking.booking_date,
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        status: booking.status,
-        created_at: booking.created_at,
-        updated_at: booking.updated_at,
-        cancelled_at: booking.cancelled_at,
-        cancellation_fee: booking.cancellation_fee,
-        cancelled_by_host: booking.cancelled_by_host,
-        cancellation_reason: booking.cancellation_reason,
-        space: {
-          id: booking.spaces.id,
-          title: booking.spaces.title,
-          address: booking.spaces.address,
-          photos: booking.spaces.photos,
-          host_id: booking.spaces.host_id,
-          price_per_day: booking.spaces.price_per_day
-        },
-        coworker: null // Current user is the coworker
-      }));
-
-      const transformHostBookings = hostBookings.map(booking => ({
-        id: booking.id,
-        space_id: booking.space_id,
-        user_id: booking.user_id,
-        booking_date: booking.booking_date,
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        status: booking.status,
-        created_at: booking.created_at,
-        updated_at: booking.updated_at,
-        cancelled_at: booking.cancelled_at,
-        cancellation_fee: booking.cancellation_fee,
-        cancelled_by_host: booking.cancelled_by_host,
-        cancellation_reason: booking.cancellation_reason,
-        space: {
-          id: booking.spaces.id,
-          title: booking.spaces.title,
-          address: booking.spaces.address,
-          photos: booking.spaces.photos,
-          host_id: booking.spaces.host_id,
-          price_per_day: booking.spaces.price_per_day
-        },
-        coworker: {
-          id: booking.profiles.id,
-          first_name: booking.profiles.first_name,
-          last_name: booking.profiles.last_name,
-          profile_photo_url: booking.profiles.profile_photo_url
-        }
-      }));
-
-      // Combine all bookings
-      const allBookings = [...transformCoworkerBookings, ...transformHostBookings];
-
-      // Remove duplicates
-      const uniqueBookings = allBookings.filter((booking, index, self) => 
-        index === self.findIndex(b => b.id === booking.id)
-      );
-
-      if (!signal.aborted) {
-        setBookings(uniqueBookings);
-      }
-
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error("Error fetching bookings:", error);
-        toast.error("Errore nel caricamento delle prenotazioni");
-      }
-    } finally {
-      if (!signal.aborted) {
-        setIsLoading(false);
-      }
-    }
-  }, [authState.user?.id, authState.profile?.role]);
+  const [bookings, setBookings] = useState<BookingWithSpace[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBookings();
+    const fetchBookings = async () => {
+      setIsLoading(true);
+      setError(null);
 
-    // Cleanup on unmount
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+      try {
+        if (!authState.user) {
+          setError('User not authenticated');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from<Booking>('bookings')
+          .select(`
+            *,
+            spaces (
+              id,
+              title,
+              address
+            )
+          `)
+          .eq('user_id', authState.user.id);
+
+        if (error) {
+          console.error('Error fetching bookings:', error);
+          setError(error.message);
+        } else {
+          // Type assertion to ensure 'spaces' is always an object
+          const typedData: BookingWithSpace[] = data
+            ? data.map(booking => ({
+                ...booking,
+                space: booking.spaces as Space,
+              }))
+            : [];
+          setBookings(typedData);
+        }
+      } catch (err: any) {
+        console.error('Unexpected error:', err);
+        setError(err.message || 'An unexpected error occurred');
+      } finally {
+        setIsLoading(false);
       }
     };
-  }, [fetchBookings]);
 
-  return { bookings, setBookings, isLoading, refetch: fetchBookings };
+    if (authState.user) {
+      fetchBookings();
+    }
+  }, [authState.user]);
+
+  const cancelBooking = async (bookingId: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from<Booking>('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) {
+        console.error('Error cancelling booking:', error);
+        setError(error.message);
+        toast.error('Failed to cancel booking');
+      } else {
+        setBookings(prevBookings =>
+          prevBookings.map(booking =>
+            booking.id === bookingId ? { ...booking, status: 'cancelled' } : booking
+          )
+        );
+        toast.success('Booking cancelled successfully');
+      }
+    } catch (err: any) {
+      console.error('Unexpected error:', err);
+      setError(err.message || 'An unexpected error occurred');
+      toast.error('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return {
+    bookings,
+    isLoading,
+    error,
+    cancelBooking,
+  };
 };

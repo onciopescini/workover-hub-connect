@@ -1,9 +1,6 @@
-
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Search, Send, Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

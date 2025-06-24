@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { getEvent, joinEvent, leaveEvent, joinWaitlist, leaveWaitlist, getUserEventStatus, canJoinEvent } from "@/lib/event-utils";
 import { EventWithDetails } from "@/types/event";
 import { Button } from "@/components/ui/button";

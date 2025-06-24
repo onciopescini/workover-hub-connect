@@ -1,189 +1,204 @@
-
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { AgeVerificationDialog } from "@/components/gdpr/AgeVerificationDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Loader2, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showAgeVerification, setShowAgeVerification] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isEmailValid, setIsEmailValid] = useState(false);
+  const [isPasswordValid, setIsPasswordValid] = useState(false);
+  const [isConfirmPasswordValid, setIsConfirmPasswordValid] = useState(false);
+  const [isMatchingPasswords, setIsMatchingPasswords] = useState(true);
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setIsEmailValid(emailRegex.test(email));
+
+    // Password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
+    setIsPasswordValid(passwordRegex.test(password));
+
+    // Confirm password validation
+    setIsConfirmPasswordValid(confirmPassword.length > 0);
+
+    // Check if passwords match
+    setIsMatchingPasswords(password === confirmPassword);
+  }, [email, password, confirmPassword]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password !== confirmPassword) {
-      toast.error("Le password non corrispondono");
+
+    if (!isEmailValid || !isPasswordValid || !isConfirmPasswordValid || !isMatchingPasswords) {
+      setError("Please fill in all fields correctly.");
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("La password deve essere di almeno 6 caratteri");
-      return;
-    }
-
-    // Show age verification dialog
-    setShowAgeVerification(true);
-  };
-
-  const handleAgeVerificationConfirm = async () => {
     setIsLoading(true);
-    setShowAgeVerification(false);
-    
+    setError(null);
+
     try {
       await signUp(email, password);
-      
-      // Update profile with age confirmation
-      const { data: user } = await supabase.auth.getUser();
-      if (user?.user) {
-        await supabase
-          .from('profiles')
-          .update({ age_confirmed: true })
-          .eq('id', user.user.id);
-      }
-
-      toast.success("Account creato con successo! Controlla la tua email per confermare la registrazione.");
-      navigate("/onboarding");
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      toast.error(error.message || "Errore durante la registrazione");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAgeVerificationCancel = () => {
-    setShowAgeVerification(false);
-    toast.info("Devi confermare di avere almeno 18 anni per registrarti");
-  };
-
-  const handleGoogleSignUp = async () => {
-    // Show age verification for Google signup too
-    setShowAgeVerification(true);
-  };
-
-  const handleGoogleAgeVerificationConfirm = async () => {
-    setIsLoading(true);
-    setShowAgeVerification(false);
-    
-    try {
-      await signInWithGoogle();
-      
-      // Age confirmation will be handled in the auth callback
-      toast.success("Registrazione con Google completata!");
-    } catch (error: any) {
-      console.error("Google signup error:", error);
-      toast.error(error.message || "Errore durante la registrazione con Google");
+      navigate('/login');
+    } catch (err: any) {
+      setError(err.message || "Signup failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <Card className="max-w-md w-full space-y-8">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              Registrati su Workover
-            </CardTitle>
-            <CardDescription className="text-center">
-              Crea il tuo account per iniziare a trovare spazi di coworking
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="il-tuo-email@esempio.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+    <div className="w-full flex justify-center items-center py-12">
+      <Card className="w-full max-w-md space-y-4">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Crea un account</CardTitle>
+          <CardDescription className="text-muted-foreground text-center">
+            Inserisci la tua email e password per registrarti
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Inserisci la tua email"
+                disabled={isLoading}
+              />
+              {!isEmailValid && email.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Inserisci un'email valida.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
+                  placeholder="Inserisci la tua password"
+                  disabled={isLoading}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Conferma Password</Label>
+              {!isPasswordValid && password.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    La password deve essere di almeno 8 caratteri e contenere almeno una lettera maiuscola, una lettera minuscola, un numero e un carattere speciale.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Conferma Password</Label>
+              <div className="relative">
                 <Input
                   id="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
+                  placeholder="Conferma la tua password"
+                  disabled={isLoading}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Nascondi password" : "Mostra password"}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creazione account..." : "Crea Account"}
-              </Button>
-            </form>
-
-            <Separator />
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignUp}
-              disabled={isLoading}
-            >
-              Registrati con Google
+              {!isConfirmPasswordValid && confirmPassword.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Conferma la tua password.
+                  </AlertDescription>
+                </Alert>
+              )}
+              {!isMatchingPasswords && confirmPassword.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Le password non corrispondono.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {error}
+                </AlertDescription>
+              </Alert>
+            )}
+            <Button disabled={isLoading} className="w-full" type="submit">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Attendere...
+                </>
+              ) : (
+                <>
+                  Crea account
+                  <CheckCircle className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
-
-            <div className="text-center">
-              <span className="text-sm text-gray-600">
-                Hai già un account?{" "}
-                <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                  Accedi qui
-                </Link>
-              </span>
-            </div>
-
-            <div className="text-xs text-gray-500 text-center">
-              Registrandoti accetti i nostri{" "}
-              <Link to="/terms" className="underline">
-                Termini di Servizio
-              </Link>{" "}
-              e la{" "}
-              <Link to="/privacy" className="underline">
-                Privacy Policy
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <AgeVerificationDialog
-        isOpen={showAgeVerification}
-        onConfirm={email ? handleAgeVerificationConfirm : handleGoogleAgeVerificationConfirm}
-        onCancel={handleAgeVerificationCancel}
-      />
-    </>
+          </form>
+          <div className="text-sm text-muted-foreground text-center">
+            Hai già un account?{" "}
+            <Link to="/login" className="text-primary underline">
+              Accedi
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

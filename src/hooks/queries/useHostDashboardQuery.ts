@@ -1,6 +1,5 @@
-
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingWithDetails } from "@/types/booking";
 import { ReviewWithDetails } from "@/types/review";

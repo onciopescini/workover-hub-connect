@@ -1,8 +1,7 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/OptimizedAuthContext';
 
 interface GDPRRequest {
   id: string;
@@ -23,7 +22,7 @@ export const useGDPRRequests = () => {
   const [requests, setRequests] = useState<GDPRRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     if (!authState.user?.id) return;
 
     try {
@@ -49,9 +48,9 @@ export const useGDPRRequests = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [authState.user?.id]);
 
-  const submitExportRequest = async () => {
+  const submitExportRequest = useCallback(async () => {
     if (!authState.user?.id) return false;
 
     try {
@@ -89,9 +88,9 @@ export const useGDPRRequests = () => {
       toast.error('Errore nell\'invio della richiesta');
       return false;
     }
-  };
+  }, [authState.user?.id, fetchRequests]);
 
-  const submitDeletionRequest = async (reason?: string) => {
+  const submitDeletionRequest = useCallback(async (reason?: string) => {
     if (!authState.user?.id) return false;
 
     try {
@@ -125,7 +124,7 @@ export const useGDPRRequests = () => {
       toast.error('Errore nell\'invio della richiesta');
       return false;
     }
-  };
+  }, [authState.user?.id, fetchRequests]);
 
   useEffect(() => {
     fetchRequests();

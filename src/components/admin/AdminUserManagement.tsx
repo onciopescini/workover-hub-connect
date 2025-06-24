@@ -1,422 +1,314 @@
-
-import { useState, useMemo } from "react";
-import { AdminProfile, AdminWarning, WARNING_TYPES, WARNING_SEVERITY } from "@/types/admin";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Search, Ban, CheckCircle, MessageSquare, Eye } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { 
-  useUsersQuery, 
-  useSuspendUserMutation, 
-  useReactivateUserMutation, 
-  useCreateWarningMutation,
-  useUserWarningsQuery 
-} from "@/hooks/queries/useUsersQuery";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, UserCheck, UserX, Search, Mail, Calendar, MapPin } from "lucide-react";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export function AdminUserManagement() {
+interface User {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  profile_photo_url: string | null;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+  is_active: boolean;
+  email_confirmed_at: string | null;
+  phone: string | null;
+  city: string | null;
+  profession: string | null;
+  competencies: string[] | null;
+  industries: string[] | null;
+}
+
+const AdminUserManagement = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
   const { authState } = useAuth();
-  const { data: users = [], isLoading, error } = useUsersQuery();
-  const suspendUserMutation = useSuspendUserMutation();
-  const reactivateUserMutation = useReactivateUserMutation();
-  const createWarningMutation = useCreateWarningMutation();
-  
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  
-  // Warning dialog state
-  const [warningDialog, setWarningDialog] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [warningForm, setWarningForm] = useState({
-    warning_type: "behavior",
-    title: "",
-    message: "",
-    severity: "medium"
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        toast.error('Failed to fetch users');
+        return;
+      }
+
+      if (data) {
+        const usersWithParsedData = data.map(user => ({
+          ...user,
+          competencies: user.competencies ? (Array.isArray(user.competencies) ? user.competencies : JSON.parse(user.competencies)) : [],
+          industries: user.industries ? (Array.isArray(user.industries) ? user.industries : JSON.parse(user.industries)) : [],
+        }));
+        setUsers(usersWithParsedData as User[]);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const searchTerm = searchQuery.toLowerCase();
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+    return (
+      fullName.includes(searchTerm) ||
+      user.email.toLowerCase().includes(searchTerm)
+    );
+  }).filter(user => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'active') return user.is_active;
+    if (activeTab === 'inactive') return !user.is_active;
+    return true;
   });
 
-  // Warnings view dialog state
-  const [warningsDialog, setWarningsDialog] = useState(false);
-  const [warningsUserId, setWarningsUserId] = useState<string>("");
-  
-  // Query for user warnings (only when dialog is open)
-  const { data: userWarnings = [] } = useUserWarningsQuery(warningsUserId);
+  const handleActivateUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: true })
+        .eq('id', userId);
 
-  // Filter users with useMemo for performance
-  const filteredUsers = useMemo(() => {
-    console.log("Filtering users with React Query...");
-    console.log("Search term:", searchTerm);
-    console.log("Filter role:", filterRole);
-    console.log("Filter status:", filterStatus);
-    console.log("Total users to filter:", users.length);
-    
-    const filtered = users.filter(user => {
-      const matchesSearch = 
-        user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesRole = filterRole === "all" || user.role === filterRole;
-      const matchesStatus = filterStatus === "all" || 
-        (filterStatus === "suspended" && user.is_suspended) ||
-        (filterStatus === "active" && !user.is_suspended);
+      if (error) {
+        console.error('Error activating user:', error);
+        toast.error('Failed to activate user');
+        return;
+      }
 
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-
-    console.log("Filtered users:", filtered.length);
-    return filtered;
-  }, [users, searchTerm, filterRole, filterStatus]);
-
-  const handleSuspendUser = async (userId: string) => {
-    const reason = prompt("Inserisci il motivo della sospensione:");
-    if (!reason) return;
-
-    await suspendUserMutation.mutateAsync({ userId, reason });
-  };
-
-  const handleReactivateUser = async (userId: string) => {
-    await reactivateUserMutation.mutateAsync(userId);
-  };
-
-  const handleSendWarning = async () => {
-    if (!selectedUserId || !warningForm.title || !warningForm.message) {
-      return;
-    }
-
-    await createWarningMutation.mutateAsync({
-      user_id: selectedUserId,
-      admin_id: authState.user!.id,
-      warning_type: warningForm.warning_type,
-      title: warningForm.title,
-      message: warningForm.message,
-      severity: warningForm.severity,
-      is_active: true
-    });
-
-    setWarningDialog(false);
-    setWarningForm({
-      warning_type: "behavior",
-      title: "",
-      message: "",
-      severity: "medium"
-    });
-    setSelectedUserId("");
-  };
-
-  const handleViewWarnings = (userId: string) => {
-    setWarningsUserId(userId);
-    setWarningsDialog(true);
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "admin": return "bg-red-100 text-red-800";
-      case "host": return "bg-blue-100 text-blue-800";
-      case "coworker": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, is_active: true } : user
+      ));
+      toast.success('User activated successfully');
+    } catch (error) {
+      console.error('Error activating user:', error);
+      toast.error('Failed to activate user');
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "critical": return "bg-red-100 text-red-800";
-      case "high": return "bg-orange-100 text-orange-800";
-      case "medium": return "bg-yellow-100 text-yellow-800";
-      case "low": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: false })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error deactivating user:', error);
+        toast.error('Failed to deactivate user');
+        return;
+      }
+
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, is_active: false } : user
+      ));
+      toast.success('User deactivated successfully');
+    } catch (error) {
+      console.error('Error deactivating user:', error);
+      toast.error('Failed to deactivate user');
     }
   };
 
-  if (isLoading) {
-    return <div className="text-center py-8">Caricamento utenti...</div>;
-  }
+  const handlePromoteToAdmin = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'admin' })
+        .eq('id', userId);
 
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-600">Errore nel caricamento degli utenti</p>
-      </div>
-    );
-  }
+      if (error) {
+        console.error('Error promoting user to admin:', error);
+        toast.error('Failed to promote user to admin');
+        return;
+      }
+
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, role: 'admin' } : user
+      ));
+      toast.success('User promoted to admin successfully');
+    } catch (error) {
+      console.error('Error promoting user to admin:', error);
+      toast.error('Failed to promote user to admin');
+    }
+  };
+
+  const handleDemoteFromAdmin = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'coworker' })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error demoting user from admin:', error);
+        toast.error('Failed to demote user from admin');
+        return;
+      }
+
+      setUsers(users.map(user =>
+        user.id === userId ? { ...user, role: 'coworker' } : user
+      ));
+      toast.success('User demoted from admin successfully');
+    } catch (error) {
+      console.error('Error demoting user from admin:', error);
+      toast.error('Failed to demote user from admin');
+    }
+  };
+
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Gestione Utenti</h2>
-        <p className="text-gray-600">Gestisci utenti, sospensioni e warning</p>
-        <p className="text-sm text-gray-500">Totale utenti: {users.length} | Filtrati: {filteredUsers.length}</p>
-      </div>
-
-      {/* Filters */}
+    <div>
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Cerca per nome..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+        <CardHeader>
+          <CardTitle>Gestione Utenti</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <Input
+              type="text"
+              placeholder="Cerca utenti..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            <Tabs defaultValue="all" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="all" onClick={() => setActiveTab('all')}>Tutti</TabsTrigger>
+                <TabsTrigger value="active" onClick={() => setActiveTab('active')}>Attivi</TabsTrigger>
+                <TabsTrigger value="inactive" onClick={() => setActiveTab('inactive')}>Inattivi</TabsTrigger>
+              </TabsList>
+              <TabsContent value="all">
+                <UserList
+                  users={filteredUsers}
+                  onActivateUser={handleActivateUser}
+                  onDeactivateUser={handleDeactivateUser}
+                  onPromoteToAdmin={handlePromoteToAdmin}
+                  onDemoteFromAdmin={handleDemoteFromAdmin}
+                  getInitials={getInitials}
                 />
-              </div>
-            </div>
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-full sm:w-[150px]">
-                <SelectValue placeholder="Ruolo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i ruoli</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="host">Host</SelectItem>
-                <SelectItem value="coworker">Coworker</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[150px]">
-                <SelectValue placeholder="Stato" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti</SelectItem>
-                <SelectItem value="active">Attivi</SelectItem>
-                <SelectItem value="suspended">Sospesi</SelectItem>
-              </SelectContent>
-            </Select>
+              </TabsContent>
+              <TabsContent value="active">
+                <UserList
+                  users={filteredUsers}
+                  onActivateUser={handleActivateUser}
+                  onDeactivateUser={handleDeactivateUser}
+                  onPromoteToAdmin={handlePromoteToAdmin}
+                  onDemoteFromAdmin={handleDemoteFromAdmin}
+                  getInitials={getInitials}
+                />
+              </TabsContent>
+              <TabsContent value="inactive">
+                <UserList
+                  users={filteredUsers}
+                  onActivateUser={handleActivateUser}
+                  onDeactivateUser={handleDeactivateUser}
+                  onPromoteToAdmin={handlePromoteToAdmin}
+                  onDemoteFromAdmin={handleDemoteFromAdmin}
+                  getInitials={getInitials}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </CardContent>
       </Card>
-
-      {/* Empty states */}
-      {users.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-red-600">⚠️ Nessun utente trovato nel database</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Verifica che ci siano utenti registrati nel sistema
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {users.length > 0 && filteredUsers.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-orange-600">⚠️ Nessun utente corrisponde ai filtri applicati</p>
-            <p className="text-sm text-gray-500 mt-2">
-              Prova a modificare i filtri di ricerca
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Users List */}
-      <div className="grid gap-4">
-        {filteredUsers.map((user) => (
-          <Card key={user.id}>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg">
-                      {user.first_name} {user.last_name}
-                    </h3>
-                    <Badge className={getRoleColor(user.role)}>
-                      {user.role}
-                    </Badge>
-                    {user.is_suspended && (
-                      <Badge variant="destructive">
-                        Sospeso
-                      </Badge>
-                    )}
-                    {user.stripe_connected && (
-                      <Badge variant="secondary">
-                        Stripe Connesso
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>Registrato: {new Date(user.created_at).toLocaleDateString('it-IT')}</p>
-                    {user.is_suspended && user.suspension_reason && (
-                      <p className="text-red-600">
-                        <strong>Motivo sospensione:</strong> {user.suspension_reason}
-                      </p>
-                    )}
-                    {user.admin_notes && (
-                      <p className="text-blue-600">
-                        <strong>Note admin:</strong> {user.admin_notes}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewWarnings(user.id)}
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Warning
-                  </Button>
-
-                  <Dialog open={warningDialog} onOpenChange={setWarningDialog}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedUserId(user.id)}
-                      >
-                        <MessageSquare className="w-4 h-4 mr-1" />
-                        Invia Warning
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Invia Warning a {user.first_name} {user.last_name}</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="warning-type">Tipo Warning</Label>
-                          <Select value={warningForm.warning_type} onValueChange={(value) => 
-                            setWarningForm(prev => ({ ...prev, warning_type: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(WARNING_TYPES).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="severity">Gravità</Label>
-                          <Select value={warningForm.severity} onValueChange={(value) => 
-                            setWarningForm(prev => ({ ...prev, severity: value }))
-                          }>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(WARNING_SEVERITY).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="title">Titolo</Label>
-                          <Input
-                            id="title"
-                            value={warningForm.title}
-                            onChange={(e) => setWarningForm(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Titolo del warning"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="message">Messaggio</Label>
-                          <Textarea
-                            id="message"
-                            value={warningForm.message}
-                            onChange={(e) => setWarningForm(prev => ({ ...prev, message: e.target.value }))}
-                            placeholder="Descrizione dettagliata del problema"
-                            rows={4}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setWarningDialog(false)}>
-                          Annulla
-                        </Button>
-                        <Button 
-                          onClick={handleSendWarning}
-                          disabled={createWarningMutation.isPending}
-                        >
-                          {createWarningMutation.isPending ? "Invio..." : "Invia Warning"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-
-                  {user.is_suspended ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleReactivateUser(user.id)}
-                      disabled={reactivateUserMutation.isPending}
-                      className="text-green-600 hover:text-green-700"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Riattiva
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSuspendUser(user.id)}
-                      disabled={suspendUserMutation.isPending}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Ban className="w-4 h-4 mr-1" />
-                      Sospendi
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Warnings View Dialog */}
-      <Dialog open={warningsDialog} onOpenChange={setWarningsDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Warning Utente</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
-            {userWarnings.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Nessun warning trovato</p>
-            ) : (
-              userWarnings.map((warning) => (
-                <Card key={warning.id}>
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold">{warning.title}</h4>
-                      <div className="flex gap-2">
-                        <Badge className={getSeverityColor(warning.severity)}>
-                          {WARNING_SEVERITY[warning.severity as keyof typeof WARNING_SEVERITY]}
-                        </Badge>
-                        <Badge variant="outline">
-                          {WARNING_TYPES[warning.warning_type as keyof typeof WARNING_TYPES]}
-                        </Badge>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mb-2">{warning.message}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(warning.created_at).toLocaleString('it-IT')}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Results Summary */}
-      <div className="text-sm text-gray-600">
-        Visualizzati {filteredUsers.length} di {users.length} utenti
-      </div>
     </div>
   );
+};
+
+interface UserListProps {
+  users: User[];
+  onActivateUser: (userId: string) => void;
+  onDeactivateUser: (userId: string) => void;
+  onPromoteToAdmin: (userId: string) => void;
+  onDemoteFromAdmin: (userId: string) => void;
+  getInitials: (firstName: string, lastName: string) => string;
 }
+
+const UserList: React.FC<UserListProps> = ({
+  users,
+  onActivateUser,
+  onDeactivateUser,
+  onPromoteToAdmin,
+  onDemoteFromAdmin,
+  getInitials
+}) => {
+  return (
+    <div className="grid gap-4">
+      {users.map(user => (
+        <Card key={user.id}>
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <Avatar>
+                <AvatarImage src={user.profile_photo_url || undefined} />
+                <AvatarFallback>{getInitials(user.first_name, user.last_name)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-sm font-medium">{user.first_name} {user.last_name}</div>
+                <div className="text-xs text-gray-500">{user.email}</div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              {user.role === 'admin' ? (
+                <Badge variant="secondary">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Admin
+                </Badge>
+              ) : (
+                <Badge variant="outline">
+                  <UserCheck className="w-3 h-3 mr-1" />
+                  Coworker
+                </Badge>
+              )}
+              {!user.is_active && (
+                <Badge variant="destructive">
+                  <UserX className="w-3 h-3 mr-1" />
+                  Inattivo
+                </Badge>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              {user.is_active ? (
+                <Button variant="outline" size="sm" onClick={() => onDeactivateUser(user.id)}>
+                  Disattiva
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => onActivateUser(user.id)}>
+                  Attiva
+                </Button>
+              )}
+              {user.role === 'admin' ? (
+                <Button variant="ghost" size="sm" onClick={() => onDemoteFromAdmin(user.id)}>
+                  Demansiona
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => onPromoteToAdmin(user.id)}>
+                  Promuovi
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+export default AdminUserManagement;

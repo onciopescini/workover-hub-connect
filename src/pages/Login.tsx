@@ -1,172 +1,122 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { signIn, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { signIn } = useAuth();
 
-  // Get the redirect path from location state or default to dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
-
-  // Redirect if already authenticated
   useEffect(() => {
-    if (authState.isAuthenticated && !authState.isLoading) {
-      navigate(from);
-    }
-  }, [authState.isAuthenticated, authState.isLoading, navigate, from]);
+    // Clear any existing errors when the component mounts or location changes
+    setError(null);
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    setError(null);
+    setLoading(true);
 
     try {
-      await signIn(email, password, from);
-      toast.success('Accesso effettuato con successo!');
-      navigate(from);
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'Errore durante l\'accesso. Verifica le credenziali.');
+      // Use the redirectTo parameter from the URL, if available
+      const searchParams = new URLSearchParams(location.search);
+      const redirectTo = searchParams.get('redirectTo') || '/';
+
+      await signIn(email, password, redirectTo);
+    } catch (error: any) {
+      setError(error.message || 'Authentication failed');
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await signInWithGoogle();
-      // Note: The redirect is handled automatically by Google OAuth flow
-      toast.success('Reindirizzamento a Google...');
-    } catch (err: any) {
-      console.error('Google sign in error:', err);
-      setError(err.message || 'Errore durante l\'accesso con Google.');
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Logo and header */}
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
-            <Building2 className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Workover</h1>
-          <p className="mt-2 text-gray-600">Accedi al tuo account</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Accedi</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+    <div className="w-full flex justify-center items-center py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Accedi al tuo account</CardTitle>
+          <CardDescription className="text-center">
+            Inserisci le tue credenziali per continuare
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
+                  placeholder="mario.rossi@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  disabled={isLoading}
-                  placeholder="tua@email.com"
                 />
               </div>
-
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Inserisci la password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={isLoading}
-                    placeholder="La tua password"
                   />
-                  <button
+                  <Button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 h-auto w-auto p-0 data-[state=open]:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
+                      <EyeOff className="h-4 w-4" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
+                      <Eye className="h-4 w-4" />
                     )}
-                  </button>
+                    <span className="sr-only">Mostra password</span>
+                  </Button>
                 </div>
               </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Accesso in corso...' : 'Accedi'}
-              </Button>
-            </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">oppure</span>
-              </div>
             </div>
-
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Connessione...' : 'Continua con Google'}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button disabled={loading} className="w-full mt-4">
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Accesso...</span>
+                </div>
+              ) : (
+                <span>Accedi</span>
+              )}
             </Button>
-
-            <div className="text-center space-y-2">
-              <p className="text-sm text-gray-600">
-                Non hai ancora un account?{' '}
-                <Link to="/register" className="text-indigo-600 hover:text-indigo-500 font-medium">
-                  Registrati
-                </Link>
-              </p>
-              <Link to="/" className="text-sm text-gray-500 hover:text-gray-700">
-                Torna alla home
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </form>
+          <div className="text-sm text-gray-500 text-center">
+            Non hai un account? <Link to="/register" className="underline underline-offset-4 hover:text-primary">Registrati</Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

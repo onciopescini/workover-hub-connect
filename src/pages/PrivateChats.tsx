@@ -1,15 +1,15 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, Search, ArrowLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import { PrivateChat, PrivateMessage } from "@/types/networking";
-import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/networking-utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquare, Send, Plus, Search, Users, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { toast } from "sonner";
 
 const PrivateChats = () => {
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ const PrivateChats = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600">Caricamento chat...</p>
         </div>
       </div>
@@ -116,7 +116,7 @@ const PrivateChats = () => {
           <div className="overflow-y-auto h-[calc(100vh-120px)]">
             {chats.length === 0 ? (
               <div className="p-8 text-center">
-                <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Nessuna chat
                 </h3>
@@ -189,7 +189,7 @@ const PrivateChats = () => {
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-600">Nessun messaggio ancora. Inizia la conversazione!</p>
                   </div>
                 ) : (
@@ -248,7 +248,7 @@ const PrivateChats = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center bg-gray-50">
               <div className="text-center">
-                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   Seleziona una chat
                 </h3>

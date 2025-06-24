@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
-import { Json } from "@/integrations/supabase/types";
-import { fetchBookingMessages, sendBookingMessage, uploadMessageAttachment, markMessageAsRead } from "@/lib/message-utils";
+import { fetchMessages, sendMessage, uploadMessageAttachment, markMessageAsRead } from "@/lib/messaging-utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -15,17 +14,6 @@ interface MessageListProps {
   bookingId: string;
 }
 
-// Helper function to safely convert Json array to string array
-const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
-  if (!jsonArray) return [];
-  
-  if (Array.isArray(jsonArray)) {
-    return jsonArray.filter((item): item is string => typeof item === 'string');
-  }
-  
-  return [];
-};
-
 export function MessageList({ bookingId }: MessageListProps) {
   const { authState } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,104 +22,57 @@ export function MessageList({ bookingId }: MessageListProps) {
   const [attachment, setAttachment] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMountedRef = useRef(true);
-
-  // Memoize the message loading function
-  const loadMessages = useCallback(async () => {
-    if (!bookingId || !isMountedRef.current) return;
-    
-    try {
-      const data = await fetchBookingMessages(bookingId);
-      if (isMountedRef.current) {
-        setMessages(data);
-        
-        // Mark new messages as read
-        const unreadMessages = data.filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id);
-        unreadMessages.forEach(msg => {
-          markMessageAsRead(msg.id);
-        });
-      }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      if (isMountedRef.current) {
-        toast({
-          title: "Errore nel caricamento messaggi",
-          description: "Riprova più tardi",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [bookingId, authState.user?.id]);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    setIsLoading(true);
-    
-    loadMessages().finally(() => {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
-    });
+    const loadMessages = async () => {
+      setIsLoading(true);
+      const data = await fetchMessages(bookingId);
+      setMessages(data);
+      setIsLoading(false);
 
-    // Set up real-time listener for new messages
+      // Marca i nuovi messaggi come letti
+      data.forEach(msg => {
+        if (!msg.is_read && msg.sender_id !== authState.user?.id) {
+          markMessageAsRead(msg.id);
+        }
+      });
+    };
+
+    if (bookingId) {
+      loadMessages();
+    }
+
+    // Setup real-time listener per nuovi messaggi
     const channel = supabase
-      .channel(`messages-${bookingId}`)
+      .channel('messages-changes')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `booking_id=eq.${bookingId}`,
       }, (payload) => {
-        if (!isMountedRef.current) return;
-        
-        const newMsg = payload.new as any;
-        
-        // Fetch sender profile for the new message
-        supabase
-          .from("profiles")
-          .select("id, first_name, last_name, profile_photo_url")
-          .eq("id", newMsg.sender_id)
-          .single()
-          .then(({ data: senderProfile }) => {
-            if (!isMountedRef.current) return;
-            
-            const messageWithSender: Message = {
-              id: newMsg.id,
-              booking_id: newMsg.booking_id,
-              sender_id: newMsg.sender_id,
-              content: newMsg.content,
-              attachments: jsonArrayToStringArray(newMsg.attachments),
-              is_read: newMsg.is_read,
-              created_at: newMsg.created_at,
-              sender: senderProfile || undefined
-            };
-            
-            setMessages(prev => {
-              const exists = prev.some(m => m.id === messageWithSender.id);
-              if (!exists) {
-                // Mark as read if from someone else
-                if (messageWithSender.sender_id !== authState.user?.id && !messageWithSender.is_read) {
-                  markMessageAsRead(messageWithSender.id);
-                }
-                return [...prev, messageWithSender];
-              }
-              return prev;
-            });
-          });
+        const newMsg = payload.new as Message;
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === newMsg.id);
+          if (!exists) {
+            // Marca come letto se non è dal mittente corrente
+            if (newMsg.sender_id !== authState.user?.id && !newMsg.is_read) {
+              markMessageAsRead(newMsg.id);
+            }
+            return [...prev, newMsg];
+          }
+          return prev;
+        });
       })
       .subscribe();
 
     return () => {
-      isMountedRef.current = false;
       supabase.removeChannel(channel);
     };
-  }, [bookingId, loadMessages, authState.user?.id]);
+  }, [bookingId, authState.user?.id]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleAttachment = () => {
@@ -141,10 +82,10 @@ export function MessageList({ bookingId }: MessageListProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "File troppo grande",
-          description: "Dimensione massima file: 5MB",
+          description: "La dimensione massima del file è 5MB",
           variant: "destructive",
         });
         return;
@@ -155,32 +96,24 @@ export function MessageList({ bookingId }: MessageListProps) {
 
   const handleSendMessage = async () => {
     if ((!newMessage || newMessage.trim() === '') && !attachment) return;
-    
+
     try {
       setIsLoading(true);
-      
+
       let attachments: string[] = [];
-      
+
       if (attachment) {
         const uploadedUrl = await uploadMessageAttachment(attachment);
         if (uploadedUrl) {
           attachments = [uploadedUrl];
         }
       }
-      
-      const result = await sendBookingMessage(
-        bookingId, 
-        newMessage.trim(), 
-        attachments
-      );
-      
-      if (result) {
-        setNewMessage("");
-        setAttachment(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        
-        // The message will be added via real-time subscription
-      }
+
+      await sendMessage(bookingId, newMessage.trim(), attachments);
+
+      setNewMessage("");
+      setAttachment(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
@@ -193,7 +126,6 @@ export function MessageList({ bookingId }: MessageListProps) {
     }
   };
 
-  // Helper functions
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -236,7 +168,7 @@ export function MessageList({ bookingId }: MessageListProps) {
           messages.map((message) => {
             const isCurrentUser = isCurrentUserMessage(message);
             const sender = message.sender;
-            
+
             return (
               <div
                 key={message.id}
@@ -252,34 +184,34 @@ export function MessageList({ bookingId }: MessageListProps) {
                       )}
                     </Avatar>
                   )}
-                  
+
                   <div className={`space-y-1 ${isCurrentUser ? 'items-end' : 'items-start'}`}>
                     <Card className={`${isCurrentUser ? 'bg-blue-500 text-white' : 'bg-gray-100'} rounded-lg shadow-sm`}>
                       <CardContent className="p-3">
                         {message.content && <p>{message.content}</p>}
-                        
+
                         {message.attachments && message.attachments.length > 0 && (
                           <div className="mt-2">
                             {message.attachments.map((url, index) => (
                               getAttachmentType(url) === 'image' ? (
-                                <a 
+                                <a
                                   key={index}
-                                  href={url} 
-                                  target="_blank" 
+                                  href={url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="block"
                                 >
-                                  <img 
-                                    src={url} 
-                                    alt="Attachment" 
-                                    className="max-w-full max-h-48 rounded-md" 
+                                  <img
+                                    src={url}
+                                    alt="Allegato"
+                                    className="max-w-full max-h-48 rounded-md"
                                   />
                                 </a>
                               ) : (
-                                <a 
+                                <a
                                   key={index}
-                                  href={url} 
-                                  target="_blank" 
+                                  href={url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className={`flex items-center gap-2 py-1 px-2 rounded-md ${isCurrentUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
                                 >
@@ -293,10 +225,10 @@ export function MessageList({ bookingId }: MessageListProps) {
                         )}
                       </CardContent>
                     </Card>
-                    
+
                     <div className={`text-xs text-gray-500 ${isCurrentUser ? 'text-right' : 'text-left'}`}>
-                      {!isCurrentUser && sender && (
-                        <span>{sender.first_name} • </span>
+                      {!isCurrentUser && (
+                        <span>{sender?.first_name} • </span>
                       )}
                       <span>{formatMessageTime(message.created_at)}</span>
                     </div>
@@ -308,7 +240,7 @@ export function MessageList({ bookingId }: MessageListProps) {
         )}
         <div ref={messagesEndRef} />
       </div>
-      
+
       <div className="p-4 border-t">
         {attachment && (
           <div className="flex items-center mb-2 p-2 bg-gray-100 rounded">
@@ -325,7 +257,7 @@ export function MessageList({ bookingId }: MessageListProps) {
             </Button>
           </div>
         )}
-        
+
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -335,7 +267,7 @@ export function MessageList({ bookingId }: MessageListProps) {
           >
             <Paperclip className="h-4 w-4" />
           </Button>
-          
+
           <Textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
@@ -349,7 +281,7 @@ export function MessageList({ bookingId }: MessageListProps) {
               }
             }}
           />
-          
+
           <Button
             onClick={handleSendMessage}
             disabled={isLoading || ((!newMessage || newMessage.trim() === '') && !attachment)}
@@ -357,7 +289,7 @@ export function MessageList({ bookingId }: MessageListProps) {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        
+
         <input
           type="file"
           ref={fileInputRef}

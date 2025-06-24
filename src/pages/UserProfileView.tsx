@@ -1,25 +1,39 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   MapPin, 
   Star, 
   Calendar, 
   MessageSquare, 
+  User, 
+  Building, 
+  Coffee, 
+  Users, 
+  Heart, 
+  Share2, 
+  MoreHorizontal, 
   Flag, 
-  ExternalLink,
-  Briefcase,
-  Globe,
-  Heart
+  UserPlus, 
+  UserCheck,
+  Mail, 
+  Phone, 
+  Briefcase, 
+  GraduationCap, 
+  Award, 
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import LoadingScreen from '@/components/LoadingScreen';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/OptimizedAuthContext';
 
 interface UserProfile {
   id: string;

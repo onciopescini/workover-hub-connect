@@ -1,150 +1,177 @@
-
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { BookingWithDetails } from "@/types/booking";
-import LoadingScreen from "@/components/LoadingScreen";
-import { MessageDialog } from "@/components/messaging/MessageDialog";
-import { CancelBookingDialog } from "@/components/bookings/CancelBookingDialog";
-import { BookingCard } from "@/components/bookings/BookingCard";
-import { BookingTabs } from "@/components/bookings/BookingTabs";
-import { EmptyBookingsState } from "@/components/bookings/EmptyBookingsState";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, MapPin, MessageSquare, User } from "lucide-react";
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { useBookingsQuery, useCancelBookingMutation } from "@/hooks/queries/useBookingsQuery";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
-export default function Bookings() {
+const Bookings = () => {
   const { authState } = useAuth();
-  const { data: bookings = [], isLoading, error } = useBookingsQuery();
-  const cancelBookingMutation = useCancelBookingMutation();
-  
-  const [filteredBookings, setFilteredBookings] = useState<BookingWithDetails[]>([]);
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "confirmed" | "cancelled">("all");
-  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [selectedBookingId, setSelectedBookingId] = useState<string>("");
-  const [selectedBookingTitle, setSelectedBookingTitle] = useState<string>("");
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [bookingToCancel, setBookingToCancel] = useState<BookingWithDetails | null>(null);
+  const { data: bookings, isLoading, error } = useBookingsQuery();
+  const { mutate: cancelBooking, isLoading: isCancelling } = useCancelBookingMutation();
+  const [cancelReason, setCancelReason] = useState('');
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [isCancellationDialogOpen, setIsCancellationDialogOpen] = useState(false);
 
-  // Filter bookings based on active tab
-  useEffect(() => {
-    if (activeTab === "all") {
-      setFilteredBookings(bookings);
-    } else {
-      setFilteredBookings(bookings.filter(booking => booking.status === activeTab));
-    }
-  }, [activeTab, bookings]);
-
-  // Determine if current user is host or coworker for each booking
-  const getUserRole = (booking: BookingWithDetails) => {
-    return authState.user?.id === booking.space?.host_id ? "host" : "coworker";
-  };
-
-  // Open message dialog
-  const openMessageDialog = (bookingId: string, spaceTitle: string) => {
+  const handleOpenCancellationDialog = (bookingId: string) => {
     setSelectedBookingId(bookingId);
-    setSelectedBookingTitle(spaceTitle);
-    setMessageDialogOpen(true);
+    setIsCancellationDialogOpen(true);
   };
 
-  // Open cancel dialog
-  const openCancelDialog = (booking: BookingWithDetails) => {
-    setBookingToCancel(booking);
-    setCancelDialogOpen(true);
+  const handleCloseCancellationDialog = () => {
+    setIsCancellationDialogOpen(false);
+    setSelectedBookingId(null);
+    setCancelReason('');
   };
 
-  // Handle booking cancellation using React Query mutation
-  const handleCancelBooking = async (reason?: string) => {
-    if (!bookingToCancel) return;
+  const handleCancelBooking = () => {
+    if (!selectedBookingId) return;
 
-    const userRole = getUserRole(bookingToCancel);
-    
-    try {
-      await cancelBookingMutation.mutateAsync({
-        bookingId: bookingToCancel.id,
-        isHost: userRole === "host",
-        reason
-      });
-      
-      setCancelDialogOpen(false);
-      setBookingToCancel(null);
-    } catch (error) {
-      // Error handling is done in the mutation
-    }
+    cancelBooking({
+      bookingId: selectedBookingId,
+      isHost: false,
+      reason: cancelReason,
+    });
+
+    handleCloseCancellationDialog();
   };
 
-  if (authState.isLoading || isLoading) {
-    return <LoadingScreen />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center py-8">
-            <p className="text-red-600">Errore nel caricamento delle prenotazioni</p>
-            <p className="text-sm text-gray-500 mt-2">Riprova più tardi</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Errore nel caricamento</h2>
+          <p className="text-gray-600">Si è verificato un errore durante il caricamento delle prenotazioni.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookings || bookings.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Nessuna prenotazione</h2>
+          <p className="text-gray-600">Non hai ancora effettuato nessuna prenotazione.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Le tue Prenotazioni
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Gestisci le tue prenotazioni come {authState.profile?.role === "host" ? "host e coworker" : "coworker"}
-          </p>
-        </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Le mie Prenotazioni</h1>
 
-        {/* Tabs for filtering */}
-        <BookingTabs 
-          bookings={bookings}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        >
-          {filteredBookings.length === 0 ? (
-            <EmptyBookingsState activeTab={activeTab} />
-          ) : (
-            <div className="space-y-4">
-              {filteredBookings.map((booking) => {
-                const userRole = getUserRole(booking);
-                return (
-                  <BookingCard
-                    key={booking.id}
-                    booking={booking}
-                    userRole={userRole}
-                    onOpenMessageDialog={openMessageDialog}
-                    onOpenCancelDialog={openCancelDialog}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </BookingTabs>
-
-        {/* Message Dialog */}
-        <MessageDialog
-          open={messageDialogOpen}
-          onOpenChange={setMessageDialogOpen}
-          bookingId={selectedBookingId}
-          bookingTitle={selectedBookingTitle}
-        />
-
-        {/* Cancel Booking Dialog */}
-        {bookingToCancel && (
-          <CancelBookingDialog
-            open={cancelDialogOpen}
-            onOpenChange={setCancelDialogOpen}
-            booking={bookingToCancel}
-            onConfirm={handleCancelBooking}
-            isLoading={cancelBookingMutation.isPending}
-          />
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {bookings.map((booking) => (
+          <Card key={booking.id}>
+            <CardHeader>
+              <CardTitle>
+                {booking.space?.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span>{format(new Date(booking.booking_date), 'PPP', { locale: it })}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span>{booking.start_time} - {booking.end_time}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span>{booking.space?.address}</span>
+              </div>
+              {booking.coworker && (
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <span>Prenotazione di: {booking.coworker.first_name} {booking.coworker.last_name}</span>
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <Badge variant="secondary">{booking.status}</Badge>
+              </div>
+              <Separator />
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenCancellationDialog(booking.id)}
+                  disabled={isCancelling}
+                >
+                  Cancella
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {/* Cancellation Dialog */}
+      <Dialog open={isCancellationDialogOpen} onOpenChange={setIsCancellationDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Conferma Cancellazione</DialogTitle>
+            <DialogDescription>
+              Sei sicuro di voler cancellare questa prenotazione?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Textarea
+                id="reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="col-span-4"
+                placeholder="Motivo della cancellazione"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Annulla
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleCancelBooking}
+              disabled={isCancelling}
+            >
+              Conferma Cancellazione
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+};
+
+export default Bookings;

@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, UserMinus, User } from "lucide-react";
 import { Connection } from "@/types/networking";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { removeConnection, createOrGetPrivateChat } from "@/lib/networking-utils";
 import { useNetworking } from "@/hooks/useNetworking";
 import { useNavigate } from "react-router-dom";

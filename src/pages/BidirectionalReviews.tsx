@@ -1,202 +1,114 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/contexts/AuthContext';
-import { getBookingReviews, getEventReviews } from '@/lib/bidirectional-review-utils';
-import { ReviewCard } from '@/components/reviews/ReviewCard';
-import { BookingReviewWithDetails, EventReviewWithDetails } from '@/types/review';
-import { ArrowLeft, Star, MessageSquare, Calendar } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Star, MessageSquare, User, Calendar } from "lucide-react";
+import { getUserReviews } from "@/lib/review-utils";
+import { ReviewWithDetails } from "@/types/review";
+import { formatDistanceToNow } from 'date-fns';
+import { it } from 'date-fns/locale';
 
-export default function BidirectionalReviews() {
+const BidirectionalReviews = () => {
   const { authState } = useAuth();
-  const navigate = useNavigate();
-  const [bookingReviews, setBookingReviews] = useState<{
-    given: BookingReviewWithDetails[];
-    received: BookingReviewWithDetails[];
-  }>({ given: [], received: [] });
-  const [eventReviews, setEventReviews] = useState<{
-    given: EventReviewWithDetails[];
-    received: EventReviewWithDetails[];
-  }>({ given: [], received: [] });
-  const [loading, setLoading] = useState(true);
+  const [receivedReviews, setReceivedReviews] = useState<ReviewWithDetails[]>([]);
+  const [givenReviews, setGivenReviews] = useState<ReviewWithDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authState.user?.id) {
-      loadReviews();
-    }
-  }, [authState.user?.id]);
+    const loadReviews = async () => {
+      setIsLoading(true);
+      if (authState.user) {
+        const reviews = await getUserReviews(authState.user.id);
+        setReceivedReviews(reviews.received);
+        setGivenReviews(reviews.given);
+      }
+      setIsLoading(false);
+    };
 
-  const loadReviews = async () => {
-    if (!authState.user?.id) return;
-    
-    setLoading(true);
-    try {
-      const [bookingData, eventData] = await Promise.all([
-        getBookingReviews(authState.user.id),
-        getEventReviews(authState.user.id)
-      ]);
-      
-      setBookingReviews(bookingData);
-      setEventReviews(eventData);
-    } catch (error) {
-      console.error('Error loading reviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadReviews();
+  }, [authState.user]);
 
-  const allGivenReviews = [...bookingReviews.given, ...eventReviews.given];
-  const allReceivedReviews = [...bookingReviews.received, ...eventReviews.received];
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center space-x-4 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Indietro
-          </Button>
-        </div>
-        <div className="text-center">Caricamento recensioni...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center space-x-4 mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Indietro
-        </Button>
-        
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-4">Le tue Recensioni</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Recensioni Ricevute */}
         <div>
-          <h1 className="text-2xl font-bold">Le Mie Recensioni</h1>
-          <p className="text-gray-600">
-            Gestisci le recensioni date e ricevute
-          </p>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recensioni Ricevute</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {receivedReviews.length === 0 ? (
+                <p>Nessuna recensione ricevuta.</p>
+              ) : (
+                <div className="space-y-4">
+                  {receivedReviews.map((review) => (
+                    <div key={review.id} className="border rounded-md p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span>{review.rating}</span>
+                      </div>
+                      <p className="text-sm">{review.comment}</p>
+                      <div className="flex items-center space-x-2 mt-2 text-gray-500 text-xs">
+                        <User className="h-3 w-3" />
+                        <span>Da: {review.reviewer?.first_name} {review.reviewer?.last_name}</span>
+                        <Calendar className="h-3 w-3" />
+                        <span>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: it })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recensioni Date */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recensioni Date</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {givenReviews.length === 0 ? (
+                <p>Nessuna recensione data.</p>
+              ) : (
+                <div className="space-y-4">
+                  {givenReviews.map((review) => (
+                    <div key={review.id} className="border rounded-md p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span>{review.rating}</span>
+                      </div>
+                      <p className="text-sm">{review.comment}</p>
+                       <div className="flex items-center space-x-2 mt-2 text-gray-500 text-xs">
+                        <User className="h-3 w-3" />
+                        <span>A: {review.reviewee?.first_name} {review.reviewee?.last_name}</span>
+                        <Calendar className="h-3 w-3" />
+                        <span>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: it })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Star className="w-5 h-5 text-yellow-500 mr-2" />
-              <span className="text-2xl font-bold">{allGivenReviews.length}</span>
-            </div>
-            <p className="text-sm text-gray-600">Recensioni Date</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <MessageSquare className="w-5 h-5 text-blue-500 mr-2" />
-              <span className="text-2xl font-bold">{allReceivedReviews.length}</span>
-            </div>
-            <p className="text-sm text-gray-600">Recensioni Ricevute</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Calendar className="w-5 h-5 text-green-500 mr-2" />
-              <span className="text-2xl font-bold">{bookingReviews.given.length + bookingReviews.received.length}</span>
-            </div>
-            <p className="text-sm text-gray-600">Recensioni Spazi</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Calendar className="w-5 h-5 text-purple-500 mr-2" />
-              <span className="text-2xl font-bold">{eventReviews.given.length + eventReviews.received.length}</span>
-            </div>
-            <p className="text-sm text-gray-600">Recensioni Eventi</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="received" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="received">
-            Recensioni Ricevute ({allReceivedReviews.length})
-          </TabsTrigger>
-          <TabsTrigger value="given">
-            Recensioni Date ({allGivenReviews.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="received" className="space-y-6">
-          {allReceivedReviews.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nessuna recensione ricevuta
-                </h3>
-                <p className="text-gray-600">
-                  Le recensioni che riceverai appariranno qui
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {allReceivedReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  type={'booking_id' in review ? 'booking' : 'event'}
-                  showVisibility={true}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="given" className="space-y-6">
-          {allGivenReviews.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Star className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Nessuna recensione scritta
-                </h3>
-                <p className="text-gray-600">
-                  Le recensioni che scriverai appariranno qui
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {allGivenReviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  type={'booking_id' in review ? 'booking' : 'event'}
-                  showVisibility={true}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
     </div>
   );
-}
+};
+
+export default BidirectionalReviews;

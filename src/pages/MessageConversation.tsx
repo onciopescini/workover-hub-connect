@@ -1,189 +1,81 @@
-
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { BookingWithDetails } from "@/types/booking";
-import { ArrowLeft, Calendar, MapPin, User } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import LoadingScreen from "@/components/LoadingScreen";
 import { MessageList } from "@/components/messaging/MessageList";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
 
-export default function MessageConversation() {
+const MessageConversation = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const { authState } = useAuth();
   const navigate = useNavigate();
-  const [booking, setBooking] = useState<BookingWithDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [bookingTitle, setBookingTitle] = useState<string>('');
 
   useEffect(() => {
-    const fetchBookingDetails = async () => {
-      if (!bookingId || !authState.user) return;
+    const fetchBookingTitle = async () => {
+      if (!bookingId) return;
 
       try {
-        setIsLoading(true);
-        
-        // Prima fetchiamo i dati della prenotazione
-        const { data: bookingData, error: bookingError } = await supabase
-          .from("bookings")
-          .select(`
-            id,
-            space_id,
-            user_id,
-            booking_date,
-            start_time,
-            end_time,
-            status,
-            created_at,
-            updated_at,
-            cancelled_at,
-            cancellation_fee,
-            cancelled_by_host,
-            cancellation_reason
-          `)
-          .eq("id", bookingId)
+        // Assuming you have a Supabase client set up
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('spaces(title)')
+          .eq('id', bookingId)
           .single();
 
-        if (bookingError) throw bookingError;
-
-        // Poi fetchiamo i dati dello spazio
-        const { data: spaceData, error: spaceError } = await supabase
-          .from("spaces")
-          .select(`
-            id,
-            title,
-            address,
-            photos,
-            host_id,
-            price_per_day
-          `)
-          .eq("id", bookingData.space_id)
-          .single();
-
-        if (spaceError) throw spaceError;
-
-        // Infine fetchiamo i dati del profilo del coworker
-        const { data: coworkerData, error: coworkerError } = await supabase
-          .from("profiles")
-          .select(`
-            id,
-            first_name,
-            last_name,
-            profile_photo_url
-          `)
-          .eq("id", bookingData.user_id)
-          .single();
-
-        if (coworkerError) {
-          console.error('Error fetching coworker profile:', coworkerError);
-          // Non lanciamo errore qui, continuiamo senza il profilo
+        if (error) {
+          console.error("Error fetching booking title:", error);
+          setBookingTitle('Errore nel caricamento');
+        } else if (data?.spaces?.title) {
+          setBookingTitle(data.spaces.title);
+        } else {
+          setBookingTitle('Titolo non trovato');
         }
-
-        // Verify user has access to this conversation
-        const isHost = authState.user.id === spaceData.host_id;
-        const isCoworker = authState.user.id === bookingData.user_id;
-        
-        if (!isHost && !isCoworker) {
-          toast.error("Non hai accesso a questa conversazione");
-          navigate("/messages");
-          return;
-        }
-
-        // Combiniamo tutti i dati
-        const combinedBooking: BookingWithDetails = {
-          ...bookingData,
-          space: spaceData,
-          coworker: coworkerData || null
-        };
-
-        setBooking(combinedBooking);
       } catch (error) {
-        console.error("Error fetching booking:", error);
-        toast.error("Errore nel caricamento della conversazione");
-        navigate("/messages");
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching booking title:", error);
+        setBookingTitle('Errore nel caricamento');
       }
     };
 
-    fetchBookingDetails();
-  }, [bookingId, authState.user, navigate]);
+    fetchBookingTitle();
+  }, [bookingId]);
 
-  if (isLoading || !authState.user) {
-    return <LoadingScreen />;
-  }
-
-  if (!booking) {
+  if (!authState.isAuthenticated) {
+    // Redirect to login if not authenticated
+    navigate('/login');
     return null;
   }
 
-  const isHost = authState.user.id === booking.space?.host_id;
-  const otherParty = isHost 
-    ? {
-        name: `${booking.coworker?.first_name} ${booking.coworker?.last_name}`,
-        photo: booking.coworker?.profile_photo_url
-      }
-    : {
-        name: booking.space?.title || "Host",
-        photo: null
-      };
-
-  const formattedDate = format(new Date(booking.booking_date), "d MMMM yyyy", { locale: it });
+  if (!bookingId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8">
+            <CardTitle className="text-xl font-semibold mb-4">ID Prenotazione non valido</CardTitle>
+            <p>Nessun ID di prenotazione fornito. Si prega di controllare l'URL.</p>
+            <Button onClick={() => navigate('/bookings')}>Torna alle Prenotazioni</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b p-4 flex items-center space-x-3">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate("/messages")}
-          className="shrink-0"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={otherParty.photo || undefined} />
-          <AvatarFallback>
-            <User className="w-5 h-5" />
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-gray-900 truncate">
-            {otherParty.name}
-          </h1>
-          <div className="flex items-center text-sm text-gray-600 space-x-2">
-            <span>{booking.space?.title}</span>
-            <span>•</span>
-            <div className="flex items-center">
-              <Calendar className="w-3 h-3 mr-1" />
-              <span>{formattedDate}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Booking info bar */}
-      <div className="bg-blue-50 border-b p-3">
-        <div className="flex items-center text-sm text-blue-800">
-          <MapPin className="w-4 h-4 mr-2" />
-          <span>{booking.space?.address}</span>
-          <span className="ml-auto text-xs">
-            Tu sei: {isHost ? "Host" : "Coworker"}
-          </span>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-hidden">
-        <MessageList bookingId={booking.id} />
+    <div className="min-h-screen bg-gray-50 py-6">
+      <div className="max-w-4xl mx-auto bg-white shadow overflow-hidden rounded-md">
+        <Card>
+          <CardHeader className="py-4">
+            <CardTitle className="text-lg font-semibold">
+              Conversazione - {bookingTitle || 'Caricamento...'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <MessageList bookingId={bookingId} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-}
+};
+
+export default MessageConversation;

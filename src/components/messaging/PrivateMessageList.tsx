@@ -1,10 +1,9 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { PrivateMessage } from "@/types/networking";
 import { fetchPrivateMessages, sendPrivateMessage, uploadPrivateMessageAttachment, markPrivateMessageAsRead } from "@/lib/private-messaging-utils";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Paperclip, Send, Download, FileIcon } from "lucide-react";
