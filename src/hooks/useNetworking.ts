@@ -26,7 +26,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .from('connection_suggestions')
         .select(`
           *,
-          suggested_user:suggested_user_id (
+          suggested_user:profiles!connection_suggestions_suggested_user_id_fkey (
             id,
             first_name,
             last_name,
@@ -42,7 +42,11 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setError(error.message);
         toast.error("Failed to load connection suggestions.");
       } else {
-        setSuggestions(data || []);
+        const typedSuggestions: ConnectionSuggestion[] = (data || []).map(item => ({
+          ...item,
+          reason: item.reason as "shared_space" | "shared_event" | "similar_interests"
+        }));
+        setSuggestions(typedSuggestions);
       }
     } catch (err: any) {
       console.error("Unexpected error fetching connection suggestions:", err);
@@ -62,14 +66,14 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .from('connections')
         .select(`
           *,
-          sender:sender_id (
+          sender:profiles!connections_sender_id_fkey (
             id,
             first_name,
             last_name,
             profile_photo_url,
             bio
           ),
-          receiver:receiver_id (
+          receiver:profiles!connections_receiver_id_fkey (
             id,
             first_name,
             last_name,
@@ -84,7 +88,11 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setError(error.message);
         toast.error("Failed to load connections.");
       } else {
-        setConnections(data || []);
+        const typedConnections: Connection[] = (data || []).map(item => ({
+          ...item,
+          status: item.status as "pending" | "rejected" | "accepted"
+        }));
+        setConnections(typedConnections);
       }
     } catch (err: any) {
       console.error("Unexpected error fetching connections:", err);

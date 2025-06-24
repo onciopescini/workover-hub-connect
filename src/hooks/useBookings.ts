@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/OptimizedAuthContext';
@@ -54,14 +55,13 @@ export const useBookings = () => {
             status,
             created_at,
             updated_at,
-            spaces (
+            space:spaces (
               id,
               title,
               address
             )
           `)
-          .eq('user_id', authState.user.id)
-          .returns<BookingWithSpace[]>();
+          .eq('user_id', authState.user.id);
 
         if (error) {
           console.error('Error fetching bookings:', error);
@@ -78,7 +78,7 @@ export const useBookings = () => {
             status: booking.status,
             created_at: booking.created_at,
             updated_at: booking.updated_at,
-            space: booking.spaces, // Assign the nested space object directly
+            space: booking.space as Space,
           })) : [];
           setBookings(formattedBookings);
         }
@@ -90,7 +90,9 @@ export const useBookings = () => {
       }
     };
 
-    fetchBookings();
+    if (authState.user) {
+      fetchBookings();
+    }
   }, [authState.user]);
 
   const cancelBooking = async (bookingId: string) => {

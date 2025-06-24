@@ -1,116 +1,112 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { Space } from "@/types/space";
 
-export type FavoriteSpace = Space & {
-  favorite_id: string;
-};
+export interface FavoriteSpace {
+  id: string;
+  user_id: string;
+  space_id: string;
+  created_at: string;
+  space: {
+    id: string;
+    title: string;
+    description: string;
+    address: string;
+    price_per_day: number;
+    photos: string[];
+    category: string;
+    work_environment: string;
+    host_id: string;
+  };
+}
 
-// Get all favorites for current user
-export const getUserFavorites = async (): Promise<FavoriteSpace[]> => {
+export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) return [];
-
     const { data, error } = await supabase
       .from('favorites')
       .select(`
-        id as favorite_id,
-        space_id,
-        spaces:space_id (*)
+        *,
+        space:spaces (
+          id,
+          title,
+          description,
+          address,
+          price_per_day,
+          photos,
+          category,
+          work_environment,
+          host_id
+        )
       `)
-      .eq('user_id', user.user.id);
+      .eq('user_id', userId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching favorite spaces:', error);
+      throw error;
+    }
 
-    // Transform response to match the FavoriteSpace type
-    return data.map((item: any) => ({
-      ...item.spaces,
-      favorite_id: item.favorite_id
-    })) as FavoriteSpace[];
+    return data || [];
   } catch (error) {
-    console.error("Error fetching favorites:", error);
+    console.error('Error in getFavoriteSpaces:', error);
     return [];
   }
 };
 
-// Add a space to favorites
 export const addToFavorites = async (spaceId: string): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
+    
     if (!user?.user) {
-      toast.error("You must be logged in to add favorites");
-      return false;
+      throw new Error("User not authenticated");
     }
 
     const { error } = await supabase
       .from('favorites')
       .insert({
         user_id: user.user.id,
-        space_id: spaceId
+        space_id: spaceId,
       });
 
     if (error) {
-      if (error.code === '23505') { // Unique violation
-        toast.error("This space is already in your favorites");
-      } else {
-        toast.error("Failed to add to favorites");
-        console.error(error);
-      }
+      console.error('Error adding to favorites:', error);
+      toast.error('Errore nell\'aggiunta ai preferiti');
       return false;
     }
 
-    toast.success("Added to favorites");
+    toast.success('Aggiunto ai preferiti');
     return true;
   } catch (error) {
-    console.error("Error adding to favorites:", error);
-    toast.error("Failed to add to favorites");
+    console.error('Error in addToFavorites:', error);
+    toast.error('Errore nell\'aggiunta ai preferiti');
     return false;
   }
 };
 
-// Remove from favorites
-export const removeFromFavorites = async (favoriteId: string): Promise<boolean> => {
+export const removeFromFavorites = async (spaceId: string): Promise<boolean> => {
   try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) {
+      throw new Error("User not authenticated");
+    }
+
     const { error } = await supabase
       .from('favorites')
       .delete()
-      .eq('id', favoriteId);
+      .eq('user_id', user.user.id)
+      .eq('space_id', spaceId);
 
     if (error) {
-      toast.error("Failed to remove from favorites");
-      console.error(error);
+      console.error('Error removing from favorites:', error);
+      toast.error('Errore nella rimozione dai preferiti');
       return false;
     }
 
-    toast.success("Removed from favorites");
+    toast.success('Rimosso dai preferiti');
     return true;
   } catch (error) {
-    console.error("Error removing from favorites:", error);
-    toast.error("Failed to remove from favorites");
-    return false;
-  }
-};
-
-// Check if a space is in user's favorites
-export const isSpaceFavorited = async (spaceId: string): Promise<boolean> => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) return false;
-
-    const { data, error } = await supabase
-      .from('favorites')
-      .select('id')
-      .eq('user_id', user.user.id)
-      .eq('space_id', spaceId)
-      .maybeSingle();
-
-    if (error) throw error;
-    
-    return !!data;
-  } catch (error) {
-    console.error("Error checking favorite status:", error);
+    console.error('Error in removeFromFavorites:', error);
+    toast.error('Errore nella rimozione dai preferiti');
     return false;
   }
 };

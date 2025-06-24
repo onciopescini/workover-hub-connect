@@ -9,7 +9,7 @@ export interface Message {
   booking_id: string;
   created_at: string;
   is_read: boolean;
-  attachments?: string[];
+  attachments: string[];
   sender?: {
     first_name: string;
     last_name: string;
