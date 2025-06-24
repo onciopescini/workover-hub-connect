@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AdminUser } from '@/types/admin-user';
 
-export const useUserActions = (updateUser: (userId: string, updates: any) => void) => {
+export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUser>) => void) => {
   const handleActivateUser = async (userId: string) => {
     try {
       const { error } = await supabase

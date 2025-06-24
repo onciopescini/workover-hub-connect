@@ -1,15 +1,10 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-
-interface User {
-  id: string;
-  role: string;
-  is_suspended: boolean;
-}
+import { AdminUser } from '@/types/admin-user';
 
 interface UserActionsProps {
-  user: User;
+  user: AdminUser;
   onActivateUser: (userId: string) => void;
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;

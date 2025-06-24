@@ -5,19 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Shield, UserCheck, UserX } from "lucide-react";
 import { UserActions } from "./UserActions";
-
-interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  profile_photo_url: string | null;
-  profession: string | null;
-  is_suspended: boolean;
-}
+import { AdminUser } from '@/types/admin-user';
 
 interface UserCardProps {
-  user: User;
+  user: AdminUser;
   onActivateUser: (userId: string) => void;
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;

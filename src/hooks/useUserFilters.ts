@@ -1,16 +1,8 @@
 
 import { useState, useMemo } from 'react';
+import { AdminUser } from '@/types/admin-user';
 
-interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  is_suspended: boolean;
-  suspension_reason: string | null;
-}
-
-export const useUserFilters = (users: User[]) => {
+export const useUserFilters = (users: AdminUser[]) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 

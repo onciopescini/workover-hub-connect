@@ -1,19 +1,10 @@
 
 import React from 'react';
 import { UserCard } from "./UserCard";
-
-interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  profile_photo_url: string | null;
-  profession: string | null;
-  is_suspended: boolean;
-}
+import { AdminUser } from '@/types/admin-user';
 
 interface UserListProps {
-  users: User[];
+  users: AdminUser[];
   onActivateUser: (userId: string) => void;
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;
