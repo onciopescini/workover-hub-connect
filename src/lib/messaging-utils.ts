@@ -61,7 +61,7 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       .from('messages')
       .select(`
         *,
-        sender:profiles!messages_sender_id_fkey (
+        sender:profiles!sender_id (
           first_name,
           last_name,
           profile_photo_url
@@ -84,8 +84,8 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       is_read: msg.is_read,
       attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : [],
       sender: msg.sender ? {
-        first_name: msg.sender.first_name,
-        last_name: msg.sender.last_name,
+        first_name: msg.sender.first_name || '',
+        last_name: msg.sender.last_name || '',
         profile_photo_url: msg.sender.profile_photo_url
       } : undefined
     })) || [];
@@ -107,13 +107,13 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       .from('private_chats')
       .select(`
         *,
-        participant_1:profiles!private_chats_participant_1_id_fkey (
+        participant_1:profiles!participant_1_id (
           id,
           first_name,
           last_name,
           profile_photo_url
         ),
-        participant_2:profiles!private_chats_participant_2_id_fkey (
+        participant_2:profiles!participant_2_id (
           id,
           first_name,
           last_name,

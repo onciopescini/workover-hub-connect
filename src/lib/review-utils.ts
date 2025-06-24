@@ -9,6 +9,10 @@ export interface Review {
   created_at: string;
   reviewer_id: string;
   reviewee_id: string;
+  // Properties for SpaceReviews compatibility
+  author_id?: string;
+  content?: string;
+  is_visible?: boolean;
 }
 
 export interface ReviewWithDetails {
@@ -23,12 +27,12 @@ export interface ReviewWithDetails {
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
-  };
+  } | null;
   reviewee?: {
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
-  };
+  } | null;
   booking?: {
     space?: {
       title: string;
@@ -47,7 +51,7 @@ export const getUserReviews = async (userId: string): Promise<{
         .from('reviews')
         .select(`
           *,
-          reviewee:profiles!reviews_reviewee_id_fkey (
+          reviewee:profiles!reviewee_id (
             first_name,
             last_name,
             profile_photo_url
@@ -65,7 +69,7 @@ export const getUserReviews = async (userId: string): Promise<{
         .from('reviews')
         .select(`
           *,
-          reviewer:profiles!reviews_reviewer_id_fkey (
+          reviewer:profiles!reviewer_id (
             first_name,
             last_name,
             profile_photo_url
@@ -80,19 +84,19 @@ export const getUserReviews = async (userId: string): Promise<{
         .eq('reviewee_id', userId)
     ]);
 
-    const given = givenResult.data || [];
-    const received = receivedResult.data || [];
+    const given = (givenResult.data || []).map(review => ({
+      ...review,
+      reviewee: review.reviewee || null,
+      booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
+    }));
 
-    return {
-      given: given.map(review => ({
-        ...review,
-        booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
-      })),
-      received: received.map(review => ({
-        ...review,
-        booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
-      }))
-    };
+    const received = (receivedResult.data || []).map(review => ({
+      ...review,
+      reviewer: review.reviewer || null,
+      booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
+    }));
+
+    return { given, received };
   } catch (error) {
     console.error('Error fetching user reviews:', error);
     return { given: [], received: [] };

@@ -18,7 +18,7 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
   const [showAllReviews, setShowAllReviews] = useState(false);
   
   const averageRating = calculateAverageRating(reviews);
-  const visibleReviews = reviews.filter(review => review.is_visible);
+  const visibleReviews = reviews.filter(review => review.is_visible !== false);
   const reviewsToShow = showAllReviews ? visibleReviews : visibleReviews.slice(0, 3);
 
   const renderStars = (rating: number) => {
@@ -81,7 +81,7 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
             <div className="flex items-start gap-3">
               <Avatar className="w-10 h-10">
                 <AvatarFallback>
-                  {review.author_id.substring(0, 2).toUpperCase()}
+                  {(review.author_id || review.reviewer_id).substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -91,9 +91,9 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
                     {format(new Date(review.created_at), 'dd MMM yyyy', { locale: it })}
                   </span>
                 </div>
-                {review.content && (
+                {(review.content || review.comment) && (
                   <p className="text-gray-700 text-sm mt-2">
-                    {review.content}
+                    {review.content || review.comment}
                   </p>
                 )}
               </div>
