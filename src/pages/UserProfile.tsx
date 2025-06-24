@@ -26,7 +26,7 @@ interface UserSpace {
   category: string;
   price_per_day: number;
   photos: string[];
-  city?: string; // Made optional to handle missing data
+  address: string;
 }
 
 interface UserReview {
@@ -39,13 +39,6 @@ interface UserReview {
     last_name: string;
     profile_photo_url?: string;
   };
-}
-
-interface PrivateChat {
-  id: string;
-  participant_1_id: string;
-  participant_2_id: string;
-  created_at: string;
 }
 
 const UserProfile = () => {
@@ -80,7 +73,7 @@ const UserProfile = () => {
 
       setProfile(profileData);
 
-      // Fetch user's spaces with safe type handling
+      // Fetch user's spaces
       const { data: spacesData, error: spacesError } = await supabase
         .from('spaces')
         .select('*')
@@ -90,31 +83,33 @@ const UserProfile = () => {
       if (spacesError) {
         console.error('Error fetching spaces:', spacesError);
       } else {
-        // Transform data to match UserSpace interface, adding city as optional
-        const transformedSpaces = (spacesData || []).map(space => ({
-          ...space,
-          city: space.city || undefined // Handle missing city gracefully
-        }));
-        setSpaces(transformedSpaces);
+        setSpaces(spacesData || []);
       }
 
-      // Fetch user's reviews with correct foreign key hints
+      // Fetch user's reviews - get basic review data first
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          reviewer:profiles!reviews_reviewer_id_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          )
-        `)
+        .select('*')
         .eq('reviewee_id', userId);
 
       if (reviewsError) {
         console.error('Error fetching reviews:', reviewsError);
-      } else {
-        setReviews(reviewsData || []);
+      } else if (reviewsData && reviewsData.length > 0) {
+        // Get reviewer profiles separately
+        const reviewerIds = reviewsData.map(r => r.reviewer_id);
+        const { data: reviewerProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, profile_photo_url')
+          .in('id', reviewerIds);
+
+        const profilesMap = new Map((reviewerProfiles || []).map(p => [p.id, p]));
+        
+        const reviewsWithProfiles = reviewsData.map(review => ({
+          ...review,
+          reviewer: profilesMap.get(review.reviewer_id) || null
+        }));
+        
+        setReviews(reviewsWithProfiles);
       }
 
     } catch (error) {
@@ -303,9 +298,7 @@ const UserProfile = () => {
                       <h3 className="font-semibold mb-2">{space.title}</h3>
                       <p className="text-sm text-gray-600 mb-2">{space.description}</p>
                       <Badge variant="secondary" className="mb-2">{space.category}</Badge>
-                      {space.city && (
-                        <p className="text-sm text-gray-500 mb-2">{space.city}</p>
-                      )}
+                      <p className="text-sm text-gray-500 mb-2">{space.address}</p>
                       <p className="font-semibold">€{space.price_per_day}/giorno</p>
                     </div>
                   ))}

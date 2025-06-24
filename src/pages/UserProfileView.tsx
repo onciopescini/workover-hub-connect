@@ -102,23 +102,30 @@ const UserProfileView = () => {
         setSpaces(spacesData || []);
       }
 
-      // Fetch user's reviews
+      // Fetch user's reviews - get basic review data first
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
-        .select(`
-          *,
-          reviewer:profiles!reviews_reviewer_id_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          )
-        `)
+        .select('*')
         .eq('reviewee_id', userId);
 
       if (reviewsError) {
         console.error('Error fetching reviews:', reviewsError);
-      } else {
-        setReviews(reviewsData || []);
+      } else if (reviewsData && reviewsData.length > 0) {
+        // Get reviewer profiles separately
+        const reviewerIds = reviewsData.map(r => r.reviewer_id);
+        const { data: reviewerProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, profile_photo_url')
+          .in('id', reviewerIds);
+
+        const profilesMap = new Map((reviewerProfiles || []).map(p => [p.id, p]));
+        
+        const reviewsWithProfiles = reviewsData.map(review => ({
+          ...review,
+          reviewer: profilesMap.get(review.reviewer_id) || null
+        }));
+        
+        setReviews(reviewsWithProfiles);
       }
 
     } catch (error) {

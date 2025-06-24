@@ -46,16 +46,12 @@ export const getUserReviews = async (userId: string): Promise<{
   received: ReviewWithDetails[];
 }> => {
   try {
+    // Get reviews given by user - fetch profiles separately
     const [givenResult, receivedResult] = await Promise.all([
       supabase
         .from('reviews')
         .select(`
           *,
-          reviewee:profiles!reviews_reviewee_id_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          ),
           booking:bookings!reviews_booking_id_fkey (
             booking_date,
             space:spaces!bookings_space_id_fkey (
@@ -69,11 +65,6 @@ export const getUserReviews = async (userId: string): Promise<{
         .from('reviews')
         .select(`
           *,
-          reviewer:profiles!reviews_reviewer_id_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          ),
           booking:bookings!reviews_booking_id_fkey (
             booking_date,
             space:spaces!bookings_space_id_fkey (
@@ -84,15 +75,34 @@ export const getUserReviews = async (userId: string): Promise<{
         .eq('reviewee_id', userId)
     ]);
 
+    // Get profile data separately for reviewees and reviewers
+    const givenRevieweeIds = (givenResult.data || []).map(r => r.reviewee_id);
+    const receivedReviewerIds = (receivedResult.data || []).map(r => r.reviewer_id);
+    
+    const [revieweeProfiles, reviewerProfiles] = await Promise.all([
+      givenRevieweeIds.length > 0 ? supabase
+        .from('profiles')
+        .select('id, first_name, last_name, profile_photo_url')
+        .in('id', givenRevieweeIds) : Promise.resolve({ data: [] }),
+      
+      receivedReviewerIds.length > 0 ? supabase
+        .from('profiles')
+        .select('id, first_name, last_name, profile_photo_url')
+        .in('id', receivedReviewerIds) : Promise.resolve({ data: [] })
+    ]);
+
+    const revieweeProfilesMap = new Map((revieweeProfiles.data || []).map(p => [p.id, p]));
+    const reviewerProfilesMap = new Map((reviewerProfiles.data || []).map(p => [p.id, p]));
+
     const given = (givenResult.data || []).map(review => ({
       ...review,
-      reviewee: review.reviewee || null,
+      reviewee: revieweeProfilesMap.get(review.reviewee_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
     const received = (receivedResult.data || []).map(review => ({
       ...review,
-      reviewer: review.reviewer || null,
+      reviewer: reviewerProfilesMap.get(review.reviewer_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
