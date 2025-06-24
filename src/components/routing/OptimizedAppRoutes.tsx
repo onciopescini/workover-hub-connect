@@ -31,6 +31,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
+const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 const Bookings = lazy(() => import("@/pages/Bookings"));
 const Messages = lazy(() => import("@/pages/Messages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
@@ -79,6 +80,13 @@ export const OptimizedAppRoutes = () => {
         <Route path="events/:id" element={
           <LazyWrapper>
             <EventDetail />
+          </LazyWrapper>
+        } />
+        
+        {/* Public user profiles */}
+        <Route path="users/:userId" element={
+          <LazyWrapper>
+            <UserProfileView />
           </LazyWrapper>
         } />
         
