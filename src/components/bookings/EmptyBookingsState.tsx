@@ -11,6 +11,19 @@ interface EmptyBookingsStateProps {
 export const EmptyBookingsState = ({ activeTab }: EmptyBookingsStateProps) => {
   const navigate = useNavigate();
 
+  const getEmptyMessage = () => {
+    switch (activeTab) {
+      case "pending":
+        return "Non hai prenotazioni in attesa.";
+      case "confirmed":
+        return "Non hai prenotazioni confermate.";
+      case "cancelled":
+        return "Non hai prenotazioni annullate.";
+      default:
+        return "Non hai ancora nessuna prenotazione.";
+    }
+  };
+
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -19,10 +32,7 @@ export const EmptyBookingsState = ({ activeTab }: EmptyBookingsStateProps) => {
           Nessuna prenotazione trovata
         </h3>
         <p className="text-gray-600 text-center mb-4">
-          {activeTab === "all" 
-            ? "Non hai ancora nessuna prenotazione."
-            : `Non hai prenotazioni ${activeTab === "pending" ? "in attesa" : activeTab === "confirmed" ? "confermate" : "annullate"}.`
-          }
+          {getEmptyMessage()}
         </p>
         {activeTab === "all" && (
           <Button onClick={() => navigate("/dashboard")} className="bg-[#4F46E5] hover:bg-[#4F46E5]/90">

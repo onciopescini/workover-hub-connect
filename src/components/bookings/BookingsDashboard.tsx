@@ -11,9 +11,7 @@ import { EnhancedBookingCard } from './EnhancedBookingCard';
 import { EmptyBookingsState } from './EmptyBookingsState';
 import { MessageDialog } from '../messaging/MessageDialog';
 import { CancelBookingDialog } from './CancelBookingDialog';
-import { Calendar, Filter, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Calendar, Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function BookingsDashboard() {
@@ -55,7 +53,12 @@ export function BookingsDashboard() {
         .order('booking_date', { ascending: false });
 
       if (error) throw error;
-      return data as BookingWithDetails[];
+      
+      // Transform the data to match BookingWithDetails type
+      return (data || []).map((booking: any) => ({
+        ...booking,
+        coworker: Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker
+      })) as BookingWithDetails[];
     },
     enabled: !!authState.user
   });
@@ -79,6 +82,25 @@ export function BookingsDashboard() {
   const handleOpenCancelDialog = (booking: BookingWithDetails) => {
     setSelectedBooking(booking);
     setCancelDialogOpen(true);
+  };
+
+  const handleCancelBooking = async (reason?: string) => {
+    if (!selectedBooking) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('cancel_booking', {
+        booking_id: selectedBooking.id,
+        cancelled_by_host: false,
+        reason: reason
+      });
+
+      if (error) throw error;
+      
+      // Refresh bookings data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+    }
   };
 
   if (!authState.isAuthenticated) {
@@ -153,7 +175,7 @@ export function BookingsDashboard() {
 
       {/* Bookings Content */}
       {bookings.length === 0 ? (
-        <EmptyBookingsState />
+        <EmptyBookingsState activeTab={activeTab} />
       ) : (
         <BookingTabs
           bookings={filteredBookings}
@@ -176,17 +198,18 @@ export function BookingsDashboard() {
 
       {/* Dialogs */}
       <MessageDialog
-        isOpen={messageDialogOpen}
-        onClose={() => setMessageDialogOpen(false)}
+        open={messageDialogOpen}
+        onOpenChange={setMessageDialogOpen}
         bookingId={messageBookingId}
-        spaceTitle={messageSpaceTitle}
+        bookingTitle={messageSpaceTitle}
       />
 
       {selectedBooking && (
         <CancelBookingDialog
-          isOpen={cancelDialogOpen}
-          onClose={() => setCancelDialogOpen(false)}
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
           booking={selectedBooking}
+          onConfirm={handleCancelBooking}
         />
       )}
     </div>
