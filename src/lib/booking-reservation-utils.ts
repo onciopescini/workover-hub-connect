@@ -4,6 +4,21 @@ import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
 
+// Type guard per validare SlotReservationResult
+function isSlotReservationResult(data: any): data is SlotReservationResult {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof data.success === 'boolean' &&
+    (data.error === undefined || typeof data.error === 'string') &&
+    (data.booking_id === undefined || typeof data.booking_id === 'string') &&
+    (data.reservation_token === undefined || typeof data.reservation_token === 'string') &&
+    (data.reserved_until === undefined || typeof data.reserved_until === 'string') &&
+    (data.space_title === undefined || typeof data.space_title === 'string') &&
+    (data.confirmation_type === undefined || typeof data.confirmation_type === 'string')
+  );
+}
+
 export const reserveBookingSlot = async (
   spaceId: string,
   date: string,
@@ -33,7 +48,14 @@ export const reserveBookingSlot = async (
       return null;
     }
 
-    return data as SlotReservationResult;
+    // Valida la struttura della risposta con il type guard
+    if (!isSlotReservationResult(data)) {
+      console.error('Invalid response structure from validate_and_reserve_slot:', data);
+      toast.error("Errore nel formato della risposta");
+      return null;
+    }
+
+    return data;
   } catch (error) {
     console.error('Unexpected error reserving slot:', error);
     toast.error("Errore imprevisto nella prenotazione");
