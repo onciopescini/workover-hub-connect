@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -9,11 +8,7 @@ export interface ProfileAccessResult {
 }
 
 // Type guard per validare la struttura della risposta RPC
-function isValidProfileAccessResponse(data: any): data is {
-  has_access: boolean;
-  access_reason: string;
-  message: string;
-} {
+function isValidProfileAccessResponse(data: any): data is ProfileAccessResult {
   return (
     data &&
     typeof data === 'object' &&
@@ -50,13 +45,10 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
       };
     }
 
-    // Validazione robusta del tipo con type guard
-    if (isValidProfileAccessResponse(data)) {
-      return {
-        has_access: data.has_access,
-        access_reason: data.access_reason,
-        message: data.message
-      };
+    // Cast sicuro e validazione del tipo
+    const responseData = data as unknown;
+    if (isValidProfileAccessResponse(responseData)) {
+      return responseData;
     }
 
     console.error('Invalid response format from check_profile_access:', data);
