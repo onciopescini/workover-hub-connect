@@ -87,6 +87,14 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
     });
   };
 
+  const handleLocationChange = (location: string, coordinates?: { lat: number; lng: number }) => {
+    onFiltersChange({
+      ...filters,
+      location,
+      coordinates: coordinates || null
+    });
+  };
+
   const handleAmenityToggle = (amenity: string) => {
     const newAmenities = filters.amenities.includes(amenity)
       ? filters.amenities.filter(a => a !== amenity)
@@ -267,10 +275,7 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
               </h4>
               <GeographicSearch
                 value={filters.location}
-                onChange={(location, coordinates) => {
-                  updateFilter('location', location);
-                  updateFilter('coordinates', coordinates);
-                }}
+                onChange={handleLocationChange}
                 placeholder="Cerca per città, quartiere o indirizzo..."
               />
             </div>

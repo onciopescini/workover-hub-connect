@@ -13,17 +13,24 @@ interface GeocodeResult {
 }
 
 interface GeographicSearchProps {
+  value?: string; // Supporto per controlled component
+  onChange?: (location: string, coordinates?: { lat: number; lng: number }) => void; // Alternativa a onLocationSelect
   onLocationSelect?: (location: string, coordinates?: { lat: number; lng: number }) => void;
   placeholder?: string;
   className?: string;
 }
 
 export const GeographicSearch: React.FC<GeographicSearchProps> = ({
+  value,
+  onChange,
   onLocationSelect,
   placeholder = "Cerca per città o indirizzo...",
   className = ""
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  // Usa value prop se fornito (controlled), altrimenti stato interno (uncontrolled)
+  const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const searchQuery = value !== undefined ? value : internalSearchQuery;
+  
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
@@ -33,15 +40,30 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
+  // Sincronizza stato interno con value prop quando cambia
+  useEffect(() => {
+    if (value !== undefined && value !== internalSearchQuery) {
+      setInternalSearchQuery(value);
+    }
+  }, [value]);
+
   // Gestisce la ricerca con debounce
-  const handleSearchInput = useCallback(async (value: string) => {
-    setSearchQuery(value);
+  const handleSearchInput = useCallback(async (inputValue: string) => {
+    // Aggiorna lo stato appropriato
+    if (value === undefined) {
+      setInternalSearchQuery(inputValue);
+    }
+    
+    // Chiama onChange se fornito
+    if (onChange) {
+      onChange(inputValue);
+    }
     
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (value.trim().length < 2) {
+    if (inputValue.trim().length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
       setIsSearching(false);
@@ -52,7 +74,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const results = await geocodeAddress(value);
+        const results = await geocodeAddress(inputValue);
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
       } catch (error) {
@@ -63,11 +85,17 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
         setIsSearching(false);
       }
     }, 300);
-  }, [geocodeAddress]);
+  }, [geocodeAddress, onChange, value]);
 
   // Gestisce la selezione di un suggerimento
   const handleSuggestionSelect = useCallback((suggestion: GeocodeResult) => {
-    setSearchQuery(suggestion.place_name);
+    const selectedLocation = suggestion.place_name;
+    
+    // Aggiorna lo stato appropriato
+    if (value === undefined) {
+      setInternalSearchQuery(selectedLocation);
+    }
+    
     setShowSuggestions(false);
     setIsSearching(false);
     
@@ -76,12 +104,18 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
       lng: suggestion.center[0]
     };
 
-    if (onLocationSelect) {
-      onLocationSelect(suggestion.place_name, coordinates);
-    } else {
-      navigate(`/spaces?city=${encodeURIComponent(suggestion.place_name)}&lat=${coordinates.lat}&lng=${coordinates.lng}`);
+    // Chiama entrambi i callback se forniti
+    if (onChange) {
+      onChange(selectedLocation, coordinates);
     }
-  }, [onLocationSelect, navigate]);
+    
+    if (onLocationSelect) {
+      onLocationSelect(selectedLocation, coordinates);
+    } else if (!onChange) {
+      // Solo se non c'è onChange, naviga (per retrocompatibilità)
+      navigate(`/spaces?city=${encodeURIComponent(selectedLocation)}&lat=${coordinates.lat}&lng=${coordinates.lng}`);
+    }
+  }, [onChange, onLocationSelect, navigate, value]);
 
   // Gestisce l'invio del form
   const handleSearch = useCallback(async (e: React.FormEvent) => {
@@ -104,7 +138,9 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
         handleSuggestionSelect(results[0]);
       } else {
         // Fallback se nessun risultato
-        if (onLocationSelect) {
+        if (onChange) {
+          onChange(searchQuery.trim());
+        } else if (onLocationSelect) {
           onLocationSelect(searchQuery.trim());
         } else {
           navigate(`/spaces?city=${encodeURIComponent(searchQuery.trim())}`);
@@ -113,7 +149,9 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     } catch (error) {
       console.error('Search submit error:', error);
       // Fallback anche in caso di errore
-      if (onLocationSelect) {
+      if (onChange) {
+        onChange(searchQuery.trim());
+      } else if (onLocationSelect) {
         onLocationSelect(searchQuery.trim());
       } else {
         navigate(`/spaces?city=${encodeURIComponent(searchQuery.trim())}`);
@@ -121,11 +159,11 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery, suggestions, handleSuggestionSelect, geocodeAddress, onLocationSelect, navigate]);
+  }, [searchQuery, suggestions, handleSuggestionSelect, geocodeAddress, onChange, onLocationSelect, navigate]);
 
   // Gestisce la geolocalizzazione
   const getCurrentLocation = useCallback(() => {
-    if (isGettingLocation) return; // Previeni chiamate multiple
+    if (isGettingLocation) return;
     
     setIsGettingLocation(true);
     
@@ -139,16 +177,25 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
       async (position) => {
         try {
           const locationName = await reverseGeocode(position.coords.longitude, position.coords.latitude);
-          setSearchQuery(locationName);
+          
+          // Aggiorna lo stato appropriato
+          if (value === undefined) {
+            setInternalSearchQuery(locationName);
+          }
           
           const coordinates = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
 
+          // Chiama entrambi i callback se forniti
+          if (onChange) {
+            onChange(locationName, coordinates);
+          }
+          
           if (onLocationSelect) {
             onLocationSelect(locationName, coordinates);
-          } else {
+          } else if (!onChange) {
             navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
           }
         } catch (error) {
@@ -183,7 +230,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
         maximumAge: 600000
       }
     );
-  }, [reverseGeocode, onLocationSelect, navigate, isGettingLocation]);
+  }, [reverseGeocode, onChange, onLocationSelect, navigate, isGettingLocation, value]);
 
   // Chiude i suggerimenti quando si clicca fuori
   useEffect(() => {
