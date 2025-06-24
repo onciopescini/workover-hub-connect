@@ -15,7 +15,7 @@ interface ConversationItem {
   lastMessageTime?: string;
   unreadCount?: number;
   isOnline?: boolean;
-  status?: 'confirmed' | 'pending' | 'active';
+  status?: 'confirmed' | 'pending' | 'cancelled' | 'active';
   priority?: 'urgent' | 'high' | 'normal';
   businessContext?: {
     type: 'booking' | 'payment' | 'general';
@@ -56,7 +56,7 @@ export const useMessagesData = (activeTab: string) => {
               )
             `)
             .eq("user_id", authState.user.id)
-            .in("status", ["confirmed", "pending"])
+            .in("status", ["confirmed", "pending", "cancelled"])
             .order("created_at", { ascending: false });
 
           if (!error && bookings) {
@@ -68,7 +68,7 @@ export const useMessagesData = (activeTab: string) => {
                 'Host',
               subtitle: booking.space?.title || 'Spazio',
               avatar: booking.space?.host?.profile_photo_url,
-              status: booking.status,
+              status: booking.status as 'confirmed' | 'pending' | 'cancelled',
               lastMessageTime: booking.updated_at,
               businessContext: {
                 type: 'booking' as const,
@@ -100,7 +100,8 @@ export const useMessagesData = (activeTab: string) => {
               subtitle: 'Chat privata',
               avatar: otherParticipant?.profile_photo_url,
               lastMessageTime: chat.last_message_at,
-              isOnline: Math.random() > 0.5 // Mock online status
+              isOnline: Math.random() > 0.5,
+              status: 'active' as const
             };
           });
 
