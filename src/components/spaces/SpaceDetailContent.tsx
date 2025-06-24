@@ -1,29 +1,26 @@
 
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, MapPin, Star, MessageSquare, Users, Coffee, CheckCircle, AlertTriangle } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
-import { it } from 'date-fns/locale';
 import { Space } from "@/types/space";
-import { Review, calculateAverageRating } from "@/lib/review-utils";
+import { Review } from "@/lib/review-utils";
+import { SpaceHeroSection } from './SpaceHeroSection';
+import { SpaceInfoCards } from './SpaceInfoCards';
+import { HostProfileSection } from './HostProfileSection';
+import { StickyBookingCard } from './StickyBookingCard';
 import { SpaceReviews } from './SpaceReviews';
-import { BookingForm } from './BookingForm';
-import FavoriteButton from './FavoriteButton';
-import { useBookingsFixed } from '@/hooks/useBookingsFixed';
 import { toast } from 'sonner';
+import { createOrGetPrivateChat } from "@/lib/networking-utils";
 
 interface ExtendedSpace extends Space {
-  city?: string;
   host?: {
     id: string;
     first_name: string;
     last_name: string;
     profile_photo_url: string | null;
+    bio?: string;
+    location?: string;
+    created_at: string;
   };
 }
 
@@ -35,133 +32,107 @@ interface SpaceDetailContentProps {
 export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) {
   const navigate = useNavigate();
   const { authState } = useAuth();
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const { loading } = useBookingsFixed();
-
-  const averageRating = calculateAverageRating(reviews);
+  const [startingChat, setStartingChat] = useState(false);
 
   const handleBookingSuccess = () => {
     toast.success("Prenotazione creata con successo!");
-    setShowBookingForm(false);
   };
 
   const handleBookingError = (errorMessage: string) => {
     toast.error(errorMessage);
   };
 
-  const getInitials = (firstName: string = '', lastName: string = '') => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const handleLoginRequired = () => {
+    navigate('/login');
   };
 
-  // Extract city from address if not provided separately
-  const getSpaceCity = () => {
-    if (space.city) return space.city;
-    // Try to extract city from address (assuming format: "Address, City")
-    const addressParts = space.address.split(',');
-    return addressParts.length > 1 ? addressParts[addressParts.length - 1].trim() : '';
+  const handleMessageHost = async () => {
+    if (!space.host || startingChat) return;
+
+    setStartingChat(true);
+    try {
+      const chatId = await createOrGetPrivateChat(space.host.id);
+      if (chatId) {
+        window.location.href = `/messages/private/${chatId}`;
+      } else {
+        toast.error("Impossibile avviare la chat");
+      }
+    } catch (error) {
+      console.error('Error starting private chat:', error);
+      toast.error("Errore nell'avvio della chat");
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
+  // Calculate average rating from reviews
+  const averageRating = reviews.length > 0 
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
+    : 0;
+
+  // Transform space data for hero section
+  const heroSpaceData = {
+    id: space.id,
+    title: space.title,
+    address: space.address,
+    photos: space.photos || ['/placeholder.svg'],
+    category: space.category,
+    rating: averageRating,
+    reviewCount: reviews.length,
+    isVerified: true,
+    isSuperhost: space.host ? true : false
+  };
+
+  // Transform space data for info cards
+  const infoSpaceData = {
+    max_capacity: space.max_capacity,
+    amenities: space.amenities || [],
+    work_environment: space.work_environment,
+    description: space.description
+  };
+
+  // Transform space data for booking card
+  const bookingSpaceData = {
+    id: space.id,
+    price_per_day: space.price_per_day,
+    max_capacity: space.max_capacity,
+    title: space.title
   };
 
   return (
-    <div className="grid gap-4">
-      {/* Space Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold">{space.title}</CardTitle>
-              <p className="text-gray-500 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {space.address}{getSpaceCity() && `, ${getSpaceCity()}`}
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <FavoriteButton spaceId={space.id} />
-              
-              {space.host && (
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={space.host.profile_photo_url || undefined} />
-                  <AvatarFallback>
-                    {getInitials(space.host.first_name, space.host.last_name)}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="py-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-700">{space.description}</p>
-              
-              <div className="mt-4 flex items-center space-x-3">
-                <Badge variant="secondary">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Disponibile
-                </Badge>
-                <Badge variant="secondary">
-                  <Coffee className="w-4 h-4 mr-1" />
-                  {space.category}
-                </Badge>
-                {space.work_environment && (
-                  <Badge variant="secondary">
-                    <Users className="w-4 h-4 mr-1" />
-                    {space.work_environment}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-2">Dettagli</h4>
-              <ul className="list-disc list-inside text-gray-600">
-                <li>Prezzo: €{space.price_per_day} al giorno</li>
-                <li>Capacità massima: {space.max_capacity} persone</li>
-                <li>Servizi: {space.amenities?.join(', ') || 'Nessuno'}</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Booking Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Prenota questo spazio</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {authState.isAuthenticated ? (
-            showBookingForm ? (
-              <BookingForm 
-                spaceId={space.id}
-                pricePerDay={space.price_per_day}
-                onSuccess={handleBookingSuccess}
-                onError={handleBookingError}
-              />
-            ) : (
-              <div className="text-center">
-                <Button onClick={() => setShowBookingForm(true)}>
-                  Prenota ora
-                </Button>
-              </div>
-            )
-          ) : (
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">
-                Devi effettuare l'accesso per prenotare questo spazio.
-              </p>
-              <Button onClick={() => navigate('/login')}>
-                Accedi per prenotare
-              </Button>
-            </div>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Hero Section */}
+          <SpaceHeroSection space={heroSpaceData} />
+          
+          {/* Space Information */}
+          <SpaceInfoCards space={infoSpaceData} />
+          
+          {/* Host Profile */}
+          {space.host && (
+            <HostProfileSection 
+              host={space.host} 
+              onMessageHost={handleMessageHost}
+            />
           )}
-        </CardContent>
-      </Card>
+          
+          {/* Reviews Section */}
+          <SpaceReviews spaceId={space.id} reviews={reviews} />
+        </div>
 
-      {/* Reviews Section */}
-      <SpaceReviews spaceId={space.id} reviews={reviews} />
+        {/* Sticky Booking Sidebar */}
+        <div className="lg:col-span-1">
+          <StickyBookingCard
+            space={bookingSpaceData}
+            isAuthenticated={authState.isAuthenticated}
+            onLoginRequired={handleLoginRequired}
+            onBookingSuccess={handleBookingSuccess}
+            onBookingError={handleBookingError}
+          />
+        </div>
+      </div>
     </div>
   );
 }
