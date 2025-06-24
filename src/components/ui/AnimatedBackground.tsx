@@ -9,6 +9,7 @@ interface FloatingParticle {
   size: number;
   speed: number;
   opacity: number;
+  animationType: 'float' | 'float-slow' | 'float-fast';
 }
 
 interface AnimatedBackgroundProps {
@@ -20,13 +21,16 @@ export function AnimatedBackground({ className, particleCount = 50 }: AnimatedBa
   const [particles, setParticles] = React.useState<FloatingParticle[]>([]);
 
   React.useEffect(() => {
+    const animationTypes: Array<'float' | 'float-slow' | 'float-fast'> = ['float', 'float-slow', 'float-fast'];
+    
     const newParticles: FloatingParticle[] = Array.from({ length: particleCount }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: Math.random() * 4 + 1,
       speed: Math.random() * 2 + 0.5,
-      opacity: Math.random() * 0.5 + 0.1
+      opacity: Math.random() * 0.5 + 0.1,
+      animationType: animationTypes[Math.floor(Math.random() * animationTypes.length)]
     }));
     setParticles(newParticles);
   }, [particleCount]);
@@ -41,14 +45,17 @@ export function AnimatedBackground({ className, particleCount = 50 }: AnimatedBa
         {particles.map((particle) => (
           <div
             key={particle.id}
-            className="absolute rounded-full bg-gradient-to-r from-indigo-400 to-emerald-400 animate-pulse"
+            className={cn(
+              "absolute rounded-full bg-gradient-to-r from-indigo-400 to-emerald-400",
+              `animate-${particle.animationType}`,
+              "motion-reduce:animate-none"
+            )}
             style={{
               left: `${particle.x}%`,
               top: `${particle.y}%`,
               width: `${particle.size}px`,
               height: `${particle.size}px`,
               opacity: particle.opacity,
-              animation: `float ${particle.speed}s ease-in-out infinite alternate`,
             }}
           />
         ))}
@@ -56,13 +63,6 @@ export function AnimatedBackground({ className, particleCount = 50 }: AnimatedBa
       
       {/* Animated Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
-      
-      <style jsx>{`
-        @keyframes float {
-          0% { transform: translateY(0px) rotate(0deg); }
-          100% { transform: translateY(-20px) rotate(180deg); }
-        }
-      `}</style>
     </div>
   );
 }
