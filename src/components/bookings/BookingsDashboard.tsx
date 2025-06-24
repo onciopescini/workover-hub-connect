@@ -40,7 +40,8 @@ export function BookingsDashboard() {
             address,
             photos,
             host_id,
-            price_per_day
+            price_per_day,
+            confirmation_type
           ),
           coworker:profiles!bookings_user_id_fkey (
             id,
@@ -73,7 +74,31 @@ export function BookingsDashboard() {
     return matchesTab && matchesSearch && matchesDate;
   });
 
+  // Check if chat is enabled for booking (only for paid bookings)
+  const isChatEnabled = (booking: BookingWithDetails) => {
+    if (booking.space?.confirmation_type === 'instant') {
+      // For instant bookings, chat is enabled if booking is confirmed (payment completed)
+      return booking.status === 'confirmed';
+    } else {
+      // For host approval bookings, chat is enabled if booking is confirmed (host approved AND paid)
+      return booking.status === 'confirmed';
+    }
+  };
+
   const handleOpenMessageDialog = (bookingId: string, spaceTitle: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
+    if (!booking || !isChatEnabled(booking)) {
+      // Show appropriate message based on booking state
+      if (booking?.status === 'pending' && booking?.space?.confirmation_type === 'host_approval') {
+        alert('La chat sarà disponibile dopo l\'approvazione dell\'host e il completamento del pagamento.');
+      } else if (booking?.status === 'pending') {
+        alert('La chat sarà disponibile dopo il completamento del pagamento.');
+      } else {
+        alert('Chat non disponibile per questa prenotazione.');
+      }
+      return;
+    }
+    
     setMessageBookingId(bookingId);
     setMessageSpaceTitle(spaceTitle);
     setMessageDialogOpen(true);
@@ -190,6 +215,7 @@ export function BookingsDashboard() {
                 userRole="coworker"
                 onOpenMessageDialog={handleOpenMessageDialog}
                 onOpenCancelDialog={handleOpenCancelDialog}
+                isChatEnabled={isChatEnabled(booking)}
               />
             ))}
           </div>

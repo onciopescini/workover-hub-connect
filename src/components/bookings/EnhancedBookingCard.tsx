@@ -1,12 +1,11 @@
 
-import React from 'react';
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { BookingWithDetails } from "@/types/booking";
-import { Calendar, MapPin, User, MessageSquare, X, Star, Clock, Euro } from "lucide-react";
+import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
@@ -16,14 +15,16 @@ interface EnhancedBookingCardProps {
   userRole: "host" | "coworker";
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  isChatEnabled?: boolean;
 }
 
-export function EnhancedBookingCard({ 
+export const EnhancedBookingCard = ({ 
   booking, 
   userRole, 
   onOpenMessageDialog, 
-  onOpenCancelDialog 
-}: EnhancedBookingCardProps) {
+  onOpenCancelDialog,
+  isChatEnabled = false
+}: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
     if (userRole === "host") {
       return {
@@ -46,50 +47,87 @@ export function EnhancedBookingCard({
     return booking.status === "confirmed" || booking.status === "pending";
   };
 
+  const getBookingStatusInfo = () => {
+    if (booking.status === 'pending') {
+      if (booking.space?.confirmation_type === 'instant') {
+        return {
+          icon: <Euro className="w-4 h-4" />,
+          text: "In attesa di pagamento",
+          color: "text-orange-600"
+        };
+      } else {
+        return {
+          icon: <Clock className="w-4 h-4" />,
+          text: "In attesa di approvazione host",
+          color: "text-yellow-600"
+        };
+      }
+    }
+    return null;
+  };
+
+  const getChatButtonState = () => {
+    if (isChatEnabled) {
+      return {
+        enabled: true,
+        text: "Messaggi",
+        tooltip: null
+      };
+    }
+    
+    if (booking.status === 'pending') {
+      if (booking.space?.confirmation_type === 'instant') {
+        return {
+          enabled: false,
+          text: "Chat (dopo pagamento)",
+          tooltip: "La chat sarà disponibile dopo il completamento del pagamento"
+        };
+      } else {
+        return {
+          enabled: false,
+          text: "Chat (dopo approvazione)",
+          tooltip: "La chat sarà disponibile dopo l'approvazione dell'host e il pagamento"
+        };
+      }
+    }
+    
+    return {
+      enabled: false,
+      text: "Chat non disponibile",
+      tooltip: "Chat non disponibile per questa prenotazione"
+    };
+  };
+
   const otherParty = getOtherParty();
   const formattedDate = format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it });
-  const spaceImage = booking.space?.photos?.[0] || "/placeholder.svg";
+  const statusInfo = getBookingStatusInfo();
+  const chatState = getChatButtonState();
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-l-4 border-indigo-500">
-      <CardHeader className="pb-4">
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex gap-4 flex-1">
-            {/* Space Image */}
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-              <img
-                src={spaceImage}
-                alt={booking.space?.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg";
-                }}
-              />
-            </div>
-            
-            {/* Main Info */}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">
-                {booking.space?.title || 'Spazio senza titolo'}
-              </h3>
-              <div className="flex items-center text-sm text-gray-600 mt-1">
-                <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span className="truncate">{booking.space?.address || 'Indirizzo non disponibile'}</span>
-              </div>
-              <div className="flex items-center text-sm text-gray-600 mt-1">
-                <Calendar className="w-4 h-4 mr-1 flex-shrink-0" />
-                <span>{formattedDate}</span>
-              </div>
-              {booking.start_time && booking.end_time && (
-                <div className="flex items-center text-sm text-gray-500 mt-1">
-                  <Clock className="w-4 h-4 mr-1 flex-shrink-0" />
-                  <span>{booking.start_time} - {booking.end_time}</span>
-                </div>
+          <div className="flex-1">
+            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              {booking.space?.title || 'Spazio senza titolo'}
+              {booking.space?.confirmation_type === 'instant' && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <Shield className="w-3 h-3 mr-1" />
+                  Immediata
+                </Badge>
               )}
+            </CardTitle>
+            <div className="flex items-center text-sm text-gray-600 mt-1">
+              <MapPin className="w-4 h-4 mr-1" />
+              {booking.space?.address || 'Indirizzo non disponibile'}
             </div>
+            {statusInfo && (
+              <div className={`flex items-center text-sm mt-1 ${statusInfo.color}`}>
+                {statusInfo.icon}
+                <span className="ml-1">{statusInfo.text}</span>
+              </div>
+            )}
           </div>
-          
-          {/* Status Badge */}
           <Badge className={BOOKING_STATUS_COLORS[booking.status as keyof typeof BOOKING_STATUS_COLORS]}>
             {BOOKING_STATUS_LABELS[booking.status as keyof typeof BOOKING_STATUS_LABELS]}
           </Badge>
@@ -97,46 +135,55 @@ export function EnhancedBookingCard({
       </CardHeader>
 
       <CardContent className="pt-0">
-        {/* Host/Price Info */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar className="w-8 h-8">
+            <Avatar className="w-10 h-10">
               <AvatarImage src={otherParty.photo || undefined} />
-              <AvatarFallback className="text-xs">
-                <User className="w-4 h-4" />
+              <AvatarFallback>
+                <User className="w-5 h-5" />
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-gray-900 text-sm">{otherParty.name}</p>
-              <p className="text-xs text-gray-600">{otherParty.role}</p>
+              <p className="font-medium text-gray-900">{otherParty.name}</p>
+              <p className="text-sm text-gray-600">{otherParty.role}</p>
             </div>
           </div>
 
-          {booking.space?.price_per_day && (
-            <div className="text-right">
-              <div className="flex items-center text-sm font-semibold text-gray-900">
-                <Euro className="w-4 h-4 mr-1" />
-                {booking.space.price_per_day}
-              </div>
-              <p className="text-xs text-gray-500">per giorno</p>
+          <div className="text-right">
+            <div className="flex items-center text-sm text-gray-600 mb-1">
+              <Calendar className="w-4 h-4 mr-1" />
+              {formattedDate}
             </div>
-          )}
+            {booking.start_time && booking.end_time && (
+              <p className="text-xs text-gray-500">
+                {booking.start_time} - {booking.end_time}
+              </p>
+            )}
+            {booking.slot_reserved_until && booking.status === 'pending' && (
+              <p className="text-xs text-orange-600 mt-1">
+                <Clock className="w-3 h-3 inline mr-1" />
+                Slot riservato fino: {format(new Date(booking.slot_reserved_until), 'HH:mm')}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-4">
           <Button
-            variant="outline"
+            variant={chatState.enabled ? "outline" : "secondary"}
             size="sm"
             className="flex items-center"
-            onClick={() => onOpenMessageDialog(booking.id, booking.space?.title || "Spazio")}
+            onClick={() => chatState.enabled && onOpenMessageDialog(booking.id, booking.space?.title || "Spazio")}
+            disabled={!chatState.enabled}
+            title={chatState.tooltip || undefined}
           >
             <MessageSquare className="w-4 h-4 mr-1" />
-            Messaggi
+            {chatState.text}
           </Button>
           
           {/* Review button - only show for completed bookings */}
-          {booking.status === 'confirmed' && otherParty.id && (
+          {booking.status === 'confirmed' && otherParty.id && isChatEnabled && (
             <ReviewButton
               booking={booking}
               targetUserId={otherParty.id}
@@ -156,19 +203,7 @@ export function EnhancedBookingCard({
             </Button>
           )}
         </div>
-
-        {/* Progress indicator for pending bookings */}
-        {booking.status === 'pending' && (
-          <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-xs text-yellow-800">
-              In attesa di conferma dall'host
-            </p>
-            <div className="w-full bg-yellow-200 rounded-full h-1 mt-1">
-              <div className="bg-yellow-500 h-1 rounded-full w-1/2 animate-pulse"></div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
-}
+};

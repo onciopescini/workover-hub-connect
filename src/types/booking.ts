@@ -1,4 +1,3 @@
-
 import { Database } from "@/integrations/supabase/types";
 
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
@@ -19,6 +18,10 @@ export type BookingWithDetails = {
   cancellation_fee?: number | null;
   cancelled_by_host?: boolean | null;
   cancellation_reason?: string | null;
+  slot_reserved_until?: string | null;
+  payment_required?: boolean | null;
+  payment_session_id?: string | null;
+  reservation_token?: string | null;
   space: {
     id: string;
     title: string;
@@ -26,6 +29,7 @@ export type BookingWithDetails = {
     photos: string[];
     host_id: string;
     price_per_day?: number;
+    confirmation_type?: string;
   };
   coworker?: {
     id: string;
@@ -48,7 +52,22 @@ export type RawBookingData = {
   cancellation_fee?: number | null;
   cancelled_by_host?: boolean | null;
   cancellation_reason?: string | null;
+  slot_reserved_until?: string | null;
+  payment_required?: boolean | null;
+  payment_session_id?: string | null;
+  reservation_token?: string | null;
 };
+
+// Reservation result type
+export interface SlotReservationResult {
+  success: boolean;
+  error?: string;
+  booking_id?: string;
+  reservation_token?: string;
+  reserved_until?: string;
+  space_title?: string;
+  confirmation_type?: string;
+}
 
 // Message type definition to match our database schema
 export type Message = {

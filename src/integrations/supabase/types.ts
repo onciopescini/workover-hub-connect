@@ -214,6 +214,10 @@ export type Database = {
           created_at: string | null
           end_time: string | null
           id: string
+          payment_required: boolean | null
+          payment_session_id: string | null
+          reservation_token: string | null
+          slot_reserved_until: string | null
           space_id: string
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
@@ -229,6 +233,10 @@ export type Database = {
           created_at?: string | null
           end_time?: string | null
           id?: string
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          reservation_token?: string | null
+          slot_reserved_until?: string | null
           space_id: string
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -244,6 +252,10 @@ export type Database = {
           created_at?: string | null
           end_time?: string | null
           id?: string
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          reservation_token?: string | null
+          slot_reserved_until?: string | null
           space_id?: string
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
@@ -1773,6 +1785,10 @@ export type Database = {
         Args: { viewer_id: string; profile_id: string }
         Returns: Json
       }
+      cleanup_expired_slots: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_inactive_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
@@ -1914,6 +1930,17 @@ export type Database = {
       update_review_visibility: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      validate_and_reserve_slot: {
+        Args: {
+          space_id_param: string
+          date_param: string
+          start_time_param: string
+          end_time_param: string
+          user_id_param: string
+          confirmation_type_param: string
+        }
+        Returns: Json
       }
       validate_booking_slot_with_lock: {
         Args: {
