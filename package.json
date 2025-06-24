@@ -13,7 +13,7 @@
     "test:ui": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"  
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -52,6 +52,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.3.0",
+    "framer-motion": "^12.19.1",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "mapbox-gl": "^3.12.0",
