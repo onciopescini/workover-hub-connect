@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,20 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, MessageCircle, Calendar, Users, Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-
-interface ConversationItem {
-  id: string;
-  type: 'booking' | 'private' | 'group';
-  title: string;
-  subtitle: string;
-  avatar?: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isOnline?: boolean;
-  status?: 'confirmed' | 'pending' | 'active';
-  priority?: 'urgent' | 'high' | 'normal';
-}
+import { ConversationItem } from "@/types/messaging";
 
 interface ConversationSidebarProps {
   conversations: ConversationItem[];

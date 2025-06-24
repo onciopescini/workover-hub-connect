@@ -1,23 +1,9 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { MessageSquare, Calendar, Users } from "lucide-react";
-
-interface ConversationItem {
-  id: string;
-  type: 'booking' | 'private' | 'group';
-  title: string;
-  subtitle: string;
-  avatar?: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isOnline?: boolean;
-  status?: 'confirmed' | 'pending' | 'active';
-  priority?: 'urgent' | 'high' | 'normal';
-}
+import { ConversationItem } from "@/types/messaging";
 
 interface MessagesTabsManagerProps {
   activeTab: string;

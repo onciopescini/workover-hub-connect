@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,15 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { EnhancedMessageComposer } from "./EnhancedMessageComposer";
 import { EnhancedMessageBubble } from "./EnhancedMessageBubble";
 import { Search, MessageSquare } from "lucide-react";
-
-interface ConversationItem {
-  id: string;
-  type: 'booking' | 'private' | 'group';
-  title: string;
-  subtitle: string;
-  avatar?: string;
-  status?: 'confirmed' | 'pending' | 'active';
-}
+import { ConversationItem } from "@/types/messaging";
 
 interface MessagesChatAreaProps {
   selectedConversation?: ConversationItem;
