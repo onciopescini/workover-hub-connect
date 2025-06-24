@@ -103,7 +103,7 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ host, on
             <div className="text-sm text-gray-600">Tasso risposta</div>
           </div>
           <div className="text-center">
-            <div className="font-semibold text-lg">< 1h</div>
+            <div className="font-semibold text-lg">&lt; 1h</div>
             <div className="text-sm text-gray-600">Tempo risposta</div>
           </div>
           <div className="text-center">
