@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
@@ -11,10 +12,10 @@ import { CreditCard, Loader2, AlertCircle } from "lucide-react";
 interface Payment {
   id: string;
   booking_id: string;
-  payment_date: string;
+  created_at: string;
   amount: number;
   currency: string;
-  status: 'completed' | 'pending' | 'failed';
+  payment_status: 'completed' | 'pending' | 'failed';
 }
 
 export function PaymentsDashboard() {
@@ -44,23 +45,30 @@ export function PaymentsDashboard() {
       } else if (timeRange === '365') {
         startDate = new Date(today.setDate(today.getDate() - 365));
       } else {
-        startDate = new Date(today.setDate(today.getDate() - 30)); // Default to 30 days
+        startDate = new Date(today.setDate(today.getDate() - 30));
       }
 
-      query = query.gte('payment_date', startDate.toISOString());
+      query = query.gte('created_at', startDate.toISOString());
 
       if (filter !== 'all') {
-        query = query.eq('status', filter);
+        query = query.eq('payment_status', filter);
       }
 
-      const { data, error } = await query.order('payment_date', { ascending: false });
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching payments:', error);
         throw error;
       }
 
-      return data as Payment[];
+      return data?.map(payment => ({
+        id: payment.id,
+        booking_id: payment.booking_id,
+        created_at: payment.created_at,
+        amount: payment.amount,
+        currency: payment.currency,
+        payment_status: payment.payment_status
+      })) as Payment[];
     },
     enabled: !!authState.user?.id,
   });
@@ -134,7 +142,7 @@ export function PaymentsDashboard() {
                     <tr key={payment.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {format(new Date(payment.payment_date), 'dd MMM yyyy', { locale: it })}
+                          {format(new Date(payment.created_at), 'dd MMM yyyy', { locale: it })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -146,7 +154,7 @@ export function PaymentsDashboard() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{payment.status}</div>
+                        <div className="text-sm text-gray-900">{payment.payment_status}</div>
                       </td>
                     </tr>
                   ))}

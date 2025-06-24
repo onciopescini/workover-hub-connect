@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +22,7 @@ const HostAnalytics = () => {
 
   const { data: analyticsData, isLoading, error } = useQuery({
     queryKey: ['host-analytics', authState.user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<AnalyticsData | null> => {
       if (!authState.user?.id) {
         return null;
       }
@@ -29,22 +30,22 @@ const HostAnalytics = () => {
       // Fetch total revenue
       const { data: revenueData, error: revenueError } = await supabase
         .from('payments')
-        .select('amount')
-        .eq('host_id', authState.user.id)
-        .eq('status', 'completed');
+        .select('host_amount')
+        .eq('user_id', authState.user.id)
+        .eq('payment_status', 'completed');
 
       if (revenueError) {
         console.error('Error fetching revenue:', revenueError);
         throw revenueError;
       }
 
-      const totalRevenue = revenueData?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+      const totalRevenue = revenueData?.reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
 
       // Fetch total bookings
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select('id', { count: 'exact' })
-        .eq('host_id', authState.user.id);
+        .select('id')
+        .eq('user_id', authState.user.id);
 
       if (bookingsError) {
         console.error('Error fetching bookings:', bookingsError);
@@ -55,9 +56,9 @@ const HostAnalytics = () => {
 
       // Fetch average rating
       const { data: ratingData, error: ratingError } = await supabase
-        .from('reviews')
+        .from('booking_reviews')
         .select('rating')
-        .eq('host_id', authState.user.id);
+        .eq('target_id', authState.user.id);
 
       if (ratingError) {
         console.error('Error fetching ratings:', ratingError);
@@ -70,8 +71,8 @@ const HostAnalytics = () => {
       // Fetch total messages
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
-        .select('id', { count: 'exact' })
-        .eq('host_id', authState.user.id);
+        .select('id')
+        .eq('sender_id', authState.user.id);
 
       if (messagesError) {
         console.error('Error fetching messages:', messagesError);
@@ -83,15 +84,16 @@ const HostAnalytics = () => {
       // Fetch total coworkers
       const { data: coworkersData, error: coworkersError } = await supabase
         .from('bookings')
-        .select('user_id', { count: 'distinct' })
-        .eq('host_id', authState.user.id);
+        .select('user_id')
+        .eq('user_id', authState.user.id);
 
       if (coworkersError) {
         console.error('Error fetching coworkers:', coworkersError);
         throw coworkersError;
       }
 
-      const totalCoworkers = coworkersData?.length || 0;
+      const uniqueCoworkers = new Set(coworkersData?.map(b => b.user_id) || []);
+      const totalCoworkers = uniqueCoworkers.size;
 
       return {
         totalRevenue,

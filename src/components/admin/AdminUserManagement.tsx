@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,19 +15,18 @@ interface User {
   id: string;
   first_name: string;
   last_name: string;
-  email: string;
   role: string;
   profile_photo_url: string | null;
   created_at: string;
   updated_at: string;
   last_login_at: string | null;
-  is_active: boolean;
-  email_confirmed_at: string | null;
   phone: string | null;
   city: string | null;
   profession: string | null;
   competencies: string[] | null;
   industries: string[] | null;
+  is_suspended: boolean;
+  suspension_reason: string | null;
 }
 
 const AdminUserManagement = () => {
@@ -56,8 +56,8 @@ const AdminUserManagement = () => {
           ...user,
           competencies: user.competencies ? (Array.isArray(user.competencies) ? user.competencies : JSON.parse(user.competencies)) : [],
           industries: user.industries ? (Array.isArray(user.industries) ? user.industries : JSON.parse(user.industries)) : [],
-        }));
-        setUsers(usersWithParsedData as User[]);
+        })) as User[];
+        setUsers(usersWithParsedData);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -68,14 +68,11 @@ const AdminUserManagement = () => {
   const filteredUsers = users.filter(user => {
     const searchTerm = searchQuery.toLowerCase();
     const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-    return (
-      fullName.includes(searchTerm) ||
-      user.email.toLowerCase().includes(searchTerm)
-    );
+    return fullName.includes(searchTerm);
   }).filter(user => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'active') return user.is_active;
-    if (activeTab === 'inactive') return !user.is_active;
+    if (activeTab === 'active') return !user.is_suspended;
+    if (activeTab === 'inactive') return user.is_suspended;
     return true;
   });
 
@@ -83,7 +80,7 @@ const AdminUserManagement = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_active: true })
+        .update({ is_suspended: false })
         .eq('id', userId);
 
       if (error) {
@@ -93,7 +90,7 @@ const AdminUserManagement = () => {
       }
 
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, is_active: true } : user
+        user.id === userId ? { ...user, is_suspended: false } : user
       ));
       toast.success('User activated successfully');
     } catch (error) {
@@ -106,7 +103,7 @@ const AdminUserManagement = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ is_active: false })
+        .update({ is_suspended: true })
         .eq('id', userId);
 
       if (error) {
@@ -116,7 +113,7 @@ const AdminUserManagement = () => {
       }
 
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, is_active: false } : user
+        user.id === userId ? { ...user, is_suspended: true } : user
       ));
       toast.success('User deactivated successfully');
     } catch (error) {
@@ -193,7 +190,7 @@ const AdminUserManagement = () => {
               <TabsList>
                 <TabsTrigger value="all" onClick={() => setActiveTab('all')}>Tutti</TabsTrigger>
                 <TabsTrigger value="active" onClick={() => setActiveTab('active')}>Attivi</TabsTrigger>
-                <TabsTrigger value="inactive" onClick={() => setActiveTab('inactive')}>Inattivi</TabsTrigger>
+                <TabsTrigger value="inactive" onClick={() => setActiveTab('inactive')}>Sospesi</TabsTrigger>
               </TabsList>
               <TabsContent value="all">
                 <UserList
@@ -262,7 +259,7 @@ const UserList: React.FC<UserListProps> = ({
               </Avatar>
               <div>
                 <div className="text-sm font-medium">{user.first_name} {user.last_name}</div>
-                <div className="text-xs text-gray-500">{user.email}</div>
+                <div className="text-xs text-gray-500">{user.profession || 'No profession'}</div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -277,21 +274,21 @@ const UserList: React.FC<UserListProps> = ({
                   Coworker
                 </Badge>
               )}
-              {!user.is_active && (
+              {user.is_suspended && (
                 <Badge variant="destructive">
                   <UserX className="w-3 h-3 mr-1" />
-                  Inattivo
+                  Sospeso
                 </Badge>
               )}
             </div>
             <div className="flex space-x-2">
-              {user.is_active ? (
-                <Button variant="outline" size="sm" onClick={() => onDeactivateUser(user.id)}>
-                  Disattiva
-                </Button>
-              ) : (
+              {user.is_suspended ? (
                 <Button size="sm" onClick={() => onActivateUser(user.id)}>
                   Attiva
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => onDeactivateUser(user.id)}>
+                  Sospendi
                 </Button>
               )}
               {user.role === 'admin' ? (

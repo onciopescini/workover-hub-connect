@@ -17,8 +17,7 @@ import {
   Filter,
   FileText
 } from "lucide-react";
-import ReportDialog from "./ReportDialog";
-import ReportDetailsDialog from "./ReportDetailsDialog";
+import { ReportDetailsDialog } from "./ReportDetailsDialog";
 
 interface Report {
   id: string;

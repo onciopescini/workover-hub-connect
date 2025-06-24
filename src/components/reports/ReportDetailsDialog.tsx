@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,69 +7,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, MessageSquare, User, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { Calendar, MessageSquare, User, AlertTriangle, CheckCircle, Clock, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ReportDetailsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  reportId: string;
+  report: any;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: () => void;
 }
 
-export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDetailsDialogProps) {
+export function ReportDetailsDialog({ report, isOpen, onClose, onUpdate }: ReportDetailsDialogProps) {
   const { authState } = useAuth();
-  const [report, setReport] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [resolution, setResolution] = useState<string>("");
-  const [status, setStatus] = useState<string>("open");
-
-  React.useEffect(() => {
-    const fetchReport = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("reports")
-          .select(`
-            *,
-            profiles (
-              id,
-              first_name,
-              last_name,
-              profile_photo_url
-            ),
-            spaces (
-              id,
-              title
-            ),
-            events (
-              id,
-              title
-            )
-          `)
-          .eq("id", reportId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching report:", error);
-        } else {
-          setReport(data);
-          setStatus(data.status);
-          setResolution(data.resolution || "");
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (open && reportId) {
-      fetchReport();
-    }
-  }, [open, reportId]);
+  const [adminNotes, setAdminNotes] = useState<string>(report?.admin_notes || "");
+  const [status, setStatus] = useState<string>(report?.status || "open");
 
   const handleResolveReport = async () => {
-    if (!resolution) {
-      alert("Please enter a resolution.");
+    if (!adminNotes) {
+      toast.error("Please enter resolution notes.");
       return;
     }
 
@@ -78,18 +37,19 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
         .from("reports")
         .update({
           status: "resolved",
-          resolution: resolution,
-          resolved_by: authState.user?.id,
-          resolved_at: new Date().toISOString(),
+          admin_notes: adminNotes,
+          reviewed_by: authState.user?.id,
+          reviewed_at: new Date().toISOString(),
         })
-        .eq("id", reportId);
+        .eq("id", report.id);
 
       if (error) {
         console.error("Error resolving report:", error);
-        alert("Failed to resolve report.");
+        toast.error("Failed to resolve report.");
       } else {
-        alert("Report resolved successfully!");
-        onOpenChange(false);
+        toast.success("Report resolved successfully!");
+        onUpdate();
+        onClose();
       }
     } finally {
       setIsLoading(false);
@@ -102,7 +62,7 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
 
   if (!report) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Caricamento...</DialogTitle>
@@ -114,7 +74,7 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[825px]">
         <DialogHeader>
           <DialogTitle>Dettagli Segnalazione</DialogTitle>
@@ -164,23 +124,23 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
                 <CardTitle>Informazioni Utente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {report.profiles ? (
+                {report.reporter ? (
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={report.profiles.profile_photo_url || ""} />
+                      <AvatarImage src={report.reporter.profile_photo_url || ""} />
                       <AvatarFallback>
                         {getInitials(
-                          report.profiles.first_name,
-                          report.profiles.last_name
+                          report.reporter.first_name,
+                          report.reporter.last_name
                         )}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="text-sm font-medium">
-                        {report.profiles.first_name} {report.profiles.last_name}
+                        {report.reporter.first_name} {report.reporter.last_name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        ID: {report.profiles.id}
+                        ID: {report.reporter.id}
                       </div>
                     </div>
                   </div>
@@ -198,18 +158,18 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
                 <CardTitle>Informazioni Aggiuntive</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {report.space ? (
+                {report.target_type === 'space' && (
                   <div className="flex items-center space-x-2">
-                    <Building className="h-4 w-4 text-gray-500" />
-                    <span>Spazio: {report.spaces.title}</span>
+                    <Building2 className="h-4 w-4 text-gray-500" />
+                    <span>Spazio segnalato</span>
                   </div>
-                ) : null}
-                {report.event ? (
+                )}
+                {report.target_type === 'event' && (
                   <div className="flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>Evento: {report.events.title}</span>
+                    <span>Evento segnalato</span>
                   </div>
-                ) : null}
+                )}
               </CardContent>
             </Card>
 
@@ -219,9 +179,9 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
               </CardHeader>
               <CardContent className="space-y-4">
                 <Textarea
-                  placeholder="Inserisci la risoluzione..."
-                  value={resolution}
-                  onChange={(e) => setResolution(e.target.value)}
+                  placeholder="Inserisci le note di risoluzione..."
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
                 />
 
                 <Select value={status} onValueChange={setStatus}>
@@ -230,9 +190,9 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="open">Aperto</SelectItem>
+                    <SelectItem value="under_review">In revisione</SelectItem>
                     <SelectItem value="resolved">Risolto</SelectItem>
-                    <SelectItem value="pending">In sospeso</SelectItem>
-                    <SelectItem value="rejected">Rifiutato</SelectItem>
+                    <SelectItem value="dismissed">Respinto</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -241,33 +201,7 @@ export function ReportDetailsDialog({ open, onOpenChange, reportId }: ReportDeta
                   disabled={isLoading}
                   className="w-full"
                 >
-                  {isLoading ? (
-                    <>
-                      Caricamento...{" "}
-                      <svg
-                        className="animate-spin h-5 w-5 ml-2"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                    </>
-                  ) : (
-                    "Risolvi Segnalazione"
-                  )}
+                  {isLoading ? "Salvando..." : "Risolvi Segnalazione"}
                 </Button>
               </CardContent>
             </Card>

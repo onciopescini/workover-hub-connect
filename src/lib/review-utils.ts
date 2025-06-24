@@ -1,105 +1,111 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { ReviewWithDetails, ReviewInsert } from "@/types/review";
 
-// Get reviews for a specific user (both given and received)
-export const getUserReviews = async (userId: string): Promise<{
-  given: ReviewWithDetails[];
-  received: ReviewWithDetails[];
-}> => {
+export interface Review {
+  id: string;
+  booking_id: string;
+  author_id: string;
+  target_id: string;
+  rating: number;
+  content: string | null;
+  created_at: string;
+  updated_at: string;
+  is_visible: boolean;
+}
+
+export const calculateAverageRating = (reviews: Review[]): number => {
+  if (!reviews || reviews.length === 0) {
+    return 0;
+  }
+
+  const visibleReviews = reviews.filter(review => review.is_visible);
+  if (visibleReviews.length === 0) {
+    return 0;
+  }
+
+  const totalRating = visibleReviews.reduce((sum, review) => sum + review.rating, 0);
+  return Math.round((totalRating / visibleReviews.length) * 10) / 10;
+};
+
+export const getReviewsForSpace = async (spaceId: string): Promise<Review[]> => {
   try {
-    // Reviews given by the user
-    const { data: givenReviews, error: givenError } = await supabase
-      .from("reviews")
+    const { data, error } = await supabase
+      .from('booking_reviews')
       .select(`
         *,
-        reviewer:profiles!reviewer_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        booking:booking_id (
-          booking_date,
-          space:space_id (
-            title,
-            address
-          )
+        bookings!inner (
+          space_id
         )
       `)
-      .eq("reviewer_id", userId);
+      .eq('bookings.space_id', spaceId)
+      .eq('is_visible', true)
+      .order('created_at', { ascending: false });
 
-    if (givenError) throw givenError;
+    if (error) {
+      console.error('Error fetching reviews:', error);
+      throw error;
+    }
 
-    // Reviews received by the user
-    const { data: receivedReviews, error: receivedError } = await supabase
-      .from("reviews")
-      .select(`
-        *,
-        reviewer:profiles!reviewer_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        booking:booking_id (
-          booking_date,
-          space:space_id (
-            title,
-            address
-          )
-        )
-      `)
-      .eq("reviewee_id", userId);
-
-    if (receivedError) throw receivedError;
-
-    return {
-      given: givenReviews as ReviewWithDetails[] || [],
-      received: receivedReviews as ReviewWithDetails[] || [],
-    };
+    return data || [];
   } catch (error) {
-    console.error("Error fetching user reviews:", error);
-    return { given: [], received: [] };
+    console.error('Error in getReviewsForSpace:', error);
+    return [];
   }
 };
 
-// Add a new review
-export const addReview = async (review: ReviewInsert): Promise<boolean> => {
+export const submitReview = async (
+  bookingId: string,
+  targetId: string,
+  rating: number,
+  content: string
+): Promise<Review | null> => {
   try {
-    const { error } = await supabase.from("reviews").insert(review);
+    const { data, error } = await supabase
+      .from('booking_reviews')
+      .insert({
+        booking_id: bookingId,
+        target_id: targetId,
+        rating: rating,
+        content: content,
+        author_id: (await supabase.auth.getUser()).data.user?.id,
+      })
+      .select()
+      .single();
 
     if (error) {
-      toast.error("Failed to submit review");
-      console.error(error);
+      console.error('Error submitting review:', error);
+      toast.error('Errore nell\'invio della recensione');
+      throw error;
+    }
+
+    toast.success('Recensione inviata con successo');
+    return data;
+  } catch (error) {
+    console.error('Error in submitReview:', error);
+    return null;
+  }
+};
+
+export const canUserReview = async (bookingId: string, userId: string): Promise<boolean> => {
+  try {
+    // Check if user has already reviewed this booking
+    const { data: existingReview, error } = await supabase
+      .from('booking_reviews')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .eq('author_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking existing review:', error);
       return false;
     }
 
-    toast.success("Review submitted successfully");
-    return true;
+    // If review exists, user cannot review again
+    return !existingReview;
   } catch (error) {
-    console.error("Error adding review:", error);
-    toast.error("Failed to submit review");
+    console.error('Error in canUserReview:', error);
     return false;
-  }
-};
-
-// Get average rating for a user
-export const getUserAverageRating = async (userId: string): Promise<number | null> => {
-  try {
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("rating")
-      .eq("reviewee_id", userId);
-
-    if (error) throw error;
-    if (!data || data.length === 0) return null;
-
-    const average =
-      data.reduce((sum, review) => sum + review.rating, 0) / data.length;
-
-    return Math.round(average * 10) / 10; // Round to 1 decimal place
-  } catch (error) {
-    console.error("Error calculating average rating:", error);
-    return null;
   }
 };

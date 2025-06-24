@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
@@ -14,7 +15,7 @@ import { calculateAverageRating } from "@/lib/review-utils";
 import { SpaceReviews } from './SpaceReviews';
 import { BookingForm } from './BookingForm';
 import FavoriteButton from './FavoriteButton';
-import { useBookings } from '@/hooks/useBookings';
+import { useBookingsFixed } from '@/hooks/useBookingsFixed';
 import { toast } from 'sonner';
 
 interface SpaceDetailContentProps {
@@ -27,7 +28,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
   const { authState } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const { isLoading: isBookingLoading, createBooking } = useBookings();
+  const { isLoading, error } = useBookingsFixed();
 
   const averageRating = calculateAverageRating(reviews);
 
@@ -101,7 +102,6 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
               <ul className="list-disc list-inside text-gray-600">
                 <li>Prezzo: €{space.price_per_day} al giorno</li>
                 <li>Capacità massima: {space.max_capacity} persone</li>
-                <li>Superficie: {space.size_sqm} mq</li>
                 <li>Servizi: {space.amenities?.join(', ') || 'Nessuno'}</li>
               </ul>
             </div>
