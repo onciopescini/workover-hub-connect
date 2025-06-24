@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Paperclip, Send, Download, FileIcon } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface MessageListProps {
@@ -30,7 +31,7 @@ export function MessageList({ bookingId }: MessageListProps) {
       setMessages(data);
       setIsLoading(false);
 
-      // Marca i nuovi messaggi come letti
+      // Mark new messages as read
       data.forEach(msg => {
         if (!msg.is_read && msg.sender_id !== authState.user?.id) {
           markMessageAsRead(msg.id);
@@ -42,7 +43,7 @@ export function MessageList({ bookingId }: MessageListProps) {
       loadMessages();
     }
 
-    // Setup real-time listener per nuovi messaggi
+    // Setup real-time listener for new messages
     const channel = supabase
       .channel('messages-changes')
       .on('postgres_changes', {
@@ -55,7 +56,7 @@ export function MessageList({ bookingId }: MessageListProps) {
         setMessages(prev => {
           const exists = prev.some(m => m.id === newMsg.id);
           if (!exists) {
-            // Marca come letto se non è dal mittente corrente
+            // Mark as read if not from current user
             if (newMsg.sender_id !== authState.user?.id && !newMsg.is_read) {
               markMessageAsRead(newMsg.id);
             }
@@ -83,11 +84,7 @@ export function MessageList({ bookingId }: MessageListProps) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File troppo grande",
-          description: "La dimensione massima del file è 5MB",
-          variant: "destructive",
-        });
+        toast.error("File troppo grande. Dimensione massima: 5MB");
         return;
       }
       setAttachment(file);
@@ -109,18 +106,14 @@ export function MessageList({ bookingId }: MessageListProps) {
         }
       }
 
-      await sendMessage(bookingId, newMessage.trim(), attachments);
+      await sendMessage(bookingId, newMessage.trim());
 
       setNewMessage("");
       setAttachment(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Error sending message:", error);
-      toast({
-        title: "Errore nell'invio del messaggio",
-        description: "Riprova più tardi",
-        variant: "destructive",
-      });
+      toast.error("Errore nell'invio del messaggio");
     } finally {
       setIsLoading(false);
     }

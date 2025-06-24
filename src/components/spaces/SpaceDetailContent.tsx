@@ -10,16 +10,25 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Space } from "@/types/space";
-import { Review } from "@/types/review";
-import { calculateAverageRating } from "@/lib/review-utils";
+import { Review, calculateAverageRating } from "@/lib/review-utils";
 import { SpaceReviews } from './SpaceReviews';
 import { BookingForm } from './BookingForm';
 import FavoriteButton from './FavoriteButton';
 import { useBookingsFixed } from '@/hooks/useBookingsFixed';
 import { toast } from 'sonner';
 
+interface ExtendedSpace extends Space {
+  city?: string;
+  host?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  };
+}
+
 interface SpaceDetailContentProps {
-  space: Space;
+  space: ExtendedSpace;
   reviews: Review[];
 }
 
@@ -28,7 +37,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
   const { authState } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const { isLoading, error } = useBookingsFixed();
+  const { loading } = useBookingsFixed();
 
   const averageRating = calculateAverageRating(reviews);
 
@@ -45,6 +54,14 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  // Extract city from address if not provided separately
+  const getSpaceCity = () => {
+    if (space.city) return space.city;
+    // Try to extract city from address (assuming format: "Address, City")
+    const addressParts = space.address.split(',');
+    return addressParts.length > 1 ? addressParts[addressParts.length - 1].trim() : '';
+  };
+
   return (
     <div className="grid gap-4">
       {/* Space Header */}
@@ -55,7 +72,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
               <CardTitle className="text-2xl font-bold">{space.title}</CardTitle>
               <p className="text-gray-500 flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
-                {space.address}, {space.city}
+                {space.address}{getSpaceCity() && `, ${getSpaceCity()}`}
               </p>
             </div>
             

@@ -9,7 +9,12 @@ export interface Message {
   booking_id: string;
   created_at: string;
   is_read: boolean;
-  attachments?: any[];
+  attachments?: string[];
+  sender?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  };
 }
 
 export interface MessageWithSender extends Message {
@@ -21,7 +26,7 @@ export interface MessageWithSender extends Message {
   };
 }
 
-export const fetchMessagesForBooking = async (bookingId: string): Promise<MessageWithSender[]> => {
+export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -42,10 +47,23 @@ export const fetchMessagesForBooking = async (bookingId: string): Promise<Messag
       throw error;
     }
 
-    return data as MessageWithSender[];
+    return data?.map(msg => ({
+      id: msg.id,
+      content: msg.content,
+      sender_id: msg.sender_id,
+      booking_id: msg.booking_id,
+      created_at: msg.created_at,
+      is_read: msg.is_read,
+      attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : [],
+      sender: msg.sender ? {
+        first_name: msg.sender.first_name,
+        last_name: msg.sender.last_name,
+        profile_photo_url: msg.sender.profile_photo_url
+      } : undefined
+    })) || [];
   } catch (error) {
-    console.error('Error in fetchMessagesForBooking:', error);
-    throw error;
+    console.error('Error in fetchMessages:', error);
+    return [];
   }
 };
 
@@ -67,9 +85,50 @@ export const sendMessage = async (bookingId: string, content: string): Promise<M
       throw error;
     }
 
-    return data;
+    return {
+      id: data.id,
+      content: data.content,
+      sender_id: data.sender_id,
+      booking_id: data.booking_id,
+      created_at: data.created_at,
+      is_read: data.is_read,
+      attachments: Array.isArray(data.attachments) ? data.attachments as string[] : []
+    };
   } catch (error) {
     console.error('Error in sendMessage:', error);
+    return null;
+  }
+};
+
+export const uploadMessageAttachment = async (file: File): Promise<string | null> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) {
+      throw new Error("User not authenticated");
+    }
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${user.user.id}/${fileName}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from("message_attachments")
+      .upload(filePath, file);
+      
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw uploadError;
+    }
+    
+    const { data } = supabase.storage
+      .from("message_attachments")
+      .getPublicUrl(filePath);
+      
+    return data.publicUrl;
+  } catch (error) {
+    console.error("Error in uploadMessageAttachment:", error);
+    toast.error('Errore nell\'upload del file');
     return null;
   }
 };

@@ -14,6 +14,23 @@ export interface Review {
   is_visible: boolean;
 }
 
+export interface ReviewWithDetails {
+  id: string;
+  booking_id: string;
+  author_id: string;
+  target_id: string;
+  rating: number;
+  content: string | null;
+  created_at: string;
+  updated_at: string;
+  is_visible: boolean;
+  author?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  };
+}
+
 export const calculateAverageRating = (reviews: Review[]): number => {
   if (!reviews || reviews.length === 0) {
     return 0;
@@ -54,6 +71,87 @@ export const getReviewsForSpace = async (spaceId: string): Promise<Review[]> => 
   }
 };
 
+export const getUserReviews = async (userId: string): Promise<{ given: ReviewWithDetails[], received: ReviewWithDetails[] }> => {
+  try {
+    // Get reviews given by user
+    const { data: givenReviews, error: givenError } = await supabase
+      .from('booking_reviews')
+      .select(`
+        *,
+        target:profiles!booking_reviews_target_id_fkey (
+          first_name,
+          last_name,
+          profile_photo_url
+        )
+      `)
+      .eq('author_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (givenError) {
+      console.error('Error fetching given reviews:', givenError);
+      throw givenError;
+    }
+
+    // Get reviews received by user
+    const { data: receivedReviews, error: receivedError } = await supabase
+      .from('booking_reviews')
+      .select(`
+        *,
+        author:profiles!booking_reviews_author_id_fkey (
+          first_name,
+          last_name,
+          profile_photo_url
+        )
+      `)
+      .eq('target_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (receivedError) {
+      console.error('Error fetching received reviews:', receivedError);
+      throw receivedError;
+    }
+
+    return {
+      given: givenReviews?.map(review => ({
+        ...review,
+        author: review.target
+      })) || [],
+      received: receivedReviews?.map(review => ({
+        ...review,
+        author: review.author
+      })) || []
+    };
+  } catch (error) {
+    console.error('Error in getUserReviews:', error);
+    return { given: [], received: [] };
+  }
+};
+
+export const getUserAverageRating = async (userId: string): Promise<number | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('booking_reviews')
+      .select('rating')
+      .eq('target_id', userId)
+      .eq('is_visible', true);
+
+    if (error) {
+      console.error('Error fetching user rating:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const totalRating = data.reduce((sum, review) => sum + review.rating, 0);
+    return Math.round((totalRating / data.length) * 10) / 10;
+  } catch (error) {
+    console.error('Error in getUserAverageRating:', error);
+    return null;
+  }
+};
+
 export const submitReview = async (
   bookingId: string,
   targetId: string,
@@ -89,7 +187,6 @@ export const submitReview = async (
 
 export const canUserReview = async (bookingId: string, userId: string): Promise<boolean> => {
   try {
-    // Check if user has already reviewed this booking
     const { data: existingReview, error } = await supabase
       .from('booking_reviews')
       .select('id')
@@ -102,7 +199,6 @@ export const canUserReview = async (bookingId: string, userId: string): Promise<
       return false;
     }
 
-    // If review exists, user cannot review again
     return !existingReview;
   } catch (error) {
     console.error('Error in canUserReview:', error);

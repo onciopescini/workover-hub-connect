@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserNotification, NotificationCounts } from '@/types/notification';
@@ -31,8 +32,15 @@ export const useNotifications = () => {
         return;
       }
 
-      setNotifications(data || []);
-      updateCounts(data || []);
+      // Transform the data to match our type
+      const transformedData: UserNotification[] = data?.map(notification => ({
+        ...notification,
+        type: notification.type as UserNotification['type'],
+        metadata: notification.metadata as Record<string, any>
+      })) || [];
+
+      setNotifications(transformedData);
+      updateCounts(transformedData);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +79,12 @@ export const useNotifications = () => {
         },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const newNotification = payload.new as UserNotification;
+            const newNotification = {
+              ...payload.new,
+              type: payload.new.type as UserNotification['type'],
+              metadata: payload.new.metadata as Record<string, any>
+            } as UserNotification;
+            
             setNotifications((prevNotifications) => {
               const exists = prevNotifications.some(n => n.id === newNotification.id);
               if (exists) {
@@ -119,4 +132,3 @@ export const useNotifications = () => {
     markAllAsRead,
   };
 };
-

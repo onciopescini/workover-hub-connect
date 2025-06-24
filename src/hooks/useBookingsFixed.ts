@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/OptimizedAuthContext';
@@ -28,12 +29,12 @@ interface BookingWithSpace extends Booking {
 export const useBookingsFixed = () => {
   const { authState } = useAuth();
   const [bookings, setBookings] = useState<BookingWithSpace[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
 
       try {
@@ -43,10 +44,10 @@ export const useBookingsFixed = () => {
         }
 
         const { data, error } = await supabase
-          .from<Booking>('bookings')
+          .from('bookings')
           .select(`
             *,
-            spaces (
+            space:spaces (
               id,
               title,
               address
@@ -58,11 +59,11 @@ export const useBookingsFixed = () => {
           console.error('Error fetching bookings:', error);
           setError(error.message);
         } else {
-          // Type assertion to ensure 'spaces' is always an object
+          // Transform the data to match our interface
           const typedData: BookingWithSpace[] = data
             ? data.map(booking => ({
                 ...booking,
-                space: booking.spaces as Space,
+                space: booking.space as Space,
               }))
             : [];
           setBookings(typedData);
@@ -71,7 +72,7 @@ export const useBookingsFixed = () => {
         console.error('Unexpected error:', err);
         setError(err.message || 'An unexpected error occurred');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
@@ -81,12 +82,12 @@ export const useBookingsFixed = () => {
   }, [authState.user]);
 
   const cancelBooking = async (bookingId: string) => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase
-        .from<Booking>('bookings')
+      const { error } = await supabase
+        .from('bookings')
         .update({ status: 'cancelled' })
         .eq('id', bookingId);
 
@@ -107,13 +108,13 @@ export const useBookingsFixed = () => {
       setError(err.message || 'An unexpected error occurred');
       toast.error('An unexpected error occurred');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return {
     bookings,
-    isLoading,
+    loading,
     error,
     cancelBooking,
   };
