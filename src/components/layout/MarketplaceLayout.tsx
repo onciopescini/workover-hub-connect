@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UnifiedHeader } from './UnifiedHeader';
+import { OptimizedUnifiedHeader } from './OptimizedUnifiedHeader';
 
 interface MarketplaceLayoutProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ export function MarketplaceLayout({ children, showFooter = true }: MarketplaceLa
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <UnifiedHeader />
+      <OptimizedUnifiedHeader />
       <main className="flex-1">
         {children}
       </main>
