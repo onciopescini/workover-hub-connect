@@ -36,6 +36,7 @@ const Bookings = lazy(() => import("@/pages/Bookings"));
 const Messages = lazy(() => import("@/pages/Messages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
+const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
@@ -158,6 +159,14 @@ export const OptimizedAppRoutes = () => {
           <OptimizedAuthProtected>
             <LazyWrapper>
               <Networking />
+            </LazyWrapper>
+          </OptimizedAuthProtected>
+        } />
+        
+        <Route path="networking-test-suite" element={
+          <OptimizedAuthProtected>
+            <LazyWrapper>
+              <NetworkingTestSuite />
             </LazyWrapper>
           </OptimizedAuthProtected>
         } />

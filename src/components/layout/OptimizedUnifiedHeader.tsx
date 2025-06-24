@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/OptimizedAuthContext';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home } from 'lucide-react';
+import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +52,7 @@ export const OptimizedUnifiedHeader = () => {
       return [
         ...baseItems,
         { name: 'Admin Panel', href: '/admin/users', icon: Settings },
+        { name: 'Test Suite', href: '/networking-test-suite', icon: TestTube },
         { name: 'Gestione Utenti', href: '/admin/users', icon: Users },
       ];
     }
@@ -190,6 +190,14 @@ export const OptimizedUnifiedHeader = () => {
                         <span>Messaggi</span>
                       </Link>
                     </DropdownMenuItem>
+                    {authState.profile.role === 'admin' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/networking-test-suite" className="flex items-center">
+                          <TestTube className="mr-2 h-4 w-4" />
+                          <span>Test Suite</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="flex items-center">
                         <Settings className="mr-2 h-4 w-4" />
