@@ -8,6 +8,22 @@ export interface ProfileAccessResult {
   message: string;
 }
 
+// Type guard per validare la struttura della risposta RPC
+function isValidProfileAccessResponse(data: any): data is {
+  has_access: boolean;
+  access_reason: string;
+  message: string;
+} {
+  return (
+    data &&
+    typeof data === 'object' &&
+    !Array.isArray(data) &&
+    typeof data.has_access === 'boolean' &&
+    typeof data.access_reason === 'string' &&
+    typeof data.message === 'string'
+  );
+}
+
 // Verifica accesso al profilo tramite funzione database
 export const checkProfileAccess = async (profileId: string): Promise<ProfileAccessResult> => {
   try {
@@ -34,20 +50,16 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
       };
     }
 
-    // Fix per il tipo: validazione più robusta
-    if (data && typeof data === 'object') {
-      // Accesso diretto alle proprietà con validazione
-      const hasAccess = Boolean(data.has_access);
-      const accessReason = String(data.access_reason || 'unknown');
-      const message = String(data.message || 'Nessun messaggio disponibile');
-      
+    // Validazione robusta del tipo con type guard
+    if (isValidProfileAccessResponse(data)) {
       return {
-        has_access: hasAccess,
-        access_reason: accessReason,
-        message: message
+        has_access: data.has_access,
+        access_reason: data.access_reason,
+        message: data.message
       };
     }
 
+    console.error('Invalid response format from check_profile_access:', data);
     return {
       has_access: false,
       access_reason: 'error',
