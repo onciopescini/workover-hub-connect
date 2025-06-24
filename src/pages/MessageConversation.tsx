@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Button } from "@/components/ui/button";
 import { MessageList } from "@/components/messaging/MessageList";
+import { supabase } from "@/integrations/supabase/client";
 
 const MessageConversation = () => {
   const { bookingId } = useParams<{ bookingId: string }>();

@@ -13,9 +13,9 @@ const Favorites = () => {
 
   useEffect(() => {
     const loadFavoriteSpaces = async () => {
-      if (authState.isAuthenticated) {
+      if (authState.isAuthenticated && authState.user) {
         setIsLoading(true);
-        const spaces = await getFavoriteSpaces();
+        const spaces = await getFavoriteSpaces(authState.user.id);
         setFavoriteSpaces(spaces);
         setIsLoading(false);
       } else {
@@ -25,7 +25,7 @@ const Favorites = () => {
     };
 
     loadFavoriteSpaces();
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, authState.user]);
 
   if (isLoading) {
     return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Star, MessageSquare, User, Calendar } from "lucide-react";
-import { getUserReviews } from "@/lib/review-utils";
-import { ReviewWithDetails } from "@/types/review";
+import { getUserReviews, ReviewWithDetails } from "@/lib/review-utils";
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 

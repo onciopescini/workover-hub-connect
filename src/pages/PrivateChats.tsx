@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,10 +8,17 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Plus, Search, Users, Clock } from "lucide-react";
+import { MessageSquare, Send, Plus, Search, Users, Clock, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { toast } from "sonner";
+import { 
+  getUserPrivateChats, 
+  getPrivateMessages, 
+  sendPrivateMessage,
+  PrivateChat,
+  PrivateMessage 
+} from "@/lib/messaging-utils";
 
 const PrivateChats = () => {
   const navigate = useNavigate();
@@ -70,7 +79,7 @@ const PrivateChats = () => {
   };
 
   const getOtherParticipant = (chat: PrivateChat) => {
-    if (chat.participant_1?.id === authState.user?.id) {
+    if (chat.participant_1_id === authState.user?.id) {
       return chat.participant_2;
     }
     return chat.participant_1;

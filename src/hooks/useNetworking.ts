@@ -44,7 +44,8 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
       } else {
         const typedSuggestions: ConnectionSuggestion[] = (data || []).map(item => ({
           ...item,
-          reason: item.reason as "shared_space" | "shared_event" | "similar_interests"
+          reason: item.reason as "shared_space" | "shared_event" | "similar_interests",
+          shared_context: (item.shared_context as Record<string, any>) || {}
         }));
         setSuggestions(typedSuggestions);
       }
@@ -126,13 +127,6 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
       setIsLoading(false);
     }
   }, [fetchSuggestions]);
-
-  useEffect(() => {
-    if (authState.user) {
-      fetchSuggestions();
-      fetchConnections();
-    }
-  }, [authState.user, fetchSuggestions, fetchConnections]);
 
   const sendConnectionRequest = async (receiverId: string): Promise<boolean> => {
     try {
@@ -255,6 +249,13 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
   const getActiveConnections = (): Connection[] => {
     return connections.filter((connection) => connection.status === 'accepted');
   };
+
+  useEffect(() => {
+    if (authState.user) {
+      fetchSuggestions();
+      fetchConnections();
+    }
+  }, [authState.user, fetchSuggestions, fetchConnections]);
 
   return {
     suggestions,

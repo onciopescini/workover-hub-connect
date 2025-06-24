@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -49,6 +48,33 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
   } catch (error) {
     console.error('Error in getFavoriteSpaces:', error);
     return [];
+  }
+};
+
+export const isSpaceFavorited = async (spaceId: string): Promise<boolean> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('space_id', spaceId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking favorite status:', error);
+      return false;
+    }
+
+    return !!data;
+  } catch (error) {
+    console.error('Error in isSpaceFavorited:', error);
+    return false;
   }
 };
 

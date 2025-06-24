@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -26,6 +25,36 @@ export interface MessageWithSender extends Message {
   };
 }
 
+export interface PrivateChat {
+  id: string;
+  participant_1_id: string;
+  participant_2_id: string;
+  created_at: string;
+  last_message_at: string;
+  participant_1?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  };
+  participant_2?: {
+    id: string;   
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+  };
+}
+
+export interface PrivateMessage {
+  id: string;
+  content: string;
+  sender_id: string;
+  chat_id: string;
+  created_at: string;
+  is_read: boolean;
+  attachments: string[];
+}
+
 export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
   try {
     const { data, error } = await supabase
@@ -33,7 +62,6 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       .select(`
         *,
         sender:profiles!messages_sender_id_fkey (
-          id,
           first_name,
           last_name,
           profile_photo_url
@@ -64,6 +92,103 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
   } catch (error) {
     console.error('Error in fetchMessages:', error);
     return [];
+  }
+};
+
+export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { data, error } = await supabase
+      .from('private_chats')
+      .select(`
+        *,
+        participant_1:profiles!private_chats_participant_1_id_fkey (
+          id,
+          first_name,
+          last_name,
+          profile_photo_url
+        ),
+        participant_2:profiles!private_chats_participant_2_id_fkey (
+          id,
+          first_name,
+          last_name,
+          profile_photo_url
+        )
+      `)
+      .or(`participant_1_id.eq.${user.user.id},participant_2_id.eq.${user.user.id}`)
+      .order('last_message_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching private chats:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserPrivateChats:', error);
+    return [];
+  }
+};
+
+export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('private_messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching private messages:', error);
+      throw error;
+    }
+
+    return data?.map(msg => ({
+      id: msg.id,
+      content: msg.content,
+      sender_id: msg.sender_id,
+      chat_id: msg.chat_id,
+      created_at: msg.created_at,
+      is_read: msg.is_read,
+      attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : []
+    })) || [];
+  } catch (error) {
+    console.error('Error in getPrivateMessages:', error);
+    return [];
+  }
+};
+
+export const sendPrivateMessage = async (chatId: string, content: string): Promise<boolean> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    
+    if (!user?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const { error } = await supabase
+      .from('private_messages')
+      .insert({
+        chat_id: chatId,
+        content: content,
+        sender_id: user.user.id,
+      });
+
+    if (error) {
+      console.error('Error sending private message:', error);
+      toast.error('Errore nell\'invio del messaggio');
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in sendPrivateMessage:', error);
+    return false;
   }
 };
 

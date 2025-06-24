@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "lucide-react";
-import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
@@ -30,13 +30,10 @@ const SpaceEdit = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [workEnvironment, setWorkEnvironment] = useState('');
   const [pricePerDay, setPricePerDay] = useState(0);
   const [amenities, setAmenities] = useState<string[]>([]);
-  const [availableFrom, setAvailableFrom] = useState<Date | undefined>(undefined);
-  const [availableTo, setAvailableTo] = useState<Date | undefined>(undefined);
   const [published, setPublished] = useState(false);
 
   useEffect(() => {
@@ -65,13 +62,10 @@ const SpaceEdit = () => {
           setTitle(data.title);
           setDescription(data.description);
           setAddress(data.address);
-          setCity(data.city);
           setCategory(data.category);
           setWorkEnvironment(data.work_environment);
           setPricePerDay(data.price_per_day);
           setAmenities(data.amenities || []);
-          setAvailableFrom(data.available_from ? new Date(data.available_from) : undefined);
-          setAvailableTo(data.available_to ? new Date(data.available_to) : undefined);
           setPublished(data.published);
         }
       } finally {
@@ -99,13 +93,10 @@ const SpaceEdit = () => {
           title,
           description,
           address,
-          city,
           category,
-          work_environment,
-          price_per_day,
+          work_environment: workEnvironment,
+          price_per_day: pricePerDay,
           amenities,
-          available_from: availableFrom ? format(availableFrom, 'yyyy-MM-dd') : null,
-          available_to: availableTo ? format(availableTo, 'yyyy-MM-dd') : null,
           published,
         })
         .eq('id', id);
@@ -221,15 +212,6 @@ const SpaceEdit = () => {
               />
             </div>
             <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </div>
-            <div>
               <Label htmlFor="category">Category</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="w-full">
@@ -305,24 +287,6 @@ const SpaceEdit = () => {
                 </div>
               </ScrollArea>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Available From</Label>
-                <DatePicker
-                  selected={availableFrom}
-                  onSelect={setAvailableFrom}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <Label>Available To</Label>
-                <DatePicker
-                  selected={availableTo}
-                  onSelect={setAvailableTo}
-                  className="w-full"
-                />
-              </div>
-            </div>
             <div>
               <Label htmlFor="published">Published</Label>
               <Switch
@@ -332,7 +296,7 @@ const SpaceEdit = () => {
               />
             </div>
             <div className="flex justify-between">
-              <Button variant="primary" onClick={handleUpdateSpace} disabled={isLoading}>
+              <Button variant="default" onClick={handleUpdateSpace} disabled={isLoading}>
                 Update Space
               </Button>
               <Button variant="destructive" onClick={handleDeleteSpace} disabled={isLoading}>

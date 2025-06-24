@@ -1,9 +1,28 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Star, MessageSquare, User, ArrowLeft } from "lucide-react";
+import { formatDistanceToNow } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { getUserReviews, getUserAverageRating, ReviewWithDetails } from "@/lib/review-utils";
+
+const LoadingScreen = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Caricamento...</h2>
+      <p className="text-gray-600">Stiamo caricando le tue recensioni.</p>
+    </div>
+  </div>
+);
 
 export default function Reviews() {
+  const navigate = useNavigate();
   const { authState } = useAuth();
   const [reviews, setReviews] = useState<{
     given: ReviewWithDetails[];
