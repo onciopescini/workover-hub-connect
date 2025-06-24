@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -13,7 +12,8 @@ import {
   Calendar,
   Eye,
   Clock,
-  Verified
+  Verified,
+  Users
 } from 'lucide-react';
 import { Connection } from '@/types/networking';
 import { useAuth } from '@/contexts/OptimizedAuthContext';
