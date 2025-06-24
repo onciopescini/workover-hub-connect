@@ -1,71 +1,72 @@
+
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Search, UserPlus, MessageCircle, Calendar, MapPin } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Users, UserPlus, MessageCircle, TrendingUp } from "lucide-react";
+import { useNetworking } from "@/hooks/useNetworking";
+import { NetworkingDashboard } from "@/components/networking/NetworkingDashboard";
+import { EnhancedConnectionCard } from "@/components/networking/EnhancedConnectionCard";
+import { EnhancedSuggestionCard } from "@/components/networking/EnhancedSuggestionCard";
+import { NetworkingSearch } from "@/components/networking/NetworkingSearch";
+import { ConnectionRequestCard } from "@/components/networking/ConnectionRequestCard";
 
 const Networking = () => {
   const { authState } = useAuth();
+  const { 
+    connections, 
+    suggestions, 
+    getSentRequests, 
+    getReceivedRequests, 
+    getActiveConnections 
+  } = useNetworking();
+  
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilters, setSearchFilters] = useState<any>({});
 
-  // Mock data for demonstration - in real app this would come from your networking service
-  const connections = [
-    {
-      id: "1",
-      name: "Marco Rossi",
-      profession: "Designer",
-      location: "Milano",
-      avatar: "",
-      status: "accepted",
-      shared_spaces: 2,
-      last_active: "2 giorni fa"
-    },
-    {
-      id: "2", 
-      name: "Sara Bianchi",
-      profession: "Developer",
-      location: "Roma",
-      avatar: "",
-      status: "pending",
-      shared_spaces: 1,
-      last_active: "1 settimana fa"
-    }
+  // Mock data for dashboard stats
+  const dashboardStats = {
+    totalConnections: getActiveConnections().length,
+    pendingRequests: getReceivedRequests().length,
+    messagesThisWeek: 24,
+    eventsAttended: 3,
+    profileViews: 89,
+    connectionRate: 78
+  };
+
+  const savedSearches = [
+    "Product Managers Milano",
+    "Tech Startup Founders",
+    "Digital Marketing Roma"
   ];
 
-  const suggestions = [
-    {
-      id: "3",
-      name: "Luca Verdi",
-      profession: "Marketing Manager",
-      location: "Torino",
-      avatar: "",
-      shared_context: "Ha prenotato nello stesso spazio",
-      match_score: 85
-    },
-    {
-      id: "4",
-      name: "Elena Neri",
-      profession: "Architetto",
-      location: "Firenze", 
-      avatar: "",
-      shared_context: "Partecipa agli stessi eventi",
-      match_score: 92
-    }
-  ];
+  const handleSearch = (query: string, filters: any) => {
+    setSearchQuery(query);
+    setSearchFilters(filters);
+    // In a real app, this would trigger API calls to search with filters
+    console.log("Searching for:", query, "with filters:", filters);
+  };
 
-  const filteredConnections = connections.filter(conn =>
-    conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conn.profession.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConnections = getActiveConnections().filter(conn => {
+    if (!searchQuery) return true;
+    const isCurrentUserSender = conn.sender_id === authState.user?.id;
+    const otherUser = isCurrentUserSender ? conn.receiver : conn.sender;
+    if (!otherUser) return false;
+    
+    const fullName = `${otherUser.first_name} ${otherUser.last_name}`.toLowerCase();
+    return fullName.includes(searchQuery.toLowerCase()) ||
+           (otherUser.bio && otherUser.bio.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
-  const filteredSuggestions = suggestions.filter(sugg =>
-    sugg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    sugg.profession.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSuggestions = suggestions.filter(sugg => {
+    if (!searchQuery) return true;
+    const user = sugg.suggested_user;
+    if (!user) return false;
+    
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+    return fullName.includes(searchQuery.toLowerCase()) ||
+           (user.bio && user.bio.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
   if (!authState.isAuthenticated) {
     return (
@@ -87,49 +88,44 @@ const Networking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Networking</h1>
-          <p className="text-gray-600">
-            Connettiti con professionisti che condividono i tuoi spazi ed eventi
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Dashboard */}
+        <NetworkingDashboard stats={dashboardStats} />
 
         {/* Search */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Cerca per nome o professione..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <NetworkingSearch 
+          onSearch={handleSearch}
+          savedSearches={savedSearches}
+        />
 
         <Tabs defaultValue="connections" className="space-y-6">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="connections" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Le mie connessioni
+              Connessioni ({getActiveConnections().length})
             </TabsTrigger>
             <TabsTrigger value="suggestions" className="flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Suggerimenti
+              Suggerimenti ({suggestions.length})
+            </TabsTrigger>
+            <TabsTrigger value="sent" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Inviate ({getSentRequests().length})
+            </TabsTrigger>
+            <TabsTrigger value="received" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Ricevute ({getReceivedRequests().length})
             </TabsTrigger>
           </TabsList>
 
-          {/* Connections Tab */}
+          {/* Active Connections */}
           <TabsContent value="connections">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {filteredConnections.length === 0 ? (
-                <div className="col-span-full text-center py-12">
+                <div className="text-center py-12">
                   <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nessuna connessione trovata
+                    {searchQuery ? "Nessuna connessione trovata" : "Nessuna connessione attiva"}
                   </h3>
                   <p className="text-gray-600">
                     {searchQuery ? "Prova a modificare la ricerca" : "Inizia a connetterti con altri professionisti"}
@@ -137,66 +133,23 @@ const Networking = () => {
                 </div>
               ) : (
                 filteredConnections.map((connection) => (
-                  <Card key={connection.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={connection.avatar} />
-                          <AvatarFallback>
-                            {connection.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {connection.name}
-                            </h3>
-                            <Badge variant={connection.status === 'accepted' ? 'default' : 'secondary'}>
-                              {connection.status === 'accepted' ? 'Connesso' : 'In attesa'}
-                            </Badge>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-1">{connection.profession}</p>
-                          
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-                            <MapPin className="h-3 w-3" />
-                            {connection.location}
-                          </div>
-                          
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-4">
-                            <Calendar className="h-3 w-3" />
-                            {connection.shared_spaces} spazi condivisi • Attivo {connection.last_active}
-                          </div>
-                          
-                          {connection.status === 'accepted' && (
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="flex-1">
-                                <MessageCircle className="h-3 w-3 mr-1" />
-                                Messaggio
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                Profilo
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <EnhancedConnectionCard 
+                    key={connection.id} 
+                    connection={connection} 
+                  />
                 ))
               )}
             </div>
           </TabsContent>
 
-          {/* Suggestions Tab */}
+          {/* Suggestions */}
           <TabsContent value="suggestions">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4">
               {filteredSuggestions.length === 0 ? (
-                <div className="col-span-full text-center py-12">
+                <div className="text-center py-12">
                   <UserPlus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nessun suggerimento trovato
+                    {searchQuery ? "Nessun suggerimento trovato" : "Nessun suggerimento disponibile"}
                   </h3>
                   <p className="text-gray-600">
                     {searchQuery ? "Prova a modificare la ricerca" : "I suggerimenti appariranno man mano che utilizzi la piattaforma"}
@@ -204,50 +157,60 @@ const Networking = () => {
                 </div>
               ) : (
                 filteredSuggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={suggestion.avatar} />
-                          <AvatarFallback>
-                            {suggestion.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {suggestion.name}
-                            </h3>
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              {suggestion.match_score}% match
-                            </Badge>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-1">{suggestion.profession}</p>
-                          
-                          <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-                            <MapPin className="h-3 w-3" />
-                            {suggestion.location}
-                          </div>
-                          
-                          <p className="text-xs text-blue-600 mb-4">
-                            {suggestion.shared_context}
-                          </p>
-                          
-                          <div className="flex gap-2">
-                            <Button size="sm" className="flex-1">
-                              <UserPlus className="h-3 w-3 mr-1" />
-                              Connetti
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Profilo
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <EnhancedSuggestionCard 
+                    key={suggestion.id} 
+                    suggestion={suggestion} 
+                  />
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Sent Requests */}
+          <TabsContent value="sent">
+            <div className="space-y-4">
+              {getSentRequests().length === 0 ? (
+                <div className="text-center py-12">
+                  <TrendingUp className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nessuna richiesta inviata
+                  </h3>
+                  <p className="text-gray-600">
+                    Le richieste che invii appariranno qui
+                  </p>
+                </div>
+              ) : (
+                getSentRequests().map((connection) => (
+                  <ConnectionRequestCard 
+                    key={connection.id} 
+                    connection={connection} 
+                    type="sent"
+                  />
+                ))
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Received Requests */}
+          <TabsContent value="received">
+            <div className="space-y-4">
+              {getReceivedRequests().length === 0 ? (
+                <div className="text-center py-12">
+                  <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nessuna richiesta ricevuta
+                  </h3>
+                  <p className="text-gray-600">
+                    Le richieste che ricevi appariranno qui
+                  </p>
+                </div>
+              ) : (
+                getReceivedRequests().map((connection) => (
+                  <ConnectionRequestCard 
+                    key={connection.id} 
+                    connection={connection} 
+                    type="received"
+                  />
                 ))
               )}
             </div>
