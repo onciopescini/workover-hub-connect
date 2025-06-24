@@ -60,9 +60,9 @@ const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
 export const OptimizedAppRoutes = () => {
   return (
     <Routes>
-      {/* Public routes with MainLayout */}
+      {/* Unified routes with MainLayout */}
       <Route path="/" element={<MainLayout />}>
-        {/* Landing and auth */}
+        {/* Public routes */}
         <Route index element={<Index />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
@@ -88,10 +88,8 @@ export const OptimizedAppRoutes = () => {
         <Route path="contact" element={<Contact />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
-      </Route>
 
-      {/* Protected routes with MainLayout */}
-      <Route path="/" element={<MainLayout />}>
+        {/* Protected routes */}
         <Route path="onboarding" element={
           <OptimizedAuthProtected requireOnboarding={false}>
             <LazyWrapper>

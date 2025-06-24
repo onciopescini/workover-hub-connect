@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/OptimizedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceFilters } from '@/components/spaces/SpaceFilters';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
