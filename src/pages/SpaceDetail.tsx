@@ -23,7 +23,10 @@ const SpaceDetail = () => {
             id,
             first_name,
             last_name,
-            profile_photo_url
+            profile_photo_url,
+            bio,
+            location,
+            created_at
           )
         `)
         .eq('id', id)
@@ -36,6 +39,9 @@ const SpaceDetail = () => {
           first_name: string;
           last_name: string;
           profile_photo_url: string | null;
+          bio?: string;
+          location?: string;
+          created_at: string;
         };
       };
     },
