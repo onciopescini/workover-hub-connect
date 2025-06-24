@@ -1,6 +1,24 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+// Interface per il risultato di validazione RPC
+export interface ValidationResult {
+  valid: boolean;
+  conflicts: any[];
+  message: string;
+}
+
+// Type guard per ValidationResult
+function isValidationResult(data: any): data is ValidationResult {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof data.valid === 'boolean' &&
+    Array.isArray(data.conflicts) &&
+    typeof data.message === 'string'
+  );
+}
+
 // Funzione RPC ottimizzata per recuperare disponibilità spazio
 export const fetchOptimizedSpaceAvailability = async (
   spaceId: string,
@@ -28,7 +46,7 @@ export const validateBookingSlotWithLock = async (
   startTime: string,
   endTime: string,
   userId: string
-) => {
+): Promise<ValidationResult> => {
   const { data, error } = await supabase.rpc('validate_booking_slot_with_lock', {
     space_id_param: spaceId,
     date_param: date,
@@ -40,6 +58,12 @@ export const validateBookingSlotWithLock = async (
   if (error) {
     console.error('RPC slot validation error:', error);
     throw error;
+  }
+
+  // Valida la struttura della risposta con il type guard
+  if (!isValidationResult(data)) {
+    console.error('Invalid response structure from validate_booking_slot_with_lock:', data);
+    throw new Error('Invalid response format from validation RPC');
   }
 
   return data;
