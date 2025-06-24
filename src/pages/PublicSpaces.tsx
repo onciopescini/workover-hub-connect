@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/OptimizedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { SpaceFilters } from '@/components/spaces/SpaceFilters';
+import { AdvancedSpaceFilters } from '@/components/spaces/AdvancedSpaceFilters';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
-import { SpaceCardsGrid } from '@/components/spaces/SpaceCardsGrid';
+import { EnhancedSpaceCardsGrid } from '@/components/spaces/EnhancedSpaceCardsGrid';
 import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
@@ -17,11 +18,16 @@ const PublicSpaces = () => {
   const { initialCity, initialCoordinates } = useLocationParams();
   const [filters, setFilters] = useState({
     category: '',
-    priceRange: [0, 200],
+    priceRange: [0, 200] as [number, number],
     amenities: [] as string[],
     workEnvironment: '',
     location: '',
-    coordinates: null as { lat: number; lng: number } | null
+    coordinates: null as { lat: number; lng: number } | null,
+    capacity: [1, 20] as [number, number],
+    rating: 0,
+    verified: false,
+    superhost: false,
+    instantBook: false
   });
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
@@ -93,6 +99,12 @@ const PublicSpaces = () => {
       if (filters.priceRange[0] > 0) {
         query = query.gte('price_per_day', filters.priceRange[0]);
       }
+      if (filters.capacity[1] < 20) {
+        query = query.lte('max_capacity', filters.capacity[1]);
+      }
+      if (filters.capacity[0] > 1) {
+        query = query.gte('max_capacity', filters.capacity[0]);
+      }
       if (filters.location) {
         query = query.ilike('city', `%${filters.location}%`);
       }
@@ -115,7 +127,6 @@ const PublicSpaces = () => {
 
   const handleSpaceClick = (spaceId: string) => {
     handleCardClick(spaceId);
-    // Always navigate to the same route regardless of authentication status
     navigate(`/spaces/${spaceId}`);
   };
 
@@ -137,52 +148,49 @@ const PublicSpaces = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
-    <SplitScreenLayout
-      filters={
-        <div>
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Trova il tuo spazio di lavoro ideale
-            </h1>
-            <p className="text-gray-600">
-              Scopri spazi di coworking, uffici privati e sale riunioni nella tua città
-            </p>
-          </div>
-          <SpaceFilters filters={filters} onFiltersChange={handleFiltersChange} />
-          {spaces && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-600">
-                {spaces.length} spazi trovati
+    <div className="min-h-screen bg-gray-50">
+      <SplitScreenLayout
+        filters={
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Trova il tuo spazio di lavoro ideale
+              </h1>
+              <p className="text-gray-600 mb-4">
+                Scopri spazi di coworking, uffici privati e sale riunioni nella tua città
               </p>
+              {spaces && (
+                <div className="text-sm text-gray-500">
+                  Aggiornato {new Date().toLocaleTimeString('it-IT')}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      }
-      map={
-        <SpaceMap 
-          spaces={spaces || []} 
-          userLocation={mapCenter}
-          onSpaceClick={handleMapSpaceClick}
-          highlightedSpaceId={highlightedId}
-        />
-      }
-      cards={
-        <SpaceCardsGrid 
-          spaces={spaces || []} 
-          onSpaceClick={handleSpaceClick}
-          highlightedId={highlightedId}
-        />
-      }
-    />
+            <AdvancedSpaceFilters 
+              filters={filters} 
+              onFiltersChange={handleFiltersChange}
+              totalResults={spaces?.length || 0}
+            />
+          </div>
+        }
+        map={
+          <SpaceMap 
+            spaces={spaces || []} 
+            userLocation={mapCenter}
+            onSpaceClick={handleMapSpaceClick}
+            highlightedSpaceId={highlightedId}
+          />
+        }
+        cards={
+          <EnhancedSpaceCardsGrid 
+            spaces={spaces || []} 
+            onSpaceClick={handleSpaceClick}
+            highlightedId={highlightedId}
+            isLoading={isLoading}
+          />
+        }
+      />
+    </div>
   );
 };
 
