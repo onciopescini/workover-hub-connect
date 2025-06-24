@@ -1769,6 +1769,10 @@ export type Database = {
         }
         Returns: Json
       }
+      check_profile_access: {
+        Args: { viewer_id: string; profile_id: string }
+        Returns: Json
+      }
       cleanup_inactive_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
