@@ -1,130 +1,181 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Search, Send, Paperclip } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageSquare, Calendar, Users, Plus, Settings, Search } from "lucide-react";
+import { ConversationSidebar } from "@/components/messaging/ConversationSidebar";
+import { EnhancedMessageComposer } from "@/components/messaging/EnhancedMessageComposer";
+import { EnhancedMessageBubble } from "@/components/messaging/EnhancedMessageBubble";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/messaging-utils";
 import { fetchBookingMessages } from "@/lib/message-utils";
-import { useBookings } from "@/hooks/useBookings";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
-
-interface BookingWithHost {
-  id: string;
-  status: string;
-  booking_date: string;
-  space_id: string;
-  user_id: string;
-  space?: {
-    id: string;
-    title: string;
-    host_id: string;
-    host?: {
-      id: string;
-      first_name: string;
-      last_name: string;
-      profile_photo_url?: string;
-    };
-  };
-}
 
 const Messages = () => {
   const { authState } = useAuth();
-  const [selectedBookingId, setSelectedBookingId] = useState<string>("");
-  const [newMessage, setNewMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [bookingsWithHosts, setBookingsWithHosts] = useState<BookingWithHost[]>([]);
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedConversationId, setSelectedConversationId] = useState<string>("");
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch bookings with host information
+  // Fetch conversations based on active tab
   useEffect(() => {
-    const fetchBookingsWithHosts = async () => {
+    const fetchConversations = async () => {
       if (!authState.user?.id) return;
 
+      setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("bookings")
-          .select(`
-            *,
-            space:spaces (
-              id,
-              title,
-              host_id,
-              host:profiles!host_id (
+        if (activeTab === "all" || activeTab === "bookings") {
+          // Fetch booking conversations
+          const { data: bookings, error } = await supabase
+            .from("bookings")
+            .select(`
+              *,
+              space:spaces (
                 id,
-                first_name,
-                last_name,
-                profile_photo_url
+                title,
+                host_id,
+                host:profiles!host_id (
+                  id,
+                  first_name,
+                  last_name,
+                  profile_photo_url
+                )
               )
-            )
-          `)
-          .eq("user_id", authState.user.id)
-          .in("status", ["confirmed", "pending"])
-          .order("created_at", { ascending: false });
+            `)
+            .eq("user_id", authState.user.id)
+            .in("status", ["confirmed", "pending"])
+            .order("created_at", { ascending: false });
 
-        if (error) throw error;
+          if (!error && bookings) {
+            const bookingConversations = bookings.map(booking => ({
+              id: `booking-${booking.id}`,
+              type: 'booking',
+              title: booking.space?.host ? 
+                `${booking.space.host.first_name} ${booking.space.host.last_name}` : 
+                'Host',
+              subtitle: booking.space?.title || 'Spazio',
+              avatar: booking.space?.host?.profile_photo_url,
+              status: booking.status,
+              lastMessageTime: booking.updated_at,
+              businessContext: {
+                type: 'booking',
+                details: booking.space?.title
+              }
+            }));
+            
+            setConversations(prev => 
+              activeTab === "all" ? 
+                [...bookingConversations, ...prev.filter(c => c.type !== 'booking')] :
+                bookingConversations
+            );
+          }
+        }
 
-        setBookingsWithHosts(data || []);
+        if (activeTab === "all" || activeTab === "private") {
+          // Fetch private chats
+          const privateChats = await getUserPrivateChats();
+          const privateChatConversations = privateChats.map(chat => {
+            const otherParticipant = chat.participant_1_id === authState.user?.id ? 
+              chat.participant_2 : chat.participant_1;
+            
+            return {
+              id: `private-${chat.id}`,
+              type: 'private',
+              title: otherParticipant ? 
+                `${otherParticipant.first_name} ${otherParticipant.last_name}` : 
+                'Utente',
+              subtitle: 'Chat privata',
+              avatar: otherParticipant?.profile_photo_url,
+              lastMessageTime: chat.last_message_at,
+              isOnline: Math.random() > 0.5 // Mock online status
+            };
+          });
+
+          setConversations(prev => 
+            activeTab === "all" ? 
+              [...prev.filter(c => c.type !== 'private'), ...privateChatConversations] :
+              privateChatConversations
+          );
+        }
       } catch (error) {
-        console.error("Error fetching bookings with hosts:", error);
+        console.error("Error fetching conversations:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchBookingsWithHosts();
-  }, [authState.user?.id]);
+    fetchConversations();
+  }, [activeTab, authState.user?.id]);
 
-  // Get messages for selected booking
-  const { data: messages = [], isLoading } = useQuery({
-    queryKey: ['booking-messages', selectedBookingId],
-    queryFn: () => selectedBookingId ? fetchBookingMessages(selectedBookingId) : Promise.resolve([]),
-    enabled: !!selectedBookingId,
-    refetchInterval: 3000, // Refresh every 3 seconds for real-time feel
-  });
-
-  // Filter bookings by search
-  const filteredBookings = bookingsWithHosts.filter(booking =>
-    booking.space?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (booking.space?.host?.first_name + ' ' + booking.space?.host?.last_name)
-      .toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Auto-select first booking if none selected
+  // Fetch messages for selected conversation
   useEffect(() => {
-    if (!selectedBookingId && filteredBookings.length > 0) {
-      setSelectedBookingId(filteredBookings[0].id);
-    }
-  }, [selectedBookingId, filteredBookings]);
+    const fetchMessages = async () => {
+      if (!selectedConversationId) return;
 
-  const selectedBooking = bookingsWithHosts.find(b => b.id === selectedBookingId);
+      try {
+        const [type, id] = selectedConversationId.split('-');
+        let fetchedMessages: any[] = [];
 
-  const getUserRole = (booking: BookingWithHost) => {
-    return authState.user?.id === booking.space?.host_id ? "host" : "coworker";
-  };
+        if (type === 'booking') {
+          fetchedMessages = await fetchBookingMessages(id);
+        } else if (type === 'private') {
+          fetchedMessages = await getPrivateMessages(id);
+        }
 
-  const getOtherPartyName = (booking: BookingWithHost) => {
-    const userRole = getUserRole(booking);
-    if (userRole === "host") {
-      // Host sees coworker's name - we need to get coworker profile
-      return "Coworker"; // Simplified for now
-    } else {
-      // Coworker sees host's name
-      const host = booking.space?.host;
-      return host ? `${host.first_name} ${host.last_name}` : "Host";
-    }
-  };
+        setMessages(fetchedMessages.map(msg => ({
+          ...msg,
+          senderName: msg.sender ? 
+            `${msg.sender.first_name} ${msg.sender.last_name}` : 
+            'Unknown',
+          senderAvatar: msg.sender?.profile_photo_url,
+          isCurrentUser: msg.sender_id === authState.user?.id
+        })));
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      }
+    };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedBookingId) return;
+    fetchMessages();
+  }, [selectedConversationId, authState.user?.id]);
+
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
+    if (!selectedConversationId) return;
+
+    const [type, id] = selectedConversationId.split('-');
     
-    // Here you would implement sendBookingMessage
-    console.log('Sending message:', newMessage, 'to booking:', selectedBookingId);
-    setNewMessage("");
+    try {
+      if (type === 'private') {
+        await sendPrivateMessage(id, content);
+      }
+      // Add booking message sending logic here
+      
+      // Refresh messages
+      // This would trigger the useEffect above
+    } catch (error) {
+      console.error("Error sending message:", error);
+      throw error;
+    }
   };
+
+  const getTabCount = (tab: string) => {
+    return conversations.filter(c => 
+      tab === "all" ? true : c.type === tab
+    ).length;
+  };
+
+  const filteredConversations = conversations.filter(c => {
+    if (activeTab === "all") return true;
+    if (activeTab === "bookings") return c.type === "booking";
+    if (activeTab === "private") return c.type === "private";
+    return true;
+  });
 
   if (!authState.isAuthenticated) {
     return (
@@ -145,181 +196,153 @@ const Messages = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-4">
+        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Messaggi</h1>
-          <p className="text-gray-600">
-            Comunica con host e coworker per le tue prenotazioni
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Centro Messaggi</h1>
+              <p className="text-gray-600">
+                Gestisci tutte le tue conversazioni di prenotazioni e networking
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuova Chat
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
-          {/* Conversations List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Conversazioni
-              </CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Cerca conversazioni..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="all" className="flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4" />
+                  Tutti
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {getTabCount("all")}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="bookings" className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Prenotazioni
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {getTabCount("bookings")}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="private" className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  Private
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {getTabCount("private")}
+                  </Badge>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={activeTab} className="h-full mt-0">
+                <ConversationSidebar
+                  conversations={filteredConversations}
+                  selectedId={selectedConversationId}
+                  onSelect={setSelectedConversationId}
                 />
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-96">
-                {filteredBookings.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p>Nessuna conversazione attiva</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {filteredBookings.map((booking) => (
-                      <div
-                        key={booking.id}
-                        className={`p-4 cursor-pointer border-b hover:bg-gray-50 ${
-                          selectedBookingId === booking.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                        }`}
-                        onClick={() => setSelectedBookingId(booking.id)}
-                      >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={booking.space?.host?.profile_photo_url || ""} />
-                            <AvatarFallback>
-                              {getOtherPartyName(booking).charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium text-gray-900 truncate">
-                                {getOtherPartyName(booking)}
-                              </p>
-                              <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
-                                {booking.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 truncate">
-                              {booking.space?.title}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDistanceToNow(new Date(booking.booking_date), {
-                                addSuffix: true,
-                                locale: it
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
 
           {/* Messages Area */}
-          <Card className="lg:col-span-2">
-            {selectedBooking ? (
-              <>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={selectedBooking.space?.host?.profile_photo_url || ""} />
-                      <AvatarFallback>
-                        {getOtherPartyName(selectedBooking).charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-lg">
-                        {getOtherPartyName(selectedBooking)}
-                      </CardTitle>
-                      <p className="text-sm text-gray-600">
-                        {selectedBooking.space?.title}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="flex flex-col h-96">
-                  {/* Messages */}
-                  <ScrollArea className="flex-1 mb-4">
-                    {isLoading ? (
-                      <div className="text-center py-8 text-gray-500">
-                        Caricamento messaggi...
+          <div className="lg:col-span-3">
+            <Card className="h-full flex flex-col">
+              {selectedConversationId ? (
+                <>
+                  {/* Chat Header */}
+                  <CardHeader className="border-b">
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {filteredConversations.find(c => c.id === selectedConversationId)?.title}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {filteredConversations.find(c => c.id === selectedConversationId)?.subtitle}
+                          </p>
+                        </div>
                       </div>
-                    ) : messages.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                        <p>Nessun messaggio ancora</p>
-                        <p className="text-sm">Inizia la conversazione!</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          {filteredConversations.find(c => c.id === selectedConversationId)?.type}
+                        </Badge>
+                        <Button variant="ghost" size="icon">
+                          <Search className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ) : (
-                      <div className="space-y-4 p-4">
-                        {messages.map((message) => (
-                          <div
-                            key={message.id}
-                            className={`flex ${
-                              message.sender_id === authState.user?.id ? 'justify-end' : 'justify-start'
-                            }`}
-                          >
-                            <div
-                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                                message.sender_id === authState.user?.id
-                                  ? 'bg-blue-500 text-white'
-                                  : 'bg-gray-200 text-gray-900'
-                              }`}
-                            >
-                              <p>{message.content}</p>
-                              <p className={`text-xs mt-1 ${
-                                message.sender_id === authState.user?.id ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                {formatDistanceToNow(new Date(message.created_at), {
-                                  addSuffix: true,
-                                  locale: it
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
+                    </CardTitle>
+                  </CardHeader>
 
-                  {/* Message Input */}
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon">
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                    <Input
+                  {/* Messages */}
+                  <CardContent className="flex-1 p-0">
+                    <ScrollArea className="h-96 p-4">
+                      {messages.length === 0 ? (
+                        <div className="text-center py-12 text-gray-500">
+                          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p className="text-lg font-medium">Nessun messaggio</p>
+                          <p>Inizia la conversazione!</p>
+                        </div>
+                      ) : (
+                        <div>
+                          {messages.map((message) => (
+                            <EnhancedMessageBubble
+                              key={message.id}
+                              id={message.id}
+                              content={message.content}
+                              attachments={message.attachments?.map((url: string) => ({
+                                url,
+                                type: url.includes('.jpg') || url.includes('.png') ? 'image' as const : 'file' as const,
+                                name: url.split('/').pop() || 'file'
+                              }))}
+                              senderName={message.senderName}
+                              senderAvatar={message.senderAvatar}
+                              timestamp={message.created_at}
+                              isCurrentUser={message.isCurrentUser}
+                              isRead={message.is_read}
+                              businessContext={
+                                selectedConversationId.startsWith('booking-') ? {
+                                  type: 'booking',
+                                  details: filteredConversations.find(c => c.id === selectedConversationId)?.subtitle
+                                } : undefined
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+
+                    {/* Message Composer */}
+                    <EnhancedMessageComposer
+                      onSend={handleSendMessage}
                       placeholder="Scrivi un messaggio..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
                     />
-                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                      <Send className="h-4 w-4" />
-                    </Button>
+                  </CardContent>
+                </>
+              ) : (
+                <CardContent className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">Seleziona una conversazione</p>
+                    <p>Scegli una chat per iniziare a comunicare</p>
                   </div>
                 </CardContent>
-              </>
-            ) : (
-              <CardContent className="flex items-center justify-center h-full">
-                <div className="text-center text-gray-500">
-                  <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <p className="text-lg font-medium">Seleziona una conversazione</p>
-                  <p>Scegli una prenotazione per iniziare a chattare</p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

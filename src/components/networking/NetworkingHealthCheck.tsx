@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -188,7 +187,7 @@ export const NetworkingHealthCheck = () => {
   const overallStatus = checks.length > 0 ? (
     checks.every(c => c.status === 'healthy') ? 'healthy' :
     checks.some(c => c.status === 'critical') ? 'critical' : 'warning'
-  ) : 'unknown';
+  ) : 'checking';
 
   return (
     <div className="space-y-6">
