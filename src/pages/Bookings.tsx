@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { BookingsDashboard } from '@/components/bookings/BookingsDashboard';
+import { EnhancedBookingsDashboard } from '@/components/bookings/EnhancedBookingsDashboard';
 
 export default function Bookings() {
-  return <BookingsDashboard />;
+  return <EnhancedBookingsDashboard />;
 }
