@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,7 +131,7 @@ export function EnhancedBookingsDashboard() {
   const handleStatusFilter = (status: string) => {
     setFilters(prev => ({
       ...prev,
-      status: status === 'all' ? undefined : status
+      status: status === 'all' ? undefined : status as 'pending' | 'confirmed' | 'cancelled'
     }));
   };
 
