@@ -13,15 +13,40 @@ const EnhancedHostDashboard = () => {
   const { metrics, recentActivity, isLoading } = useEnhancedHostDashboard();
   const [activeTab, setActiveTab] = useState('overview');
 
-  if (!authState.isAuthenticated || authState.profile?.role !== 'host') {
+  console.log('🔍 Host Dashboard: Current auth state:', {
+    userId: authState.user?.id,
+    userRole: authState.profile?.role,
+    isAuthenticated: authState.isAuthenticated,
+    hasMetrics: !!metrics
+  });
+
+  if (!authState.isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+            <p className="text-gray-600">
+              Please log in to access the host dashboard.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (authState.profile?.role !== 'host' && authState.profile?.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-user-md">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Accesso Limitato</h2>
             <p className="text-gray-600">
               Solo gli host possono accedere a questa dashboard.
+              <br />
+              Current role: {authState.profile?.role || 'Unknown'}
             </p>
           </CardContent>
         </Card>
