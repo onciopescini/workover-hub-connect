@@ -37,6 +37,12 @@ export type BookingWithDetails = {
     last_name: string;
     profile_photo_url: string | null;
   } | null;
+  payments?: Array<{
+    id: string;
+    payment_status: string;
+    amount: number;
+    created_at: string;
+  }>;
 };
 
 // Raw booking data from database

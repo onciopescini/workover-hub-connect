@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { BookingWithDetails } from "@/types/booking";
 
 export type BookingFilter = {
-  status?: string;
+  status?: 'pending' | 'confirmed' | 'cancelled';
   dateRange?: { start: string; end: string };
   spaceId?: string;
   searchTerm?: string;
@@ -140,7 +140,7 @@ const fetchEnhancedBookings = async (userId: string, userRole?: string, filters?
       booking_date: booking.booking_date,
       start_time: booking.start_time,
       end_time: booking.end_time,
-      status: booking.status,
+      status: booking.status as 'pending' | 'confirmed' | 'cancelled',
       created_at: booking.created_at,
       updated_at: booking.updated_at,
       cancelled_at: booking.cancelled_at,
@@ -171,7 +171,7 @@ const fetchEnhancedBookings = async (userId: string, userRole?: string, filters?
       booking_date: booking.booking_date,
       start_time: booking.start_time,
       end_time: booking.end_time,
-      status: booking.status,
+      status: booking.status as 'pending' | 'confirmed' | 'cancelled',
       created_at: booking.created_at,
       updated_at: booking.updated_at,
       cancelled_at: booking.cancelled_at,

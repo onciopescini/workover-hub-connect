@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,7 +64,7 @@ export function EnhancedBookingsDashboard() {
     const totalRevenue = bookings
       .filter(b => b.status === 'confirmed')
       .reduce((sum, b) => {
-        const payment = Array.isArray(b.payments) ? b.payments[0] : b.payments;
+        const payment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
         return sum + (payment?.amount || 0);
       }, 0);
 
