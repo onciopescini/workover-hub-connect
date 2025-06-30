@@ -21,7 +21,7 @@ export const useCoworkerBookings = (filters?: BookingFilter) => {
       
       if (!userId) {
         console.log('❌ No user ID available');
-        throw new Error('User ID not available');
+        return [];
       }
 
       try {
@@ -30,8 +30,9 @@ export const useCoworkerBookings = (filters?: BookingFilter) => {
         
         console.log('✅ Coworker bookings fetched:', coworkerData?.length || 0);
 
-        // Transform the data
+        // Transform the data with error handling
         const transformedBookings = transformCoworkerBookings(coworkerData);
+        console.log('✅ Coworker bookings transformed:', transformedBookings.length);
 
         // Apply search filter if provided
         const filteredBookings = applySearchFilter(transformedBookings, filters?.searchTerm || '');
@@ -42,13 +43,20 @@ export const useCoworkerBookings = (filters?: BookingFilter) => {
 
       } catch (error) {
         console.error('❌ Error fetching coworker bookings:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent UI crashes
+        return [];
       }
     },
     enabled: !!authState.user?.id,
     staleTime: 30000,
-    refetchOnWindowFocus: true,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnWindowFocus: false, // Reduced aggressive refetching
+    retry: 1, // Reduced retry attempts
+    retryDelay: 2000,
+    // Add error handling
+    meta: {
+      onError: (error: Error) => {
+        console.error('🚨 Coworker bookings query error:', error);
+      }
+    }
   });
 };

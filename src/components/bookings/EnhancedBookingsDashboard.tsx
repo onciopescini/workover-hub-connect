@@ -25,7 +25,7 @@ export function EnhancedBookingsDashboard() {
   const userRole = authState.profile?.role;
   const isHost = userRole === 'host' || userRole === 'admin';
 
-  // Use role-specific hooks
+  // Use role-specific hooks with error boundary
   const coworkerQuery = useCoworkerBookings(filters);
   const hostQuery = useHostBookings(filters);
 
@@ -40,45 +40,74 @@ export function EnhancedBookingsDashboard() {
     userRole,
     isHost,
     bookingsCount: bookings.length,
-    activeQuery: isHost ? 'host' : 'coworker'
+    activeQuery: isHost ? 'host' : 'coworker',
+    hasError: !!error
   });
 
-  // Filter bookings based on search term
+  // Filter bookings based on search term with error handling
   const filteredBookings = useMemo(() => {
-    if (!searchTerm) return bookings;
-    
-    const searchLower = searchTerm.toLowerCase();
-    return bookings.filter(booking =>
-      booking.space.title.toLowerCase().includes(searchLower) ||
-      booking.space.address.toLowerCase().includes(searchLower) ||
-      (booking.coworker && 
-        `${booking.coworker.first_name} ${booking.coworker.last_name}`.toLowerCase().includes(searchLower))
-    );
+    try {
+      if (!searchTerm || !Array.isArray(bookings)) return bookings;
+      
+      const searchLower = searchTerm.toLowerCase().trim();
+      return bookings.filter(booking => {
+        if (!booking) return false;
+        
+        const spaceTitle = booking.space?.title?.toLowerCase() || '';
+        const spaceAddress = booking.space?.address?.toLowerCase() || '';
+        const coworkerName = booking.coworker 
+          ? `${booking.coworker.first_name || ''} ${booking.coworker.last_name || ''}`.toLowerCase()
+          : '';
+        
+        return spaceTitle.includes(searchLower) ||
+               spaceAddress.includes(searchLower) ||
+               coworkerName.includes(searchLower);
+      });
+    } catch (err) {
+      console.error('❌ Error filtering bookings:', err);
+      return bookings;
+    }
   }, [bookings, searchTerm]);
 
-  // Calculate role-specific statistics
+  // Calculate role-specific statistics with error handling
   const stats = useMemo(() => {
-    const total = bookings.length;
-    const pending = bookings.filter(b => b.status === 'pending').length;
-    const confirmed = bookings.filter(b => b.status === 'confirmed').length;
-    const cancelled = bookings.filter(b => b.status === 'cancelled').length;
-    
-    const totalRevenue = bookings
-      .filter(b => b.status === 'confirmed')
-      .reduce((sum, b) => {
-        const payment = b.payments && b.payments.length > 0 ? b.payments[0] : null;
-        return sum + (payment?.amount || 0);
-      }, 0);
+    try {
+      if (!Array.isArray(bookings)) {
+        return { total: 0, pending: 0, confirmed: 0, cancelled: 0, totalRevenue: 0 };
+      }
 
-    return { total, pending, confirmed, cancelled, totalRevenue };
+      const total = bookings.length;
+      const pending = bookings.filter(b => b?.status === 'pending').length;
+      const confirmed = bookings.filter(b => b?.status === 'confirmed').length;
+      const cancelled = bookings.filter(b => b?.status === 'cancelled').length;
+      
+      const totalRevenue = bookings
+        .filter(b => b?.status === 'confirmed')
+        .reduce((sum, b) => {
+          const payment = b?.payments && Array.isArray(b.payments) && b.payments.length > 0 ? b.payments[0] : null;
+          return sum + (payment?.amount || 0);
+        }, 0);
+
+      return { total, pending, confirmed, cancelled, totalRevenue };
+    } catch (err) {
+      console.error('❌ Error calculating stats:', err);
+      return { total: 0, pending: 0, confirmed: 0, cancelled: 0, totalRevenue: 0 };
+    }
   }, [bookings]);
 
   // Check if chat is enabled for booking
   const isChatEnabled = (booking: BookingWithDetails) => {
-    if (booking.space?.confirmation_type === 'instant') {
-      return booking.status === 'confirmed';
-    } else {
-      return booking.status === 'confirmed';
+    try {
+      if (!booking) return false;
+      
+      if (booking.space?.confirmation_type === 'instant') {
+        return booking.status === 'confirmed';
+      } else {
+        return booking.status === 'confirmed';
+      }
+    } catch (err) {
+      console.error('❌ Error checking chat status:', err);
+      return false;
     }
   };
 
@@ -87,28 +116,37 @@ export function EnhancedBookingsDashboard() {
     return isHost ? "host" : "coworker";
   };
 
-  // Event handlers
+  // Event handlers with error handling
   const handleOpenMessageDialog = (bookingId: string, spaceTitle: string) => {
-    const booking = bookings.find(b => b.id === bookingId);
-    if (!booking || !isChatEnabled(booking)) {
-      if (booking?.status === 'pending' && booking?.space?.confirmation_type === 'host_approval') {
-        alert('La chat sarà disponibile dopo l\'approvazione dell\'host e il completamento del pagamento.');
-      } else if (booking?.status === 'pending') {
-        alert('La chat sarà disponibile dopo il completamento del pagamento.');
-      } else {
-        alert('Chat non disponibile per questa prenotazione.');
+    try {
+      const booking = bookings.find(b => b?.id === bookingId);
+      if (!booking || !isChatEnabled(booking)) {
+        if (booking?.status === 'pending' && booking?.space?.confirmation_type === 'host_approval') {
+          alert('La chat sarà disponibile dopo l\'approvazione dell\'host e il completamento del pagamento.');
+        } else if (booking?.status === 'pending') {
+          alert('La chat sarà disponibile dopo il completamento del pagamento.');
+        } else {
+          alert('Chat non disponibile per questa prenotazione.');
+        }
+        return;
       }
-      return;
+      
+      setMessageBookingId(bookingId);
+      setMessageSpaceTitle(spaceTitle);
+      setMessageDialogOpen(true);
+    } catch (err) {
+      console.error('❌ Error opening message dialog:', err);
     }
-    
-    setMessageBookingId(bookingId);
-    setMessageSpaceTitle(spaceTitle);
-    setMessageDialogOpen(true);
   };
 
   const handleOpenCancelDialog = (booking: BookingWithDetails) => {
-    setSelectedBooking(booking);
-    setCancelDialogOpen(true);
+    try {
+      if (!booking) return;
+      setSelectedBooking(booking);
+      setCancelDialogOpen(true);
+    } catch (err) {
+      console.error('❌ Error opening cancel dialog:', err);
+    }
   };
 
   const handleCancelBooking = async (reason?: string) => {
@@ -125,27 +163,39 @@ export function EnhancedBookingsDashboard() {
       setCancelDialogOpen(false);
       setSelectedBooking(null);
     } catch (error) {
-      console.error('Error cancelling booking:', error);
+      console.error('❌ Error cancelling booking:', error);
     }
   };
 
   const handleStatusFilter = (status: string) => {
-    setFilters(prev => ({
-      ...prev,
-      status: status === 'all' ? undefined : status as 'pending' | 'confirmed' | 'cancelled'
-    }));
+    try {
+      setFilters(prev => ({
+        ...prev,
+        status: status === 'all' ? undefined : status as 'pending' | 'confirmed' | 'cancelled'
+      }));
+    } catch (err) {
+      console.error('❌ Error setting status filter:', err);
+    }
   };
 
   const handleDateRangeFilter = (range: { start: string; end: string } | undefined) => {
-    setFilters(prev => ({
-      ...prev,
-      dateRange: range
-    }));
+    try {
+      setFilters(prev => ({
+        ...prev,
+        dateRange: range
+      }));
+    } catch (err) {
+      console.error('❌ Error setting date range filter:', err);
+    }
   };
 
   const handleClearFilters = () => {
-    setFilters({});
-    setSearchTerm("");
+    try {
+      setFilters({});
+      setSearchTerm("");
+    } catch (err) {
+      console.error('❌ Error clearing filters:', err);
+    }
   };
 
   if (!authState.isAuthenticated) {
@@ -153,6 +203,7 @@ export function EnhancedBookingsDashboard() {
   }
 
   if (error) {
+    console.error('🚨 Dashboard error:', error);
     return <BookingsDashboardError onRefresh={() => refetch()} />;
   }
 

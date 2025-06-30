@@ -2,38 +2,130 @@
 import { BookingWithDetails } from "@/types/booking";
 
 export const transformCoworkerBookings = (data: any[]): BookingWithDetails[] => {
-  return data.map(booking => ({
-    ...booking,
-    space: booking.space || {},
-    coworker: null, // For coworker bookings, user is the coworker
-    payments: booking.payments || []
-  }));
+  if (!Array.isArray(data)) {
+    console.warn('⚠️ Invalid data provided to transformCoworkerBookings:', data);
+    return [];
+  }
+
+  return data.map(booking => {
+    try {
+      return {
+        id: booking.id || '',
+        space_id: booking.space_id || '',
+        user_id: booking.user_id || '',
+        booking_date: booking.booking_date || '',
+        start_time: booking.start_time || undefined,
+        end_time: booking.end_time || undefined,
+        status: booking.status || 'pending',
+        created_at: booking.created_at || '',
+        updated_at: booking.updated_at || '',
+        cancelled_at: booking.cancelled_at || null,
+        cancellation_fee: booking.cancellation_fee || null,
+        cancelled_by_host: booking.cancelled_by_host || null,
+        cancellation_reason: booking.cancellation_reason || null,
+        slot_reserved_until: booking.slot_reserved_until || null,
+        payment_required: booking.payment_required || null,
+        payment_session_id: booking.payment_session_id || null,
+        reservation_token: booking.reservation_token || null,
+        space: {
+          id: booking.space?.id || '',
+          title: booking.space?.title || 'Spazio senza titolo',
+          address: booking.space?.address || 'Indirizzo non disponibile',
+          photos: Array.isArray(booking.space?.photos) ? booking.space.photos : [],
+          host_id: booking.space?.host_id || '',
+          price_per_day: booking.space?.price_per_day || 0,
+          confirmation_type: booking.space?.confirmation_type || 'host_approval'
+        },
+        coworker: null, // For coworker bookings, user is the coworker
+        payments: Array.isArray(booking.payments) ? booking.payments : []
+      };
+    } catch (error) {
+      console.error('❌ Error transforming coworker booking:', error, booking);
+      return null;
+    }
+  }).filter(Boolean) as BookingWithDetails[];
 };
 
 export const transformHostBookings = (data: any[]): BookingWithDetails[] => {
-  return data.map(booking => ({
-    ...booking,
-    space: booking.space || {},
-    coworker: booking.coworker || null,
-    payments: booking.payments || []
-  }));
+  if (!Array.isArray(data)) {
+    console.warn('⚠️ Invalid data provided to transformHostBookings:', data);
+    return [];
+  }
+
+  return data.map(booking => {
+    try {
+      return {
+        id: booking.id || '',
+        space_id: booking.space_id || '',
+        user_id: booking.user_id || '',
+        booking_date: booking.booking_date || '',
+        start_time: booking.start_time || undefined,
+        end_time: booking.end_time || undefined,
+        status: booking.status || 'pending',
+        created_at: booking.created_at || '',
+        updated_at: booking.updated_at || '',
+        cancelled_at: booking.cancelled_at || null,
+        cancellation_fee: booking.cancellation_fee || null,
+        cancelled_by_host: booking.cancelled_by_host || null,
+        cancellation_reason: booking.cancellation_reason || null,
+        slot_reserved_until: booking.slot_reserved_until || null,
+        payment_required: booking.payment_required || null,
+        payment_session_id: booking.payment_session_id || null,
+        reservation_token: booking.reservation_token || null,
+        space: {
+          id: booking.space?.id || '',
+          title: booking.space?.title || 'Spazio senza titolo',
+          address: booking.space?.address || 'Indirizzo non disponibile',
+          photos: Array.isArray(booking.space?.photos) ? booking.space.photos : [],
+          host_id: booking.space?.host_id || '',
+          price_per_day: booking.space?.price_per_day || 0,
+          confirmation_type: booking.space?.confirmation_type || 'host_approval'
+        },
+        coworker: booking.coworker ? {
+          id: booking.coworker.id || '',
+          first_name: booking.coworker.first_name || '',
+          last_name: booking.coworker.last_name || '',
+          profile_photo_url: booking.coworker.profile_photo_url || null
+        } : null,
+        payments: Array.isArray(booking.payments) ? booking.payments : []
+      };
+    } catch (error) {
+      console.error('❌ Error transforming host booking:', error, booking);
+      return null;
+    }
+  }).filter(Boolean) as BookingWithDetails[];
 };
 
 export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: string): BookingWithDetails[] => {
-  if (!searchTerm) return bookings;
+  if (!searchTerm || !searchTerm.trim()) return bookings;
   
-  const searchLower = searchTerm.toLowerCase();
-  return bookings.filter(booking =>
-    booking.space?.title?.toLowerCase().includes(searchLower) ||
-    booking.space?.address?.toLowerCase().includes(searchLower) ||
-    (booking.coworker && 
-      `${booking.coworker.first_name} ${booking.coworker.last_name}`.toLowerCase().includes(searchLower))
-  );
+  const searchLower = searchTerm.toLowerCase().trim();
+  
+  return bookings.filter(booking => {
+    try {
+      const spaceTitle = booking.space?.title?.toLowerCase() || '';
+      const spaceAddress = booking.space?.address?.toLowerCase() || '';
+      const coworkerName = booking.coworker 
+        ? `${booking.coworker.first_name} ${booking.coworker.last_name}`.toLowerCase()
+        : '';
+      
+      return spaceTitle.includes(searchLower) ||
+             spaceAddress.includes(searchLower) ||
+             coworkerName.includes(searchLower);
+    } catch (error) {
+      console.error('❌ Error applying search filter:', error, booking);
+      return false;
+    }
+  });
 };
 
 export const removeDuplicateBookings = (bookings: BookingWithDetails[]): BookingWithDetails[] => {
-  const seen = new Set();
+  if (!Array.isArray(bookings)) return [];
+  
+  const seen = new Set<string>();
   return bookings.filter(booking => {
+    if (!booking?.id) return false;
+    
     if (seen.has(booking.id)) {
       return false;
     }

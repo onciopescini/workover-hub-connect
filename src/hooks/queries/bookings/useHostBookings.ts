@@ -23,7 +23,7 @@ export const useHostBookings = (filters?: BookingFilter) => {
       
       if (!userId) {
         console.log('❌ No user ID available');
-        throw new Error('User ID not available');
+        return [];
       }
 
       if (userRole !== 'host' && userRole !== 'admin') {
@@ -37,8 +37,9 @@ export const useHostBookings = (filters?: BookingFilter) => {
         
         console.log('✅ Host bookings fetched:', hostData?.length || 0);
 
-        // Transform the data
+        // Transform the data with error handling
         const transformedBookings = transformHostBookings(hostData);
+        console.log('✅ Host bookings transformed:', transformedBookings.length);
 
         // Apply search filter if provided
         const filteredBookings = applySearchFilter(transformedBookings, filters?.searchTerm || '');
@@ -49,13 +50,20 @@ export const useHostBookings = (filters?: BookingFilter) => {
 
       } catch (error) {
         console.error('❌ Error fetching host bookings:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent UI crashes
+        return [];
       }
     },
     enabled: !!authState.user?.id && (authState.profile?.role === 'host' || authState.profile?.role === 'admin'),
     staleTime: 30000,
-    refetchOnWindowFocus: true,
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnWindowFocus: false, // Reduced aggressive refetching
+    retry: 1, // Reduced retry attempts
+    retryDelay: 2000,
+    // Add error handling
+    meta: {
+      onError: (error: Error) => {
+        console.error('🚨 Host bookings query error:', error);
+      }
+    }
   });
 };
