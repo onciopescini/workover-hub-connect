@@ -1,37 +1,69 @@
 
 import React from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
-import { Card, CardContent } from "@/components/ui/card";
 import { EnhancedBookingsDashboard } from '@/components/bookings/EnhancedBookingsDashboard';
-import { AppLayout } from "@/components/layout/AppLayout";
+import { EnterpriseHostDashboard } from '@/components/host/advanced/EnterpriseHostDashboard';
 
-export default function Bookings() {
+const Bookings = () => {
   const { authState } = useAuth();
+  
+  // Determina se mostrare la dashboard enterprise per host premium
+  const isEnterpriseHost = authState.profile?.role === 'host' && authState.profile?.subscription_tier === 'enterprise';
+  
+  // Mock data per la demo
+  const mockNotifications = [
+    {
+      id: '1',
+      type: 'booking' as const,
+      title: 'Nuova prenotazione ricevuta',
+      content: 'Marco Rossi ha prenotato la Sala Conferenze A',
+      timestamp: '2 minuti fa',
+      priority: 'high' as const,
+      isRead: false,
+      metadata: {}
+    },
+    {
+      id: '2',
+      type: 'payment' as const,
+      title: 'Pagamento completato',
+      content: 'Ricevuto pagamento di €120 per prenotazione #1234',
+      timestamp: '15 minuti fa',
+      priority: 'medium' as const,
+      isRead: false,
+      metadata: {}
+    }
+  ];
 
-  console.log('🔍 Bookings page: Current auth state:', {
-    userId: authState.user?.id,
-    userRole: authState.profile?.role,
-    isAuthenticated: authState.isAuthenticated
-  });
+  const mockRevenueData = [
+    { month: 'Gen', revenue: 2400, bookings: 45, avgBookingValue: 53 },
+    { month: 'Feb', revenue: 1398, bookings: 32, avgBookingValue: 44 },
+    { month: 'Mar', revenue: 9800, bookings: 78, avgBookingValue: 126 },
+    { month: 'Apr', revenue: 3908, bookings: 56, avgBookingValue: 70 },
+    { month: 'Mag', revenue: 4800, bookings: 64, avgBookingValue: 75 },
+    { month: 'Giu', revenue: 3800, bookings: 48, avgBookingValue: 79 }
+  ];
 
-  if (!authState.isAuthenticated) {
+  const mockPerformanceMetrics = {
+    responseTime: 85,
+    errorRate: 0.2,
+    throughput: 750,
+    availability: 99.9,
+    memoryUsage: 35,
+    cpuUsage: 28
+  };
+
+  if (isEnterpriseHost) {
     return (
-      <AppLayout title="Access Required" subtitle="Please log in to view your bookings">
-        <div className="container mx-auto py-8">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h2 className="text-xl font-semibold mb-4">Authentication Required</h2>
-              <p className="text-gray-600 mb-4">Please log in to view your bookings.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </AppLayout>
+      <EnterpriseHostDashboard
+        bookings={[]}
+        notifications={mockNotifications}
+        revenueData={mockRevenueData}
+        performanceMetrics={mockPerformanceMetrics}
+      />
     );
   }
 
-  return (
-    <AppLayout title="My Bookings" subtitle="Manage and track all your bookings">
-      <EnhancedBookingsDashboard />
-    </AppLayout>
-  );
-}
+  return <EnhancedBookingsDashboard />;
+};
+
+export default Bookings;
