@@ -22,6 +22,7 @@ const SpacesManage = () => {
       
       console.log('🔍 SpacesManage: Current auth state:', {
         userId: authState.user?.id,
+        userEmail: authState.user?.email,
         userRole: authState.profile?.role,
         isAuthenticated: authState.isAuthenticated
       });
@@ -33,19 +34,25 @@ const SpacesManage = () => {
       }
 
       try {
+        console.log('🔍 Fetching spaces for user:', authState.user.id);
         const spacesData = await getHostSpaces(authState.user.id);
         console.log('✅ SpacesManage: Fetched spaces:', spacesData);
         setSpaces(spacesData);
       } catch (error) {
         console.error("❌ SpacesManage: Error fetching spaces:", error);
-        toast.error("Failed to load spaces.");
+        toast.error("Errore nel caricamento degli spazi.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSpaces();
-  }, [authState.user?.id]);
+    // Fetch spaces only when we have user data and it's not loading
+    if (!authState.isLoading && authState.user?.id) {
+      fetchSpaces();
+    } else if (!authState.isLoading && !authState.user?.id) {
+      setIsLoading(false);
+    }
+  }, [authState.user?.id, authState.isLoading]);
 
   const handleCreateSpace = () => {
     navigate('/space/new');
@@ -56,11 +63,10 @@ const SpacesManage = () => {
   };
 
   const handleDeleteSpace = async (spaceId: string) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this space?");
+    const confirmDelete = window.confirm("Sei sicuro di voler eliminare questo spazio?");
     if (!confirmDelete) return;
 
     try {
-      const { getHostSpaces } = await import("@/lib/host-utils");
       const { supabase } = await import("@/integrations/supabase/client");
       
       const { error } = await supabase
@@ -71,14 +77,14 @@ const SpacesManage = () => {
 
       if (error) {
         console.error("Error deleting space:", error);
-        toast.error("Failed to delete space.");
+        toast.error("Errore nell'eliminazione dello spazio.");
       } else {
         setSpaces(spaces.filter(space => space.id !== spaceId));
-        toast.success("Space deleted successfully.");
+        toast.success("Spazio eliminato con successo.");
       }
     } catch (error) {
       console.error("Error deleting space:", error);
-      toast.error("Failed to delete space.");
+      toast.error("Errore nell'eliminazione dello spazio.");
     }
   };
 
@@ -88,13 +94,13 @@ const SpacesManage = () => {
 
   if (!authState.isAuthenticated) {
     return (
-      <AppLayout title="Access Required" subtitle="Please log in to manage your spaces">
+      <AppLayout title="Accesso Richiesto" subtitle="Effettua il login per gestire i tuoi spazi">
         <div className="container mx-auto mt-8">
           <Card>
             <CardContent className="p-8 text-center">
-              <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+              <h2 className="text-xl font-semibold mb-2">Autenticazione Richiesta</h2>
               <p className="text-gray-600">
-                Please log in to access space management.
+                Effettua il login per accedere alla gestione degli spazi.
               </p>
             </CardContent>
           </Card>
@@ -104,76 +110,88 @@ const SpacesManage = () => {
   }
 
   return (
-    <AppLayout title="Manage Your Spaces" subtitle="Create, edit, and manage your spaces">
+    <AppLayout title="Gestisci i Tuoi Spazi" subtitle="Crea, modifica e gestisci i tuoi spazi">
       <div className="container mx-auto mt-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">My Spaces</h1>
+            <h1 className="text-2xl font-bold">I Miei Spazi</h1>
             <p className="text-gray-600">
-              User: {authState.profile?.first_name} {authState.profile?.last_name} 
-              (Role: {authState.profile?.role})
+              Utente: {authState.profile?.first_name} {authState.profile?.last_name} 
+              ({authState.user?.email}) - Ruolo: {authState.profile?.role}
             </p>
           </div>
           <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
-            Create New Space
+            Crea Nuovo Spazio
           </Button>
         </div>
 
         {isLoading ? (
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-            <p className="mt-2">Loading spaces...</p>
+            <p className="mt-2">Caricamento spazi...</p>
           </div>
         ) : spaces.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No spaces created yet
+                Nessuno spazio creato
               </h3>
               <p className="text-gray-600 mb-4">
-                You haven't created any spaces yet. Create your first space to get started!
+                Non hai ancora creato nessuno spazio. Crea il tuo primo spazio per iniziare!
               </p>
               <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
-                Create your first space
+                Crea il tuo primo spazio
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {spaces.map((space) => (
-              <Card key={space.id}>
-                <CardHeader>
-                  <CardTitle>{space.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-2">Address: {space.address}</p>
-                  <p className="text-sm text-gray-600 mb-2">Price: €{space.price_per_day}/day</p>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Status: {space.published ? (
-                      <span className="text-green-600 font-medium">Published</span>
-                    ) : (
-                      <span className="text-yellow-600 font-medium">Draft</span>
-                    )}
-                  </p>
-                  <div className="flex justify-end mt-4 space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => handleViewSpace(space.id)}>
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Button>
-                    <Button size="sm" onClick={() => handleEditSpace(space.id)}>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDeleteSpace(space.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-4">
+              Trovati {spaces.length} spazio/i
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {spaces.map((space) => (
+                <Card key={space.id}>
+                  <CardHeader>
+                    <CardTitle className="flex justify-between items-start">
+                      <span>{space.title}</span>
+                      {space.is_suspended && (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                          Sospeso
+                        </span>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 mb-2">Indirizzo: {space.address}</p>
+                    <p className="text-sm text-gray-600 mb-2">Prezzo: €{space.price_per_day}/giorno</p>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Stato: {space.published ? (
+                        <span className="text-green-600 font-medium">Pubblicato</span>
+                      ) : (
+                        <span className="text-yellow-600 font-medium">Bozza</span>
+                      )}
+                    </p>
+                    <div className="flex justify-end mt-4 space-x-2">
+                      <Button size="sm" variant="outline" onClick={() => handleViewSpace(space.id)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Visualizza
+                      </Button>
+                      <Button size="sm" onClick={() => handleEditSpace(space.id)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Modifica
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteSpace(space.id)}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Elimina
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
       </div>

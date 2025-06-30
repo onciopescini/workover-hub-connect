@@ -9,14 +9,26 @@ export const useSpaceCreation = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
+  console.log('🔍 useSpaceCreation: Current auth state', {
+    isLoading: authState.isLoading,
+    user: authState.user?.id,
+    profile: authState.profile,
+    role: authState.profile?.role
+  });
+
   // Check if the host can create spaces or is limited
   useEffect(() => {
     const checkRestriction = async () => {
       if (authState.user && authState.profile?.role === 'host') {
-        const isRestricted = await checkSpaceCreationRestriction();
-        if (isRestricted) {
-          toast.error("Non puoi creare nuovi spazi. Hai uno spazio sospeso che richiede la tua attenzione.");
-          navigate('/spaces/manage');
+        console.log('🔍 Checking space creation restrictions for host');
+        try {
+          const isRestricted = await checkSpaceCreationRestriction();
+          if (isRestricted) {
+            toast.error("Non puoi creare nuovi spazi. Hai uno spazio sospeso che richiede la tua attenzione.");
+            navigate('/spaces/manage');
+          }
+        } catch (error) {
+          console.error('Error checking space creation restriction:', error);
         }
       }
     };
@@ -27,6 +39,7 @@ export const useSpaceCreation = () => {
   // Ensure only hosts can access
   useEffect(() => {
     if (authState.profile && authState.profile.role !== "host") {
+      console.log('🚫 Non-host trying to access space creation:', authState.profile.role);
       toast.error("Solo gli host possono creare spazi");
       navigate("/dashboard");
     }
