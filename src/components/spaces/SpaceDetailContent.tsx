@@ -91,12 +91,13 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     description: space.description
   };
 
-  // Transform space data for booking card
+  // Transform space data for booking card - FIX: Include confirmation_type
   const bookingSpaceData = {
     id: space.id,
     price_per_day: space.price_per_day,
     max_capacity: space.max_capacity,
-    title: space.title
+    title: space.title,
+    confirmation_type: space.confirmation_type || 'host_approval'
   };
 
   return (
