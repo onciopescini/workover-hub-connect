@@ -91,7 +91,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     description: space.description
   };
 
-  // Transform space data for booking card - FIX: Include confirmation_type
+  // Transform space data for booking card - INCLUDE confirmation_type
   const bookingSpaceData = {
     id: space.id,
     price_per_day: space.price_per_day,

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";

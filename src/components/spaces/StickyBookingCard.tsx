@@ -31,7 +31,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   const [isSticky, setIsSticky] = useState(false);
   const [selectedDays, setSelectedDays] = useState(1);
 
-  // Debug logging per il tipo di conferma - FIX: Assicuriamoci che confirmation_type sia passato correttamente
+  // Debug logging per il tipo di conferma - ENSURE confirmation_type is passed correctly
   const confirmationType = space.confirmation_type || 'host_approval';
   const isInstantBooking = confirmationType === 'instant';
   
