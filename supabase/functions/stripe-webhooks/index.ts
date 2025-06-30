@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { StripeConfig } from "./utils/stripe-config.ts";
 import { ErrorHandler } from "./utils/error-handler.ts";
 import { WebhookValidator } from "./handlers/webhook-validator.ts";
-import { CheckoutHandlers } from "./handlers/checkout-handlers.ts";
+import { EnhancedCheckoutHandlers } from "./handlers/enhanced-checkout-handlers.ts";
 import { PaymentHandlers } from "./handlers/payment-handlers.ts";
 import { AccountHandlers } from "./handlers/account-handlers.ts";
 
@@ -42,13 +42,13 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as any;
-        result = await CheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin);
+        result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin);
         break;
       }
 
       case 'checkout.session.expired': {
         const session = event.data.object as any;
-        result = await CheckoutHandlers.handleCheckoutSessionExpired(session, supabaseAdmin);
+        result = await EnhancedCheckoutHandlers.handleCheckoutSessionExpired(session, supabaseAdmin);
         break;
       }
 
@@ -88,6 +88,8 @@ serve(async (req) => {
         }
       );
     }
+
+    ErrorHandler.logSuccess('Webhook processed successfully', { eventType: event.type });
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

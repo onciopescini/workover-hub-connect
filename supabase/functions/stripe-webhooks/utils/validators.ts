@@ -1,22 +1,53 @@
+import Stripe from "https://esm.sh/stripe@15.0.0";
+import { ErrorHandler } from "./error-handler.ts";
 
 export class Validators {
   static validateWebhookSignature(signature: string | null): boolean {
-    return signature !== null && signature.length > 0;
+    if (!signature) {
+      ErrorHandler.logError('Missing stripe-signature header');
+      return false;
+    }
+    return true;
   }
 
   static validateWebhookSecret(secret: string | null): boolean {
-    return secret !== null && secret.length > 0;
+    if (!secret) {
+      ErrorHandler.logError('Missing STRIPE_WEBHOOK_SECRET environment variable');
+      return false;
+    }
+    return true;
+  }
+
+  static validateStripeEvent(event: Stripe.Event | null): boolean {
+    if (!event || !event.type || !event.data) {
+      ErrorHandler.logError('Invalid Stripe event structure');
+      return false;
+    }
+    return true;
   }
 
   static validateBookingMetadata(metadata: any): boolean {
-    return metadata && typeof metadata.booking_id === 'string';
+    if (!metadata) {
+      ErrorHandler.logError('Missing session metadata');
+      return false;
+    }
+
+    const requiredFields = ['booking_id', 'base_amount'];
+    for (const field of requiredFields) {
+      if (!metadata[field]) {
+        ErrorHandler.logError(`Missing required metadata field: ${field}`);
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  static validateStripeEvent(event: any): boolean {
-    return event && event.type && event.data && event.data.object;
-  }
-
-  static validateAccountVerification(account: any): boolean {
-    return account && typeof account.charges_enabled === 'boolean' && typeof account.payouts_enabled === 'boolean';
+  static validateAccountVerification(account: Stripe.Account): boolean {
+    if (!account || !account.id) {
+      ErrorHandler.logError('Invalid account data');
+      return false;
+    }
+    return true;
   }
 }
