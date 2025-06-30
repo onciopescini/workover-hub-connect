@@ -40,7 +40,10 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.app';
+    
+    // Get the origin from the request to build correct redirect URLs
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000';
+    console.log('🔵 Using origin for redirects:', origin);
 
     if (!stripeSecretKey) {
       console.error('🔴 STRIPE_SECRET_KEY not found');
@@ -129,8 +132,8 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      success_url: `${siteUrl}/bookings?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${siteUrl}/bookings?cancelled=true`,
+      success_url: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}&success=true`,
+      cancel_url: `${origin}/bookings?cancelled=true`,
       metadata: {
         booking_id: booking_id,
         base_amount: base_amount.toString(),
@@ -154,7 +157,9 @@ serve(async (req) => {
       sessionId: session.id,
       paymentUrl: session.url,
       hostAccount: hostStripeAccount,
-      applicationFee: Math.round(breakdown.platformRevenue * 100)
+      applicationFee: Math.round(breakdown.platformRevenue * 100),
+      successUrl: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}&success=true`,
+      cancelUrl: `${origin}/bookings?cancelled=true`
     });
 
     // Create payment record

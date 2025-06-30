@@ -10,6 +10,7 @@ import { BookingsDashboardFilters } from './dashboard/BookingsDashboardFilters';
 import { BookingsDashboardContent } from './dashboard/BookingsDashboardContent';
 import { BookingsDashboardUnauthenticated } from './dashboard/BookingsDashboardUnauthenticated';
 import { BookingsDashboardError } from './dashboard/BookingsDashboardError';
+import { PaymentSuccessHandler } from './PaymentSuccessHandler';
 
 export function EnhancedBookingsDashboard() {
   const { authState } = useAuth();
@@ -209,6 +210,9 @@ export function EnhancedBookingsDashboard() {
 
   return (
     <div className="container mx-auto py-8 space-y-8">
+      {/* Payment Success/Error Handler */}
+      <PaymentSuccessHandler />
+
       <BookingsDashboardHeader
         totalBookings={stats.total}
         pendingCount={stats.pending}
