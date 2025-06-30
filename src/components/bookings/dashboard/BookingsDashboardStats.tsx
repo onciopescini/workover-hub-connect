@@ -22,7 +22,6 @@ export const BookingsDashboardStats = ({ stats }: BookingsDashboardStatsProps) =
   
   // Role-specific labels
   const revenueLabel = isHost ? 'Fatturato' : 'Speso';
-  const revenueIcon = isHost ? Euro : Euro;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -81,7 +80,7 @@ export const BookingsDashboardStats = ({ stats }: BookingsDashboardStatsProps) =
               <p className="text-sm font-medium text-gray-600">{revenueLabel}</p>
               <p className="text-2xl font-bold text-green-600">€{stats.totalRevenue.toFixed(2)}</p>
             </div>
-            <revenueIcon className="w-8 h-8 text-green-500" />
+            <Euro className="w-8 h-8 text-green-500" />
           </div>
         </CardContent>
       </Card>
