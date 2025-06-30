@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,9 +42,15 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
       errors.push('L\'orario di fine deve essere successivo a quello di inizio');
     }
     
-    // Validation per data passata
-    if (selectedDate && new Date(selectedDate) < new Date().setHours(0, 0, 0, 0)) {
-      errors.push('Non puoi prenotare per date passate');
+    // Fix: Confronto corretto delle date
+    if (selectedDate) {
+      const selectedDateObj = new Date(selectedDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDateObj < today) {
+        errors.push('Non puoi prenotare per date passate');
+      }
     }
     
     setValidationErrors(errors);
