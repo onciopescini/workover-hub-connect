@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, CheckCircle, XCircle, Euro } from 'lucide-react';
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 
 interface BookingStats {
   total: number;
@@ -16,6 +17,13 @@ interface BookingsDashboardStatsProps {
 }
 
 export const BookingsDashboardStats = ({ stats }: BookingsDashboardStatsProps) => {
+  const { authState } = useAuth();
+  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+  
+  // Role-specific labels
+  const revenueLabel = isHost ? 'Fatturato' : 'Speso';
+  const revenueIcon = isHost ? Euro : Euro;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card>
@@ -70,10 +78,10 @@ export const BookingsDashboardStats = ({ stats }: BookingsDashboardStatsProps) =
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Fatturato</p>
+              <p className="text-sm font-medium text-gray-600">{revenueLabel}</p>
               <p className="text-2xl font-bold text-green-600">€{stats.totalRevenue.toFixed(2)}</p>
             </div>
-            <Euro className="w-8 h-8 text-green-500" />
+            <revenueIcon className="w-8 h-8 text-green-500" />
           </div>
         </CardContent>
       </Card>

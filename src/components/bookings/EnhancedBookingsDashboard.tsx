@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
-import { useEnhancedBookingsQuery, useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
+import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
+import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
+import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
 import { BookingWithDetails } from '@/types/booking';
 import { BookingsDashboardHeader } from './dashboard/BookingsDashboardHeader';
 import { BookingsDashboardStats } from './dashboard/BookingsDashboardStats';
@@ -20,9 +22,27 @@ export function EnhancedBookingsDashboard() {
   const [messageBookingId, setMessageBookingId] = useState("");
   const [messageSpaceTitle, setMessageSpaceTitle] = useState("");
 
-  // Queries and mutations
-  const { data: bookings = [], isLoading, error, refetch } = useEnhancedBookingsQuery(filters);
+  // Determine user role and fetch appropriate bookings
+  const userRole = authState.profile?.role;
+  const isHost = userRole === 'host' || userRole === 'admin';
+
+  // Use role-specific hooks
+  const coworkerQuery = useCoworkerBookings(filters);
+  const hostQuery = useHostBookings(filters);
+
+  // Select the appropriate query based on user role
+  const activeQuery = isHost ? hostQuery : coworkerQuery;
+  const { data: bookings = [], isLoading, error, refetch } = activeQuery;
+
   const cancelBookingMutation = useEnhancedCancelBookingMutation();
+
+  console.log('🔍 EnhancedBookingsDashboard:', {
+    userId: authState.user?.id,
+    userRole,
+    isHost,
+    bookingsCount: bookings.length,
+    activeQuery: isHost ? 'host' : 'coworker'
+  });
 
   // Filter bookings based on search term
   const filteredBookings = useMemo(() => {
@@ -37,13 +57,15 @@ export function EnhancedBookingsDashboard() {
     );
   }, [bookings, searchTerm]);
 
-  // Calculate statistics
+  // Calculate role-specific statistics
   const stats = useMemo(() => {
     const total = bookings.length;
     const pending = bookings.filter(b => b.status === 'pending').length;
     const confirmed = bookings.filter(b => b.status === 'confirmed').length;
     const cancelled = bookings.filter(b => b.status === 'cancelled').length;
     
+    // For hosts: revenue from bookings received
+    // For coworkers: amount spent on bookings made
     const totalRevenue = bookings
       .filter(b => b.status === 'confirmed')
       .reduce((sum, b) => {
@@ -63,9 +85,11 @@ export function EnhancedBookingsDashboard() {
     }
   };
 
-  // Determine user role in relation to booking
+  // Determine user role in relation to specific booking
   const getUserRole = (booking: BookingWithDetails): "host" | "coworker" => {
-    return booking.space.host_id === authState.user?.id ? "host" : "coworker";
+    // If we're in host view, user is always the host for these bookings
+    // If we're in coworker view, user is always the coworker for these bookings
+    return isHost ? "host" : "coworker";
   };
 
   // Event handlers
@@ -137,10 +161,21 @@ export function EnhancedBookingsDashboard() {
     return <BookingsDashboardError onRefresh={() => refetch()} />;
   }
 
+  const dashboardTitle = isHost ? "Prenotazioni Ricevute" : "Le Mie Prenotazioni";
+  const dashboardSubtitle = isHost 
+    ? "Gestisci le prenotazioni ricevute nei tuoi spazi" 
+    : "Visualizza e gestisci le prenotazioni che hai effettuato";
+
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <BookingsDashboardHeader onRefresh={() => refetch()} isLoading={isLoading} />
-      
+      <div className="text-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">{dashboardTitle}</h1>
+        <p className="text-gray-600 mt-2">{dashboardSubtitle}</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Visualizza come: {isHost ? 'Host' : 'Coworker'}
+        </p>
+      </div>
+
       <BookingsDashboardStats stats={stats} />
 
       <BookingsDashboardFilters
