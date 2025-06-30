@@ -1,36 +1,15 @@
-
-import { useState } from 'react';
-
-export type BookingFilter = {
+export interface BookingFilter {
   status?: 'pending' | 'confirmed' | 'cancelled';
-  dateRange?: { start: string; end: string };
-  spaceId?: string;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
   searchTerm?: string;
-};
+}
 
 export const useBookingFilters = () => {
-  const [filters, setFilters] = useState<BookingFilter>({});
-
-  const updateFilter = (key: keyof BookingFilter, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({});
-  };
-
-  const hasActiveFilters = () => {
-    return Object.values(filters).some(value => value !== undefined);
-  };
-
+  // Hook per gestire filtri avanzati
   return {
-    filters,
-    setFilters,
-    updateFilter,
-    clearFilters,
-    hasActiveFilters
+    // Placeholder per future implementazioni
   };
 };

@@ -2,15 +2,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BookingFilter } from "./useBookingFilters";
 
-// Fetch bookings where user is the coworker (guest)
 export const fetchCoworkerBookings = async (userId: string, filters?: BookingFilter) => {
   console.log('🔍 Fetching coworker bookings for user:', userId);
-
+  
   let query = supabase
-    .from("bookings")
+    .from('bookings')
     .select(`
       *,
-      spaces!inner (
+      space:spaces!inner (
         id,
         title,
         address,
@@ -26,62 +25,56 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
         created_at
       )
     `)
-    .eq("user_id", userId)
-    .order("booking_date", { ascending: false });
+    .eq('user_id', userId);
 
   // Apply filters
   if (filters?.status) {
-    query = query.eq("status", filters.status);
+    query = query.eq('status', filters.status);
   }
+
   if (filters?.dateRange) {
     query = query
-      .gte("booking_date", filters.dateRange.start)
-      .lte("booking_date", filters.dateRange.end);
-  }
-  if (filters?.spaceId) {
-    query = query.eq("space_id", filters.spaceId);
+      .gte('booking_date', filters.dateRange.start)
+      .lte('booking_date', filters.dateRange.end);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
-    console.error('❌ Coworker bookings error:', error);
+    console.error('❌ Error fetching coworker bookings:', error);
     throw error;
   }
 
+  console.log('✅ Coworker bookings fetched:', data?.length || 0);
   return data || [];
 };
 
-// Fetch bookings where user is the host
-export const fetchHostBookings = async (userId: string, userRole?: string, filters?: BookingFilter) => {
-  console.log('🔍 Fetching host bookings for user:', userId);
-
-  if (userRole !== "host" && userRole !== "admin") {
-    return [];
-  }
-
+export const fetchHostBookings = async (userId: string, userRole: string, filters?: BookingFilter) => {
+  console.log('🔍 Fetching host bookings for user:', userId, 'role:', userRole);
+  
   // First get user's spaces
   const { data: userSpaces, error: spacesError } = await supabase
-    .from("spaces")
-    .select("id")
-    .eq("host_id", userId);
+    .from('spaces')
+    .select('id')
+    .eq('host_id', userId);
 
   if (spacesError) {
-    console.error('❌ User spaces error:', spacesError);
-    return [];
+    console.error('❌ Error fetching user spaces:', spacesError);
+    throw spacesError;
   }
 
   if (!userSpaces || userSpaces.length === 0) {
+    console.log('📝 No spaces found for host');
     return [];
   }
 
   const spaceIds = userSpaces.map(space => space.id);
 
   let query = supabase
-    .from("bookings")
+    .from('bookings')
     .select(`
       *,
-      spaces!inner (
+      space:spaces!inner (
         id,
         title,
         address,
@@ -90,7 +83,7 @@ export const fetchHostBookings = async (userId: string, userRole?: string, filte
         price_per_day,
         confirmation_type
       ),
-      profiles!bookings_user_id_fkey (
+      coworker:profiles!bookings_user_id_fkey (
         id,
         first_name,
         last_name,
@@ -103,29 +96,26 @@ export const fetchHostBookings = async (userId: string, userRole?: string, filte
         created_at
       )
     `)
-    .in("space_id", spaceIds)
-    .neq("user_id", userId) // Don't include own bookings
-    .order("booking_date", { ascending: false });
+    .in('space_id', spaceIds);
 
   // Apply filters
   if (filters?.status) {
-    query = query.eq("status", filters.status);
+    query = query.eq('status', filters.status);
   }
+
   if (filters?.dateRange) {
     query = query
-      .gte("booking_date", filters.dateRange.start)
-      .lte("booking_date", filters.dateRange.end);
-  }
-  if (filters?.spaceId) {
-    query = query.eq("space_id", filters.spaceId);
+      .gte('booking_date', filters.dateRange.start)
+      .lte('booking_date', filters.dateRange.end);
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
-    console.error('❌ Host bookings error:', error);
-    return [];
+    console.error('❌ Error fetching host bookings:', error);
+    throw error;
   }
 
+  console.log('✅ Host bookings fetched:', data?.length || 0);
   return data || [];
 };

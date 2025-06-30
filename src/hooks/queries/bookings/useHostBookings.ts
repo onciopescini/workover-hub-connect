@@ -27,7 +27,7 @@ export const useHostBookings = (filters?: BookingFilter) => {
       }
 
       if (userRole !== 'host' && userRole !== 'admin') {
-        console.log('❌ User is not a host or admin');
+        console.log('❌ User is not a host or admin, returning empty array');
         return [];
       }
 

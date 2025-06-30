@@ -6,7 +6,6 @@ import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
 import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
 import { BookingWithDetails } from '@/types/booking';
 import { BookingsDashboardHeader } from './dashboard/BookingsDashboardHeader';
-import { BookingsDashboardStats } from './dashboard/BookingsDashboardStats';
 import { BookingsDashboardFilters } from './dashboard/BookingsDashboardFilters';
 import { BookingsDashboardContent } from './dashboard/BookingsDashboardContent';
 import { BookingsDashboardUnauthenticated } from './dashboard/BookingsDashboardUnauthenticated';
@@ -64,8 +63,6 @@ export function EnhancedBookingsDashboard() {
     const confirmed = bookings.filter(b => b.status === 'confirmed').length;
     const cancelled = bookings.filter(b => b.status === 'cancelled').length;
     
-    // For hosts: revenue from bookings received
-    // For coworkers: amount spent on bookings made
     const totalRevenue = bookings
       .filter(b => b.status === 'confirmed')
       .reduce((sum, b) => {
@@ -87,8 +84,6 @@ export function EnhancedBookingsDashboard() {
 
   // Determine user role in relation to specific booking
   const getUserRole = (booking: BookingWithDetails): "host" | "coworker" => {
-    // If we're in host view, user is always the host for these bookings
-    // If we're in coworker view, user is always the coworker for these bookings
     return isHost ? "host" : "coworker";
   };
 
@@ -161,22 +156,14 @@ export function EnhancedBookingsDashboard() {
     return <BookingsDashboardError onRefresh={() => refetch()} />;
   }
 
-  const dashboardTitle = isHost ? "Prenotazioni Ricevute" : "Le Mie Prenotazioni";
-  const dashboardSubtitle = isHost 
-    ? "Gestisci le prenotazioni ricevute nei tuoi spazi" 
-    : "Visualizza e gestisci le prenotazioni che hai effettuato";
-
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{dashboardTitle}</h1>
-        <p className="text-gray-600 mt-2">{dashboardSubtitle}</p>
-        <p className="text-sm text-gray-500 mt-1">
-          Visualizza come: {isHost ? 'Host' : 'Coworker'}
-        </p>
-      </div>
-
-      <BookingsDashboardStats stats={stats} />
+      <BookingsDashboardHeader
+        totalBookings={stats.total}
+        pendingCount={stats.pending}
+        confirmedCount={stats.confirmed}
+        totalRevenue={stats.totalRevenue}
+      />
 
       <BookingsDashboardFilters
         searchTerm={searchTerm}
