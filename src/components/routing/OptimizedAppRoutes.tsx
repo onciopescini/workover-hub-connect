@@ -46,6 +46,9 @@ const EventDetail = lazy(() => import("@/pages/EventDetail"));
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
 const HostAnalytics = lazy(() => import("@/pages/host/HostAnalytics"));
 const HostRevenue = lazy(() => import("@/pages/host/HostRevenue"));
+const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
+const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
+const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
 
 // Admin pages
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
@@ -184,6 +187,37 @@ export const OptimizedAppRoutes = () => {
             <LazyWrapper>
               <Settings />
             </LazyWrapper>
+          </OptimizedAuthProtected>
+        } />
+
+        {/* Host-specific routes - AGGIUNTE QUI */}
+        <Route path="space/new" element={
+          <OptimizedAuthProtected>
+            <RoleProtected allowedRoles={['host']}>
+              <LazyWrapper>
+                <SpaceNew />
+              </LazyWrapper>
+            </RoleProtected>
+          </OptimizedAuthProtected>
+        } />
+        
+        <Route path="spaces/manage" element={
+          <OptimizedAuthProtected>
+            <RoleProtected allowedRoles={['host']}>
+              <LazyWrapper>
+                <SpacesManage />
+              </LazyWrapper>
+            </RoleProtected>
+          </OptimizedAuthProtected>
+        } />
+        
+        <Route path="space/edit/:id" element={
+          <OptimizedAuthProtected>
+            <RoleProtected allowedRoles={['host']}>
+              <LazyWrapper>
+                <SpaceEdit />
+              </LazyWrapper>
+            </RoleProtected>
           </OptimizedAuthProtected>
         } />
       </Route>

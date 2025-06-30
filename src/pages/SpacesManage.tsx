@@ -24,19 +24,32 @@ const SpacesManage = () => {
         userId: authState.user?.id,
         userEmail: authState.user?.email,
         userRole: authState.profile?.role,
-        isAuthenticated: authState.isAuthenticated
+        isAuthenticated: authState.isAuthenticated,
+        isLoading: authState.isLoading
       });
 
       if (!authState.user?.id) {
-        console.log('❌ No user ID available');
+        console.log('❌ No user ID available, waiting...');
         setIsLoading(false);
         return;
       }
 
       try {
         console.log('🔍 Fetching spaces for user:', authState.user.id);
+        
+        // Fetch degli spazi dell'host usando la funzione corretta
         const spacesData = await getHostSpaces(authState.user.id);
         console.log('✅ SpacesManage: Fetched spaces:', spacesData);
+        
+        // Debug aggiuntivo per vedere i dati ricevuti
+        console.log('📊 Spaces details:', spacesData.map(space => ({
+          id: space.id,
+          title: space.title,
+          host_id: space.host_id,
+          published: space.published,
+          is_suspended: space.is_suspended
+        })));
+        
         setSpaces(spacesData);
       } catch (error) {
         console.error("❌ SpacesManage: Error fetching spaces:", error);
@@ -55,10 +68,12 @@ const SpacesManage = () => {
   }, [authState.user?.id, authState.isLoading]);
 
   const handleCreateSpace = () => {
+    console.log('🔍 Navigating to space creation');
     navigate('/space/new');
   };
 
   const handleEditSpace = (spaceId: string) => {
+    console.log('🔍 Navigating to edit space:', spaceId);
     navigate(`/space/edit/${spaceId}`);
   };
 
@@ -119,6 +134,9 @@ const SpacesManage = () => {
               Utente: {authState.profile?.first_name} {authState.profile?.last_name} 
               ({authState.user?.email}) - Ruolo: {authState.profile?.role}
             </p>
+            <p className="text-sm text-gray-500 mt-1">
+              User ID: {authState.user?.id}
+            </p>
           </div>
           <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700 text-white">
             <Plus className="w-4 h-4 mr-2" />
@@ -135,11 +153,17 @@ const SpacesManage = () => {
           <Card>
             <CardContent className="p-8 text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Nessuno spazio creato
+                Nessuno spazio trovato
               </h3>
               <p className="text-gray-600 mb-4">
-                Non hai ancora creato nessuno spazio. Crea il tuo primo spazio per iniziare!
+                Non sono stati trovati spazi per il tuo account. Crea il tuo primo spazio per iniziare!
               </p>
+              <div className="text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded">
+                <p>Debug info:</p>
+                <p>User ID: {authState.user?.id}</p>
+                <p>Role: {authState.profile?.role}</p>
+                <p>Email: {authState.user?.email}</p>
+              </div>
               <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Crea il tuo primo spazio
@@ -174,6 +198,10 @@ const SpacesManage = () => {
                         <span className="text-yellow-600 font-medium">Bozza</span>
                       )}
                     </p>
+                    <div className="text-xs text-gray-400 mb-4 bg-gray-50 p-2 rounded">
+                      ID: {space.id}<br/>
+                      Host ID: {space.host_id}
+                    </div>
                     <div className="flex justify-end mt-4 space-x-2">
                       <Button size="sm" variant="outline" onClick={() => handleViewSpace(space.id)}>
                         <Eye className="w-4 h-4 mr-2" />

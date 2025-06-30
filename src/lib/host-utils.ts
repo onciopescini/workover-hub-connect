@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const getHostSpaces = async (hostId: string) => {
-  console.log('🔍 getHostSpaces: Fetching spaces for host:', hostId);
+  console.log('🔍 getHostSpaces: Fetching ALL spaces for host:', hostId);
   
   try {
     const { data, error } = await supabase
@@ -16,7 +16,15 @@ export const getHostSpaces = async (hostId: string) => {
       throw error;
     }
 
-    console.log('✅ getHostSpaces: Found', data?.length || 0, 'spaces for host:', data);
+    console.log('✅ getHostSpaces: Found', data?.length || 0, 'spaces for host');
+    console.log('📊 Spaces data:', data?.map(space => ({
+      id: space.id,
+      title: space.title,
+      published: space.published,
+      is_suspended: space.is_suspended,
+      host_id: space.host_id
+    })));
+    
     return data || [];
   } catch (error) {
     console.error('❌ getHostSpaces: Exception:', error);
