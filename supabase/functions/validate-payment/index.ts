@@ -67,13 +67,12 @@ serve(async (req) => {
     const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
     
     if (isPaymentSuccessful && session.metadata?.booking_id) {
-      // Aggiorna il pagamento nel database
+      // Aggiorna il pagamento nel database - RIMUOVO updated_at che non esiste
       const { error: paymentError } = await supabaseAdmin
         .from('payments')
         .update({
           payment_status: 'completed',
-          receipt_url: session.receipt_url,
-          updated_at: new Date().toISOString()
+          receipt_url: session.receipt_url
         })
         .eq('stripe_session_id', session_id);
 

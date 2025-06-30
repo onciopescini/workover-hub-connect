@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePayment } from '@/lib/payment-utils';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PaymentVerificationResult {
   isLoading: boolean;
@@ -16,6 +17,7 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!sessionId) return;
@@ -41,9 +43,17 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
         if (data?.success) {
           setIsSuccess(true);
           setBookingId(data.booking_id);
+          
+          // Invalida le query delle prenotazioni per forzare il refresh
+          queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['coworker-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
+          
           toast.success('Pagamento completato con successo! La tua prenotazione è confermata.', {
             duration: 5000
           });
+
+          console.log('🔵 Booking queries invalidated - UI should refresh automatically');
         } else {
           throw new Error('Payment verification failed');
         }
@@ -58,7 +68,7 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
     };
 
     verifyPayment();
-  }, [sessionId]);
+  }, [sessionId, queryClient]);
 
   return { isLoading, isSuccess, error, bookingId };
 };
