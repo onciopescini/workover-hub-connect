@@ -80,7 +80,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     rating: averageRating,
     reviewCount: reviews.length,
     isVerified: true,
-    isSuperhost: space.host ? true : false
+    isSuperhost: false
   };
 
   // Transform space data for info cards
@@ -91,7 +91,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     description: space.description
   };
 
-  // Transform space data for booking card - INCLUDE confirmation_type
+  // Transform space data for booking card
   const bookingSpaceData = {
     id: space.id,
     price_per_day: space.price_per_day,

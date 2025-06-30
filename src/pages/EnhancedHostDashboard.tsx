@@ -26,9 +26,9 @@ const EnhancedHostDashboard = () => {
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+            <h2 className="text-xl font-semibold mb-2">Accesso Richiesto</h2>
             <p className="text-gray-600">
-              Please log in to access the host dashboard.
+              Effettua il login per accedere alla dashboard host.
             </p>
           </CardContent>
         </Card>
@@ -39,14 +39,12 @@ const EnhancedHostDashboard = () => {
   if (authState.profile?.role !== 'host' && authState.profile?.role !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-user-md">
+        <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Accesso Limitato</h2>
             <p className="text-gray-600">
               Solo gli host possono accedere a questa dashboard.
-              <br />
-              Current role: {authState.profile?.role || 'Unknown'}
             </p>
           </CardContent>
         </Card>

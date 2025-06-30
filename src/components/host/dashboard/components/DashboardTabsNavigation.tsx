@@ -2,13 +2,12 @@
 import React from 'react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export const DashboardTabsNavigation: React.FC = () => {
+export const DashboardTabsNavigation = () => {
   return (
-    <TabsList className="grid w-full grid-cols-5">
+    <TabsList className="grid w-full grid-cols-4">
       <TabsTrigger value="overview">Panoramica</TabsTrigger>
       <TabsTrigger value="financial">Finanze</TabsTrigger>
       <TabsTrigger value="payments">Pagamenti</TabsTrigger>
-      <TabsTrigger value="insights">AI Insights</TabsTrigger>
       <TabsTrigger value="management">Gestione</TabsTrigger>
     </TabsList>
   );

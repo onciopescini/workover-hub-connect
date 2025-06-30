@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
@@ -26,7 +25,7 @@ export function EnhancedBookingsDashboard() {
   const userRole = authState.profile?.role;
   const isHost = userRole === 'host' || userRole === 'admin';
 
-  // Use role-specific hooks with error boundary
+  // Use role-specific hooks
   const coworkerQuery = useCoworkerBookings(filters);
   const hostQuery = useHostBookings(filters);
 
@@ -36,7 +35,7 @@ export function EnhancedBookingsDashboard() {
 
   const cancelBookingMutation = useEnhancedCancelBookingMutation();
 
-  console.log('🔍 EnhancedBookingsDashboard:', {
+  console.log('🔍 BookingsDashboard:', {
     userId: authState.user?.id,
     userRole,
     isHost,
@@ -45,7 +44,7 @@ export function EnhancedBookingsDashboard() {
     hasError: !!error
   });
 
-  // Filter bookings based on search term with error handling
+  // Filter bookings based on search term
   const filteredBookings = useMemo(() => {
     try {
       if (!searchTerm || !Array.isArray(bookings)) return bookings;
@@ -70,7 +69,7 @@ export function EnhancedBookingsDashboard() {
     }
   }, [bookings, searchTerm]);
 
-  // Calculate role-specific statistics with error handling
+  // Calculate statistics
   const stats = useMemo(() => {
     try {
       if (!Array.isArray(bookings)) {
@@ -117,7 +116,6 @@ export function EnhancedBookingsDashboard() {
     return isHost ? "host" : "coworker";
   };
 
-  // Event handlers with error handling
   const handleOpenMessageDialog = (bookingId: string, spaceTitle: string) => {
     try {
       const booking = bookings.find(b => b?.id === bookingId);
