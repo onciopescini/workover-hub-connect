@@ -7,8 +7,8 @@ import { EnterpriseHostDashboard } from '@/components/host/advanced/EnterpriseHo
 const Bookings = () => {
   const { authState } = useAuth();
   
-  // Determina se mostrare la dashboard enterprise per host premium
-  const isEnterpriseHost = authState.profile?.role === 'host' && authState.profile?.subscription_tier === 'enterprise';
+  // Mostra la dashboard enterprise per tutti gli host (subscription logic temporaneamente rimossa)
+  const isHost = authState.profile?.role === 'host';
   
   // Mock data per la demo
   const mockNotifications = [
@@ -52,7 +52,7 @@ const Bookings = () => {
     cpuUsage: 28
   };
 
-  if (isEnterpriseHost) {
+  if (isHost) {
     return (
       <EnterpriseHostDashboard
         bookings={[]}
