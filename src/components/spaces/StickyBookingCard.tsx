@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Euro, Shield, Clock } from "lucide-react";
+import { Calendar, Users, Euro, Shield, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { BookingForm } from './BookingForm';
 
 interface StickyBookingCardProps {
@@ -31,6 +31,17 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   const [isSticky, setIsSticky] = useState(false);
   const [selectedDays, setSelectedDays] = useState(1);
 
+  // Debug logging per il tipo di conferma
+  const confirmationType = space.confirmation_type || 'host_approval';
+  const isInstantBooking = confirmationType === 'instant';
+  
+  console.log('🔍 StickyBookingCard - Space confirmation type:', {
+    spaceId: space.id,
+    confirmationType,
+    isInstantBooking,
+    rawConfirmationType: space.confirmation_type
+  });
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -52,7 +63,6 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   };
 
   const pricing = calculateTotal();
-  const confirmationType = space.confirmation_type || 'host_approval';
 
   if (showBookingForm) {
     return (
@@ -60,7 +70,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
-              {confirmationType === 'instant' ? 'Prenota ora' : 'Richiedi prenotazione'}
+              {isInstantBooking ? 'Prenota ora' : 'Richiedi prenotazione'}
             </CardTitle>
             <Button 
               variant="ghost" 
@@ -95,9 +105,24 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             <span className="text-2xl font-bold">€{space.price_per_day}</span>
             <span className="text-gray-600">/ giorno</span>
           </div>
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            <Shield className="w-3 h-3 mr-1" />
-            {confirmationType === 'instant' ? 'Prenotazione immediata' : 'Richiede approvazione'}
+          <Badge 
+            variant="secondary" 
+            className={isInstantBooking 
+              ? "bg-green-100 text-green-800" 
+              : "bg-orange-100 text-orange-800"
+            }
+          >
+            {isInstantBooking ? (
+              <>
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Prenotazione immediata
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Richiede approvazione
+              </>
+            )}
           </Badge>
         </div>
       </CardHeader>
@@ -130,6 +155,25 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           <span>Fino a {space.max_capacity} persone</span>
         </div>
 
+        {/* Confirmation Type Info */}
+        <div className={`flex items-center gap-2 text-sm p-2 rounded ${
+          isInstantBooking 
+            ? 'bg-green-50 text-green-700' 
+            : 'bg-orange-50 text-orange-700'
+        }`}>
+          {isInstantBooking ? (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              <span>Conferma automatica</span>
+            </>
+          ) : (
+            <>
+              <Clock className="w-4 h-4" />
+              <span>Risposta dell'host entro 24h</span>
+            </>
+          )}
+        </div>
+
         {/* Price Breakdown */}
         <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
           <div className="flex justify-between text-sm">
@@ -154,7 +198,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           </div>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            <span>{confirmationType === 'instant' ? 'Conferma immediata' : 'Risposta entro 24h'}</span>
+            <span>{isInstantBooking ? 'Conferma immediata' : 'Risposta entro 24h'}</span>
           </div>
         </div>
 
@@ -166,7 +210,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             size="lg"
           >
             <Euro className="w-4 h-4 mr-2" />
-            {confirmationType === 'instant' ? 'Prenota ora' : 'Richiedi prenotazione'}
+            {isInstantBooking ? 'Prenota ora' : 'Richiedi prenotazione'}
           </Button>
         ) : (
           <Button 
@@ -179,7 +223,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
         )}
 
         <p className="text-xs text-center text-gray-500">
-          {confirmationType === 'instant' 
+          {isInstantBooking 
             ? 'Pagamento richiesto per confermare la prenotazione'
             : 'Pagamento richiesto solo dopo approvazione'
           }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, CalendarDays, Clock, Euro, AlertTriangle } from "lucide-react";
+import { Calendar, CalendarDays, Clock, Euro, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { reserveBookingSlot, calculateBookingTotal, handlePaymentFlow } from "@/lib/booking-reservation-utils";
 
@@ -23,24 +23,56 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
   const [endTime, setEndTime] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [reservationStep, setReservationStep] = useState<'form' | 'reserved' | 'payment'>('form');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Debug logging per il tipo di conferma
+  console.log('🔍 BookingForm - Props:', {
+    spaceId,
+    pricePerDay,
+    confirmationType,
+    isInstant: confirmationType === 'instant'
+  });
+
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+    
+    if (!selectedDate) errors.push('Seleziona una data');
+    if (!startTime) errors.push('Seleziona orario di inizio');
+    if (!endTime) errors.push('Seleziona orario di fine');
+    if (startTime && endTime && startTime >= endTime) {
+      errors.push('L\'orario di fine deve essere successivo a quello di inizio');
+    }
+    
+    // Validation per data passata
+    if (selectedDate && new Date(selectedDate) < new Date().setHours(0, 0, 0, 0)) {
+      errors.push('Non puoi prenotare per date passate');
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedDate || !startTime || !endTime) {
-      onError('Tutti i campi sono obbligatori');
-      return;
-    }
-
-    if (startTime >= endTime) {
-      onError('L\'orario di fine deve essere successivo a quello di inizio');
+    console.log('🔵 BookingForm - Submit initiated with:', {
+      spaceId,
+      selectedDate,
+      startTime,
+      endTime,
+      confirmationType
+    });
+    
+    if (!validateForm()) {
+      onError('Correggi gli errori nel form');
       return;
     }
 
     setIsProcessing(true);
+    setValidationErrors([]);
     
     try {
-      console.log('🔵 Reserving slot for space:', spaceId);
+      console.log('🔵 BookingForm - Reserving slot for space:', spaceId);
       
       // Step 1: Reserve the slot (5 minute lock)
       const reservation = await reserveBookingSlot(
@@ -51,12 +83,16 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         confirmationType
       );
 
+      console.log('🔵 BookingForm - Reservation result:', reservation);
+
       if (!reservation || !reservation.success) {
-        onError(reservation?.error || 'Errore nella prenotazione dello slot');
+        const errorMsg = reservation?.error || 'Errore nella prenotazione dello slot';
+        console.error('🔴 BookingForm - Reservation failed:', errorMsg);
+        onError(errorMsg);
         return;
       }
 
-      console.log('🔵 Slot reserved successfully:', reservation);
+      console.log('✅ BookingForm - Slot reserved successfully:', reservation);
       setReservationStep('reserved');
 
       // Step 2: Handle payment flow based on confirmation type
@@ -64,7 +100,14 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         // Instant booking -> proceed to payment immediately
         const totalAmount = calculateBookingTotal(pricePerDay, startTime, endTime);
         
-        toast.success('Slot riservato! Reindirizzamento al pagamento...');
+        console.log('🔵 BookingForm - Processing instant booking payment:', {
+          bookingId: reservation.booking_id,
+          totalAmount
+        });
+        
+        toast.success('Slot riservato! Reindirizzamento al pagamento...', {
+          icon: <CheckCircle className="w-4 h-4" />
+        });
         
         // Small delay to show success message
         setTimeout(() => {
@@ -72,23 +115,30 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
             reservation.booking_id!,
             totalAmount,
             () => {
+              console.log('✅ BookingForm - Payment flow completed');
               setReservationStep('payment');
               onSuccess();
             },
-            onError
+            (error) => {
+              console.error('🔴 BookingForm - Payment flow error:', error);
+              onError(error);
+            }
           );
         }, 1500);
         
       } else {
         // Host approval required -> show waiting message
-        toast.success('Richiesta di prenotazione inviata! Attendere l\'approvazione dell\'host.');
+        console.log('🔵 BookingForm - Host approval required, showing confirmation');
+        toast.success('Richiesta di prenotazione inviata! Attendere l\'approvazione dell\'host.', {
+          icon: <CheckCircle className="w-4 h-4" />
+        });
         setReservationStep('reserved');
         onSuccess();
       }
       
     } catch (error) {
-      console.error('Error in booking process:', error);
-      onError('Errore nel processo di prenotazione');
+      console.error('🔴 BookingForm - Unexpected error in booking process:', error);
+      onError('Errore imprevisto nel processo di prenotazione');
     } finally {
       setIsProcessing(false);
     }
@@ -147,14 +197,40 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
           <CalendarDays className="w-5 h-5" />
           {confirmationType === 'instant' ? 'Prenota Subito' : 'Richiedi Prenotazione'}
         </CardTitle>
-        {confirmationType === 'host_approval' && (
-          <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded">
-            <AlertTriangle className="w-4 h-4" />
-            Richiede approvazione dell'host
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm">
+          {confirmationType === 'instant' ? (
+            <div className="flex items-center gap-2 text-green-600 bg-green-50 p-2 rounded">
+              <CheckCircle className="w-4 h-4" />
+              Prenotazione immediata
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded">
+              <AlertTriangle className="w-4 h-4" />
+              Richiede approvazione dell'host
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400 rounded">
+            <div className="flex">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Correggi questi errori:
+                </h3>
+                <ul className="mt-2 text-sm text-red-700">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>• {error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date">Data</Label>
@@ -214,8 +290,8 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
                 <span className="font-bold text-lg">€{totalPrice.toFixed(2)}</span>
               </div>
               {confirmationType === 'instant' && (
-                <div className="text-xs text-gray-500 mt-2">
-                  <Clock className="w-3 h-3 inline mr-1" />
+                <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
                   Slot riservato per 5 minuti durante il pagamento
                 </div>
               )}
