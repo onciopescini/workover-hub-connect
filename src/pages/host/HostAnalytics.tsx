@@ -54,8 +54,8 @@ const HostAnalytics = () => {
     id: index + 1,
     guest: activity.description || "Cliente",
     space: metrics.topPerformingSpace?.title || "Spazio",
-    date: new Date(activity.date).toLocaleDateString('it-IT'),
-    amount: activity.amount || 0
+    date: new Date(activity.created_at).toLocaleDateString('it-IT'),
+    amount: metrics.averageBookingValue || 0
   })) || [];
 
   return (

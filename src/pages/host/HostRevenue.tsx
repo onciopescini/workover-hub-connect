@@ -172,10 +172,10 @@ const HostRevenue = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold">
-                      {activity.amount && `€${activity.amount.toFixed(2)}`}
+                      €{metrics.averageBookingValue.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatDate(new Date(activity.date))}
+                      {formatDate(new Date(activity.created_at))}
                     </p>
                   </div>
                 </div>
