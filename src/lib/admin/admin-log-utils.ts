@@ -1,20 +1,26 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { AdminActionLog } from "@/types/admin";
+import { logger } from "@/lib/logger";
+
+// Create contextual logger for admin log utils
+const adminLogger = logger;
 
 // Admin actions log
 export const getAdminActionsLog = async (): Promise<AdminActionLog[]> => {
   try {
-    console.log("getAdminActionsLog: Starting fetch...");
+    adminLogger.info("Starting admin actions log fetch");
     
     // Verify admin status first
     const { data: currentUser } = await supabase.auth.getUser();
     if (!currentUser?.user) {
-      console.log("getAdminActionsLog: No authenticated user");
+      adminLogger.warn("No authenticated user found for admin log fetch");
       return [];
     }
 
-    console.log("getAdminActionsLog: Current user ID:", currentUser.user.id);
+    adminLogger.debug("Admin log fetch - user ID", { 
+      metadata: { userId: currentUser.user.id }
+    });
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -22,10 +28,20 @@ export const getAdminActionsLog = async (): Promise<AdminActionLog[]> => {
       .eq('id', currentUser.user.id)
       .single();
 
-    console.log("getAdminActionsLog: Current user profile:", profile);
+    adminLogger.debug("Admin log fetch - user profile", { 
+      metadata: { 
+        profileRole: profile?.role || 'unknown', 
+        suspended: profile?.is_suspended ?? false 
+      }
+    });
 
     if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      console.log("getAdminActionsLog: User is not admin or is suspended");
+      adminLogger.warn("User is not admin or is suspended", { 
+        metadata: { 
+          role: profile?.role || 'unknown', 
+          suspended: profile?.is_suspended ?? false
+        }
+      });
       return [];
     }
     
@@ -36,16 +52,20 @@ export const getAdminActionsLog = async (): Promise<AdminActionLog[]> => {
       .limit(100);
 
     if (error) {
-      console.error("getAdminActionsLog: Database error:", error);
+      adminLogger.error("Database error fetching admin logs", {}, error);
       throw error;
     }
     
-    console.log("getAdminActionsLog: Fetched logs:", data?.length || 0, "entries");
-    console.log("getAdminActionsLog: Sample logs:", data?.slice(0, 3));
+    adminLogger.info("Successfully fetched admin actions log", { 
+      metadata: {
+        count: data?.length || 0,
+        sampleCount: Math.min(3, data?.length || 0)
+      }
+    });
     
     return data as AdminActionLog[];
   } catch (error) {
-    console.error("getAdminActionsLog: Error fetching admin actions log:", error);
+    adminLogger.error("Error fetching admin actions log", {}, error as Error);
     throw error;
   }
 };

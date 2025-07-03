@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import LoadingScreen from "@/components/LoadingScreen";
 import { isCurrentUserAdmin } from "@/lib/admin-utils";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 type AdminProtectedProps = {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ const AdminProtected = ({ children }: AdminProtectedProps) => {
   const { authState } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const { handleAsyncError } = useErrorHandler('AdminProtected');
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -23,15 +25,15 @@ const AdminProtected = ({ children }: AdminProtectedProps) => {
       }
 
       if (!authState.isLoading && authState.isAuthenticated) {
-        try {
-          const adminStatus = await isCurrentUserAdmin();
-          setIsAdmin(adminStatus);
-        } catch (error) {
-          console.error("Error checking admin status:", error);
-          setIsAdmin(false);
-        } finally {
-          setIsChecking(false);
-        }
+        const adminStatus = await handleAsyncError(async () => {
+          return await isCurrentUserAdmin();
+        }, { 
+          context: 'check_admin_status',
+          showToast: false // Don't show toast for auth checks
+        });
+
+        setIsAdmin(adminStatus ?? false);
+        setIsChecking(false);
       }
     };
 

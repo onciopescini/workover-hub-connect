@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { PlayCircle, Settings } from 'lucide-react';
 import { executeValidationSuite } from '@/lib/validation-runner';
 import { sprint1Validator } from '@/lib/validation-suite';
+import { useLogger } from '@/hooks/useLogger';
 
 export const ValidationRunner = () => {
+  const { info } = useLogger({ context: 'ValidationRunner' });
+
   const handleRunPaymentValidation = () => {
-    console.log('🚀 Running Payment Validation Suite...');
+    info('Starting Payment Validation Suite');
     executeValidationSuite();
   };
 
   const handleRunFullValidation = async () => {
-    console.log('🚀 Running Full Sprint 1 Validation Suite...');
+    info('Starting Full Sprint 1 Validation Suite');
     await sprint1Validator.runFullValidation();
   };
 

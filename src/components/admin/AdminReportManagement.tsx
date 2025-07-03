@@ -9,28 +9,39 @@ import { AdminReportDialog } from "./AdminReportDialog";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { Eye } from "lucide-react";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useLogger } from "@/hooks/useLogger";
 
 const AdminReportManagement = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
+  const { handleAsyncError } = useErrorHandler('AdminReportManagement');
+  const { info } = useLogger({ context: 'AdminReportManagement' });
+
   useEffect(() => {
     fetchReports();
   }, []);
 
   const fetchReports = async () => {
-    console.log("AdminReportManagement: Starting to fetch reports...");
     setIsLoading(true);
-    try {
-      const data = await getAllReports();
-      console.log("AdminReportManagement: Received reports:", data);
+    
+    const data = await handleAsyncError(async () => {
+      info("Starting to fetch admin reports");
+      const result = await getAllReports();
+      info("Successfully fetched admin reports", { metadata: { count: result.length } });
+      return result;
+    }, { 
+      context: 'fetch_reports',
+      toastMessage: "Errore nel caricamento delle segnalazioni"
+    });
+
+    if (data) {
       setReports(data);
-    } catch (error) {
-      console.error("AdminReportManagement: Error fetching reports:", error);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   const handleCloseDialog = () => {
@@ -99,7 +110,7 @@ const AdminReportManagement = () => {
     </Card>
   );
 
-  console.log("AdminReportManagement: Rendering with reports:", reports);
+  // Removed console.log for production readiness
 
   return (
     <div className="space-y-6">

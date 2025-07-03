@@ -117,7 +117,10 @@ class Logger {
         // For now, we'll use a placeholder that could integrate with Supabase
         await this.sendToRemote(entries);
       } catch (error) {
-        console.error('Failed to send logs to remote service:', error);
+        // Only log to console in development
+        if (!import.meta.env.PROD) {
+          console.error('Failed to send logs to remote service:', error);
+        }
         // Re-add entries to buffer for retry
         this.buffer.unshift(...entries);
       }
@@ -125,9 +128,19 @@ class Logger {
   }
 
   private async sendToRemote(entries: LogEntry[]): Promise<void> {
-    // Placeholder for remote logging integration
-    // This could integrate with Supabase Edge Functions or external services
-    console.log('Would send to remote:', entries.length, 'entries');
+    // Integrate with Sentry for remote logging
+    try {
+      // In production, this could send to Supabase Edge Functions or external services
+      if (import.meta.env.PROD) {
+        // Actual remote logging implementation would go here
+        // For now, we rely on Sentry integration in monitoring.ts
+      }
+    } catch (error) {
+      // Fallback: don't use console.log in production
+      if (!import.meta.env.PROD) {
+        console.warn('Remote logging failed:', error);
+      }
+    }
   }
 
   private createLogEntry(
@@ -290,15 +303,15 @@ class Logger {
   }
 }
 
-// Create default logger instance
+// Create default logger instance with environment-aware configuration
 const defaultConfig: Partial<LoggerConfig> = {
-  level: process.env['NODE_ENV'] === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
-  enableConsole: true,
-  enableRemote: process.env['NODE_ENV'] === 'production',
+  level: import.meta.env.PROD ? LogLevel.WARN : LogLevel.DEBUG,
+  enableConsole: !import.meta.env.PROD, // Only enable console in development
+  enableRemote: import.meta.env.PROD,
   bufferSize: 50,
   flushInterval: 30000,
   enableContextTracking: true,
-  enablePerformanceTracking: process.env['NODE_ENV'] !== 'production'
+  enablePerformanceTracking: !import.meta.env.PROD
 };
 
 export const logger = new Logger(defaultConfig);

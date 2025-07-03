@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, X, Search, Eye, MapPin, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { AdminSpaceRevisionDialog } from "./AdminSpaceRevisionDialog";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useLogger } from "@/hooks/useLogger";
 
 export function AdminSpaceManagement() {
   const [spaces, setSpaces] = useState<AdminSpace[]>([]);

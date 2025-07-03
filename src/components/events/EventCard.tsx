@@ -59,7 +59,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
             enableResponsive={true}
             priority={false}
             className="w-full h-full"
-            onLoadComplete={() => console.log(`Event card image loaded: ${event.title}`)}
+            onLoadComplete={() => {}} // Removed console.log for production readiness
           />
           <div className="absolute top-2 left-2">
             <Badge className="bg-purple-600">
@@ -115,7 +115,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
                 enableResponsive={false}
                 priority={false}
                 className="w-6 h-6 rounded-full object-cover"
-                onLoadComplete={() => console.log('Event creator avatar loaded')}
+                onLoadComplete={() => {}} // Removed console.log for production readiness
               />
               <span className="text-sm text-gray-600">
                 Organizzato da {event.profiles.first_name} {event.profiles.last_name}
