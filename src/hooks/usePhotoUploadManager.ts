@@ -71,7 +71,7 @@ export const usePhotoUploadManager = ({
           try {
             const optimizationJobId = await startImageOptimization(
               fileName,
-              initialDataId,
+              initialDataId ?? '',
               file.size
             );
             
@@ -105,7 +105,10 @@ export const usePhotoUploadManager = ({
 
   const removePhoto = (index: number) => {
     if (index < photoFiles.length) {
-      URL.revokeObjectURL(photoPreviewUrls[index]);
+      const url = photoPreviewUrls[index];
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
       onPhotoFilesChange(photoFiles.filter((_, i) => i !== index));
     }
     

@@ -11,15 +11,15 @@ export interface Connection {
     id: string;
     first_name: string;
     last_name: string;
-    profile_photo_url?: string;
-    bio?: string;
+    profile_photo_url?: string | null;
+    bio?: string | null;
   };
   receiver?: {
     id: string;
     first_name: string;
     last_name: string;
-    profile_photo_url?: string;
-    bio?: string;
+    profile_photo_url?: string | null;
+    bio?: string | null;
   };
 }
 
@@ -35,8 +35,8 @@ export interface ConnectionSuggestion {
     id: string;
     first_name: string;
     last_name: string;
-    profile_photo_url?: string;
-    bio?: string;
+    profile_photo_url?: string | null;
+    bio?: string | null;
   };
 }
 

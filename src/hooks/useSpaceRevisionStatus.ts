@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 interface SpaceRevisionInfo {
   id: string;
   title: string;
-  is_suspended: boolean;
-  revision_requested: boolean;
-  revision_notes?: string;
+  is_suspended: boolean | null;
+  revision_requested: boolean | null;
+  revision_notes?: string | null;
   host_id: string;
 }
 

@@ -4,7 +4,7 @@ import type { Space, SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
 
 interface UseSpaceFormStateProps {
-  initialData?: Space;
+  initialData?: Space | undefined;
 }
 
 export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
@@ -33,8 +33,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     price_per_hour: 0,
     price_per_day: 0,
     address: "",
-    latitude: undefined,
-    longitude: undefined,
+    latitude: null,
+    longitude: null,
     photos: [],
     rules: "",
     ideal_guest_tags: [],
@@ -76,7 +76,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     }
   }, [initialData]);
 
-  const handleInputChange = (field: string, value: string | number | boolean | string[] | undefined) => {
+  const handleInputChange = (field: string, value: string | number | boolean | string[] | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -84,8 +84,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     setFormData((prev) => ({
       ...prev,
       address,
-      latitude: coordinates?.lat,
-      longitude: coordinates?.lng
+      latitude: coordinates?.lat ?? null,
+      longitude: coordinates?.lng ?? null
     }));
   };
 

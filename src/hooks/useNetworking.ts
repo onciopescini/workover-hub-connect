@@ -26,7 +26,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
       const { data: currentUser } = await supabase
         .from('profiles')
         .select('networking_enabled')
-        .eq('id', authState.user?.id)
+        .eq('id', authState.user?.id ?? '')
         .single();
 
       if (!currentUser?.networking_enabled) {
@@ -49,7 +49,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
             networking_enabled
           )
         `)
-        .eq('user_id', authState.user?.id)
+        .eq('user_id', authState.user?.id ?? '')
         .order('score', { ascending: false });
 
       if (error) {
@@ -65,7 +65,9 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         const typedSuggestions: ConnectionSuggestion[] = filteredData.map(item => ({
           ...item,
           reason: item.reason as "shared_space" | "shared_event" | "similar_interests",
-          shared_context: (item.shared_context as Record<string, any>) || {}
+          shared_context: (item.shared_context as Record<string, any>) || {},
+          score: item.score ?? 0,
+          created_at: item.created_at ?? ''
         }));
         setSuggestions(typedSuggestions);
       }
@@ -111,7 +113,10 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
       } else {
         const typedConnections: Connection[] = (data || []).map(item => ({
           ...item,
-          status: item.status as "pending" | "rejected" | "accepted"
+          status: item.status as "pending" | "rejected" | "accepted",
+          created_at: item.created_at ?? '',
+          updated_at: item.updated_at ?? '',
+          expires_at: item.expires_at ?? ''
         }));
         setConnections(typedConnections);
       }
@@ -154,7 +159,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .from('connections')
         .insert([
           {
-            sender_id: authState.user?.id,
+            sender_id: authState.user?.id ?? '',
             receiver_id: receiverId,
             status: 'pending',
             expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Expires in 3 days

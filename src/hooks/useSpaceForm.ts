@@ -9,7 +9,7 @@ interface UseSpaceFormProps {
   isEdit?: boolean;
 }
 
-export const useSpaceForm = ({ initialData, isEdit = false }: UseSpaceFormProps) => {
+export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpaceFormProps) => {
   const {
     formData,
     availabilityData,
@@ -38,7 +38,7 @@ export const useSpaceForm = ({ initialData, isEdit = false }: UseSpaceFormProps)
     photoPreviewUrls,
     validateForm,
     isEdit,
-    initialDataId: initialData?.id
+    initialDataId: initialData?.id ?? ''
   });
 
   // Enhanced input change handler that clears errors

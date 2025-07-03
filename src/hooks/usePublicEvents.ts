@@ -107,7 +107,7 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
       profiles: null
     };
 
-    if (event.space_id) {
+    if (event['space_id']) {
       try {
         const { data: spaceData, error: spaceError } = await supabase
           .from('spaces')
@@ -125,11 +125,11 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
           };
         }
       } catch (error) {
-        console.warn('Failed to fetch space data for event', event.id, ':', error);
+        console.warn('Failed to fetch space data for event', event['id'], ':', error);
       }
     }
 
-    if (event.created_by) {
+    if (event['created_by']) {
       try {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -145,7 +145,7 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
           };
         }
       } catch (error) {
-        console.warn('Failed to fetch profile data for event', event.id, ':', error);
+        console.warn('Failed to fetch profile data for event', event['id'], ':', error);
       }
     }
 

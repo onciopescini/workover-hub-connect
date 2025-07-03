@@ -36,7 +36,10 @@ export const useNotifications = () => {
       const transformedData: UserNotification[] = data?.map(notification => ({
         ...notification,
         type: notification.type as UserNotification['type'],
-        metadata: notification.metadata as Record<string, any>
+        metadata: notification.metadata as Record<string, any>,
+        content: notification.content ?? '',
+        created_at: notification.created_at ?? '',
+        is_read: notification.is_read ?? false
       })) || [];
 
       setNotifications(transformedData);
@@ -81,8 +84,8 @@ export const useNotifications = () => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newNotification = {
               ...payload.new,
-              type: payload.new.type as UserNotification['type'],
-              metadata: payload.new.metadata as Record<string, any>
+              type: payload.new['type'] as UserNotification['type'],
+              metadata: payload.new['metadata'] as Record<string, any>
             } as UserNotification;
             
             setNotifications((prevNotifications) => {
@@ -95,7 +98,7 @@ export const useNotifications = () => {
             });
           } else if (payload.eventType === 'DELETE') {
             setNotifications((prevNotifications) =>
-              prevNotifications.filter((n) => n.id !== payload.old?.id)
+              prevNotifications.filter((n) => n.id !== payload.old?.['id'])
             );
           }
         }

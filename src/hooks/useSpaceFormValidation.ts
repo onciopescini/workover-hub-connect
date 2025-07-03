@@ -14,39 +14,41 @@ export const useSpaceFormValidation = ({ formData, availabilityData }: UseSpaceF
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.title?.trim()) {
+    const data = formData as any;
+    
+    if (!data['title']?.trim()) {
       newErrors.title = "Title is required";
     }
 
-    if (!formData.description?.trim()) {
+    if (!data['description']?.trim()) {
       newErrors.description = "Description is required";
     }
 
-    if (!formData.address?.trim()) {
+    if (!data['address']?.trim()) {
       newErrors.address = "Address is required";
     }
 
-    if (formData.address?.trim() && (!formData.latitude || !formData.longitude)) {
+    if (data['address']?.trim() && (!data['latitude'] || !data['longitude'])) {
       newErrors.address = "Seleziona un indirizzo dai suggerimenti per ottenere le coordinate GPS";
     }
 
-    if (formData.max_capacity === undefined || formData.max_capacity < 1) {
+    if (data['max_capacity'] === undefined || data['max_capacity'] < 1) {
       newErrors.max_capacity = "Capacity must be at least 1";
     }
 
-    if (formData.price_per_hour === undefined || formData.price_per_hour < 0) {
+    if (data['price_per_hour'] === undefined || data['price_per_hour'] < 0) {
       newErrors.price_per_hour = "Hourly price must be a valid number";
     }
 
-    if (formData.price_per_day === undefined || formData.price_per_day < 0) {
+    if (data['price_per_day'] === undefined || data['price_per_day'] < 0) {
       newErrors.price_per_day = "Daily price must be a valid number";
     }
 
-    if (!formData.category) {
+    if (!data['category']) {
       newErrors.category = "Category is required";
     }
 
-    if (!formData.work_environment) {
+    if (!data['work_environment']) {
       newErrors.work_environment = "Work environment is required";
     }
 
