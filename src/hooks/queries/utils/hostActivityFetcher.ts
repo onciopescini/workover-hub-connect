@@ -42,8 +42,8 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
       type: 'booking',
       title: `Nuova prenotazione da ${booking.profiles?.first_name} ${booking.profiles?.last_name}`,
       description: `Prenotazione per ${booking.spaces?.title} - ${booking.booking_date}`,
-      created_at: booking.created_at,
-      metadata: { booking_id: booking.id, status: booking.status }
+      created_at: booking.created_at ?? '',
+      metadata: { booking_id: booking.id, status: booking.status ?? 'pending' }
     });
   });
 
@@ -54,7 +54,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
       type: 'message',
       title: `Nuovo messaggio da ${message.profiles?.first_name} ${message.profiles?.last_name}`,
       description: message.content.substring(0, 100) + '...',
-      created_at: message.created_at,
+      created_at: message.created_at ?? '',
       metadata: { booking_id: message.booking_id }
     });
   });

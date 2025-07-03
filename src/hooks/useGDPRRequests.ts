@@ -38,7 +38,10 @@ export const useGDPRRequests = () => {
       const typedRequests: GDPRRequest[] = (data || []).map(request => ({
         ...request,
         request_type: request.request_type as 'data_export' | 'data_deletion' | 'data_rectification',
-        status: request.status as 'pending' | 'completed' | 'rejected'
+        status: request.status as 'pending' | 'completed' | 'rejected',
+        created_at: request.created_at ?? '',
+        completed_at: request.completed_at ?? '',
+        updated_at: request.updated_at ?? ''
       }));
       
       setRequests(typedRequests);

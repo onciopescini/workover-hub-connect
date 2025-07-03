@@ -331,5 +331,5 @@ export function useAsyncStateWithRetry<T>(
   retryDelay?: number,
   options: UseAsyncStateOptions<T> = {}
 ) {
-  return useAsyncState<T>({ ...options, maxRetries, retryDelay });
+  return useAsyncState<T>({ ...options, maxRetries, retryDelay: retryDelay ?? 1000 });
 }

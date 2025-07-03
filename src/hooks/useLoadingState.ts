@@ -5,7 +5,7 @@ import { createContextualLogger } from '@/lib/logger';
 export interface LoadingState {
   isLoading: boolean;
   error: string | null;
-  progress?: number;
+  progress: number;
 }
 
 export interface UseLoadingStateOptions {
@@ -32,7 +32,7 @@ export function useLoadingState(
   const [state, setState] = useState<LoadingState>({
     isLoading: false,
     error: null,
-    progress: undefined,
+    progress: 0,
     ...initialState
   });
 
@@ -72,7 +72,7 @@ export function useLoadingState(
   const withLoading = useCallback(async <T>(operation: () => Promise<T>): Promise<T | null> => {
     const startTime = Date.now();
     setLoading(true);
-    setState(prev => ({ ...prev, error: null, progress: undefined }));
+    setState(prev => ({ ...prev, error: null, progress: 0 }));
 
     const timeoutId = setTimeout(() => {
       setError(`Operation timed out after ${timeout}ms`);
@@ -117,7 +117,7 @@ export function useLoadingState(
     setState({
       isLoading: false,
       error: null,
-      progress: undefined
+      progress: 0
     });
     if (logger) {
       logger.debug('Loading state reset', {

@@ -56,9 +56,9 @@ export const useMessagesData = (activeTab: string) => {
                 `${booking.space.host.first_name} ${booking.space.host.last_name}` : 
                 'Host',
               subtitle: booking.space?.title || 'Spazio',
-              avatar: booking.space?.host?.profile_photo_url,
+              avatar: booking.space?.host?.profile_photo_url ?? '',
               status: booking.status as 'confirmed' | 'pending' | 'cancelled',
-              lastMessageTime: booking.updated_at,
+              lastMessageTime: booking.updated_at ?? '',
               businessContext: {
                 type: 'booking' as const,
                 details: booking.space?.title
@@ -87,7 +87,7 @@ export const useMessagesData = (activeTab: string) => {
                 `${otherParticipant.first_name} ${otherParticipant.last_name}` : 
                 'Utente',
               subtitle: 'Chat privata',
-              avatar: otherParticipant?.profile_photo_url,
+              avatar: otherParticipant?.profile_photo_url ?? '',
               lastMessageTime: chat.last_message_at,
               isOnline: Math.random() > 0.5,
               status: 'active' as const
@@ -120,9 +120,9 @@ export const useMessagesData = (activeTab: string) => {
         let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
-          fetchedMessages = await fetchBookingMessages(id);
+          fetchedMessages = await fetchBookingMessages(id ?? '');
         } else if (type === 'private') {
-          fetchedMessages = await getPrivateMessages(id) as unknown as PrivateMessage[];
+          fetchedMessages = await getPrivateMessages(id ?? '') as unknown as PrivateMessage[];
         }
 
         setMessages(fetchedMessages.map(msg => {
@@ -152,7 +152,7 @@ export const useMessagesData = (activeTab: string) => {
     
     try {
       if (type === 'private') {
-        await sendPrivateMessage(id, content);
+        await sendPrivateMessage(id ?? '', content);
       }
       // Add booking message sending logic here
       

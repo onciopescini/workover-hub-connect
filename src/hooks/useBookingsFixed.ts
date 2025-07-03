@@ -63,6 +63,11 @@ export const useBookingsFixed = () => {
           const typedData: BookingWithSpace[] = data
             ? data.map(booking => ({
                 ...booking,
+                start_time: booking.start_time ?? '',
+                end_time: booking.end_time ?? '',
+                status: booking.status ?? 'pending',
+                created_at: booking.created_at ?? '',
+                updated_at: booking.updated_at ?? '',
                 space: booking.space as Space,
               }))
             : [];

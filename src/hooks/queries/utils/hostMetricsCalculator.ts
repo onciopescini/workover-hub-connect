@@ -112,7 +112,7 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
   }));
 
   const topPerformingSpace = spaceRevenue.reduce((top, current) => 
-    current.revenue > (top?.revenue || 0) ? current : top, null);
+    current.revenue > (top?.revenue || 0) ? current : top, { revenue: 0, id: '', title: '' });
 
   return {
     totalRevenue,

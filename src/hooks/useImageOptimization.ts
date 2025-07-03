@@ -138,7 +138,7 @@ export const useImageOptimization = (options: UseImageOptimizationOptions = {}) 
 
       const result = {
         optimizedBlob: processedBlob,
-        blurPlaceholder,
+        ...(blurPlaceholder && { blurPlaceholder }),
         compressionRatio,
         originalSize,
         optimizedSize

@@ -73,11 +73,11 @@ export const useBookings = () => {
             space_id: booking.space_id,
             user_id: booking.user_id,
             booking_date: booking.booking_date,
-            start_time: booking.start_time,
-            end_time: booking.end_time,
-            status: booking.status,
-            created_at: booking.created_at,
-            updated_at: booking.updated_at,
+            start_time: booking.start_time ?? '',
+            end_time: booking.end_time ?? '',
+            status: booking.status ?? 'pending',
+            created_at: booking.created_at ?? '',
+            updated_at: booking.updated_at ?? '',
             space: booking.space as Space,
           })) : [];
           setBookings(formattedBookings);

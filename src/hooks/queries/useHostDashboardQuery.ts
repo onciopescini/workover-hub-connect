@@ -89,11 +89,11 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
       space_id: booking.space_id,
       user_id: booking.user_id,
       booking_date: booking.booking_date,
-      start_time: booking.start_time,
-      end_time: booking.end_time,
-      status: booking.status,
-      created_at: booking.created_at,
-      updated_at: booking.updated_at,
+      start_time: booking.start_time ?? '',
+      end_time: booking.end_time ?? '',
+      status: booking.status ?? 'pending',
+      created_at: booking.created_at ?? '',
+      updated_at: booking.updated_at ?? '',
       cancelled_at: booking.cancelled_at,
       cancellation_fee: booking.cancellation_fee,
       cancelled_by_host: booking.cancelled_by_host,
@@ -152,13 +152,13 @@ const fetchHostMessages = async (hostId: string, bookings: BookingWithDetails[])
       sender_id: msg.sender_id,
       content: msg.content,
       attachments: jsonArrayToStringArray(msg.attachments),
-      is_read: msg.is_read,
-      created_at: msg.created_at,
+      is_read: msg.is_read ?? false,
+      created_at: msg.created_at ?? '',
       sender: senderProfile ? {
         first_name: senderProfile.first_name,
         last_name: senderProfile.last_name,
         profile_photo_url: senderProfile.profile_photo_url
-      } : undefined
+      } : { first_name: '', last_name: '', profile_photo_url: null }
     };
   });
 };
