@@ -96,7 +96,7 @@ const SpacesManage = () => {
         .from('spaces')
         .delete()
         .eq('id', spaceId)
-        .eq('host_id', authState.user?.id);
+        .eq('host_id', authState.user?.id ?? '');
 
       if (error) {
         console.error("Error deleting space:", error);

@@ -162,6 +162,46 @@ export const getSpaceWaitlist = async (spaceId: string): Promise<WaitlistWithDet
   }
 };
 
+// Check if user is in space waitlist
+export const isInSpaceWaitlist = async (spaceId: string): Promise<string | null> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) return null;
+
+    const { data } = await supabase
+      .from('waitlists')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('space_id', spaceId)
+      .single();
+
+    return data?.id || null;
+  } catch (error) {
+    console.error("Error checking space waitlist:", error);
+    return null;
+  }
+};
+
+// Check if user is in event waitlist
+export const isInEventWaitlist = async (eventId: string): Promise<string | null> => {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) return null;
+
+    const { data } = await supabase
+      .from('waitlists')
+      .select('id')
+      .eq('user_id', user.user.id)
+      .eq('event_id', eventId)
+      .single();
+
+    return data?.id || null;
+  } catch (error) {
+    console.error("Error checking event waitlist:", error);
+    return null;
+  }
+};
+
 // Get waitlist for event (admin/host view)
 export const getEventWaitlist = async (eventId: string): Promise<WaitlistWithDetails[]> => {
   try {

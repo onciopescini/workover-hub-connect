@@ -41,7 +41,7 @@ const SpaceEdit = () => {
           .from('spaces')
           .select('*')
           .eq('id', id)
-          .eq('host_id', authState.user?.id) // Security check
+          .eq('host_id', authState.user?.id ?? '') // Security check
           .single();
 
         if (error) {

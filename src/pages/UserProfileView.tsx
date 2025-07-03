@@ -56,7 +56,7 @@ interface UserReview {
     first_name: string;
     last_name: string;
     profile_photo_url?: string;
-  };
+  } | undefined;
 }
 
 const UserProfileView = () => {
@@ -123,7 +123,16 @@ const UserProfileView = () => {
             reviewer: profilesMap.get(review.reviewer_id) || null
           }));
           
-          setReviews(reviewsWithProfiles);
+          setReviews(reviewsWithProfiles.map(review => ({
+            ...review,
+            comment: review.comment ?? '',
+            created_at: review.created_at ?? '',
+            reviewer: review.reviewer ? {
+              first_name: review.reviewer.first_name,
+              last_name: review.reviewer.last_name,
+              profile_photo_url: review.reviewer.profile_photo_url ?? ''
+            } : undefined
+          })));
         }
       }
     } catch (error) {
@@ -183,7 +192,7 @@ const UserProfileView = () => {
 
   // Gestione accesso negato con componente dedicato
   if (!hasAccess && accessResult) {
-    const profileName = profile ? `${profile.first_name} ${profile.last_name}` : undefined;
+    const profileName = profile ? `${profile['first_name']} ${profile['last_name']}` : '';
     return <ProfileAccessDenied accessResult={accessResult} profileName={profileName} />;
   }
 
@@ -206,13 +215,13 @@ const UserProfileView = () => {
     if (visibilityLevel !== 'full') return null;
 
     const socialLinks = [
-      { url: profile.website, icon: Globe, label: 'Website' },
-      { url: profile.linkedin_url, icon: ExternalLink, label: 'LinkedIn' },
-      { url: profile.twitter_url, icon: ExternalLink, label: 'Twitter' },
-      { url: profile.instagram_url, icon: ExternalLink, label: 'Instagram' },
-      { url: profile.facebook_url, icon: ExternalLink, label: 'Facebook' },
-      { url: profile.youtube_url, icon: ExternalLink, label: 'YouTube' },
-      { url: profile.github_url, icon: ExternalLink, label: 'GitHub' },
+      { url: profile['website'], icon: Globe, label: 'Website' },
+      { url: profile['linkedin_url'], icon: ExternalLink, label: 'LinkedIn' },
+      { url: profile['twitter_url'], icon: ExternalLink, label: 'Twitter' },
+      { url: profile['instagram_url'], icon: ExternalLink, label: 'Instagram' },
+      { url: profile['facebook_url'], icon: ExternalLink, label: 'Facebook' },
+      { url: profile['youtube_url'], icon: ExternalLink, label: 'YouTube' },
+      { url: profile['github_url'], icon: ExternalLink, label: 'GitHub' },
     ].filter(link => link.url);
 
     if (socialLinks.length === 0) return null;
@@ -260,9 +269,9 @@ const UserProfileView = () => {
             <CardHeader>
               <div className="flex items-center space-x-4">
                 <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                  {profile.profile_photo_url ? (
+                  {profile['profile_photo_url'] ? (
                     <img 
-                      src={String(profile.profile_photo_url)} 
+                      src={String(profile['profile_photo_url'])} 
                       alt="Profile" 
                       className="w-16 h-16 rounded-full object-cover"
                     />
@@ -271,60 +280,60 @@ const UserProfileView = () => {
                   )}
                 </div>
                 <div>
-                  <CardTitle>{String(profile.first_name)} {String(profile.last_name)}</CardTitle>
-                  {profile.job_title && (
-                    <p className="text-gray-600">{String(profile.job_title)}</p>
+                  <CardTitle>{String(profile['first_name'])} {String(profile['last_name'])}</CardTitle>
+                  {profile['job_title'] && (
+                    <p className="text-gray-600">{profile['job_title'] as string}</p>
                   )}
-                  {profile.profession && (
-                    <p className="text-gray-600">{String(profile.profession)}</p>
+                  {profile['profession'] && (
+                    <p className="text-gray-600">{profile['profession'] as string}</p>
                   )}
-                  {profile.location && (
-                    <p className="text-sm text-gray-500">{String(profile.location)}</p>
+                  {profile['location'] && (
+                    <p className="text-sm text-gray-500">{profile['location'] as string}</p>
                   )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {profile.bio && (
+              {profile['bio'] && (
                 <div className="mb-4">
                   <h3 className="font-semibold mb-2">Bio</h3>
-                  <p className="text-gray-700">{String(profile.bio)}</p>
+                  <p className="text-gray-700">{profile['bio'] as string}</p>
                 </div>
               )}
 
               {/* Mostra dettagli aggiuntivi solo con accesso completo */}
               {canViewFullProfile && (
                 <>
-                  {profile.skills && (
+                  {profile['skills'] && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Competenze</h3>
-                      <p className="text-gray-700">{String(profile.skills)}</p>
+                      <p className="text-gray-700">{String(profile['skills'])}</p>
                     </div>
                   )}
 
-                  {profile.interests && (
+                  {profile['interests'] && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Interessi</h3>
-                      <p className="text-gray-700">{String(profile.interests)}</p>
+                      <p className="text-gray-700">{String(profile['interests'])}</p>
                     </div>
                   )}
 
-                  {Array.isArray(profile.competencies) && profile.competencies.length > 0 && (
+                  {Array.isArray(profile['competencies']) && profile['competencies'].length > 0 && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Competenze Tecniche</h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile.competencies.map((comp, index) => (
+                        {profile['competencies'].map((comp, index) => (
                           <Badge key={index} variant="secondary">{String(comp)}</Badge>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {Array.isArray(profile.industries) && profile.industries.length > 0 && (
+                  {Array.isArray(profile['industries']) && profile['industries'].length > 0 && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Settori</h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile.industries.map((industry, index) => (
+                        {profile['industries'].map((industry, index) => (
                           <Badge key={index} variant="outline">{String(industry)}</Badge>
                         ))}
                       </div>
@@ -337,7 +346,7 @@ const UserProfileView = () => {
                     <h3 className="font-semibold mb-2">Membro da</h3>
                     <p className="text-gray-600 flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {format(new Date(String(profile.created_at)), 'MMMM yyyy', { locale: it })}
+                      {format(new Date(String(profile['created_at'])), 'MMMM yyyy', { locale: it })}
                     </p>
                   </div>
 
@@ -372,7 +381,7 @@ const UserProfileView = () => {
             {/* User's Spaces */}
             <Card>
               <CardHeader>
-                <CardTitle>Spazi di {String(profile.first_name)}</CardTitle>
+                <CardTitle>Spazi di {String(profile['first_name'])}</CardTitle>
               </CardHeader>
               <CardContent>
                 {spaces.length === 0 ? (

@@ -38,7 +38,7 @@ interface UserReview {
     first_name: string;
     last_name: string;
     profile_photo_url?: string;
-  };
+  } | undefined;
 }
 
 const UserProfile = () => {
@@ -71,7 +71,13 @@ const UserProfile = () => {
         return;
       }
 
-      setProfile(profileData);
+      setProfile({
+        ...profileData,
+        profile_photo_url: profileData.profile_photo_url ?? '',
+        bio: profileData.bio ?? '',
+        location: profileData.location ?? '',
+        profession: profileData.profession ?? ''
+      });
 
       // Fetch user's spaces
       const { data: spacesData, error: spacesError } = await supabase
@@ -109,7 +115,16 @@ const UserProfile = () => {
           reviewer: profilesMap.get(review.reviewer_id) || null
         }));
         
-        setReviews(reviewsWithProfiles);
+        setReviews(reviewsWithProfiles.map(review => ({
+          ...review,
+          comment: review.comment ?? '',
+          created_at: review.created_at ?? '',
+          reviewer: review.reviewer ? {
+            first_name: review.reviewer.first_name,
+            last_name: review.reviewer.last_name,
+            profile_photo_url: review.reviewer.profile_photo_url ?? ''
+          } : undefined
+        })));
       }
 
     } catch (error) {

@@ -22,11 +22,15 @@ const WaitlistButton = ({ type, targetId, disabled = false, className }: Waitlis
 
   const checkWaitlistStatus = async () => {
     if (type === "space") {
-      const inWaitlist = await isInSpaceWaitlist(targetId);
+      const waitlistIdResult = await isInSpaceWaitlist(targetId);
+      const inWaitlist = waitlistIdResult !== null;
       setIsInWaitlist(inWaitlist);
+      setWaitlistId(waitlistIdResult);
     } else {
-      const inWaitlist = await isInEventWaitlist(targetId);
+      const waitlistIdResult = await isInEventWaitlist(targetId);
+      const inWaitlist = waitlistIdResult !== null;
       setIsInWaitlist(inWaitlist);
+      setWaitlistId(waitlistIdResult);
     }
   };
 
