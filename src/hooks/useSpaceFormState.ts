@@ -76,7 +76,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     }
   }, [initialData]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number | boolean | string[] | undefined) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

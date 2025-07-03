@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 
 // Comprehensive validation suite for Sprint 1
 export class Sprint1ValidationSuite {
-  private results: any[] = [];
+  private results: Array<{ category: string; status: string; details?: string; error?: unknown }> = [];
   
   async runFullValidation(): Promise<void> {
     console.log('🚀 STARTING SPRINT 1 FULL VALIDATION SUITE');

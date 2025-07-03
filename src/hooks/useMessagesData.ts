@@ -9,7 +9,7 @@ export const useMessagesData = (activeTab: string) => {
   const { authState } = useAuth();
   const [selectedConversationId, setSelectedConversationId] = useState<string>("");
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch conversations based on active tab
@@ -110,7 +110,7 @@ export const useMessagesData = (activeTab: string) => {
 
       try {
         const [type, id] = selectedConversationId.split('-');
-        let fetchedMessages: any[] = [];
+        let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
           fetchedMessages = await fetchBookingMessages(id);

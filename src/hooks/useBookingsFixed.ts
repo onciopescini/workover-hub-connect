@@ -68,9 +68,9 @@ export const useBookingsFixed = () => {
             : [];
           setBookings(typedData);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Unexpected error:', err);
-        setError(err.message || 'An unexpected error occurred');
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
         setLoading(false);
       }
@@ -103,9 +103,9 @@ export const useBookingsFixed = () => {
         );
         toast.success('Booking cancelled successfully');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Unexpected error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);

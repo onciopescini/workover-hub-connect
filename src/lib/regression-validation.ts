@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 // Comprehensive regression validation suite for Sprint 1
 export class RegressionValidationSuite {
-  private results: any[] = [];
+  private results: Array<{ module: string; status: string; details: string; error?: unknown }> = [];
   private warnings: string[] = [];
   private errors: string[] = [];
 

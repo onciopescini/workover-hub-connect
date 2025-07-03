@@ -42,7 +42,7 @@ export const useSpaceForm = ({ initialData, isEdit = false }: UseSpaceFormProps)
   });
 
   // Enhanced input change handler that clears errors
-  const handleInputChangeWithErrorClear = (field: string, value: any) => {
+  const handleInputChangeWithErrorClear = (field: string, value: string | number | boolean | string[]) => {
     handleInputChange(field, value);
     clearError(field);
   };
@@ -56,7 +56,7 @@ export const useSpaceForm = ({ initialData, isEdit = false }: UseSpaceFormProps)
   };
 
   // Enhanced availability change handler that clears errors
-  const handleAvailabilityChangeWithErrorClear = (availability: any) => {
+  const handleAvailabilityChangeWithErrorClear = (availability: import("@/types/availability").AvailabilityData) => {
     handleAvailabilityChange(availability);
     clearError('availability');
   };

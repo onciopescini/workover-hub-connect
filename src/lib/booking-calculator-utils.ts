@@ -17,7 +17,7 @@ export const calculateBookingDetails = (
   selectedStartTime: string,
   selectedEndTime: string,
   space: Space,
-  conflictCheck: any,
+  conflictCheck: { hasConflict: boolean; validated?: boolean },
   isOnline: boolean
 ): BookingDetails | null => {
   const startDateTime = new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedStartTime}:00`);

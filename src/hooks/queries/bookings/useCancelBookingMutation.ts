@@ -38,9 +38,10 @@ export const useCancelBookingMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['host-dashboard-metrics'] });
       toast.success("Prenotazione cancellata con successo");
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error("❌ Error cancelling booking:", error);
-      toast.error(`Errore nella cancellazione: ${error.message || 'Errore sconosciuto'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      toast.error(`Errore nella cancellazione: ${errorMessage}`);
     },
   });
 };

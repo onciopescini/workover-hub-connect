@@ -7,7 +7,7 @@ import { Space } from '@/types/space';
 interface ConflictCheckState {
   checking: boolean;
   hasConflict: boolean;
-  conflictDetails?: any[];
+  conflictDetails?: Array<Record<string, unknown>>;
   validated?: boolean;
 }
 

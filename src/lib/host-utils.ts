@@ -97,12 +97,16 @@ export const getHostBookings = async (hostId: string) => {
   }
 };
 
-export const getUserRole = (authState: any): "host" | "coworker" | "admin" | null => {
+export const getUserRole = (authState: { profile?: { role?: string } } | null): "host" | "coworker" | "admin" | null => {
   if (!authState?.profile?.role) return null;
-  return authState.profile.role;
+  const role = authState.profile.role;
+  if (role === 'host' || role === 'coworker' || role === 'admin') {
+    return role as "host" | "coworker" | "admin";
+  }
+  return null;
 };
 
-export const canAccessHostFeatures = (authState: any): boolean => {
+export const canAccessHostFeatures = (authState: { profile?: { role?: string } } | null): boolean => {
   const role = getUserRole(authState);
   return role === 'host' || role === 'admin';
 };

@@ -58,9 +58,9 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
           throw new Error('Payment verification failed');
         }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('🔴 Error verifying payment:', err);
-        setError(err.message || 'Errore nella verifica del pagamento');
+        setError(err instanceof Error ? err.message : 'Errore nella verifica del pagamento');
         toast.error('Errore nella verifica del pagamento. Contatta il supporto se il problema persiste.');
       } finally {
         setIsLoading(false);

@@ -99,7 +99,7 @@ export interface AccessibilityViolation {
   impact: "minor" | "moderate" | "serious" | "critical";
   help: string;
   helpUrl?: string;
-  nodes?: any[];
+  nodes?: Array<Record<string, unknown>>;
 }
 
 // Retention Exemption types (keeping existing ones)

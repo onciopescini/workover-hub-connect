@@ -56,3 +56,80 @@ export function isStringArray(value: unknown): value is string[] {
 export function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every(item => typeof item === 'number');
 }
+
+// Enhanced type guards for strict mode compatibility
+export function hasProperty<T extends string>(
+  obj: unknown,
+  property: T
+): obj is Record<T, unknown> {
+  return typeof obj === 'object' && obj !== null && property in obj;
+}
+
+export function isValidBookingData(value: unknown): value is {
+  id: string;
+  space_id: string;
+  user_id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'space_id') &&
+    hasProperty(value, 'user_id') &&
+    hasProperty(value, 'booking_date') &&
+    hasProperty(value, 'start_time') &&
+    hasProperty(value, 'end_time') &&
+    hasProperty(value, 'status') &&
+    hasProperty(value, 'created_at') &&
+    hasProperty(value, 'updated_at') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).space_id === 'string' &&
+    typeof (value as Record<string, unknown>).user_id === 'string'
+  );
+}
+
+export function isValidSpaceData(value: unknown): value is {
+  id: string;
+  title: string;
+  address: string;
+  photos: unknown;
+  host_id: string;
+  price_per_day: number;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'title') &&
+    hasProperty(value, 'address') &&
+    hasProperty(value, 'host_id') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).title === 'string' &&
+    typeof (value as Record<string, unknown>).address === 'string' &&
+    typeof (value as Record<string, unknown>).host_id === 'string'
+  );
+}
+
+export function isValidProfileData(value: unknown): value is {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_photo_url?: string;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'first_name') &&
+    hasProperty(value, 'last_name') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).first_name === 'string' &&
+    typeof (value as Record<string, unknown>).last_name === 'string'
+  );
+}

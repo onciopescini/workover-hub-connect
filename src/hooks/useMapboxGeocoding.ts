@@ -35,7 +35,7 @@ export const useMapboxGeocoding = () => {
       
       const data = await response.json();
       
-      return data.features.map((feature: any) => ({
+      return data.features.map((feature: { place_name: string; center: [number, number]; bbox?: [number, number, number, number] }) => ({
         place_name: feature.place_name,
         center: feature.center,
         bbox: feature.bbox

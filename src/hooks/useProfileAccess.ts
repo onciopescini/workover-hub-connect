@@ -16,7 +16,7 @@ interface UseProfileAccessProps {
 
 export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [accessResult, setAccessResult] = useState<ProfileAccessResult | null>(null);
   const [visibilityLevel, setVisibilityLevel] = useState<'full' | 'limited' | 'none'>('none');
   const [error, setError] = useState<string | null>(null);
@@ -40,9 +40,9 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
           toast.info(result.message);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error checking profile access:', err);
-      setError(err.message || 'Errore nella verifica dell\'accesso');
+      setError(err instanceof Error ? err.message : 'Errore nella verifica dell\'accesso');
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +70,9 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
           toast.info(result.message);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching profile:', err);
-      setError(err.message || 'Errore nel recupero del profilo');
+      setError(err instanceof Error ? err.message : 'Errore nel recupero del profilo');
     } finally {
       setIsLoading(false);
     }

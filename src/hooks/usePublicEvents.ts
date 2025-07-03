@@ -36,8 +36,8 @@ interface SimpleEvent {
   } | null;
 }
 
-// Raw Supabase query function with aggressive type elimination
-const fetchEventsRaw = async (filters: UsePublicEventsParams): Promise<any> => {
+// Raw Supabase query function with aggressive type elimination  
+const fetchEventsRaw = async (filters: UsePublicEventsParams): Promise<Array<Record<string, unknown>>> => {
   try {
     console.log('Fetching events with filters:', filters);
     
@@ -84,7 +84,7 @@ const fetchEventsRaw = async (filters: UsePublicEventsParams): Promise<any> => {
 };
 
 // Data transformation function
-const transformEvents = async (rawEvents: any[]): Promise<SimpleEvent[]> => {
+const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promise<SimpleEvent[]> => {
   const enrichedEvents: SimpleEvent[] = [];
   
   for (const event of rawEvents) {
@@ -155,7 +155,7 @@ export const usePublicEvents = (filters: UsePublicEventsParams) => {
   return useQuery({
     queryKey: ['public-events', filtersKey],
     queryFn: () => fetchPublicEvents(filters),
-  } as any);
+  });
 };
 
 export type { SimpleEvent };
