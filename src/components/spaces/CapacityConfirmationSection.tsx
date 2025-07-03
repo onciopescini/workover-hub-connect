@@ -34,9 +34,9 @@ export const CapacityConfirmationSection = ({
           onChange={(e) => onInputChange("max_capacity", parseInt(e.target.value))}
           disabled={isSubmitting}
         />
-        {errors.max_capacity && (
-          <p className="text-sm text-red-500">{errors.max_capacity}</p>
-        )}
+          {errors['max_capacity'] && (
+            <p className="text-sm text-red-500">{errors['max_capacity']}</p>
+          )}
       </div>
 
       <div className="space-y-2">

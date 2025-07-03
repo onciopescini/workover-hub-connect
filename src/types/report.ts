@@ -1,7 +1,19 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-export type Report = Database["public"]["Tables"]["reports"]["Row"] & {
+export type Report = {
+  id: string;
+  target_type: string;
+  target_id: string;
+  reason: string;
+  description: string | null;
+  status: string;
+  created_at: string | null;
+  updated_at: string;
+  reporter_id: string;
+  admin_notes?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
   reporter?: {
     first_name: string;
     last_name: string;

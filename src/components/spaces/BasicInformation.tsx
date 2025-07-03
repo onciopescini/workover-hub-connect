@@ -40,8 +40,8 @@ export const BasicInformation = ({
             placeholder="E.g., Bright Home Office in Downtown"
             disabled={isSubmitting}
           />
-          {errors.title && (
-            <p className="text-sm text-red-500">{errors.title}</p>
+          {errors['title'] && (
+            <p className="text-sm text-red-500">{errors['title']}</p>
           )}
         </div>
 
@@ -57,8 +57,8 @@ export const BasicInformation = ({
             className="min-h-[100px]"
             disabled={isSubmitting}
           />
-          {errors.description && (
-            <p className="text-sm text-red-500">{errors.description}</p>
+          {errors['description'] && (
+            <p className="text-sm text-red-500">{errors['description']}</p>
           )}
         </div>
 
@@ -81,8 +81,8 @@ export const BasicInformation = ({
               </div>
             ))}
           </RadioGroup>
-          {errors.category && (
-            <p className="text-sm text-red-500">{errors.category}</p>
+          {errors['category'] && (
+            <p className="text-sm text-red-500">{errors['category']}</p>
           )}
         </div>
       </CardContent>

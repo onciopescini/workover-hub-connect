@@ -40,7 +40,7 @@ const RefactoredReportDialog = ({
       target_type: targetType,
       target_id: targetId,
       reason: data.reason as any,
-      description: data.description
+      description: data.description ?? null
     });
 
     if (success) {

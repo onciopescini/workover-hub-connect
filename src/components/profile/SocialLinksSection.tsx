@@ -81,7 +81,7 @@ export function SocialLinksSection({ profile }: SocialLinksSectionProps) {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => window.open(link.url, '_blank')}
+                    onClick={() => window.open(link.url ?? '', '_blank')}
                     className="h-8 w-8 p-0"
                   >
                     <ExternalLink className="h-4 w-4" />

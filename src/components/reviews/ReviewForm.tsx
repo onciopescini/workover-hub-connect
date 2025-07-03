@@ -48,7 +48,7 @@ export function ReviewForm({
           booking_id: bookingId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content,
+          content: data.content ?? null,
           author_id: '', // Will be set by RLS
         });
       } else if (type === 'event' && eventId) {
@@ -56,7 +56,7 @@ export function ReviewForm({
           event_id: eventId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content,
+          content: data.content ?? null,
           author_id: '', // Will be set by RLS
         });
       }

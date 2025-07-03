@@ -77,7 +77,7 @@ const UserReports = () => {
             )}
             
             <div className="text-xs text-gray-500">
-              Inviata {formatDistanceToNow(new Date(report.created_at), { 
+              Inviata {formatDistanceToNow(new Date(report.created_at ?? new Date()), { 
                 addSuffix: true, 
                 locale: it 
               })}

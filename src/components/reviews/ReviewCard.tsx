@@ -65,7 +65,7 @@ export function ReviewCard({ review, type, showVisibility = false }: ReviewCardP
             
             <div className="flex items-center justify-between mt-3">
               <span className="text-xs text-gray-500">
-                {formatDistanceToNow(new Date(review.created_at), { 
+                {formatDistanceToNow(new Date(review.created_at ?? new Date()), { 
                   addSuffix: true, 
                   locale: it 
                 })}

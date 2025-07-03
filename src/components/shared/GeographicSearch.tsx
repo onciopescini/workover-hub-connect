@@ -127,14 +127,14 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
 
     try {
       // Se abbiamo suggerimenti, usa il primo
-      if (suggestions.length > 0) {
+      if (suggestions.length > 0 && suggestions[0]) {
         handleSuggestionSelect(suggestions[0]);
         return;
       }
 
       // Altrimenti cerca la località
       const results = await geocodeAddress(searchQuery.trim());
-      if (results.length > 0) {
+      if (results.length > 0 && results[0]) {
         handleSuggestionSelect(results[0]);
       } else {
         // Fallback se nessun risultato

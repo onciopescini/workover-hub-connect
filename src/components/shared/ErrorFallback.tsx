@@ -28,7 +28,7 @@ export function ErrorFallback({
   onGoHome,
   onReportBug,
   canRetry = true,
-  showDetails = process.env.NODE_ENV === 'development',
+  showDetails = process.env['NODE_ENV'] === 'development',
   className
 }: ErrorFallbackProps) {
   const handleRetry = () => {

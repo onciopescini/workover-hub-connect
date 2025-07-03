@@ -32,7 +32,7 @@ export const LocationPricing = ({
         <AddressAutocomplete
           value={address || ""}
           onChange={onAddressChange}
-          error={errors.address}
+          error={errors['address'] ?? ''}
           disabled={isSubmitting}
         />
 
@@ -50,8 +50,8 @@ export const LocationPricing = ({
               onChange={(e) => onInputChange("price_per_hour", parseFloat(e.target.value))}
               disabled={isSubmitting}
             />
-            {errors.price_per_hour && (
-              <p className="text-sm text-red-500">{errors.price_per_hour}</p>
+            {errors['price_per_hour'] && (
+              <p className="text-sm text-red-500">{errors['price_per_hour']}</p>
             )}
           </div>
 
@@ -68,8 +68,8 @@ export const LocationPricing = ({
               onChange={(e) => onInputChange("price_per_day", parseFloat(e.target.value))}
               disabled={isSubmitting}
             />
-            {errors.price_per_day && (
-              <p className="text-sm text-red-500">{errors.price_per_day}</p>
+            {errors['price_per_day'] && (
+              <p className="text-sm text-red-500">{errors['price_per_day']}</p>
             )}
           </div>
         </div>

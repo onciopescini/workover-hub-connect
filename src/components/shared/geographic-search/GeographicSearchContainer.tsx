@@ -115,13 +115,13 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
     setIsSearching(true);
 
     try {
-      if (suggestions.length > 0) {
+      if (suggestions.length > 0 && suggestions[0]) {
         handleSuggestionSelect(suggestions[0]);
         return;
       }
 
       const results = await geocodeAddress(searchQuery.trim());
-      if (results.length > 0) {
+      if (results.length > 0 && results[0]) {
         handleSuggestionSelect(results[0]);
       } else {
         if (onChange) {

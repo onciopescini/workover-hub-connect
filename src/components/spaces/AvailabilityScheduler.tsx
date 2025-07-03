@@ -49,7 +49,11 @@ export const AvailabilityScheduler = ({
   const updateTimeSlot = (day: string, slotIndex: number, field: 'start' | 'end', value: string) => {
     const daySchedule = availability.recurring[day as keyof WeeklySchedule];
     const newSlots = [...(daySchedule?.slots || [])];
-    newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
+    newSlots[slotIndex] = { 
+      start: newSlots[slotIndex]?.start ?? '', 
+      end: newSlots[slotIndex]?.end ?? '',
+      [field]: value 
+    };
     
     const newAvailability = {
       ...availability,

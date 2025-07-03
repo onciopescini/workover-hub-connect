@@ -38,7 +38,7 @@ export function ReportDetailsDialog({ report, isOpen, onClose, onUpdate }: Repor
         .update({
           status: "resolved",
           admin_notes: adminNotes,
-          reviewed_by: authState.user?.id,
+          reviewed_by: authState.user?.id ?? null,
           reviewed_at: new Date().toISOString(),
         })
         .eq("id", report.id);
