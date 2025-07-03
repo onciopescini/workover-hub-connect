@@ -156,10 +156,15 @@ export const useBookingsDashboardState = () => {
 
   const handleStatusFilter = useCallback((status: string) => {
     try {
-      setFilters(prev => ({
-        ...prev,
-        status: status === 'all' ? undefined : status as 'pending' | 'confirmed' | 'cancelled'
-      }));
+      setFilters(prev => {
+        const newFilters = { ...prev };
+        if (status === 'all') {
+          delete newFilters.status;
+        } else {
+          newFilters.status = status as 'pending' | 'confirmed' | 'cancelled';
+        }
+        return newFilters;
+      });
     } catch (err) {
       console.error('❌ Error setting status filter:', err);
     }
@@ -167,10 +172,15 @@ export const useBookingsDashboardState = () => {
 
   const handleDateRangeFilter = useCallback((range: { start: string; end: string } | undefined) => {
     try {
-      setFilters(prev => ({
-        ...prev,
-        dateRange: range
-      }));
+      setFilters(prev => {
+        const newFilters = { ...prev };
+        if (range) {
+          newFilters.dateRange = range;
+        } else {
+          delete newFilters.dateRange;
+        }
+        return newFilters;
+      });
     } catch (err) {
       console.error('❌ Error setting date range filter:', err);
     }

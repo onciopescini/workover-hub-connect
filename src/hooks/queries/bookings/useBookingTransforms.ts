@@ -6,11 +6,11 @@ interface RawBookingData {
   space_id?: string;
   user_id?: string;
   booking_date?: string;
-  start_time?: string;
-  end_time?: string;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   cancelled_at?: string | null;
   cancellation_fee?: number | null;
   cancelled_by_host?: boolean | null;
@@ -50,8 +50,8 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         space_id: booking.space_id || '',
         user_id: booking.user_id || '',
         booking_date: booking.booking_date || '',
-        start_time: booking.start_time || undefined,
-        end_time: booking.end_time || undefined,
+        start_time: booking.start_time || '',
+        end_time: booking.end_time || '',
         status: booking.status || 'pending',
         created_at: booking.created_at || '',
         updated_at: booking.updated_at || '',
@@ -95,8 +95,8 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         space_id: booking.space_id || '',
         user_id: booking.user_id || '',
         booking_date: booking.booking_date || '',
-        start_time: booking.start_time || undefined,
-        end_time: booking.end_time || undefined,
+        start_time: booking.start_time || '',
+        end_time: booking.end_time || '',
         status: booking.status || 'pending',
         created_at: booking.created_at || '',
         updated_at: booking.updated_at || '',

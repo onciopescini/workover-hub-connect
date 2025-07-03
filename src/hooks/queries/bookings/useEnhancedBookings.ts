@@ -37,7 +37,7 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         console.log('🔍 Fetching coworker and host bookings...');
         const [coworkerData, hostData] = await Promise.all([
           fetchCoworkerBookings(userId, filters),
-          fetchHostBookings(userId, userRole, filters)
+          fetchHostBookings(userId, userRole ?? '', filters)
         ]);
 
         console.log('✅ Raw data fetched:', {
@@ -66,15 +66,18 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         console.log('✅ Final bookings count:', filteredBookings.length);
         
         // Debug: Log sample booking data
-        if (filteredBookings.length > 0) {
-          console.log('📋 Sample booking:', {
-            id: filteredBookings[0].id,
-            spaceTitle: filteredBookings[0].space?.title,
-            status: filteredBookings[0].status,
-            userId: filteredBookings[0].user_id,
-            spaceHostId: filteredBookings[0].space?.host_id
-          });
-        }
+         if (filteredBookings.length > 0) {
+           const sample = filteredBookings[0];
+           if (sample) {
+             console.log('📋 Sample booking:', {
+               id: sample.id,
+               spaceTitle: sample.space?.title,
+               status: sample.status,
+               userId: sample.user_id,
+               spaceHostId: sample.space?.host_id
+             });
+           }
+         }
 
         return filteredBookings;
 

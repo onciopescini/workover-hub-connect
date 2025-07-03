@@ -26,7 +26,7 @@ interface WaitlistEntry {
   };
   event?: {
     title: string;
-    max_participants: number;
+    max_participants: number | null;
     date: string;
   };
 }
@@ -65,8 +65,8 @@ export function WaitlistManager() {
           event_id: entry.event_id ?? '',
           created_at: entry.created_at ?? new Date().toISOString(),
           user: entry.user as WaitlistEntry['user'],
-          space: entry.space as WaitlistEntry['space'],
-          event: entry.event as WaitlistEntry['event']
+          space: entry.space ?? { title: '', max_capacity: 0 },
+          event: entry.event ?? { title: '', max_participants: 0, date: '' }
         }));
 
       setWaitlists(validWaitlists);
@@ -298,7 +298,7 @@ export function WaitlistManager() {
                       </div>
                       
                       <div className="text-sm text-gray-500 mt-1">
-                        In attesa dal {new Date(entry.created_at).toLocaleDateString('it-IT')}
+                        In attesa dal {entry.created_at ? new Date(entry.created_at).toLocaleDateString('it-IT') : 'Data sconosciuta'}
                         {entry.event?.date && (
                           <span className="ml-2">
                             • Evento: {new Date(entry.event.date).toLocaleDateString('it-IT')}
@@ -311,7 +311,7 @@ export function WaitlistManager() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      onClick={() => promoteUser(entry.id, entry.space_id, entry.event_id)}
+                      onClick={() => promoteUser(entry.id, entry.space_id || undefined, entry.event_id || undefined)}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />

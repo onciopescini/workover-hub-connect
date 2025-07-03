@@ -18,11 +18,16 @@ export const useCancelBookingMutation = () => {
     }) => {
       console.log('🔄 Cancelling booking:', bookingId);
       
-      const { data, error } = await supabase.rpc('cancel_booking', {
+      const params: any = {
         booking_id: bookingId,
-        cancelled_by_host: isHost,
-        reason: reason
-      });
+        cancelled_by_host: isHost
+      };
+      
+      if (reason) {
+        params.reason = reason;
+      }
+      
+      const { data, error } = await supabase.rpc('cancel_booking', params);
 
       if (error) {
         console.error('❌ Cancel booking error:', error);

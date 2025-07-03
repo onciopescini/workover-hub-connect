@@ -9,8 +9,8 @@ export type BookingWithDetails = {
   space_id: string;
   user_id: string;
   booking_date: string;
-  start_time?: string;
-  end_time?: string;
+  start_time: string;
+  end_time: string;
   status: 'pending' | 'confirmed' | 'cancelled';
   created_at: string;
   updated_at: string;

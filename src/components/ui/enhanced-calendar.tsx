@@ -21,8 +21,10 @@ function EnhancedCalendar({
 }: EnhancedCalendarProps) {
   
   const getDayAvailability = (date: Date): DayAvailability['status'] | null => {
+    if (!availability) return null;
     const dateStr = date.toISOString().split('T')[0];
-    return availability && availability[dateStr] ? availability[dateStr].status : null;
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    return availability[dateStr]?.status ?? null;
   };
 
   const dayModifiers: DayModifiers = {
