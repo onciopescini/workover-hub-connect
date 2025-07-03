@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/messaging-utils";
 import { fetchBookingMessages } from "@/lib/message-utils";

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSpaceFilters } from '@/components/spaces/AdvancedSpaceFilters';
 import { SpaceMap } from '@/components/spaces/SpaceMap';

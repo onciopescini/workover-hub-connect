@@ -1,6 +1,6 @@
 
 import { useCallback, useRef, useMemo } from 'react';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export const useProfile = () => {
   const { authState, refreshProfile } = useAuth();

@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingFilter } from "./useBookingFilters";
 import { fetchCoworkerBookings, fetchHostBookings } from "./useBookingDataFetcher";

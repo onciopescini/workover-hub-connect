@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { useMessagesData } from "@/hooks/useMessagesData";
 import { MessagesPageHeader } from "@/components/messaging/MessagesPageHeader";
 import { MessagesTabsManager } from "@/components/messaging/MessagesTabsManager";

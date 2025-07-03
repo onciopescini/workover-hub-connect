@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { EnhancedBookingsDashboard } from '@/components/bookings/EnhancedBookingsDashboard';
 
 const Bookings = () => {

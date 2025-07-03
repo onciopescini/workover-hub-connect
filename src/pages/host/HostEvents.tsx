@@ -7,7 +7,7 @@ import { Calendar, Users, MapPin, Edit2, Trash2, Plus } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { useNavigate } from 'react-router-dom';
 

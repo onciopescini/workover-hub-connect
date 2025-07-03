@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Connection, ConnectionSuggestion } from "@/types/networking";
 import { User } from "@supabase/supabase-js";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface UseNetworkingProps {
   initialSuggestions?: ConnectionSuggestion[];

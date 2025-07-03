@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 
 export interface ProfileFormData {

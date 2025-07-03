@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserNotification, NotificationCounts } from '@/types/notification';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export const useNotifications = () => {
   const { authState } = useAuth();

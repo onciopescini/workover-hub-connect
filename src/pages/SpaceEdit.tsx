@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import RefactoredSpaceForm from "@/components/spaces/RefactoredSpaceForm";
 import { Card, CardContent } from "@/components/ui/card";
