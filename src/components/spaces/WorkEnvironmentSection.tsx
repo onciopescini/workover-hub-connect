@@ -37,8 +37,8 @@ export const WorkEnvironmentSection = ({
           </div>
         ))}
       </RadioGroup>
-      {errors.work_environment && (
-        <p className="text-sm text-red-500">{errors.work_environment}</p>
+      {errors['work_environment'] && (
+        <p className="text-sm text-red-500">{errors['work_environment']}</p>
       )}
     </div>
   );

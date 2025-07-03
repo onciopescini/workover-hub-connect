@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    mode === 'development' && Inspect(),
+    // mode === 'development' && Inspect(), // Disabled to fix Vite crash
     mode === 'production' && analyzer(),
   ].filter(Boolean),
   resolve: {

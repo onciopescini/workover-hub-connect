@@ -30,7 +30,7 @@ export function AnimatedBackground({ className, particleCount = 50 }: AnimatedBa
       size: Math.random() * 4 + 1,
       speed: Math.random() * 2 + 0.5,
       opacity: Math.random() * 0.5 + 0.1,
-      animationType: animationTypes[Math.floor(Math.random() * animationTypes.length)]
+      animationType: animationTypes[Math.floor(Math.random() * animationTypes.length)] as 'float' | 'float-slow' | 'float-fast'
     }));
     setParticles(newParticles);
   }, [particleCount]);

@@ -97,8 +97,8 @@ const SpaceForm = ({ initialData, isEdit = false }: SpaceFormProps) => {
         onAvailabilityChange={handleAvailabilityChange}
         isSubmitting={isSubmitting}
       />
-      {errors.availability && (
-        <p className="text-sm text-red-500 mt-2">{errors.availability}</p>
+      {errors['availability'] && (
+        <p className="text-sm text-red-500 mt-2">{errors['availability']}</p>
       )}
 
       <Photos

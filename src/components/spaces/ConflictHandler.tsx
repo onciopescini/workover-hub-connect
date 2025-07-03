@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 interface ConflictHandlerProps {
   hasConflict: boolean;
   conflictDetails?: any[];
-  onRefresh?: () => void;
-  onTimeChange?: () => void;
+  onRefresh?: (() => void) | undefined;
+  onTimeChange?: (() => void) | undefined;
   loading?: boolean;
   alternativeSuggestions?: string[];
 }

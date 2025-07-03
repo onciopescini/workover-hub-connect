@@ -40,8 +40,8 @@ export function LoadingOverlay({
         <SkeletonLoader
           variant={skeletonConfig.variant || 'card'}
           rows={skeletonConfig.rows || 3}
-          showAvatar={skeletonConfig.showAvatar}
-          showImage={skeletonConfig.showImage}
+          showAvatar={skeletonConfig.showAvatar !== undefined ? skeletonConfig.showAvatar : false}
+          showImage={skeletonConfig.showImage !== undefined ? skeletonConfig.showImage : false}
         />
       </div>
     );
@@ -56,7 +56,7 @@ export function LoadingOverlay({
             <LoadingSpinner
               text={message}
               showText
-              progress={progress}
+              progress={progress !== undefined ? progress : 0}
               context={context}
               enableLogging
             />
@@ -72,7 +72,7 @@ export function LoadingOverlay({
       <LoadingSpinner
         text={message}
         showText
-        progress={progress}
+        progress={progress !== undefined ? progress : 0}
         context={context}
         enableLogging
       />
