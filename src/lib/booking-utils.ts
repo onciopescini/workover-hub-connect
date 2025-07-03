@@ -42,11 +42,16 @@ export const cancelBooking = async (
   reason?: string
 ): Promise<{ success: boolean; fee?: number; error?: string }> => {
   try {
-    const { data, error } = await supabase.rpc('cancel_booking', {
+    const rpcParams: { booking_id: string; cancelled_by_host: boolean; reason?: string } = {
       booking_id: bookingId,
-      cancelled_by_host: cancelledByHost,
-      reason: reason || null
-    });
+      cancelled_by_host: cancelledByHost
+    };
+
+    if (reason) {
+      rpcParams.reason = reason;
+    }
+
+    const { data, error } = await supabase.rpc('cancel_booking', rpcParams);
 
     if (error) {
       console.error("Error cancelling booking:", error);
@@ -68,8 +73,9 @@ export const cancelBooking = async (
     }
 
     if (!result.success) {
-      toast.error(result.error || "Errore nella cancellazione");
-      return { success: false, error: result.error };
+      const errorMessage = result.error ?? "Errore nella cancellazione";
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
 
     toast.success("Prenotazione cancellata con successo");

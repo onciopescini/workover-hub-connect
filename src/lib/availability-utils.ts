@@ -146,19 +146,28 @@ export const calculateDayAvailability = (
     const startTime = allSlots[i];
     const endTime = allSlots[i + 1];
     
+    if (!startTime || !endTime) continue;
     const isAvailable = isSlotAvailable(date, startTime, endTime, allBookings);
     
-    availableSlots.push({
-      start: startTime,
-      end: endTime,
-      available: isAvailable,
-      bookingId: isAvailable ? undefined : allBookings.find(b => 
+    const slot: TimeSlot = {
+      start: startTime ?? '',
+      end: endTime ?? '',
+      available: isAvailable
+    };
+
+    if (!isAvailable) {
+      const conflictingBooking = allBookings.find(b => 
         b.booking_date === date && 
-        startTime < b.end_time && 
-        endTime > b.start_time &&
+        (startTime ?? '') < (b.end_time ?? '') && 
+        (endTime ?? '') > (b.start_time ?? '') &&
         ['confirmed', 'pending'].includes(b.status)
-      )?.id
-    });
+      );
+      if (conflictingBooking?.id) {
+        slot.bookingId = conflictingBooking.id;
+      }
+    }
+
+    availableSlots.push(slot);
   }
 
   // Determina lo status del giorno
@@ -198,7 +207,7 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
     
     try {
       // Recupera le prenotazioni esistenti con RPC ottimizzato
-      const bookings = await fetchSpaceBookings(spaceId, startDate, endDate, !forceRefresh, true);
+      const bookings = await fetchSpaceBookings(spaceId, startDate, endDate, !forceRefresh, true) as Array<{ booking_date: string; start_time: string; end_time: string; status: string; id?: string }>;
       
       // Recupera la configurazione di disponibilità dello spazio
       const { data: spaceData } = await supabase
@@ -354,8 +363,9 @@ export const fetchMultipleSpacesAvailability = async (
     });
 
     (data || []).forEach(booking => {
-      if (groupedBookings[booking.space_id]) {
-        groupedBookings[booking.space_id].push(booking);
+      const spaceId = booking?.space_id;
+      if (spaceId && groupedBookings[spaceId]) {
+        groupedBookings[spaceId].push(booking);
       }
     });
 

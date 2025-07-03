@@ -33,16 +33,25 @@ export const getHostEvents = async (hostId: string): Promise<EventWithDetails[]>
   // Transform the data to match EventWithDetails type
   const transformedData: EventWithDetails[] = (data || []).map(event => ({
     ...event,
+    created_at: event.created_at ?? '',
+    city: event.city ?? '',
+    current_participants: event.current_participants ?? 0,
+    creator: event.creator ?? {
+      id: '',
+      first_name: '',
+      last_name: '',
+      profile_photo_url: null
+    },
     participants: (event.participants || []).map((p: { user_id: string }): EventParticipant => ({
       event_id: event.id,
       user_id: p.user_id,
-      joined_at: null, // Set to null when not available from the query
+      joined_at: '',
     })),
     waitlist: (event.waitlist || []).map((w: { user_id: string }): WaitlistEntry => ({
-      id: '', // Set to empty string when not available from the query
+      id: '',
       event_id: event.id,
       user_id: w.user_id,
-      created_at: null, // Set to null when not available from the query
+      created_at: '',
     })),
   }));
 

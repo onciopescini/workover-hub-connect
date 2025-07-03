@@ -44,7 +44,10 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      created_at: item.created_at ?? ''
+    }));
   } catch (error) {
     console.error('Error in getFavoriteSpaces:', error);
     return [];

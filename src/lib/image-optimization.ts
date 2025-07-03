@@ -148,10 +148,15 @@ export const generateOptimizedImageUrls = (
         .getPublicUrl(optimizedPath).data.publicUrl
     : undefined;
 
-  return {
-    original: originalUrl,
-    optimized: optimizedUrl
+  const result: OptimizedImageUrls = {
+    original: originalUrl
   };
+
+  if (optimizedUrl) {
+    result.optimized = optimizedUrl;
+  }
+
+  return result;
 };
 
 // Check if image is optimized
@@ -187,13 +192,13 @@ export const subscribeToImageProcessingUpdates = (
         imageLogger.debug('Image processing job updated', {
           action: 'job_update',
           jobId,
-          status: payload.new.status
+          status: payload.new['status']
         });
         
         // Cast the status to the correct type
         const updatedJob = {
           ...payload.new,
-          status: payload.new.status as 'pending' | 'processing' | 'completed' | 'failed'
+          status: payload.new['status'] as 'pending' | 'processing' | 'completed' | 'failed'
         } as ImageProcessingJob;
         
         callback(updatedJob);

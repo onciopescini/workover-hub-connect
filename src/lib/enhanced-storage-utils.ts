@@ -223,6 +223,9 @@ export const uploadMultipleSpacePhotos = async (
     const file = files[i];
     
     try {
+      const file = files[i];
+      if (!file) continue;
+      
       const result = await uploadSpacePhotoWithOptimization(
         file,
         userId,
@@ -236,13 +239,13 @@ export const uploadMultipleSpacePhotos = async (
       storageLogger.debug('Individual upload completed in bulk', {
         action: 'bulk_item_completed',
         fileIndex: i,
-        fileName: file.name
+        fileName: file?.name ?? 'unknown'
       });
     } catch (error) {
       storageLogger.error('Failed to upload file in bulk', {
         action: 'bulk_item_failed',
         fileIndex: i,
-        fileName: file.name,
+        fileName: file?.name ?? 'unknown',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       throw error;

@@ -39,8 +39,22 @@ export const getEvent = async (eventId: string): Promise<EventWithDetails | null
 
   return {
     ...event,
-    participants: participants || [],
-    waitlist: waitlist || []
+    creator: event.creator ?? {
+      id: '',
+      first_name: '',
+      last_name: '',
+      profile_photo_url: null
+    },
+    participants: (participants || []).map(p => ({
+      ...p,
+      event_id: p.event_id ?? eventId,
+      joined_at: p.joined_at ?? ''
+    })),
+    waitlist: (waitlist || []).map(w => ({
+      ...w,
+      event_id: w.event_id ?? eventId,
+      created_at: w.created_at ?? ''
+    }))
   };
 };
 

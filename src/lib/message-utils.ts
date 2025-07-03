@@ -56,17 +56,25 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       // Non lanciamo errore qui, continuiamo senza i profili
     }
 
-    // Combiniamo i dati con conversione sicura degli attachments
-    const messages: Message[] = messagesData.map(msg => ({
-      id: msg.id,
-      booking_id: msg.booking_id,
-      sender_id: msg.sender_id,
-      content: msg.content,
-      attachments: jsonArrayToStringArray(msg.attachments),
-      is_read: msg.is_read,
-      created_at: msg.created_at,
-      sender: profilesData?.find(profile => profile.id === msg.sender_id) || undefined
-    }));
+    // Combiniamo i dati con conversione sicura degli attachments  
+    const messages: Message[] = messagesData.map(msg => {
+      const message: Message = {
+        id: msg.id,
+        booking_id: msg.booking_id,
+        sender_id: msg.sender_id,
+        content: msg.content,
+        attachments: jsonArrayToStringArray(msg.attachments),
+        is_read: msg.is_read ?? false,
+        created_at: msg.created_at ?? ''
+      };
+      
+      const senderProfile = profilesData?.find(profile => profile.id === msg.sender_id);
+      if (senderProfile) {
+        message.sender = senderProfile;
+      }
+      
+      return message;
+    });
     
     return messages;
   } catch (error) {
@@ -123,16 +131,21 @@ export const sendBookingMessage = async (
       console.error("Error fetching sender profile:", profileError);
     }
     
-    return {
+    const message: Message = {
       id: data.id,
       booking_id: data.booking_id,
       sender_id: data.sender_id,
       content: data.content,
       attachments: jsonArrayToStringArray(data.attachments),
-      is_read: data.is_read,
-      created_at: data.created_at,
-      sender: senderProfile || undefined
+      is_read: data.is_read ?? false,
+      created_at: data.created_at ?? ''
     };
+    
+    if (senderProfile) {
+      message.sender = senderProfile;
+    }
+    
+    return message;
   } catch (error) {
     console.error("Error in sendBookingMessage:", error);
     toast({

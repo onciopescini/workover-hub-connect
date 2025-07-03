@@ -75,20 +75,27 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       throw error;
     }
 
-    return data?.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      sender_id: msg.sender_id,
-      booking_id: msg.booking_id,
-      created_at: msg.created_at,
-      is_read: msg.is_read,
-      attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : [],
-      sender: msg.sender ? {
-        first_name: msg.sender.first_name || '',
-        last_name: msg.sender.last_name || '',
-        profile_photo_url: msg.sender.profile_photo_url
-      } : undefined
-    })) || [];
+    return data?.map(msg => {
+      const message: Message = {
+        id: msg.id,
+        content: msg.content,
+        sender_id: msg.sender_id,
+        booking_id: msg.booking_id,
+        created_at: msg.created_at ?? '',
+        is_read: msg.is_read ?? false,
+        attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : []
+      };
+      
+      if (msg.sender) {
+        message.sender = {
+          first_name: msg.sender.first_name || '',
+          last_name: msg.sender.last_name || '',
+          profile_photo_url: msg.sender.profile_photo_url
+        };
+      }
+      
+      return message;
+    }) || [];
   } catch (error) {
     console.error('Error in fetchMessages:', error);
     return [];
@@ -128,7 +135,11 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       throw error;
     }
 
-    return data || [];
+    return data?.map(chat => ({
+      ...chat,
+      created_at: chat.created_at ?? '',
+      last_message_at: chat.last_message_at ?? ''
+    })) || [];
   } catch (error) {
     console.error('Error in getUserPrivateChats:', error);
     return [];
@@ -153,8 +164,8 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
       content: msg.content,
       sender_id: msg.sender_id,
       chat_id: msg.chat_id,
-      created_at: msg.created_at,
-      is_read: msg.is_read,
+      created_at: msg.created_at ?? '',
+      is_read: msg.is_read ?? false,
       attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : []
     })) || [];
   } catch (error) {
@@ -197,9 +208,9 @@ export const sendMessage = async (bookingId: string, content: string): Promise<M
     const { data, error } = await supabase
       .from('messages')
       .insert({
-        booking_id: bookingId,
         content: content,
-        sender_id: (await supabase.auth.getUser()).data.user?.id,
+        sender_id: (await supabase.auth.getUser()).data.user?.id ?? '',
+        booking_id: bookingId
       })
       .select()
       .single();
@@ -215,8 +226,8 @@ export const sendMessage = async (bookingId: string, content: string): Promise<M
       content: data.content,
       sender_id: data.sender_id,
       booking_id: data.booking_id,
-      created_at: data.created_at,
-      is_read: data.is_read,
+      created_at: data.created_at ?? '',
+      is_read: data.is_read ?? false,
       attachments: Array.isArray(data.attachments) ? data.attachments as string[] : []
     };
   } catch (error) {

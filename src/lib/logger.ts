@@ -136,20 +136,35 @@ class Logger {
     context?: LogContext,
     error?: Error
   ): LogEntry {
-    return {
+    const entry: LogEntry = {
       timestamp: new Date(),
       level,
       message,
-      context: context?.component,
-      metadata: {
-        ...context,
-        url: typeof window !== 'undefined' ? window.location.href : undefined,
-        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
-      },
-      error,
-      sessionId: this.sessionId,
-      userId: this.getCurrentUserId(),
+      sessionId: this.sessionId
     };
+
+    if (context?.component) {
+      entry.context = context.component;
+    }
+
+    if (context || typeof window !== 'undefined') {
+      entry.metadata = {
+        ...context,
+        url: typeof window !== 'undefined' ? window.location.href : '',
+        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+      };
+    }
+
+    if (error) {
+      entry.error = error;
+    }
+
+    const userId = this.getCurrentUserId();
+    if (userId) {
+      entry.userId = userId;
+    }
+
+    return entry;
   }
 
   private getCurrentUserId(): string | undefined {
@@ -229,13 +244,18 @@ class Logger {
       const endTime = performance.now();
       const duration = endTime - startTime;
       
-      this.info(`Performance: ${label} completed`, {
-        component: context,
+      const logContext: LogContext = {
         performanceLabel: label,
         duration: duration,
         startTime,
         endTime
-      });
+      };
+
+      if (context) {
+        logContext.component = context;
+      }
+
+      this.info(`Performance: ${label} completed`, logContext);
     };
   }
 
@@ -272,13 +292,13 @@ class Logger {
 
 // Create default logger instance
 const defaultConfig: Partial<LoggerConfig> = {
-  level: process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
+  level: process.env['NODE_ENV'] === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
   enableConsole: true,
-  enableRemote: process.env.NODE_ENV === 'production',
+  enableRemote: process.env['NODE_ENV'] === 'production',
   bufferSize: 50,
   flushInterval: 30000,
   enableContextTracking: true,
-  enablePerformanceTracking: process.env.NODE_ENV !== 'production'
+  enablePerformanceTracking: process.env['NODE_ENV'] !== 'production'
 };
 
 export const logger = new Logger(defaultConfig);

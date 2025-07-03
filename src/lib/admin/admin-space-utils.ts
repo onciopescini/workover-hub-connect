@@ -24,12 +24,17 @@ export const moderateSpace = async (spaceId: string, approve: boolean, rejection
     const { data: currentUser } = await supabase.auth.getUser();
     if (!currentUser.user) throw new Error("Not authenticated");
 
-    const { data, error } = await supabase.rpc("moderate_space", {
+    const rpcParams: { space_id: string; approve: boolean; moderator_id: string; rejection_reason?: string } = {
       space_id: spaceId,
       approve: approve,
-      moderator_id: currentUser.user.id,
-      rejection_reason: rejectionReason || null
-    });
+      moderator_id: currentUser.user.id
+    };
+
+    if (rejectionReason) {
+      rpcParams.rejection_reason = rejectionReason;
+    }
+
+    const { data, error } = await supabase.rpc("moderate_space", rpcParams);
 
     if (error) throw error;
     

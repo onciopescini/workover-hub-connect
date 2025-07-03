@@ -203,20 +203,25 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
     const isVisible = userReview?.is_visible || false;
 
     let daysUntilVisible: number | undefined;
-    if (userReview && !isVisible) {
+    if (userReview && !isVisible && userReview.created_at) {
       const daysSinceCreation = Math.floor(
         (Date.now() - new Date(userReview.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
       daysUntilVisible = Math.max(0, 14 - daysSinceCreation);
     }
 
-    return {
+    const result: ReviewStatus = {
       canWriteReview: !hasWrittenReview,
       hasWrittenReview,
       hasReceivedReview,
-      isVisible,
-      daysUntilVisible
+      isVisible
     };
+
+    if (daysUntilVisible !== undefined) {
+      result.daysUntilVisible = daysUntilVisible;
+    }
+
+    return result;
   } catch (error) {
     console.error("Error getting booking review status:", error);
     return {
@@ -254,20 +259,25 @@ export const getEventReviewStatus = async (eventId: string, userId: string, targ
     const isVisible = userReview?.is_visible || false;
 
     let daysUntilVisible: number | undefined;
-    if (userReview && !isVisible) {
+    if (userReview && !isVisible && userReview.created_at) {
       const daysSinceCreation = Math.floor(
         (Date.now() - new Date(userReview.created_at).getTime()) / (1000 * 60 * 60 * 24)
       );
       daysUntilVisible = Math.max(0, 14 - daysSinceCreation);
     }
 
-    return {
+    const result: ReviewStatus = {
       canWriteReview: !hasWrittenReview,
       hasWrittenReview,
       hasReceivedReview,
-      isVisible,
-      daysUntilVisible
+      isVisible
     };
+
+    if (daysUntilVisible !== undefined) {
+      result.daysUntilVisible = daysUntilVisible;
+    }
+
+    return result;
   } catch (error) {
     console.error("Error getting event review status:", error);
     return {
