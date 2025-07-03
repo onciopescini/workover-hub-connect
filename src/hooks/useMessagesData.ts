@@ -4,6 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/messaging-utils";
 import { fetchBookingMessages } from "@/lib/message-utils";
 import { ConversationItem } from "@/types/messaging";
+import { isValidMessageWithSender } from "@/types/strict-type-guards";
+
+interface PrivateMessage {
+  sender?: { first_name: string; last_name: string; profile_photo_url?: string };
+  sender_id: string;
+  [key: string]: unknown;
+}
 
 export const useMessagesData = (activeTab: string) => {
   const { authState } = useAuth();
@@ -115,17 +122,21 @@ export const useMessagesData = (activeTab: string) => {
         if (type === 'booking') {
           fetchedMessages = await fetchBookingMessages(id);
         } else if (type === 'private') {
-          fetchedMessages = await getPrivateMessages(id);
+          fetchedMessages = await getPrivateMessages(id) as unknown as PrivateMessage[];
         }
 
-        setMessages(fetchedMessages.map(msg => ({
-          ...msg,
-          senderName: msg.sender ? 
-            `${msg.sender.first_name} ${msg.sender.last_name}` : 
-            'Unknown',
-          senderAvatar: msg.sender?.profile_photo_url,
-          isCurrentUser: msg.sender_id === authState.user?.id
-        })));
+        setMessages(fetchedMessages.map(msg => {
+          const msgData = msg as any;
+          const sender = msgData.sender as any;
+          return {
+            ...msg,
+            senderName: sender ? 
+              `${sender.first_name as string} ${sender.last_name as string}` : 
+              'Unknown',
+            senderAvatar: sender?.profile_photo_url as string,
+            isCurrentUser: msgData.sender_id === authState.user?.id
+          };
+        }));
       } catch (error) {
         console.error("Error fetching messages:", error);
       }

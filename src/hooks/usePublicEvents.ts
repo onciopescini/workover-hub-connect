@@ -88,8 +88,21 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
   const enrichedEvents: SimpleEvent[] = [];
   
   for (const event of rawEvents) {
+    // Safe cast of known event structure
+    const eventData = event as any;
     const enrichedEvent: SimpleEvent = {
-      ...event,
+      id: eventData.id as string,
+      title: eventData.title as string,
+      description: eventData.description as string | null,
+      date: eventData.date as string,
+      space_id: eventData.space_id as string,
+      created_by: eventData.created_by as string | null,
+      created_at: eventData.created_at as string | null,
+      max_participants: eventData.max_participants as number | null,
+      current_participants: eventData.current_participants as number | null,
+      image_url: eventData.image_url as string | null,
+      status: eventData.status as string | null,
+      city: eventData.city as string | null,
       spaces: null,
       profiles: null
     };
@@ -99,7 +112,7 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
         const { data: spaceData, error: spaceError } = await supabase
           .from('spaces')
           .select('title, address, latitude, longitude')
-          .eq('id', event.space_id)
+          .eq('id', eventData.space_id as string)
           .maybeSingle() as any;
         
         if (!spaceError && spaceData && spaceData.title) {
@@ -121,7 +134,7 @@ const transformEvents = async (rawEvents: Array<Record<string, unknown>>): Promi
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('first_name, last_name, profile_photo_url')
-          .eq('id', event.created_by)
+          .eq('id', eventData.created_by as string)
           .maybeSingle() as any;
         
         if (!profileError && profileData) {

@@ -133,3 +133,89 @@ export function isValidProfileData(value: unknown): value is {
     typeof (value as Record<string, unknown>).last_name === 'string'
   );
 }
+
+// Enhanced booking data validation
+export function isValidBookingWithSpace(value: unknown): value is {
+  id: string;
+  spaces: { id: string; title: string; address: string; photos: string[]; host_id: string; price_per_day: number };
+  profiles?: { id: string; first_name: string; last_name: string; profile_photo_url?: string };
+  [key: string]: unknown;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'spaces') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    isValidSpaceData((value as Record<string, unknown>).spaces)
+  );
+}
+
+// Message with sender validation
+export function isValidMessageWithSender(value: unknown): value is {
+  sender?: { first_name: string; last_name: string; profile_photo_url?: string };
+  sender_id: string;
+  [key: string]: unknown;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'sender_id') &&
+    typeof (value as Record<string, unknown>).sender_id === 'string'
+  );
+}
+
+// Safe event data validation
+export function isValidEventData(value: unknown): value is {
+  id: string;
+  title: string;
+  description: string | null;
+  date: string;
+  space_id: string;
+  created_by: string | null;
+  created_at: string | null;
+  max_participants: number | null;
+  current_participants: number | null;
+  image_url: string | null;
+  status: string | null;
+  city: string | null;
+  [key: string]: unknown;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'title') &&
+    hasProperty(value, 'space_id') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).title === 'string' &&
+    typeof (value as Record<string, unknown>).space_id === 'string'
+  );
+}
+
+// Complete profile validation
+export function isCompleteProfile(value: unknown): value is Record<string, unknown> & {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_photo_url?: string;
+  bio?: string;
+  location?: string;
+  competencies?: string[];
+  industries?: string[];
+  created_at: string;
+  [key: string]: unknown;
+} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    hasProperty(value, 'id') &&
+    hasProperty(value, 'first_name') &&
+    hasProperty(value, 'last_name') &&
+    hasProperty(value, 'created_at') &&
+    typeof (value as Record<string, unknown>).id === 'string' &&
+    typeof (value as Record<string, unknown>).first_name === 'string' &&
+    typeof (value as Record<string, unknown>).last_name === 'string' &&
+    typeof (value as Record<string, unknown>).created_at === 'string'
+  );
+}

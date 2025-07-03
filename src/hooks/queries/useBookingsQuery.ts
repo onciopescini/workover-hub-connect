@@ -74,60 +74,68 @@ const fetchBookings = async (userId: string, userRole?: string): Promise<Booking
   }
 
   // Transform bookings to match BookingWithDetails interface
-  const transformCoworkerBookings = (coworkerBookingsRaw || []).map(booking => ({
-    id: booking.id,
-    space_id: booking.space_id,
-    user_id: booking.user_id,
-    booking_date: booking.booking_date,
-    start_time: booking.start_time,
-    end_time: booking.end_time,
-    status: booking.status,
-    created_at: booking.created_at,
-    updated_at: booking.updated_at,
-    cancelled_at: booking.cancelled_at,
-    cancellation_fee: booking.cancellation_fee,
-    cancelled_by_host: booking.cancelled_by_host,
-    cancellation_reason: booking.cancellation_reason,
-    space: {
-      id: booking.spaces.id,
-      title: booking.spaces.title,
-      address: booking.spaces.address,
-      photos: booking.spaces.photos,
-      host_id: booking.spaces.host_id,
-      price_per_day: booking.spaces.price_per_day
-    },
-    coworker: null
-  }));
+  const transformCoworkerBookings = (coworkerBookingsRaw || []).map(booking => {
+    // Safe cast of known structure from Supabase query
+    const bookingData = booking as any;
+    return {
+      id: bookingData.id as string,
+      space_id: bookingData.space_id as string,
+      user_id: bookingData.user_id as string,
+      booking_date: bookingData.booking_date as string,
+      start_time: bookingData.start_time as string,
+      end_time: bookingData.end_time as string,
+      status: bookingData.status as "pending" | "confirmed" | "cancelled",
+      created_at: bookingData.created_at as string,
+      updated_at: bookingData.updated_at as string,
+      cancelled_at: bookingData.cancelled_at as string,
+      cancellation_fee: bookingData.cancellation_fee as number,
+      cancelled_by_host: bookingData.cancelled_by_host as boolean,
+      cancellation_reason: bookingData.cancellation_reason as string,
+      space: {
+        id: bookingData.spaces?.id as string,
+        title: bookingData.spaces?.title as string,
+        address: bookingData.spaces?.address as string,
+        photos: bookingData.spaces?.photos as string[],
+        host_id: bookingData.spaces?.host_id as string,
+        price_per_day: bookingData.spaces?.price_per_day as number
+      },
+      coworker: null
+    };
+  });
 
-  const transformHostBookings = hostBookings.map(booking => ({
-    id: booking.id,
-    space_id: booking.space_id,
-    user_id: booking.user_id,
-    booking_date: booking.booking_date,
-    start_time: booking.start_time,
-    end_time: booking.end_time,
-    status: booking.status,
-    created_at: booking.created_at,
-    updated_at: booking.updated_at,
-    cancelled_at: booking.cancelled_at,
-    cancellation_fee: booking.cancellation_fee,
-    cancelled_by_host: booking.cancelled_by_host,
-    cancellation_reason: booking.cancellation_reason,
-    space: {
-      id: booking.spaces.id,
-      title: booking.spaces.title,
-      address: booking.spaces.address,
-      photos: booking.spaces.photos,
-      host_id: booking.spaces.host_id,
-      price_per_day: booking.spaces.price_per_day
-    },
-    coworker: {
-      id: booking.profiles.id,
-      first_name: booking.profiles.first_name,
-      last_name: booking.profiles.last_name,
-      profile_photo_url: booking.profiles.profile_photo_url
-    }
-  }));
+  const transformHostBookings = hostBookings.map(booking => {
+    // Safe cast of known structure from Supabase query
+    const bookingData = booking as any;
+    return {
+      id: bookingData.id as string,
+      space_id: bookingData.space_id as string,
+      user_id: bookingData.user_id as string,
+      booking_date: bookingData.booking_date as string,
+      start_time: bookingData.start_time as string,
+      end_time: bookingData.end_time as string,
+      status: bookingData.status as "pending" | "confirmed" | "cancelled",
+      created_at: bookingData.created_at as string,
+      updated_at: bookingData.updated_at as string,
+      cancelled_at: bookingData.cancelled_at as string,
+      cancellation_fee: bookingData.cancellation_fee as number,
+      cancelled_by_host: bookingData.cancelled_by_host as boolean,
+      cancellation_reason: bookingData.cancellation_reason as string,
+      space: {
+        id: bookingData.spaces?.id as string,
+        title: bookingData.spaces?.title as string,
+        address: bookingData.spaces?.address as string,
+        photos: bookingData.spaces?.photos as string[],
+        host_id: bookingData.spaces?.host_id as string,
+        price_per_day: bookingData.spaces?.price_per_day as number
+      },
+      coworker: {
+        id: bookingData.profiles?.id as string,
+        first_name: bookingData.profiles?.first_name as string,
+        last_name: bookingData.profiles?.last_name as string,
+        profile_photo_url: bookingData.profiles?.profile_photo_url as string
+      }
+    };
+  });
 
   // Combine and remove duplicates
   const allBookings = [...transformCoworkerBookings, ...transformHostBookings];

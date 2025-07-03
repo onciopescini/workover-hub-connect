@@ -12,6 +12,7 @@ import { useProfileAccess } from "@/hooks/useProfileAccess";
 import { ProfileAccessDenied } from "@/components/profile/ProfileAccessDenied";
 import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
+import { isCompleteProfile } from "@/types/strict-type-guards";
 
 interface UserProfile {
   id: string;
@@ -225,7 +226,7 @@ const UserProfileView = () => {
             return (
               <a
                 key={index}
-                href={link.url}
+                href={link.url as string}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
@@ -261,7 +262,7 @@ const UserProfileView = () => {
                 <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
                   {profile.profile_photo_url ? (
                     <img 
-                      src={profile.profile_photo_url} 
+                      src={String(profile.profile_photo_url)} 
                       alt="Profile" 
                       className="w-16 h-16 rounded-full object-cover"
                     />
@@ -270,15 +271,15 @@ const UserProfileView = () => {
                   )}
                 </div>
                 <div>
-                  <CardTitle>{profile.first_name} {profile.last_name}</CardTitle>
+                  <CardTitle>{String(profile.first_name)} {String(profile.last_name)}</CardTitle>
                   {profile.job_title && (
-                    <p className="text-gray-600">{profile.job_title}</p>
+                    <p className="text-gray-600">{String(profile.job_title)}</p>
                   )}
                   {profile.profession && (
-                    <p className="text-gray-600">{profile.profession}</p>
+                    <p className="text-gray-600">{String(profile.profession)}</p>
                   )}
                   {profile.location && (
-                    <p className="text-sm text-gray-500">{profile.location}</p>
+                    <p className="text-sm text-gray-500">{String(profile.location)}</p>
                   )}
                 </div>
               </div>
@@ -287,7 +288,7 @@ const UserProfileView = () => {
               {profile.bio && (
                 <div className="mb-4">
                   <h3 className="font-semibold mb-2">Bio</h3>
-                  <p className="text-gray-700">{profile.bio}</p>
+                  <p className="text-gray-700">{String(profile.bio)}</p>
                 </div>
               )}
 
@@ -297,34 +298,34 @@ const UserProfileView = () => {
                   {profile.skills && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Competenze</h3>
-                      <p className="text-gray-700">{profile.skills}</p>
+                      <p className="text-gray-700">{String(profile.skills)}</p>
                     </div>
                   )}
 
                   {profile.interests && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Interessi</h3>
-                      <p className="text-gray-700">{profile.interests}</p>
+                      <p className="text-gray-700">{String(profile.interests)}</p>
                     </div>
                   )}
 
-                  {profile.competencies && profile.competencies.length > 0 && (
+                  {Array.isArray(profile.competencies) && profile.competencies.length > 0 && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Competenze Tecniche</h3>
                       <div className="flex flex-wrap gap-2">
                         {profile.competencies.map((comp, index) => (
-                          <Badge key={index} variant="secondary">{comp}</Badge>
+                          <Badge key={index} variant="secondary">{String(comp)}</Badge>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {profile.industries && profile.industries.length > 0 && (
+                  {Array.isArray(profile.industries) && profile.industries.length > 0 && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Settori</h3>
                       <div className="flex flex-wrap gap-2">
                         {profile.industries.map((industry, index) => (
-                          <Badge key={index} variant="outline">{industry}</Badge>
+                          <Badge key={index} variant="outline">{String(industry)}</Badge>
                         ))}
                       </div>
                     </div>
@@ -336,7 +337,7 @@ const UserProfileView = () => {
                     <h3 className="font-semibold mb-2">Membro da</h3>
                     <p className="text-gray-600 flex items-center">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {format(new Date(profile.created_at), 'MMMM yyyy', { locale: it })}
+                      {format(new Date(String(profile.created_at)), 'MMMM yyyy', { locale: it })}
                     </p>
                   </div>
 
@@ -371,7 +372,7 @@ const UserProfileView = () => {
             {/* User's Spaces */}
             <Card>
               <CardHeader>
-                <CardTitle>Spazi di {profile.first_name}</CardTitle>
+                <CardTitle>Spazi di {String(profile.first_name)}</CardTitle>
               </CardHeader>
               <CardContent>
                 {spaces.length === 0 ? (

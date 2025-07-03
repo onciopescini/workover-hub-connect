@@ -4,10 +4,19 @@ import { format } from 'date-fns';
 import { checkRealTimeConflicts, validateBookingSlotWithLock } from '@/lib/availability-utils';
 import { Space } from '@/types/space';
 
+interface BookingConflict {
+  id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  user_id: string;
+  [key: string]: unknown;
+}
+
 interface ConflictCheckState {
   checking: boolean;
   hasConflict: boolean;
-  conflictDetails?: Array<Record<string, unknown>>;
+  conflictDetails?: BookingConflict[];
   validated?: boolean;
 }
 
@@ -60,12 +69,12 @@ export const useBookingConflictCheck = (
             'temp-validation' // Validazione temporanea
           );
 
-          setConflictCheck({
-            checking: false,
-            hasConflict: !validationResult.valid,
-            conflictDetails: validationResult.conflicts || [],
-            validated: validationResult.valid
-          });
+           setConflictCheck({
+             checking: false,
+             hasConflict: !validationResult.valid,
+             conflictDetails: (validationResult.conflicts || []) as BookingConflict[],
+             validated: validationResult.valid
+           });
         } catch (validationError) {
           console.warn('Server validation failed, using client-side result:', validationError);
           setConflictCheck({
