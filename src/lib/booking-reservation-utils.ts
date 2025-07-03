@@ -5,17 +5,19 @@ import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
 
 // Type guard per validare SlotReservationResult
-function isSlotReservationResult(data: any): data is SlotReservationResult {
+function isSlotReservationResult(data: unknown): data is SlotReservationResult {
+  if (typeof data !== 'object' || data === null) return false;
+  
+  const obj = data as any;
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    typeof data.success === 'boolean' &&
-    (data.error === undefined || typeof data.error === 'string') &&
-    (data.booking_id === undefined || typeof data.booking_id === 'string') &&
-    (data.reservation_token === undefined || typeof data.reservation_token === 'string') &&
-    (data.reserved_until === undefined || typeof data.reserved_until === 'string') &&
-    (data.space_title === undefined || typeof data.space_title === 'string') &&
-    (data.confirmation_type === undefined || typeof data.confirmation_type === 'string')
+    'success' in obj &&
+    typeof obj.success === 'boolean' &&
+    (!('error' in obj) || obj.error === undefined || typeof obj.error === 'string') &&
+    (!('booking_id' in obj) || obj.booking_id === undefined || typeof obj.booking_id === 'string') &&
+    (!('reservation_token' in obj) || obj.reservation_token === undefined || typeof obj.reservation_token === 'string') &&
+    (!('reserved_until' in obj) || obj.reserved_until === undefined || typeof obj.reserved_until === 'string') &&
+    (!('space_title' in obj) || obj.space_title === undefined || typeof obj.space_title === 'string') &&
+    (!('confirmation_type' in obj) || obj.confirmation_type === undefined || typeof obj.confirmation_type === 'string')
   );
 }
 

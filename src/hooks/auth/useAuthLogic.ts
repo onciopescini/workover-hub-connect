@@ -2,8 +2,9 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfileCache } from './useProfileCache';
 import { useAuthRedirects } from './useAuthRedirects';
-import type { AuthState } from '@/types/auth';
+import type { AuthState, Profile } from '@/types/auth';
 import { createAuthState, shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
+import type { Session } from '@supabase/supabase-js';
 
 export const useAuthLogic = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -22,7 +23,7 @@ export const useAuthLogic = () => {
   const currentUserId = useRef<string | null>(null);
 
   // Funzione ottimizzata per aggiornare lo stato auth
-  const updateAuthState = useCallback((session: any, profile: any = null) => {
+  const updateAuthState = useCallback((session: Session | null, profile: Profile | null = null) => {
     const user = session?.user || null;
     const isAuthenticated = !!session;
     

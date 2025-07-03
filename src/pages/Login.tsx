@@ -37,8 +37,9 @@ const Login = () => {
       const redirectTo = searchParams.get('redirectTo') || '/';
 
       await signIn(email, password, redirectTo);
-    } catch (error: any) {
-      setError(error.message || 'Authentication failed');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -50,8 +51,9 @@ const Login = () => {
 
     try {
       await signInWithGoogle();
-    } catch (error: any) {
-      setError(error.message || 'Errore durante l\'accesso con Google');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso con Google';
+      setError(errorMessage);
     } finally {
       setGoogleLoading(false);
     }

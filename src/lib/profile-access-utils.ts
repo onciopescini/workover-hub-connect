@@ -8,14 +8,17 @@ export interface ProfileAccessResult {
 }
 
 // Type guard per validare la struttura della risposta RPC
-function isValidProfileAccessResponse(data: any): data is ProfileAccessResult {
+function isValidProfileAccessResponse(data: unknown): data is ProfileAccessResult {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  
+  const obj = data as any;
   return (
-    data &&
-    typeof data === 'object' &&
-    !Array.isArray(data) &&
-    typeof data.has_access === 'boolean' &&
-    typeof data.access_reason === 'string' &&
-    typeof data.message === 'string'
+    'has_access' in obj &&
+    'access_reason' in obj &&
+    'message' in obj &&
+    typeof obj.has_access === 'boolean' &&
+    typeof obj.access_reason === 'string' &&
+    typeof obj.message === 'string'
   );
 }
 
@@ -135,7 +138,7 @@ export const getProfileVisibilityLevel = (accessReason: string): 'full' | 'limit
 };
 
 // Filtra dati profilo in base al livello di accesso
-export const filterProfileData = (profile: any, visibilityLevel: 'full' | 'limited' | 'none') => {
+export const filterProfileData = (profile: Record<string, any>, visibilityLevel: 'full' | 'limited' | 'none') => {
   if (visibilityLevel === 'none') {
     return null;
   }

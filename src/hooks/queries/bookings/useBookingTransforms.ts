@@ -1,7 +1,43 @@
 
 import { BookingWithDetails } from "@/types/booking";
 
-export const transformCoworkerBookings = (data: any[]): BookingWithDetails[] => {
+interface RawBookingData {
+  id?: string;
+  space_id?: string;
+  user_id?: string;
+  booking_date?: string;
+  start_time?: string;
+  end_time?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  cancelled_at?: string | null;
+  cancellation_fee?: number | null;
+  cancelled_by_host?: boolean | null;
+  cancellation_reason?: string | null;
+  slot_reserved_until?: string | null;
+  payment_required?: boolean | null;
+  payment_session_id?: string | null;
+  reservation_token?: string | null;
+  space?: {
+    id?: string;
+    title?: string;
+    address?: string;
+    photos?: string[];
+    host_id?: string;
+    price_per_day?: number;
+    confirmation_type?: string;
+  };
+  coworker?: {
+    id?: string;
+    first_name?: string;
+    last_name?: string;
+    profile_photo_url?: string | null;
+  } | null;
+  payments?: unknown[];
+}
+
+export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
     console.warn('⚠️ Invalid data provided to transformCoworkerBookings:', data);
     return [];
@@ -46,7 +82,7 @@ export const transformCoworkerBookings = (data: any[]): BookingWithDetails[] => 
   }).filter(Boolean) as BookingWithDetails[];
 };
 
-export const transformHostBookings = (data: any[]): BookingWithDetails[] => {
+export const transformHostBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
     console.warn('⚠️ Invalid data provided to transformHostBookings:', data);
     return [];

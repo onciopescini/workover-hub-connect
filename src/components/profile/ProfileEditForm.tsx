@@ -42,8 +42,9 @@ export function ProfileEditForm({ onProfileUpdate }: ProfileEditFormProps) {
       setIsEditing(false);
       toast.success("Profile updated successfully!");
       onProfileUpdate?.();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

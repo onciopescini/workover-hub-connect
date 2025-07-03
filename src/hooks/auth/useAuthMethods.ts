@@ -4,14 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut } from '@/lib/auth-utils';
 import type { Profile } from '@/types/auth';
+import type { Session, User } from '@supabase/supabase-js';
 
 interface UseAuthMethodsProps {
   fetchProfile: (userId: string) => Promise<Profile | null>;
-  updateAuthState: (session: any, profile: any) => void;
+  updateAuthState: (session: Session | null, profile: Profile | null) => void;
   refreshProfile: () => Promise<void>;
   clearCache: () => void;
   invalidateProfile: (userId: string) => void;
-  currentUser: any;
+  currentUser: User | null;
 }
 
 export const useAuthMethods = ({
@@ -37,9 +38,10 @@ export const useAuthMethods = ({
           navigate(redirectTo, { replace: true });
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error);
-      throw new Error(error.message || 'Errore durante l\'accesso');
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso';
+      throw new Error(errorMessage);
     }
   }, [fetchProfile, updateAuthState, navigate]);
 
@@ -55,18 +57,20 @@ export const useAuthMethods = ({
 
       if (error) throw error;
       toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error);
-      throw new Error(error.message || 'Errore durante la registrazione');
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante la registrazione';
+      throw new Error(errorMessage);
     }
   }, []);
 
   const signInWithGoogle = useCallback(async (): Promise<void> => {
     try {
       await cleanSignInWithGoogle();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google sign in error:', error);
-      throw new Error(error.message || 'Errore durante l\'accesso con Google');
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso con Google';
+      throw new Error(errorMessage);
     }
   }, []);
 
@@ -75,10 +79,11 @@ export const useAuthMethods = ({
       clearCache();
       await aggressiveSignOut();
       toast.success('Logout effettuato con successo');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error);
       toast.success('Logout effettuato con successo');
-      throw new Error(error.message || 'Errore durante il logout');
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante il logout';
+      throw new Error(errorMessage);
     }
   }, [clearCache]);
 
@@ -97,9 +102,10 @@ export const useAuthMethods = ({
       invalidateProfile(currentUser.id);
       await refreshProfile();
       toast.success('Profilo aggiornato con successo');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Update profile error:', error);
-      throw new Error(error.message || 'Errore durante l\'aggiornamento del profilo');
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'aggiornamento del profilo';
+      throw new Error(errorMessage);
     }
   }, [currentUser, refreshProfile, invalidateProfile]);
 

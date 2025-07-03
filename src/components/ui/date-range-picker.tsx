@@ -21,7 +21,7 @@ export function DatePickerWithRange({ onDateChange, placeholder = "Seleziona per
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleDateSelect = (range: any) => {
+  const handleDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
     if (range?.from && range?.to) {
       const newRange = { start: range.from, end: range.to };
       setDateRange(newRange);

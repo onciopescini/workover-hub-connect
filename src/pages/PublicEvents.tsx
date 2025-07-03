@@ -32,7 +32,7 @@ const PublicEvents = () => {
     categoryFilter,
     dateFromFilter,
     dateToFilter
-  }) as { data: SimpleEvent[] | undefined; isLoading: boolean; error: any };
+  }) as { data: SimpleEvent[] | undefined; isLoading: boolean; error: unknown };
 
   const { data: events, isLoading, error } = queryResult;
 

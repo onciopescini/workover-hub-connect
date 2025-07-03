@@ -120,12 +120,13 @@ export function StripeSetup() {
         throw new Error(errorMsg);
       }
       
-    } catch (error: any) {
-      logger.error("Stripe connection process failed", error, {
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error("Stripe connection process failed", errorObj, {
         action: 'stripe_connect_failed',
-        errorMessage: error.message
+        errorMessage: errorObj.message
       });
-      const errorMessage = error.message || "Errore nel collegamento con Stripe";
+      const errorMessage = error instanceof Error ? error.message : "Errore nel collegamento con Stripe";
       setLastError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -197,12 +198,13 @@ export function StripeSetup() {
           toast.info("Setup Stripe ancora in corso...");
         }
       }
-    } catch (error: any) {
-      logger.error("Status refresh process failed", error, {
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error("Status refresh process failed", errorObj, {
         action: 'refresh_status_failed',
-        errorMessage: error.message
+        errorMessage: errorObj.message
       });
-      const errorMessage = error.message || "Errore nel controllo dello stato";
+      const errorMessage = error instanceof Error ? error.message : "Errore nel controllo dello stato";
       setLastError(errorMessage);
       toast.error(errorMessage);
     } finally {

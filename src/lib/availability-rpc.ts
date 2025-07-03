@@ -2,20 +2,31 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Interface per il risultato di validazione RPC
+interface BookingConflict {
+  id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  user_id: string;
+}
+
 export interface ValidationResult {
   valid: boolean;
-  conflicts: any[];
+  conflicts: BookingConflict[];
   message: string;
 }
 
 // Type guard per ValidationResult
-function isValidationResult(data: any): data is ValidationResult {
+function isValidationResult(data: unknown): data is ValidationResult {
   return (
     typeof data === 'object' &&
     data !== null &&
-    typeof data.valid === 'boolean' &&
-    Array.isArray(data.conflicts) &&
-    typeof data.message === 'string'
+    'valid' in data &&
+    'conflicts' in data &&
+    'message' in data &&
+    typeof (data as any).valid === 'boolean' &&
+    Array.isArray((data as any).conflicts) &&
+    typeof (data as any).message === 'string'
   );
 }
 
