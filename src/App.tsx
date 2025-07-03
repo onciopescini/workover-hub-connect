@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { AppRoutes } from "@/components/routing/AppRoutes";
+import { ProductionMonitoring } from "@/components/shared/ProductionMonitoring";
 
 import "./App.css";
 
@@ -26,23 +27,25 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-          }}
-        />
-        <BrowserRouter>
-          <AuthProvider>
-            <GDPRProvider>
-              <AppRoutes />
-            </GDPRProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ProductionMonitoring>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+            }}
+          />
+          <BrowserRouter>
+            <AuthProvider>
+              <GDPRProvider>
+                <AppRoutes />
+              </GDPRProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ProductionMonitoring>
   );
 }
 
