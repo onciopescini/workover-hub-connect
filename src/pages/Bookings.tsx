@@ -1,14 +1,9 @@
 
 import React from 'react';
-import { useAuth } from "@/hooks/auth/useAuth";
-import { EnhancedBookingsDashboard } from '@/components/bookings/EnhancedBookingsDashboard';
+import { LazyEnhancedBookingsDashboard } from '@/components/bookings/lazy/LazyEnhancedBookingsDashboard';
 
 const Bookings = () => {
-  const { authState } = useAuth();
-  
-  // Usa sempre EnhancedBookingsDashboard per tutti gli utenti
-  // La dashboard gestisce internamente le differenze tra host e coworker
-  return <EnhancedBookingsDashboard />;
+  return <LazyEnhancedBookingsDashboard />;
 };
 
 export default Bookings;
