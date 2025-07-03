@@ -2,6 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
+import QAValidationDashboard from "@/components/qa/QAValidationDashboard";
 
 // Layouts
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -194,6 +195,13 @@ export const AppRoutes = () => {
         <Route path="strict-mode-fixer" element={
           <LazyWrapper>
             <StrictModeFixer />
+          </LazyWrapper>
+        } />
+
+        {/* QA Validation Dashboard */}
+        <Route path="qa-validation" element={
+          <LazyWrapper>
+            <QAValidationDashboard />
           </LazyWrapper>
         } />
 

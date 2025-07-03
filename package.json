@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
+    "@playwright/test": "^1.53.2",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -48,6 +49,9 @@
     "@sentry/tracing": "^7.120.3",
     "@supabase/supabase-js": "^2.49.8",
     "@tanstack/react-query": "^5.76.2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/uuid": "^10.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -56,6 +60,8 @@
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^12.19.1",
     "input-otp": "^1.2.4",
+    "jest": "^30.0.4",
+    "jest-environment-jsdom": "^30.0.4",
     "lucide-react": "^0.462.0",
     "mapbox-gl": "^3.12.0",
     "next-themes": "^0.3.0",
@@ -74,6 +80,7 @@
     "vaul": "^0.9.3",
     "vite-bundle-analyzer": "^1.0.0",
     "vite-plugin-inspect": "^11.3.0",
+    "webpack-bundle-analyzer": "^4.10.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
