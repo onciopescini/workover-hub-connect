@@ -66,6 +66,7 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
       const timer = setTimeout(() => setIsInitialCheck(false), 50); // Ridotto da 100ms
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [authState.isLoading, isInitialCheck]);
 
   // Early return ottimizzato

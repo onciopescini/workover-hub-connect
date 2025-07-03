@@ -6,7 +6,7 @@ import { PaymentWithDetails, PAYMENT_STATUS, PAYMENT_STATUS_COLORS } from "@/typ
 
 interface PaymentListItemProps {
   payment: PaymentWithDetails;
-  userRole?: string;
+  userRole: string | undefined;
   onRetryPayment: (paymentId: string, bookingId: string, amount: number) => void;
   onDownloadReceipt: (receiptUrl: string) => void;
 }

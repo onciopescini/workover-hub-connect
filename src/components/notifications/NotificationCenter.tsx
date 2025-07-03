@@ -58,7 +58,7 @@ export function NotificationCenter() {
     
     switch (notification.type) {
       case 'message':
-        return metadata.booking_id ? `/messages/${metadata.booking_id}` : '/messages';
+        return metadata["booking_id"] ? `/messages/${metadata["booking_id"]}` : '/messages';
       case 'connection':
         return '/networking';
       case 'booking':
@@ -221,11 +221,11 @@ export function NotificationCenter() {
                         {/* Metadati aggiuntivi */}
                         {notification.metadata && Object.keys(notification.metadata).length > 0 && (
                           <div className="mt-2 text-xs text-gray-500">
-                            {notification.metadata.sender_name && (
-                              <span>Da: {notification.metadata.sender_name}</span>
+                            {notification.metadata["sender_name"] && (
+                              <span>Da: {notification.metadata["sender_name"]}</span>
                             )}
-                            {notification.metadata.space_title && (
-                              <span>Spazio: {notification.metadata.space_title}</span>
+                            {notification.metadata["space_title"] && (
+                              <span>Spazio: {notification.metadata["space_title"]}</span>
                             )}
                           </div>
                         )}

@@ -140,28 +140,28 @@ export const OptimizedUnifiedHeader = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage 
-                          src={authState.profile.profile_photo_url} 
-                          alt={authState.profile.first_name || 'User'} 
-                        />
-                        <AvatarFallback>
-                          {userInitials}
-                        </AvatarFallback>
-                      </Avatar>
+                       <Avatar className="h-8 w-8">
+                         <AvatarImage 
+                           src={authState.profile.profile_photo_url ?? undefined} 
+                           alt={authState.profile.first_name ?? 'User'} 
+                         />
+                         <AvatarFallback>
+                           {userInitials}
+                         </AvatarFallback>
+                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <div className="flex items-center justify-start gap-2 p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage 
-                          src={authState.profile.profile_photo_url} 
-                          alt={authState.profile.first_name || 'User'} 
-                        />
-                        <AvatarFallback>
-                          {userInitials}
-                        </AvatarFallback>
-                      </Avatar>
+                       <Avatar className="h-8 w-8">
+                         <AvatarImage 
+                           src={authState.profile.profile_photo_url ?? undefined} 
+                           alt={authState.profile.first_name ?? 'User'} 
+                         />
+                         <AvatarFallback>
+                           {userInitials}
+                         </AvatarFallback>
+                       </Avatar>
                       <div className="flex flex-col space-y-1 leading-none">
                         <p className="font-medium text-sm">
                           {authState.profile.first_name} {authState.profile.last_name}

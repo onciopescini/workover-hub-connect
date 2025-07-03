@@ -35,13 +35,15 @@ export function EnhancedBookingsDashboardDialogs({
         bookingTitle={messageSpaceTitle}
       />
 
-      <CancelBookingDialog
-        open={cancelDialogOpen}
-        onOpenChange={setCancelDialogOpen}
-        booking={selectedBooking}
-        onConfirm={onCancelBooking}
-        isLoading={cancelBookingLoading}
-      />
+      {selectedBooking && (
+        <CancelBookingDialog
+          open={cancelDialogOpen}
+          onOpenChange={setCancelDialogOpen}
+          booking={selectedBooking}
+          onConfirm={onCancelBooking}
+          isLoading={cancelBookingLoading}
+        />
+      )}
     </>
   );
 }

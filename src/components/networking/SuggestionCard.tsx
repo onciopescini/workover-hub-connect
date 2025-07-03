@@ -102,16 +102,16 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({ suggestion }) =>
                   <Users className="w-4 h-4" />
                   Score: {suggestion.score}
                 </div>
-                {suggestion.shared_context?.space_title && (
+                {suggestion.shared_context?.["space_title"] && (
                   <div className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {suggestion.shared_context.space_title}
+                    {suggestion.shared_context["space_title"]}
                   </div>
                 )}
-                {suggestion.shared_context?.event_title && (
+                {suggestion.shared_context?.["event_title"] && (
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    {suggestion.shared_context.event_title}
+                    {suggestion.shared_context["event_title"]}
                   </div>
                 )}
               </div>

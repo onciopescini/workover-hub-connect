@@ -26,6 +26,7 @@ export const PaymentSuccessHandler: React.FC = () => {
       }, 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isLoading, isSuccess, error, cancelled, navigate]);
 
   if (cancelled) {

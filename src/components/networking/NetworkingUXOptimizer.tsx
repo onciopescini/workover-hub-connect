@@ -72,7 +72,7 @@ export const NetworkingUXOptimizer = () => {
           </div>
           <Slider
             value={[settings.animationSpeed]}
-            onValueChange={(value) => setSettings(prev => ({ ...prev, animationSpeed: value[0] }))}
+            onValueChange={(value) => setSettings(prev => ({ ...prev, animationSpeed: value[0] ?? 300 }))}
             min={100}
             max={1000}
             step={50}

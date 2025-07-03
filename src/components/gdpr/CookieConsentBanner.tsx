@@ -214,9 +214,9 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
                     </details>
                   </div>
                   
-                  {category.id !== COOKIE_CATEGORIES[COOKIE_CATEGORIES.length - 1].id && (
-                    <Separator className="mt-4" />
-                  )}
+                   {category.id !== COOKIE_CATEGORIES[COOKIE_CATEGORIES.length - 1]?.id && (
+                     <Separator className="mt-4" />
+                   )}
                 </div>
               ))}
             </div>

@@ -87,9 +87,11 @@ export const MessagesChatArea = ({
                   isRead={message.is_read}
                   businessContext={
                     selectedConversation.id.startsWith('booking-') ? {
-                      type: 'booking',
+                      type: 'booking' as const,
                       details: selectedConversation.subtitle
-                    } : undefined
+                    } : {
+                      type: 'general' as const
+                    }
                   }
                 />
               ))}

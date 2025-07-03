@@ -91,14 +91,14 @@ export function NotificationItem({ notification, onMarkAsRead, onClick }: Notifi
               {/* Metadati */}
               {notification.metadata && Object.keys(notification.metadata).length > 0 && (
                 <div className="text-xs text-gray-500 space-y-1">
-                  {notification.metadata.sender_name && (
-                    <div>Da: {notification.metadata.sender_name}</div>
+                  {notification.metadata["sender_name"] && (
+                    <div>Da: {notification.metadata["sender_name"]}</div>
                   )}
-                  {notification.metadata.space_title && (
-                    <div>Spazio: {notification.metadata.space_title}</div>
+                  {notification.metadata["space_title"] && (
+                    <div>Spazio: {notification.metadata["space_title"]}</div>
                   )}
-                  {notification.metadata.event_title && (
-                    <div>Evento: {notification.metadata.event_title}</div>
+                  {notification.metadata["event_title"] && (
+                    <div>Evento: {notification.metadata["event_title"]}</div>
                   )}
                 </div>
               )}

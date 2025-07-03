@@ -123,8 +123,8 @@ export function VisualWorkflowSection() {
             <InteractiveCard className="overflow-hidden" hoverScale={false} tiltEffect={false}>
               <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
                 <img
-                  src={`https://images.unsplash.com/${steps[activeStep].image}?auto=format&fit=crop&w=800&q=80`}
-                  alt={steps[activeStep].title}
+                  src={`https://images.unsplash.com/${steps[activeStep]?.image}?auto=format&fit=crop&w=800&q=80`}
+                  alt={steps[activeStep]?.title}
                   className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
                 />
               </div>
@@ -133,20 +133,20 @@ export function VisualWorkflowSection() {
 
           <div className="order-1 lg:order-2">
             <div className="max-w-lg">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${steps[activeStep].color} text-white mb-6`}>
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${steps[activeStep]?.color} text-white mb-6`}>
                 {(() => {
-                  const Icon = steps[activeStep].icon;
-                  return <Icon className="w-5 h-5" />;
+                  const Icon = steps[activeStep]?.icon;
+                  return Icon ? <Icon className="w-5 h-5" /> : null;
                 })()}
                 <span className="font-medium">Step {activeStep + 1}</span>
               </div>
               
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                {steps[activeStep].title}
+                {steps[activeStep]?.title}
               </h3>
               
               <p className="text-lg text-gray-600 leading-relaxed">
-                {steps[activeStep].description}
+                {steps[activeStep]?.description}
               </p>
               
               {/* Step Navigation */}

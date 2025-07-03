@@ -146,7 +146,7 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
             <div>
               <div className="text-sm font-medium">Segnalato da:</div>
               <div className="text-sm text-gray-600">
-                {report.reporter?.first_name ?? 'N/A'} {report.reporter?.last_name ?? ''}
+                {report.reporter?.first_name ?? ''} {report.reporter?.last_name ?? ''}
               </div>
             </div>
 
@@ -225,7 +225,7 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
             <div>
               <Label className="text-sm font-medium">Stato:</Label>
               <Select 
-                value={newStatus} 
+                value={newStatus ?? ''} 
                 onValueChange={setNewStatus}
               >
                 <SelectTrigger onClick={(e) => e.stopPropagation()}>

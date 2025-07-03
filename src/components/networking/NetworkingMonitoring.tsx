@@ -88,6 +88,7 @@ export const NetworkingMonitoring = () => {
       const interval = setInterval(fetchMetrics, 5000); // Update every 5 seconds
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isRealTime]);
 
   const getHealthColor = (health: string) => {

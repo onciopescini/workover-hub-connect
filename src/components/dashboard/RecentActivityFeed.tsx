@@ -94,11 +94,11 @@ export const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
                       })}
                     </span>
                     
-                    {activity.metadata?.status && (
-                      <Badge variant="outline" className="text-xs">
-                        {activity.metadata.status}
-                      </Badge>
-                    )}
+                     {activity.metadata?.["status"] && (
+                       <Badge variant="outline" className="text-xs">
+                         {activity.metadata["status"]}
+                       </Badge>
+                     )}
                   </div>
                 </div>
               </div>

@@ -9,7 +9,7 @@ interface MessagesTabsManagerProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   conversations: ConversationItem[];
-  selectedId?: string;
+  selectedId: string | undefined;
   onSelectConversation: (id: string) => void;
   getTabCount: (tab: string) => number;
 }
@@ -51,7 +51,7 @@ export const MessagesTabsManager = ({
       <TabsContent value={activeTab} className="h-full mt-0">
         <ConversationSidebar
           conversations={conversations}
-          selectedId={selectedId}
+          selectedId={selectedId ?? ''}
           onSelect={onSelectConversation}
         />
       </TabsContent>

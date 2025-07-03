@@ -130,7 +130,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
             <Button 
               size="sm" 
               className="bg-purple-600 hover:bg-purple-700"
-              disabled={isEventFull()}
+              disabled={Boolean(isEventFull())}
             >
               {isEventFull() ? 'Al completo' : 'Visualizza dettagli'}
             </Button>

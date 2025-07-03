@@ -30,7 +30,7 @@ interface PaymentWithDetails {
 
 interface PaymentsListProps {
   payments: PaymentWithDetails[];
-  userRole?: string;
+  userRole: string | undefined;
   onRetryPayment: (paymentId: string, bookingId: string, amount: number) => void;
   onDownloadReceipt: (receiptUrl: string) => void;
 }

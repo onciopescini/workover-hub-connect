@@ -14,7 +14,7 @@ export const HostDashboardContent = ({
 }: HostDashboardContentProps) => {
   return (
     <div className="container mx-auto py-8 space-y-8">
-      <HostDashboardHeader firstName={firstName} />
+      <HostDashboardHeader firstName={firstName ?? ''} />
       
       {metrics && <HostDashboardMetrics metrics={metrics} />}
       
@@ -23,8 +23,18 @@ export const HostDashboardContent = ({
       <HostDashboardTabs 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        metrics={metrics}
-        recentActivity={recentActivity}
+        metrics={metrics ?? {
+          totalRevenue: 0,
+          monthlyRevenue: 0,
+          totalBookings: 0,
+          pendingBookings: 0,
+          confirmedBookings: 0,
+          occupancyRate: 0,
+          averageBookingValue: 0,
+          revenueGrowth: 0,
+          topPerformingSpace: null
+        }}
+        recentActivity={recentActivity ?? []}
       />
     </div>
   );
