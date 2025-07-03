@@ -145,7 +145,7 @@ export const useBookingsDashboardState = () => {
       await cancelBookingMutation.mutateAsync({
         bookingId: selectedBooking.id,
         isHost: userRole === 'host',
-        reason: reason
+        reason: reason ?? ''
       });
       setCancelDialogOpen(false);
       setSelectedBooking(null);

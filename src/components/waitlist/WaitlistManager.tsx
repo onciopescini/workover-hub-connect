@@ -12,9 +12,9 @@ import { Clock, Users, Search, UserPlus, X, Calendar, MapPin } from "lucide-reac
 interface WaitlistEntry {
   id: string;
   user_id: string;
-  space_id?: string;
-  event_id?: string;
-  created_at: string;
+  space_id: string | null;
+  event_id: string | null;
+  created_at: string | null;
   user: {
     first_name: string;
     last_name: string;
@@ -61,6 +61,9 @@ export function WaitlistManager() {
         .filter(entry => entry.user) // Only include entries with valid user data
         .map(entry => ({
           ...entry,
+          space_id: entry.space_id ?? '',
+          event_id: entry.event_id ?? '',
+          created_at: entry.created_at ?? new Date().toISOString(),
           user: entry.user as WaitlistEntry['user'],
           space: entry.space as WaitlistEntry['space'],
           event: entry.event as WaitlistEntry['event']
@@ -85,7 +88,7 @@ export function WaitlistManager() {
         // Add user to event participants
         const { error: addError } = await supabase
           .from('event_participants')
-          .insert({ event_id: eventId, user_id: waitlists.find(w => w.id === waitlistId)?.user_id });
+          .insert({ event_id: eventId, user_id: waitlists.find(w => w.id === waitlistId)?.user_id ?? '' });
 
         if (addError) throw addError;
 

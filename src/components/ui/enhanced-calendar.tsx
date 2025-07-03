@@ -22,7 +22,7 @@ function EnhancedCalendar({
   
   const getDayAvailability = (date: Date): DayAvailability['status'] | null => {
     const dateStr = date.toISOString().split('T')[0];
-    return availability[dateStr]?.status || null;
+    return availability && availability[dateStr] ? availability[dateStr].status : null;
   };
 
   const dayModifiers: DayModifiers = {

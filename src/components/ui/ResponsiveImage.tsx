@@ -68,8 +68,8 @@ export function ResponsiveImage({
         priority={priority}
         enableWebP={enableWebP}
         enableResponsive={false} // We're handling it manually here
-        fallbackSrc={fallbackSrc}
-        onLoadComplete={onLoadComplete}
+        fallbackSrc={fallbackSrc ?? '/images/placeholder.png'}
+        onLoadComplete={onLoadComplete ?? (() => {})}
         onLoad={onLoad}
         onError={onError}
         onLoadStart={onLoadStart}

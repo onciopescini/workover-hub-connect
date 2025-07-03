@@ -26,7 +26,7 @@ export const useBookingCardState = ({
         return {
           id: booking.user_id,
           name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
-          photo: booking.coworker?.profile_photo_url,
+          photo: booking.coworker?.profile_photo_url ?? null,
           role: "Coworker"
         };
       } else {

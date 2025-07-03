@@ -21,7 +21,7 @@ export function DatePickerWithRange({ onDateChange, placeholder = "Seleziona per
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleDateSelect = (range: { from?: Date; to?: Date } | undefined) => {
+  const handleDateSelect = (range: { from?: Date | undefined; to?: Date | undefined } | undefined) => {
     if (range?.from && range?.to) {
       const newRange = { start: range.from, end: range.to };
       setDateRange(newRange);
@@ -62,7 +62,7 @@ export function DatePickerWithRange({ onDateChange, placeholder = "Seleziona per
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={dateRange?.start}
+            defaultMonth={dateRange?.start ?? new Date()}
             selected={{
               from: dateRange?.start,
               to: dateRange?.end,

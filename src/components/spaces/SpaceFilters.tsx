@@ -58,7 +58,12 @@ export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersCh
     });
   };
 
-  const hasActiveFilters = filters?.category || (filters?.amenities && filters.amenities.length > 0) || filters?.workEnvironment || (filters?.priceRange && filters.priceRange[0] > 0) || (filters?.priceRange && filters.priceRange[1] < 200) || filters?.location;
+  const hasActiveFilters = filters?.category || 
+    (filters?.amenities && filters.amenities.length > 0) || 
+    filters?.workEnvironment || 
+    (filters?.priceRange && filters.priceRange.length > 0 && (filters.priceRange[0] ?? 0) > 0) || 
+    (filters?.priceRange && filters.priceRange.length > 1 && (filters.priceRange[1] ?? 200) < 200) ||
+    filters?.location;
 
   return (
     <div className="space-y-4">
