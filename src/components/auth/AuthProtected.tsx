@@ -74,7 +74,7 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
   }
 
   if (navigationDecision.action === 'redirect') {
-    return <Navigate to={navigationDecision.to} state={navigationDecision.state} replace />;
+    return <Navigate to={navigationDecision.to ?? '/login'} state={navigationDecision.state} replace />;
   }
 
   return <>{children}</>;

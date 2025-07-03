@@ -77,13 +77,13 @@ const AdminReportManagement = () => {
       </CardHeader>
       <CardContent>
         <div className="text-sm text-gray-600">
-          Segnalato {formatDistanceToNow(new Date(report.created_at), { 
+          Segnalato {formatDistanceToNow(new Date(report.created_at ?? ''), { 
             addSuffix: true, 
             locale: it 
           })}
           {report.reviewed_at && (
             <span className="ml-2">
-              • Rivisto {formatDistanceToNow(new Date(report.reviewed_at), { 
+              • Rivisto {formatDistanceToNow(new Date(report.reviewed_at ?? ''), { 
                 addSuffix: true, 
                 locale: it 
               })}

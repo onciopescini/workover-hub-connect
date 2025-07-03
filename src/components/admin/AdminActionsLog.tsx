@@ -173,7 +173,7 @@ export function AdminActionsLog() {
                   <div className="text-sm text-gray-500">
                     <span>Target ID: {log.target_id.slice(0, 8)}...</span>
                     <span className="mx-2">•</span>
-                    <span>{new Date(log.created_at).toLocaleString('it-IT')}</span>
+                    <span>{new Date(log.created_at ?? '').toLocaleString('it-IT')}</span>
                   </div>
                   
                   {log.metadata && Object.keys(log.metadata).length > 0 && (

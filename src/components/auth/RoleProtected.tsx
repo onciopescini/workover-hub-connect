@@ -45,7 +45,7 @@ const RoleProtected = ({ children, allowedRoles }: RoleProtectedProps) => {
   }
 
   if (routingDecision.action === 'redirect') {
-    return <Navigate to={routingDecision.to} replace />;
+    return <Navigate to={routingDecision.to ?? '/onboarding'} replace />;
   }
 
   return <>{children}</>;

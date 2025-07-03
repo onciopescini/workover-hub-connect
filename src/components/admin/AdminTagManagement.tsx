@@ -171,7 +171,7 @@ export function AdminTagManagement() {
                   
                   <div className="text-sm text-gray-600 space-y-1">
                     <p>Utilizzi: {tag.usage_count}</p>
-                    <p>Creato: {new Date(tag.created_at).toLocaleDateString('it-IT')}</p>
+                    <p>Creato: {new Date(tag.created_at ?? '').toLocaleDateString('it-IT')}</p>
                     {tag.approved_at && (
                       <p>Approvato: {new Date(tag.approved_at).toLocaleDateString('it-IT')}</p>
                     )}

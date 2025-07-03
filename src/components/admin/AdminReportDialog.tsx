@@ -26,7 +26,7 @@ interface AdminReportDialogProps {
 export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminReportDialogProps) {
   const navigate = useNavigate();
   const [newStatus, setNewStatus] = useState(report.status);
-  const [adminNotes, setAdminNotes] = useState(report.admin_notes || "");
+  const [adminNotes, setAdminNotes] = useState(report.admin_notes ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuspendDialog, setShowSuspendDialog] = useState(false);
 
@@ -146,7 +146,7 @@ export function AdminReportDialog({ report, isOpen, onClose, onUpdate }: AdminRe
             <div>
               <div className="text-sm font-medium">Segnalato da:</div>
               <div className="text-sm text-gray-600">
-                {report.reporter?.first_name || 'N/A'} {report.reporter?.last_name || ''}
+                {report.reporter?.first_name ?? 'N/A'} {report.reporter?.last_name ?? ''}
               </div>
             </div>
 

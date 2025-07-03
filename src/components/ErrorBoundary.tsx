@@ -29,14 +29,14 @@ export class ErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const errorId = this.state.errorId || `error_${Date.now()}`;
     
     // Log the error with normalized signature
     logger.critical("Error Boundary caught error", {
       action: "ErrorBoundary-Reporting",
       errorId,
-      componentStack: errorInfo.componentStack,
+      componentStack: errorInfo.componentStack ?? '',
       errorMessage: error.message
     }, error);
 
@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -95,7 +95,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env['NODE_ENV'] === 'development' && this.state.error && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700">
                   Dettagli tecnici (solo in sviluppo)

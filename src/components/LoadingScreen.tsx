@@ -80,7 +80,7 @@ const LoadingScreen = ({
             isLoading={true}
             variant="spinner"
             message={message}
-            progress={showProgress ? progress : undefined}
+            {...(showProgress && progress !== undefined && { progress })}
             context={context}
           />
           
@@ -106,7 +106,7 @@ const LoadingScreen = ({
         isLoading={true}
         variant="spinner"
         message={message}
-        progress={showProgress ? progress : undefined}
+        {...(showProgress && progress !== undefined && { progress })}
         context={context}
         className="text-indigo-500"
       />

@@ -17,10 +17,10 @@ interface SupportTicket {
   user_id: string;
   subject: string;
   message: string;
-  response?: string;
+  response?: string | null;
   status: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export function AdminTicketManagement() {
@@ -206,8 +206,8 @@ export function AdminTicketManagement() {
                         <p><strong>Risposta:</strong> {ticket.response}</p>
                       </div>
                     )}
-                    <p>Creato: {new Date(ticket.created_at).toLocaleDateString('it-IT')}</p>
-                    <p>Aggiornato: {new Date(ticket.updated_at).toLocaleDateString('it-IT')}</p>
+                    <p>Creato: {new Date(ticket.created_at ?? '').toLocaleDateString('it-IT')}</p>
+                    <p>Aggiornato: {new Date(ticket.updated_at ?? '').toLocaleDateString('it-IT')}</p>
                   </div>
                 </div>
 
