@@ -281,40 +281,40 @@ const UserProfileView = () => {
                 </div>
                 <div>
                   <CardTitle>{String(profile['first_name'])} {String(profile['last_name'])}</CardTitle>
-                  {profile['job_title'] && (
-                    <p className="text-gray-600">{profile['job_title'] as string}</p>
+                  {typeof profile['job_title'] === 'string' && profile['job_title'] && (
+                    <p className="text-gray-600">{profile['job_title']}</p>
                   )}
-                  {profile['profession'] && (
-                    <p className="text-gray-600">{profile['profession'] as string}</p>
+                  {typeof profile['profession'] === 'string' && profile['profession'] && (
+                    <p className="text-gray-600">{profile['profession']}</p>
                   )}
-                  {profile['location'] && (
-                    <p className="text-sm text-gray-500">{profile['location'] as string}</p>
+                  {typeof profile['location'] === 'string' && profile['location'] && (
+                    <p className="text-sm text-gray-500">{profile['location']}</p>
                   )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {profile['bio'] && (
+              {typeof profile['bio'] === 'string' && profile['bio'] && (
                 <div className="mb-4">
                   <h3 className="font-semibold mb-2">Bio</h3>
-                  <p className="text-gray-700">{profile['bio'] as string}</p>
+                  <p className="text-gray-700">{profile['bio']}</p>
                 </div>
               )}
 
               {/* Mostra dettagli aggiuntivi solo con accesso completo */}
               {canViewFullProfile && (
                 <>
-                  {profile['skills'] && (
+                  {typeof profile['skills'] === 'string' && profile['skills'] && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Competenze</h3>
-                      <p className="text-gray-700">{String(profile['skills'])}</p>
+                      <p className="text-gray-700">{profile['skills']}</p>
                     </div>
                   )}
 
-                  {profile['interests'] && (
+                  {typeof profile['interests'] === 'string' && profile['interests'] && (
                     <div className="mb-4">
                       <h3 className="font-semibold mb-2">Interessi</h3>
-                      <p className="text-gray-700">{String(profile['interests'])}</p>
+                      <p className="text-gray-700">{profile['interests']}</p>
                     </div>
                   )}
 

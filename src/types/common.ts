@@ -16,7 +16,7 @@ export interface StatusConfig {
   label: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   color: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string | undefined }>;
 }
 
 export interface FormSubmissionState {

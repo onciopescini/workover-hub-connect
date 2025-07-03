@@ -60,7 +60,18 @@ const HostEvents = () => {
         return;
       }
 
-      setEvents(data || []);
+      const transformedEvents = (data || []).map(event => ({
+        ...event,
+        description: event.description ?? '',
+        created_by: event.created_by ?? '',
+        created_at: event.created_at ?? '',
+        city: event.city ?? '',
+        status: event.status ?? '',
+        image_url: event.image_url ?? '',
+        max_participants: event.max_participants ?? 0,
+        current_participants: event.current_participants ?? 0
+      }));
+      setEvents(transformedEvents);
     } catch (error) {
       console.error('Error in fetchEvents:', error);
       toast.error('Errore nel caricamento degli eventi');

@@ -8,7 +8,7 @@ export function isErrorWithMessage(error: unknown): error is { message: string }
     typeof error === 'object' &&
     error !== null &&
     'message' in error &&
-    typeof (error as Record<string, unknown>).message === 'string'
+    typeof (error as Record<string, unknown>)['message'] === 'string'
   );
 }
 
@@ -43,8 +43,8 @@ export function isValidProfile(data: unknown): data is { id: string; first_name:
     data !== null &&
     'id' in data &&
     'first_name' in data &&
-    typeof (data as Record<string, unknown>).id === 'string' &&
-    typeof (data as Record<string, unknown>).first_name === 'string'
+    typeof (data as Record<string, unknown>)['id'] === 'string' &&
+    typeof (data as Record<string, unknown>)['first_name'] === 'string'
   );
 }
 
@@ -88,9 +88,9 @@ export function isValidBookingData(value: unknown): value is {
     hasProperty(value, 'status') &&
     hasProperty(value, 'created_at') &&
     hasProperty(value, 'updated_at') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    typeof (value as Record<string, unknown>).space_id === 'string' &&
-    typeof (value as Record<string, unknown>).user_id === 'string'
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['space_id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['user_id'] === 'string'
   );
 }
 
@@ -109,10 +109,10 @@ export function isValidSpaceData(value: unknown): value is {
     hasProperty(value, 'title') &&
     hasProperty(value, 'address') &&
     hasProperty(value, 'host_id') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    typeof (value as Record<string, unknown>).title === 'string' &&
-    typeof (value as Record<string, unknown>).address === 'string' &&
-    typeof (value as Record<string, unknown>).host_id === 'string'
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['title'] === 'string' &&
+    typeof (value as Record<string, unknown>)['address'] === 'string' &&
+    typeof (value as Record<string, unknown>)['host_id'] === 'string'
   );
 }
 
@@ -128,9 +128,9 @@ export function isValidProfileData(value: unknown): value is {
     hasProperty(value, 'id') &&
     hasProperty(value, 'first_name') &&
     hasProperty(value, 'last_name') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    typeof (value as Record<string, unknown>).first_name === 'string' &&
-    typeof (value as Record<string, unknown>).last_name === 'string'
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['first_name'] === 'string' &&
+    typeof (value as Record<string, unknown>)['last_name'] === 'string'
   );
 }
 
@@ -146,8 +146,8 @@ export function isValidBookingWithSpace(value: unknown): value is {
     value !== null &&
     hasProperty(value, 'id') &&
     hasProperty(value, 'spaces') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    isValidSpaceData((value as Record<string, unknown>).spaces)
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    isValidSpaceData((value as Record<string, unknown>)['spaces'])
   );
 }
 
@@ -161,7 +161,7 @@ export function isValidMessageWithSender(value: unknown): value is {
     typeof value === 'object' &&
     value !== null &&
     hasProperty(value, 'sender_id') &&
-    typeof (value as Record<string, unknown>).sender_id === 'string'
+    typeof (value as Record<string, unknown>)['sender_id'] === 'string'
   );
 }
 
@@ -187,9 +187,9 @@ export function isValidEventData(value: unknown): value is {
     hasProperty(value, 'id') &&
     hasProperty(value, 'title') &&
     hasProperty(value, 'space_id') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    typeof (value as Record<string, unknown>).title === 'string' &&
-    typeof (value as Record<string, unknown>).space_id === 'string'
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['title'] === 'string' &&
+    typeof (value as Record<string, unknown>)['space_id'] === 'string'
   );
 }
 
@@ -213,9 +213,9 @@ export function isCompleteProfile(value: unknown): value is Record<string, unkno
     hasProperty(value, 'first_name') &&
     hasProperty(value, 'last_name') &&
     hasProperty(value, 'created_at') &&
-    typeof (value as Record<string, unknown>).id === 'string' &&
-    typeof (value as Record<string, unknown>).first_name === 'string' &&
-    typeof (value as Record<string, unknown>).last_name === 'string' &&
-    typeof (value as Record<string, unknown>).created_at === 'string'
+    typeof (value as Record<string, unknown>)['id'] === 'string' &&
+    typeof (value as Record<string, unknown>)['first_name'] === 'string' &&
+    typeof (value as Record<string, unknown>)['last_name'] === 'string' &&
+    typeof (value as Record<string, unknown>)['created_at'] === 'string'
   );
 }
