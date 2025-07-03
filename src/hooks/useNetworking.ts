@@ -69,9 +69,9 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         }));
         setSuggestions(typedSuggestions);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error fetching connection suggestions:", err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while loading suggestions.");
     } finally {
       setIsLoading(false);
@@ -115,9 +115,9 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         }));
         setConnections(typedConnections);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error fetching connections:", err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while loading connections.");
     } finally {
       setIsLoading(false);
@@ -139,9 +139,9 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         toast.success("Connection suggestions refreshed successfully!");
         await fetchSuggestions();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error refreshing connection suggestions:", err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while refreshing suggestions.");
     } finally {
       setIsLoading(false);
@@ -170,7 +170,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         await fetchConnections();
         return true;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error sending connection request:", err);
       toast.error("An unexpected error occurred while sending the connection request.");
       return false;
@@ -193,7 +193,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         await fetchConnections();
         return true;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error accepting connection request:", err);
       toast.error("An unexpected error occurred while accepting the connection request.");
       return false;
@@ -216,7 +216,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         await fetchConnections();
         return true;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error rejecting connection request:", err);
       toast.error("An unexpected error occurred while rejecting the connection request.");
       return false;
@@ -239,7 +239,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         await fetchConnections();
         return true;
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Unexpected error removing connection:", err);
       toast.error("An unexpected error occurred while removing the connection.");
       return false;

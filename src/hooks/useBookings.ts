@@ -82,9 +82,9 @@ export const useBookings = () => {
           })) : [];
           setBookings(formattedBookings);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Unexpected error fetching bookings:', err);
-        setError(err.message || 'An unexpected error occurred');
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
         setLoading(false);
       }
@@ -118,10 +118,11 @@ export const useBookings = () => {
         );
         toast.success('Booking cancelled successfully!');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Unexpected error cancelling booking:', err);
-      setError(err.message || 'An unexpected error occurred');
-      toast.error(`Unexpected error cancelling booking: ${err.message || 'An unexpected error occurred'}`);
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      toast.error(`Unexpected error cancelling booking: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

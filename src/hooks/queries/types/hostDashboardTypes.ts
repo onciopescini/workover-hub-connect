@@ -21,5 +21,5 @@ export interface RecentActivity {
   title: string;
   description: string;
   created_at: string;
-  metadata: any;
+  metadata: Record<string, string | number | boolean>;
 }

@@ -42,7 +42,7 @@ interface UseLoggerReturn {
   
   // Hook lifecycle
   setContext: (newContext: string) => void;
-  addMetadata: (key: string, value: any) => void;
+  addMetadata: (key: string, value: string | number | boolean | null) => void;
   removeMetadata: (key: string) => void;
   
   // Logger instance for advanced usage
@@ -253,7 +253,7 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
     });
   }, [debug]);
 
-  const addMetadata = useCallback((key: string, value: any) => {
+  const addMetadata = useCallback((key: string, value: string | number | boolean | null) => {
     metadataRef.current[key] = value;
     
     if (enableDebugMode) {

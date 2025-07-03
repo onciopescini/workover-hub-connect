@@ -21,7 +21,7 @@ export interface DayAvailability {
 }
 
 // Cache per ottimizzare le performance
-const availabilityCache = new Map<string, { data: any; timestamp: number }>();
+const availabilityCache = new Map<string, { data: unknown; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minuti
 
 // Genera slot di tempo in intervalli di 30 minuti
@@ -40,7 +40,7 @@ export const isSlotAvailable = (
   date: string, 
   startTime: string, 
   endTime: string, 
-  allBookings: any[]
+  allBookings: Array<{ booking_date: string; start_time: string; end_time: string; status: string; id?: string }>
 ): boolean => {
   return !allBookings.some(booking => {
     if (booking.booking_date !== date) return false;
@@ -123,8 +123,8 @@ export const invalidateAvailabilityCache = (spaceId: string) => {
 // Calcola la disponibilità per una data specifica (ottimizzato)
 export const calculateDayAvailability = (
   date: string,
-  spaceAvailability: any,
-  allBookings: any[]
+  spaceAvailability: { recurring?: Record<string, { enabled: boolean }> } | null,
+  allBookings: Array<{ booking_date: string; start_time: string; end_time: string; status: string; id?: string }>
 ): DayAvailability => {
   const dayOfWeek = format(parseISO(date), 'EEEE').toLowerCase();
   const daySchedule = spaceAvailability?.recurring?.[dayOfWeek];
@@ -212,7 +212,11 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
       
       for (let day = 1; day <= new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate(); day++) {
         const date = format(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day), 'yyyy-MM-dd');
-        availabilityMap[date] = calculateDayAvailability(date, spaceData?.availability, bookings);
+        availabilityMap[date] = calculateDayAvailability(
+          date, 
+          spaceData?.availability as { recurring?: Record<string, { enabled: boolean }> } | null, 
+          bookings
+        );
       }
       
       setAvailability(availabilityMap);
