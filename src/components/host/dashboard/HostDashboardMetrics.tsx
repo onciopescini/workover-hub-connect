@@ -2,13 +2,13 @@
 import React from 'react';
 import { Euro, TrendingUp, Calendar, Users } from "lucide-react";
 import { MetricsCard } from "@/components/dashboard/MetricsCard";
-import { HostDashboardMetrics } from '@/hooks/queries/useEnhancedHostDashboard';
+import type { HostDashboardMetrics as HostDashboardMetricsType } from '@/hooks/queries/useEnhancedHostDashboard';
 
-interface EnhancedHostDashboardMetricsProps {
-  metrics: HostDashboardMetrics;
+interface HostDashboardMetricsProps {
+  metrics: HostDashboardMetricsType;
 }
 
-export const EnhancedHostDashboardMetrics: React.FC<EnhancedHostDashboardMetricsProps> = ({
+export const HostDashboardMetrics: React.FC<HostDashboardMetricsProps> = ({
   metrics
 }) => {
   return (

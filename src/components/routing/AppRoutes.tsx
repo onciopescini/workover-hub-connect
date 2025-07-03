@@ -9,7 +9,7 @@ import { MarketplaceLayout } from "@/components/layout/MarketplaceLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 
 // Auth protection
-import OptimizedAuthProtected from "@/components/auth/OptimizedAuthProtected";
+import AuthProtected from "@/components/auth/AuthProtected";
 import RoleProtected from "@/components/auth/RoleProtected";
 
 // Public pages (eager loading per performance)
@@ -61,7 +61,7 @@ const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
   </Suspense>
 );
 
-export const OptimizedAppRoutes = () => {
+export const AppRoutes = () => {
   return (
     <Routes>
       {/* Unified routes with MainLayout */}
@@ -102,91 +102,91 @@ export const OptimizedAppRoutes = () => {
 
         {/* Protected routes */}
         <Route path="onboarding" element={
-          <OptimizedAuthProtected requireOnboarding={false}>
+          <AuthProtected requireOnboarding={false}>
             <LazyWrapper>
               <Onboarding />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="dashboard" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Dashboard />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="profile" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Profile />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="profile/edit" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <ProfileEdit />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="bookings" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Bookings />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="messages" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Messages />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="messages/:bookingId" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <MessageConversation />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="networking" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Networking />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="networking-test-suite" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <NetworkingTestSuite />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="notifications" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Notifications />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
         
         <Route path="settings" element={
-          <OptimizedAuthProtected>
+          <AuthProtected>
             <LazyWrapper>
               <Settings />
             </LazyWrapper>
-          </OptimizedAuthProtected>
+          </AuthProtected>
         } />
 
         {/* Legacy host routes - redirects to unified /host structure */}
@@ -194,11 +194,11 @@ export const OptimizedAppRoutes = () => {
 
       {/* Host routes */}
       <Route path="/host" element={
-        <OptimizedAuthProtected>
+        <AuthProtected>
           <RoleProtected allowedRoles={['host']}>
             <MainLayout />
           </RoleProtected>
-        </OptimizedAuthProtected>
+        </AuthProtected>
       }>
         <Route path="onboarding" element={
           <LazyWrapper>
@@ -243,13 +243,13 @@ export const OptimizedAppRoutes = () => {
 
       {/* Admin routes */}
       <Route path="/admin" element={
-        <OptimizedAuthProtected>
+        <AuthProtected>
           <RoleProtected allowedRoles={['admin']}>
             <AdminLayout currentPage="/admin">
               <div />
             </AdminLayout>
           </RoleProtected>
-        </OptimizedAuthProtected>
+        </AuthProtected>
       }>
         <Route index element={
           <LazyWrapper>

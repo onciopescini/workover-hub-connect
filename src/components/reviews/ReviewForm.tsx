@@ -1,10 +1,14 @@
 
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Star } from 'lucide-react';
 import { addBookingReview, addEventReview } from '@/lib/bidirectional-review-utils';
+import { ReviewFormSchema, ReviewFormData } from '@/schemas/reviewSchema';
 
 interface ReviewFormProps {
   type: 'booking' | 'event';
@@ -15,21 +19,27 @@ interface ReviewFormProps {
   onSuccess?: () => void;
 }
 
-export function ReviewForm({ type, bookingId, eventId, targetId, targetName, onSuccess }: ReviewFormProps) {
-  const [rating, setRating] = useState(0);
+export function ReviewForm({
+  type, 
+  bookingId, 
+  eventId, 
+  targetId, 
+  targetName, 
+  onSuccess 
+}: ReviewFormProps) {
   const [hoveredRating, setHoveredRating] = useState(0);
-  const [content, setContent] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (rating === 0) {
-      return;
+  const form = useForm<ReviewFormData>({
+    resolver: zodResolver(ReviewFormSchema),
+    defaultValues: {
+      rating: 0,
+      content: ""
     }
+  });
 
-    setIsSubmitting(true);
-    
+  const watchedRating = form.watch('rating');
+
+  const onSubmit = async (data: ReviewFormData) => {
     try {
       let success = false;
       
@@ -37,16 +47,16 @@ export function ReviewForm({ type, bookingId, eventId, targetId, targetName, onS
         success = await addBookingReview({
           booking_id: bookingId,
           target_id: targetId,
-          rating,
-          content: content.trim() || null,
+          rating: data.rating,
+          content: data.content,
           author_id: '', // Will be set by RLS
         });
       } else if (type === 'event' && eventId) {
         success = await addEventReview({
           event_id: eventId,
           target_id: targetId,
-          rating,
-          content: content.trim() || null,
+          rating: data.rating,
+          content: data.content,
           author_id: '', // Will be set by RLS
         });
       }
@@ -54,8 +64,8 @@ export function ReviewForm({ type, bookingId, eventId, targetId, targetName, onS
       if (success && onSuccess) {
         onSuccess();
       }
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Error submitting review:', error);
     }
   };
 
@@ -65,53 +75,66 @@ export function ReviewForm({ type, bookingId, eventId, targetId, targetName, onS
         <CardTitle>Lascia una recensione per {targetName}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Valutazione
-            </label>
-            <div className="flex space-x-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoveredRating(star)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  className="focus:outline-none"
-                >
-                  <Star
-                    className={`w-8 h-8 ${
-                      star <= (hoveredRating || rating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Commento (opzionale)
-            </label>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Condividi la tua esperienza..."
-              rows={4}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="rating"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valutazione</FormLabel>
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => field.onChange(star)}
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        className="focus:outline-none"
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= (hoveredRating || watchedRating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <Button
-            type="submit"
-            disabled={rating === 0 || isSubmitting}
-            className="w-full"
-          >
-            {isSubmitting ? 'Invio in corso...' : 'Invia recensione'}
-          </Button>
-        </form>
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Commento (opzionale)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Condividi la tua esperienza..."
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className="w-full"
+            >
+              {form.formState.isSubmitting ? 'Invio in corso...' : 'Invia recensione'}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

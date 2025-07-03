@@ -3,13 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { HostDashboardMetrics } from '@/hooks/queries/useEnhancedHostDashboard';
+import type { HostDashboardMetrics } from '@/hooks/queries/useEnhancedHostDashboard';
 
-interface EnhancedHostDashboardManagementProps {
+interface HostDashboardManagementProps {
   metrics: HostDashboardMetrics;
 }
 
-export const EnhancedHostDashboardManagement: React.FC<EnhancedHostDashboardManagementProps> = ({
+export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = ({
   metrics
 }) => {
   const navigate = useNavigate();

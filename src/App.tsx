@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { OptimizedAuthProvider } from "@/contexts/OptimizedAuthContext";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
-import { OptimizedAppRoutes } from "@/components/routing/OptimizedAppRoutes";
+import { AppRoutes } from "@/components/routing/AppRoutes";
 
 import "./App.css";
 
@@ -37,7 +37,7 @@ function App() {
         <BrowserRouter>
           <OptimizedAuthProvider>
             <GDPRProvider>
-              <OptimizedAppRoutes />
+              <AppRoutes />
             </GDPRProvider>
           </OptimizedAuthProvider>
         </BrowserRouter>

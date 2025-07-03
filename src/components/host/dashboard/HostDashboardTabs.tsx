@@ -10,7 +10,7 @@ import { PaymentsTabContent } from './components/PaymentsTabContent';
 import { ManagementTabContent } from './components/ManagementTabContent';
 import { DashboardTabsProps } from './types/dashboard-tabs-types';
 
-export const EnhancedHostDashboardTabs: React.FC<DashboardTabsProps> = ({
+export const HostDashboardTabs: React.FC<DashboardTabsProps> = ({
   activeTab,
   setActiveTab,
   metrics,

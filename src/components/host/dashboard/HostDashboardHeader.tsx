@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { BarChart3, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface EnhancedHostDashboardHeaderProps {
+interface HostDashboardHeaderProps {
   firstName?: string;
 }
 
-export const EnhancedHostDashboardHeader: React.FC<EnhancedHostDashboardHeaderProps> = ({
+export const HostDashboardHeader: React.FC<HostDashboardHeaderProps> = ({
   firstName
 }) => {
   const navigate = useNavigate();

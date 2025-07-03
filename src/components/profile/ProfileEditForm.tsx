@@ -1,114 +1,158 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/OptimizedAuthContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Edit, Check, X } from "lucide-react";
 import { toast } from "sonner";
 
-const ProfileEditForm = () => {
+interface ProfileEditFormProps {
+  onProfileUpdate?: () => void;
+}
+
+export function ProfileEditForm({ onProfileUpdate }: ProfileEditFormProps) {
   const { authState, updateProfile } = useAuth();
-  const [formData, setFormData] = useState({
-    first_name: authState.profile?.first_name || '',
-    last_name: authState.profile?.last_name || '',
-    profession: authState.profile?.profession || '',
-    bio: authState.profile?.bio || '',
-    location: authState.profile?.location || '',
-    phone: authState.profile?.phone || '',
-  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [firstName, setFirstName] = useState(authState.profile?.first_name || "");
+  const [lastName, setLastName] = useState(authState.profile?.last_name || "");
+  const [bio, setBio] = useState(authState.profile?.bio || "");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(authState.profile?.profile_photo_url || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  useEffect(() => {
+    if (authState.profile) {
+      setFirstName(authState.profile.first_name || "");
+      setLastName(authState.profile.last_name || "");
+      setBio(authState.profile.bio || "");
+      setProfilePhotoUrl(authState.profile.profile_photo_url || "");
+    }
+  }, [authState.profile]);
 
+  const handleUpdateProfile = async () => {
+    setIsLoading(true);
     try {
-      await updateProfile(formData);
-      toast.success("Profilo aggiornato con successo");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Errore nell'aggiornamento del profilo");
+      await updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        bio: bio,
+        profile_photo_url: profilePhotoUrl,
+      });
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+      onProfileUpdate?.();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setFirstName(authState.profile?.first_name || "");
+    setLastName(authState.profile?.last_name || "");
+    setBio(authState.profile?.bio || "");
+    setProfilePhotoUrl(authState.profile?.profile_photo_url || "");
+  };
+
+  const getUserInitials = () => {
+    const firstNameInitial = authState.profile?.first_name?.charAt(0) || "";
+    const lastNameInitial = authState.profile?.last_name?.charAt(0) || "";
+    return `${firstNameInitial}${lastNameInitial}`.toUpperCase() || "U";
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Modifica Profilo</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="first_name">Nome</Label>
-              <Input
-                id="first_name"
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="last_name">Cognome</Label>
-              <Input
-                id="last_name"
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                required
-              />
-            </div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg font-medium">
+          Informazioni Profilo
+        </CardTitle>
+        {isEditing ? (
+          <div className="space-x-2">
+            <Button
+              variant="ghost"
+              onClick={handleCancelEdit}
+              disabled={isLoading}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Annulla
+            </Button>
+            <Button
+              onClick={handleUpdateProfile}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Edit className="mr-2 h-4 w-4 animate-spin" />
+                  Aggiornamento...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Salva
+                </>
+              )}
+            </Button>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="profession">Professione</Label>
-            <Input
-              id="profession"
-              value={formData.profession}
-              onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="bio">Biografia</Label>
-            <Textarea
-              id="bio"
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="location">Località</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefono</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Salvando..." : "Salva modifiche"}
+        ) : (
+          <Button onClick={() => setIsEditing(true)}>
+            <Edit className="w-4 h-4 mr-2" />
+            Modifica
           </Button>
-        </form>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center space-x-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={profilePhotoUrl} alt="Profile" />
+            <AvatarFallback>{getUserInitials()}</AvatarFallback>
+          </Avatar>
+        </div>
+        <div className="grid w-full gap-4">
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="firstName">Nome</Label>
+            <Input
+              id="firstName"
+              placeholder="Il tuo nome"
+              value={firstName}
+              disabled={!isEditing}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="lastName">Cognome</Label>
+            <Input
+              id="lastName"
+              placeholder="Il tuo cognome"
+              value={lastName}
+              disabled={!isEditing}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="bio">Bio</Label>
+            <Input
+              id="bio"
+              placeholder="A breve descrizione di te"
+              value={bio}
+              disabled={!isEditing}
+              onChange={(e) => setBio(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="profilePhotoUrl">URL Foto Profilo</Label>
+            <Input
+              id="profilePhotoUrl"
+              placeholder="URL della tua foto profilo"
+              value={profilePhotoUrl}
+              disabled={!isEditing}
+              onChange={(e) => setProfilePhotoUrl(e.target.value)}
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
-};
-
-export default ProfileEditForm;
+}

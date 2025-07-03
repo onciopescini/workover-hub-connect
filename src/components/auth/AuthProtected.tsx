@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/OptimizedAuthContext";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -12,52 +12,63 @@ type AuthProtectedProps = {
 const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProps) => {
   const { authState } = useAuth();
   const location = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
-  const hasCheckedAuth = useRef(false);
+  const [isInitialCheck, setIsInitialCheck] = useState(true);
 
-  // Memoized navigation decisions to prevent unnecessary recalculations
+  // Memoized navigation decisions con logica ottimizzata
   const navigationDecision = useMemo(() => {
-    if (authState.isLoading || isChecking) {
+    // Se ancora in loading, mostra loading screen ma riduci il delay
+    if (authState.isLoading && isInitialCheck) {
       return { action: 'loading' };
     }
 
-    // Not authenticated, redirect to login
+    // Non autenticato, redirect al login
     if (!authState.isAuthenticated) {
       return { 
         action: 'redirect', 
         to: '/login', 
-        state: { from: location } 
+        state: { from: location.pathname } 
       };
     }
 
-    // Authenticated but needs to complete onboarding
+    // Autenticato ma profilo non caricato ancora
+    if (!authState.profile) {
+      return { action: 'loading' };
+    }
+
+    // Controllo onboarding solo se richiesto
     if (
       requireOnboarding &&
-      authState.profile &&
       !authState.profile.onboarding_completed &&
-      authState.profile.role !== 'admin' // Admin can skip onboarding
+      authState.profile.role !== 'admin' &&
+      location.pathname !== '/onboarding'
     ) {
       return { 
         action: 'redirect', 
         to: '/onboarding', 
-        state: { from: location } 
+        state: { from: location.pathname } 
       };
     }
 
-    // Authenticated and ready
+    // Tutto ok, può accedere
     return { action: 'render' };
-  }, [authState.isLoading, authState.isAuthenticated, authState.profile, requireOnboarding, location, isChecking]);
+  }, [
+    authState.isLoading, 
+    authState.isAuthenticated, 
+    authState.profile, 
+    requireOnboarding, 
+    location.pathname, 
+    isInitialCheck
+  ]);
 
+  // Ridotto delay per initial check per migliorare UX
   useEffect(() => {
-    if (!authState.isLoading && !hasCheckedAuth.current) {
-      hasCheckedAuth.current = true;
-      // Reduced delay for better performance
-      const timer = setTimeout(() => setIsChecking(false), 100);
+    if (!authState.isLoading && isInitialCheck) {
+      const timer = setTimeout(() => setIsInitialCheck(false), 50); // Ridotto da 100ms
       return () => clearTimeout(timer);
     }
-  }, [authState.isLoading]);
+  }, [authState.isLoading, isInitialCheck]);
 
-  // Early return optimization
+  // Early return ottimizzato
   if (navigationDecision.action === 'loading') {
     return <LoadingScreen />;
   }
@@ -66,7 +77,6 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
     return <Navigate to={navigationDecision.to} state={navigationDecision.state} replace />;
   }
 
-  // Authenticated and onboarding completed (or not required)
   return <>{children}</>;
 };
 

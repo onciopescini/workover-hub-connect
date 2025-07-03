@@ -6,14 +6,14 @@ import { TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivityFeed } from '@/components/dashboard/RecentActivityFeed';
-import { HostDashboardMetrics, RecentActivity } from '@/hooks/queries/useEnhancedHostDashboard';
+import type { HostDashboardMetrics, RecentActivity } from '@/hooks/queries/useEnhancedHostDashboard';
 
-interface EnhancedHostDashboardOverviewProps {
+interface HostDashboardOverviewProps {
   metrics: HostDashboardMetrics;
   recentActivity: RecentActivity[];
 }
 
-export const EnhancedHostDashboardOverview: React.FC<EnhancedHostDashboardOverviewProps> = ({
+export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
   metrics,
   recentActivity
 }) => {
