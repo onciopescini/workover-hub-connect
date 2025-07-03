@@ -16,7 +16,7 @@ import {
   Users
 } from 'lucide-react';
 import { Connection } from '@/types/networking';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { removeConnection, createOrGetPrivateChat } from '@/lib/networking-utils';
 import { useNetworking } from '@/hooks/useNetworking';
 import { useNavigate } from 'react-router-dom';

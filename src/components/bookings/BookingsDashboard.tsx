@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingWithDetails } from "@/types/booking";

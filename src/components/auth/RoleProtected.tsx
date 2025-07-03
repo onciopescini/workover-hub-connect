@@ -1,6 +1,6 @@
 
 import { useMemo } from "react";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { Navigate } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import { UserRole } from "@/types/auth";

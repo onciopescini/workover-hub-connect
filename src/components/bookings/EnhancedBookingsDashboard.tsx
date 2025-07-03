@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
 import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
 import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';

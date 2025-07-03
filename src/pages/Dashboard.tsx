@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import LoadingScreen from "@/components/LoadingScreen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
 import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale } from "lucide-react";
 

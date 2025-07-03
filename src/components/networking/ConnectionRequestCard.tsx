@@ -5,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Clock, User, Eye } from "lucide-react";
 import { Connection } from "@/types/networking";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { acceptConnectionRequest, rejectConnectionRequest } from "@/lib/networking-utils";
 import { useNetworking } from "@/hooks/useNetworking";
 import { useNavigate } from "react-router-dom";

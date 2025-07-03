@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, CheckCircle, XCircle, Euro } from 'lucide-react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface BookingStats {
   total: number;

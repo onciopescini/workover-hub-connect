@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PrivateMessage } from "@/types/networking";
 import { fetchPrivateMessages, sendPrivateMessage, uploadPrivateMessageAttachment, markPrivateMessageAsRead } from "@/lib/private-messaging-utils";

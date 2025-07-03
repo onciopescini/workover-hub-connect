@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
 import { fetchMessages, sendMessage, uploadMessageAttachment, markMessageAsRead } from "@/lib/messaging-utils";

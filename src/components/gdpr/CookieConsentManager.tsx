@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useConsent } from '@/hooks/useConsent';
 import { CookieConsentBanner } from './CookieConsentBanner';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/OptimizedAuthContext';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function CookieConsentManager() {
   const { consent, shouldShowBanner } = useConsent();

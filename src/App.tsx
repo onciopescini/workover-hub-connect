@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
-import { OptimizedAuthProvider } from "@/contexts/OptimizedAuthContext";
+import { AuthProvider } from "@/providers/AuthProvider";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { AppRoutes } from "@/components/routing/AppRoutes";
 
@@ -35,11 +35,11 @@ function App() {
           }}
         />
         <BrowserRouter>
-          <OptimizedAuthProvider>
+          <AuthProvider>
             <GDPRProvider>
               <AppRoutes />
             </GDPRProvider>
-          </OptimizedAuthProvider>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

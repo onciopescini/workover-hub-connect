@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { HostDashboardHeader } from "@/components/host/dashboard/HostDashboardHeader";

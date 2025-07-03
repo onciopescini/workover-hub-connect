@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users } from "lucide-react";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { StripeSetup } from "@/components/host/StripeSetup";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";

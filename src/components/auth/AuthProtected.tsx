@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/OptimizedAuthContext";
+import { useAuth } from "@/hooks/auth/useAuth";
 import LoadingScreen from "@/components/LoadingScreen";
 
 type AuthProtectedProps = {
