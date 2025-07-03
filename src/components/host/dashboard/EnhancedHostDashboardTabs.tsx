@@ -3,6 +3,8 @@ import React from 'react';
 import { Tabs } from '@/components/ui/tabs';
 import { DashboardTabsNavigation } from './components/DashboardTabsNavigation';
 import { OverviewTabContent } from './components/OverviewTabContent';
+import { RevenueTabContent } from './components/RevenueTabContent';
+import { AnalyticsTabContent } from './components/AnalyticsTabContent';
 import { FinancialTabContent } from './components/FinancialTabContent';
 import { PaymentsTabContent } from './components/PaymentsTabContent';
 import { ManagementTabContent } from './components/ManagementTabContent';
@@ -19,6 +21,16 @@ export const EnhancedHostDashboardTabs: React.FC<DashboardTabsProps> = ({
       <DashboardTabsNavigation />
 
       <OverviewTabContent 
+        metrics={metrics}
+        recentActivity={recentActivity}
+      />
+
+      <RevenueTabContent 
+        metrics={metrics}
+        recentActivity={recentActivity}
+      />
+
+      <AnalyticsTabContent 
         metrics={metrics}
         recentActivity={recentActivity}
       />

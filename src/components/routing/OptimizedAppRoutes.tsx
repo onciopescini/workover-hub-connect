@@ -44,8 +44,6 @@ const EventDetail = lazy(() => import("@/pages/EventDetail"));
 
 // Host pages
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
-const HostAnalytics = lazy(() => import("@/pages/host/HostAnalytics"));
-const HostRevenue = lazy(() => import("@/pages/host/HostRevenue"));
 const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
@@ -235,14 +233,15 @@ export const OptimizedAppRoutes = () => {
             <HostDashboard />
           </LazyWrapper>
         } />
+        {/* Redirect old routes to unified dashboard */}
         <Route path="analytics" element={
           <LazyWrapper>
-            <HostAnalytics />
+            <HostDashboard />
           </LazyWrapper>
         } />
         <Route path="revenue" element={
           <LazyWrapper>
-            <HostRevenue />
+            <HostDashboard />
           </LazyWrapper>
         } />
       </Route>
