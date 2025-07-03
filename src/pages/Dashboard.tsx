@@ -150,7 +150,7 @@ const Dashboard = () => {
               <Button onClick={() => navigate('/host/spaces')}>
                 Gestisci Spazi
               </Button>
-              <Button variant="outline" onClick={() => navigate('/host/spaces/new')}>
+              <Button variant="outline" onClick={() => navigate('/host/space/new')}>
                 Aggiungi Nuovo Spazio
               </Button>
             </div>

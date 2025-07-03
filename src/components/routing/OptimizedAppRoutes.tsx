@@ -189,36 +189,7 @@ export const OptimizedAppRoutes = () => {
           </OptimizedAuthProtected>
         } />
 
-        {/* Host-specific routes - AGGIUNTE QUI */}
-        <Route path="space/new" element={
-          <OptimizedAuthProtected>
-            <RoleProtected allowedRoles={['host']}>
-              <LazyWrapper>
-                <SpaceNew />
-              </LazyWrapper>
-            </RoleProtected>
-          </OptimizedAuthProtected>
-        } />
-        
-        <Route path="spaces/manage" element={
-          <OptimizedAuthProtected>
-            <RoleProtected allowedRoles={['host']}>
-              <LazyWrapper>
-                <SpacesManage />
-              </LazyWrapper>
-            </RoleProtected>
-          </OptimizedAuthProtected>
-        } />
-        
-        <Route path="space/edit/:id" element={
-          <OptimizedAuthProtected>
-            <RoleProtected allowedRoles={['host']}>
-              <LazyWrapper>
-                <SpaceEdit />
-              </LazyWrapper>
-            </RoleProtected>
-          </OptimizedAuthProtected>
-        } />
+        {/* Legacy host routes - redirects to unified /host structure */}
       </Route>
 
       {/* Host routes */}
@@ -239,6 +210,24 @@ export const OptimizedAppRoutes = () => {
             <HostDashboard />
           </LazyWrapper>
         } />
+        
+        {/* Host space management under unified /host structure */}
+        <Route path="spaces" element={
+          <LazyWrapper>
+            <SpacesManage />
+          </LazyWrapper>
+        } />
+        <Route path="space/new" element={
+          <LazyWrapper>
+            <SpaceNew />
+          </LazyWrapper>
+        } />
+        <Route path="space/edit/:id" element={
+          <LazyWrapper>
+            <SpaceEdit />
+          </LazyWrapper>
+        } />
+        
         {/* Redirect old routes to unified dashboard */}
         <Route path="analytics" element={
           <LazyWrapper>

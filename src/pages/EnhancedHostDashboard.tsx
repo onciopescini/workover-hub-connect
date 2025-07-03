@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { EnhancedHostDashboardHeader } from "@/components/host/dashboard/EnhancedHostDashboardHeader";
 import { EnhancedHostDashboardMetrics } from "@/components/host/dashboard/EnhancedHostDashboardMetrics";
 import { EnhancedHostDashboardTabs } from "@/components/host/dashboard/EnhancedHostDashboardTabs";
+import { HostProgressTracker } from "@/components/host/onboarding/HostProgressTracker";
 import useEnhancedHostDashboard from "@/hooks/queries/useEnhancedHostDashboard";
 
 const EnhancedHostDashboard = () => {
@@ -75,6 +76,12 @@ const EnhancedHostDashboard = () => {
     <div className="container mx-auto py-8 space-y-8">
       <EnhancedHostDashboardHeader firstName={authState.profile?.first_name} />
       <EnhancedHostDashboardMetrics metrics={metrics} />
+      
+      {/* Show progress tracker if user hasn't completed setup */}
+      {(!authState.profile?.stripe_connected || !authState.profile?.onboarding_completed) && (
+        <HostProgressTracker />
+      )}
+      
       <EnhancedHostDashboardTabs 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
