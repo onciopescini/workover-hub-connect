@@ -50,7 +50,7 @@ export function AdminSpaceManagement() {
       const spacesData = await getAllSpaces();
       setSpaces(spacesData);
     } catch (error) {
-      console.error("Error fetching spaces:", error);
+      // Error handled by useErrorHandler
       toast.error("Errore nel caricamento degli spazi");
     } finally {
       setIsLoading(false);
@@ -90,7 +90,7 @@ export function AdminSpaceManagement() {
       await moderateSpace(spaceId, true);
       await fetchSpaces();
     } catch (error) {
-      console.error("Error approving space:", error);
+      // Error handled by useErrorHandler
     }
   };
 
@@ -107,7 +107,7 @@ export function AdminSpaceManagement() {
       setRejectionReason("");
       setSelectedSpaceId("");
     } catch (error) {
-      console.error("Error rejecting space:", error);
+      // Error handled by useErrorHandler
     }
   };
 

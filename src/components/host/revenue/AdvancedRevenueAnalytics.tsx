@@ -62,12 +62,12 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
   };
 
   const handleExportDAC7 = () => {
-    console.log('Exporting DAC7 report...');
+    // DAC7 export initiated
     // Implementa logica export CSV per DAC7
   };
 
   const handleExportRevenue = () => {
-    console.log('Exporting revenue report...');
+    // Revenue export initiated
     // Implementa logica export revenue report
   };
 

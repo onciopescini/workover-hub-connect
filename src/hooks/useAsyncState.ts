@@ -181,7 +181,7 @@ export function useAsyncState<T = any>(
         toast.error(message);
       }
 
-      console.error('Async operation failed:', errorObj);
+      // Error logging removed - handled by error handler
       return null;
     } finally {
       if (isMountedRef.current) {
@@ -227,7 +227,7 @@ export function useAsyncState<T = any>(
   // Refresh function (re-executes last operation)
   const refresh = useCallback(async (): Promise<T | null> => {
     if (!lastOperationRef.current) {
-      console.warn('No operation to refresh');
+      // No operation to refresh - handled silently
       return null;
     }
     return execute(lastOperationRef.current);
@@ -236,7 +236,7 @@ export function useAsyncState<T = any>(
   // Retry function with exponential backoff
   const retry = useCallback(async (): Promise<T | null> => {
     if (!lastOperationRef.current) {
-      console.warn('No operation to retry');
+      // No operation to retry - handled silently
       return null;
     }
 
