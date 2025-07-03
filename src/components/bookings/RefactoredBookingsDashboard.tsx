@@ -1,16 +1,15 @@
-
 import React from 'react';
 import { AccessGuard } from '@/components/shared/access/AccessGuard';
 import { LoadingSkeleton } from '@/components/shared/access/LoadingSkeleton';
-import { EnhancedBookingsDashboard } from './EnhancedBookingsDashboard';
+import { RefactoredBookingsDashboardContent } from './RefactoredBookingsDashboardContent';
 
-export function BookingsDashboard() {
+export function RefactoredBookingsDashboard() {
   return (
     <AccessGuard 
       requiredRoles={['coworker', 'host', 'admin']}
       loadingFallback={<LoadingSkeleton />}
     >
-      <EnhancedBookingsDashboard />
+      <RefactoredBookingsDashboardContent />
     </AccessGuard>
   );
 }

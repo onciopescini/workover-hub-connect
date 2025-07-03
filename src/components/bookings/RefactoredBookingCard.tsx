@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BookingWithDetails } from "@/types/booking";
 import { UserRole } from '@/types/bookings/bookings-ui.types';
@@ -8,19 +7,19 @@ import { BookingCardContent } from './components/BookingCardContent';
 import { BookingCardActions } from './components/BookingCardActions';
 import { Card } from "@/components/ui/card";
 
-interface BookingCardProps {
+interface RefactoredBookingCardProps {
   booking: BookingWithDetails;
   userRole: UserRole;
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
 }
 
-export const BookingCard = ({ 
+export const RefactoredBookingCard = ({ 
   booking, 
   userRole, 
   onOpenMessageDialog, 
   onOpenCancelDialog 
-}: BookingCardProps) => {
+}: RefactoredBookingCardProps) => {
   const { displayData, actions } = useBookingCardState({
     booking,
     userRole,
