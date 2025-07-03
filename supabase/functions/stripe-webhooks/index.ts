@@ -25,13 +25,31 @@ serve(async (req) => {
   }
 
   try {
+    ErrorHandler.logInfo('Webhook received', {
+      method: req.method,
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    });
+
     const stripe = StripeConfig.getInstance();
     const webhookSecret = StripeConfig.getWebhookSecret();
     
-    const validationResult = await WebhookValidator.validateWebhookSignature(req, stripe, webhookSecret);
+    // Clone request to preserve body for signature validation
+    const requestClone = req.clone();
+    const validationResult = await WebhookValidator.validateWebhookSignature(requestClone, stripe, webhookSecret);
     
     if (!validationResult.success) {
-      return new Response(validationResult.error, { status: 400 });
+      ErrorHandler.logError('Webhook validation failed', validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Webhook validation failed', 
+          details: validationResult.error 
+        }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const event = validationResult.event!;

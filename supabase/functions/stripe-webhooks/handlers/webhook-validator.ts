@@ -25,10 +25,17 @@ export class WebhookValidator {
     ErrorHandler.logInfo('Validating webhook signature...');
 
     try {
+      // CRITICAL FIX: Preserve raw body for accurate signature validation
       const rawBody = await req.arrayBuffer();
-      const body = new TextDecoder("utf-8").decode(rawBody);
+      const bodyText = new TextDecoder("utf-8").decode(rawBody);
 
-      const event = stripe.webhooks.constructEvent(body, signature!, webhookSecret);
+      ErrorHandler.logInfo('Webhook validation debug', {
+        bodyLength: bodyText.length,
+        hasSignature: !!signature,
+        hasSecret: !!webhookSecret
+      });
+
+      const event = stripe.webhooks.constructEvent(bodyText, signature!, webhookSecret);
       
       if (!Validators.validateStripeEvent(event)) {
         return { success: false, error: 'Invalid event structure' };
@@ -38,10 +45,13 @@ export class WebhookValidator {
       return { success: true, event };
     } catch (err: any) {
       ErrorHandler.logError('Webhook signature verification failed', err, {
+        errorMessage: err.message,
+        errorType: err.name,
         signaturePresent: !!signature,
-        secretConfigured: !!webhookSecret
+        secretConfigured: !!webhookSecret,
+        requestHeaders: Object.fromEntries(req.headers.entries())
       });
-      return { success: false, error: 'Invalid signature' };
+      return { success: false, error: `Signature validation failed: ${err.message}` };
     }
   }
 }
