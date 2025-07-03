@@ -44,6 +44,7 @@ const EventDetail = lazy(() => import("@/pages/EventDetail"));
 
 // Host pages
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
+const HostOnboarding = lazy(() => import("@/pages/HostOnboarding"));
 const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
@@ -228,6 +229,11 @@ export const OptimizedAppRoutes = () => {
           </RoleProtected>
         </OptimizedAuthProtected>
       }>
+        <Route path="onboarding" element={
+          <LazyWrapper>
+            <HostOnboarding />
+          </LazyWrapper>
+        } />
         <Route path="dashboard" element={
           <LazyWrapper>
             <HostDashboard />

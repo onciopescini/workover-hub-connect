@@ -65,7 +65,13 @@ const Onboarding = () => {
       });
 
       toast.success("Onboarding completato con successo!");
-      navigate("/dashboard");
+      
+      // Redirect hosts to specialized onboarding
+      if (formData.role === 'host') {
+        navigate("/host/onboarding");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("Error completing onboarding:", error);
       toast.error("Errore durante il completamento dell'onboarding");
