@@ -41,6 +41,7 @@ const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
 const EventDetail = lazy(() => import("@/pages/EventDetail"));
+const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
 // Host pages
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
@@ -187,6 +188,13 @@ export const AppRoutes = () => {
               <Settings />
             </LazyWrapper>
           </AuthProtected>
+        } />
+
+        {/* TypeScript Strict Mode Fixer - public tool */}
+        <Route path="strict-mode-fixer" element={
+          <LazyWrapper>
+            <StrictModeFixer />
+          </LazyWrapper>
         } />
 
         {/* Legacy host routes - redirects to unified /host structure */}
