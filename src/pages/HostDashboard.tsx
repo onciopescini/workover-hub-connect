@@ -25,7 +25,7 @@ const HostDashboard = () => {
         <LoadingSkeleton />
       ) : (
         <HostDashboardContent
-          firstName={firstName}
+          firstName={firstName ?? ''}
           metrics={metrics}
           recentActivity={recentActivity}
           activeTab={activeTab}

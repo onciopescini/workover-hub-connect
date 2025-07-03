@@ -96,12 +96,16 @@ export const getUserReviews = async (userId: string): Promise<{
 
     const given = (givenResult.data || []).map(review => ({
       ...review,
+      comment: review.comment ?? '',
+      created_at: review.created_at ?? '',
       reviewee: revieweeProfilesMap.get(review.reviewee_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
     const received = (receivedResult.data || []).map(review => ({
       ...review,
+      comment: review.comment ?? '',
+      created_at: review.created_at ?? '',
       reviewer: reviewerProfilesMap.get(review.reviewer_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));

@@ -54,7 +54,7 @@ export const getHostRevenueData = async (
   let filteredPayments = payments || [];
   if (month !== "all") {
     filteredPayments = filteredPayments.filter(payment => {
-      const paymentMonth = new Date(payment.created_at).getMonth() + 1;
+      const paymentMonth = new Date(payment.created_at || new Date()).getMonth() + 1;
       return paymentMonth === parseInt(month);
     });
   }
@@ -67,7 +67,7 @@ export const getHostRevenueData = async (
   const recentPayouts = filteredPayments.map(payment => ({
     id: payment.id,
     amount: payment.host_amount || 0,
-    date: payment.created_at,
+    date: payment.created_at || '',
     booking_id: payment.booking_id,
     space_title: payment.bookings?.spaces?.title || 'N/A'
   }));
@@ -76,7 +76,7 @@ export const getHostRevenueData = async (
   const monthlyRevenue = [];
   for (let m = 1; m <= 12; m++) {
     const monthPayments = (payments || []).filter(payment => {
-      const paymentMonth = new Date(payment.created_at).getMonth() + 1;
+      const paymentMonth = new Date(payment.created_at || new Date()).getMonth() + 1;
       return paymentMonth === m;
     });
     

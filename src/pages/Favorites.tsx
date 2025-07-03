@@ -8,7 +8,7 @@ import { getFavoriteSpaces } from '@/lib/favorites-utils';
 
 const Favorites = () => {
   const { authState } = useAuth();
-  const [favoriteSpaces, setFavoriteSpaces] = useState([]);
+  const [favoriteSpaces, setFavoriteSpaces] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

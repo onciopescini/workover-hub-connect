@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { WaitlistInsert, WaitlistWithDetails } from "@/types/waitlist";
 import { toast } from "sonner";
@@ -34,10 +33,10 @@ export const joinSpaceWaitlist = async (spaceId: string): Promise<boolean> => {
 
     if (error) throw error;
     
-    toast.success("Aggiunto alla lista d'attesa");
+    toast.success("Aggiunto alla lista d'attesa!");
     return true;
   } catch (error) {
-    console.error("Error joining space waitlist:", error);
+    console.error("Error joining waitlist:", error);
     toast.error("Errore nell'unirsi alla lista d'attesa");
     return false;
   }
@@ -74,11 +73,11 @@ export const joinEventWaitlist = async (eventId: string): Promise<boolean> => {
 
     if (error) throw error;
     
-    toast.success("Aggiunto alla lista d'attesa");
+    toast.success("Aggiunto alla lista d'attesa!");
     return true;
   } catch (error) {
     console.error("Error joining event waitlist:", error);
-    toast.error("Errore nell'unirsi alla lista d'attesa");
+    toast.error("Errore nell'unirsi alla lista d'attesa dell'evento");
     return false;
   }
 };
@@ -97,12 +96,12 @@ export const leaveWaitlist = async (waitlistId: string): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Error leaving waitlist:", error);
-    toast.error("Errore nel lasciare la lista d'attesa");
+    toast.error("Errore nella rimozione dalla lista d'attesa");
     return false;
   }
 };
 
-// Get user's waitlists with details
+// Get user waitlists
 export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
   try {
     const { data: user } = await supabase.auth.getUser();
@@ -122,52 +121,71 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
     
     return (data || []).map(item => ({
       ...item,
-      space_title: item.spaces?.title,
-      event_title: item.events?.title,
-      event_date: item.events?.date,
-      host_name: item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name ||
-                 item.events?.spaces?.profiles?.first_name + ' ' + item.events?.spaces?.profiles?.last_name
+      created_at: item.created_at ?? '',
+      space_title: item.spaces?.title ?? '',
+      event_title: item.events?.title ?? '',
+      event_date: item.events?.date ?? '',
+      host_name: (item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name) ||
+                 (item.events?.spaces?.profiles?.first_name + ' ' + item.events?.spaces?.profiles?.last_name) || ''
     }));
   } catch (error) {
-    console.error("Error fetching user waitlists:", error);
+    console.error("Error fetching waitlists:", error);
     return [];
   }
 };
 
-// Check if user is in space waitlist
-export const isInSpaceWaitlist = async (spaceId: string): Promise<boolean> => {
+// Get waitlist for space (admin/host view)
+export const getSpaceWaitlist = async (spaceId: string): Promise<WaitlistWithDetails[]> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) return false;
-
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('waitlists')
-      .select('id')
-      .eq('user_id', user.user.id)
+      .select(`
+        *,
+        profiles:user_id(first_name, last_name, profile_photo_url)
+      `)
       .eq('space_id', spaceId)
-      .single();
+      .order('created_at', { ascending: true });
 
-    return !!data;
+    if (error) throw error;
+    
+    return (data || []).map(item => ({
+      ...item,
+      created_at: item.created_at ?? '',
+      space_title: '',
+      event_title: '',
+      event_date: '',
+      host_name: ''
+    }));
   } catch (error) {
-    return false;
+    console.error("Error fetching space waitlist:", error);
+    return [];
   }
 };
 
-// Check if user is in event waitlist
-export const isInEventWaitlist = async (eventId: string): Promise<boolean> => {
+// Get waitlist for event (admin/host view)
+export const getEventWaitlist = async (eventId: string): Promise<WaitlistWithDetails[]> => {
   try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) return false;
-
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('waitlists')
-      .select('id')
-      .eq('user_id', user.user.id)
+      .select(`
+        *,
+        profiles:user_id(first_name, last_name, profile_photo_url)
+      `)
       .eq('event_id', eventId)
-      .single();
+      .order('created_at', { ascending: true });
 
-    return !!data;
+    if (error) throw error;
+    
+    return (data || []).map(item => ({
+      ...item,
+      created_at: item.created_at ?? '',
+      space_title: '',
+      event_title: '',
+      event_date: '',
+      host_name: ''
+    }));
   } catch (error) {
-    return false;
+    console.error("Error fetching event waitlist:", error);
+    return [];
   }
 };

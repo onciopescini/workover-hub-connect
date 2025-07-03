@@ -60,10 +60,10 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     `# Generato il: ${new Date().toLocaleDateString('it-IT')}`,
     '',
     ...((payments || []).map(payment => [
-      new Date(payment.created_at).toLocaleDateString('it-IT'),
+      new Date(payment.created_at || new Date()).toLocaleDateString('it-IT'),
       (payment.host_amount || 0).toFixed(2),
       `"${payment.bookings?.spaces?.title || 'N/A'}"`,
-      new Date(payment.bookings?.booking_date || '').toLocaleDateString('it-IT'),
+      new Date(payment.bookings?.booking_date || new Date()).toLocaleDateString('it-IT'),
       payment.id
     ].join(',')))
   ];

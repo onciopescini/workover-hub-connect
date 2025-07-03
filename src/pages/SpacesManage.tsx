@@ -193,7 +193,7 @@ const SpacesManage = () => {
                 </p>
                 
                 {/* Debug info per sviluppo */}
-                {process.env.NODE_ENV === 'development' && (
+                {process.env['NODE_ENV'] === 'development' && (
                   <div className="text-sm text-gray-500 mb-6 bg-gray-50 p-4 rounded border">
                     <p className="font-medium mb-2">Debug Info:</p>
                     <p>User ID: {authState.user?.id}</p>

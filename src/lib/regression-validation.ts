@@ -296,16 +296,18 @@ export class RegressionValidationSuite {
         console.log('✅ Profiles table structure with new fields validated');
         
         // Check if new fields are accessible
-        if (profiles && profiles.length > 0) {
-          const profile = profiles[0];
-          const hasNewFields = 'phone' in profile && 'city' in profile && 'profession' in profile && 'competencies' in profile && 'industries' in profile;
+    if (profiles && profiles.length > 0) {
+      const profile = profiles[0];
+      if (profile) {
+        const hasNewFields = 'phone' in profile && 'city' in profile && 'profession' in profile && 'competencies' in profile && 'industries' in profile;
           if (hasNewFields) {
             console.log('✅ New profile fields (phone, city, profession, competencies, industries) are accessible');
           } else {
             this.warnings.push('New profile fields may not be properly accessible');
           }
-        }
       }
+    }
+  }
 
       // Test role enum
       console.log('✅ User role enum structure validated');

@@ -104,12 +104,17 @@ export const reviewSpaceRevision = async (
       return false;
     }
 
-    const { data, error } = await supabase.rpc('review_space_revision', {
+    const rpcParams: any = {
       space_id: spaceId,
       admin_id: user.user.id,
-      approved,
-      admin_notes: adminNotes || null
-    });
+      approved
+    };
+    
+    if (adminNotes) {
+      rpcParams.admin_notes = adminNotes;
+    }
+    
+    const { data, error } = await supabase.rpc('review_space_revision', rpcParams);
 
     if (error) {
       console.error('Error reviewing revision:', error);

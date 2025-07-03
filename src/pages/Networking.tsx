@@ -159,7 +159,16 @@ const Networking = () => {
                 filteredSuggestions.map((suggestion) => (
                   <EnhancedSuggestionCard 
                     key={suggestion.id} 
-                    suggestion={suggestion} 
+                    suggestion={{
+                      ...suggestion,
+                        suggested_user: suggestion.suggested_user ? {
+                         first_name: suggestion.suggested_user.first_name,
+                         last_name: suggestion.suggested_user.last_name,
+                         profile_photo_url: suggestion.suggested_user.profile_photo_url ?? '',
+                         bio: suggestion.suggested_user.bio ?? ''
+                       } : undefined
+                    }}
+                    onConnect={() => console.log('Connect')} // handleConnect not implemented
                   />
                 ))
               )}

@@ -17,6 +17,11 @@ const SpaceEdit = () => {
   const { id } = useParams<{ id: string }>();
   const { authState } = useAuth();
   const navigate = useNavigate();
+  
+  if (!id) {
+    navigate('/spaces/manage');
+    return null;
+  }
   const [space, setSpace] = useState<Space | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

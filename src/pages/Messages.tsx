@@ -48,11 +48,13 @@ const Messages = () => {
 
           {/* Messages Area */}
           <div className="lg:col-span-3">
-            <MessagesChatArea
-              selectedConversation={selectedConversation}
-              messages={messages}
-              onSendMessage={handleSendMessage}
-            />
+            {selectedConversation && (
+              <MessagesChatArea
+                selectedConversation={selectedConversation}
+                messages={messages}
+                onSendMessage={handleSendMessage}
+              />
+            )}
           </div>
         </div>
       </div>
