@@ -105,8 +105,8 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         price_per_hour: initialData.price_per_hour || 0,
         price_per_day: initialData.price_per_day || 0,
         address: initialData.address || "",
-        latitude: initialData.latitude,
-        longitude: initialData.longitude,
+        latitude: initialData.latitude ?? undefined,
+        longitude: initialData.longitude ?? undefined,
         photos: initialData.photos || [],
         rules: initialData.rules || "",
         ideal_guest_tags: initialData.ideal_guest_tags || [],
@@ -208,7 +208,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
 
   const removePhoto = (index: number) => {
     // If it's a preview URL from a file we're about to upload
-    if (index < photoFiles.length) {
+    if (index < photoFiles.length && photoPreviewUrls[index]) {
       URL.revokeObjectURL(photoPreviewUrls[index]);
       setPhotoFiles(prev => prev.filter((_, i) => i !== index));
     }
@@ -241,10 +241,10 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         price_per_hour: data.price_per_hour,
         price_per_day: data.price_per_day,
         address: data.address,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
         photos: photoPreviewUrls,
-        rules: data.rules,
+        rules: data.rules ?? null,
         ideal_guest_tags: data.ideal_guest_tags,
         event_friendly_tags: data.event_friendly_tags,
         confirmation_type: data.confirmation_type,

@@ -163,6 +163,7 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
       return unsubscribe;
     } catch (error) {
       console.error('Failed to start image processing:', error);
+      return undefined;
     }
   }, [spaceId]);
 

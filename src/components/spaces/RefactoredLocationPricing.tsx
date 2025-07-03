@@ -37,7 +37,7 @@ export const RefactoredLocationPricing = () => {
                 <AddressAutocomplete
                   value={field.value || ""}
                   onChange={handleAddressChange}
-                  error={form.formState.errors.address?.message}
+                  error={form.formState.errors.address?.message ?? ''}
                   disabled={false}
                 />
               </FormControl>

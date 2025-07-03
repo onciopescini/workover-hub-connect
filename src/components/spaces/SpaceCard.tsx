@@ -44,8 +44,8 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
         {/* Image */}
         <div className="relative h-48 overflow-hidden rounded-t-lg">
           <ResponsiveImage
-            src={getMainPhoto()}
-            alt={space.title}
+            src={getMainPhoto() || '/placeholder.svg'}
+            alt={space.title || 'Space image'}
             aspectRatio="photo"
             objectFit="cover"
             enableWebP={true}

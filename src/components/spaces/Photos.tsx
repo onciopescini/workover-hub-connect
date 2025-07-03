@@ -23,8 +23,8 @@ interface PhotosProps {
 
 interface ImageState {
   url: string;
-  processingJob?: ImageProcessingJob;
-  optimizedUrls?: { original: string; optimized?: string };
+  processingJob?: ImageProcessingJob | undefined;
+  optimizedUrls?: { original: string; optimized?: string } | undefined;
 }
 
 export const Photos = ({
@@ -44,8 +44,8 @@ export const Photos = ({
     photoPreviewUrls.forEach((url) => {
       newStates.set(url, {
         url,
-        processingJob: imageStates.get(url)?.processingJob,
-        optimizedUrls: imageStates.get(url)?.optimizedUrls
+        processingJob: imageStates.get(url)?.processingJob || undefined,
+        optimizedUrls: imageStates.get(url)?.optimizedUrls || undefined
       });
     });
     
@@ -76,7 +76,7 @@ export const Photos = ({
                 processingJob: job,
                 optimizedUrls: job.optimized_path 
                   ? generateOptimizedImageUrls(job.original_path, job.optimized_path)
-                  : state.optimizedUrls
+                  : state.optimizedUrls || undefined
               });
               
               return newMap;
@@ -94,7 +94,7 @@ export const Photos = ({
                     processingJob: updatedJob,
                     optimizedUrls: updatedJob.optimized_path 
                       ? generateOptimizedImageUrls(updatedJob.original_path, updatedJob.optimized_path)
-                      : state.optimizedUrls
+                      : state.optimizedUrls || undefined
                   });
                 }
                 

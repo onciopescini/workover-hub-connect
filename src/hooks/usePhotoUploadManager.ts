@@ -9,7 +9,7 @@ interface UsePhotoUploadManagerProps {
   uploadingPhotos: boolean;
   processingJobs: string[];
   isSubmitting: boolean;
-  initialDataId?: string;
+  initialDataId?: string | undefined;
   onUploadingChange: (uploading: boolean) => void;
   onProcessingJobsChange: (jobs: string[]) => void;
   onPhotoFilesChange: (files: File[]) => void;

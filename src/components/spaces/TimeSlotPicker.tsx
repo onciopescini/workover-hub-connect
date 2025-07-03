@@ -69,7 +69,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
   function handleKeyboardActivate(index: number) {
     if (index >= 0 && index < allTimeSlots.length - 1) {
       const time = allTimeSlots[index];
-      handleSlotClick(time);
+      if (time) {
+        handleSlotClick(time);
+      }
     }
   }
 
@@ -118,7 +120,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
       
       if (endIndex < allTimeSlots.length) {
         const actualEndTime = allTimeSlots[endIndex];
-        await performConflictCheck(start, actualEndTime);
+        if (actualEndTime) {
+          await performConflictCheck(start, actualEndTime);
+        }
       }
     }
     setDragStart(null);
@@ -136,7 +140,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
       const startIndex = allTimeSlots.indexOf(time);
       if (startIndex < allTimeSlots.length - 1) {
         const endTime = allTimeSlots[startIndex + 1];
-        await performConflictCheck(time, endTime);
+        if (endTime) {
+          await performConflictCheck(time, endTime);
+        }
       }
     } else {
       onTimeSelection('', '');

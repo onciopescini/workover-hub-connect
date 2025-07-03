@@ -66,7 +66,15 @@ export function ReportsList() {
       const { data, error } = await query;
       if (error) throw error;
 
-      setReports(data || []);
+      setReports((data || []).map(report => ({
+        ...report,
+        description: report.description || '',
+        status: report.status || 'open',
+        created_at: report.created_at || new Date().toISOString(),
+        admin_notes: report.admin_notes || '',
+        reviewed_at: report.reviewed_at || '',
+        reviewed_by: report.reviewed_by || ''
+      })));
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast.error('Errore nel caricamento delle segnalazioni');

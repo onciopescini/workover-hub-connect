@@ -5,7 +5,7 @@ import { useSpaceFormValidation } from "./useSpaceFormValidation";
 import { useSpaceFormSubmission } from "./useSpaceFormSubmission";
 
 interface UseSpaceFormProps {
-  initialData?: Space;
+  initialData?: Space | undefined;
   isEdit?: boolean;
 }
 
