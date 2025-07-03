@@ -4,7 +4,7 @@
  * Comprehensive testing and validation automation for WorkoverHub.
  * Integrates console cleanup, performance testing, and regression detection.
  */
-import { consoleCleanupScanner, type ScanResult } from './console-cleanup-scanner';
+import { consoleCleanupScanner, type ScanResult } from './console-cleanup-mock';
 import { logger } from '@/lib/logger';
 
 export interface QAValidationResult {

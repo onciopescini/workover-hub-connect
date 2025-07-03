@@ -23,7 +23,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { qaAutomationSuite, type QAValidationResult } from '@/lib/qa/qa-automation';
-import { consoleCleanupScanner } from '@/lib/qa/console-cleanup-scanner';
+import { consoleCleanupScanner } from '@/lib/qa/console-cleanup-mock';
 import { useLogger } from '@/hooks/useLogger';
 
 const QAValidationDashboard = () => {
@@ -142,10 +142,22 @@ const QAValidationDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div className="p-3 border border-blue-200 rounded-lg bg-blue-50">
+                  <div className="text-sm font-medium text-blue-900 mb-2">
+                    💻 Use CLI Tool for Real Scanning
+                  </div>
+                  <div className="bg-gray-900 text-green-400 p-2 rounded font-mono text-xs">
+                    <div>npm run console-cleanup</div>
+                  </div>
+                  <div className="text-xs text-blue-700 mt-2">
+                    For fix suggestions: <code>npm run console-cleanup:fix</code>
+                  </div>
+                </div>
+                
                 {consoleCleanupResult && (
                   <div className="text-sm">
                     <span className="font-medium">
-                      {consoleCleanupResult.totalConsoleUsages} console statements found
+                      {consoleCleanupResult.totalConsoleUsages} console statements found (mock)
                     </span>
                     <br />
                     <span className="text-muted-foreground">
@@ -158,7 +170,7 @@ const QAValidationDashboard = () => {
                   variant="outline"
                   className="w-full"
                 >
-                  Scan Console Usage
+                  Preview Mock Data
                 </Button>
               </div>
             </CardContent>
