@@ -23,16 +23,16 @@ export const getUserNotifications = async (limit?: number): Promise<UserNotifica
 
     if (error) throw error;
     
-    // Map the raw data to ensure type compatibility
+    // Map the raw data to ensure type compatibility with fallbacks
     const notifications: UserNotification[] = (data || []).map(notification => ({
       id: notification.id,
       user_id: notification.user_id,
       type: notification.type as UserNotification['type'],
       title: notification.title,
-      content: notification.content,
+      content: notification.content ?? '',
       metadata: notification.metadata as Record<string, any>,
-      is_read: notification.is_read,
-      created_at: notification.created_at
+      is_read: notification.is_read ?? false,
+      created_at: notification.created_at ?? ''
     }));
 
     return notifications;
@@ -109,15 +109,21 @@ export const createNotification = async (
   metadata?: Record<string, any>
 ): Promise<boolean> => {
   try {
+    // Handle exactOptionalPropertyTypes by conditionally adding content
+    const insertData: any = {
+      user_id: userId,
+      type,
+      title,
+      metadata: metadata || {}
+    };
+    
+    if (content !== undefined) {
+      insertData.content = content;
+    }
+    
     const { error } = await supabase
       .from('user_notifications')
-      .insert({
-        user_id: userId,
-        type,
-        title,
-        content,
-        metadata: metadata || {}
-      });
+      .insert(insertData);
 
     if (error) throw error;
     return true;

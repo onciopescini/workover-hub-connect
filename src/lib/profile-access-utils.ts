@@ -144,14 +144,14 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
   }
 
   const baseData = {
-    id: profile.id,
-    first_name: profile.first_name,
-    last_name: profile.last_name,
-    profile_photo_url: profile.profile_photo_url,
-    bio: profile.bio,
-    job_title: profile.job_title,
-    profession: profile.profession,
-    location: profile.location
+    id: profile['id'],
+    first_name: profile['first_name'],
+    last_name: profile['last_name'],
+    profile_photo_url: profile['profile_photo_url'],
+    bio: profile['bio'],
+    job_title: profile['job_title'],
+    profession: profile['profession'],
+    location: profile['location']
   };
 
   if (visibilityLevel === 'limited') {
@@ -161,17 +161,17 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
   // Full access - restituisce tutti i dati
   return {
     ...baseData,
-    skills: profile.skills,
-    interests: profile.interests,
-    competencies: profile.competencies,
-    industries: profile.industries,
-    website: profile.website,
-    linkedin_url: profile.linkedin_url,
-    twitter_url: profile.twitter_url,
-    instagram_url: profile.instagram_url,
-    facebook_url: profile.facebook_url,
-    youtube_url: profile.youtube_url,
-    github_url: profile.github_url,
-    created_at: profile.created_at
+    skills: profile['skills'],
+    interests: profile['interests'],
+    competencies: profile['competencies'],
+    industries: profile['industries'],
+    website: profile['website'],
+    linkedin_url: profile['linkedin_url'],
+    twitter_url: profile['twitter_url'],
+    instagram_url: profile['instagram_url'],
+    facebook_url: profile['facebook_url'],
+    youtube_url: profile['youtube_url'],
+    github_url: profile['github_url'],
+    created_at: profile['created_at']
   };
 };

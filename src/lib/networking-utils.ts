@@ -33,10 +33,13 @@ export const getUserConnections = async (): Promise<Connection[]> => {
 
     if (error) throw error;
     
-    // Cast esplicito per il campo status
+    // Cast esplicito per il campo status e fallback per campi nullable
     return (data || []).map(conn => ({
       ...conn,
-      status: conn.status as 'pending' | 'accepted' | 'rejected'
+      status: conn.status as 'pending' | 'accepted' | 'rejected',
+      created_at: conn.created_at ?? '',
+      expires_at: conn.expires_at ?? '',
+      updated_at: conn.updated_at ?? ''
     }));
   } catch (error) {
     console.error("Error fetching connections:", error);
@@ -229,7 +232,30 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       .order('last_message_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(chat => ({
+      ...chat,
+      created_at: chat.created_at ?? '',
+      last_message_at: chat.last_message_at ?? '',
+      participant_1: chat.participant_1 ? {
+        ...chat.participant_1,
+        profile_photo_url: chat.participant_1.profile_photo_url ?? ''
+      } : {
+        id: '',
+        first_name: '',
+        last_name: '',
+        profile_photo_url: ''
+      },
+      participant_2: chat.participant_2 ? {
+        ...chat.participant_2,
+        profile_photo_url: chat.participant_2.profile_photo_url ?? ''
+      } : {
+        id: '',
+        first_name: '',
+        last_name: '',
+        profile_photo_url: ''
+      }
+    }));
   } catch (error) {
     console.error("Error fetching private chats:", error);
     return [];
@@ -317,10 +343,21 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
 
     if (error) throw error;
     
-    // Cast esplicito per il campo attachments
+    // Cast esplicito per i campi attachments e fallback per campi nullable
     return (data || []).map(message => ({
       ...message,
-      attachments: (message.attachments ?? []) as string[]
+      attachments: (message.attachments ?? []) as string[],
+      is_read: message.is_read ?? false,
+      created_at: message.created_at ?? '',
+      sender: message.sender ? {
+        ...message.sender,
+        profile_photo_url: message.sender.profile_photo_url ?? ''
+      } : {
+        id: '',
+        first_name: '',
+        last_name: '',
+        profile_photo_url: ''
+      }
     }));
   } catch (error) {
     console.error("Error fetching private messages:", error);

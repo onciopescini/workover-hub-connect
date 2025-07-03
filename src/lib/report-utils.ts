@@ -48,7 +48,16 @@ export const getUserReports = async (): Promise<Report[]> => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(report => ({
+      ...report,
+      status: report.status ?? 'open',
+      admin_notes: report.admin_notes ?? '',
+      description: report.description ?? '',
+      created_at: report.created_at ?? '',
+      reviewed_at: report.reviewed_at ?? '',
+      updated_at: report.updated_at ?? ''
+    }));
   } catch (error) {
     console.error("Error fetching reports:", error);
     return [];
@@ -101,7 +110,16 @@ export const getAllReports = async (): Promise<Report[]> => {
     
     console.log("Fetched reports:", data);
     console.log("Number of reports found:", data?.length || 0);
-    return data || [];
+    
+    return (data || []).map(report => ({
+      ...report,
+      status: report.status ?? 'open',
+      admin_notes: report.admin_notes ?? '',
+      description: report.description ?? '',
+      created_at: report.created_at ?? '',
+      reviewed_at: report.reviewed_at ?? '',
+      updated_at: report.updated_at ?? ''
+    }));
   } catch (error) {
     console.error("Error fetching all reports:", error);
     return [];
@@ -117,11 +135,17 @@ export const reviewReport = async (
   try {
     console.log("Reviewing report:", { reportId, status, adminNotes });
     
-    const { data, error } = await supabase.rpc('review_report', {
+    // Handle exactOptionalPropertyTypes for admin_notes
+    const rpcParams: any = {
       report_id: reportId,
-      new_status: status,
-      admin_notes: adminNotes
-    });
+      new_status: status
+    };
+    
+    if (adminNotes !== undefined) {
+      rpcParams.admin_notes = adminNotes;
+    }
+    
+    const { data, error } = await supabase.rpc('review_report', rpcParams);
 
     if (error) {
       console.error("Error reviewing report:", error);

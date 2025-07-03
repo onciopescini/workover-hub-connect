@@ -112,7 +112,13 @@ export const getUserPayments = async (): Promise<Payment[]> => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(payment => ({
+      ...payment,
+      method: payment.method ?? '',
+      receipt_url: payment.receipt_url ?? '',
+      created_at: payment.created_at ?? ''
+    }));
   } catch (error) {
     console.error("Error fetching user payments:", error);
     return [];
