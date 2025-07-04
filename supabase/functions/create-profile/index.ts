@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,11 @@ serve(async (req) => {
       linkedin_url 
     }: ProfileRequest = await req.json();
 
-    console.log(`Creating profile for user: ${user_id}, email: ${email}`);
+    ErrorHandler.logInfo('Creating profile for user', {
+      user_id,
+      email,
+      role
+    });
 
     // Validate required fields
     if (!user_id || !email || !first_name || !last_name) {
@@ -53,7 +58,9 @@ serve(async (req) => {
       .single();
 
     if (existingProfile) {
-      console.log('Profile already exists, updating...');
+      ErrorHandler.logInfo('Profile already exists, updating', {
+        user_id
+      });
       
       const { data: updatedProfile, error: updateError } = await supabaseAdmin
         .from('profiles')
@@ -104,7 +111,10 @@ serve(async (req) => {
       throw createError;
     }
 
-    console.log('Profile created successfully:', newProfile.id);
+    ErrorHandler.logSuccess('Profile created successfully', {
+      profile_id: newProfile.id,
+      role
+    });
 
     // Send welcome email
     try {
@@ -119,7 +129,11 @@ serve(async (req) => {
         }
       });
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      ErrorHandler.logWarning('Failed to send welcome email', {
+        error: emailError,
+        user_id,
+        email
+      });
       // Don't fail the profile creation if email fails
     }
 
@@ -133,7 +147,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Error creating/updating profile:', error);
+    ErrorHandler.logError('Error creating/updating profile', error, {
+      user_id,
+      email
+    });
     return new Response(
       JSON.stringify({ error: error.message }),
       {

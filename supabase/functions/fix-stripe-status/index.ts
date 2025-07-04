@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 FIX-STRIPE-STATUS: Starting manual fix...');
+    ErrorHandler.logInfo('FIX-STRIPE-STATUS: Starting manual fix');
     
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -21,7 +22,10 @@ serve(async (req) => {
     );
 
     // Fix the specific account acct_1RUcf32QXwRUltvJ
-    console.log('🔵 FIX-STRIPE-STATUS: Updating account acct_1RUcf32QXwRUltvJ to connected=true');
+    ErrorHandler.logInfo('FIX-STRIPE-STATUS: Updating account', {
+      account_id: 'acct_1RUcf32QXwRUltvJ',
+      action: 'set_connected_true'
+    });
     
     const { data, error } = await supabaseAdmin
       .from('profiles')
@@ -33,11 +37,16 @@ serve(async (req) => {
       .select();
 
     if (error) {
-      console.error('🔴 FIX-STRIPE-STATUS: Error fixing Stripe status:', error);
+      ErrorHandler.logError('FIX-STRIPE-STATUS: Error fixing Stripe status', error, {
+        account_id: 'acct_1RUcf32QXwRUltvJ'
+      });
       throw error;
     }
 
-    console.log('✅ FIX-STRIPE-STATUS: Fixed Stripe status for account acct_1RUcf32QXwRUltvJ:', data);
+    ErrorHandler.logSuccess('FIX-STRIPE-STATUS: Fixed Stripe status', {
+      account_id: 'acct_1RUcf32QXwRUltvJ',
+      updated_profiles: data?.length || 0
+    });
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -50,7 +59,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('🔴 FIX-STRIPE-STATUS: Error in fix-stripe-status:', error);
+    ErrorHandler.logError('FIX-STRIPE-STATUS: Error in fix-stripe-status', error);
     return new Response(JSON.stringify({ 
       success: false,
       error: error.message,

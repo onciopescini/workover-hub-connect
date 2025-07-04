@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting connection suggestions generation...');
+    ErrorHandler.logInfo('Starting connection suggestions generation');
 
     // Call the existing database function for generating suggestions
     const { error: suggestionsError } = await supabaseAdmin
@@ -28,14 +29,16 @@ serve(async (req) => {
       throw suggestionsError;
     }
 
-    console.log('Connection suggestions generated successfully');
+    ErrorHandler.logSuccess('Connection suggestions generated successfully');
 
     // Clean up expired connections
     const { error: cleanupError } = await supabaseAdmin
       .rpc('expire_pending_connections');
 
     if (cleanupError) {
-      console.error('Error cleaning up expired connections:', cleanupError);
+      ErrorHandler.logWarning('Error cleaning up expired connections', {
+        error: cleanupError
+      });
     }
 
     // Get statistics for logging
@@ -49,7 +52,10 @@ serve(async (req) => {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'accepted');
 
-    console.log(`Statistics: ${newSuggestionsCount} new suggestions, ${activeConnectionsCount} active connections`);
+    ErrorHandler.logInfo('Connection suggestions statistics', {
+      new_suggestions: newSuggestionsCount,
+      active_connections: activeConnectionsCount
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -64,7 +70,7 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Error generating connection suggestions:', error);
+    ErrorHandler.logError('Error generating connection suggestions', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

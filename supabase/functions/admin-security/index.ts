@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +29,12 @@ serve(async (req) => {
   try {
     const { action, target_id, admin_id, reason, approve }: AdminActionRequest = await req.json();
 
-    console.log(`Admin action: ${action} by ${admin_id} on ${target_id}`);
+    ErrorHandler.logInfo('Admin action initiated', {
+      action,
+      admin_id,
+      target_id,
+      reason: reason || 'none'
+    });
 
     // Verify admin permissions
     const { data: adminProfile, error: adminError } = await supabaseAdmin
@@ -38,7 +44,11 @@ serve(async (req) => {
       .single();
 
     if (adminError || adminProfile?.role !== 'admin') {
-      console.error('Unauthorized admin action attempt:', admin_id);
+      ErrorHandler.logError('Unauthorized admin action attempt', adminError, {
+        attempted_by: admin_id,
+        action,
+        target_id
+      });
       return new Response(
         JSON.stringify({ error: 'Unauthorized: Admin access required' }),
         {
@@ -121,7 +131,11 @@ serve(async (req) => {
               }
             }
           } catch (emailError) {
-            console.error('Failed to send space moderation email:', emailError);
+            ErrorHandler.logWarning('Failed to send space moderation email', {
+              error: emailError,
+              space_id: target_id,
+              action: approve ? 'approve' : 'reject'
+            });
           }
         }
         break;
@@ -141,7 +155,12 @@ serve(async (req) => {
         throw new Error(`Unknown admin action: ${action}`);
     }
 
-    console.log(`Admin action completed successfully:`, result);
+    ErrorHandler.logSuccess('Admin action completed successfully', {
+      action,
+      target_id,
+      admin_id,
+      result
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -153,7 +172,11 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Error executing admin action:', error);
+    ErrorHandler.logError('Error executing admin action', error, {
+      action,
+      target_id,
+      admin_id
+    });
     return new Response(
       JSON.stringify({ error: error.message }),
       {
