@@ -42,13 +42,17 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   // Handle return from Stripe setup
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('stripe_setup') === 'success' && currentStep === 2) {
+    if (urlParams.get('stripe_setup') === 'success') {
+      // Assicurati che siamo al step Stripe
+      if (currentStep < 2) {
+        setCurrentStep(2);
+      }
       setIsProcessingStripeReturn(true);
       handleStripeReturn();
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [currentStep]);
+  }, []); // Esegui solo una volta al mount
 
   const handleStripeReturn = async () => {
     try {
