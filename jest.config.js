@@ -1,14 +1,15 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/js-with-ts-esm', // ✅ Supporto ESM con TypeScript
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/tests/setup/test-setup.ts'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
   },
+  extensionsToTreatAsEsm: ['.ts', '.tsx'], // ✅ Aggiunto per ESM
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   testMatch: [
     '<rootDir>/tests/**/*.(test|spec).(ts|tsx)',
@@ -34,6 +35,7 @@ module.exports = {
   globals: {
     'ts-jest': {
       tsconfig: 'tsconfig.app.json',
+      useESM: true, // ✅ Abilita ESM in ts-jest
     },
   },
 };
