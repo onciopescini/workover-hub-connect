@@ -17,6 +17,7 @@ import { RefactoredAvailabilityScheduler } from "./RefactoredAvailabilitySchedul
 import { RefactoredPhotos } from "./RefactoredPhotos";
 import { RefactoredPublishingOptions } from "./RefactoredPublishingOptions";
 import { startImageOptimization } from "@/lib/image-optimization";
+import { useLogger } from "@/hooks/useLogger";
 import type { Space } from "@/types/space";
 
 interface RefactoredSpaceFormProps {
@@ -26,6 +27,7 @@ interface RefactoredSpaceFormProps {
 
 const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFormProps) => {
   const navigate = useNavigate();
+  const { info, warn, error } = useLogger({ context: 'RefactoredSpaceForm' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [processingJobs, setProcessingJobs] = useState<string[]>([]);
@@ -87,8 +89,11 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
           if (availabilityJson && typeof availabilityJson === 'object' && availabilityJson.recurring) {
             parsedAvailability = availabilityJson;
           }
-        } catch (error) {
-          console.error("Error parsing availability:", error);
+        } catch (parseError) {
+          error("Error parsing availability", parseError as Error, { 
+            spaceId: initialData.id,
+            availabilityData: initialData.availability 
+          });
         }
       }
 
@@ -149,14 +154,18 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
           const fileExt = file.name.split('.').pop();
           const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
           
-          const { data, error } = await supabase.storage
+          const { data, error: uploadError } = await supabase.storage
             .from('space_photos')
             .upload(fileName, file, {
               upsert: true,
             });
 
-          if (error) {
-            console.error("Upload error:", error);
+          if (uploadError) {
+            error("Upload error", uploadError, { 
+              fileName,
+              fileSize: file.size,
+              fileType: file.type 
+            });
             continue;
           }
 
@@ -175,7 +184,12 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
             
             newProcessingJobs.push(optimizationJobId);
           } catch (optimizationError) {
-            console.warn('Failed to start optimization:', optimizationError);
+            warn('Failed to start optimization', { 
+              optimizationError,
+              fileName,
+              spaceId: initialData?.id,
+              fileSize: file.size 
+            });
           }
 
           // Replace preview URL with actual URL
@@ -184,8 +198,12 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
             newPreviewUrls[urlIndex] = urlData.publicUrl;
             URL.revokeObjectURL(previewUrl);
           }
-        } catch (error) {
-          console.error("Error processing file:", file.name, error);
+        } catch (fileError) {
+          error("Error processing file", fileError as Error, { 
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type 
+          });
         }
       }
       
@@ -198,8 +216,10 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       });
       setProcessingJobs(prev => [...prev, ...newProcessingJobs]);
       
-    } catch (error) {
-      console.error("Error uploading photos:", error);
+    } catch (uploadingError) {
+      error("Error uploading photos", uploadingError as Error, { 
+        spaceId: initialData?.id 
+      });
       toast.error("Errore nel caricamento delle foto");
     } finally {
       setUploadingPhotos(false);
@@ -282,8 +302,12 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       
       // Redirect back to manage spaces
       navigate("/spaces/manage");
-    } catch (error) {
-      console.error("Error saving space:", error);
+    } catch (saveError) {
+      error("Error saving space", saveError as Error, { 
+        isEdit,
+        spaceId: initialData?.id,
+        spaceTitle: data.title 
+      });
       toast.error("Failed to save space");
     } finally {
       setIsSubmitting(false);
