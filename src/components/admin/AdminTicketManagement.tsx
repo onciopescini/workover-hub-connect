@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { MessageSquare, Search, Clock, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface SupportTicket {
   id: string;
@@ -24,6 +25,7 @@ interface SupportTicket {
 }
 
 export function AdminTicketManagement() {
+  const { error } = useLogger({ context: 'AdminTicketManagement' });
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<SupportTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,8 +54,8 @@ export function AdminTicketManagement() {
 
       if (error) throw error;
       setTickets(data || []);
-    } catch (error) {
-      console.error("Error fetching tickets:", error);
+    } catch (fetchError) {
+      error("Error fetching tickets", fetchError as Error);
       toast.error("Errore nel caricamento dei ticket");
     } finally {
       setIsLoading(false);
@@ -88,8 +90,8 @@ export function AdminTicketManagement() {
       
       await fetchTickets();
       toast.success("Stato ticket aggiornato");
-    } catch (error) {
-      console.error("Error updating ticket status:", error);
+    } catch (updateError) {
+      error("Error updating ticket status", updateError as Error, { ticketId, newStatus });
       toast.error("Errore nell'aggiornamento del ticket");
     }
   };
@@ -117,8 +119,11 @@ export function AdminTicketManagement() {
       setResponse("");
       setSelectedTicket(null);
       toast.success("Risposta inviata con successo");
-    } catch (error) {
-      console.error("Error sending response:", error);
+    } catch (responseError) {
+      error("Error sending response", responseError as Error, { 
+        ticketId: selectedTicket.id,
+        responseLength: response.length 
+      });
       toast.error("Errore nell'invio della risposta");
     }
   };
