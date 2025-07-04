@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "jest",
+    "test": "jest --coverage",
     "test:ui": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
