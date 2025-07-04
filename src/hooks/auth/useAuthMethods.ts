@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLogger } from '@/hooks/useLogger';
 import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut } from '@/lib/auth-utils';
 import type { Profile } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
@@ -23,6 +24,7 @@ export const useAuthMethods = ({
   invalidateProfile,
   currentUser
 }: UseAuthMethodsProps) => {
+  const { error } = useLogger({ context: 'useAuthMethods' });
   const navigate = useNavigate();
 
   const signIn = useCallback(async (email: string, password: string, redirectTo?: string): Promise<void> => {
@@ -38,9 +40,13 @@ export const useAuthMethods = ({
           navigate(redirectTo, { replace: true });
         }
       }
-    } catch (error: unknown) {
-      console.error('Sign in error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso';
+    } catch (signInError: unknown) {
+      error('Sign in error', signInError as Error, {
+        operation: 'sign_in',
+        email: email,
+        redirectTo: redirectTo
+      });
+      const errorMessage = signInError instanceof Error ? signInError.message : 'Errore durante l\'accesso';
       throw new Error(errorMessage);
     }
   }, [fetchProfile, updateAuthState, navigate]);
@@ -57,9 +63,12 @@ export const useAuthMethods = ({
 
       if (error) throw error;
       toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
-    } catch (error: unknown) {
-      console.error('Sign up error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante la registrazione';
+    } catch (signUpError: unknown) {
+      error('Sign up error', signUpError as Error, {
+        operation: 'sign_up',
+        email: email
+      });
+      const errorMessage = signUpError instanceof Error ? signUpError.message : 'Errore durante la registrazione';
       throw new Error(errorMessage);
     }
   }, []);
@@ -67,9 +76,11 @@ export const useAuthMethods = ({
   const signInWithGoogle = useCallback(async (): Promise<void> => {
     try {
       await cleanSignInWithGoogle();
-    } catch (error: unknown) {
-      console.error('Google sign in error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso con Google';
+    } catch (googleError: unknown) {
+      error('Google sign in error', googleError as Error, {
+        operation: 'google_sign_in'
+      });
+      const errorMessage = googleError instanceof Error ? googleError.message : 'Errore durante l\'accesso con Google';
       throw new Error(errorMessage);
     }
   }, []);
@@ -79,10 +90,13 @@ export const useAuthMethods = ({
       clearCache();
       await aggressiveSignOut();
       toast.success('Logout effettuato con successo');
-    } catch (error: unknown) {
-      console.error('Sign out error:', error);
+    } catch (signOutError: unknown) {
+      error('Sign out error', signOutError as Error, {
+        operation: 'sign_out',
+        userId: currentUser?.id
+      });
       toast.success('Logout effettuato con successo');
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante il logout';
+      const errorMessage = signOutError instanceof Error ? signOutError.message : 'Errore durante il logout';
       throw new Error(errorMessage);
     }
   }, [clearCache]);
@@ -102,9 +116,13 @@ export const useAuthMethods = ({
       invalidateProfile(currentUser.id);
       await refreshProfile();
       toast.success('Profilo aggiornato con successo');
-    } catch (error: unknown) {
-      console.error('Update profile error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'aggiornamento del profilo';
+    } catch (updateError: unknown) {
+      error('Update profile error', updateError as Error, {
+        operation: 'update_profile',
+        userId: currentUser?.id,
+        updates: Object.keys(updates)
+      });
+      const errorMessage = updateError instanceof Error ? updateError.message : 'Errore durante l\'aggiornamento del profilo';
       throw new Error(errorMessage);
     }
   }, [currentUser, refreshProfile, invalidateProfile]);

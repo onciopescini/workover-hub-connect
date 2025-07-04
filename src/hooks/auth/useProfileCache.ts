@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useLogger } from '@/hooks/useLogger';
 import { ProfileCacheManager } from '@/utils/auth/profile-cache';
 import type { Profile } from '@/types/auth';
 
 export const useProfileCache = () => {
+  const { error: logError } = useLogger({ context: 'useProfileCache' });
   const cacheManager = ProfileCacheManager.getInstance();
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
@@ -20,7 +22,10 @@ export const useProfileCache = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        logError('Error fetching profile from database', error as Error, {
+          operation: 'fetch_profile',
+          userId: userId
+        });
         return null;
       }
 
@@ -30,8 +35,11 @@ export const useProfileCache = () => {
       }
 
       return data;
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (fetchError) {
+      logError('Error fetching profile from cache', fetchError as Error, {
+        operation: 'fetch_profile_cache',
+        userId: userId
+      });
       return null;
     }
   }, [cacheManager]);

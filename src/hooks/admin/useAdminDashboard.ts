@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useLogger } from '@/hooks/useLogger';
 import { getAdminStats } from '@/lib/admin-utils';
 import { AdminStats } from '@/types/admin';
 
@@ -13,6 +14,7 @@ export interface AdminDashboardActions {
 }
 
 export const useAdminDashboard = () => {
+  const { error: logError } = useLogger({ context: 'useAdminDashboard' });
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -24,7 +26,9 @@ export const useAdminDashboard = () => {
       const adminStats = await getAdminStats();
       setStats(adminStats);
     } catch (err) {
-      console.error("Error fetching admin stats:", err);
+      logError('Error fetching admin stats', err as Error, {
+        operation: 'fetch_admin_stats'
+      });
       setError(err instanceof Error ? err : new Error('Failed to fetch admin stats'));
     } finally {
       setIsLoading(false);

@@ -2,11 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfileCache } from './useProfileCache';
 import { useAuthRedirects } from './useAuthRedirects';
+import { useLogger } from '@/hooks/useLogger';
 import type { AuthState, Profile } from '@/types/auth';
 import { createAuthState, shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
 import type { Session } from '@supabase/supabase-js';
 
 export const useAuthLogic = () => {
+  const { error: logError, debug } = useLogger({ context: 'useAuthLogic' });
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     session: null,
@@ -80,7 +82,9 @@ export const useAuthLogic = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          logError('Error getting session during auth initialization', error as Error, {
+            operation: 'get_session'
+          });
           if (mounted) {
             updateAuthState(null);
           }
@@ -97,7 +101,9 @@ export const useAuthLogic = () => {
           updateAuthState(null);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        logError('Auth initialization error', error as Error, {
+          operation: 'auth_initialization'
+        });
         if (mounted) {
           updateAuthState(null);
         }
@@ -113,7 +119,11 @@ export const useAuthLogic = () => {
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', event, !!session);
+        debug('Auth state changed', {
+          event,
+          hasSession: !!session,
+          operation: 'auth_state_change'
+        });
 
         if (session?.user) {
           await fetchUserProfile(session.user.id);
