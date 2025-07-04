@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 Stripe Connect function started');
+    ErrorHandler.logInfo('Stripe Connect function started');
 
     // Verifica delle variabili d'ambiente
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -22,16 +23,14 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!stripeSecretKey) {
-      console.error('🔴 STRIPE_SECRET_KEY not found');
+      ErrorHandler.logError('STRIPE_SECRET_KEY not found', null, { operation: 'env_validation' });
       throw new Error('Stripe configuration missing');
     }
 
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error('🔴 Supabase configuration missing');
+      ErrorHandler.logError('Supabase configuration missing', null, { operation: 'env_validation' });
       throw new Error('Supabase configuration missing');
     }
-
-    console.log('🔵 Environment variables verified');
 
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2025-05-28.basil',
@@ -47,21 +46,21 @@ serve(async (req) => {
     // Verifica autenticazione
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('🔴 Missing authorization header');
+      ErrorHandler.logError('Missing authorization header', null, { operation: 'auth_validation' });
       throw new Error('Missing authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '');
-    console.log('🔵 Extracting user from token');
+    ErrorHandler.logInfo('Extracting user from token');
 
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.error('🔴 Authentication failed:', authError);
+      ErrorHandler.logError('Authentication failed', authError, { operation: 'user_auth' });
       throw new Error('Invalid authentication');
     }
 
-    console.log('🔵 User authenticated:', user.id);
+    ErrorHandler.logInfo('User authenticated', { userId: user.id });
 
     // Ottieni dati del profilo
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -71,15 +70,22 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
-      console.error('🔴 Profile not found:', profileError);
+      ErrorHandler.logError('Profile not found', profileError, { 
+        operation: 'fetch_profile',
+        userId: user.id 
+      });
       throw new Error('Profile not found');
     }
 
-    console.log('🔵 Profile loaded:', profile.id, 'Role:', profile.role);
+    ErrorHandler.logInfo('Profile loaded', { profileId: profile.id, role: profile.role });
 
     // Verifica che sia un host
     if (profile.role !== 'host') {
-      console.error('🔴 User is not a host:', profile.role);
+      ErrorHandler.logError('User is not a host', null, { 
+        operation: 'role_validation',
+        userId: user.id,
+        role: profile.role 
+      });
       throw new Error('Only hosts can connect Stripe accounts');
     }
 
@@ -90,7 +96,7 @@ serve(async (req) => {
 
     // Crea account Stripe Connect se non esiste
     if (!accountId) {
-      console.log('🔵 Creating new Stripe Connect account');
+      ErrorHandler.logInfo('Creating new Stripe Connect account');
       
       const account = await stripe.accounts.create({
         type: 'express',
@@ -106,7 +112,7 @@ serve(async (req) => {
       });
 
       accountId = account.id;
-      console.log('🔵 Stripe account created:', accountId);
+      ErrorHandler.logSuccess('Stripe account created', { accountId });
 
       // Salva l'account ID nel profilo
       const { error: updateError } = await supabaseAdmin
@@ -118,17 +124,21 @@ serve(async (req) => {
         .eq('id', user.id);
 
       if (updateError) {
-        console.error('🔴 Error updating profile with Stripe account ID:', updateError);
+        ErrorHandler.logError('Error updating profile with Stripe account ID', updateError, {
+          operation: 'update_profile',
+          userId: user.id,
+          accountId
+        });
         // Non bloccare il processo, continua comunque
       } else {
-        console.log('🔵 Profile updated with Stripe account ID');
+        ErrorHandler.logSuccess('Profile updated with Stripe account ID');
       }
     } else {
-      console.log('🔵 Using existing Stripe account:', accountId);
+      ErrorHandler.logInfo('Using existing Stripe account', { accountId });
     }
 
     // Crea Account Link per onboarding - FIXED URL
-    console.log('🔵 Creating account link');
+    ErrorHandler.logInfo('Creating account link');
     
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
@@ -137,7 +147,11 @@ serve(async (req) => {
       type: 'account_onboarding',
     });
 
-    console.log('🔵 Account link created successfully:', accountLink.url);
+    ErrorHandler.logSuccess('Account link created successfully', { 
+      accountId,
+      hasReturnUrl: !!return_url,
+      hasRefreshUrl: !!refresh_url
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -149,7 +163,11 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('🔴 Error in stripe-connect function:', error);
+    ErrorHandler.logError('Error in stripe-connect function', error, {
+      operation: 'stripe_connect',
+      error_message: error.message,
+      stack: error.stack
+    });
     
     return new Response(
       JSON.stringify({ 

@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,7 +35,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 Create payment session function started');
+    ErrorHandler.logInfo('Create payment session started');
 
     // Validate environment variables
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -43,15 +44,14 @@ serve(async (req) => {
     
     // Get the origin from the request to build correct redirect URLs
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000';
-    console.log('🔵 Using origin for redirects:', origin);
 
     if (!stripeSecretKey) {
-      console.error('🔴 STRIPE_SECRET_KEY not found');
+      ErrorHandler.logError('STRIPE_SECRET_KEY not found', null, { operation: 'env_validation' });
       throw new Error('Stripe configuration missing');
     }
 
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error('🔴 Supabase configuration missing');
+      ErrorHandler.logError('Supabase configuration missing', null, { operation: 'env_validation' });
       throw new Error('Supabase configuration missing');
     }
 
@@ -73,7 +73,7 @@ serve(async (req) => {
       throw new Error('Missing required parameters');
     }
 
-    console.log('🔵 Creating payment session:', {
+    ErrorHandler.logInfo('Creating payment session', {
       booking_id,
       base_amount,
       currency,
@@ -82,7 +82,6 @@ serve(async (req) => {
 
     // Calculate breakdown
     const breakdown = calculatePaymentBreakdown(base_amount);
-    console.log('🔵 Payment breakdown:', breakdown);
 
     // Get booking and space details
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -104,7 +103,10 @@ serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
-      console.error('🔴 Error fetching booking:', bookingError);
+      ErrorHandler.logError('Error fetching booking', bookingError, { 
+        operation: 'fetch_booking',
+        booking_id 
+      });
       throw new Error('Booking not found');
     }
 
@@ -153,13 +155,10 @@ serve(async (req) => {
       },
     });
 
-    console.log('✅ Stripe session created:', {
+    ErrorHandler.logSuccess('Stripe session created', {
       sessionId: session.id,
-      paymentUrl: session.url,
       hostAccount: hostStripeAccount,
-      applicationFee: Math.round(breakdown.platformRevenue * 100),
-      successUrl: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancelUrl: `${origin}/bookings?cancelled=true`
+      applicationFee: Math.round(breakdown.platformRevenue * 100)
     });
 
     // Create payment record
@@ -178,11 +177,15 @@ serve(async (req) => {
       });
 
     if (paymentError) {
-      console.error('🔴 Error creating payment record:', paymentError);
+      ErrorHandler.logError('Error creating payment record', paymentError, {
+        operation: 'create_payment_record',
+        booking_id,
+        session_id: session.id
+      });
       throw new Error('Failed to create payment record');
     }
 
-    console.log('✅ Payment record created successfully');
+    ErrorHandler.logSuccess('Payment record created successfully');
 
     return new Response(JSON.stringify({
       payment_url: session.url,
@@ -194,7 +197,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('🔴 Error in create-payment-session function:', error);
+    ErrorHandler.logError('Error in create-payment-session function', error, {
+      operation: 'create_payment_session',
+      error_message: error.message
+    });
     
     return new Response(
       JSON.stringify({ 

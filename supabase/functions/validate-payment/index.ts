@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 Validate payment function started');
+    ErrorHandler.logInfo('Validate payment function started');
 
     // Verifica delle variabili d'ambiente
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -22,12 +23,12 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!stripeSecretKey) {
-      console.error('🔴 STRIPE_SECRET_KEY not found');
+      ErrorHandler.logError('STRIPE_SECRET_KEY not found', null, { operation: 'env_validation' });
       throw new Error('Stripe configuration missing');
     }
 
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error('🔴 Supabase configuration missing');
+      ErrorHandler.logError('Supabase configuration missing', null, { operation: 'env_validation' });
       throw new Error('Supabase configuration missing');
     }
 
@@ -49,7 +50,7 @@ serve(async (req) => {
       throw new Error('Missing session_id parameter');
     }
 
-    console.log('🔵 Validating payment session:', session_id);
+    ErrorHandler.logInfo('Validating payment session', { session_id });
 
     // Recupera la sessione da Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
@@ -58,7 +59,7 @@ serve(async (req) => {
       throw new Error('Session not found');
     }
 
-    console.log('🔵 Session retrieved:', {
+    ErrorHandler.logInfo('Session retrieved', {
       id: session.id,
       payment_status: session.payment_status,
       status: session.status
@@ -77,9 +78,12 @@ serve(async (req) => {
         .eq('stripe_session_id', session_id);
 
       if (paymentError) {
-        console.error('🔴 Error updating payment:', paymentError);
+        ErrorHandler.logError('Error updating payment', paymentError, {
+          operation: 'update_payment',
+          session_id
+        });
       } else {
-        console.log('✅ Payment updated successfully');
+        ErrorHandler.logSuccess('Payment updated successfully');
       }
 
       // Aggiorna la prenotazione
@@ -92,9 +96,12 @@ serve(async (req) => {
         .eq('id', session.metadata.booking_id);
 
       if (bookingError) {
-        console.error('🔴 Error updating booking:', bookingError);
+        ErrorHandler.logError('Error updating booking', bookingError, {
+          operation: 'update_booking',
+          booking_id: session.metadata.booking_id
+        });
       } else {
-        console.log('✅ Booking confirmed successfully');
+        ErrorHandler.logSuccess('Booking confirmed successfully');
       }
     }
 
@@ -109,7 +116,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('🔴 Error in validate-payment function:', error);
+    ErrorHandler.logError('Error in validate-payment function', error, {
+      operation: 'validate_payment',
+      error_message: error.message
+    });
     
     return new Response(
       JSON.stringify({ 
