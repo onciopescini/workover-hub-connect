@@ -8,9 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { Database, Trash2, Archive, Eye, RefreshCw, AlertTriangle, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 import type { DataMinimizationAudit } from "@/types/gdpr";
 
 export const DataMinimizationAuditDashboard = () => {
+  const { error } = useLogger({ context: 'DataMinimizationAuditDashboard' });
   const [audits, setAudits] = useState<DataMinimizationAudit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRunningAudit, setIsRunningAudit] = useState(false);
@@ -28,8 +30,8 @@ export const DataMinimizationAuditDashboard = () => {
 
       if (error) throw error;
       setAudits((data || []) as DataMinimizationAudit[]);
-    } catch (error) {
-      console.error("Error fetching minimization audits:", error);
+    } catch (fetchError) {
+      error("Error fetching minimization audits", fetchError as Error, { operation: 'fetch_minimization_audits' });
       toast.error("Errore nel caricamento degli audit");
     } finally {
       setIsLoading(false);
@@ -56,8 +58,8 @@ export const DataMinimizationAuditDashboard = () => {
 
       toast.success(`Audit completato: ${result.audit_entries_created} voci create`);
       fetchAudits();
-    } catch (error) {
-      console.error("Error running minimization audit:", error);
+    } catch (auditError) {
+      error("Error running minimization audit", auditError as Error, { operation: 'run_minimization_audit' });
       toast.error("Errore nell'esecuzione dell'audit");
     } finally {
       setIsRunningAudit(false);

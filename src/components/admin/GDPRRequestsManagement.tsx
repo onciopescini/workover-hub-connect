@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Download, Trash2, Eye, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 type GDPRRequestType = "data_export" | "data_deletion" | "data_rectification";
 type GDPRRequestStatus = "pending" | "processing" | "completed" | "failed";
@@ -28,6 +29,7 @@ interface GDPRRequest {
 }
 
 export const GDPRRequestsManagement = () => {
+  const { error } = useLogger({ context: 'GDPRRequestsManagement' });
   const [requests, setRequests] = useState<GDPRRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -45,8 +47,8 @@ export const GDPRRequestsManagement = () => {
 
       if (error) throw error;
       setRequests((data || []) as GDPRRequest[]);
-    } catch (error) {
-      console.error("Error fetching GDPR requests:", error);
+    } catch (fetchError) {
+      error("Error fetching GDPR requests", fetchError as Error, { operation: 'fetch_gdpr_requests' });
       toast.error("Errore nel caricamento delle richieste GDPR");
     } finally {
       setIsLoading(false);
@@ -67,8 +69,8 @@ export const GDPRRequestsManagement = () => {
       
       toast.success("Stato richiesta aggiornato");
       fetchGDPRRequests();
-    } catch (error) {
-      console.error("Error updating request status:", error);
+    } catch (updateError) {
+      error("Error updating request status", updateError as Error, { requestId, status });
       toast.error("Errore nell'aggiornamento dello stato");
     }
   };

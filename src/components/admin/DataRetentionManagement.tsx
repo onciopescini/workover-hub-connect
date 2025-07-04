@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, Clock, Database, RefreshCw, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 type RetentionActionType = "anonymize" | "delete" | "archive";
 
@@ -26,6 +27,7 @@ interface CleanupInactiveDataResponse {
 }
 
 export const DataRetentionManagement = () => {
+  const { error } = useLogger({ context: 'DataRetentionManagement' });
   const [retentionLogs, setRetentionLogs] = useState<RetentionLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRunningCleanup, setIsRunningCleanup] = useState(false);
@@ -44,8 +46,8 @@ export const DataRetentionManagement = () => {
 
       if (error) throw error;
       setRetentionLogs((data || []) as RetentionLog[]);
-    } catch (error) {
-      console.error("Error fetching retention logs:", error);
+    } catch (fetchError) {
+      error("Error fetching retention logs", fetchError as Error, { operation: 'fetch_retention_logs' });
       toast.error("Errore nel caricamento dei log di retention");
     } finally {
       setIsLoading(false);
@@ -62,8 +64,8 @@ export const DataRetentionManagement = () => {
       const cleanupResult = data as unknown as CleanupInactiveDataResponse;
       toast.success(`Pulizia completata: ${cleanupResult.deleted_profiles} profili eliminati, ${cleanupResult.anonymized_bookings} prenotazioni anonimizzate, ${cleanupResult.deleted_messages} messaggi eliminati`);
       fetchRetentionLogs();
-    } catch (error) {
-      console.error("Error running data cleanup:", error);
+    } catch (cleanupError) {
+      error("Error running data cleanup", cleanupError as Error, { operation: 'run_data_cleanup' });
       toast.error("Errore durante la pulizia dei dati");
     } finally {
       setIsRunningCleanup(false);

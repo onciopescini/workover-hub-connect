@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle, Eye, Edit3, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface GDPRRequest {
   id: string;
@@ -24,6 +25,7 @@ interface GDPRRequest {
 }
 
 export const DataRectificationManagement = () => {
+  const { error } = useLogger({ context: 'DataRectificationManagement' });
   const [requests, setRequests] = useState<GDPRRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -46,8 +48,8 @@ export const DataRectificationManagement = () => {
 
       if (error) throw error;
       setRequests((data || []) as GDPRRequest[]);
-    } catch (error) {
-      console.error("Error fetching rectification requests:", error);
+    } catch (fetchError) {
+      error("Error fetching rectification requests", fetchError as Error, { operation: 'fetch_rectification_requests' });
       toast.error("Errore nel caricamento delle richieste");
     } finally {
       setIsLoading(false);
@@ -88,8 +90,12 @@ export const DataRectificationManagement = () => {
       setAdminNotes("");
       setCorrectionsApplied("");
       fetchRequests();
-    } catch (error) {
-      console.error("Error processing request:", error);
+    } catch (processError) {
+      error("Error processing request", processError as Error, { 
+        requestId: selectedRequest?.id,
+        approved,
+        operation: 'process_rectification'
+      });
       toast.error("Errore nell'elaborazione della richiesta");
     }
   };
