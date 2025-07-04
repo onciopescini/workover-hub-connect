@@ -13,7 +13,7 @@ import { useLogger } from "@/hooks/useLogger";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function StripeSetup() {
-  const { authState } = useAuth();
+  const { authState, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
@@ -193,10 +193,11 @@ export function StripeSetup() {
           // Invalidate host progress cache to trigger immediate refresh
           await queryClient.invalidateQueries({ queryKey: ['host-progress'] });
           
+          // Refresh AuthContext to update UI immediately
+          await refreshProfile?.();
+          
           toast.success("Setup Stripe completato! Progresso aggiornato.");
           
-          // Trigger refresh del context without full page reload
-          window.location.reload();
         } else if (!profile?.stripe_connected) {
           logger.info("Stripe setup still in progress", {
             action: 'stripe_setup_pending',
@@ -274,6 +275,13 @@ export function StripeSetup() {
               <strong>Errore:</strong> {lastError}
             </AlertDescription>
           </Alert>
+        )}
+
+        {isCheckingStatus && (
+          <div className="flex items-center justify-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <Loader2 className="h-4 w-4 animate-spin mr-2 text-blue-600" />
+            <span className="text-blue-800 font-medium">Stripe configurato, aggiornamento in corso...</span>
+          </div>
         )}
 
         {!stripeConnected ? (
