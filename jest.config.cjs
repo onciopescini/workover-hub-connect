@@ -1,6 +1,6 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  preset: 'ts-jest/presets/js-with-ts-esm', // ✅ Supporto ESM con TypeScript
+  preset: 'ts-jest', // ✅ Supporto ESM con TypeScript
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/tests/setup/test-setup.ts'],
   moduleNameMapper: {
