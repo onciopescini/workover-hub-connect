@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CreditCard, Loader2, Info } from "lucide-react";
 import { createPaymentSession, validatePayment, calculatePaymentBreakdown } from "@/lib/payment-utils";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface PaymentButtonProps {
   bookingId: string;
@@ -24,6 +25,7 @@ const PaymentButton = ({
   onPaymentSuccess
 }: PaymentButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { info, error } = useLogger({ context: 'PaymentButton' });
 
   // Calculate breakdown with dual commission model
   const breakdown = calculatePaymentBreakdown(amount);
@@ -32,13 +34,12 @@ const PaymentButton = ({
     setIsLoading(true);
     
     try {
-      console.log('🔵 Starting payment process for booking:', bookingId);
-      console.log('🔵 Payment breakdown:', breakdown);
+      info('Starting payment process', { bookingId, breakdown });
       
       const session = await createPaymentSession(bookingId, amount, currency);
       
       if (session?.payment_url) {
-        console.log('🔵 Redirecting to Stripe Checkout:', session.payment_url);
+        info('Redirecting to Stripe Checkout', { paymentUrl: session.payment_url });
         
         // Apri Stripe Checkout in una nuova finestra
         const checkoutWindow = window.open(session.payment_url, '_blank');
@@ -48,7 +49,7 @@ const PaymentButton = ({
           const checkClosed = setInterval(async () => {
             if (checkoutWindow.closed) {
               clearInterval(checkClosed);
-              console.log('🔵 Checkout window closed, validating payment...');
+              info('Checkout window closed, validating payment', { sessionId: session.session_id });
               
               // Valida il pagamento
               try {
@@ -59,10 +60,10 @@ const PaymentButton = ({
                 } else {
                   toast.info("Pagamento non completato o annullato");
                 }
-              } catch (error) {
-                console.error('Error validating payment:', error);
-                toast.error("Errore nella validazione del pagamento");
-              }
+                } catch (validationError) {
+                  error('Error validating payment', validationError as Error, { sessionId: session.session_id });
+                  toast.error("Errore nella validazione del pagamento");
+                }
             }
           }, 1000);
           
@@ -79,8 +80,8 @@ const PaymentButton = ({
       } else {
         toast.error("Errore nella creazione della sessione di pagamento");
       }
-    } catch (error) {
-      console.error("Payment error:", error);
+    } catch (paymentError) {
+      error('Payment error', paymentError as Error, { bookingId, amount });
       toast.error("Errore nel processare il pagamento");
     } finally {
       setIsLoading(false);

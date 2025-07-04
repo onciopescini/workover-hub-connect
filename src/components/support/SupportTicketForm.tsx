@@ -10,6 +10,7 @@ import { createSupportTicket } from "@/lib/support-utils";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useLogger } from "@/hooks/useLogger";
 
 interface SupportTicketFormData {
   subject: string;
@@ -33,6 +34,7 @@ const TICKET_CATEGORIES = [
 
 export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { info, error } = useLogger({ context: 'SupportTicketForm' });
   
   const form = useForm<SupportTicketFormData>({
     defaultValues: {
@@ -54,11 +56,12 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
 
       if (success) {
         form.reset();
+        info('Support ticket created successfully', { subject: data.subject, category: data.category });
         toast.success("Ticket creato con successo! Ti risponderemo presto.");
         onSuccess?.();
       }
-    } catch (error) {
-      console.error("Error creating ticket:", error);
+    } catch (ticketError) {
+      error("Error creating ticket", ticketError as Error, { subject: data.subject, category: data.category });
       toast.error("Errore nella creazione del ticket. Riprova.");
     } finally {
       setIsSubmitting(false);
