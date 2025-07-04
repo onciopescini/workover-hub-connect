@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, MessageCircle, Calendar, Zap } from 'lucide-react';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 export const NetworkingQuickActions = React.memo(() => {
   const actions = [
@@ -9,19 +10,19 @@ export const NetworkingQuickActions = React.memo(() => {
       icon: Users,
       title: 'Trova Connessioni',
       description: 'Scopri nuovi professionisti',
-      onClick: () => console.log('Navigate to connections')
+      onClick: () => frontendLogger.componentLoad('Navigate to connections', undefined, { component: 'NetworkingQuickActions' })
     },
     {
       icon: MessageCircle,
       title: 'Messaggi',
       description: 'Gestisci conversazioni',
-      onClick: () => console.log('Navigate to messages')
+      onClick: () => frontendLogger.componentLoad('Navigate to messages', undefined, { component: 'NetworkingQuickActions' })
     },
     {
       icon: Calendar,
       title: 'Eventi Networking',
       description: 'Partecipa agli eventi',
-      onClick: () => console.log('Navigate to events')
+      onClick: () => frontendLogger.componentLoad('Navigate to events', undefined, { component: 'NetworkingQuickActions' })
     }
   ];
 

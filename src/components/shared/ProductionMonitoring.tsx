@@ -21,6 +21,7 @@
 import React, { useEffect, useState } from 'react';
 import * as Sentry from '@sentry/react';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface ProductionMonitoringProps {
   children: React.ReactNode;
@@ -92,7 +93,9 @@ export const ProductionMonitoring: React.FC<ProductionMonitoringProps> = ({
         }
       } catch (error) {
         Sentry.captureException(error);
-        console.warn('Performance monitoring failed:', error);
+        frontendLogger.componentLoad('Performance monitoring failed', undefined, { 
+          component: 'ProductionMonitoring'
+        });
       }
     };
 

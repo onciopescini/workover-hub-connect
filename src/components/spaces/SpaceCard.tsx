@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users, Wifi } from 'lucide-react';
 import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
 import { Space } from '@/types/space';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface SpaceCardProps {
   space: Space;
@@ -50,7 +51,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             objectFit="cover"
             enableWebP={true}
             priority={false}
-            onLoadComplete={() => console.log(`Space card image loaded: ${space.title}`)}
+            onLoadComplete={() => frontendLogger.componentLoad(`Space card image: ${space.title}`, undefined, { component: 'SpaceCard' })}
             className="w-full h-full"
           />
           <div className="absolute top-2 left-2">

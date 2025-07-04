@@ -4,6 +4,7 @@ import { useConsent } from '@/hooks/useConsent';
 import { CookieConsentBanner } from './CookieConsentBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 export function CookieConsentManager() {
   const { consent, shouldShowBanner } = useConsent();
@@ -37,7 +38,9 @@ export function CookieConsentManager() {
           is_active: true
         });
     } catch (error) {
-      console.error('Error logging consent:', error);
+      frontendLogger.adminAction('Error logging consent', error, { 
+        component: 'CookieConsentManager' 
+      });
     }
   };
 
