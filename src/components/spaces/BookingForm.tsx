@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, CalendarDays, Clock, Euro, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { reserveBookingSlot, calculateBookingTotal, handlePaymentFlow } from "@/lib/booking-reservation-utils";
+import { useLogger } from "@/hooks/useLogger";
 
 interface BookingFormProps {
   spaceId: string;
@@ -24,9 +25,10 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
   const [isProcessing, setIsProcessing] = useState(false);
   const [reservationStep, setReservationStep] = useState<'form' | 'reserved' | 'payment'>('form');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const { info, error, debug } = useLogger({ context: 'BookingForm' });
 
-  // Debug logging per il tipo di conferma
-  console.log('🔍 BookingForm - Props:', {
+  // Log component initialization
+  debug('BookingForm initialized', {
     spaceId,
     pricePerDay,
     confirmationType,
@@ -61,7 +63,7 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔵 BookingForm - Submit initiated with:', {
+    info('Submit initiated', {
       spaceId,
       selectedDate,
       startTime,
@@ -78,7 +80,7 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
     setValidationErrors([]);
     
     try {
-      console.log('🔵 BookingForm - Reserving slot for space:', spaceId);
+      info('Reserving slot for space', { spaceId });
       
       // Step 1: Reserve the slot (5 minute lock)
       const reservation = await reserveBookingSlot(
@@ -89,16 +91,25 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         confirmationType
       );
 
-      console.log('🔵 BookingForm - Reservation result:', reservation);
+      info('Reservation result', { reservation });
 
       if (!reservation || !reservation.success) {
         const errorMsg = reservation?.error || 'Errore nella prenotazione dello slot';
-        console.error('🔴 BookingForm - Reservation failed:', errorMsg);
+        error('Reservation failed', new Error(errorMsg), { 
+          spaceId, 
+          selectedDate, 
+          startTime, 
+          endTime,
+          reservation 
+        });
         onError(errorMsg);
         return;
       }
 
-      console.log('✅ BookingForm - Slot reserved successfully:', reservation);
+      info('Slot reserved successfully', { 
+        bookingId: reservation.booking_id,
+        reservedUntil: reservation.reserved_until 
+      });
       setReservationStep('reserved');
 
       // Step 2: Handle payment flow based on confirmation type
@@ -106,7 +117,7 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         // Instant booking -> proceed to payment immediately
         const totalAmount = calculateBookingTotal(pricePerDay, startTime, endTime);
         
-        console.log('🔵 BookingForm - Processing instant booking payment:', {
+        info('Processing instant booking payment', {
           bookingId: reservation.booking_id,
           totalAmount
         });
@@ -121,20 +132,25 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
             reservation.booking_id!,
             totalAmount,
             () => {
-              console.log('✅ BookingForm - Payment flow completed');
+              info('Payment flow completed successfully', { bookingId: reservation.booking_id });
               setReservationStep('payment');
               onSuccess();
             },
-            (error) => {
-              console.error('🔴 BookingForm - Payment flow error:', error);
-              onError(error);
+            (paymentError) => {
+              error('Payment flow error', new Error(paymentError), { 
+                bookingId: reservation.booking_id,
+                totalAmount 
+              });
+              onError(paymentError);
             }
           );
         }, 1500);
         
       } else {
         // Host approval required -> show waiting message
-        console.log('🔵 BookingForm - Host approval required, showing confirmation');
+        info('Host approval required, showing confirmation', { 
+          bookingId: reservation.booking_id 
+        });
         toast.success('Richiesta di prenotazione inviata! Attendere l\'approvazione dell\'host.', {
           icon: <CheckCircle className="w-4 h-4" />
         });
@@ -142,8 +158,14 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         onSuccess();
       }
       
-    } catch (error) {
-      console.error('🔴 BookingForm - Unexpected error in booking process:', error);
+    } catch (bookingError) {
+      error('Unexpected error in booking process', bookingError as Error, {
+        spaceId,
+        selectedDate,
+        startTime,
+        endTime,
+        confirmationType
+      });
       onError('Errore imprevisto nel processo di prenotazione');
     } finally {
       setIsProcessing(false);
