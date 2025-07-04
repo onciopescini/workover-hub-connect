@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Zap, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface PerformanceMetrics {
   loadTime: number;
@@ -15,6 +16,7 @@ interface PerformanceMetrics {
 }
 
 export const NetworkingPerformanceTest = () => {
+  const { error } = useLogger({ context: 'NetworkingPerformanceTest' });
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -54,9 +56,12 @@ export const NetworkingPerformanceTest = () => {
       testMetrics.totalTime = performance.now() - startTime;
       setMetrics(testMetrics);
       toast.success("Test di performance completato!");
-    } catch (error) {
+    } catch (testError) {
       toast.error("Errore durante il test di performance");
-      console.error("Performance test error:", error);
+      error("Performance test error", testError as Error, { 
+        operation: 'performance_test',
+        testPhase: 'execution'
+      });
     } finally {
       setIsRunning(false);
     }

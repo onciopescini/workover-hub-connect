@@ -4,6 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { SimpleEvent } from '@/hooks/usePublicEvents';
+import { useLogger } from '@/hooks/useLogger';
 
 interface EventMapProps {
   events: SimpleEvent[];
@@ -18,12 +19,13 @@ export const EventMap: React.FC<EventMapProps> = ({
   onEventClick,
   highlightedEventId 
 }) => {
+  const { error: logError } = useLogger({ context: 'EventMap' });
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<string | null>(null);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -32,19 +34,25 @@ export const EventMap: React.FC<EventMapProps> = ({
         const { data, error } = await supabase.functions.invoke('get-mapbox-token') as any;
         
         if (error) {
-          console.error('Error fetching Mapbox token:', error);
-          setError('Impossibile caricare la mappa');
+          logError('Error fetching Mapbox token', error as Error, { 
+            operation: 'fetch_mapbox_token',
+            context: 'map_initialization'
+          });
+          setErrorState('Impossibile caricare la mappa');
           return;
         }
 
         if (data?.token) {
           setMapboxToken(data.token);
         } else {
-          setError('Token Mapbox non configurato');
+          setErrorState('Token Mapbox non configurato');
         }
       } catch (err) {
-        console.error('Error:', err);
-        setError('Errore nel caricamento della mappa');
+        logError('Error in map initialization', err as Error, { 
+          operation: 'map_setup',
+          context: 'component_initialization'
+        });
+        setErrorState('Errore nel caricamento della mappa');
       } finally {
         setIsLoading(false);
       }
@@ -127,11 +135,11 @@ export const EventMap: React.FC<EventMapProps> = ({
     );
   }
 
-  if (error) {
+  if (errorState) {
     return (
       <div className="relative w-full h-full bg-gray-100 flex items-center justify-center">
         <div className="text-center p-4">
-          <p className="text-sm text-red-600 mb-2">{error}</p>
+          <p className="text-sm text-red-600 mb-2">{errorState}</p>
           <p className="text-xs text-gray-500">La mappa non è disponibile al momento</p>
         </div>
       </div>

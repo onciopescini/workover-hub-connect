@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle, RefreshCw, Database, Shield, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface HealthCheck {
   id: string;
@@ -16,6 +17,7 @@ interface HealthCheck {
 }
 
 export const NetworkingHealthCheck = () => {
+  const { error } = useLogger({ context: 'NetworkingHealthCheck' });
   const [checks, setChecks] = useState<HealthCheck[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [lastFullCheck, setLastFullCheck] = useState<Date | null>(null);
@@ -100,13 +102,17 @@ export const NetworkingHealthCheck = () => {
         default:
           throw new Error('Unknown check');
       }
-    } catch (error) {
-      console.error(`Health check ${checkId} failed:`, error);
+    } catch (checkError) {
+      error(`Health check ${checkId} failed`, checkError as Error, { 
+        operation: 'health_check',
+        checkId,
+        checkType: checkId
+      });
       return {
         id: checkId,
         name: checkId,
         status: 'critical',
-        message: `Errore: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Errore: ${checkError instanceof Error ? checkError.message : 'Unknown error'}`,
         lastCheck: new Date(),
         responseTime: performance.now() - startTime
       };

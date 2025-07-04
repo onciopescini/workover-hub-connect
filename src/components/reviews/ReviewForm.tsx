@@ -9,6 +9,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Star } from 'lucide-react';
 import { addBookingReview, addEventReview } from '@/lib/bidirectional-review-utils';
 import { ReviewFormSchema, ReviewFormData } from '@/schemas/reviewSchema';
+import { useLogger } from '@/hooks/useLogger';
 
 interface ReviewFormProps {
   type: 'booking' | 'event';
@@ -27,6 +28,7 @@ export function ReviewForm({
   targetName, 
   onSuccess 
 }: ReviewFormProps) {
+  const { error } = useLogger({ context: 'ReviewForm' });
   const [hoveredRating, setHoveredRating] = useState(0);
 
   const form = useForm<ReviewFormData>({
@@ -64,8 +66,14 @@ export function ReviewForm({
       if (success && onSuccess) {
         onSuccess();
       }
-    } catch (error) {
-      console.error('Error submitting review:', error);
+    } catch (submitError) {
+      error('Error submitting review', submitError as Error, { 
+        operation: 'submit_review',
+        reviewType: type,
+        targetId,
+        bookingId,
+        eventId
+      });
     }
   };
 

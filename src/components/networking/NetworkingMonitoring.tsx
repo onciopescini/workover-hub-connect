@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, Users, AlertTriangle, CheckCircle, TrendingUp, Wifi } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface SystemMetrics {
   totalConnections: number;
@@ -17,6 +18,7 @@ interface SystemMetrics {
 }
 
 export const NetworkingMonitoring = () => {
+  const { error } = useLogger({ context: 'NetworkingMonitoring' });
   const [metrics, setMetrics] = useState<SystemMetrics>({
     totalConnections: 0,
     activeUsers: 0,
@@ -66,8 +68,11 @@ export const NetworkingMonitoring = () => {
 
       setMetrics(newMetrics);
       setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
+    } catch (fetchError) {
+      error('Error fetching metrics', fetchError as Error, { 
+        operation: 'fetch_metrics',
+        context: 'system_monitoring'
+      });
       toast.error('Errore nel caricamento delle metriche');
     }
   };

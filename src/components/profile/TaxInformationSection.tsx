@@ -12,6 +12,7 @@ import { FileText, Download, Upload, AlertCircle, CheckCircle, Euro } from "luci
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 const EU_COUNTRIES = [
   { code: "IT", name: "Italia" },
@@ -44,6 +45,7 @@ const EU_COUNTRIES = [
 ];
 
 export const TaxInformationSection = () => {
+  const { error } = useLogger({ context: 'TaxInformationSection' });
   const { authState, updateProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [taxCountry, setTaxCountry] = useState(authState.profile?.tax_country || "");
@@ -60,8 +62,13 @@ export const TaxInformationSection = () => {
       });
 
       toast.success("Informazioni fiscali aggiornate con successo");
-    } catch (error) {
-      console.error("Error updating tax information:", error);
+    } catch (updateError) {
+      error("Error updating tax information", updateError as Error, { 
+        operation: 'update_tax_info',
+        taxCountry,
+        hasVatNumber: !!vatNumber,
+        hasTaxId: !!taxId
+      });
       toast.error("Errore nell'aggiornamento delle informazioni fiscali");
     } finally {
       setIsLoading(false);

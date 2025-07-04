@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 import { 
   Instagram, 
   Twitter, 
@@ -32,6 +33,7 @@ interface SocialLinks {
 }
 
 export function SocialMediaSection() {
+  const { error } = useLogger({ context: 'SocialMediaSection' });
   const { authState, refreshProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -108,8 +110,11 @@ export function SocialMediaSection() {
       setIsEditing(false);
       toast.success("Collegamenti social aggiornati con successo!");
       
-    } catch (error) {
-      console.error("Error updating social links:", error);
+    } catch (updateError) {
+      error("Error updating social links", updateError as Error, { 
+        operation: 'update_social_links',
+        platformCount: Object.keys(socialLinks).filter(key => socialLinks[key as keyof SocialLinks]).length
+      });
       toast.error("Errore nell'aggiornamento dei collegamenti social");
     } finally {
       setIsSaving(false);
