@@ -14,6 +14,7 @@ import {
 import { calculatePaymentBreakdown } from "@/lib/payment-utils";
 import { executeValidationSuite } from "@/lib/validation-runner";
 import { validateStripeAmounts } from "@/lib/stripe-validation";
+import { frontendLogger } from '@/utils/frontend-logger';
 
 export const PaymentValidationDashboard = () => {
   const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
@@ -37,8 +38,7 @@ export const PaymentValidationDashboard = () => {
     setIsRunning(true);
     setFullSuiteRun(true);
     
-    console.log('🚀 POST-REFACTOR STRIPE VALIDATION SUITE');
-    console.log('='.repeat(60));
+    frontendLogger.paymentValidation('POST-REFACTOR STRIPE VALIDATION SUITE', 'Starting comprehensive validation');
 
     try {
       // Run payment validation
@@ -59,13 +59,14 @@ export const PaymentValidationDashboard = () => {
         
         const destinationChargeValid = stripeSessionAmount === (stripeTransferAmount + stripeApplicationFee);
         
-        console.log(`\n🔍 DESTINATION CHARGE TEST - €${price}:`);
-        console.log(`  Session Amount: ${stripeSessionAmount} cents`);
-        console.log(`  Application Fee: ${stripeApplicationFee} cents (10% of base)`);
-        console.log(`  Transfer Amount: ${stripeTransferAmount} cents (95% of base)`);
-        console.log(`  Sum Check: ${stripeTransferAmount} + ${stripeApplicationFee} = ${stripeTransferAmount + stripeApplicationFee}`);
-        console.log(`  Expected: ${stripeSessionAmount}`);
-        console.log(`  Result: ${destinationChargeValid ? '✅ PASS' : '❌ FAIL'}`);
+        frontendLogger.stripeIntegration(`DESTINATION CHARGE TEST - €${price}`, {
+          sessionAmount: stripeSessionAmount,
+          applicationFee: stripeApplicationFee,
+          transferAmount: stripeTransferAmount,
+          sumCheck: stripeTransferAmount + stripeApplicationFee,
+          expected: stripeSessionAmount,
+          result: destinationChargeValid ? 'PASS' : 'FAIL'
+        });
         
         return {
           price,
@@ -84,17 +85,15 @@ export const PaymentValidationDashboard = () => {
       const paymentsPassed = paymentResults.filter(r => r.passed).length;
       const stripePassed = stripeResults.filter(r => r.destinationChargeValid).length;
       
-      console.log('\n📊 POST-REFACTOR SUMMARY:');
-      console.log(`✅ Payment Calculations: ${paymentsPassed}/${paymentResults.length}`);
-      console.log(`✅ Stripe Destination Charges: ${stripePassed}/${stripeResults.length}`);
-      console.log(`✅ Dual Commission (5%+5%): ${paymentsPassed === paymentResults.length ? 'WORKING' : 'FAILED'}`);
-      
-      if (paymentsPassed === paymentResults.length && stripePassed === stripeResults.length) {
-        console.log('\n🎉 ALL POST-REFACTOR VALIDATIONS PASSED!');
-      }
+      frontendLogger.paymentValidation('POST-REFACTOR SUMMARY', {
+        paymentCalculations: `${paymentsPassed}/${paymentResults.length}`,
+        stripeDestinationCharges: `${stripePassed}/${stripeResults.length}`,
+        dualCommissionStatus: paymentsPassed === paymentResults.length ? 'WORKING' : 'FAILED',
+        allValidationsPassed: paymentsPassed === paymentResults.length && stripePassed === stripeResults.length
+      });
 
     } catch (error) {
-      console.error('❌ Post-refactor validation failed:', error);
+      frontendLogger.paymentValidation('Post-refactor validation failed', error);
     } finally {
       setIsRunning(false);
     }
@@ -103,16 +102,17 @@ export const PaymentValidationDashboard = () => {
   const testUICalculations = () => {
     const testPrices = [20, 150, 75, 500];
     
-    console.log("🧪 UI CALCULATION VALIDATION:");
+    frontendLogger.calculationTest("UI CALCULATION VALIDATION", 'Starting UI calculation tests', testPrices);
+    
     testPrices.forEach(price => {
       const breakdown = calculatePaymentBreakdown(price);
-      console.log(`Base: €${price}`);
-      console.log(`  Buyer Total: €${breakdown.buyerTotalAmount}`);
-      console.log(`  Host Payout: €${breakdown.hostNetPayout}`);
-      console.log(`  Platform Revenue: €${breakdown.platformRevenue}`);
-      console.log(`  Currency Valid: ${validateCurrencyRounding(breakdown.buyerTotalAmount)}`);
-      console.log(`  Stripe Amount: ${validateStripeAmount(breakdown.buyerTotalAmount)} cents`);
-      console.log("---");
+      frontendLogger.calculationTest(`Base Price €${price}`, price, {
+        buyerTotal: breakdown.buyerTotalAmount,
+        hostPayout: breakdown.hostNetPayout,
+        platformRevenue: breakdown.platformRevenue,
+        currencyValid: validateCurrencyRounding(breakdown.buyerTotalAmount),
+        stripeAmount: validateStripeAmount(breakdown.buyerTotalAmount)
+      });
     });
   };
 

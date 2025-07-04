@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, RefreshCw, Euro, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface DAC7Report {
   id: string;
@@ -54,7 +55,7 @@ export const DAC7ReportsManagement = () => {
       if (error) throw error;
       setReports((data || []) as DAC7Report[]);
     } catch (error) {
-      console.error("Error fetching DAC7 reports:", error);
+      frontendLogger.adminAction("Error fetching DAC7 reports", error, { component: 'DAC7ReportsManagement' });
       toast.error("Errore nel caricamento dei report DAC7");
     } finally {
       setIsLoading(false);
@@ -83,7 +84,7 @@ export const DAC7ReportsManagement = () => {
       toast.success(`Report DAC7 generati per l'anno ${year}`);
       fetchDAC7Reports();
     } catch (error) {
-      console.error("Error generating DAC7 reports:", error);
+      frontendLogger.adminAction("Error generating DAC7 reports", error, { component: 'DAC7ReportsManagement' });
       toast.error("Errore nella generazione dei report DAC7");
     } finally {
       setIsGenerating(false);

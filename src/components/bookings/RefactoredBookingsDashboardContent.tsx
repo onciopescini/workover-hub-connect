@@ -5,6 +5,7 @@ import { BookingsDashboardFilters } from './dashboard/BookingsDashboardFilters';
 import { BookingsDashboardContent } from './dashboard/BookingsDashboardContent';
 import { BookingsDashboardError } from './dashboard/BookingsDashboardError';
 import { PaymentSuccessHandler } from './PaymentSuccessHandler';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 export function RefactoredBookingsDashboardContent() {
   const {
@@ -24,7 +25,9 @@ export function RefactoredBookingsDashboardContent() {
   } = useBookingsDashboardState();
 
   if (error) {
-    console.error('🚨 Dashboard error:', error);
+    frontendLogger.bookingDashboard('Dashboard error', error, { 
+      component: 'RefactoredBookingsDashboard' 
+    });
     return <BookingsDashboardError onRefresh={() => refetch()} />;
   }
 

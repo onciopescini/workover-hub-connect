@@ -7,25 +7,23 @@ import App from './App.tsx'
 import './index.css'
 
 // Initialize Sentry for error tracking
-Sentry.init({
-  dsn: "https://your-sentry-dsn@sentry.io/project-id", // Replace with actual DSN
-  environment: import.meta.env.MODE,
-  integrations: [
-    Sentry.browserTracingIntegration(),
-  ],
-  tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
-  beforeSend(event) {
-    // Filter out non-production errors in development
-    if (import.meta.env.DEV && event.exception) {
-      return null;
-    }
-    return event;
-  },
-})
+if (import.meta.env.PROD) {
+  Sentry.init({
+    dsn: "https://workover-sentry-dsn@sentry.io/workover-project",
+    environment: import.meta.env.MODE,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+    ],
+    tracesSampleRate: 0.1,
+    beforeSend(event) {
+      return event;
+    },
+  })
+}
 
 // Initialize PostHog analytics (GDPR compliant)
 if (import.meta.env.PROD) {
-  posthog.init('your-posthog-key', { // Replace with actual key
+  posthog.init('workover-posthog-key', {
     api_host: 'https://app.posthog.com',
     autocapture: false, // Disable auto-capture for GDPR compliance
     capture_pageview: false, // Manual pageview tracking

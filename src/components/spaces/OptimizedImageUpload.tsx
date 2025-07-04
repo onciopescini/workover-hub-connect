@@ -11,6 +11,7 @@ import {
   generateOptimizedImageUrls,
   type ImageProcessingJob 
 } from '@/lib/image-optimization';
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface OptimizedImageUploadProps {
   photoPreviewUrls: string[];
@@ -114,7 +115,7 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
     originalSize: number
   ) => {
     try {
-      console.log('Starting image processing for:', filePath);
+      frontendLogger.imageProcessing('Starting image processing', { filePath, spaceId });
       
       const jobId = await startImageOptimization(filePath, spaceId, originalSize);
       
@@ -162,7 +163,11 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
       // Clean up subscription when component unmounts or image is removed
       return unsubscribe;
     } catch (error) {
-      console.error('Failed to start image processing:', error);
+      frontendLogger.imageProcessing('Failed to start image processing', error, { 
+        component: 'OptimizedImageUpload',
+        filePath, 
+        spaceId: spaceId || undefined 
+      });
       return undefined;
     }
   }, [spaceId]);
@@ -187,7 +192,7 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
                   enableWebP={true}
                   enableResponsive={true}
                   priority={index < 4}
-                  onLoadComplete={() => console.log(`Space photo ${index + 1} loaded`)}
+                  onLoadComplete={() => frontendLogger.componentLoad(`Space photo ${index + 1}`, undefined, { component: 'OptimizedImageUpload' })}
                 />
               </div>
               

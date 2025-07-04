@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Paperclip, Send, Download, FileIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface PrivateMessageListProps {
   chatId: string;
@@ -115,7 +116,10 @@ export function PrivateMessageList({ chatId }: PrivateMessageListProps) {
       setAttachment(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
-      console.error("Error sending private message:", error);
+      frontendLogger.messagingSystem("Error sending private message", error as Error, { 
+        component: 'PrivateMessageList',
+        chatId 
+      });
       toast({
         title: "Errore nell'invio del messaggio",
         description: "Riprova più tardi",

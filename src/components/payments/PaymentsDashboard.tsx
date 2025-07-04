@@ -8,6 +8,7 @@ import { PaymentFilters } from './PaymentFilters';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CreditCard, Loader2, AlertCircle } from "lucide-react";
+import { frontendLogger } from '@/utils/frontend-logger';
 
 interface Payment {
   id: string;
@@ -57,7 +58,10 @@ export function PaymentsDashboard() {
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching payments:', error);
+        frontendLogger.paymentDashboard('Error fetching payments', { 
+          component: 'PaymentsDashboard',
+          error: error.message 
+        });
         throw error;
       }
 
