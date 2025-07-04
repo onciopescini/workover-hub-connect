@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useLogger } from "@/hooks/useLogger";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingFilter } from "./useBookingFilters";
 import { fetchCoworkerBookings } from "./useBookingDataFetcher";
@@ -8,19 +9,23 @@ import { transformCoworkerBookings, applySearchFilter } from "./useBookingTransf
 
 export const useCoworkerBookings = (filters?: BookingFilter) => {
   const { authState } = useAuth();
+  const { debug, error } = useLogger({ context: 'useCoworkerBookings' });
   
   return useQuery({
     queryKey: ['coworker-bookings', authState.user?.id, filters],
     queryFn: async (): Promise<BookingWithDetails[]> => {
       const userId = authState.user?.id;
       
-      console.log('🔍 Coworker bookings query started:', {
+      debug('Coworker bookings query started', {
+        operation: 'fetch_coworker_bookings',
         userId,
         filters
       });
       
       if (!userId) {
-        console.log('❌ No user ID available');
+        debug('No user ID available for coworker bookings', {
+          operation: 'fetch_coworker_bookings_validation'
+        });
         return [];
       }
 
@@ -28,21 +33,38 @@ export const useCoworkerBookings = (filters?: BookingFilter) => {
         // Fetch only coworker bookings (bookings made by the user)
         const coworkerData = await fetchCoworkerBookings(userId, filters);
         
-        console.log('✅ Coworker bookings fetched:', coworkerData?.length || 0);
+        debug('Coworker bookings fetched successfully', {
+          operation: 'fetch_coworker_bookings_success',
+          count: coworkerData?.length || 0,
+          userId
+        });
 
         // Transform the data with error handling
         const transformedBookings = transformCoworkerBookings(coworkerData);
-        console.log('✅ Coworker bookings transformed:', transformedBookings.length);
+        
+        debug('Coworker bookings transformed successfully', {
+          operation: 'transform_coworker_bookings',
+          transformedCount: transformedBookings.length,
+          originalCount: coworkerData?.length || 0
+        });
 
         // Apply search filter if provided
         const filteredBookings = applySearchFilter(transformedBookings, filters?.searchTerm || '');
 
-        console.log('✅ Final coworker bookings count:', filteredBookings.length);
+        debug('Coworker bookings filtered successfully', {
+          operation: 'filter_coworker_bookings',
+          finalCount: filteredBookings.length,
+          searchTerm: filters?.searchTerm
+        });
         
         return filteredBookings;
 
-      } catch (error) {
-        console.error('❌ Error fetching coworker bookings:', error);
+      } catch (fetchError) {
+        error('Error fetching coworker bookings', fetchError as Error, {
+          operation: 'fetch_coworker_bookings_error',
+          userId,
+          filters
+        });
         // Return empty array instead of throwing to prevent UI crashes
         return [];
       }
@@ -54,8 +76,11 @@ export const useCoworkerBookings = (filters?: BookingFilter) => {
     retryDelay: 2000,
     // Add error handling
     meta: {
-      onError: (error: Error) => {
-        console.error('🚨 Coworker bookings query error:', error);
+      onError: (queryError: Error) => {
+        error('Coworker bookings query error', queryError, {
+          operation: 'coworker_bookings_query_error',
+          userId: authState.user?.id
+        });
       }
     }
   });

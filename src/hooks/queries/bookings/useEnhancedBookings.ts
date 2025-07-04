@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useLogger } from "@/hooks/useLogger";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingFilter } from "./useBookingFilters";
 import { fetchCoworkerBookings, fetchHostBookings } from "./useBookingDataFetcher";
@@ -14,6 +15,7 @@ import {
 // Main enhanced bookings query hook
 export const useEnhancedBookings = (filters?: BookingFilter) => {
   const { authState } = useAuth();
+  const { debug, error } = useLogger({ context: 'useEnhancedBookings' });
   
   return useQuery({
     queryKey: ['enhanced-bookings', authState.user?.id, authState.profile?.role, filters],
@@ -21,26 +23,36 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
       const userId = authState.user?.id;
       const userRole = authState.profile?.role;
       
-      console.log('🔍 Enhanced bookings query started:', {
+      debug('Enhanced bookings query started', {
+        operation: 'fetch_enhanced_bookings',
         userId,
         userRole,
         filters
       });
       
       if (!userId) {
-        console.log('❌ No user ID available');
-        throw new Error('User ID not available');
+        const errorMessage = 'User ID not available for enhanced bookings';
+        error('Enhanced bookings validation failed', new Error(errorMessage), {
+          operation: 'fetch_enhanced_bookings_validation'
+        });
+        throw new Error(errorMessage);
       }
 
       try {
         // Fetch both coworker and host bookings in parallel
-        console.log('🔍 Fetching coworker and host bookings...');
+        debug('Fetching coworker and host bookings in parallel', {
+          operation: 'fetch_parallel_bookings',
+          userId,
+          userRole
+        });
+        
         const [coworkerData, hostData] = await Promise.all([
           fetchCoworkerBookings(userId, filters),
           fetchHostBookings(userId, userRole ?? '', filters)
         ]);
 
-        console.log('✅ Raw data fetched:', {
+        debug('Raw booking data fetched successfully', {
+          operation: 'fetch_parallel_bookings_success',
           coworkerBookings: coworkerData?.length || 0,
           hostBookings: hostData?.length || 0
         });
@@ -49,7 +61,8 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         const transformedCoworkerBookings = transformCoworkerBookings(coworkerData);
         const transformedHostBookings = transformHostBookings(hostData);
 
-        console.log('✅ Data transformed:', {
+        debug('Booking data transformed successfully', {
+          operation: 'transform_enhanced_bookings',
           transformedCoworkerBookings: transformedCoworkerBookings.length,
           transformedHostBookings: transformedHostBookings.length
         });
@@ -58,32 +71,46 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         const allBookings = [...transformedCoworkerBookings, ...transformedHostBookings];
         const uniqueBookings = removeDuplicateBookings(allBookings);
 
-        console.log('🔧 After deduplication:', uniqueBookings.length);
+        debug('Booking data deduplicated', {
+          operation: 'deduplicate_enhanced_bookings',
+          totalBeforeDedup: allBookings.length,
+          uniqueBookings: uniqueBookings.length
+        });
 
         // Apply search filter if provided
         const filteredBookings = applySearchFilter(uniqueBookings, filters?.searchTerm || '');
 
-        console.log('✅ Final bookings count:', filteredBookings.length);
+        debug('Enhanced bookings filtered successfully', {
+          operation: 'filter_enhanced_bookings',
+          finalCount: filteredBookings.length,
+          searchTerm: filters?.searchTerm
+        });
         
         // Debug: Log sample booking data
-         if (filteredBookings.length > 0) {
-           const sample = filteredBookings[0];
-           if (sample) {
-             console.log('📋 Sample booking:', {
-               id: sample.id,
-               spaceTitle: sample.space?.title,
-               status: sample.status,
-               userId: sample.user_id,
-               spaceHostId: sample.space?.host_id
-             });
-           }
-         }
+        if (filteredBookings.length > 0) {
+          const sample = filteredBookings[0];
+          if (sample) {
+            debug('Sample enhanced booking data', {
+              operation: 'sample_enhanced_booking',
+              bookingId: sample.id,
+              spaceTitle: sample.space?.title,
+              status: sample.status,
+              userId: sample.user_id,
+              spaceHostId: sample.space?.host_id
+            });
+          }
+        }
 
         return filteredBookings;
 
-      } catch (error) {
-        console.error('❌ Error fetching enhanced bookings:', error);
-        throw error;
+      } catch (fetchError) {
+        error('Error fetching enhanced bookings', fetchError as Error, {
+          operation: 'fetch_enhanced_bookings_error',
+          userId,
+          userRole,
+          filters
+        });
+        throw fetchError;
       }
     },
     enabled: !!authState.user?.id,

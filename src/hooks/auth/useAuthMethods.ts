@@ -99,7 +99,7 @@ export const useAuthMethods = ({
       const errorMessage = signOutError instanceof Error ? signOutError.message : 'Errore durante il logout';
       throw new Error(errorMessage);
     }
-  }, [clearCache]);
+  }, [clearCache, error, currentUser?.id]);
 
   const updateProfile = useCallback(async (updates: Partial<Profile>): Promise<void> => {
     if (!currentUser) throw new Error('User not authenticated');

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useLogger } from "@/hooks/useLogger";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
 import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
 import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
@@ -10,6 +11,7 @@ import { UserRole } from '@/types/bookings/bookings-ui.types';
 
 export const useBookingsDashboardState = () => {
   const { authState } = useAuth();
+  const { debug, error } = useLogger({ context: 'useBookingsDashboardState' });
   const [filters, setFilters] = useState<BookingFilter>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
@@ -51,8 +53,12 @@ export const useBookingsDashboardState = () => {
                spaceAddress.includes(searchLower) ||
                coworkerName.includes(searchLower);
       });
-    } catch (err) {
-      console.error('❌ Error filtering bookings:', err);
+    } catch (filterError) {
+      error('Error filtering bookings in dashboard', filterError as Error, {
+        operation: 'filter_bookings_dashboard',
+        searchTerm,
+        bookingsCount: Array.isArray(bookings) ? bookings.length : 0
+      });
       return bookings;
     }
   }, [bookings, searchTerm]);
@@ -77,8 +83,11 @@ export const useBookingsDashboardState = () => {
         }, 0);
 
       return { total, pending, confirmed, cancelled, totalRevenue };
-    } catch (err) {
-      console.error('❌ Error calculating stats:', err);
+    } catch (statsError) {
+      error('Error calculating booking stats', statsError as Error, {
+        operation: 'calculate_booking_stats',
+        bookingsCount: Array.isArray(bookings) ? bookings.length : 0
+      });
       return { total: 0, pending: 0, confirmed: 0, cancelled: 0, totalRevenue: 0 };
     }
   }, [bookings]);
@@ -93,8 +102,12 @@ export const useBookingsDashboardState = () => {
       } else {
         return booking.status === 'confirmed';
       }
-    } catch (err) {
-      console.error('❌ Error checking chat status:', err);
+    } catch (chatError) {
+      error('Error checking chat status', chatError as Error, {
+        operation: 'check_chat_status',
+        bookingId: booking?.id,
+        status: booking?.status
+      });
       return false;
     }
   }, []);
@@ -121,8 +134,12 @@ export const useBookingsDashboardState = () => {
       setMessageBookingId(bookingId);
       setMessageSpaceTitle(spaceTitle);
       setMessageDialogOpen(true);
-    } catch (err) {
-      console.error('❌ Error opening message dialog:', err);
+    } catch (dialogError) {
+      error('Error opening message dialog', dialogError as Error, {
+        operation: 'open_message_dialog',
+        bookingId,
+        spaceTitle
+      });
     }
   }, [bookings, isChatEnabled]);
 
@@ -131,8 +148,11 @@ export const useBookingsDashboardState = () => {
       if (!booking) return;
       setSelectedBooking(booking);
       setCancelDialogOpen(true);
-    } catch (err) {
-      console.error('❌ Error opening cancel dialog:', err);
+    } catch (dialogError) {
+      error('Error opening cancel dialog', dialogError as Error, {
+        operation: 'open_cancel_dialog',
+        bookingId: booking?.id
+      });
     }
   }, []);
 
@@ -149,8 +169,12 @@ export const useBookingsDashboardState = () => {
       });
       setCancelDialogOpen(false);
       setSelectedBooking(null);
-    } catch (error) {
-      console.error('❌ Error cancelling booking:', error);
+    } catch (cancelError) {
+      error('Error cancelling booking', cancelError as Error, {
+        operation: 'cancel_booking',
+        bookingId: selectedBooking?.id,
+        userRole
+      });
     }
   }, [selectedBooking, getUserRole, cancelBookingMutation]);
 
@@ -165,8 +189,11 @@ export const useBookingsDashboardState = () => {
         }
         return newFilters;
       });
-    } catch (err) {
-      console.error('❌ Error setting status filter:', err);
+    } catch (filterError) {
+      error('Error setting status filter', filterError as Error, {
+        operation: 'set_status_filter',
+        status
+      });
     }
   }, []);
 
@@ -181,8 +208,11 @@ export const useBookingsDashboardState = () => {
         }
         return newFilters;
       });
-    } catch (err) {
-      console.error('❌ Error setting date range filter:', err);
+    } catch (filterError) {
+      error('Error setting date range filter', filterError as Error, {
+        operation: 'set_date_range_filter',
+        range
+      });
     }
   }, []);
 
@@ -190,8 +220,10 @@ export const useBookingsDashboardState = () => {
     try {
       setFilters({});
       setSearchTerm("");
-    } catch (err) {
-      console.error('❌ Error clearing filters:', err);
+    } catch (clearError) {
+      error('Error clearing filters', clearError as Error, {
+        operation: 'clear_filters'
+      });
     }
   }, []);
 
