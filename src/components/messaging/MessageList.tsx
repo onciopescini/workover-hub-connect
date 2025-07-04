@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Paperclip, Send, Download, FileIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { useLogger } from "@/hooks/useLogger";
 
 interface MessageListProps {
   bookingId: string;
@@ -17,6 +18,7 @@ interface MessageListProps {
 
 export function MessageList({ bookingId }: MessageListProps) {
   const { authState } = useAuth();
+  const { error: logError } = useLogger({ context: 'MessageList' });
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -112,7 +114,11 @@ export function MessageList({ bookingId }: MessageListProps) {
       setAttachment(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
-      console.error("Error sending message:", error);
+      logError('Error sending message', error as Error, {
+        operation: 'send_message',
+        bookingId,
+        hasAttachment: !!attachment
+      });
       toast.error("Errore nell'invio del messaggio");
     } finally {
       setIsLoading(false);

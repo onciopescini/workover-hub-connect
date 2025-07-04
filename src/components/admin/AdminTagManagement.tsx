@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, Search, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 export function AdminTagManagement() {
+  const { error: logError } = useLogger({ context: 'AdminTagManagement' });
   const [tags, setTags] = useState<GlobalTag[]>([]);
   const [filteredTags, setFilteredTags] = useState<GlobalTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +33,9 @@ export function AdminTagManagement() {
       const tagsData = await getAllTags();
       setTags(tagsData);
     } catch (error) {
-      console.error("Error fetching tags:", error);
+      logError('Error fetching tags', error as Error, {
+        operation: 'fetch_tags'
+      });
       toast.error("Errore nel caricamento dei tag");
     } finally {
       setIsLoading(false);
@@ -59,7 +63,11 @@ export function AdminTagManagement() {
       await approveTag(tagId);
       await fetchTags();
     } catch (error) {
-      console.error("Error approving tag:", error);
+      logError('Error approving tag', error as Error, {
+        operation: 'approve_tag',
+        tagId
+      });
+      toast.error('Errore nell\'approvazione del tag');
     }
   };
 

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MapPin, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useLogger } from "@/hooks/useLogger";
 
 interface AddressSuggestion {
   id: string;
@@ -29,6 +30,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   error,
   disabled = false
 }) => {
+  const { error: logError } = useLogger({ context: 'AddressAutocomplete' });
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -42,14 +44,18 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       try {
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         if (error) {
-          console.error('Error fetching Mapbox token:', error);
+          logError('Error fetching Mapbox token', error as Error, {
+            operation: 'fetch_mapbox_token'
+          });
           return;
         }
         if (data?.token) {
           setMapboxToken(data.token);
         }
       } catch (err) {
-        console.error('Error:', err);
+        logError('Error fetching Mapbox token', err as Error, {
+          operation: 'fetch_mapbox_token_exception'
+        });
       }
     };
 
@@ -77,7 +83,10 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
       setSuggestions(data.features || []);
       setShowSuggestions(true);
     } catch (error) {
-      console.error('Error fetching address suggestions:', error);
+      logError('Error fetching address suggestions', error as Error, {
+        operation: 'fetch_address_suggestions',
+        query
+      });
       setSuggestions([]);
     } finally {
       setIsLoading(false);

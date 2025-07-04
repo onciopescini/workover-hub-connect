@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Eye, Plus, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 
 interface AccessibilityAudit {
   id: string;
@@ -32,6 +33,7 @@ interface AccessibilityViolation {
 }
 
 export const AccessibilityAuditManagement = () => {
+  const { error: logError } = useLogger({ context: 'AccessibilityAuditManagement' });
   const [audits, setAudits] = useState<AccessibilityAudit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAuditType, setSelectedAuditType] = useState<string>("all");
@@ -56,7 +58,9 @@ export const AccessibilityAuditManagement = () => {
       if (error) throw error;
       setAudits((data || []) as AccessibilityAudit[]);
     } catch (error) {
-      console.error("Error fetching accessibility audits:", error);
+      logError('Error fetching accessibility audits', error as Error, {
+        operation: 'fetch_accessibility_audits'
+      });
       toast.error("Errore nel caricamento degli audit di accessibilità");
     } finally {
       setIsLoading(false);
@@ -93,7 +97,11 @@ export const AccessibilityAuditManagement = () => {
       setNewAudit({ page_url: "", score: 100, violations: "" });
       fetchAudits();
     } catch (error) {
-      console.error("Error creating accessibility audit:", error);
+      logError('Error creating accessibility audit', error as Error, {
+        operation: 'create_accessibility_audit',
+        pageUrl: newAudit.page_url,
+        score: newAudit.score
+      });
       toast.error("Errore nella creazione dell'audit");
     }
   };

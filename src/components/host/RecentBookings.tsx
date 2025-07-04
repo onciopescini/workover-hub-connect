@@ -8,6 +8,7 @@ import { Calendar, MapPin, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useLogger } from "@/hooks/useLogger";
 
 interface RecentBookingsProps {
   bookings: BookingWithDetails[];
@@ -15,6 +16,7 @@ interface RecentBookingsProps {
 }
 
 export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProps) {
+  const { error: logError } = useLogger({ context: 'RecentBookings' });
   const [loadingBookings, setLoadingBookings] = useState<Set<string>>(new Set());
 
   const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {
@@ -41,7 +43,11 @@ export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProp
         onBookingUpdate();
       }
     } catch (error) {
-      console.error('Error updating booking:', error);
+      logError('Error updating booking', error as Error, {
+        operation: 'update_booking',
+        bookingId,
+        action
+      });
       toast.error('Errore nell\'aggiornamento della prenotazione');
     } finally {
       setLoadingBookings(prev => {

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { useLogger } from "@/hooks/useLogger";
 
 interface BookingApprovalCardProps {
   booking: BookingWithDetails;
@@ -17,6 +18,7 @@ interface BookingApprovalCardProps {
 }
 
 export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprovalCardProps) => {
+  const { error: logError } = useLogger({ context: 'BookingApprovalCard' });
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
 
@@ -52,7 +54,11 @@ export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprov
       toast.success('Prenotazione approvata con successo!');
       onApprovalUpdate();
     } catch (error) {
-      console.error('Error approving booking:', error);
+      logError('Error approving booking', error as Error, {
+        operation: 'approve_booking',
+        bookingId: booking.id,
+        spaceTitle: booking.space?.title
+      });
       toast.error('Errore nell\'approvazione della prenotazione');
     } finally {
       setIsApproving(false);
@@ -94,7 +100,11 @@ export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprov
       toast.success('Prenotazione rifiutata');
       onApprovalUpdate();
     } catch (error) {
-      console.error('Error rejecting booking:', error);
+      logError('Error rejecting booking', error as Error, {
+        operation: 'reject_booking',
+        bookingId: booking.id,
+        spaceTitle: booking.space?.title
+      });
       toast.error('Errore nel rifiuto della prenotazione');
     } finally {
       setIsRejecting(false);

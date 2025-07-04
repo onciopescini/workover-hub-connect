@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Euro, Shield, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { BookingForm } from './BookingForm';
+import { useLogger } from "@/hooks/useLogger";
 
 interface StickyBookingCardProps {
   space: {
@@ -27,15 +28,17 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   onBookingSuccess,
   onBookingError
 }) => {
+  const { debug } = useLogger({ context: 'StickyBookingCard' });
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [selectedDays, setSelectedDays] = useState(1);
 
-  // Debug logging per il tipo di conferma - ENSURE confirmation_type is passed correctly
+  // Confirmation type handling
   const confirmationType = space.confirmation_type || 'host_approval';
   const isInstantBooking = confirmationType === 'instant';
   
-  console.log('🔍 StickyBookingCard - Space confirmation type:', {
+  debug('Space confirmation type validation', {
+    operation: 'validate_confirmation_type',
     spaceId: space.id,
     confirmationType,
     isInstantBooking,

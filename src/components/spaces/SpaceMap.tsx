@@ -6,6 +6,7 @@ import { Space } from '@/types/space';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceMapPreview } from './SpaceMapPreview';
 import { createRoot } from 'react-dom/client';
+import { useLogger } from "@/hooks/useLogger";
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -20,6 +21,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
   onSpaceClick,
   highlightedSpaceId 
 }) => {
+  const { error: logError } = useLogger({ context: 'SpaceMap' });
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -42,7 +44,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) {
-          console.error('Error fetching Mapbox token:', error);
+          logError('Error fetching Mapbox token', error as Error, {
+            operation: 'fetch_mapbox_token'
+          });
           setError('Impossibile caricare la mappa');
           return;
         }
@@ -53,7 +57,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
           setError('Token Mapbox non configurato');
         }
       } catch (err) {
-        console.error('Error:', err);
+        logError('Error fetching Mapbox token', err as Error, {
+          operation: 'fetch_mapbox_token_exception'
+        });
         setError('Errore nel caricamento della mappa');
       } finally {
         setIsLoadingToken(false);
@@ -162,12 +168,15 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
                     popups.current.splice(index, 1);
                   }
                 } catch (error) {
-                  console.warn('Error cleaning up popup:', error);
+                  // Silently handle popup cleanup errors to avoid noise
                 }
               });
             }
           } catch (error) {
-            console.error('Error creating popup:', error);
+            logError('Error creating popup', error as Error, {
+              operation: 'create_popup',
+              spaceId: space.id
+            });
           }
         });
 
@@ -179,7 +188,10 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
           markers.current[space.id] = marker;
         }
       } catch (error) {
-        console.error(`Failed to add marker for space ${space.id}:`, error);
+        logError('Failed to add marker for space', error as Error, {
+          operation: 'add_marker',
+          spaceId: space.id
+        });
       }
     });
   }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId]);
@@ -202,7 +214,10 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
         )
         .addTo(map.current);
     } catch (error) {
-      console.error('Error adding user location marker:', error);
+      logError('Error adding user location marker', error as Error, {
+        operation: 'add_user_location_marker',
+        userLocation
+      });
     }
   }, [userLocation, mapReady]);
 
