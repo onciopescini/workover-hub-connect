@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube } from 'lucide-react';
+import { useLogger } from '@/hooks/useLogger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
 
 export const OptimizedUnifiedHeader = () => {
+  const { error } = useLogger({ context: 'OptimizedUnifiedHeader' });
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,10 +84,15 @@ export const OptimizedUnifiedHeader = () => {
   const handleSignOut = useCallback(async () => {
     try {
       await signOut();
-    } catch (error) {
-      console.error('Sign out error:', error);
+    } catch (signOutError) {
+      error('Error during sign out from header', signOutError as Error, { 
+        operation: 'header_sign_out',
+        userId: authState.profile?.id,
+        userRole: authState.profile?.role,
+        currentPath: location.pathname
+      });
     }
-  }, [signOut]);
+  }, [signOut, error, authState.profile, location.pathname]);
 
   // Ottimizzato mobile menu toggle
   const toggleMobileMenu = useCallback(() => {

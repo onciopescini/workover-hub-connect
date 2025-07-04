@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLogger } from "@/hooks/useLogger";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,7 @@ export function AppLayout({
   showBackButton = true, 
   customBackUrl 
 }: AppLayoutProps) {
+  const { error } = useLogger({ context: 'AppLayout' });
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -73,8 +75,13 @@ export function AppLayout({
   const handleLogout = async () => {
     try {
       await signOut();
-    } catch (error) {
-      console.error("Error during logout:", error);
+    } catch (logoutError) {
+      error('Error during user logout', logoutError as Error, { 
+        operation: 'user_logout',
+        userId: authState.profile?.id,
+        userRole: authState.profile?.role,
+        currentPath: location.pathname
+      });
     }
   };
 

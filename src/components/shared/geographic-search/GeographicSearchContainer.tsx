@@ -5,6 +5,7 @@ import { useMapboxGeocoding } from '@/hooks/useMapboxGeocoding';
 import { LocationInput } from './LocationInput';
 import { LocationSuggestionsList } from './LocationSuggestionsList';
 import { cn } from '@/lib/utils';
+import { useLogger } from '@/hooks/useLogger';
 
 interface GeocodeResult {
   place_name: string;
@@ -26,6 +27,7 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
   placeholder = "Cerca per città o indirizzo...",
   className = ""
 }) => {
+  const { error } = useLogger({ context: 'GeographicSearchContainer' });
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const searchQuery = value !== undefined ? value : internalSearchQuery;
   
@@ -71,8 +73,12 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
         const results = await geocodeAddress(inputValue);
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
-      } catch (error) {
-        console.error('Search error:', error);
+      } catch (searchError) {
+        error('Error during geographic search in container', searchError as Error, { 
+          operation: 'container_search_address',
+          query: inputValue,
+          queryLength: inputValue.length
+        });
         setSuggestions([]);
         setShowSuggestions(false);
       } finally {
@@ -132,8 +138,12 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
           navigate(`/spaces?city=${encodeURIComponent(searchQuery.trim())}`);
         }
       }
-    } catch (error) {
-      console.error('Search submit error:', error);
+    } catch (submitError) {
+      error('Error submitting search in container', submitError as Error, { 
+        operation: 'container_search_submit',
+        query: searchQuery.trim(),
+        hasSuggestions: suggestions.length > 0
+      });
       if (onChange) {
         onChange(searchQuery.trim());
       } else if (onLocationSelect) {
@@ -180,25 +190,33 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
           } else if (!onChange) {
             navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
           }
-        } catch (error) {
-          console.error('Error getting location name:', error);
+        } catch (locationError) {
+          error('Error getting location name in container', locationError as Error, { 
+            operation: 'container_reverse_geocode',
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
           alert('Errore nel ottenere la posizione');
         } finally {
           setIsGettingLocation(false);
         }
       },
-      (error) => {
-        console.error('Geolocation error:', error);
+      (geolocationError) => {
+        error('Geolocation error in container', new Error(geolocationError.message), { 
+          operation: 'container_get_location',
+          errorCode: geolocationError.code,
+          errorMessage: geolocationError.message
+        });
         let errorMessage = 'Errore nel accedere alla posizione';
         
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
+        switch (geolocationError.code) {
+          case geolocationError.PERMISSION_DENIED:
             errorMessage = 'Permesso di geolocalizzazione negato';
             break;
-          case error.POSITION_UNAVAILABLE:
+          case geolocationError.POSITION_UNAVAILABLE:
             errorMessage = 'Posizione non disponibile';
             break;
-          case error.TIMEOUT:
+          case geolocationError.TIMEOUT:
             errorMessage = 'Timeout della richiesta di posizione';
             break;
         }

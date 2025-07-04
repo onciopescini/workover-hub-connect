@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
 import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale } from "lucide-react";
+import { useLogger } from '@/hooks/useLogger';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -10,14 +11,19 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
+  const { error } = useLogger({ context: 'AdminLayout' });
   const navigate = useNavigate();
   const { authState, signOut } = useAuth();
 
   const handleLogout = async () => {
     try {
       await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
+    } catch (logoutError) {
+      error('Error signing out admin user', logoutError as Error, { 
+        operation: 'admin_logout',
+        adminId: authState.profile?.id,
+        currentPage
+      });
     }
   };
 

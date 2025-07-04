@@ -35,7 +35,7 @@ const AvatarImage = React.forwardRef<
     fallbackSrc={fallbackSrc ?? '/images/placeholder.png'}
     quality={0.9}
     className={cn("aspect-square h-full w-full rounded-full", className)}
-    onLoadComplete={() => console.log('Avatar image loaded')}
+    onLoadComplete={() => {}} // Avatar load tracking removed for production
     {...props}
   />
 ))
