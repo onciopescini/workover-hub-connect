@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔵 Review notifications cron job started');
+    ErrorHandler.logInfo('Review notifications cron job started');
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -41,11 +42,13 @@ serve(async (req) => {
       .lte('booking_date', twentyFourHoursAgo.toISOString().split('T')[0]);
 
     if (bookingsError) {
-      console.error('🔴 Error fetching eligible bookings:', bookingsError);
+      ErrorHandler.logError('Error fetching eligible bookings', bookingsError);
       throw bookingsError;
     }
 
-    console.log(`🔵 Found ${eligibleBookings?.length || 0} eligible bookings`);
+    ErrorHandler.logInfo('Found eligible bookings for review notifications', {
+      count: eligibleBookings?.length || 0
+    });
 
     for (const booking of eligibleBookings || []) {
       // Controlla se esiste già una notifica per questa prenotazione
@@ -58,7 +61,7 @@ serve(async (req) => {
         .single();
 
       if (existingNotification) {
-        console.log(`🔵 Notification already sent for booking ${booking.id}`);
+        ErrorHandler.logInfo('Notification already sent for booking', { bookingId: booking.id });
         continue;
       }
 
@@ -79,9 +82,11 @@ serve(async (req) => {
         });
 
       if (notificationError) {
-        console.error(`🔴 Error sending notification for booking ${booking.id}:`, notificationError);
+        ErrorHandler.logError('Error sending coworker review notification', notificationError, {
+          bookingId: booking.id
+        });
       } else {
-        console.log(`✅ Review notification sent for booking ${booking.id}`);
+        ErrorHandler.logSuccess('Review notification sent to coworker', { bookingId: booking.id });
       }
 
       // Invia anche notifica all'host per recensire il coworker
@@ -101,9 +106,11 @@ serve(async (req) => {
         });
 
       if (hostNotificationError) {
-        console.error(`🔴 Error sending host notification for booking ${booking.id}:`, hostNotificationError);
+        ErrorHandler.logError('Error sending host review notification', hostNotificationError, {
+          bookingId: booking.id
+        });
       } else {
-        console.log(`✅ Host review notification sent for booking ${booking.id}`);
+        ErrorHandler.logSuccess('Review notification sent to host', { bookingId: booking.id });
       }
     }
 
@@ -116,7 +123,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('🔴 Error in review notifications cron:', error);
+    ErrorHandler.logError('Error in review notifications cron', error, {
+      errorMessage: error.message,
+      stack: error.stack
+    });
     
     return new Response(
       JSON.stringify({ 

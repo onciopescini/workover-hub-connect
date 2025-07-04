@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -146,7 +147,7 @@ serve(async (req) => {
   try {
     const { type, to, data }: EmailRequest = await req.json();
 
-    console.log(`Sending email type: ${type} to: ${to}`);
+    ErrorHandler.logInfo('Sending email', { type, to, hasData: !!data });
 
     if (!emailTemplates[type as keyof typeof emailTemplates]) {
       throw new Error(`Unknown email type: ${type}`);
@@ -161,7 +162,11 @@ serve(async (req) => {
       html: template.html,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    ErrorHandler.logSuccess('Email sent successfully', { 
+      type,
+      to,
+      emailId: emailResponse.data?.id 
+    });
 
     return new Response(JSON.stringify({ success: true, id: emailResponse.data?.id }), {
       status: 200,
@@ -172,7 +177,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    ErrorHandler.logError('Error sending email', error, {
+      errorMessage: error.message,
+      stack: error.stack
+    });
     return new Response(
       JSON.stringify({ error: error.message }),
       {

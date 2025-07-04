@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ serve(async (req) => {
   try {
     const { user_id, subject, message, category = 'other' }: TicketRequest = await req.json();
 
-    console.log(`Creating support ticket for user: ${user_id}`);
+    ErrorHandler.logInfo('Creating support ticket', { user_id, subject, category });
 
     // Validate required fields
     if (!user_id || !subject || !message) {
@@ -42,14 +43,14 @@ serve(async (req) => {
       .single();
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+      ErrorHandler.logWarning('Error fetching user profile', profileError, { user_id });
     }
 
     // Get user email from auth
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
     
     if (authError) {
-      console.error('Error fetching user auth data:', authError);
+      ErrorHandler.logWarning('Error fetching user auth data', authError, { user_id });
     }
 
     // Create support ticket
@@ -68,7 +69,7 @@ serve(async (req) => {
       throw ticketError;
     }
 
-    console.log('Support ticket created:', ticket.id);
+    ErrorHandler.logSuccess('Support ticket created', { ticketId: ticket.id, user_id });
 
     // Create user notification
     try {
@@ -84,7 +85,9 @@ serve(async (req) => {
           }
         });
     } catch (notificationError) {
-      console.error('Failed to create user notification:', notificationError);
+      ErrorHandler.logWarning('Failed to create user notification', notificationError, {
+        ticketId: ticket.id
+      });
     }
 
     // Send email notification to admin
@@ -106,7 +109,9 @@ serve(async (req) => {
         }
       });
     } catch (emailError) {
-      console.error('Failed to send admin email notification:', emailError);
+      ErrorHandler.logWarning('Failed to send admin email notification', emailError, {
+        ticketId: ticket.id
+      });
     }
 
     // Send confirmation email to user
@@ -124,7 +129,10 @@ serve(async (req) => {
           }
         });
       } catch (emailError) {
-        console.error('Failed to send user confirmation email:', emailError);
+        ErrorHandler.logWarning('Failed to send user confirmation email', emailError, {
+          ticketId: ticket.id,
+          userEmail: authUser.user.email
+        });
       }
     }
 
@@ -138,7 +146,10 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error('Error creating support ticket:', error);
+    ErrorHandler.logError('Error creating support ticket', error, {
+      errorMessage: error.message,
+      stack: error.stack
+    });
     return new Response(
       JSON.stringify({ error: error.message }),
       {

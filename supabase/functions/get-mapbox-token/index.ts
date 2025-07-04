@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,10 +17,12 @@ serve(async (req) => {
     // Cambiato il nome della variabile per matchare il secret in Supabase
     const mapboxToken = Deno.env.get("NEXT_PUBLIC_MAPBOX_TOKEN");
     
-    console.log("Mapbox token check:", mapboxToken ? "Token found" : "Token not found");
+    ErrorHandler.logInfo('Mapbox token check', { 
+      hasToken: !!mapboxToken 
+    });
     
     if (!mapboxToken) {
-      console.error("NEXT_PUBLIC_MAPBOX_TOKEN environment variable not set");
+      ErrorHandler.logError('NEXT_PUBLIC_MAPBOX_TOKEN environment variable not set', null);
       return new Response(
         JSON.stringify({ error: "Mapbox token not configured" }),
         {
@@ -29,7 +32,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("Returning token successfully");
+    ErrorHandler.logSuccess('Returning Mapbox token successfully');
     return new Response(
       JSON.stringify({ token: mapboxToken }),
       {
@@ -37,7 +40,10 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error in get-mapbox-token function:", error);
+    ErrorHandler.logError('Error in get-mapbox-token function', error, {
+      errorMessage: error.message,
+      stack: error.stack
+    });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       {

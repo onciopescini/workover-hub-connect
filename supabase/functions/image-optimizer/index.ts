@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,11 @@ serve(async (req) => {
 
     const { filePath, spaceId, originalSize }: ImageProcessingRequest = await req.json()
 
-    console.log('Processing image:', { filePath, spaceId, originalSize })
+    ErrorHandler.logInfo('Processing image optimization request', { 
+      filePath, 
+      spaceId, 
+      originalSize 
+    });
 
     // Get user from authorization header
     const authHeader = req.headers.get('Authorization')
@@ -75,7 +80,10 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Image optimization error:', error)
+    ErrorHandler.logError('Image optimization error', error, {
+      errorMessage: error.message,
+      stack: error.stack
+    });
     return new Response(
       JSON.stringify({ 
         success: false, 
@@ -96,7 +104,7 @@ async function processImageAsync(
   userId: string
 ) {
   try {
-    console.log('Starting async image processing for job:', jobId)
+    ErrorHandler.logInfo('Starting async image processing', { jobId });
 
     // Update job status to processing
     await supabaseClient.rpc('update_image_processing_job', {
@@ -149,15 +157,18 @@ async function processImageAsync(
       compression_ratio_param: compressionRatio
     })
 
-    console.log('Image processing completed:', {
+    ErrorHandler.logSuccess('Image processing completed', {
       jobId,
       originalSize,
       optimizedSize,
       compressionRatio: `${compressionRatio.toFixed(2)}%`
-    })
+    });
 
   } catch (error) {
-    console.error('Background image processing failed:', error)
+    ErrorHandler.logError('Background image processing failed', error, {
+      jobId,
+      errorMessage: error.message
+    });
     
     // Update job as failed
     await supabaseClient.rpc('update_image_processing_job', {
@@ -189,7 +200,9 @@ async function convertToWebP(imageBuffer: ArrayBuffer): Promise<ArrayBuffer> {
     
     return webpBuffer.buffer
   } catch (error) {
-    console.error('WebP conversion failed:', error)
+    ErrorHandler.logError('WebP conversion failed', error, {
+      errorMessage: error.message
+    });
     throw new Error(`Image conversion failed: ${error.message}`)
   }
 }
