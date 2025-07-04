@@ -12,9 +12,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertTriangle, Plus, Clock, CheckCircle, Shield, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLogger } from "@/hooks/useLogger";
 import type { DataBreach } from "@/types/gdpr";
 
 export const DataBreachManagement = () => {
+  const { error } = useLogger({ context: 'DataBreachManagement' });
   const [breaches, setBreaches] = useState<DataBreach[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -41,8 +43,8 @@ export const DataBreachManagement = () => {
 
       if (error) throw error;
       setBreaches((data || []) as DataBreach[]);
-    } catch (error) {
-      console.error("Error fetching breaches:", error);
+    } catch (fetchError) {
+      error("Error fetching breaches", fetchError as Error);
       toast.error("Errore nel caricamento delle violazioni");
     } finally {
       setIsLoading(false);
@@ -82,8 +84,12 @@ export const DataBreachManagement = () => {
         impact_assessment: ""
       });
       fetchBreaches();
-    } catch (error) {
-      console.error("Error creating breach:", error);
+    } catch (createError) {
+      error("Error creating breach", createError as Error, { 
+        breachNature: newBreach.nature_of_breach,
+        affectedCount: newBreach.affected_users_count,
+        severity: newBreach.severity 
+      });
       toast.error("Errore nella registrazione della violazione");
     }
   };
@@ -103,8 +109,8 @@ export const DataBreachManagement = () => {
 
       toast.success("Stato violazione aggiornato");
       fetchBreaches();
-    } catch (error) {
-      console.error("Error updating breach status:", error);
+    } catch (updateError) {
+      error("Error updating breach status", updateError as Error, { breachId, status });
       toast.error("Errore nell'aggiornamento dello stato");
     }
   };
@@ -123,8 +129,8 @@ export const DataBreachManagement = () => {
 
       toast.success("Notifica alle autorità registrata");
       fetchBreaches();
-    } catch (error) {
-      console.error("Error marking authority notified:", error);
+    } catch (notifyError) {
+      error("Error marking authority notified", notifyError as Error, { breachId });
       toast.error("Errore nella registrazione della notifica");
     }
   };
