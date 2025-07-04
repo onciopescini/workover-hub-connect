@@ -10,9 +10,11 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLogger } from "@/hooks/useLogger";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function StripeSetup() {
   const { authState } = useAuth();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -187,8 +189,13 @@ export function StripeSetup() {
             previousStatus: stripeConnected,
             newStatus: profile.stripe_connected
           });
-          toast.success("Stato Stripe aggiornato!");
-          // Trigger refresh del context
+          
+          // Invalidate host progress cache to trigger immediate refresh
+          await queryClient.invalidateQueries({ queryKey: ['host-progress'] });
+          
+          toast.success("Setup Stripe completato! Progresso aggiornato.");
+          
+          // Trigger refresh del context without full page reload
           window.location.reload();
         } else if (!profile?.stripe_connected) {
           logger.info("Stripe setup still in progress", {

@@ -13,11 +13,14 @@ interface HostProgressData {
   hasPhotos: boolean;
 }
 
-export const useHostProgress = () => {
+export const useHostProgress = (options?: { 
+  refetchOnWindowFocus?: boolean;
+  staleTime?: number;
+}) => {
   const { authState } = useAuth();
   const userId = authState.user?.id;
 
-  return useQuery({
+  return useQuery<HostProgressData>({
     queryKey: ['host-progress', userId],
     queryFn: async (): Promise<HostProgressData> => {
       if (!userId) throw new Error('User not authenticated');
@@ -76,6 +79,9 @@ export const useHostProgress = () => {
       };
     },
     enabled: !!userId && authState.profile?.role === 'host',
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes by default, configurable
+    refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
+    // Aggiorna più frequentemente quando ci sono operazioni critiche in corso
+    refetchInterval: (userId && !authState.profile?.stripe_connected) ? 30 * 1000 : false, // 30 seconds polling se Stripe non è ancora connesso
   });
 };

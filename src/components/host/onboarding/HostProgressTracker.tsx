@@ -33,7 +33,10 @@ export const HostProgressTracker: React.FC = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
   const profile = authState.profile;
-  const { data: progressData, isLoading } = useHostProgress();
+  const { data: progressData, isLoading, refetch } = useHostProgress({
+    refetchOnWindowFocus: true,
+    staleTime: 1 * 60 * 1000 // 1 minute per Stripe setup critici
+  });
 
   if (isLoading) {
     return <div className="animate-pulse space-y-4">
@@ -47,7 +50,7 @@ export const HostProgressTracker: React.FC = () => {
       id: 'profile',
       title: 'Profilo Completo',
       description: 'Completa tutte le informazioni del profilo',
-      completed: progressData?.profileComplete || false,
+      completed: progressData?.profileComplete ?? false,
       required: true,
       action: () => navigate('/profile/edit'),
       actionLabel: 'Completa Profilo'
@@ -56,7 +59,7 @@ export const HostProgressTracker: React.FC = () => {
       id: 'stripe',
       title: 'Setup Pagamenti',
       description: 'Configura Stripe per ricevere pagamenti',
-      completed: progressData?.stripeConnected || false,
+      completed: progressData?.stripeConnected ?? false,
       required: true,
       action: () => navigate('/host/dashboard'),
       actionLabel: 'Configura Stripe'
@@ -65,7 +68,7 @@ export const HostProgressTracker: React.FC = () => {
       id: 'first_space',
       title: 'Primo Spazio',
       description: 'Pubblica il tuo primo spazio',
-      completed: (progressData?.publishedSpacesCount || 0) > 0,
+      completed: (progressData?.publishedSpacesCount ?? 0) > 0,
       required: true,
       action: () => navigate('/host/space/new'),
       actionLabel: 'Crea Spazio'
@@ -74,7 +77,7 @@ export const HostProgressTracker: React.FC = () => {
       id: 'photos',
       title: 'Foto Professionali',
       description: 'Aggiungi foto di qualità ai tuoi spazi',
-      completed: progressData?.hasPhotos || false,
+      completed: progressData?.hasPhotos ?? false,
       required: false,
       action: () => navigate('/host/spaces'),
       actionLabel: 'Aggiungi Foto'
@@ -83,7 +86,7 @@ export const HostProgressTracker: React.FC = () => {
       id: 'availability',
       title: 'Disponibilità',
       description: 'Imposta orari e disponibilità',
-      completed: (progressData?.publishedSpacesCount || 0) > 0,
+      completed: (progressData?.publishedSpacesCount ?? 0) > 0,
       required: false,
       action: () => navigate('/host/spaces'),
       actionLabel: 'Imposta Orari'
@@ -116,8 +119,8 @@ export const HostProgressTracker: React.FC = () => {
       title: 'Prima Prenotazione',
       description: 'Ricevi la tua prima prenotazione',
       icon: Target,
-      achieved: (progressData?.totalBookings || 0) > 0,
-      progress: Math.min(progressData?.totalBookings || 0, 1),
+      achieved: (progressData?.totalBookings ?? 0) > 0,
+      progress: Math.min(progressData?.totalBookings ?? 0, 1),
       target: 1,
       reward: 'Commissione ridotta per 30 giorni'
     },
@@ -126,8 +129,8 @@ export const HostProgressTracker: React.FC = () => {
       title: 'Top Host',
       description: 'Raggiungi 10 prenotazioni',
       icon: Zap,
-      achieved: (progressData?.completedBookings || 0) >= 10,
-      progress: Math.min(progressData?.completedBookings || 0, 10),
+      achieved: (progressData?.completedBookings ?? 0) >= 10,
+      progress: Math.min(progressData?.completedBookings ?? 0, 10),
       target: 10,
       reward: 'Badge Top Host + Visibilità Premium'
     }
