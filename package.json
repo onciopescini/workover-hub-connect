@@ -13,7 +13,11 @@
     "test:ui": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "console-cleanup": "ts-node scripts/console-cleanup/index.ts scan",
+    "console-cleanup:fix": "ts-node scripts/console-cleanup/index.ts scan --fix", 
+    "console-cleanup:report": "ts-node scripts/console-cleanup/index.ts scan --output cleanup-report.md"
+
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
