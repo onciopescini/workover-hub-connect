@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users } from "lucide-react";
+import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { StripeSetup } from "@/components/host/StripeSetup";
 import { toast } from "sonner";
@@ -17,9 +17,10 @@ interface HostOnboardingWizardProps {
 }
 
 export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onComplete }) => {
-  const { authState, updateProfile } = useAuth();
+  const { authState, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isProcessingStripeReturn, setIsProcessingStripeReturn] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
@@ -37,6 +38,39 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   ];
 
   const progress = (currentStep / steps.length) * 100;
+
+  // Handle return from Stripe setup
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('stripe_setup') === 'success' && currentStep === 2) {
+      setIsProcessingStripeReturn(true);
+      handleStripeReturn();
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [currentStep]);
+
+  const handleStripeReturn = async () => {
+    try {
+      // Force refresh of profile data
+      await refreshProfile?.();
+      
+      // Wait a moment for the update to propagate
+      setTimeout(() => {
+        if (authState.profile?.stripe_connected) {
+          toast.success("Stripe configurato! Procedendo al prossimo step...");
+          setCurrentStep(3); // Advance to Localizzazione step
+        } else {
+          toast.info("Verifica in corso... Riprova tra un momento.");
+        }
+        setIsProcessingStripeReturn(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error handling Stripe return:", error);
+      toast.error("Errore nel processare il ritorno da Stripe");
+      setIsProcessingStripeReturn(false);
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -75,7 +109,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       case 1:
         return formData.businessName && formData.businessType;
       case 2:
-        return authState.profile?.stripe_connected;
+        return authState.profile?.stripe_connected || isProcessingStripeReturn;
       case 3:
         return formData.businessAddress;
       case 4:
@@ -162,9 +196,26 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
                 Questo passaggio è obbligatorio per diventare host.
               </p>
               
-              <StripeSetup />
+              <StripeSetup 
+                context="onboarding" 
+                onComplete={() => {
+                  toast.success("Setup Stripe completato!");
+                  setTimeout(() => setCurrentStep(3), 1000);
+                }}
+              />
               
-              {!authState.profile?.stripe_connected && (
+              {isProcessingStripeReturn && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 text-blue-600" />
+                    <span className="text-blue-800 font-medium">
+                      Elaborazione completamento Stripe in corso...
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {!authState.profile?.stripe_connected && !isProcessingStripeReturn && (
                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                   <p className="text-amber-800 font-medium">
                     ⚠️ Devi completare la configurazione Stripe per procedere
@@ -245,8 +296,18 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             
             <div className="ml-auto">
               {currentStep < steps.length ? (
-                <Button onClick={handleNext} disabled={!isStepValid()}>
-                  Avanti
+                <Button 
+                  onClick={handleNext} 
+                  disabled={!isStepValid() || isProcessingStripeReturn}
+                >
+                  {isProcessingStripeReturn ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Elaborazione...
+                    </>
+                  ) : (
+                    "Avanti"
+                  )}
                 </Button>
               ) : (
                 <Button onClick={handleComplete} disabled={!isStepValid()}>

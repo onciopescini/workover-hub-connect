@@ -12,7 +12,12 @@ import { toast } from "sonner";
 import { useLogger } from "@/hooks/useLogger";
 import { useQueryClient } from "@tanstack/react-query";
 
-export function StripeSetup() {
+interface StripeSetupProps {
+  context?: 'onboarding' | 'dashboard';
+  onComplete?: () => void;
+}
+
+export function StripeSetup({ context = 'dashboard', onComplete }: StripeSetupProps = {}) {
   const { authState, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
@@ -84,10 +89,18 @@ export function StripeSetup() {
         userId: authState.user?.id
       });
       
+      const returnUrl = context === 'onboarding' 
+        ? `${window.location.origin}/host/onboarding?stripe_setup=success`
+        : `${window.location.origin}/host/dashboard?stripe_setup=success`;
+      
+      const refreshUrl = context === 'onboarding'
+        ? `${window.location.origin}/host/onboarding?stripe_setup=refresh`
+        : `${window.location.origin}/host/dashboard?stripe_setup=refresh`;
+
       const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: {
-          return_url: `${window.location.origin}/host/dashboard?stripe_setup=success`,
-          refresh_url: `${window.location.origin}/host/dashboard?stripe_setup=refresh`
+          return_url: returnUrl,
+          refresh_url: refreshUrl
         }
       });
 
@@ -197,6 +210,9 @@ export function StripeSetup() {
           await refreshProfile?.();
           
           toast.success("Setup Stripe completato! Progresso aggiornato.");
+          
+          // Call onComplete callback if provided (for onboarding context)
+          onComplete?.();
           
         } else if (!profile?.stripe_connected) {
           logger.info("Stripe setup still in progress", {
