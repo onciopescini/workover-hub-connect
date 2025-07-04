@@ -11,7 +11,7 @@ import { UserRole } from '@/types/bookings/bookings-ui.types';
 
 export const useBookingsDashboardState = () => {
   const { authState } = useAuth();
-  const { debug, error } = useLogger({ context: 'useBookingsDashboardState' });
+  const { debug, error: logError } = useLogger({ context: 'useBookingsDashboardState' });
   const [filters, setFilters] = useState<BookingFilter>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
@@ -54,7 +54,7 @@ export const useBookingsDashboardState = () => {
                coworkerName.includes(searchLower);
       });
     } catch (filterError) {
-      error('Error filtering bookings in dashboard', filterError as Error, {
+      logError('Error filtering bookings in dashboard', filterError as Error, {
         operation: 'filter_bookings_dashboard',
         searchTerm,
         bookingsCount: Array.isArray(bookings) ? bookings.length : 0
@@ -84,7 +84,7 @@ export const useBookingsDashboardState = () => {
 
       return { total, pending, confirmed, cancelled, totalRevenue };
     } catch (statsError) {
-      error('Error calculating booking stats', statsError as Error, {
+      logError('Error calculating booking stats', statsError as Error, {
         operation: 'calculate_booking_stats',
         bookingsCount: Array.isArray(bookings) ? bookings.length : 0
       });
@@ -103,7 +103,7 @@ export const useBookingsDashboardState = () => {
         return booking.status === 'confirmed';
       }
     } catch (chatError) {
-      error('Error checking chat status', chatError as Error, {
+      logError('Error checking chat status', chatError as Error, {
         operation: 'check_chat_status',
         bookingId: booking?.id,
         status: booking?.status
@@ -135,7 +135,7 @@ export const useBookingsDashboardState = () => {
       setMessageSpaceTitle(spaceTitle);
       setMessageDialogOpen(true);
     } catch (dialogError) {
-      error('Error opening message dialog', dialogError as Error, {
+      logError('Error opening message dialog', dialogError as Error, {
         operation: 'open_message_dialog',
         bookingId,
         spaceTitle
@@ -149,7 +149,7 @@ export const useBookingsDashboardState = () => {
       setSelectedBooking(booking);
       setCancelDialogOpen(true);
     } catch (dialogError) {
-      error('Error opening cancel dialog', dialogError as Error, {
+      logError('Error opening cancel dialog', dialogError as Error, {
         operation: 'open_cancel_dialog',
         bookingId: booking?.id
       });
@@ -170,7 +170,7 @@ export const useBookingsDashboardState = () => {
       setCancelDialogOpen(false);
       setSelectedBooking(null);
     } catch (cancelError) {
-      error('Error cancelling booking', cancelError as Error, {
+      logError('Error cancelling booking', cancelError as Error, {
         operation: 'cancel_booking',
         bookingId: selectedBooking?.id,
         userRole
@@ -190,7 +190,7 @@ export const useBookingsDashboardState = () => {
         return newFilters;
       });
     } catch (filterError) {
-      error('Error setting status filter', filterError as Error, {
+      logError('Error setting status filter', filterError as Error, {
         operation: 'set_status_filter',
         status
       });
@@ -209,7 +209,7 @@ export const useBookingsDashboardState = () => {
         return newFilters;
       });
     } catch (filterError) {
-      error('Error setting date range filter', filterError as Error, {
+      logError('Error setting date range filter', filterError as Error, {
         operation: 'set_date_range_filter',
         range
       });
@@ -221,7 +221,7 @@ export const useBookingsDashboardState = () => {
       setFilters({});
       setSearchTerm("");
     } catch (clearError) {
-      error('Error clearing filters', clearError as Error, {
+      logError('Error clearing filters', clearError as Error, {
         operation: 'clear_filters'
       });
     }
