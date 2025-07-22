@@ -15,7 +15,7 @@ import { PhotoUploader } from "@/components/ui/PhotoUploader";
 import type { Space } from "@/types/space";
 
 interface SpaceFormProps {
-  initialData?: Partial<Space> | undefined;
+  initialData?: Space | undefined;
 }
 
 const SpaceForm = ({ initialData }: SpaceFormProps) => {
@@ -95,10 +95,10 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
           <div>
             <Label htmlFor="address">Address</Label>
             <AddressAutocomplete
-              onAddressSelected={(address, coordinates) => handleAddressChange(address, coordinates)}
-              defaultValue={formData.address || ""}
+              value={formData['address'] || ""}
+              onChange={(address: string, coordinates?: { lat: number; lng: number }) => handleAddressChange(address, coordinates)}
             />
-            {errors.address && <p className="text-red-500 text-sm">{errors.address}</p>}
+            {errors['address'] && <p className="text-red-500 text-sm">{errors['address']}</p>}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -155,7 +155,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="wifi" className="flex items-center space-x-2">
                 <Checkbox
                   id="wifi"
-                  checked={!!formData['workspace_features']?.includes("wifi")}
+                  checked={Boolean(formData['workspace_features']?.includes("wifi"))}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "wifi", !!checked)}
                 />
                 <span>WiFi</span>
@@ -165,7 +165,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="whiteboard" className="flex items-center space-x-2">
                 <Checkbox
                   id="whiteboard"
-                  checked={!!formData['workspace_features']?.includes("whiteboard")}
+                  checked={Boolean(formData['workspace_features']?.includes("whiteboard"))}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "whiteboard", !!checked)}
                 />
                 <span>Whiteboard</span>
@@ -175,7 +175,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="monitor" className="flex items-center space-x-2">
                 <Checkbox
                   id="monitor"
-                  checked={!!formData['workspace_features']?.includes("monitor")}
+                  checked={Boolean(formData['workspace_features']?.includes("monitor"))}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "monitor", !!checked)}
                 />
                 <span>Monitor</span>

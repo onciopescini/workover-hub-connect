@@ -46,7 +46,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     validateForm,
     isEdit,
     initialDataId: initialData?.id ?? '',
-    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus
+    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus || 'none'
   });
 
   // Enhanced input change handler that clears errors
