@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import { AvailabilityEditor } from "@/components/ui/AvailabilityEditor";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
+import type { Space } from "@/types/space";
 
 interface SpaceFormProps {
-  initialData?: any;
+  initialData?: Partial<Space> | undefined;
 }
 
 const SpaceForm = ({ initialData }: SpaceFormProps) => {
@@ -61,7 +62,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="category">Category</Label>
               <Select onValueChange={(value) => handleInputChange("category", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a category" defaultValue={formData.category} />
+                  <SelectValue placeholder="Select a category" defaultValue={formData['category']} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="home">Home</SelectItem>
@@ -70,7 +71,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.category && <p className="text-red-500 text-sm">{errors.category}</p>}
+              {errors['category'] && <p className="text-red-500 text-sm">{errors['category']}</p>}
             </div>
           </div>
 
@@ -78,10 +79,10 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={formData.description || ""}
+              value={formData['description'] || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
             />
-            {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
+            {errors['description'] && <p className="text-red-500 text-sm">{errors['description']}</p>}
           </div>
         </CardContent>
       </Card>
@@ -105,10 +106,10 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Input
                 type="number"
                 id="max_capacity"
-                value={formData.max_capacity || 1}
+                value={formData['max_capacity'] || 1}
                 onChange={(e) => handleInputChange("max_capacity", parseInt(e.target.value))}
               />
-              {errors.max_capacity && <p className="text-red-500 text-sm">{errors.max_capacity}</p>}
+              {errors['max_capacity'] && <p className="text-red-500 text-sm">{errors['max_capacity']}</p>}
             </div>
           </div>
         </CardContent>
@@ -125,20 +126,20 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Input
                 type="number"
                 id="price_per_hour"
-                value={formData.price_per_hour || 0}
+                value={formData['price_per_hour'] || 0}
                 onChange={(e) => handleInputChange("price_per_hour", parseFloat(e.target.value))}
               />
-              {errors.price_per_hour && <p className="text-red-500 text-sm">{errors.price_per_hour}</p>}
+              {errors['price_per_hour'] && <p className="text-red-500 text-sm">{errors['price_per_hour']}</p>}
             </div>
             <div>
               <Label htmlFor="price_per_day">Price per Day</Label>
               <Input
                 type="number"
                 id="price_per_day"
-                value={formData.price_per_day || 0}
+                value={formData['price_per_day'] || 0}
                 onChange={(e) => handleInputChange("price_per_day", parseFloat(e.target.value))}
               />
-              {errors.price_per_day && <p className="text-red-500 text-sm">{errors.price_per_day}</p>}
+              {errors['price_per_day'] && <p className="text-red-500 text-sm">{errors['price_per_day']}</p>}
             </div>
           </div>
         </CardContent>
@@ -154,7 +155,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="wifi" className="flex items-center space-x-2">
                 <Checkbox
                   id="wifi"
-                  checked={formData.workspace_features?.includes("wifi")}
+                  checked={!!formData['workspace_features']?.includes("wifi")}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "wifi", !!checked)}
                 />
                 <span>WiFi</span>
@@ -164,7 +165,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="whiteboard" className="flex items-center space-x-2">
                 <Checkbox
                   id="whiteboard"
-                  checked={formData.workspace_features?.includes("whiteboard")}
+                  checked={!!formData['workspace_features']?.includes("whiteboard")}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "whiteboard", !!checked)}
                 />
                 <span>Whiteboard</span>
@@ -174,7 +175,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="monitor" className="flex items-center space-x-2">
                 <Checkbox
                   id="monitor"
-                  checked={formData.workspace_features?.includes("monitor")}
+                  checked={!!formData['workspace_features']?.includes("monitor")}
                   onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "monitor", !!checked)}
                 />
                 <span>Monitor</span>
@@ -193,7 +194,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
             <Label htmlFor="work_environment">Work Environment</Label>
             <Select onValueChange={(value) => handleInputChange("work_environment", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select an environment" defaultValue={formData.work_environment} />
+                <SelectValue placeholder="Select an environment" defaultValue={formData['work_environment']} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="controlled">Controlled</SelectItem>
@@ -201,7 +202,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
                 <SelectItem value="open">Open</SelectItem>
               </SelectContent>
             </Select>
-            {errors.work_environment && <p className="text-red-500 text-sm">{errors.work_environment}</p>}
+            {errors['work_environment'] && <p className="text-red-500 text-sm">{errors['work_environment']}</p>}
           </div>
         </CardContent>
       </Card>
@@ -215,7 +216,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
             availabilityData={availabilityData}
             onAvailabilityChange={handleAvailabilityChange}
           />
-          {errors.availability && <p className="text-red-500 text-sm">{errors.availability}</p>}
+          {errors['availability'] && <p className="text-red-500 text-sm">{errors['availability']}</p>}
         </CardContent>
       </Card>
 
@@ -238,7 +239,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
       </Card>
       
       <PublishingOptions
-        published={formData.published}
+        published={formData['published'] ?? false}
         onInputChange={handleInputChange}
         isSubmitting={isSubmitting}
         stripeOnboardingStatus={stripeOnboardingStatus}
