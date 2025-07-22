@@ -4,6 +4,7 @@ import { ProfileService } from "../services/profile-service.ts";
 import { ErrorHandler } from "../utils/error-handler.ts";
 import { Validators } from "../utils/validators.ts";
 import type { EventHandlerResult } from "../types/webhook-types.ts";
+import type { StripeOnboardingState } from "../types/domain-types.ts";
 
 export class AccountHandlers {
   static async handleAccountUpdated(

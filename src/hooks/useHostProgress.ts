@@ -10,6 +10,7 @@ interface HostProgressData {
   totalRevenue: number;
   profileComplete: boolean;
   stripeConnected: boolean;
+  stripeOnboardingStatus: 'none' | 'pending' | 'completed' | 'restricted';
   hasPhotos: boolean;
 }
 
@@ -65,6 +66,7 @@ export const useHostProgress = (options?: {
       );
       
       const stripeConnected = !!profile?.stripe_connected;
+      const stripeOnboardingStatus = profile?.stripe_onboarding_status || 'none';
       const hasPhotos = spaces?.some(s => s.photos && s.photos.length > 0) || false;
 
       return {
@@ -75,6 +77,7 @@ export const useHostProgress = (options?: {
         totalRevenue,
         profileComplete,
         stripeConnected,
+        stripeOnboardingStatus,
         hasPhotos
       };
     },

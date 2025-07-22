@@ -37,11 +37,38 @@ export async function handleAccountUpdated(
   const profile = profiles[0];
   console.log('🔵 Updating profile for user:', profile.id, 'isVerified:', isVerified);
 
-  // Update the stripe_connected status - FIX PRINCIPALE
+  // Determine stripe_onboarding_status based on account status
+  let onboardingStatus: 'none' | 'pending' | 'completed' | 'restricted' = 'none';
+  
+  if (account.details_submitted) {
+    if (isVerified) {
+      onboardingStatus = 'completed';
+    } else {
+      onboardingStatus = 'pending';
+    }
+  } else {
+    onboardingStatus = 'none';
+  }
+  
+  // Check for restrictions
+  if (account.requirements?.disabled_reason) {
+    onboardingStatus = 'restricted';
+  }
+  
+  console.log('🔵 Determined Stripe onboarding status:', {
+    userId: profile.id,
+    status: onboardingStatus,
+    details_submitted: account.details_submitted,
+    charges_enabled: account.charges_enabled,
+    disabled_reason: account.requirements?.disabled_reason
+  });
+  
+  // Update both stripe_connected and stripe_onboarding_status
   const { error: updateError } = await supabaseAdmin
     .from('profiles')
     .update({ 
       stripe_connected: isVerified,
+      stripe_onboarding_status: onboardingStatus,
       updated_at: new Date().toISOString()
     })
     .eq('id', profile.id);

@@ -1212,6 +1212,9 @@ export type Database = {
           space_creation_restricted: boolean | null
           stripe_account_id: string | null
           stripe_connected: boolean | null
+          stripe_onboarding_status:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
           suspended_at: string | null
           suspended_by: string | null
           suspension_reason: string | null
@@ -1259,6 +1262,9 @@ export type Database = {
           space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
+          stripe_onboarding_status?:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
@@ -1306,6 +1312,9 @@ export type Database = {
           space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
+          stripe_onboarding_status?:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
@@ -1965,6 +1974,7 @@ export type Database = {
       booking_status: "pending" | "confirmed" | "cancelled"
       confirmation_type: "instant" | "host_approval"
       space_category: "home" | "outdoor" | "professional"
+      stripe_onboarding_state: "none" | "pending" | "completed" | "restricted"
       user_role: "host" | "coworker" | "admin"
       work_environment: "silent" | "controlled" | "dynamic"
     }
@@ -2097,6 +2107,7 @@ export const Constants = {
       booking_status: ["pending", "confirmed", "cancelled"],
       confirmation_type: ["instant", "host_approval"],
       space_category: ["home", "outdoor", "professional"],
+      stripe_onboarding_state: ["none", "pending", "completed", "restricted"],
       user_role: ["host", "coworker", "admin"],
       work_environment: ["silent", "controlled", "dynamic"],
     },

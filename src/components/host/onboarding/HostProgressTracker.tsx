@@ -7,6 +7,7 @@ import { CheckCircle, Circle, Star, Trophy, Target, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useHostProgress } from "@/hooks/useHostProgress";
+import { StripeStatusBadge } from "./StripeStatusBadge";
 
 interface ProgressStep {
   id: string;
@@ -206,6 +207,9 @@ export const HostProgressTracker: React.FC = () => {
                       <h4 className="font-medium">{step.title}</h4>
                       {step.required && (
                         <Badge variant="outline" className="text-xs">Obbligatorio</Badge>
+                      )}
+                      {step.id === 'stripe' && (
+                        <StripeStatusBadge status={progressData?.stripeOnboardingStatus || 'none'} />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{step.description}</p>
