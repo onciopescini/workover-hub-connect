@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { StripeSetup } from "@/components/host/StripeSetup";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HostOnboardingWizardProps {
   onComplete?: () => void;
@@ -40,7 +41,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   const progress = (currentStep / steps.length) * 100;
 
   // Handle return from Stripe setup
-  React.useEffect(() => {
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('stripe_setup') === 'success') {
       // Assicurati che siamo al step Stripe
@@ -53,6 +54,31 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []); // Esegui solo una volta al mount
+
+  // Salva l'URL di ritorno nel profilo quando siamo allo step 2
+  useEffect(() => {
+    const saveReturnUrl = async () => {
+      if (currentStep === 2 && authState.user?.id) {
+        try {
+          const returnUrl = `${window.location.origin}/host/onboarding?stripe_setup=success&step=3`;
+          
+          // Salva l'URL nel profilo
+          const { error } = await supabase
+            .from('profiles')
+            .update({ return_url: returnUrl })
+            .eq('id', authState.user.id);
+            
+          if (error) {
+            console.error("Errore nel salvare l'URL di ritorno:", error);
+          }
+        } catch (error) {
+          console.error("Errore nel salvare l'URL di ritorno:", error);
+        }
+      }
+    };
+    
+    saveReturnUrl();
+  }, [currentStep, authState.user?.id]);
 
   const handleStripeReturn = async () => {
     try {

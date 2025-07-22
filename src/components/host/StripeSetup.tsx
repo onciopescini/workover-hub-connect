@@ -89,18 +89,22 @@ export function StripeSetup({ context = 'dashboard', onComplete }: StripeSetupPr
         userId: authState.user?.id
       });
       
-      const returnUrl = context === 'onboarding' 
+      // Fallback URLs in caso non ci sia un URL personalizzato nel profilo
+      const defaultReturnUrl = context === 'onboarding' 
         ? `${window.location.origin}/host/onboarding?stripe_setup=success`
         : `${window.location.origin}/host/dashboard?stripe_setup=success`;
       
-      const refreshUrl = context === 'onboarding'
+      const defaultRefreshUrl = context === 'onboarding'
         ? `${window.location.origin}/host/onboarding?stripe_setup=refresh`
         : `${window.location.origin}/host/dashboard?stripe_setup=refresh`;
+        
+      // I return_url e refresh_url personalizzati sono già nel profilo e verranno
+      // recuperati dal server nel edge function
 
       const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: {
-          return_url: returnUrl,
-          refresh_url: refreshUrl
+          return_url: defaultReturnUrl,
+          refresh_url: defaultRefreshUrl
         }
       });
 

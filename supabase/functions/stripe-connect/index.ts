@@ -89,8 +89,16 @@ serve(async (req) => {
       throw new Error('Only hosts can connect Stripe accounts');
     }
 
-    const { return_url, refresh_url } = await req.json().catch(() => ({}));
+    // Prendi i parametri dal corpo della richiesta come fallback
+    const { return_url: fallbackReturnUrl, refresh_url: fallbackRefreshUrl } = await req.json().catch(() => ({}));
     const origin = req.headers.get('origin') || 'https://preview-workover-hub-connect.lovable.app';
+    
+    // Utilizza l'URL di ritorno memorizzato nel profilo se disponibile
+    const storedReturnUrl = profile.return_url;
+    ErrorHandler.logInfo('Return URL info', { 
+      hasStoredReturnUrl: !!storedReturnUrl, 
+      hasFallbackReturnUrl: !!fallbackReturnUrl 
+    });
 
     let accountId = profile.stripe_account_id;
 
@@ -137,20 +145,56 @@ serve(async (req) => {
       ErrorHandler.logInfo('Using existing Stripe account', { accountId });
     }
 
-    // Crea Account Link per onboarding - FIXED URL
+    // Crea Account Link per onboarding
     ErrorHandler.logInfo('Creating account link');
     
+    // Implementa validazione URL
+    let finalReturnUrl = fallbackReturnUrl;
+    let finalRefreshUrl = fallbackRefreshUrl;
+    
+    // Utilizza l'URL di ritorno memorizzato nel profilo se disponibile
+    if (storedReturnUrl) {
+      try {
+        // Semplice validazione che sia un URL valido e che inizi con https://
+        const url = new URL(storedReturnUrl);
+        if (url.protocol === 'https:') {
+          finalReturnUrl = storedReturnUrl;
+          ErrorHandler.logInfo('Using stored return URL', { url: finalReturnUrl });
+        }
+      } catch (e) {
+        ErrorHandler.logError('Invalid stored return URL', e, { url: storedReturnUrl });
+      }
+    }
+    
+    // Crea l'account link utilizzando l'URL corretto
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      return_url: return_url || `${origin}/host/dashboard?stripe_setup=success`,
-      refresh_url: refresh_url || `${origin}/host/dashboard?stripe_setup=refresh`,
+      return_url: finalReturnUrl || `${origin}/host/dashboard?stripe_setup=success`,
+      refresh_url: finalRefreshUrl || `${origin}/host/dashboard?stripe_setup=refresh`,
       type: 'account_onboarding',
     });
+    
+    // Dopo aver utilizzato il return_url dal profilo, lo cancelliamo
+    if (storedReturnUrl) {
+      const { error: clearUrlError } = await supabaseAdmin
+        .from('profiles')
+        .update({ return_url: null })
+        .eq('id', user.id);
+        
+      if (clearUrlError) {
+        ErrorHandler.logError('Error clearing return URL from profile', clearUrlError, {
+          operation: 'clear_return_url',
+          userId: user.id
+        });
+      } else {
+        ErrorHandler.logInfo('Return URL cleared from profile', { userId: user.id });
+      }
+    }
 
     ErrorHandler.logSuccess('Account link created successfully', { 
       accountId,
-      hasReturnUrl: !!return_url,
-      hasRefreshUrl: !!refresh_url
+      usedStoredUrl: !!storedReturnUrl,
+      usedFallbackUrl: !storedReturnUrl && !!fallbackReturnUrl
     });
 
     return new Response(JSON.stringify({ 
