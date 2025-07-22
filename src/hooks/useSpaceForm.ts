@@ -3,6 +3,7 @@ import type { Space } from "@/types/space";
 import { useSpaceFormState } from "./useSpaceFormState";
 import { useSpaceFormValidation } from "./useSpaceFormValidation";
 import { useSpaceFormSubmission } from "./useSpaceFormSubmission";
+import { useHostProgress } from "./useHostProgress";
 
 interface UseSpaceFormProps {
   initialData?: Space | undefined;
@@ -32,13 +33,20 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     availabilityData
   });
 
+  // Get host progress data including stripe verification status
+  const { data: hostProgressData } = useHostProgress({
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000 // 30 seconds
+  });
+
   const { isSubmitting, handleSubmit } = useSpaceFormSubmission({
     formData,
     availabilityData,
     photoPreviewUrls,
     validateForm,
     isEdit,
-    initialDataId: initialData?.id ?? ''
+    initialDataId: initialData?.id ?? '',
+    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus
   });
 
   // Enhanced input change handler that clears errors
@@ -70,6 +78,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     isSubmitting,
     uploadingPhotos,
     processingJobs,
+    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus || 'none',
     setUploadingPhotos,
     setProcessingJobs,
     setPhotoFiles,

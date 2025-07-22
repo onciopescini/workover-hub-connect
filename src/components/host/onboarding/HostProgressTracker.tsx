@@ -36,7 +36,7 @@ export const HostProgressTracker: React.FC = () => {
   const profile = authState.profile;
   const { data: progressData, isLoading, refetch } = useHostProgress({
     refetchOnWindowFocus: true,
-    staleTime: 1 * 60 * 1000 // 1 minute per Stripe setup critici
+    staleTime: 30 * 1000 // 30 seconds to ensure we get fresh data after webhook updates
   });
 
   if (isLoading) {

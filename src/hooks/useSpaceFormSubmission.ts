@@ -13,6 +13,7 @@ interface UseSpaceFormSubmissionProps {
   validateForm: () => boolean;
   isEdit?: boolean;
   initialDataId?: string;
+  stripeOnboardingStatus?: 'none' | 'pending' | 'completed' | 'restricted';
 }
 
 export const useSpaceFormSubmission = ({
@@ -21,7 +22,8 @@ export const useSpaceFormSubmission = ({
   photoPreviewUrls,
   validateForm,
   isEdit = false,
-  initialDataId
+  initialDataId,
+  stripeOnboardingStatus = 'none'
 }: UseSpaceFormSubmissionProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +37,13 @@ export const useSpaceFormSubmission = ({
     }
     
     if (!formData.address) {
-      alert("Address is required");
+      toast.error("Address is required");
+      return;
+    }
+
+    // Check if trying to publish without completed Stripe verification
+    if (formData.published && stripeOnboardingStatus !== 'completed') {
+      toast.error("Non puoi pubblicare uno spazio senza completare la verifica Stripe. Completa l'onboarding prima di pubblicare.");
       return;
     }
 

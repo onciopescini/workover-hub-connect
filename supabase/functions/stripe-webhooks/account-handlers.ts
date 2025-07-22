@@ -78,7 +78,8 @@ export async function handleAccountUpdated(
   } else {
     console.log('✅ Host stripe status updated successfully:', {
       userId: profile.id,
-      stripeConnected: isVerified
+      stripeConnected: isVerified,
+      onboardingStatus
     });
 
     // Send notification email to host about successful setup
