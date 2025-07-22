@@ -9,11 +9,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import { AvailabilityEditor } from "@/components/ui/AvailabilityEditor";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
 
-const SpaceForm = ({ initialData }) => {
+interface SpaceFormProps {
+  initialData?: any;
+}
+
+const SpaceForm = ({ initialData }: SpaceFormProps) => {
   const {
     formData,
     availabilityData,
@@ -48,10 +52,10 @@ const SpaceForm = ({ initialData }) => {
               <Input
                 type="text"
                 id="title"
-                value={formData.title || ""}
+                value={formData['title'] || ""}
                 onChange={(e) => handleInputChange("title", e.target.value)}
               />
-              {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
+              {errors['title'] && <p className="text-red-500 text-sm">{errors['title']}</p>}
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
