@@ -38,6 +38,12 @@ export interface LogContext {
   retryCount?: number;
   level?: string;
   manualReport?: boolean;
+  identifier?: string;
+  role?: string;
+  count?: number;
+  reason?: string;
+  email?: string;
+  suspended?: boolean;
 }
 
 export interface LoggerConfig {

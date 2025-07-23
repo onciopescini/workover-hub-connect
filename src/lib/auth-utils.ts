@@ -164,7 +164,7 @@ export const checkAuthRateLimit = async (action: 'login' | 'password_reset', ide
     });
 
     if (error) {
-      logger.error('Rate limit check failed', { action, identifier }, error);
+      logger.error('Rate limit check failed', { action, ...(identifier && { identifier }) }, error);
       // Fail closed - deny the request if rate limit check fails
       return { 
         allowed: false, 
@@ -176,7 +176,7 @@ export const checkAuthRateLimit = async (action: 'login' | 'password_reset', ide
 
     return data;
   } catch (error) {
-    logger.error('Rate limit check error', { action, identifier }, error as Error);
+    logger.error('Rate limit check error', { action, ...(identifier && { identifier }) }, error as Error);
     // Fail closed
     return { 
       allowed: false, 
