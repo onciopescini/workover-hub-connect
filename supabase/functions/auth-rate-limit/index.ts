@@ -67,7 +67,7 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   };
 }
 
-// Implemento l'handler per le richies
+// Implemento l'handler per le richieste
 Deno.serve(async (req) => {
   // Gestisco la richiesta CORS preflight
   if (req.method === 'OPTIONS') {
