@@ -5,19 +5,21 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { Space } from "@/types/space";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { getHostSpaces } from "@/lib/host-utils";
 import { SpaceManagementHeader } from "@/components/spaces/SpaceManagementHeader";
 import { EnhancedSpaceManagementCard } from "@/components/spaces/EnhancedSpaceManagementCard";
 
 const SpacesManage = () => {
   const { authState } = useAuth();
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [showDeleted, setShowDeleted] = useState(false);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const isAdmin = authState.profile?.role === 'admin';
 
   const fetchSpaces = async () => {
     console.log('🔍 SpacesManage: Current auth state:', {
@@ -25,7 +27,8 @@ const SpacesManage = () => {
       userEmail: authState.user?.email,
       userRole: authState.profile?.role,
       isAuthenticated: authState.isAuthenticated,
-      isLoading: authState.isLoading
+      isLoading: authState.isLoading,
+      showDeleted
     });
 
     if (!authState.user?.id) {
@@ -36,18 +39,47 @@ const SpacesManage = () => {
     try {
       console.log('🔍 Fetching spaces for user:', authState.user.id);
       
-      const spacesData = await getHostSpaces(authState.user.id);
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      let query = supabase
+        .from('spaces')
+        .select('*')
+        .eq('host_id', authState.user.id);
+      
+      // Filter by deletion status based on admin toggle
+      if (isAdmin && showDeleted) {
+        // Admin viewing deleted spaces only
+        query = query.not('deleted_at', 'is', null);
+      } else if (isAdmin && !showDeleted) {
+        // Admin viewing non-deleted spaces only  
+        query = query.is('deleted_at', null);
+      } else {
+        // Regular users - only non-deleted spaces
+        query = query.is('deleted_at', null);
+      }
+      
+      query = query.order('created_at', { ascending: false });
+      
+      const { data: spacesData, error } = await query;
+      
+      if (error) {
+        console.error("❌ SpacesManage: Error fetching spaces:", error);
+        toast.error("Errore nel caricamento degli spazi.");
+        return;
+      }
+      
       console.log('✅ SpacesManage: Fetched spaces:', spacesData);
       
-      console.log('📊 Spaces details:', spacesData.map(space => ({
+      console.log('📊 Spaces details:', spacesData?.map(space => ({
         id: space.id,
         title: space.title,
         host_id: space.host_id,
         published: space.published,
-        is_suspended: space.is_suspended
+        is_suspended: space.is_suspended,
+        deleted_at: space.deleted_at
       })));
       
-      setSpaces(spacesData);
+      setSpaces(spacesData || []);
     } catch (error) {
       console.error("❌ SpacesManage: Error fetching spaces:", error);
       toast.error("Errore nel caricamento degli spazi.");
@@ -66,7 +98,7 @@ const SpacesManage = () => {
     } else if (!authState.isLoading && !authState.user?.id) {
       setIsLoading(false);
     }
-  }, [authState.user?.id, authState.isLoading]);
+  }, [authState.user?.id, authState.isLoading, showDeleted]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -176,9 +208,29 @@ const SpacesManage = () => {
             <h2 className="text-xl font-semibold text-gray-900">I Tuoi Spazi</h2>
             <p className="text-gray-600 text-sm">
               Gestisci e monitora tutti i tuoi spazi di lavoro
+              {isAdmin && showDeleted && " (spazi eliminati)"}
             </p>
           </div>
           <div className="flex space-x-3">
+            {isAdmin && (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleted(!showDeleted)}
+                className="flex items-center"
+              >
+                {showDeleted ? (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    Nascondi Eliminati
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    Mostra Eliminati
+                  </>
+                )}
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={handleRefresh}
@@ -241,7 +293,9 @@ const SpacesManage = () => {
         ) : (
           <div className="space-y-6">
             <div className="text-sm text-gray-600">
-              Trovati {spaces.length} spazio/i ({publishedCount} pubblicati)
+              Trovati {spaces.length} spazio/i 
+              {!showDeleted && `(${publishedCount} pubblicati)`}
+              {showDeleted && isAdmin && " eliminati"}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
