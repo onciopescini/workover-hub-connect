@@ -34,9 +34,8 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   const now = Date.now();
   const windowMs = windowSeconds * 1000;
   const resetTime = Math.floor(now / windowMs) * windowMs + windowMs;
-  
   const current = rateLimitStore.get(key);
-  
+
   if (!current || current.resetTime <= now) {
     // Reset o primo tentativo
     rateLimitStore.set(key, { count: 1, resetTime });
@@ -46,10 +45,10 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
       resetTime
     };
   }
-  
+
   if (current.count >= maxAttempts) {
     // Limitazione superata
-    const waitTime = Math.ceil(((resetTime - now) / 1000);
+    const waitTime = Math.ceil(((resetTime - now) / 1000));
     return {
       allowed: false,
       remaining: 0,
@@ -57,11 +56,11 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
       message: `Troppi tentativi. Riprova tra ${waitTime} secondi.`
     };
   }
-  
+
   // Incrementa il contatore
   current.count++;
   rateLimitStore.set(key, current);
-  
+
   return {
     allowed: true,
     remaining: maxAttempts - current.count,
