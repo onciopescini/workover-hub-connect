@@ -9,7 +9,7 @@ import { logger } from '@/lib/logger';
 // Production-safe console replacement
 export const productionConsole = {
   log: (...args: any[]) => {
-    if (process.env['NODE_ENV'] === 'development') {
+    if (import.meta.env.DEV) {
       logger.debug('Console output');
     }
   },
@@ -30,7 +30,7 @@ export const productionConsole = {
   },
   
   debug: (...args: any[]) => {
-    if (process.env['NODE_ENV'] === 'development') {
+    if (import.meta.env.DEV) {
       logger.debug('Debug message');
     }
   }
@@ -42,7 +42,7 @@ export const replaceConsoleInComponent = (componentName: string) => {
   
   return {
     log: (...args: any[]) => {
-      if (process.env['NODE_ENV'] === 'development') {
+      if (import.meta.env.DEV) {
         componentLogger.debug(`[${componentName}] Console output`, { component: componentName });
       }
     },

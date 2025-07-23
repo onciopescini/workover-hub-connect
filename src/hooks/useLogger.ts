@@ -53,7 +53,7 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
   const {
     context = 'Component',
     enablePerformanceTracking = true,
-    enableDebugMode = process.env['NODE_ENV'] === 'development',
+    enableDebugMode = import.meta.env.DEV,
     metadata: initialMetadata = {}
   } = options;
 
@@ -341,7 +341,7 @@ export const useComponentLogger = (componentName: string) => {
   return useLogger({
     context: `Component-${componentName}`,
     enablePerformanceTracking: true,
-    enableDebugMode: process.env['NODE_ENV'] === 'development'
+    enableDebugMode: import.meta.env.DEV
   });
 };
 

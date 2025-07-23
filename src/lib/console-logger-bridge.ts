@@ -20,7 +20,7 @@ export const safeConsole = {
    * Development-only logging
    */
   log: (message: string, context?: LogContext) => {
-    if (process.env['NODE_ENV'] === 'development') {
+    if (import.meta.env.DEV) {
       logger.debug(message, context);
     }
   },
@@ -50,7 +50,7 @@ export const safeConsole = {
    * Debug logging (development only)
    */
   debug: (message: string, context?: LogContext) => {
-    if (process.env['NODE_ENV'] === 'development') {
+    if (import.meta.env.DEV) {
       logger.debug(message, context);
     }
   }

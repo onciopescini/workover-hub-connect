@@ -95,7 +95,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
             </div>
 
-            {process.env['NODE_ENV'] === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm font-medium text-gray-700">
                   Dettagli tecnici (solo in sviluppo)
