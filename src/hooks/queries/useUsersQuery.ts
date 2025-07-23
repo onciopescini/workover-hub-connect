@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllUsers, suspendUser, reactivateUser, createWarning, getUserWarnings } from "@/lib/admin-utils";
 import { AdminProfile, AdminWarning } from "@/types/admin";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 // Query Keys
 export const userKeys = {
@@ -20,9 +21,9 @@ export interface UserFilters {
 
 // Fetch users function
 const fetchUsers = async (): Promise<AdminProfile[]> => {
-  console.log("Fetching users with React Query...");
+  logger.debug("Fetching users with React Query", { component: 'useUsersQuery' });
   const users = await getAllUsers();
-  console.log("Fetched users:", users.length);
+  logger.debug("Fetched users", { component: 'useUsersQuery', count: users.length });
   return users;
 };
 

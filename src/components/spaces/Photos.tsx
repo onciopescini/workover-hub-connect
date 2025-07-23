@@ -196,7 +196,7 @@ export const Photos = ({
                     enableWebP={true}
                     enableResponsive={true}
                     priority={index < 4}
-                    onLoadComplete={() => console.log(`Space photo ${index + 1} loaded`)}
+                    onLoadComplete={() => {}} // Photo loaded successfully
                   />
                 </div>
                 

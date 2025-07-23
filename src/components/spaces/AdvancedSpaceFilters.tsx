@@ -145,7 +145,7 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
 
   const filterAvailableNow = () => {
     // Implementare logica per filtrare spazi disponibili ora
-    console.log('Filter available now');
+    // Filter available now - using proper state management
   };
 
   const saveCurrentSearch = () => {

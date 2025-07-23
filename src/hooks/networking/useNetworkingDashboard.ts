@@ -83,7 +83,7 @@ export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): 
 
   const calculateTrends = useCallback(() => {
     // Mock trend calculation
-    console.log('Calculating trends...');
+    // Calculating trends for dashboard analytics
   }, []);
 
   return {

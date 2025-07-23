@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.log('❌ No authorization header provided')
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { 
@@ -51,7 +50,6 @@ Deno.serve(async (req) => {
     // Get the authenticated user
     const { data: { user }, error: authError } = await userSupabase.auth.getUser()
     if (authError || !user) {
-      console.log('❌ Authentication failed:', authError)
       return new Response(
         JSON.stringify({ error: 'Authentication failed' }),
         { 
@@ -69,7 +67,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (profileError || profile?.role !== 'admin') {
-      console.log('❌ User is not admin:', { userId: user.id, role: profile?.role })
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { 
@@ -92,7 +89,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('🔄 Restoring space:', spaceId)
+    // Restoring space
 
     // Restore the space by setting deleted_at to null
     const { data: updatedSpace, error: updateError } = await supabase
@@ -123,7 +120,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('✅ Space restored successfully:', updatedSpace.id)
+    // Space restored successfully
 
     return new Response(
       JSON.stringify({ 

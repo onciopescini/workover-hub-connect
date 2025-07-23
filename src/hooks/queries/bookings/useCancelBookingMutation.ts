@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export const useCancelBookingMutation = () => {
   const queryClient = useQueryClient();
@@ -16,7 +17,7 @@ export const useCancelBookingMutation = () => {
       isHost: boolean; 
       reason?: string;
     }) => {
-      console.log('🔄 Cancelling booking:', bookingId);
+      logger.info('Cancelling booking', { component: 'useCancelBookingMutation', action: 'cancel', metadata: { bookingId } });
       
       const params: any = {
         booking_id: bookingId,
@@ -34,7 +35,7 @@ export const useCancelBookingMutation = () => {
         throw error;
       }
 
-      console.log('✅ Booking cancelled successfully');
+      logger.info('Booking cancelled successfully', { component: 'useCancelBookingMutation', action: 'cancel_success', metadata: { bookingId } });
       return data;
     },
     onSuccess: () => {

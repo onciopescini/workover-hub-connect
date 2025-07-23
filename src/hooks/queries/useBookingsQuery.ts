@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { BookingWithDetails } from "@/types/booking";
 import { cancelBooking } from "@/lib/booking-utils";
+import { logger } from "@/lib/logger";
 
 // Query Keys
 export const bookingKeys = {
@@ -16,7 +17,7 @@ export const bookingKeys = {
 
 // Fetch function for bookings
 const fetchBookings = async (userId: string, userRole?: string): Promise<BookingWithDetails[]> => {
-  console.log('Fetching bookings for user:', userId);
+  logger.debug('Fetching bookings for user', { component: 'useBookingsQuery', userId });
 
   // Fetch bookings where user is the coworker
   const { data: coworkerBookingsRaw, error: coworkerError } = await supabase

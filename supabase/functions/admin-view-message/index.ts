@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.log('❌ No authorization header provided')
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { 
@@ -51,7 +50,6 @@ Deno.serve(async (req) => {
     // Get the authenticated user
     const { data: { user }, error: authError } = await userSupabase.auth.getUser()
     if (authError || !user) {
-      console.log('❌ Authentication failed:', authError)
       return new Response(
         JSON.stringify({ error: 'Authentication failed' }),
         { 
@@ -69,7 +67,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (profileError || profile?.role !== 'admin') {
-      console.log('❌ User is not admin:', { userId: user.id, role: profile?.role })
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { 
@@ -94,7 +91,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('🔍 Admin viewing message:', messageId)
+    // Admin viewing message
 
     // Get client IP and User-Agent for audit log
     const clientIP = req.headers.get('x-forwarded-for') || 
@@ -122,7 +119,7 @@ Deno.serve(async (req) => {
         console.error('❌ Failed to log admin access:', logError)
         // Continue anyway, but log the error
       } else {
-        console.log('✅ Admin access logged:', logResult)
+        // Admin access logged successfully
       }
     } catch (logErr) {
       console.error('❌ Error logging admin access:', logErr)
@@ -158,7 +155,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('✅ Message retrieved successfully by admin')
+    // Message retrieved successfully by admin
 
     return new Response(
       JSON.stringify({ 

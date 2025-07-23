@@ -42,7 +42,7 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
             enableResponsive={true}
             priority={true} // Map previews are immediately visible
             quality={0.9} // Higher quality for preview cards
-            onLoadComplete={() => console.log(`Map preview loaded: ${space.title}`)}
+            onLoadComplete={() => {}} // Map preview loaded successfully
           />
           <div className="absolute top-2 left-2">
             <Badge variant="secondary" className="bg-white/90 text-xs">

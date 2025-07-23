@@ -26,7 +26,6 @@ Deno.serve(async (req) => {
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.log('❌ No authorization header provided')
       return new Response(
         JSON.stringify({ error: 'Authorization header required' }),
         { 
@@ -52,7 +51,6 @@ Deno.serve(async (req) => {
     // Get the authenticated user
     const { data: { user }, error: authError } = await userSupabase.auth.getUser()
     if (authError || !user) {
-      console.log('❌ Authentication failed:', authError)
       return new Response(
         JSON.stringify({ error: 'Authentication failed' }),
         { 
@@ -70,7 +68,6 @@ Deno.serve(async (req) => {
       .single()
 
     if (profileError || profile?.role !== 'admin') {
-      console.log('❌ User is not admin:', { userId: user.id, role: profile?.role })
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { 
@@ -110,7 +107,7 @@ Deno.serve(async (req) => {
     // Parse request body
     const { suspended_at, reason }: SuspendUserRequest = await req.json()
     
-    console.log('🔄 Admin updating user suspension:', { targetUserId, suspended_at, reason })
+    // Admin updating user suspension
 
     // Get client IP for audit log
     const clientIP = req.headers.get('x-forwarded-for') || 
@@ -185,8 +182,7 @@ Deno.serve(async (req) => {
     const actionMessage = suspended_at 
       ? `User suspended successfully${reason ? ` for: ${reason}` : ''}`
       : 'User suspension removed successfully'
-
-    console.log('✅', actionMessage)
+    // Admin action completed successfully
 
     return new Response(
       JSON.stringify({ 

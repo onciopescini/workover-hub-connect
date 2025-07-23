@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
                      req.headers.get('cf-connecting-ip') ||
                      'unknown';
 
-    console.log('🔍 Rate limit check for IP:', clientIP);
+    // Rate limit check for IP
 
     if (req.method !== 'POST') {
       return new Response(
@@ -133,8 +133,7 @@ Deno.serve(async (req) => {
     // Check rate limit
     const result = checkRateLimit(rateLimitKey, maxAttempts, windowSeconds);
     
-    console.log('📊 Rate limit result:', {
-      key: rateLimitKey,
+    // Rate limit result calculated
       allowed: result.allowed,
       remaining: result.remaining,
       action
