@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PublicSpacesContent } from '@/components/spaces/PublicSpacesContent';
 import { usePublicSpacesLogic } from '@/hooks/usePublicSpacesLogic';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { SpaceFilters } from '@/types/space-filters';
 
 /**
  * Public Spaces Page - Refactored for better maintainability
@@ -61,7 +62,7 @@ const PublicSpaces = () => {
         isLoading={isLoading}
         mapCenter={mapCenter}
         highlightedId={highlightedId}
-        onFiltersChange={handleFiltersChange}
+        onFiltersChange={(filters) => handleFiltersChange(filters as SpaceFilters)}
         onSpaceClick={handleSpaceClick}
         onMapSpaceClick={handleMapSpaceClick}
       />

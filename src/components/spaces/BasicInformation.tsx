@@ -5,12 +5,13 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_OPTIONS } from "@/types/space";
+import { FormInputChangeHandler } from '@/types/space-filters';
 
 interface BasicInformationProps {
   title: string;
   description: string;
   category: string;
-  onInputChange: (field: string, value: any) => void;
+  onInputChange: FormInputChangeHandler;
   errors: Record<string, string>;
   isSubmitting: boolean;
 }

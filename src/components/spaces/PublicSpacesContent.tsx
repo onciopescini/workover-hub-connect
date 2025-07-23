@@ -8,16 +8,17 @@ import { EnhancedSpaceCardsGrid } from '@/components/spaces/EnhancedSpaceCardsGr
 import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
 import { AdvancedSpaceFilters } from '@/components/spaces/AdvancedSpaceFilters';
 import { PublicSpacesHeader } from './PublicSpacesHeader';
+import { Space, SpaceFilters, FilterChangeHandler, SpaceClickHandler, Coordinates } from '@/types/space-filters';
 
 interface PublicSpacesContentProps {
-  filters: any;
-  spaces: any[];
+  filters: SpaceFilters;
+  spaces: any[]; // Keep as any[] for compatibility with existing components
   isLoading: boolean;
-  mapCenter: { lat: number; lng: number } | null;
+  mapCenter: Coordinates | null;
   highlightedId: string | null;
-  onFiltersChange: (filters: any) => void;
-  onSpaceClick: (spaceId: string) => void;
-  onMapSpaceClick: (spaceId: string) => void;
+  onFiltersChange: FilterChangeHandler;
+  onSpaceClick: SpaceClickHandler;
+  onMapSpaceClick: SpaceClickHandler;
 }
 
 export const PublicSpacesContent = ({

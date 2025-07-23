@@ -12,30 +12,29 @@ import { Slider } from '@/components/ui/slider';
 import { Filter, X } from 'lucide-react';
 import { CATEGORY_OPTIONS, AMENITIES_OPTIONS, WORK_ENVIRONMENT_OPTIONS } from '@/types/space';
 import { GeographicSearch } from '@/components/shared/GeographicSearch';
+import { BasicSpaceFilters, FormFieldValue, Coordinates } from '@/types/space-filters';
 
 interface SpaceFiltersProps {
-  filters: {
-    category: string;
-    priceRange: number[];
-    amenities: string[];
-    workEnvironment: string;
-    location?: string;
-    coordinates?: { lat: number; lng: number };
-  };
-  onFiltersChange: (filters: any) => void;
+  filters: BasicSpaceFilters;
+  onFiltersChange: (filters: BasicSpaceFilters) => void;
 }
 
 export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersChange }) => {
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: keyof BasicSpaceFilters, value: FormFieldValue) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
-  const handleLocationSelect = (location: string, coordinates?: { lat: number; lng: number }) => {
-    onFiltersChange({ 
+  const handleLocationSelect = (location: string, coordinates?: Coordinates) => {
+    const updatedFilters: BasicSpaceFilters = { 
       ...filters, 
-      location,
-      coordinates
-    });
+      location
+    };
+    
+    if (coordinates) {
+      updatedFilters.coordinates = coordinates;
+    }
+    
+    onFiltersChange(updatedFilters);
   };
 
   const addAmenity = (amenity: string) => {
@@ -122,7 +121,7 @@ export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersCh
               <label className="text-sm font-medium">Prezzo per ora</label>
               <Slider
                 value={filters.priceRange}
-                onValueChange={(value) => updateFilter('priceRange', value)}
+                onValueChange={(value) => updateFilter('priceRange', value as [number, number])}
                 max={200}
                 min={0}
                 step={5}

@@ -18,22 +18,11 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { GeographicSearch } from '@/components/shared/GeographicSearch';
+import { SpaceFilters, FilterChangeHandler, FormFieldValue, Coordinates } from '@/types/space-filters';
 
 interface AdvancedSpaceFiltersProps {
-  filters: {
-    category: string;
-    priceRange: [number, number];
-    amenities: string[];
-    workEnvironment: string;
-    location: string;
-    coordinates: { lat: number; lng: number } | null;
-    capacity: [number, number];
-    rating: number;
-    verified: boolean;
-    superhost: boolean;
-    instantBook: boolean;
-  };
-  onFiltersChange: (filters: any) => void;
+  filters: SpaceFilters;
+  onFiltersChange: FilterChangeHandler;
   totalResults?: number;
 }
 
@@ -80,14 +69,14 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
     { label: 'Prenotazione istantanea', action: () => updateFilter('instantBook', true) }
   ];
 
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = (key: keyof SpaceFilters, value: FormFieldValue) => {
     onFiltersChange({
       ...filters,
       [key]: value
     });
   };
 
-  const handleLocationChange = (location: string, coordinates?: { lat: number; lng: number }) => {
+  const handleLocationChange = (location: string, coordinates?: Coordinates) => {
     onFiltersChange({
       ...filters,
       location,
@@ -324,7 +313,7 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
               </h4>
               <Slider
                 value={filters.priceRange}
-                onValueChange={(value) => updateFilter('priceRange', value)}
+                onValueChange={(value) => updateFilter('priceRange', value as [number, number])}
                 max={200}
                 min={0}
                 step={5}
@@ -340,7 +329,7 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
               </h4>
               <Slider
                 value={filters.capacity}
-                onValueChange={(value) => updateFilter('capacity', value)}
+                onValueChange={(value) => updateFilter('capacity', value as [number, number])}
                 max={20}
                 min={1}
                 step={1}
@@ -356,7 +345,7 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
               </h4>
               <Slider
                 value={[filters.rating]}
-                onValueChange={(value) => updateFilter('rating', value[0])}
+                onValueChange={(value) => updateFilter('rating', value[0] || 0)}
                 max={5}
                 min={0}
                 step={0.5}

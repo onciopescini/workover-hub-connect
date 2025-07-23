@@ -44,7 +44,6 @@ const Networking = () => {
     setSearchQuery(query);
     setSearchFilters(filters);
     // In a real app, this would trigger API calls to search with filters
-    console.log("Searching for:", query, "with filters:", filters);
   };
 
   const filteredConnections = getActiveConnections().filter(conn => {
