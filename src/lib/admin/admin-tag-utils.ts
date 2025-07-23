@@ -31,7 +31,7 @@ export const approveTag = async (tagId: string): Promise<void> => {
 
     if (error) throw error;
     
-    const result = data as { success: boolean; error?: string; message?: string };
+    const result = data as { success: boolean; error?: string; message?: string }; // TODO: Replace with proper type validation
     if (!result.success) {
       throw new Error(result.error || "Failed to approve tag");
     }

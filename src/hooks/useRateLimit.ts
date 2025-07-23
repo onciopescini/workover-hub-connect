@@ -42,7 +42,7 @@ export const useRateLimit = (): UseRateLimitReturn => {
         };
       }
 
-      const result = data as RateLimitResult;
+      const result = data as RateLimitResult; // TODO: Replace with proper type validation
       
       if (!result.allowed) {
         setIsRateLimited(true);

@@ -48,7 +48,7 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
     
     logger.info("Successfully fetched user profiles", { count: data?.length || 0 });
     
-    return data as AdminProfile[];
+    return data as AdminProfile[]; // TODO: Replace with proper type validation
   } catch (error) {
     logger.error("Error fetching users", {}, error as Error);
     throw error;
@@ -68,7 +68,7 @@ export const suspendUser = async (userId: string, reason: string): Promise<void>
 
     if (error) throw error;
     
-    const result = data as { success: boolean; error?: string; message?: string };
+    const result = data as { success: boolean; error?: string; message?: string }; // TODO: Replace with proper type validation
     if (!result.success) {
       throw new Error(result.error || "Failed to suspend user");
     }
@@ -93,7 +93,7 @@ export const reactivateUser = async (userId: string): Promise<void> => {
 
     if (error) throw error;
     
-    const result = data as { success: boolean; error?: string; message?: string };
+    const result = data as { success: boolean; error?: string; message?: string }; // TODO: Replace with proper type validation
     if (!result.success) {
       throw new Error(result.error || "Failed to reactivate user");
     }

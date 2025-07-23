@@ -38,7 +38,7 @@ export const moderateSpace = async (spaceId: string, approve: boolean, rejection
 
     if (error) throw error;
     
-    const result = data as { success: boolean; error?: string; message?: string };
+    const result = data as { success: boolean; error?: string; message?: string }; // TODO: Replace with proper type validation
     if (!result.success) {
       throw new Error(result.error || "Failed to moderate space");
     }
