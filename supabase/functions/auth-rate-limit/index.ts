@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.3.9.3';
 
 // Definisco le intestazioni per le richieste CORS
@@ -140,7 +141,7 @@ Deno.serve(async (req) => {
       remaining: result.remaining,
       resetTime: result.resetTime,
       message: result.message
-    });
+    };
 
     return new Response(
       JSON.stringify(response),
@@ -151,7 +152,6 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Unexpected error in auth-rate-limit function:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
