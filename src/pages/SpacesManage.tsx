@@ -92,22 +92,47 @@ const SpacesManage = () => {
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       
+      // Use soft delete instead of hard delete
       const { error } = await supabase
         .from('spaces')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', spaceId)
         .eq('host_id', authState.user?.id ?? '');
 
       if (error) {
-        console.error("Error deleting space:", error);
+        console.error("Error soft-deleting space:", error);
         toast.error("Errore nell'eliminazione dello spazio.");
       } else {
         setSpaces(spaces.filter(space => space.id !== spaceId));
         toast.success("Spazio eliminato con successo.");
       }
     } catch (error) {
-      console.error("Error deleting space:", error);
+      console.error("Error soft-deleting space:", error);
       toast.error("Errore nell'eliminazione dello spazio.");
+    }
+  };
+
+  const handleRestoreSpace = async (spaceId: string) => {
+    const confirmRestore = window.confirm("Sei sicuro di voler ripristinare questo spazio?");
+    if (!confirmRestore) return;
+
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const { data, error } = await supabase.functions.invoke('restore-space', {
+        body: { spaceId }
+      });
+
+      if (error) {
+        console.error("Error restoring space:", error);
+        toast.error("Errore nel ripristino dello spazio.");
+      } else {
+        await fetchSpaces(); // Refresh the spaces list
+        toast.success("Spazio ripristinato con successo.");
+      }
+    } catch (error) {
+      console.error("Error restoring space:", error);
+      toast.error("Errore nel ripristino dello spazio.");
     }
   };
 
@@ -227,6 +252,7 @@ const SpacesManage = () => {
                   onView={handleViewSpace}
                   onEdit={handleEditSpace}
                   onDelete={handleDeleteSpace}
+                  onRestore={handleRestoreSpace}
                   bookingsCount={0} // TODO: Calcolare dai bookings
                   monthlyRevenue={0} // TODO: Calcolare dai bookings
                 />

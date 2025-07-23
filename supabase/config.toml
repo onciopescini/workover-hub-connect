@@ -33,3 +33,6 @@ verify_jwt = true
 
 [functions.fix-stripe-status]
 verify_jwt = true
+
+[functions.restore-space]
+verify_jwt = true

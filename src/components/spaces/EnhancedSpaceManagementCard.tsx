@@ -4,13 +4,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Space } from '@/types/space';
-import { Edit, Eye, Trash2, MapPin, Users, Euro } from 'lucide-react';
+import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw } from 'lucide-react';
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface EnhancedSpaceManagementCardProps {
   space: Space;
   onView: (spaceId: string) => void;
   onEdit: (spaceId: string) => void;
   onDelete: (spaceId: string) => void;
+  onRestore?: (spaceId: string) => void;
   bookingsCount: number;
   monthlyRevenue: number;
 }
@@ -20,10 +22,15 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
   onView,
   onEdit,
   onDelete,
+  onRestore,
   bookingsCount,
   monthlyRevenue
 }) => {
+  const { authState } = useAuth();
   const getStatusBadge = () => {
+    if (space.deleted_at) {
+      return <Badge variant="destructive">Eliminato</Badge>;
+    }
     if (space.is_suspended) {
       return <Badge variant="destructive">Sospeso</Badge>;
     }
@@ -32,6 +39,9 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
     }
     return <Badge variant="secondary">Bozza</Badge>;
   };
+
+  const isAdmin = authState.profile?.role === 'admin';
+  const isDeleted = !!space.deleted_at;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -78,32 +88,49 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onView(space.id)}
-              className="flex-1"
-            >
-              <Eye className="w-4 h-4 mr-1" />
-              Vedi
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onEdit(space.id)}
-              className="flex-1"
-            >
-              <Edit className="w-4 h-4 mr-1" />
-              Modifica
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onDelete(space.id)}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            {isDeleted && isAdmin && onRestore ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onRestore(space.id)}
+                className="flex-1 text-green-600 hover:text-green-700"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Ripristina
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onView(space.id)}
+                  className="flex-1"
+                  disabled={isDeleted}
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  Vedi
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(space.id)}
+                  className="flex-1"
+                  disabled={isDeleted}
+                >
+                  <Edit className="w-4 h-4 mr-1" />
+                  Modifica
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onDelete(space.id)}
+                  className="text-red-600 hover:text-red-700"
+                  disabled={isDeleted}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardContent>

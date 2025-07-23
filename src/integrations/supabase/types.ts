@@ -1467,6 +1467,7 @@ export type Database = {
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
           created_at: string
+          deleted_at: string | null
           description: string
           event_friendly_tags: string[] | null
           host_id: string
@@ -1504,6 +1505,7 @@ export type Database = {
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
           created_at?: string
+          deleted_at?: string | null
           description: string
           event_friendly_tags?: string[] | null
           host_id: string
@@ -1541,6 +1543,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
           created_at?: string
+          deleted_at?: string | null
           description?: string
           event_friendly_tags?: string[] | null
           host_id?: string
