@@ -3,6 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
+// Define proper types for rate limit responses
+interface RateLimitResponse {
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+  message?: string;
+}
+
 export const cleanupAuthState = () => {
   logger.info('Starting auth state cleanup');
   
@@ -44,13 +52,13 @@ export const aggressiveSignOut = async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      logger.warn('Global sign out failed', {}, err as Error);
+      logger.warn('Global sign out failed', {}, err as Error); // TODO: Improve error type handling
     }
 
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
-      logger.warn('Local sign out failed', {}, err as Error);
+      logger.warn('Local sign out failed', {}, err as Error); // TODO: Improve error type handling
     }
 
     // Additional cleanup - clear any remaining session data
@@ -58,7 +66,7 @@ export const aggressiveSignOut = async () => {
       // Force session termination
       await supabase.auth.signOut();
     } catch (err) {
-      logger.warn('Standard sign out failed', {}, err as Error);
+      logger.warn('Standard sign out failed', {}, err as Error); // TODO: Improve error type handling
     }
 
     logger.info('Aggressive sign out completed');
@@ -69,7 +77,7 @@ export const aggressiveSignOut = async () => {
     }, 100);
     
   } catch (error) {
-    logger.error("Error in aggressive sign out", {}, error as Error);
+    logger.error("Error in aggressive sign out", {}, error as Error); // TODO: Improve error type handling
     // Even if logout fails, force navigation
     cleanupAuthState();
     window.location.href = '/';
@@ -110,7 +118,7 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
     if (error) throw error;
     return count || 0;
   } catch (error) {
-    logger.error("Error getting unread message count", {}, error as Error);
+    logger.error("Error getting unread message count", {}, error as Error); // TODO: Improve error type handling
     return 0;
   }
 };
@@ -127,7 +135,7 @@ export const cleanSignInWithGoogle = async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      logger.warn('Pre-login cleanup sign out failed', {}, err as Error);
+      logger.warn('Pre-login cleanup sign out failed', {}, err as Error); // TODO: Improve error type handling
     }
     
     // Small delay to ensure cleanup is complete
@@ -151,13 +159,13 @@ export const cleanSignInWithGoogle = async () => {
     logger.info('Google sign in initiated successfully');
     return data;
   } catch (error) {
-    logger.error("Error in clean Google sign in", {}, error as Error);
+    logger.error("Error in clean Google sign in", {}, error as Error); // TODO: Improve error type handling
     throw error;
   }
 };
 
 // Helper function to check rate limits before authentication
-export const checkAuthRateLimit = async (action: 'login' | 'password_reset', identifier?: string) => {
+export const checkAuthRateLimit = async (action: 'login' | 'password_reset', identifier?: string): Promise<RateLimitResponse> => {
   try {
     const { data, error } = await supabase.functions.invoke('auth-rate-limit', {
       body: { action, identifier }
@@ -174,9 +182,9 @@ export const checkAuthRateLimit = async (action: 'login' | 'password_reset', ide
       };
     }
 
-    return data;
+    return data as RateLimitResponse; // TODO: Add runtime validation for rate limit response
   } catch (error) {
-    logger.error('Rate limit check error', { action, ...(identifier && { identifier }) }, error as Error);
+    logger.error('Rate limit check error', { action, ...(identifier && { identifier }) }, error as Error); // TODO: Improve error type handling
     // Fail closed
     return { 
       allowed: false, 
@@ -219,7 +227,7 @@ export const cleanSignIn = async (email: string, password: string) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    logger.error("Error in clean sign in", { email }, error as Error);
+    logger.error("Error in clean sign in", { email }, error as Error); // TODO: Improve error type handling
     throw error;
   }
 };
@@ -247,7 +255,7 @@ export const requestPasswordReset = async (email: string) => {
     toast.success('Email di reset password inviata. Controlla la tua casella di posta.');
     return { success: true };
   } catch (error) {
-    logger.error("Error in password reset", { email }, error as Error);
+    logger.error("Error in password reset", { email }, error as Error); // TODO: Improve error type handling
     throw error;
   }
 };

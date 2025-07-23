@@ -21,7 +21,7 @@ export interface WeeklySchedule {
 
 export interface AvailabilityException {
   date: string;
-  available: boolean;
+  enabled: boolean; // Changed from 'available' to 'enabled' for consistency
   slots?: TimeSlot[];
 }
 
