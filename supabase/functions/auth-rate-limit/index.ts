@@ -155,9 +155,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        allowed: true, // Fail open for availability
-        remaining: 5,
-        resetTime: Date.now() + 60000
+        allowed: false, // Fail closed for security
+        remaining: 0,
+        resetTime: Date.now() + 60000,
+        message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
       }),
       { 
         status: 500, 
