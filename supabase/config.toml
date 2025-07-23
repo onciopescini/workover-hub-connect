@@ -39,3 +39,6 @@ verify_jwt = true
 
 [functions.admin-view-message]
 verify_jwt = true
+
+[functions.admin-suspend-user]
+verify_jwt = true

@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLogger } from "@/hooks/useLogger";
+import { SuspensionBanner } from "@/components/ui/SuspensionBanner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,6 +104,9 @@ export function AppLayout({
     return `${firstName} ${lastName}`.trim() || "Utente";
   };
 
+  // Check if user is suspended
+  const isSuspended = authState.profile?.suspended_at;
+  
   // Don't show user menu for admin users
   const showUserMenu = authState.profile?.role !== "admin";
   const navLinks = getNavLinks();
@@ -214,6 +218,18 @@ export function AppLayout({
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspension Banner */}
+      {isSuspended && authState.profile && (
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <SuspensionBanner 
+              suspendedAt={authState.profile.suspended_at!}
+              {...(authState.profile.suspension_reason && { reason: authState.profile.suspension_reason })}
+            />
           </div>
         </div>
       )}
