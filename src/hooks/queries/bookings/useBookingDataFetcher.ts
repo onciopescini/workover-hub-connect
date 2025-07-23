@@ -8,7 +8,9 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
     component: 'booking-data-fetcher',
     action: 'fetch_coworker_bookings',
     userId,
-    metadata: { filters }
+    metadata: { 
+      filtersApplied: filters ? JSON.stringify(filters) : 'none'
+    }
   });
   
   try {
@@ -53,7 +55,9 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
         action: 'fetch_coworker_bookings_db_error',
         userId,
         errorMessage: queryError.message,
-        metadata: { filters }
+        metadata: { 
+          filtersApplied: filters ? JSON.stringify(filters) : 'none'
+        }
       }, queryError);
       throw new Error(`Failed to fetch coworker bookings: ${queryError.message}`);
     }
@@ -72,7 +76,9 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
       component: 'booking-data-fetcher',
       action: 'fetch_coworker_bookings_exception',
       userId,
-      metadata: { filters }
+      metadata: { 
+        filtersApplied: filters ? JSON.stringify(filters) : 'none'
+      }
     }, fetchError as Error);
     throw fetchError;
   }
@@ -84,7 +90,9 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
     action: 'fetch_host_bookings',
     userId,
     role: userRole,
-    metadata: { filters }
+    metadata: { 
+      filtersApplied: filters ? JSON.stringify(filters) : 'none'
+    }
   });
   
   try {
@@ -166,7 +174,9 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
         userId,
         role: userRole,
         errorMessage: bookingsError.message,
-        metadata: { filters }
+        metadata: { 
+          filtersApplied: filters ? JSON.stringify(filters) : 'none'
+        }
       }, bookingsError);
       throw new Error(`Failed to fetch host bookings: ${bookingsError.message}`);
     }
@@ -210,7 +220,9 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       action: 'fetch_host_bookings_exception',
       userId,
       role: userRole,
-      metadata: { filters }
+      metadata: { 
+        filtersApplied: filters ? JSON.stringify(filters) : 'none'
+      }
     }, fetchError as Error);
     throw fetchError;
   }

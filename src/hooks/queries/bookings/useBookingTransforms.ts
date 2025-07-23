@@ -81,10 +81,11 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
     } catch (transformError) {
+      const bookingId = booking.id || 'unknown';
       logger.error('Error transforming coworker booking', {
         component: 'booking-transforms',
         action: 'transform_coworker_booking_error',
-        identifier: booking.id
+        identifier: bookingId
       }, transformError as Error);
       return null;
     }
@@ -139,10 +140,11 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
     } catch (transformError) {
+      const bookingId = booking.id || 'unknown';
       logger.error('Error transforming host booking', {
         component: 'booking-transforms',
         action: 'transform_host_booking_error',
-        identifier: booking.id
+        identifier: bookingId
       }, transformError as Error);
       return null;
     }
@@ -166,10 +168,11 @@ export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: st
              spaceAddress.includes(searchLower) ||
              coworkerName.includes(searchLower);
     } catch (filterError) {
+      const bookingId = booking?.id || 'unknown';
       logger.error('Error applying search filter', {
         component: 'booking-transforms',
         action: 'apply_search_filter_error',
-        identifier: booking?.id,
+        identifier: bookingId,
         metadata: { searchTerm }
       }, filterError as Error);
       return false;
