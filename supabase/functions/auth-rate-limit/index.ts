@@ -1,13 +1,16 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+// Importo il client Supabase e altre dipendenze
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.3.9.3';
 
+// Definisco le intestazioni per le richieste CORS
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
+// Definisco le interfacce per la richiesta di limitazione
 interface RateLimitRequest {
   action: 'login' | 'password_reset';
-  identifier?: string; // email for password reset
+  identifier?: string; // email per il reset della password
 }
 
 interface RateLimitResponse {
@@ -17,7 +20,7 @@ interface RateLimitResponse {
   message?: string;
 }
 
-// In-memory rate limit store (for demo - use Redis/KV in production)
+// Implemento una semplice memorizzazione in memoria per il rate-limiting
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 function getRateLimitKey(ip: string, action: string, identifier?: string): string {
@@ -35,7 +38,7 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   const current = rateLimitStore.get(key);
   
   if (!current || current.resetTime <= now) {
-    // Reset or first attempt
+    // Reset o primo tentativo
     rateLimitStore.set(key, { count: 1, resetTime });
     return {
       allowed: true,
@@ -45,8 +48,8 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   }
   
   if (current.count >= maxAttempts) {
-    // Rate limit exceeded
-    const waitTime = Math.ceil((resetTime - now) / 1000);
+    // Limitazione superata
+    const waitTime = Math.ceil(((resetTime - now) / 1000);
     return {
       allowed: false,
       remaining: 0,
@@ -55,7 +58,7 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
     };
   }
   
-  // Increment counter
+  // Incrementa il contatore
   current.count++;
   rateLimitStore.set(key, current);
   
@@ -66,21 +69,21 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   };
 }
 
+// Implemento l'handler per le richieste
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+  // Gestisco la richiesta CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get client IP
+    // Ottengo l'indirizzo del client
     const clientIP = req.headers.get('x-forwarded-for') || 
                      req.headers.get('x-real-ip') || 
                      req.headers.get('cf-connecting-ip') ||
                      'unknown';
 
-    // Rate limit check for IP
-
+    // Controllo del rate limit per IP
     if (req.method !== 'POST') {
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),
@@ -91,7 +94,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Analizzo il corpo della richiesta
     const { action, identifier }: RateLimitRequest = await req.json();
     
     if (!action || !['login', 'password_reset'].includes(action)) {
@@ -104,7 +107,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Configure rate limits based on action
+    // Configuro i limitazioni in base sull'azione
     let maxAttempts: number;
     let windowSeconds: number;
     
@@ -127,22 +130,24 @@ Deno.serve(async (req) => {
       throw new Error('Invalid action');
     }
 
-    // Generate rate limit key
+    // Genero la chiave di rate limit
     const rateLimitKey = getRateLimitKey(clientIP, action, identifier);
     
-    // Check rate limit
+    // Verifico il rate limit
     const result = checkRateLimit(rateLimitKey, maxAttempts, windowSeconds);
     
-    // Rate limit result calculated
+    // Risultato del rate limit
+    const response: RateLimitResponse = {
       allowed: result.allowed,
       remaining: result.remaining,
-      action
+      resetTime: result.resetTime,
+      message: result.message
     });
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify(response),
       { 
-        status: result.allowed ? 200 : 429, 
+        status: response.allowed ? 200 : 429, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
@@ -162,4 +167,4 @@ Deno.serve(async (req) => {
       }
     );
   }
-})
+});
