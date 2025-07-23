@@ -10,7 +10,7 @@ import { Search, MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
 
 interface MessagesChatAreaProps {
-  selectedConversation?: ConversationItem;
+  selectedConversation?: ConversationItem | undefined;
   messages: any[];
   onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
 }
