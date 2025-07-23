@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_access_logs: {
+        Row: {
+          accessed_at: string | null
+          action: string
+          admin_id: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          action: string
+          admin_id: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string | null
+          action?: string
+          admin_id?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_actions_log: {
         Row: {
           action_type: string
@@ -1868,6 +1904,17 @@ export type Database = {
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      log_admin_access: {
+        Args: {
+          p_table_name: string
+          p_record_id: string
+          p_action: string
+          p_ip_address?: unknown
+          p_user_agent?: string
+          p_metadata?: Json
+        }
+        Returns: string
       }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
