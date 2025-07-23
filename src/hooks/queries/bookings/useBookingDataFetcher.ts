@@ -5,9 +5,10 @@ import { BookingFilter } from "./useBookingFilters";
 
 export const fetchCoworkerBookings = async (userId: string, filters?: BookingFilter) => {
   logger.debug('Fetching coworker bookings', {
-    operation: 'fetch_coworker_bookings',
+    component: 'booking-data-fetcher',
+    action: 'fetch_coworker_bookings',
     userId,
-    filters
+    metadata: { filters }
   });
   
   try {
@@ -48,15 +49,18 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
 
     if (queryError) {
       logger.error('Error fetching coworker bookings from database', {
-        operation: 'fetch_coworker_bookings_db_error',
+        component: 'booking-data-fetcher',
+        action: 'fetch_coworker_bookings_db_error',
         userId,
-        filters
+        errorMessage: queryError.message,
+        metadata: { filters }
       }, queryError);
       throw new Error(`Failed to fetch coworker bookings: ${queryError.message}`);
     }
 
     logger.debug('Coworker bookings fetched successfully', {
-      operation: 'fetch_coworker_bookings_success',
+      component: 'booking-data-fetcher',
+      action: 'fetch_coworker_bookings_success',
       count: data?.length || 0,
       userId
     });
@@ -65,9 +69,10 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
 
   } catch (fetchError) {
     logger.error('Exception in fetchCoworkerBookings', {
-      operation: 'fetch_coworker_bookings_exception',
+      component: 'booking-data-fetcher',
+      action: 'fetch_coworker_bookings_exception',
       userId,
-      filters
+      metadata: { filters }
     }, fetchError as Error);
     throw fetchError;
   }
@@ -75,10 +80,11 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
 
 export const fetchHostBookings = async (userId: string, userRole: string, filters?: BookingFilter) => {
   logger.debug('Fetching host bookings', {
-    operation: 'fetch_host_bookings',
+    component: 'booking-data-fetcher',
+    action: 'fetch_host_bookings',
     userId,
-    userRole,
-    filters
+    role: userRole,
+    metadata: { filters }
   });
   
   try {
@@ -90,26 +96,30 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
 
     if (spacesError) {
       logger.error('Error fetching user spaces', {
-        operation: 'fetch_user_spaces_error',
+        component: 'booking-data-fetcher',
+        action: 'fetch_user_spaces_error',
         userId,
-        userRole
+        role: userRole,
+        errorMessage: spacesError.message
       }, spacesError);
       throw new Error(`Failed to fetch user spaces: ${spacesError.message}`);
     }
 
     if (!userSpaces || userSpaces.length === 0) {
       logger.debug('No spaces found for host', {
-        operation: 'fetch_user_spaces_empty',
+        component: 'booking-data-fetcher',
+        action: 'fetch_user_spaces_empty',
         userId,
-        userRole
+        role: userRole
       });
       return [];
     }
 
     const spaceIds = userSpaces.map(space => space.id);
     logger.debug('User spaces found', {
-      operation: 'fetch_user_spaces_success',
-      spacesCount: spaceIds.length,
+      component: 'booking-data-fetcher',
+      action: 'fetch_user_spaces_success',
+      count: spaceIds.length,
       userId
     });
 
@@ -151,10 +161,12 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
 
     if (bookingsError) {
       logger.error('Error fetching host bookings from database', {
-        operation: 'fetch_host_bookings_db_error',
+        component: 'booking-data-fetcher',
+        action: 'fetch_host_bookings_db_error',
         userId,
-        userRole,
-        filters
+        role: userRole,
+        errorMessage: bookingsError.message,
+        metadata: { filters }
       }, bookingsError);
       throw new Error(`Failed to fetch host bookings: ${bookingsError.message}`);
     }
@@ -168,9 +180,11 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
 
     if (profilesError) {
       logger.error('Warning fetching coworker profiles', {
-        operation: 'fetch_coworker_profiles_warning',
+        component: 'booking-data-fetcher',
+        action: 'fetch_coworker_profiles_warning',
         userId,
-        userIds: userIds.length
+        count: userIds.length,
+        errorMessage: profilesError.message
       }, profilesError);
     }
 
@@ -181,20 +195,22 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
     }));
 
     logger.debug('Host bookings fetched and enriched successfully', {
-      operation: 'fetch_host_bookings_success',
-      enrichedCount: enrichedBookings.length,
+      component: 'booking-data-fetcher',
+      action: 'fetch_host_bookings_success',
+      count: enrichedBookings.length,
       userId,
-      userRole
+      role: userRole
     });
     
     return enrichedBookings;
 
   } catch (fetchError) {
     logger.error('Exception in fetchHostBookings', {
-      operation: 'fetch_host_bookings_exception',
+      component: 'booking-data-fetcher',
+      action: 'fetch_host_bookings_exception',
       userId,
-      userRole,
-      filters
+      role: userRole,
+      metadata: { filters }
     }, fetchError as Error);
     throw fetchError;
   }

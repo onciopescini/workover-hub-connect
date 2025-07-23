@@ -41,8 +41,9 @@ interface RawBookingData {
 export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
     logger.error('Invalid data provided to transformCoworkerBookings', {
-      operation: 'transform_coworker_bookings_validation',
-      dataType: typeof data
+      component: 'booking-transforms',
+      action: 'transform_coworker_bookings_validation',
+      metadata: { dataType: typeof data }
     }, new Error('Data is not an array'));
     return [];
   }
@@ -81,8 +82,9 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
       };
     } catch (transformError) {
       logger.error('Error transforming coworker booking', {
-        operation: 'transform_coworker_booking_error',
-        bookingId: booking.id
+        component: 'booking-transforms',
+        action: 'transform_coworker_booking_error',
+        identifier: booking.id
       }, transformError as Error);
       return null;
     }
@@ -92,8 +94,9 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
 export const transformHostBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
     logger.error('Invalid data provided to transformHostBookings', {
-      operation: 'transform_host_bookings_validation',
-      dataType: typeof data
+      component: 'booking-transforms',
+      action: 'transform_host_bookings_validation',
+      metadata: { dataType: typeof data }
     }, new Error('Data is not an array'));
     return [];
   }
@@ -137,8 +140,9 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
       };
     } catch (transformError) {
       logger.error('Error transforming host booking', {
-        operation: 'transform_host_booking_error',
-        bookingId: booking.id
+        component: 'booking-transforms',
+        action: 'transform_host_booking_error',
+        identifier: booking.id
       }, transformError as Error);
       return null;
     }
@@ -163,9 +167,10 @@ export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: st
              coworkerName.includes(searchLower);
     } catch (filterError) {
       logger.error('Error applying search filter', {
-        operation: 'apply_search_filter_error',
-        bookingId: booking?.id,
-        searchTerm
+        component: 'booking-transforms',
+        action: 'apply_search_filter_error',
+        identifier: booking?.id,
+        metadata: { searchTerm }
       }, filterError as Error);
       return false;
     }
