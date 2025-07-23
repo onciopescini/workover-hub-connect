@@ -17,6 +17,43 @@ interface UseRateLimitReturn {
   message: string;
 }
 
+// Type validation function for API response
+const validateRateLimitResponse = (data: unknown): RateLimitResult => {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid rate limit response: not an object');
+  }
+
+  const response = data as Record<string, unknown>;
+
+  if (typeof response['allowed'] !== 'boolean') {
+    throw new Error('Invalid rate limit response: missing or invalid allowed field');
+  }
+
+  if (typeof response['remaining'] !== 'number') {
+    throw new Error('Invalid rate limit response: missing or invalid remaining field');
+  }
+
+  if (typeof response['resetTime'] !== 'number') {
+    throw new Error('Invalid rate limit response: missing or invalid resetTime field');
+  }
+
+  if (response['message'] !== undefined && typeof response['message'] !== 'string') {
+    throw new Error('Invalid rate limit response: invalid message field');
+  }
+
+  const result: RateLimitResult = {
+    allowed: response['allowed'] as boolean,
+    remaining: response['remaining'] as number,
+    resetTime: response['resetTime'] as number
+  };
+
+  if (response['message'] !== undefined) {
+    result.message = response['message'] as string;
+  }
+
+  return result;
+};
+
 export const useRateLimit = (): UseRateLimitReturn => {
   const [isRateLimited, setIsRateLimited] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
@@ -42,7 +79,8 @@ export const useRateLimit = (): UseRateLimitReturn => {
         };
       }
 
-      const result = data as RateLimitResult; // TODO: Replace with proper type validation
+      // Validate and parse response data
+      const result = validateRateLimitResponse(data);
       
       if (!result.allowed) {
         setIsRateLimited(true);
