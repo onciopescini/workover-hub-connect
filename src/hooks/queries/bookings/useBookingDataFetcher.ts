@@ -1,12 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useLogger } from "@/hooks/useLogger";
+import { logger } from "@/lib/logger";
 import { BookingFilter } from "./useBookingFilters";
 
-const { debug, error } = useLogger({ context: 'BookingDataFetcher' });
-
 export const fetchCoworkerBookings = async (userId: string, filters?: BookingFilter) => {
-  debug('Fetching coworker bookings', {
+  logger.debug('Fetching coworker bookings', {
     operation: 'fetch_coworker_bookings',
     userId,
     filters
@@ -49,15 +47,15 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
     const { data, error: queryError } = await query.order('created_at', { ascending: false });
 
     if (queryError) {
-      error('Error fetching coworker bookings from database', queryError as Error, {
+      logger.error('Error fetching coworker bookings from database', {
         operation: 'fetch_coworker_bookings_db_error',
         userId,
         filters
-      });
+      }, queryError);
       throw new Error(`Failed to fetch coworker bookings: ${queryError.message}`);
     }
 
-    debug('Coworker bookings fetched successfully', {
+    logger.debug('Coworker bookings fetched successfully', {
       operation: 'fetch_coworker_bookings_success',
       count: data?.length || 0,
       userId
@@ -66,17 +64,17 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
     return data || [];
 
   } catch (fetchError) {
-    error('Exception in fetchCoworkerBookings', fetchError as Error, {
+    logger.error('Exception in fetchCoworkerBookings', {
       operation: 'fetch_coworker_bookings_exception',
       userId,
       filters
-    });
+    }, fetchError as Error);
     throw fetchError;
   }
 };
 
 export const fetchHostBookings = async (userId: string, userRole: string, filters?: BookingFilter) => {
-  debug('Fetching host bookings', {
+  logger.debug('Fetching host bookings', {
     operation: 'fetch_host_bookings',
     userId,
     userRole,
@@ -91,16 +89,16 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       .eq('host_id', userId);
 
     if (spacesError) {
-      error('Error fetching user spaces', spacesError as Error, {
+      logger.error('Error fetching user spaces', {
         operation: 'fetch_user_spaces_error',
         userId,
         userRole
-      });
+      }, spacesError);
       throw new Error(`Failed to fetch user spaces: ${spacesError.message}`);
     }
 
     if (!userSpaces || userSpaces.length === 0) {
-      debug('No spaces found for host', {
+      logger.debug('No spaces found for host', {
         operation: 'fetch_user_spaces_empty',
         userId,
         userRole
@@ -109,7 +107,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
     }
 
     const spaceIds = userSpaces.map(space => space.id);
-    debug('User spaces found', {
+    logger.debug('User spaces found', {
       operation: 'fetch_user_spaces_success',
       spacesCount: spaceIds.length,
       userId
@@ -152,12 +150,12 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
     const { data: bookings, error: bookingsError } = await query.order('created_at', { ascending: false });
 
     if (bookingsError) {
-      error('Error fetching host bookings from database', bookingsError as Error, {
+      logger.error('Error fetching host bookings from database', {
         operation: 'fetch_host_bookings_db_error',
         userId,
         userRole,
         filters
-      });
+      }, bookingsError);
       throw new Error(`Failed to fetch host bookings: ${bookingsError.message}`);
     }
 
@@ -169,11 +167,11 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       .in('id', userIds);
 
     if (profilesError) {
-      error('Warning fetching coworker profiles', profilesError as Error, {
+      logger.error('Warning fetching coworker profiles', {
         operation: 'fetch_coworker_profiles_warning',
         userId,
         userIds: userIds.length
-      });
+      }, profilesError);
     }
 
     // Manually join the coworker data to avoid foreign key issues
@@ -182,7 +180,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       coworker: coworkerProfiles?.find(profile => profile.id === booking.user_id) || null
     }));
 
-    debug('Host bookings fetched and enriched successfully', {
+    logger.debug('Host bookings fetched and enriched successfully', {
       operation: 'fetch_host_bookings_success',
       enrichedCount: enrichedBookings.length,
       userId,
@@ -192,12 +190,12 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
     return enrichedBookings;
 
   } catch (fetchError) {
-    error('Exception in fetchHostBookings', fetchError as Error, {
+    logger.error('Exception in fetchHostBookings', {
       operation: 'fetch_host_bookings_exception',
       userId,
       userRole,
       filters
-    });
+    }, fetchError as Error);
     throw fetchError;
   }
 };

@@ -1,8 +1,6 @@
 
 import { BookingWithDetails } from "@/types/booking";
-import { useLogger } from "@/hooks/useLogger";
-
-const { debug, error } = useLogger({ context: 'BookingTransforms' });
+import { logger } from "@/lib/logger";
 
 interface RawBookingData {
   id?: string;
@@ -42,10 +40,10 @@ interface RawBookingData {
 
 export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
-    error('Invalid data provided to transformCoworkerBookings', new Error('Data is not an array'), {
+    logger.error('Invalid data provided to transformCoworkerBookings', {
       operation: 'transform_coworker_bookings_validation',
       dataType: typeof data
-    });
+    }, new Error('Data is not an array'));
     return [];
   }
 
@@ -82,10 +80,10 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
     } catch (transformError) {
-      error('Error transforming coworker booking', transformError as Error, {
+      logger.error('Error transforming coworker booking', {
         operation: 'transform_coworker_booking_error',
         bookingId: booking.id
-      });
+      }, transformError as Error);
       return null;
     }
   }).filter(Boolean) as BookingWithDetails[];
@@ -93,10 +91,10 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
 
 export const transformHostBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
-    error('Invalid data provided to transformHostBookings', new Error('Data is not an array'), {
+    logger.error('Invalid data provided to transformHostBookings', {
       operation: 'transform_host_bookings_validation',
       dataType: typeof data
-    });
+    }, new Error('Data is not an array'));
     return [];
   }
 
@@ -138,10 +136,10 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
     } catch (transformError) {
-      error('Error transforming host booking', transformError as Error, {
+      logger.error('Error transforming host booking', {
         operation: 'transform_host_booking_error',
         bookingId: booking.id
-      });
+      }, transformError as Error);
       return null;
     }
   }).filter(Boolean) as BookingWithDetails[];
@@ -164,11 +162,11 @@ export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: st
              spaceAddress.includes(searchLower) ||
              coworkerName.includes(searchLower);
     } catch (filterError) {
-      error('Error applying search filter', filterError as Error, {
+      logger.error('Error applying search filter', {
         operation: 'apply_search_filter_error',
         bookingId: booking?.id,
         searchTerm
-      });
+      }, filterError as Error);
       return false;
     }
   });
