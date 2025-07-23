@@ -109,12 +109,6 @@ Deno.serve(async (req) => {
     
     // Admin updating user suspension
 
-    // Get client IP for audit log
-    const clientIP = req.headers.get('x-forwarded-for') || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown'
-    const userAgent = req.headers.get('user-agent') || 'unknown'
-
     // Update user suspension status
     const updateData: any = {}
     
@@ -162,8 +156,8 @@ Deno.serve(async (req) => {
           p_table_name: 'profiles',
           p_record_id: targetUserId,
           p_action: action,
-          p_ip_address: clientIP,
-          p_user_agent: userAgent,
+          p_ip_address: null,
+          p_user_agent: null,
           p_metadata: {
             timestamp: new Date().toISOString(),
             reason: reason || null,

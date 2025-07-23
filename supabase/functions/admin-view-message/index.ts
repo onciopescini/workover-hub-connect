@@ -93,12 +93,6 @@ Deno.serve(async (req) => {
 
     // Admin viewing message
 
-    // Get client IP and User-Agent for audit log
-    const clientIP = req.headers.get('x-forwarded-for') || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown'
-    const userAgent = req.headers.get('user-agent') || 'unknown'
-
     // First, log the admin access attempt
     try {
       const { data: logResult, error: logError } = await supabase
@@ -106,8 +100,8 @@ Deno.serve(async (req) => {
           p_table_name: 'messages',
           p_record_id: messageId,
           p_action: 'VIEW_MESSAGE',
-          p_ip_address: clientIP,
-          p_user_agent: userAgent,
+          p_ip_address: null,
+          p_user_agent: null,
           p_metadata: {
             timestamp: new Date().toISOString(),
             method: req.method,
@@ -163,8 +157,7 @@ Deno.serve(async (req) => {
         message: message,
         audit: {
           accessed_by: user.id,
-          accessed_at: new Date().toISOString(),
-          ip_address: clientIP
+          accessed_at: new Date().toISOString()
         }
       }),
       { 
