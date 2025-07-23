@@ -28,14 +28,14 @@ const Messages = () => {
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto p-4 w-full">
         <MessagesPageHeader />
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
+        {/* Main Content - Fixed height to avoid footer overlap */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 180px)' }}>
+          {/* Sidebar - Fixed height with internal scrolling */}
+          <div className="lg:col-span-1 flex flex-col">
             <MessagesTabsManager
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -46,15 +46,13 @@ const Messages = () => {
             />
           </div>
 
-          {/* Messages Area */}
-          <div className="lg:col-span-3">
-            {selectedConversation && (
-              <MessagesChatArea
-                selectedConversation={selectedConversation}
-                messages={messages}
-                onSendMessage={handleSendMessage}
-              />
-            )}
+          {/* Messages Area - Fixed height with internal scrolling */}
+          <div className="lg:col-span-3 flex flex-col">
+            <MessagesChatArea
+              selectedConversation={selectedConversation}
+              messages={messages}
+              onSendMessage={handleSendMessage}
+            />
           </div>
         </div>
       </div>

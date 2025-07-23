@@ -37,6 +37,7 @@ export const OptimizedUnifiedHeader = () => {
       { name: 'Eventi', href: '/events', icon: Calendar },
       { name: 'Networking', href: '/networking', icon: Users },
       { name: 'Prenotazioni', href: '/bookings', icon: Calendar },
+      { name: 'Messaggi', href: '/messages', icon: MessageSquare },
     ];
 
     const role = authState.profile?.role;
@@ -189,12 +190,6 @@ export const OptimizedUnifiedHeader = () => {
                       <Link to="/profile" className="flex items-center">
                         <User className="mr-2 h-4 w-4" />
                         <span>Il mio profilo</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/messages" className="flex items-center">
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        <span>Messaggi</span>
                       </Link>
                     </DropdownMenuItem>
                     {authState.profile.role === 'admin' && (

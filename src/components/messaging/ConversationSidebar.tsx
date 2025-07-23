@@ -1,166 +1,142 @@
-import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+import React from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, MessageCircle, Calendar, Users, Bell } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { it } from "date-fns/locale";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageSquare, Calendar, Clock, CheckCheck } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
+import { cn } from "@/lib/utils";
 
 interface ConversationSidebarProps {
   conversations: ConversationItem[];
-  selectedId?: string;
+  selectedId: string;
   onSelect: (id: string) => void;
-  onNewChat?: () => void;
 }
 
 export const ConversationSidebar = ({
   conversations,
   selectedId,
-  onSelect,
-  onNewChat
+  onSelect
 }: ConversationSidebarProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return '';
+    const date = new Date(timeString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+  };
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-  const getConversationIcon = (type: string) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case 'booking': return Calendar;
-      case 'private': return MessageCircle;
-      case 'group': return Users;
-      default: return MessageCircle;
+      case 'private': return MessageSquare;
+      default: return MessageSquare;
     }
   };
 
-  const getPriorityColor = (priority?: string) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-500';
-      case 'high': return 'bg-yellow-500';
-      default: return 'bg-blue-500';
-    }
-  };
+  if (conversations.length === 0) {
+    return (
+      <Card className="h-full">
+        <CardContent className="flex items-center justify-center h-full">
+          <div className="text-center text-gray-500">
+            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p className="font-medium">Nessuna conversazione</p>
+            <p className="text-sm">Le tue chat appariranno qui</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Messaggi</h2>
-          <Badge variant="secondary" className="text-xs">
-            {filteredConversations.length}
-          </Badge>
-        </div>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Cerca conversazioni..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      {/* Conversations List */}
-      <ScrollArea className="flex-1">
-        <div className="p-2">
-          {filteredConversations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <MessageCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-              <p>Nessuna conversazione trovata</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {filteredConversations.map((conversation) => {
-                const Icon = getConversationIcon(conversation.type);
-                const isSelected = selectedId === conversation.id;
-                
-                return (
-                  <div
-                    key={conversation.id}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-50 ${
-                      isSelected ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
-                    }`}
-                    onClick={() => onSelect(conversation.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="relative">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.avatar} />
-                          <AvatarFallback>
-                            <Icon className="h-5 w-5" />
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        {conversation.isOnline && (
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+    <Card className="h-full">
+      <CardContent className="p-0">
+        <ScrollArea className="h-full">
+          <div className="p-2">
+            {conversations.map((conversation) => {
+              const Icon = getTypeIcon(conversation.type);
+              const isSelected = conversation.id === selectedId;
+              
+              return (
+                <div
+                  key={conversation.id}
+                  onClick={() => onSelect(conversation.id)}
+                  className={cn(
+                    "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2",
+                    "hover:bg-gray-50 hover:shadow-sm",
+                    isSelected ? "bg-blue-50 border-l-4 border-l-blue-500 shadow-sm" : "border-l-4 border-l-transparent"
+                  )}
+                >
+                  <div className="flex items-start space-x-3">
+                    <Avatar className="h-10 w-10 flex-shrink-0">
+                      <AvatarImage src={conversation.avatar} />
+                      <AvatarFallback>
+                        <Icon className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="font-medium text-gray-900 truncate">
+                          {conversation.title}
+                        </h4>
+                        {conversation.lastMessageTime && (
+                          <span className="text-xs text-gray-500 flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatTime(conversation.lastMessageTime)}
+                          </span>
                         )}
                       </div>
                       
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-medium text-sm truncate">
-                            {conversation.title}
-                          </h3>
-                          <div className="flex items-center gap-1">
-                            {conversation.priority && conversation.priority !== 'normal' && (
-                              <div className={`w-2 h-2 rounded-full ${getPriorityColor(conversation.priority)}`}></div>
-                            )}
-                            {conversation.lastMessageTime && (
-                              <span className="text-xs text-gray-500">
-                                {formatDistanceToNow(new Date(conversation.lastMessageTime), {
-                                  addSuffix: true,
-                                  locale: it
-                                })}
-                              </span>
-                            )}
-                          </div>
+                      <p className="text-sm text-gray-600 truncate mb-2">
+                        {conversation.subtitle}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-xs">
+                            {conversation.type}
+                          </Badge>
+                          {conversation.status && (
+                            <Badge className={cn("text-xs", getStatusColor(conversation.status))}>
+                              {conversation.status}
+                            </Badge>
+                          )}
                         </div>
                         
-                        <p className="text-xs text-gray-600 mb-1 truncate">
-                          {conversation.subtitle}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          {conversation.lastMessage && (
-                            <p className="text-xs text-gray-500 truncate flex-1">
-                              {conversation.lastMessage}
-                            </p>
+                        <div className="flex items-center space-x-1">
+                          {conversation.unreadCount && conversation.unreadCount > 0 && (
+                            <Badge className="bg-blue-500 text-white text-xs min-w-5 h-5 flex items-center justify-center">
+                              {conversation.unreadCount}
+                            </Badge>
                           )}
-                          
-                          <div className="flex items-center gap-2">
-                            {conversation.status && (
-                              <Badge 
-                                variant={conversation.status === 'confirmed' ? 'default' : 'secondary'}
-                                className="text-xs"
-                              >
-                                {conversation.status}
-                              </Badge>
-                            )}
-                            
-                            {conversation.unreadCount && conversation.unreadCount > 0 && (
-                              <Badge className="bg-red-500 text-white text-xs min-w-5 h-5 flex items-center justify-center rounded-full">
-                                {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-                              </Badge>
-                            )}
-                          </div>
+                          {conversation.isOnline && (
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      </CardContent>
     </Card>
   );
 };
