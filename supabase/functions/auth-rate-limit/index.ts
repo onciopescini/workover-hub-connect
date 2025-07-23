@@ -1,4 +1,3 @@
-// Importo il client Supabase e altre dipendenze
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.3.9.3';
 
 // Definisco le intestazioni per le richieste CORS
@@ -68,7 +67,7 @@ function checkRateLimit(key: string, maxAttempts: number, windowSeconds: number)
   };
 }
 
-// Implemento l'handler per le richieste
+// Implemento l'handler per le richies
 Deno.serve(async (req) => {
   // Gestisco la richiesta CORS preflight
   if (req.method === 'OPTIONS') {
