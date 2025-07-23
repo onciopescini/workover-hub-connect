@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export const cleanupAuthState = () => {
-  console.log('Starting auth state cleanup...');
+  logger.info('Starting auth state cleanup');
   
   // Remove standard auth tokens
   localStorage.removeItem('supabase.auth.token');
@@ -29,12 +30,12 @@ export const cleanupAuthState = () => {
     }
   });
 
-  console.log('Auth state cleanup completed');
+  logger.info('Auth state cleanup completed');
 };
 
 export const aggressiveSignOut = async () => {
   try {
-    console.log('Starting aggressive sign out...');
+    logger.info('Starting aggressive sign out');
     
     // Clean up auth state first
     cleanupAuthState();
@@ -43,13 +44,13 @@ export const aggressiveSignOut = async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      console.warn('Global sign out failed:', err);
+      logger.warn('Global sign out failed', {}, err as Error);
     }
 
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
-      console.warn('Local sign out failed:', err);
+      logger.warn('Local sign out failed', {}, err as Error);
     }
 
     // Additional cleanup - clear any remaining session data
@@ -57,10 +58,10 @@ export const aggressiveSignOut = async () => {
       // Force session termination
       await supabase.auth.signOut();
     } catch (err) {
-      console.warn('Standard sign out failed:', err);
+      logger.warn('Standard sign out failed', {}, err as Error);
     }
 
-    console.log('Aggressive sign out completed');
+    logger.info('Aggressive sign out completed');
     
     // Force page reload to ensure clean state
     setTimeout(() => {
@@ -68,7 +69,7 @@ export const aggressiveSignOut = async () => {
     }, 100);
     
   } catch (error) {
-    console.error("Error in aggressive sign out:", error);
+    logger.error("Error in aggressive sign out", {}, error as Error);
     // Even if logout fails, force navigation
     cleanupAuthState();
     window.location.href = '/';
@@ -109,7 +110,7 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
     if (error) throw error;
     return count || 0;
   } catch (error) {
-    console.error("Error getting unread message count:", error);
+    logger.error("Error getting unread message count", {}, error as Error);
     return 0;
   }
 };
@@ -117,7 +118,7 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
 // Helper function to handle login with cleanup and force account picker
 export const cleanSignInWithGoogle = async () => {
   try {
-    console.log('Starting clean Google sign in...');
+    logger.info('Starting clean Google sign in');
     
     // Clean up existing state first
     cleanupAuthState();
@@ -126,7 +127,7 @@ export const cleanSignInWithGoogle = async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      console.warn('Pre-login cleanup sign out failed:', err);
+      logger.warn('Pre-login cleanup sign out failed', {}, err as Error);
     }
     
     // Small delay to ensure cleanup is complete
@@ -147,10 +148,10 @@ export const cleanSignInWithGoogle = async () => {
     
     if (error) throw error;
     
-    console.log('Google sign in initiated successfully');
+    logger.info('Google sign in initiated successfully');
     return data;
   } catch (error) {
-    console.error("Error in clean Google sign in:", error);
+    logger.error("Error in clean Google sign in", {}, error as Error);
     throw error;
   }
 };
@@ -163,16 +164,26 @@ export const checkAuthRateLimit = async (action: 'login' | 'password_reset', ide
     });
 
     if (error) {
-      console.error('Rate limit check failed:', error);
-      // Fail open - allow the request if rate limit check fails
-      return { allowed: true, remaining: 5, resetTime: Date.now() + 60000 };
+      logger.error('Rate limit check failed', { action, identifier }, error);
+      // Fail closed - deny the request if rate limit check fails
+      return { 
+        allowed: false, 
+        remaining: 0, 
+        resetTime: Date.now() + 60000,
+        message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
+      };
     }
 
     return data;
   } catch (error) {
-    console.error('Rate limit check error:', error);
-    // Fail open
-    return { allowed: true, remaining: 5, resetTime: Date.now() + 60000 };
+    logger.error('Rate limit check error', { action, identifier }, error as Error);
+    // Fail closed
+    return { 
+      allowed: false, 
+      remaining: 0, 
+      resetTime: Date.now() + 60000,
+      message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
+    };
   }
 };
 
@@ -208,7 +219,7 @@ export const cleanSignIn = async (email: string, password: string) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error("Error in clean sign in:", error);
+    logger.error("Error in clean sign in", { email }, error as Error);
     throw error;
   }
 };
@@ -236,7 +247,7 @@ export const requestPasswordReset = async (email: string) => {
     toast.success('Email di reset password inviata. Controlla la tua casella di posta.');
     return { success: true };
   } catch (error) {
-    console.error("Error in password reset:", error);
+    logger.error("Error in password reset", { email }, error as Error);
     throw error;
   }
 };

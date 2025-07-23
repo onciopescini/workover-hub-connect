@@ -1,5 +1,7 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface RateLimitResult {
   allowed: boolean;
@@ -30,12 +32,13 @@ export const useRateLimit = (): UseRateLimitReturn => {
       });
 
       if (error) {
-        console.error('Rate limit check failed:', error);
-        // Fail open - allow the request if rate limit check fails
+        logger.error('Rate limit check failed', { action, identifier }, error);
+        // Fail closed - deny the request if rate limit check fails
         return {
-          allowed: true,
-          remaining: 5,
-          resetTime: Date.now() + 60000
+          allowed: false,
+          remaining: 0,
+          resetTime: Date.now() + 60000,
+          message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
         };
       }
 
@@ -69,12 +72,13 @@ export const useRateLimit = (): UseRateLimitReturn => {
 
       return result;
     } catch (error) {
-      console.error('Rate limit check error:', error);
-      // Fail open
+      logger.error('Rate limit check error', { action, identifier }, error as Error);
+      // Fail closed
       return {
-        allowed: true,
-        remaining: 5,
-        resetTime: Date.now() + 60000
+        allowed: false,
+        remaining: 0,
+        resetTime: Date.now() + 60000,
+        message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
       };
     }
   }, []);

@@ -2,19 +2,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminProfile } from "@/types/admin";
+import { logger } from "@/lib/logger";
 
 export const getAllUsers = async (): Promise<AdminProfile[]> => {
   try {
-    console.log("getAllUsers: Starting fetch...");
+    logger.info("Starting getAllUsers fetch");
     
     // Verify admin status first
     const { data: currentUser } = await supabase.auth.getUser();
     if (!currentUser?.user) {
-      console.log("getAllUsers: No authenticated user");
+      logger.warn("No authenticated user found");
       return [];
     }
 
-    console.log("getAllUsers: Current user ID:", currentUser.user.id);
+    logger.debug("Current user authenticated", { userId: currentUser.user.id });
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -22,10 +23,16 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
       .eq('id', currentUser.user.id)
       .single();
 
-    console.log("getAllUsers: Current user profile:", profile);
+    logger.debug("User profile retrieved", { 
+      role: profile?.role || 'unknown',
+      suspended: profile?.is_suspended ?? false
+    });
 
     if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      console.log("getAllUsers: User is not admin or is suspended");
+      logger.warn("User is not admin or is suspended", {
+        role: profile?.role || 'unknown',
+        suspended: profile?.is_suspended ?? false
+      });
       return [];
     }
 
@@ -35,16 +42,15 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("getAllUsers: Database error:", error);
+      logger.error("Database error fetching users", {}, error);
       throw error;
     }
     
-    console.log("getAllUsers: Fetched profiles:", data?.length || 0, "profiles");
-    console.log("getAllUsers: Sample profiles:", data?.slice(0, 3));
+    logger.info("Successfully fetched user profiles", { count: data?.length || 0 });
     
     return data as AdminProfile[];
   } catch (error) {
-    console.error("getAllUsers: Error fetching users:", error);
+    logger.error("Error fetching users", {}, error as Error);
     throw error;
   }
 };
@@ -69,7 +75,7 @@ export const suspendUser = async (userId: string, reason: string): Promise<void>
 
     toast.success("Utente sospeso con successo");
   } catch (error) {
-    console.error("Error suspending user:", error);
+    logger.error("Error suspending user", { userId, reason }, error as Error);
     toast.error("Errore nella sospensione dell'utente");
     throw error;
   }
@@ -94,7 +100,7 @@ export const reactivateUser = async (userId: string): Promise<void> => {
 
     toast.success("Utente riattivato con successo");
   } catch (error) {
-    console.error("Error reactivating user:", error);
+    logger.error("Error reactivating user", { userId }, error as Error);
     toast.error("Errore nella riattivazione dell'utente");
     throw error;
   }
