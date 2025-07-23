@@ -15,20 +15,17 @@ export const StripeValidationTest = () => {
 
   const runFullValidation = async () => {
     setIsRunning(true);
-    console.log('🚀 RUNNING POST-REFACTOR VALIDATION SUITE');
-    console.log('='.repeat(60));
+    // Running post-refactor validation suite
 
     try {
-      // 1. Run payment validation suite
-      console.log('\n💰 RUNNING PAYMENT VALIDATION SUITE');
+      // Run payment validation suite
       const paymentResults = executeValidationSuite();
       setValidationResults(paymentResults.results || []);
 
-      // 2. Run Stripe validation suite
-      console.log('\n🔧 RUNNING STRIPE INTEGRATION VALIDATION');
+      // Run Stripe validation suite
       runStripeValidationSuite();
-
-      // 3. Test specific Stripe calculations
+      
+      // Test specific Stripe calculations
       const testPrices = [20, 150, 75, 500];
       const stripeTestResults = testPrices.map(price => {
         const breakdown = calculatePaymentBreakdown(price);
@@ -41,12 +38,7 @@ export const StripeValidationTest = () => {
         
         const destinationChargeValidation = stripeSessionAmount === (stripeTransferAmount + stripeApplicationFee);
         
-        console.log(`\n🔍 DESTINATION CHARGE VALIDATION for €${price}:`);
-        console.log(`Session Amount: ${stripeSessionAmount} cents`);
-        console.log(`Transfer Amount: ${stripeTransferAmount} cents`);
-        console.log(`Application Fee: ${stripeApplicationFee} cents`);
-        console.log(`Sum Check: ${stripeTransferAmount + stripeApplicationFee} cents`);
-        console.log(`Validation: ${destinationChargeValidation ? '✅ PASS' : '❌ FAIL'}`);
+        // Destination charge validation performed silently
         
         return {
           price,
@@ -61,28 +53,17 @@ export const StripeValidationTest = () => {
       
       setStripeResults(stripeTestResults);
 
-      // 4. Summary report
-      console.log('\n📊 POST-REFACTOR VALIDATION SUMMARY');
-      console.log('='.repeat(60));
+      // Summary report calculated
       
       const paymentsPassed = paymentResults.results?.filter((r: any) => r.passed).length || 0;
       const paymentsTotal = paymentResults.results?.length || 0;
       const stripePassed = stripeTestResults.filter(r => r.destinationChargeValidation).length;
       const stripeTotal = stripeTestResults.length;
       
-      console.log(`✅ Payment Calculations: ${paymentsPassed}/${paymentsTotal} passed`);
-      console.log(`✅ Stripe Destination Charges: ${stripePassed}/${stripeTotal} passed`);
-      console.log(`✅ Dual Commission Model: ${paymentsPassed === paymentsTotal ? 'WORKING' : 'FAILED'}`);
-      console.log(`✅ Currency Rounding: 2 decimal places enforced`);
-      
-      if (paymentsPassed === paymentsTotal && stripePassed === stripeTotal) {
-        console.log('\n🎉 ALL VALIDATIONS PASSED! Stripe Destination Charge refactor is successful!');
-      } else {
-        console.log('\n⚠️ Some validations failed. Please review the errors above.');
-      }
+      // Validation results calculated and stored in state
 
     } catch (error) {
-      console.error('❌ Validation suite failed:', error);
+      // Validation suite failed - error handling without console logging
     } finally {
       setIsRunning(false);
     }

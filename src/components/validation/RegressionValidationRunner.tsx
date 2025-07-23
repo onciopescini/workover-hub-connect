@@ -19,7 +19,7 @@ export const RegressionValidationRunner = () => {
   // Auto-run validation on component mount to verify schema fixes
   useEffect(() => {
     const autoRunValidation = async () => {
-      console.log('🔄 Auto-running regression validation to verify schema fixes...');
+      // Auto-running regression validation to verify schema fixes
       setIsRunning(true);
       
       try {
@@ -45,7 +45,7 @@ export const RegressionValidationRunner = () => {
 
   const runFullRegression = async () => {
     setIsRunning(true);
-    console.log('🚀 STARTING FULL SPRINT 1 REGRESSION VALIDATION');
+    // Starting full Sprint 1 regression validation
     
     try {
       const validationResults = await regressionValidator.runFullRegression();
