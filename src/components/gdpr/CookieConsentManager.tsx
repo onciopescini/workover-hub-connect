@@ -19,8 +19,8 @@ export function CookieConsentManager() {
 
   const logConsentToDatabase = async () => {
     try {
-      // Get user agent and IP info
-      const userAgent = navigator.userAgent;
+      // Only collect user agent if analytics consent is given
+      const userAgent = consent.analytics ? navigator.userAgent : '';
       
       await supabase
         .from('cookie_consent_log')
