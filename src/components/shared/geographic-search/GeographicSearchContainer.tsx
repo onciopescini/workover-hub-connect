@@ -156,81 +156,44 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
     }
   }, [searchQuery, suggestions, handleSuggestionSelect, geocodeAddress, onChange, onLocationSelect, navigate]);
 
-  const getCurrentLocation = useCallback(() => {
-    if (isGettingLocation) return;
-    
+  const getCurrentLocation = useCallback(async (coordinates: { lat: number; lng: number }) => {
     setIsGettingLocation(true);
     
-    if (!navigator.geolocation) {
-      alert('La geolocalizzazione non è supportata dal tuo browser');
-      setIsGettingLocation(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const locationName = await reverseGeocode(position.coords.longitude, position.coords.latitude);
-          
-          if (value === undefined) {
-            setInternalSearchQuery(locationName);
-          }
-          
-          const coordinates = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-
-          if (onChange) {
-            onChange(locationName, coordinates);
-          }
-          
-          if (onLocationSelect) {
-            onLocationSelect(locationName, coordinates);
-          } else if (!onChange) {
-            navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
-          }
-        } catch (locationError) {
-          error('Error getting location name in container', locationError as Error, { 
-            operation: 'container_reverse_geocode',
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          alert('Errore nel ottenere la posizione');
-        } finally {
-          setIsGettingLocation(false);
-        }
-      },
-      (geolocationError) => {
-        error('Geolocation error in container', new Error(geolocationError.message), { 
-          operation: 'container_get_location',
-          errorCode: geolocationError.code,
-          errorMessage: geolocationError.message
-        });
-        let errorMessage = 'Errore nel accedere alla posizione';
-        
-        switch (geolocationError.code) {
-          case geolocationError.PERMISSION_DENIED:
-            errorMessage = 'Permesso di geolocalizzazione negato';
-            break;
-          case geolocationError.POSITION_UNAVAILABLE:
-            errorMessage = 'Posizione non disponibile';
-            break;
-          case geolocationError.TIMEOUT:
-            errorMessage = 'Timeout della richiesta di posizione';
-            break;
-        }
-        
-        alert(errorMessage);
-        setIsGettingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 600000
+    try {
+      const locationName = await reverseGeocode(coordinates.lng, coordinates.lat);
+      
+      if (value === undefined) {
+        setInternalSearchQuery(locationName);
       }
-    );
-  }, [reverseGeocode, onChange, onLocationSelect, navigate, isGettingLocation, value]);
+
+      if (onChange) {
+        onChange(locationName, coordinates);
+      }
+      
+      if (onLocationSelect) {
+        onLocationSelect(locationName, coordinates);
+      } else if (!onChange) {
+        navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
+      }
+    } catch (locationError) {
+      error('Error getting location name in container', locationError as Error, { 
+        operation: 'container_reverse_geocode',
+        lat: coordinates.lat,
+        lng: coordinates.lng
+      });
+      alert('Errore nel ottenere la posizione');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [reverseGeocode, onChange, onLocationSelect, navigate, value]);
+
+  const handleLocationError = useCallback((errorMsg: string) => {
+    error('Geolocation error in container', new Error(errorMsg), { 
+      operation: 'container_get_location_error'
+    });
+    alert(errorMsg);
+    setIsGettingLocation(false);
+  }, [error]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -260,6 +223,7 @@ export const GeographicSearchContainer: React.FC<GeographicSearchContainerProps>
         onChange={handleSearchInput}
         onSubmit={handleSearch}
         onGetCurrentLocation={getCurrentLocation}
+        onLocationError={handleLocationError}
         placeholder={placeholder}
         isLoading={isCurrentlyLoading}
         isGettingLocation={isGettingLocation}

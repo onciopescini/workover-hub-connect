@@ -2,13 +2,15 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Navigation, Loader2 } from 'lucide-react';
+import { UserLocationButton } from '@/components/ui/UserLocationButton';
+import { Search, Loader2 } from 'lucide-react';
 
 interface LocationInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
-  onGetCurrentLocation: () => void;
+  onGetCurrentLocation: (coordinates: { lat: number; lng: number }) => void;
+  onLocationError?: (error: string) => void;
   placeholder?: string;
   isLoading: boolean;
   isGettingLocation: boolean;
@@ -20,6 +22,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   onChange,
   onSubmit,
   onGetCurrentLocation,
+  onLocationError,
   placeholder = "Cerca per città o indirizzo...",
   isLoading,
   isGettingLocation,
@@ -42,16 +45,13 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         )}
       </div>
       
-      <Button
-        type="button"
+      <UserLocationButton
+        onLocationObtained={onGetCurrentLocation}
+        onError={onLocationError || (() => {})}
+        disabled={disabled || isLoading}
         variant="outline"
         size="icon"
-        onClick={onGetCurrentLocation}
-        disabled={disabled || isLoading}
-        title="Usa la mia posizione"
-      >
-        <Navigation className={`h-4 w-4 ${isGettingLocation ? 'animate-spin' : ''}`} />
-      </Button>
+      />
       
       <Button type="submit" size="icon" disabled={disabled || isLoading}>
         <Search className="h-4 w-4" />

@@ -61,48 +61,12 @@ export const usePublicSpacesLogic = () => {
     }
   }, [initialCity, initialCoordinates, filters.location]);
 
-  // Get user location with proper error handling
+  // Initialize default location (Rome) - geolocation moved to user action
   useEffect(() => {
-    const getUserLocation = async () => {
-      if (!navigator.geolocation) {
-        warn('Geolocation not supported, using default location (Rome)');
-        setUserLocation({ lat: 41.9028, lng: 12.4964 });
-        return;
-      }
-
-      const locationResult = await handleAsyncError(
-        () => new Promise<{lat: number, lng: number}>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (position) => resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            }),
-            reject,
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 600000
-            }
-          );
-        }),
-        { 
-          context: 'geolocation',
-          showToast: false,
-          toastMessage: 'Impossibile ottenere la posizione. Utilizzo Roma come default.'
-        }
-      );
-
-      if (locationResult) {
-        info('User location obtained successfully');
-        setUserLocation(locationResult);
-      } else {
-        warn('Geolocation failed, using default location (Rome)');
-        setUserLocation({ lat: 41.9028, lng: 12.4964 });
-      }
-    };
-
-    getUserLocation();
-  }, [handleAsyncError, warn, info]);
+    if (!userLocation) {
+      setUserLocation({ lat: 41.9028, lng: 12.4964 });
+    }
+  }, []);
 
   // Spaces data fetching with React Query
   const spacesQuery = useQuery({
@@ -162,6 +126,43 @@ export const usePublicSpacesLogic = () => {
     mapInteraction.clearSelection();
   };
 
+  const getUserLocation = async () => {
+    if (!navigator.geolocation) {
+      warn('Geolocation not supported, using default location (Rome)');
+      return;
+    }
+
+    const locationResult = await handleAsyncError(
+      () => new Promise<{lat: number, lng: number}>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          }),
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 600000
+          }
+        );
+      }),
+      { 
+        context: 'geolocation',
+        showToast: false,
+        toastMessage: 'Impossibile ottenere la posizione. Utilizzo Roma come default.'
+      }
+    );
+
+    if (locationResult) {
+      info('User location obtained successfully');
+      setUserLocation(locationResult);
+      setFilters(prev => ({ ...prev, coordinates: locationResult }));
+    } else {
+      warn('Geolocation failed, using default location (Rome)');
+    }
+  };
+
   // Use coordinates for map center if available
   const mapCenter = filters.coordinates || userLocation;
 
@@ -178,6 +179,7 @@ export const usePublicSpacesLogic = () => {
     
     // Actions
     handleFiltersChange,
+    getUserLocation,
     
     // Map interaction
     ...mapInteraction
