@@ -22,7 +22,7 @@ export const MessagesChatArea = ({
 }: MessagesChatAreaProps) => {
   if (!selectedConversation) {
     return (
-      <Card className="h-full flex flex-col">
+      <Card className="h-full flex flex-col overflow-hidden">
         <CardContent className="flex items-center justify-center h-full p-6">
           <div className="text-center text-gray-500 max-w-md">
             <div className="mb-6 relative">
@@ -50,7 +50,7 @@ export const MessagesChatArea = ({
   }
 
   return (
-    <Card className="h-full flex flex-col min-h-0">
+    <Card className="h-full flex flex-col overflow-hidden">
       {/* Chat Header - Fixed height */}
       <CardHeader className="border-b flex-shrink-0 py-3">
         <CardTitle className="flex items-center justify-between">
@@ -76,46 +76,48 @@ export const MessagesChatArea = ({
       </CardHeader>
 
       {/* Messages - Flexible height with scrolling */}
-      <CardContent className="flex-1 p-0 flex flex-col min-h-0">
-        <ScrollArea className="flex-1 min-h-0" style={{ scrollBehavior: 'smooth' }}>
-          <div className="p-4">
-            {messages.length === 0 ? (
-              <div className="text-center py-8 sm:py-12 text-gray-500">
-                <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-base sm:text-lg font-medium">Nessun messaggio</p>
-                <p className="text-sm">Inizia la conversazione!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <EnhancedMessageBubble
-                    key={message.id}
-                    id={message.id}
-                    content={message.content}
-                    attachments={message.attachments?.map((url: string) => ({
-                      url,
-                      type: url.includes('.jpg') || url.includes('.png') ? 'image' as const : 'file' as const,
-                      name: url.split('/').pop() || 'file'
-                    }))}
-                    senderName={message.senderName}
-                    senderAvatar={message.senderAvatar}
-                    timestamp={message.created_at}
-                    isCurrentUser={message.isCurrentUser}
-                    isRead={message.is_read}
-                    businessContext={
-                      selectedConversation.id.startsWith('booking-') ? {
-                        type: 'booking' as const,
-                        details: selectedConversation.subtitle
-                      } : {
-                        type: 'general' as const
+      <CardContent className="flex-1 p-0 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-4">
+              {messages.length === 0 ? (
+                <div className="text-center py-8 sm:py-12 text-gray-500">
+                  <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-base sm:text-lg font-medium">Nessun messaggio</p>
+                  <p className="text-sm">Inizia la conversazione!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <EnhancedMessageBubble
+                      key={message.id}
+                      id={message.id}
+                      content={message.content}
+                      attachments={message.attachments?.map((url: string) => ({
+                        url,
+                        type: url.includes('.jpg') || url.includes('.png') ? 'image' as const : 'file' as const,
+                        name: url.split('/').pop() || 'file'
+                      }))}
+                      senderName={message.senderName}
+                      senderAvatar={message.senderAvatar}
+                      timestamp={message.created_at}
+                      isCurrentUser={message.isCurrentUser}
+                      isRead={message.is_read}
+                      businessContext={
+                        selectedConversation.id.startsWith('booking-') ? {
+                          type: 'booking' as const,
+                          details: selectedConversation.subtitle
+                        } : {
+                          type: 'general' as const
+                        }
                       }
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
         {/* Message Composer - Fixed at bottom */}
         <div className="flex-shrink-0 border-t">

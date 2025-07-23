@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MessageSquare, Calendar, Clock, CheckCheck } from "lucide-react";
+import { MessageSquare, Calendar, Clock } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +50,7 @@ export const ConversationSidebar = ({
 
   if (conversations.length === 0) {
     return (
-      <Card className="h-full flex flex-col">
+      <Card className="h-full flex flex-col overflow-hidden">
         <CardContent className="flex items-center justify-center h-full p-4">
           <div className="text-center text-gray-500">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -63,9 +63,9 @@ export const ConversationSidebar = ({
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="p-0 h-full flex flex-col min-h-0">
-        <ScrollArea className="flex-1 min-h-0" style={{ scrollBehavior: 'smooth' }}>
+    <Card className="h-full flex flex-col overflow-hidden">
+      <CardContent className="p-0 h-full flex flex-col min-h-0 overflow-hidden">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-2 space-y-1">
             {conversations.map((conversation) => {
               const Icon = getTypeIcon(conversation.type);
