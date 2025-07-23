@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const cleanupAuthState = () => {
   console.log('Starting auth state cleanup...');
@@ -154,9 +155,40 @@ export const cleanSignInWithGoogle = async () => {
   }
 };
 
-// Helper function to handle login with cleanup
+// Helper function to check rate limits before authentication
+export const checkAuthRateLimit = async (action: 'login' | 'password_reset', identifier?: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('auth-rate-limit', {
+      body: { action, identifier }
+    });
+
+    if (error) {
+      console.error('Rate limit check failed:', error);
+      // Fail open - allow the request if rate limit check fails
+      return { allowed: true, remaining: 5, resetTime: Date.now() + 60000 };
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Rate limit check error:', error);
+    // Fail open
+    return { allowed: true, remaining: 5, resetTime: Date.now() + 60000 };
+  }
+};
+
+// Helper function to handle login with cleanup and rate limiting
 export const cleanSignIn = async (email: string, password: string) => {
   try {
+    // Check rate limit first
+    const rateLimitResult = await checkAuthRateLimit('login');
+    
+    if (!rateLimitResult.allowed) {
+      const waitTime = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+      const message = rateLimitResult.message || `Troppi tentativi di login. Riprova tra ${waitTime} secondi.`;
+      toast.error(message);
+      throw new Error(message);
+    }
+
     // Clean up existing state first
     cleanupAuthState();
     
@@ -177,6 +209,34 @@ export const cleanSignIn = async (email: string, password: string) => {
     return data;
   } catch (error) {
     console.error("Error in clean sign in:", error);
+    throw error;
+  }
+};
+
+// Helper function to handle password reset with rate limiting
+export const requestPasswordReset = async (email: string) => {
+  try {
+    // Check rate limit first
+    const rateLimitResult = await checkAuthRateLimit('password_reset', email);
+    
+    if (!rateLimitResult.allowed) {
+      const waitTime = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+      const message = rateLimitResult.message || `Troppi tentativi di reset password. Riprova tra ${waitTime} secondi.`;
+      toast.error(message);
+      throw new Error(message);
+    }
+
+    // Proceed with password reset
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`
+    });
+    
+    if (error) throw error;
+    
+    toast.success('Email di reset password inviata. Controlla la tua casella di posta.');
+    return { success: true };
+  } catch (error) {
+    console.error("Error in password reset:", error);
     throw error;
   }
 };
