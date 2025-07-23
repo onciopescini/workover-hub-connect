@@ -24,33 +24,36 @@ export const MessagesTabsManager = ({
   getTabCount
 }: MessagesTabsManagerProps) => {
   return (
-    <div className="h-full flex flex-col">
-      <Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-3 mb-4 flex-shrink-0">
-          <TabsTrigger value="all" className="flex items-center gap-1">
-            <MessageSquare className="h-4 w-4" />
-            Tutti
+          <TabsTrigger value="all" className="flex items-center gap-1 text-xs sm:text-sm">
+            <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Tutti</span>
+            <span className="sm:hidden">All</span>
             <Badge variant="secondary" className="ml-1 text-xs">
               {getTabCount("all")}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            Prenotazioni
+          <TabsTrigger value="bookings" className="flex items-center gap-1 text-xs sm:text-sm">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Prenotazioni</span>
+            <span className="sm:hidden">Book</span>
             <Badge variant="secondary" className="ml-1 text-xs">
               {getTabCount("bookings")}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="private" className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            Private
+          <TabsTrigger value="private" className="flex items-center gap-1 text-xs sm:text-sm">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Private</span>
+            <span className="sm:hidden">Prv</span>
             <Badge variant="secondary" className="ml-1 text-xs">
               {getTabCount("private")}
             </Badge>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={activeTab} className="flex-1 mt-0">
+        <TabsContent value={activeTab} className="flex-1 mt-0 min-h-0">
           <ConversationSidebar
             conversations={conversations}
             selectedId={selectedId ?? ''}

@@ -50,12 +50,12 @@ export const ConversationSidebar = ({
 
   if (conversations.length === 0) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
+      <Card className="h-full flex flex-col">
+        <CardContent className="flex items-center justify-center h-full p-4">
           <div className="text-center text-gray-500">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p className="font-medium">Nessuna conversazione</p>
-            <p className="text-sm">Le tue chat appariranno qui</p>
+            <p className="font-medium text-sm">Nessuna conversazione</p>
+            <p className="text-xs">Le tue chat appariranno qui</p>
           </div>
         </CardContent>
       </Card>
@@ -63,10 +63,10 @@ export const ConversationSidebar = ({
   }
 
   return (
-    <Card className="h-full">
-      <CardContent className="p-0">
-        <ScrollArea className="h-full">
-          <div className="p-2">
+    <Card className="h-full flex flex-col">
+      <CardContent className="p-0 h-full flex flex-col min-h-0">
+        <ScrollArea className="flex-1 min-h-0" style={{ scrollBehavior: 'smooth' }}>
+          <div className="p-2 space-y-1">
             {conversations.map((conversation) => {
               const Icon = getTypeIcon(conversation.type);
               const isSelected = conversation.id === selectedId;
@@ -76,38 +76,40 @@ export const ConversationSidebar = ({
                   key={conversation.id}
                   onClick={() => onSelect(conversation.id)}
                   className={cn(
-                    "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2",
-                    "hover:bg-gray-50 hover:shadow-sm",
-                    isSelected ? "bg-blue-50 border-l-4 border-l-blue-500 shadow-sm" : "border-l-4 border-l-transparent"
+                    "p-3 rounded-lg cursor-pointer transition-all duration-200",
+                    "hover:bg-gray-50 hover:shadow-sm border-l-4",
+                    isSelected 
+                      ? "bg-blue-50 border-l-blue-500 shadow-sm" 
+                      : "border-l-transparent hover:border-l-gray-200"
                   )}
                 >
                   <div className="flex items-start space-x-3">
-                    <Avatar className="h-10 w-10 flex-shrink-0">
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                       <AvatarImage src={conversation.avatar} />
                       <AvatarFallback>
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-medium text-gray-900 truncate">
+                        <h4 className="font-medium text-gray-900 truncate text-sm">
                           {conversation.title}
                         </h4>
                         {conversation.lastMessageTime && (
-                          <span className="text-xs text-gray-500 flex items-center">
+                          <span className="text-xs text-gray-500 flex items-center flex-shrink-0 ml-2">
                             <Clock className="h-3 w-3 mr-1" />
                             {formatTime(conversation.lastMessageTime)}
                           </span>
                         )}
                       </div>
                       
-                      <p className="text-sm text-gray-600 truncate mb-2">
+                      <p className="text-xs text-gray-600 truncate mb-2">
                         {conversation.subtitle}
                       </p>
                       
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 flex-wrap">
                           <Badge variant="outline" className="text-xs">
                             {conversation.type}
                           </Badge>
@@ -118,14 +120,14 @@ export const ConversationSidebar = ({
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1 flex-shrink-0">
                           {conversation.unreadCount && conversation.unreadCount > 0 && (
                             <Badge className="bg-blue-500 text-white text-xs min-w-5 h-5 flex items-center justify-center">
-                              {conversation.unreadCount}
+                              {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
                             </Badge>
                           )}
                           {conversation.isOnline && (
-                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></div>
                           )}
                         </div>
                       </div>
