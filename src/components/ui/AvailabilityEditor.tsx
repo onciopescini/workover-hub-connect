@@ -220,10 +220,13 @@ export const AvailabilityEditor: React.FC<AvailabilityEditorProps> = ({
           </p>
         </div>
 
-        {/* TODO: Add exception dates functionality */}
-        {/* TODO: Add bulk operations (copy day, apply to all weekdays, etc.) */}
-        {/* TODO: Add validation for overlapping time slots */}
-        {/* TODO: Add timezone support */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <h4 className="font-medium text-blue-900 mb-2">Funzionalità Avanzate</h4>
+          <p className="text-sm text-blue-700">
+            Le funzionalità avanzate (date eccezionali, operazioni in blocco, supporto timezone) 
+            saranno disponibili in un prossimo aggiornamento per ottimizzare l'esperienza utente.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

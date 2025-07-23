@@ -34,7 +34,7 @@ export function QuickActions() {
           <Button 
             variant="outline" 
             className="h-12"
-            onClick={() => {/* TODO: Implementa messaggi */}}
+            onClick={() => navigate("/messages")}
           >
             <MessageSquare className="w-4 h-4 mr-2" />
             Messaggi
