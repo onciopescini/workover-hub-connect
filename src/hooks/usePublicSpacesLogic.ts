@@ -77,7 +77,12 @@ export const usePublicSpacesLogic = () => {
               lat: position.coords.latitude,
               lng: position.coords.longitude
             }),
-            reject
+            reject,
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 600000
+            }
           );
         }),
         { 

@@ -3,7 +3,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MapPin, Navigation, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2 } from 'lucide-react';
+import { UserLocationButton } from '@/components/ui/UserLocationButton';
 import { useMapboxGeocoding } from '@/hooks/useMapboxGeocoding';
 import { cn } from '@/lib/utils';
 import { useLogger } from '@/hooks/useLogger';
@@ -171,84 +172,46 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     }
   }, [searchQuery, suggestions, handleSuggestionSelect, geocodeAddress, onChange, onLocationSelect, navigate]);
 
-  // Gestisce la geolocalizzazione
-  const getCurrentLocation = useCallback(() => {
-    if (isGettingLocation) return;
-    
+  // Handle geolocation with user gesture
+  const handleLocationObtained = useCallback(async (coordinates: { lat: number; lng: number }) => {
     setIsGettingLocation(true);
     
-    if (!navigator.geolocation) {
-      alert('La geolocalizzazione non è supportata dal tuo browser');
-      setIsGettingLocation(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const locationName = await reverseGeocode(position.coords.longitude, position.coords.latitude);
-          
-          // Aggiorna lo stato appropriato
-          if (value === undefined) {
-            setInternalSearchQuery(locationName);
-          }
-          
-          const coordinates = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-
-          // Chiama entrambi i callback se forniti
-          if (onChange) {
-            onChange(locationName, coordinates);
-          }
-          
-          if (onLocationSelect) {
-            onLocationSelect(locationName, coordinates);
-          } else if (!onChange) {
-            navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
-          }
-        } catch (locationError) {
-          error('Error getting location name from coordinates', locationError as Error, { 
-            operation: 'reverse_geocode',
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          alert('Errore nel ottenere la posizione');
-        } finally {
-          setIsGettingLocation(false);
-        }
-      },
-      (geolocationError) => {
-        error('Geolocation access error', new Error(geolocationError.message), { 
-          operation: 'get_current_location',
-          errorCode: geolocationError.code,
-          errorMessage: geolocationError.message
-        });
-        let errorMessage = 'Errore nel accedere alla posizione';
-        
-        switch (geolocationError.code) {
-          case geolocationError.PERMISSION_DENIED:
-            errorMessage = 'Permesso di geolocalizzazione negato';
-            break;
-          case geolocationError.POSITION_UNAVAILABLE:
-            errorMessage = 'Posizione non disponibile';
-            break;
-          case geolocationError.TIMEOUT:
-            errorMessage = 'Timeout della richiesta di posizione';
-            break;
-        }
-        
-        alert(errorMessage);
-        setIsGettingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 600000
+    try {
+      const locationName = await reverseGeocode(coordinates.lng, coordinates.lat);
+      
+      if (value === undefined) {
+        setInternalSearchQuery(locationName);
       }
-    );
-  }, [reverseGeocode, onChange, onLocationSelect, navigate, isGettingLocation, value]);
+
+      if (onChange) {
+        onChange(locationName, coordinates);
+      }
+      
+      if (onLocationSelect) {
+        onLocationSelect(locationName, coordinates);
+      } else if (!onChange) {
+        navigate(`/spaces?lat=${coordinates.lat}&lng=${coordinates.lng}&city=${encodeURIComponent(locationName)}`);
+      }
+    } catch (locationError) {
+      error('Error getting location name from coordinates', locationError as Error, { 
+        operation: 'reverse_geocode',
+        lat: coordinates.lat,
+        lng: coordinates.lng
+      });
+      alert('Errore nel ottenere la posizione');
+    } finally {
+      setIsGettingLocation(false);
+    }
+  }, [reverseGeocode, onChange, onLocationSelect, navigate, value, error]);
+
+  const handleLocationError = useCallback((errorMessage: string) => {
+    error('Geolocation error', new Error(errorMessage), { 
+      operation: 'get_current_location',
+      errorMessage
+    });
+    alert(errorMessage);
+    setIsGettingLocation(false);
+  }, [error]);
 
   // Chiude i suggerimenti quando si clicca fuori
   useEffect(() => {
@@ -291,16 +254,11 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
           )}
         </div>
         
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={getCurrentLocation}
+        <UserLocationButton
+          onLocationObtained={handleLocationObtained}
+          onError={handleLocationError}
           disabled={isCurrentlyLoading}
-          title="Usa la mia posizione"
-        >
-          <Navigation className={`h-4 w-4 ${isGettingLocation ? 'animate-spin' : ''}`} />
-        </Button>
+        />
         
         <Button type="submit" size="icon" disabled={isCurrentlyLoading}>
           <Search className="h-4 w-4" />

@@ -128,6 +128,12 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
           lat: position.coords.latitude,
           lng: position.coords.longitude
         });
+      }, (error) => {
+        console.warn('Geolocation error:', error);
+      }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 600000
       });
     }
   };
