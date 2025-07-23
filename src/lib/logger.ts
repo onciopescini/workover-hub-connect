@@ -170,7 +170,8 @@ class Logger {
       entry.metadata = {
         ...context,
         url: typeof window !== 'undefined' ? window.location.href : '',
-        userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : '',
+        // Only collect user agent if explicitly consented (check localStorage for consent)
+        userAgent: this.hasAnalyticsConsent() ? (typeof window !== 'undefined' ? window.navigator.userAgent : '') : '',
       };
     }
 
@@ -306,6 +307,15 @@ class Logger {
       clearInterval(this.flushTimer);
     }
     this.flush();
+  }
+
+  private hasAnalyticsConsent(): boolean {
+    try {
+      const consent = localStorage.getItem('cookie-consent');
+      return consent ? JSON.parse(consent).consent?.analytics === true : false;
+    } catch {
+      return false;
+    }
   }
 }
 
