@@ -60,9 +60,12 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
           Lascia Recensione
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby="review-dialog-description">
         <DialogHeader>
           <DialogTitle>Recensione per {targetUserName}</DialogTitle>
+          <p id="review-dialog-description" className="text-sm text-muted-foreground">
+            Condividi la tua esperienza con questo utente
+          </p>
         </DialogHeader>
         <ReviewForm
           type="booking"

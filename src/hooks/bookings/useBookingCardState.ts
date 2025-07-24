@@ -43,22 +43,34 @@ export const useBookingCardState = ({
     // Check if we can cancel based on status and time
     const canCancelByStatus = booking.status === "confirmed" || booking.status === "pending";
     
-    // Check if we're before the booking start time
+    // Check if we're before the booking start time using a more robust approach
     const now = new Date();
     let canCancelByTime = true;
     
     if (booking.booking_date && booking.start_time) {
-      // Combine date and time to get the exact booking start
-      const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
-      // Can't cancel if we're past the booking start time
-      canCancelByTime = isBefore(now, bookingStart);
-      console.log('Cancellation check:', {
-        now: now.toISOString(),
-        bookingStart: bookingStart.toISOString(),
-        canCancelByTime,
-        bookingDate: booking.booking_date,
-        startTime: booking.start_time
-      });
+      try {
+        // Combine date and time to get the exact booking start
+        const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
+        
+        // Can't cancel if we're past the booking start time
+        // Using isAfter to check if current time is after booking start
+        const isBookingInPast = !isBefore(now, bookingStart);
+        canCancelByTime = !isBookingInPast;
+        
+        console.log('Cancellation check (enhanced):', {
+          now: now.toISOString(),
+          bookingStart: bookingStart.toISOString(),
+          isBookingInPast,
+          canCancelByTime,
+          bookingDate: booking.booking_date,
+          startTime: booking.start_time,
+          timeDifference: bookingStart.getTime() - now.getTime()
+        });
+      } catch (error) {
+        console.error('Error parsing booking date/time:', error);
+        // If there's an error parsing, don't allow cancellation for safety
+        canCancelByTime = false;
+      }
     }
     
     const canCancel = canCancelByStatus && canCancelByTime;

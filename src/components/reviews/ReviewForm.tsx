@@ -44,13 +44,14 @@ export function ReviewForm({
 
   const onSubmit = async (data: ReviewFormData) => {
     try {
-      let success = false;
-      
+      // Get authenticated user
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         error('User not authenticated', new Error('No authenticated user'), { operation: 'get_user' });
         return;
       }
+
+      let success = false;
 
       if (type === 'booking' && bookingId) {
         success = await addBookingReview({
@@ -70,9 +71,11 @@ export function ReviewForm({
         });
       }
       
-      if (success && onSuccess) {
+      if (success) {
         form.reset();
-        onSuccess();
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (submitError) {
       error('Error submitting review', submitError as Error, { 
