@@ -46,8 +46,6 @@ export const OptimizedUnifiedHeader = () => {
       return [
         ...baseItems,
         { name: 'Dashboard Host', href: '/host/dashboard', icon: Home },
-        { name: 'Analytics', href: '/host/analytics', icon: Users },
-        { name: 'Ricavi', href: '/host/revenue', icon: Users },
       ];
     }
     

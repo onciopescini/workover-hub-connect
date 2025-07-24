@@ -2,7 +2,8 @@ import React from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Euro, TrendingUp, Calendar, Users } from "lucide-react";
+import { Euro, TrendingUp, Calendar, Users, PieChart, BarChart3 } from "lucide-react";
+import { AdvancedFinancialMetrics } from '@/components/dashboard/AdvancedFinancialMetrics';
 import { TabContentProps } from '../types/dashboard-tabs-types';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -27,8 +28,8 @@ export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'rece
     <TabsContent value="revenue" className="space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Dashboard Revenue</h2>
-          <p className="text-muted-foreground">Analisi dei ricavi basata sui dati reali delle prenotazioni</p>
+          <h2 className="text-2xl font-bold">Revenue & Finanze</h2>
+          <p className="text-muted-foreground">Analisi completa di ricavi e finanze basata sui dati reali</p>
         </div>
         <Badge variant="secondary" className="bg-green-100 text-green-800">
           {revenueData.bookingsCount} prenotazioni totali
@@ -166,6 +167,21 @@ export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'rece
           </CardContent>
         </Card>
       )}
+
+      {/* Financial Metrics Section */}
+      <div className="mt-8">
+        <div className="flex items-center mb-6">
+          <PieChart className="w-5 h-5 mr-2" />
+          <h3 className="text-xl font-semibold">Metriche Finanziarie Avanzate</h3>
+        </div>
+        <AdvancedFinancialMetrics
+          totalRevenue={metrics.totalRevenue}
+          monthlyRevenue={metrics.monthlyRevenue}
+          revenueGrowth={metrics.revenueGrowth}
+          averageBookingValue={metrics.averageBookingValue}
+          occupancyRate={metrics.occupancyRate}
+        />
+      </div>
     </TabsContent>
   );
 };

@@ -112,8 +112,10 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
       .from('payments')
       .select(`
         id,
+        amount,
         created_at,
         host_amount,
+        payment_status,
         booking_id,
         bookings!inner (
           space_id,
@@ -128,9 +130,8 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
         )
       `)
       .eq('bookings.spaces.host_id', hostId)
-      .eq('payment_status', 'completed')
+      .in('payment_status', ['completed', 'pending'])
       .not('created_at', 'is', null)
-      .not('host_amount', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -141,26 +142,22 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
     const transactions: Transaction[] = [];
     
     for (const payment of payments) {
-      // Since we filter for non-null created_at and host_amount in the query,
-      // these should be defined, but TypeScript doesn't know that
-      if (payment.created_at && payment.host_amount) {
-        const createdAt = payment.created_at;
-        const hostAmount = payment.host_amount;
+      if (payment.created_at && typeof payment.created_at === 'string') {
+        // Gestione host_amount null: calcolo da amount totale (stima 85% per l'host)
+        const hostAmount = payment.host_amount || (payment.amount * 0.85);
         
-        if (typeof createdAt === 'string' && typeof hostAmount === 'number') {
-          transactions.push({
-            id: payment.id,
-            type: 'earning' as const,
-            description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-            amount: hostAmount,
-            date: createdAt.split('T')[0] as string,
-            status: 'completed',
-            customer: payment.bookings?.profiles 
-              ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-              : 'Guest sconosciuto',
-            booking_id: payment.booking_id
-          });
-        }
+        transactions.push({
+          id: payment.id,
+          type: 'earning' as const,
+          description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
+          amount: hostAmount,
+          date: payment.created_at.split('T')[0] as string,
+          status: payment.payment_status === 'completed' ? 'completed' : 'pending',
+          customer: payment.bookings?.profiles 
+            ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
+            : 'Guest sconosciuto',
+          booking_id: payment.booking_id
+        });
       }
     }
 
