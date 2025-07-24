@@ -138,18 +138,33 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
 
     if (!payments) return [];
 
-    return payments.map(payment => ({
-      id: payment.id,
-      type: 'earning' as const,
-      description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-      amount: payment.host_amount!,
-      date: payment.created_at!.split('T')[0],
-      status: 'completed',
-      customer: payment.bookings?.profiles 
-        ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-        : 'Guest sconosciuto',
-      booking_id: payment.booking_id
-    }));
+    const transactions: Transaction[] = [];
+    
+    for (const payment of payments) {
+      // Since we filter for non-null created_at and host_amount in the query,
+      // these should be defined, but TypeScript doesn't know that
+      if (payment.created_at && payment.host_amount) {
+        const createdAt = payment.created_at;
+        const hostAmount = payment.host_amount;
+        
+        if (typeof createdAt === 'string' && typeof hostAmount === 'number') {
+          transactions.push({
+            id: payment.id,
+            type: 'earning' as const,
+            description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
+            amount: hostAmount,
+            date: createdAt.split('T')[0] as string,
+            status: 'completed',
+            customer: payment.bookings?.profiles 
+              ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
+              : 'Guest sconosciuto',
+            booking_id: payment.booking_id
+          });
+        }
+      }
+    }
+
+    return transactions;
 
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -167,12 +182,12 @@ export const getUpcomingPayouts = async (hostId: string): Promise<PayoutData[]> 
     nextWeek.setDate(nextWeek.getDate() + 7);
     const dateString = nextWeek.toISOString().split('T')[0];
     
-    const payouts: PayoutData[] = stats.pendingPayouts > 0 ? [
+    const payouts: PayoutData[] = stats.pendingPayouts > 0 && dateString ? [
       {
         id: '1',
         amount: stats.pendingPayouts,
         date: dateString,
-        status: 'scheduled'
+        status: 'scheduled' as const
       }
     ] : [];
 

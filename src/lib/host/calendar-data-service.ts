@@ -40,7 +40,7 @@ export const getHostCalendarData = async (hostId: string): Promise<CalendarMetri
         spaces!inner (host_id)
        `)
        .eq('spaces.host_id', hostId)
-       .eq('booking_date', today)
+       .eq('booking_date', today as string)
        .in('status', ['pending', 'confirmed']);
 
     if (todayError) throw todayError;
