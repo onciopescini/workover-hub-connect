@@ -31,8 +31,6 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   const { debug } = useLogger({ context: 'StickyBookingCard' });
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(1);
-
   // Confirmation type handling
   const confirmationType = space.confirmation_type || 'host_approval';
   const isInstantBooking = confirmationType === 'instant';
@@ -54,18 +52,6 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const calculateTotal = () => {
-    const basePrice = space.price_per_day * selectedDays;
-    const serviceFee = basePrice * 0.05; // 5% service fee
-    return {
-      basePrice,
-      serviceFee,
-      total: basePrice + serviceFee
-    };
-  };
-
-  const pricing = calculateTotal();
 
   if (showBookingForm) {
     return (
@@ -131,25 +117,15 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Quick Date Selection */}
+        {/* Booking Info */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar className="w-4 h-4" />
-            <span>Seleziona durata</span>
+            <span>Prenotazione flessibile</span>
           </div>
-          
-          <div className="grid grid-cols-3 gap-2">
-            {[1, 3, 7].map((days) => (
-              <Button
-                key={days}
-                variant={selectedDays === days ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedDays(days)}
-              >
-                {days} {days === 1 ? 'giorno' : 'giorni'}
-              </Button>
-            ))}
-          </div>
+          <p className="text-sm text-gray-600">
+            Seleziona uno o più giorni con orari personalizzati
+          </p>
         </div>
 
         {/* Capacity Info */}
@@ -177,19 +153,17 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           )}
         </div>
 
-        {/* Price Breakdown */}
+        {/* Pricing Info */}
         <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
           <div className="flex justify-between text-sm">
-            <span>€{space.price_per_day} × {selectedDays} {selectedDays === 1 ? 'giorno' : 'giorni'}</span>
-            <span>€{pricing.basePrice.toFixed(2)}</span>
+            <span>Prezzo giornaliero</span>
+            <span className="font-medium">€{space.price_per_day}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Commissione servizio</span>
-            <span>€{pricing.serviceFee.toFixed(2)}</span>
+          <div className="text-xs text-gray-600">
+            • Giornata intera (8+ ore): prezzo fisso
           </div>
-          <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-            <span>Totale</span>
-            <span>€{pricing.total.toFixed(2)}</span>
+          <div className="text-xs text-gray-600">
+            • Orari ridotti: tariffa oraria proporzionale
           </div>
         </div>
 

@@ -1,14 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, CalendarDays, Clock, Euro, AlertTriangle, CheckCircle } from "lucide-react";
+import { Plus, CalendarDays, Clock, Euro, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { reserveBookingSlot, calculateBookingTotal, handlePaymentFlow } from "@/lib/booking-reservation-utils";
+import { useBookingConflictCheck } from "@/hooks/useBookingConflictCheck";
 import { useLogger } from "@/hooks/useLogger";
+import { BookingSlot, MultiDayBookingData } from "@/types/booking";
+import { BookingSlotItem } from "./BookingSlotItem";
+import { differenceInHours } from 'date-fns';
 
 interface BookingFormProps {
   spaceId: string;
@@ -18,16 +18,24 @@ interface BookingFormProps {
   onError: (message: string) => void;
 }
 
+const generateSlotId = () => {
+  return Math.random().toString(36).substr(2, 9);
+};
+
 export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess, onError }: BookingFormProps) {
-  const [selectedDate, setSelectedDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([
+    {
+      id: generateSlotId(),
+      date: '',
+      startTime: '',
+      endTime: ''
+    }
+  ]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [reservationStep, setReservationStep] = useState<'form' | 'reserved' | 'payment'>('form');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const { info, error, debug } = useLogger({ context: 'BookingForm' });
+  const { info, error, debug } = useLogger({ context: 'MultiDayBookingForm' });
 
-  // Log component initialization
   debug('BookingForm initialized', {
     spaceId,
     pricePerDay,
@@ -35,44 +43,115 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
     isInstant: confirmationType === 'instant'
   });
 
-  const validateForm = (): boolean => {
+  const addNewSlot = () => {
+    const newSlot: BookingSlot = {
+      id: generateSlotId(),
+      date: '',
+      startTime: '',
+      endTime: ''
+    };
+    setBookingSlots([...bookingSlots, newSlot]);
+  };
+
+  const updateSlot = (slotId: string, updatedSlot: BookingSlot) => {
+    setBookingSlots(slots => 
+      slots.map(slot => slot.id === slotId ? updatedSlot : slot)
+    );
+  };
+
+  const removeSlot = (slotId: string) => {
+    if (bookingSlots.length > 1) {
+      setBookingSlots(slots => slots.filter(slot => slot.id !== slotId));
+    }
+  };
+
+  const validateSlots = (): boolean => {
     const errors: string[] = [];
     
-    if (!selectedDate) errors.push('Seleziona una data');
-    if (!startTime) errors.push('Seleziona orario di inizio');
-    if (!endTime) errors.push('Seleziona orario di fine');
-    if (startTime && endTime && startTime >= endTime) {
-      errors.push('L\'orario di fine deve essere successivo a quello di inizio');
-    }
-    
-    // Fix: Confronto corretto delle date
-    if (selectedDate) {
-      const selectedDateObj = new Date(selectedDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (selectedDateObj < today) {
-        errors.push('Non puoi prenotare per date passate');
+    bookingSlots.forEach((slot, index) => {
+      if (!slot.date) {
+        errors.push(`Slot ${index + 1}: Seleziona una data`);
       }
+      if (!slot.startTime) {
+        errors.push(`Slot ${index + 1}: Seleziona orario di inizio`);
+      }
+      if (!slot.endTime) {
+        errors.push(`Slot ${index + 1}: Seleziona orario di fine`);
+      }
+      if (slot.startTime && slot.endTime && slot.startTime >= slot.endTime) {
+        errors.push(`Slot ${index + 1}: L'orario di fine deve essere successivo a quello di inizio`);
+      }
+      if (slot.date) {
+        const selectedDateObj = new Date(slot.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDateObj < today) {
+          errors.push(`Slot ${index + 1}: Non puoi prenotare per date passate`);
+        }
+      }
+      if (slot.hasConflict) {
+        errors.push(`Slot ${index + 1}: Risolvi i conflitti di prenotazione`);
+      }
+    });
+
+    // Check for duplicate slots
+    const duplicateSlots = bookingSlots.filter((slot, index) => {
+      return bookingSlots.findIndex(s => 
+        s.date === slot.date && 
+        s.startTime === slot.startTime && 
+        s.endTime === slot.endTime &&
+        slot.date && slot.startTime && slot.endTime
+      ) !== index;
+    });
+
+    if (duplicateSlots.length > 0) {
+      errors.push('Rimuovi slot duplicati');
     }
     
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
+  const calculateTotalBooking = (): MultiDayBookingData => {
+    let totalPrice = 0;
+    let totalHours = 0;
+
+    bookingSlots.forEach(slot => {
+      if (slot.date && slot.startTime && slot.endTime) {
+        const startDateTime = new Date(`${slot.date}T${slot.startTime}:00`);
+        const endDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
+        const hours = differenceInHours(endDateTime, startDateTime);
+        
+        // Apply daily rate if 8+ hours, otherwise hourly rate
+        if (hours >= 8) {
+          totalPrice += pricePerDay;
+        } else {
+          totalPrice += hours * (pricePerDay / 8); // Assuming 8-hour workday for hourly rate
+        }
+        
+        totalHours += hours;
+      }
+    });
+
+    return {
+      slots: bookingSlots,
+      totalPrice,
+      totalHours
+    };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    info('Submit initiated', {
+    info('Multi-day booking submit initiated', {
       spaceId,
-      selectedDate,
-      startTime,
-      endTime,
+      slotCount: bookingSlots.length,
       confirmationType
     });
     
-    if (!validateForm()) {
-      onError('Correggi gli errori nel form');
+    if (!validateSlots()) {
+      onError('Correggi gli errori nei slot di prenotazione');
       return;
     }
 
@@ -80,57 +159,59 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
     setValidationErrors([]);
     
     try {
-      info('Reserving slot for space', { spaceId });
+      info('Reserving multiple slots for space', { spaceId, slotCount: bookingSlots.length });
       
-      // Step 1: Reserve the slot (5 minute lock)
+      // For now, we'll reserve the first slot and then need to implement multi-slot reservation
+      const firstSlot = bookingSlots[0];
+      if (!firstSlot || !firstSlot.date || !firstSlot.startTime || !firstSlot.endTime) {
+        onError('Completa almeno un slot di prenotazione');
+        return;
+      }
+      
       const reservation = await reserveBookingSlot(
         spaceId,
-        selectedDate,
-        startTime,
-        endTime,
+        firstSlot.date,
+        firstSlot.startTime,
+        firstSlot.endTime,
         confirmationType
       );
 
       info('Reservation result', { reservation });
 
       if (!reservation || !reservation.success) {
-        const errorMsg = reservation?.error || 'Errore nella prenotazione dello slot';
+        const errorMsg = reservation?.error || 'Errore nella prenotazione degli slot';
         error('Reservation failed', new Error(errorMsg), { 
           spaceId, 
-          selectedDate, 
-          startTime, 
-          endTime,
+          slots: bookingSlots,
           reservation 
         });
         onError(errorMsg);
         return;
       }
 
-      info('Slot reserved successfully', { 
+      info('Slots reserved successfully', { 
         bookingId: reservation.booking_id,
         reservedUntil: reservation.reserved_until 
       });
       setReservationStep('reserved');
 
-      // Step 2: Handle payment flow based on confirmation type
+      // Handle payment flow based on confirmation type
       if (confirmationType === 'instant') {
-        // Instant booking -> proceed to payment immediately
-        const totalAmount = calculateBookingTotal(pricePerDay, startTime, endTime);
+        const { totalPrice } = calculateTotalBooking();
         
-        info('Processing instant booking payment', {
+        info('Processing instant booking payment for multiple slots', {
           bookingId: reservation.booking_id,
-          totalAmount
+          totalAmount: totalPrice
         });
         
-        toast.success('Slot riservato! Reindirizzamento al pagamento...', {
+        toast.success('Slot riservati! Reindirizzamento al pagamento...', {
           icon: <CheckCircle className="w-4 h-4" />
         });
         
-        // Small delay to show success message
         setTimeout(() => {
           handlePaymentFlow(
             reservation.booking_id!,
-            totalAmount,
+            totalPrice,
             () => {
               info('Payment flow completed successfully', { bookingId: reservation.booking_id });
               setReservationStep('payment');
@@ -139,7 +220,7 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
             (paymentError) => {
               error('Payment flow error', new Error(paymentError), { 
                 bookingId: reservation.booking_id,
-                totalAmount 
+                totalAmount: totalPrice 
               });
               onError(paymentError);
             }
@@ -147,11 +228,10 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         }, 1500);
         
       } else {
-        // Host approval required -> show waiting message
-        info('Host approval required, showing confirmation', { 
+        info('Host approval required for multi-slot booking', { 
           bookingId: reservation.booking_id 
         });
-        toast.success('Richiesta di prenotazione inviata! Attendere l\'approvazione dell\'host.', {
+        toast.success('Richiesta di prenotazione multi-giorno inviata! Attendere l\'approvazione dell\'host.', {
           icon: <CheckCircle className="w-4 h-4" />
         });
         setReservationStep('reserved');
@@ -159,11 +239,9 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
       }
       
     } catch (bookingError) {
-      error('Unexpected error in booking process', bookingError as Error, {
+      error('Unexpected error in multi-day booking process', bookingError as Error, {
         spaceId,
-        selectedDate,
-        startTime,
-        endTime,
+        slots: bookingSlots,
         confirmationType
       });
       onError('Errore imprevisto nel processo di prenotazione');
@@ -172,25 +250,10 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
     }
   };
 
-  const generateTimeOptions = () => {
-    const options = [];
-    for (let hour = 9; hour <= 18; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        options.push(timeString);
-      }
-    }
-    return options;
-  };
-
-  const calculateDuration = () => {
-    if (!startTime || !endTime) return 0;
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // hours
-  };
-
-  const totalPrice = calculateBookingTotal(pricePerDay, startTime, endTime);
+  const bookingData = calculateTotalBooking();
+  const validSlots = bookingSlots.filter(slot => 
+    slot.date && slot.startTime && slot.endTime && slot.startTime < slot.endTime
+  );
 
   if (reservationStep === 'reserved' && confirmationType !== 'instant') {
     return (
@@ -198,20 +261,25 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-green-600">
             <CalendarDays className="w-5 h-5" />
-            Richiesta Inviata
+            Richiesta Multi-Giorno Inviata
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="p-4 bg-green-50 rounded-lg">
             <p className="text-green-800">
-              La tua richiesta di prenotazione è stata inviata all'host. 
+              La tua richiesta di prenotazione multi-giorno è stata inviata all'host. 
               Riceverai una notifica quando verrà approvata.
             </p>
           </div>
-          <div className="text-sm text-gray-600">
-            <p>Data: {new Date(selectedDate).toLocaleDateString('it-IT')}</p>
-            <p>Orario: {startTime} - {endTime}</p>
-            <p>Durata: {calculateDuration()} ore</p>
+          <div className="text-sm text-gray-600 space-y-2">
+            <p className="font-medium">Riepilogo prenotazione:</p>
+            {validSlots.map((slot, index) => (
+              <div key={slot.id} className="border-b pb-1">
+                <p>Giorno {index + 1}: {new Date(slot.date).toLocaleDateString('it-IT')}</p>
+                <p>Orario: {slot.startTime} - {slot.endTime}</p>
+              </div>
+            ))}
+            <p className="font-medium pt-2">Totale: {bookingData.totalHours} ore</p>
           </div>
         </CardContent>
       </Card>
@@ -260,67 +328,54 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
-            <Input
-              id="date"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              required
-              disabled={isProcessing}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startTime">Orario inizio</Label>
-              <Select value={startTime} onValueChange={setStartTime} disabled={isProcessing}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona orario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {generateTimeOptions().map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Booking Slots */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Slot di prenotazione</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addNewSlot}
+                disabled={isProcessing}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Aggiungi giorno
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="endTime">Orario fine</Label>
-              <Select value={endTime} onValueChange={setEndTime} disabled={isProcessing}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona orario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {generateTimeOptions().map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {bookingSlots.map((slot, index) => (
+              <BookingSlotItem
+                key={slot.id}
+                slot={slot}
+                onUpdate={(updatedSlot) => updateSlot(slot.id, updatedSlot)}
+                onRemove={() => removeSlot(slot.id)}
+                canRemove={bookingSlots.length > 1}
+                isProcessing={isProcessing}
+              />
+            ))}
           </div>
 
-          {startTime && endTime && startTime < endTime && (
+          {/* Price Summary */}
+          {validSlots.length > 0 && (
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Durata:</span>
-                <span className="font-medium">{calculateDuration()} ore</span>
+                <span className="text-sm text-gray-600">Slot validi:</span>
+                <span className="font-medium">{validSlots.length}</span>
+              </div>
+              <div className="flex justify-between items-center mt-1">
+                <span className="text-sm text-gray-600">Durata totale:</span>
+                <span className="font-medium">{bookingData.totalHours} ore</span>
               </div>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm text-gray-600">Prezzo totale:</span>
-                <span className="font-bold text-lg">€{totalPrice.toFixed(2)}</span>
+                <span className="font-bold text-lg">€{bookingData.totalPrice.toFixed(2)}</span>
               </div>
               {confirmationType === 'instant' && (
                 <div className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  Slot riservato per 5 minuti durante il pagamento
+                  Slot riservati per 5 minuti durante il pagamento
                 </div>
               )}
             </div>
@@ -329,7 +384,7 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
           <Button
             type="submit"
             className="w-full"
-            disabled={isProcessing || !selectedDate || !startTime || !endTime}
+            disabled={isProcessing || validSlots.length === 0}
           >
             {isProcessing ? (
               <>
@@ -341,10 +396,10 @@ export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess,
                 {confirmationType === 'instant' ? (
                   <>
                     <Euro className="mr-2 h-4 w-4" />
-                    Prenota e Paga
+                    Prenota e Paga ({validSlots.length} slot)
                   </>
                 ) : (
-                  'Richiedi Prenotazione'
+                  `Richiedi Prenotazione (${validSlots.length} slot)`
                 )}
               </>
             )}

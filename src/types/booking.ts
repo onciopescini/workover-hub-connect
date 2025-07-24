@@ -4,6 +4,23 @@ export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 export type BookingUpdate = Database["public"]["Tables"]["bookings"]["Update"];
 
+// New types for multi-day booking system
+export interface BookingSlot {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  hasConflict?: boolean;
+  conflictMessage?: string;
+  suggestions?: string[];
+}
+
+export interface MultiDayBookingData {
+  slots: BookingSlot[];
+  totalPrice: number;
+  totalHours: number;
+}
+
 export type BookingWithDetails = {
   id: string;
   space_id: string;
