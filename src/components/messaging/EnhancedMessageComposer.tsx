@@ -39,13 +39,26 @@ export const EnhancedMessageComposer = ({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const validFiles = files.filter(file => file.size <= 10 * 1024 * 1024); // 10MB limit
+    
+    // Filter files by size (max 10MB per file)
+    const validFiles = files.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`Il file "${file.name}" supera il limite di 10MB. Per favore seleziona un file più piccolo.`);
+        return false;
+      }
+      return true;
+    });
     
     if (validFiles.length !== files.length) {
-      toast.error("Alcuni file sono troppo grandi (max 10MB)");
+      toast.error(`${files.length - validFiles.length} file superano il limite di dimensione consentito.`);
     }
     
     setAttachments(prev => [...prev, ...validFiles]);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const removeAttachment = (index: number) => {

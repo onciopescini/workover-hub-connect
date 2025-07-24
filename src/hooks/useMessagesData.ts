@@ -110,7 +110,7 @@ export const useMessagesData = (activeTab: string) => {
     fetchConversations();
   }, [activeTab, authState.user?.id]);
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with real-time updates
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversationId) return;
@@ -142,7 +142,36 @@ export const useMessagesData = (activeTab: string) => {
       }
     };
 
+    if (!selectedConversationId) {
+      return;
+    }
+
     fetchMessages();
+
+    // Set up real-time subscription for messages
+    const [type, id] = selectedConversationId.split('-');
+    const tableName = type === 'booking' ? 'messages' : 'private_messages';
+    const filterField = type === 'booking' ? 'booking_id' : 'chat_id';
+
+    const channel = supabase
+      .channel(`${type}-messages-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: tableName,
+          filter: `${filterField}=eq.${id}`
+        },
+        () => {
+          fetchMessages(); // Refetch when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedConversationId, authState.user?.id]);
 
   const handleSendMessage = async (content: string, attachments?: File[]) => {

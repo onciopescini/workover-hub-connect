@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EnhancedMessageComposer } from "./EnhancedMessageComposer";
 import { EnhancedMessageBubble } from "./EnhancedMessageBubble";
+import { VirtualizedMessageList } from "./VirtualizedMessageList";
 import { Search, MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
 
@@ -78,45 +79,19 @@ export const MessagesChatArea = ({
       {/* Messages - Flexible height with scrolling */}
       <CardContent className="flex-1 p-0 flex flex-col min-h-0 overflow-hidden">
         <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-4">
-              {messages.length === 0 ? (
-                <div className="text-center py-8 sm:py-12 text-gray-500">
-                  <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-base sm:text-lg font-medium">Nessun messaggio</p>
-                  <p className="text-sm">Inizia la conversazione!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <EnhancedMessageBubble
-                      key={message.id}
-                      id={message.id}
-                      content={message.content}
-                      attachments={message.attachments?.map((url: string) => ({
-                        url,
-                        type: url.includes('.jpg') || url.includes('.png') ? 'image' as const : 'file' as const,
-                        name: url.split('/').pop() || 'file'
-                      }))}
-                      senderName={message.senderName}
-                      senderAvatar={message.senderAvatar}
-                      timestamp={message.created_at}
-                      isCurrentUser={message.isCurrentUser}
-                      isRead={message.is_read}
-                      businessContext={
-                        selectedConversation.id.startsWith('booking-') ? {
-                          type: 'booking' as const,
-                          details: selectedConversation.subtitle
-                        } : {
-                          type: 'general' as const
-                        }
-                      }
-                    />
-                  ))}
-                </div>
-              )}
+          {messages.length === 0 ? (
+            <div className="text-center py-8 sm:py-12 text-gray-500 p-4">
+              <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-base sm:text-lg font-medium">Nessun messaggio</p>
+              <p className="text-sm">Inizia la conversazione!</p>
             </div>
-          </ScrollArea>
+          ) : (
+            <VirtualizedMessageList 
+              messages={messages}
+              height={400}
+              selectedConversation={selectedConversation}
+            />
+          )}
         </div>
 
         {/* Message Composer - Fixed at bottom */}

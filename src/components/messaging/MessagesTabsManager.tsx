@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { MessageSquare, Calendar, Users } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 
 interface MessagesTabsManagerProps {
   activeTab: string;
@@ -23,6 +24,7 @@ export const MessagesTabsManager = ({
   onSelectConversation,
   getTabCount
 }: MessagesTabsManagerProps) => {
+  const { counts: unreadCounts } = useUnreadCount();
   return (
     <div className="h-full flex flex-col min-h-0 overflow-hidden">
       <Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col min-h-0 overflow-hidden">
@@ -33,25 +35,46 @@ export const MessagesTabsManager = ({
               <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Tutti</span>
               <span className="sm:hidden">All</span>
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {getTabCount("all")}
-              </Badge>
+              <div className="flex items-center gap-1 ml-1">
+                <Badge variant="secondary" className="text-xs">
+                  {getTabCount("all")}
+                </Badge>
+                {unreadCounts.total > 0 && (
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                    {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
+                  </Badge>
+                )}
+              </div>
             </TabsTrigger>
             <TabsTrigger value="bookings" className="flex items-center gap-1 text-xs sm:text-sm">
               <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Prenotazioni</span>
               <span className="sm:hidden">Book</span>
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {getTabCount("bookings")}
-              </Badge>
+              <div className="flex items-center gap-1 ml-1">
+                <Badge variant="secondary" className="text-xs">
+                  {getTabCount("bookings")}
+                </Badge>
+                {unreadCounts.bookingMessages > 0 && (
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                    {unreadCounts.bookingMessages > 99 ? '99+' : unreadCounts.bookingMessages}
+                  </Badge>
+                )}
+              </div>
             </TabsTrigger>
             <TabsTrigger value="private" className="flex items-center gap-1 text-xs sm:text-sm">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Private</span>
               <span className="sm:hidden">Prv</span>
-              <Badge variant="secondary" className="ml-1 text-xs">
-                {getTabCount("private")}
-              </Badge>
+              <div className="flex items-center gap-1 ml-1">
+                <Badge variant="secondary" className="text-xs">
+                  {getTabCount("private")}
+                </Badge>
+                {unreadCounts.privateMessages > 0 && (
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                    {unreadCounts.privateMessages > 99 ? '99+' : unreadCounts.privateMessages}
+                  </Badge>
+                )}
+              </div>
             </TabsTrigger>
           </TabsList>
         </div>
