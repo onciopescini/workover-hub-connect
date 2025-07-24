@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format } from "date-fns";
+import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingCardDisplayData, UserRole } from '@/types/bookings/bookings-ui.types';
@@ -40,7 +40,21 @@ export const useBookingCardState = ({
       }
     };
 
-    const canCancel = booking.status === "confirmed" || booking.status === "pending";
+    // Check if we can cancel based on status and time
+    const canCancelByStatus = booking.status === "confirmed" || booking.status === "pending";
+    
+    // Check if we're before the booking start time
+    const now = new Date();
+    let canCancelByTime = true;
+    
+    if (booking.booking_date && booking.start_time) {
+      // Combine date and time to get the exact booking start
+      const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
+      // Can't cancel if we're past the booking start time
+      canCancelByTime = isBefore(now, bookingStart);
+    }
+    
+    const canCancel = canCancelByStatus && canCancelByTime;
     const showReviewButton = booking.status === 'confirmed';
     const otherParty = getOtherParty();
     const formattedDate = format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it });

@@ -6,7 +6,8 @@ export const ReviewFormSchema = z.object({
   content: z.string()
     .max(500, "Il commento non può superare i 500 caratteri")
     .optional()
-    .transform(val => val?.trim() || undefined),
+    .nullable()
+    .transform(val => val?.trim() || null),
 });
 
 export type ReviewFormData = z.infer<typeof ReviewFormSchema>;

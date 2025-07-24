@@ -50,7 +50,7 @@ export function ReviewForm({
           booking_id: bookingId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content ?? null,
+          content: data.content,
           author_id: '', // Will be set by RLS
         });
       } else if (type === 'event' && eventId) {
@@ -58,12 +58,13 @@ export function ReviewForm({
           event_id: eventId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content ?? null,
+          content: data.content,
           author_id: '', // Will be set by RLS
         });
       }
       
       if (success && onSuccess) {
+        form.reset();
         onSuccess();
       }
     } catch (submitError) {
@@ -123,11 +124,12 @@ export function ReviewForm({
                 <FormItem>
                   <FormLabel>Commento (opzionale)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Condividi la tua esperienza..."
-                      rows={4}
-                      {...field}
-                    />
+                     <Textarea
+                       placeholder="Condividi la tua esperienza..."
+                       rows={4}
+                       {...field}
+                       value={field.value || ""}
+                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
