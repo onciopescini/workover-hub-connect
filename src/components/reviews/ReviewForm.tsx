@@ -10,6 +10,7 @@ import { Star } from 'lucide-react';
 import { addBookingReview, addEventReview } from '@/lib/bidirectional-review-utils';
 import { ReviewFormSchema, ReviewFormData } from '@/schemas/reviewSchema';
 import { useLogger } from '@/hooks/useLogger';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ReviewFormProps {
   type: 'booking' | 'event';
@@ -45,21 +46,27 @@ export function ReviewForm({
     try {
       let success = false;
       
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        error('User not authenticated', new Error('No authenticated user'), { operation: 'get_user' });
+        return;
+      }
+
       if (type === 'booking' && bookingId) {
         success = await addBookingReview({
           booking_id: bookingId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content,
-          author_id: '', // Will be set by RLS
+          content: data.content || null,
+          author_id: userData.user.id,
         });
       } else if (type === 'event' && eventId) {
         success = await addEventReview({
           event_id: eventId,
           target_id: targetId,
           rating: data.rating,
-          content: data.content,
-          author_id: '', // Will be set by RLS
+          content: data.content || null,
+          author_id: userData.user.id,
         });
       }
       

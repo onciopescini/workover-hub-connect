@@ -52,6 +52,13 @@ export const useBookingCardState = ({
       const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
       // Can't cancel if we're past the booking start time
       canCancelByTime = isBefore(now, bookingStart);
+      console.log('Cancellation check:', {
+        now: now.toISOString(),
+        bookingStart: bookingStart.toISOString(),
+        canCancelByTime,
+        bookingDate: booking.booking_date,
+        startTime: booking.start_time
+      });
     }
     
     const canCancel = canCancelByStatus && canCancelByTime;
