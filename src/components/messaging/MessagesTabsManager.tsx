@@ -31,46 +31,46 @@ export const MessagesTabsManager = ({
         {/* Fixed header with tabs */}
         <div className="flex-shrink-0">
           <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="all" className="flex items-center gap-1 text-xs sm:text-sm">
-              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Tutti</span>
-              <span className="sm:hidden">All</span>
-              <div className="flex items-center gap-1 ml-1">
-                <Badge variant="secondary" className="text-xs">
+            <TabsTrigger value="all" className="flex items-center justify-center gap-1.5 text-xs sm:text-sm min-w-0 px-1 sm:px-3">
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Tutti</span>
+              <span className="sm:hidden truncate">All</span>
+              <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+                <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("all")}
                 </Badge>
                 {unreadCounts.total > 0 && (
-                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
                     {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
                   </Badge>
                 )}
               </div>
             </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex items-center gap-1 text-xs sm:text-sm">
-              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Prenotazioni</span>
-              <span className="sm:hidden">Book</span>
-              <div className="flex items-center gap-1 ml-1">
-                <Badge variant="secondary" className="text-xs">
+            <TabsTrigger value="bookings" className="flex items-center justify-center gap-1.5 text-xs sm:text-sm min-w-0 px-1 sm:px-3">
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Prenotazioni</span>
+              <span className="sm:hidden truncate">Book</span>
+              <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+                <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("bookings")}
                 </Badge>
                 {unreadCounts.bookingMessages > 0 && (
-                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
                     {unreadCounts.bookingMessages > 99 ? '99+' : unreadCounts.bookingMessages}
                   </Badge>
                 )}
               </div>
             </TabsTrigger>
-            <TabsTrigger value="private" className="flex items-center gap-1 text-xs sm:text-sm">
-              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Private</span>
-              <span className="sm:hidden">Prv</span>
-              <div className="flex items-center gap-1 ml-1">
-                <Badge variant="secondary" className="text-xs">
+            <TabsTrigger value="private" className="flex items-center justify-center gap-1.5 text-xs sm:text-sm min-w-0 px-1 sm:px-3">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden sm:inline truncate">Private</span>
+              <span className="sm:hidden truncate">Prv</span>
+              <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+                <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("private")}
                 </Badge>
                 {unreadCounts.privateMessages > 0 && (
-                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center">
+                  <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
                     {unreadCounts.privateMessages > 99 ? '99+' : unreadCounts.privateMessages}
                   </Badge>
                 )}
