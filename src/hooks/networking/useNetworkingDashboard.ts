@@ -1,5 +1,8 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { EnhancedNetworkingStats, Achievement, NetworkingDashboardState, NetworkingDashboardActions } from '@/types/networking-dashboard';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getNetworkingStats, calculateAchievements } from '@/lib/networking/networking-data-service';
 
 interface UseNetworkingDashboardProps {
   stats: {
@@ -13,20 +16,31 @@ interface UseNetworkingDashboardProps {
 }
 
 export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): NetworkingDashboardState & NetworkingDashboardActions => {
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { authState } = useAuth();
+
+  // Fetch real networking data
+  const { data: realStats, isLoading, refetch } = useQuery({
+    queryKey: ['networking-stats', authState.user?.id],
+    queryFn: () => getNetworkingStats(authState.user?.id || ''),
+    enabled: !!authState.user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const processedStats = useMemo((): EnhancedNetworkingStats => {
-    // Calculate enhanced metrics
-    const weeklyGrowth = Math.floor(Math.random() * 20) + 5; // Mock calculation
-    const monthlyGrowth = Math.floor(Math.random() * 50) + 10; // Mock calculation
+    // Use real data if available, fallback to provided stats
+    if (realStats) {
+      return realStats;
+    }
+
+    // Fallback calculations using provided stats
+    const weeklyGrowth = Math.floor(Math.random() * 20) + 5;
+    const monthlyGrowth = Math.floor(Math.random() * 50) + 10;
     
-    // Calculate engagement score based on activity
     const engagementScore = Math.min(100, Math.floor(
       (stats.messagesThisWeek * 2 + stats.eventsAttended * 5 + stats.profileViews) / 2
     ));
     
-    // Calculate networking score based on connections and growth
     const networkingScore = Math.min(100, Math.floor(
       (stats.totalConnections * 2 + stats.connectionRate + weeklyGrowth) / 2
     ));
@@ -38,48 +52,20 @@ export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): 
       engagementScore,
       networkingScore,
     };
-  }, [stats]);
+  }, [stats, realStats]);
 
   const achievements = useMemo((): Achievement[] => {
-    return [
-      {
-        id: '1',
-        title: 'Network Builder',
-        description: '10+ connessioni',
-        unlocked: processedStats.totalConnections >= 10,
-        progress: Math.min(100, (processedStats.totalConnections / 10) * 100),
-        icon: 'users',
-        category: 'connections'
-      },
-      {
-        id: '2',
-        title: 'Event Networker',
-        description: '5+ eventi',
-        unlocked: processedStats.eventsAttended >= 5,
-        progress: Math.min(100, (processedStats.eventsAttended / 5) * 100),
-        icon: 'calendar',
-        category: 'activity'
-      },
-      {
-        id: '3',
-        title: 'Super Connector',
-        description: '50+ connessioni',
-        unlocked: processedStats.totalConnections >= 50,
-        progress: Math.min(100, (processedStats.totalConnections / 50) * 100),
-        icon: 'award',
-        category: 'connections'
-      },
-    ];
+    return calculateAchievements(processedStats);
   }, [processedStats]);
 
-  const refreshStats = useCallback(() => {
-    setIsLoading(true);
+  const refreshStats = useCallback(async () => {
     setError(null);
-    // Simulate refresh
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    try {
+      await refetch();
+    } catch (err) {
+      setError('Errore durante l\'aggiornamento dei dati');
+    }
+  }, [refetch]);
 
   const calculateTrends = useCallback(() => {
     // Mock trend calculation

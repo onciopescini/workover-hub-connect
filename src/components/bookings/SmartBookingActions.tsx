@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import {
   Send
 } from 'lucide-react';
 import { BookingWithDetails } from '@/types/booking';
+import { analyzeGuestProfile, generateBookingRecommendation, GuestProfile, BookingRecommendation } from '@/lib/bookings/smart-booking-service';
 
 interface SmartBookingActionsProps {
   booking: BookingWithDetails;
@@ -33,6 +34,31 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customMessage, setCustomMessage] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [guestProfile, setGuestProfile] = useState<GuestProfile | null>(null);
+  const [recommendation, setRecommendation] = useState<BookingRecommendation | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
+
+  // Load guest analysis on component mount
+  useEffect(() => {
+    const loadGuestAnalysis = async () => {
+      if (!booking.user_id || !booking.space_id) return;
+      
+      setIsAnalyzing(true);
+      try {
+        const profile = await analyzeGuestProfile(booking.user_id, booking.space_id);
+        const rec = generateBookingRecommendation(profile, booking);
+        
+        setGuestProfile(profile);
+        setRecommendation(rec);
+      } catch (error) {
+        console.error('Error analyzing guest:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+
+    loadGuestAnalysis();
+  }, [booking.user_id, booking.space_id]);
 
   const messageTemplates = {
     welcome: {
@@ -61,21 +87,23 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
     "Problemi tecnici temporanei"
   ];
 
-  // Smart recommendations based on guest profile
-  const getGuestScore = () => {
-    // Mock logic for guest scoring
-    return Math.floor(Math.random() * 100) + 1;
+  // Get recommendation display info
+  const getRecommendationDisplay = () => {
+    if (!recommendation) return { action: 'review', color: 'yellow', text: 'Caricamento...' };
+    
+    switch (recommendation.action) {
+      case 'auto-approve':
+        return { action: 'auto-approve', color: 'green', text: 'Auto-Approvazione Consigliata' };
+      case 'approve':
+        return { action: 'approve', color: 'blue', text: 'Approvazione Consigliata' };
+      case 'reject':
+        return { action: 'reject', color: 'red', text: 'Rifiuto Consigliato' };
+      default:
+        return { action: 'review', color: 'yellow', text: 'Revisione Manuale Consigliata' };
+    }
   };
 
-  const getRecommendedAction = () => {
-    const score = getGuestScore();
-    if (score >= 80) return { action: 'auto-approve', color: 'green', text: 'Auto-Approvazione Consigliata' };
-    if (score >= 60) return { action: 'approve', color: 'blue', text: 'Approvazione Consigliata' };
-    return { action: 'review', color: 'yellow', text: 'Revisione Manuale Consigliata' };
-  };
-
-  const recommendation = getRecommendedAction();
-  const guestScore = getGuestScore();
+  const displayRecommendation = getRecommendationDisplay();
 
   const handleSendMessage = () => {
     const messageToSend = selectedTemplate && messageTemplates[selectedTemplate as keyof typeof messageTemplates] 
@@ -100,8 +128,9 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
     <div className="space-y-6">
       {/* AI Recommendation Card */}
       <Card className={`border-l-4 ${
-        recommendation.color === 'green' ? 'border-l-green-500 bg-green-50' :
-        recommendation.color === 'blue' ? 'border-l-blue-500 bg-blue-50' :
+        displayRecommendation.color === 'green' ? 'border-l-green-500 bg-green-50' :
+        displayRecommendation.color === 'blue' ? 'border-l-blue-500 bg-blue-50' :
+        displayRecommendation.color === 'red' ? 'border-l-red-500 bg-red-50' :
         'border-l-yellow-500 bg-yellow-50'
       }`}>
         <CardHeader className="pb-3">
@@ -109,26 +138,45 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
             <Brain className="w-5 h-5" />
             Raccomandazione AI
             <Badge variant="secondary" className="ml-auto">
-              Score: {guestScore}/100
+              Score: {recommendation?.score || 0}/100
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-semibold text-gray-900">{recommendation.text}</p>
+              <p className="font-semibold text-gray-900">{displayRecommendation.text}</p>
               <p className="text-sm text-gray-600 mt-1">
-                Basato su storico prenotazioni, recensioni e comportamento
+                {isAnalyzing ? 'Analizzando profilo guest...' : 
+                 guestProfile ? `${guestProfile.totalBookings} prenotazioni • ${guestProfile.averageRating.toFixed(1)}/5 stelle • Account da ${guestProfile.accountAge} giorni` :
+                 'Analisi profilo guest completata'}
               </p>
+              {recommendation && recommendation.reasons.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-700">Fattori positivi:</p>
+                  {recommendation.reasons.slice(0, 2).map((reason, index) => (
+                    <p key={index} className="text-xs text-green-600">• {reason}</p>
+                  ))}
+                </div>
+              )}
+              {recommendation && recommendation.riskFactors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-gray-700">Fattori di rischio:</p>
+                  {recommendation.riskFactors.slice(0, 2).map((risk, index) => (
+                    <p key={index} className="text-xs text-red-600">• {risk}</p>
+                  ))}
+                </div>
+              )}
             </div>
             <Zap className={`w-8 h-8 ${
-              recommendation.color === 'green' ? 'text-green-500' :
-              recommendation.color === 'blue' ? 'text-blue-500' :
+              displayRecommendation.color === 'green' ? 'text-green-500' :
+              displayRecommendation.color === 'blue' ? 'text-blue-500' :
+              displayRecommendation.color === 'red' ? 'text-red-500' :
               'text-yellow-500'
             }`} />
           </div>
           
-          {recommendation.action === 'auto-approve' && (
+          {displayRecommendation.action === 'auto-approve' && (
             <div className="flex gap-2">
               <Button onClick={() => onApprove(booking.id)} className="bg-green-600 hover:bg-green-700">
                 <CheckCircle className="w-4 h-4 mr-2" />

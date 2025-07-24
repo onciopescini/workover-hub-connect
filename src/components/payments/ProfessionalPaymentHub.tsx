@@ -8,7 +8,8 @@ import { PaymentForecastingTab } from './components/PaymentForecastingTab';
 import { PaymentReportsTab } from './components/PaymentReportsTab';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useQuery } from '@tanstack/react-query';
-import { getHostPaymentStats, getHostTransactions, getUpcomingPayouts } from '@/lib/host/payment-data-service';
+import { getHostPaymentStats, getHostTransactions, getUpcomingPayouts, mapTransactionToTransactionData } from '@/lib/host/payment-data-service';
+import { PaymentData, TransactionData } from './types/payment-hub-types';
 
 export const ProfessionalPaymentHub: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('month');
@@ -33,6 +34,27 @@ export const ProfessionalPaymentHub: React.FC = () => {
     enabled: !!authState.user?.id,
   });
 
+  // Transform real data to component format
+  const transformedPaymentData: PaymentData = paymentData ? {
+    totalRevenue: paymentData.totalRevenue,
+    pendingPayments: paymentData.pendingPayouts,
+    completedPayments: paymentData.totalRevenue,
+    disputedPayments: 0,
+    nextPayoutDate: paymentData.lastPayoutDate || 'N/A',
+    nextPayoutAmount: paymentData.availableBalance
+  } : {
+    totalRevenue: 0,
+    pendingPayments: 0,
+    completedPayments: 0,
+    disputedPayments: 0,
+    nextPayoutDate: 'N/A',
+    nextPayoutAmount: 0
+  };
+
+  const transformedTransactions: TransactionData[] = transactions 
+    ? transactions.map(mapTransactionToTransactionData)
+    : [];
+
   // Generate monthly forecast from real data
   const monthlyForecast = paymentData ? [
     { month: 'Gen', projected: paymentData.thisMonthEarnings * 1.1, actual: paymentData.thisMonthEarnings },
@@ -43,7 +65,7 @@ export const ProfessionalPaymentHub: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Stats */}
-      <PaymentStatsHeader paymentData={paymentData} />
+      <PaymentStatsHeader paymentData={transformedPaymentData} />
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
@@ -55,11 +77,11 @@ export const ProfessionalPaymentHub: React.FC = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <PaymentOverviewTab paymentData={paymentData} />
+          <PaymentOverviewTab paymentData={transformedPaymentData} />
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-6">
-          <PaymentTransactionsTab transactions={transactions || []} />
+          <PaymentTransactionsTab transactions={transformedTransactions} />
         </TabsContent>
 
         <TabsContent value="forecasting" className="space-y-6">

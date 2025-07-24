@@ -5,6 +5,7 @@ export interface PaymentStats {
   pendingPayouts: number;
   thisMonthEarnings: number;
   lastPayoutDate: string | null;
+  totalRevenue: number;
 }
 
 export interface Transaction {
@@ -18,21 +19,43 @@ export interface Transaction {
   booking_id?: string;
 }
 
-export interface UpcomingPayout {
+export interface TransactionData {
+  id: string;
+  date: string;
+  guestName: string;
+  spaceName: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'disputed';
+  paymentMethod: 'card' | 'bank_transfer';
+}
+
+// Mapping Transaction to TransactionData format
+export const mapTransactionToTransactionData = (transaction: Transaction): TransactionData => ({
+  id: transaction.id,
+  date: transaction.date,
+  guestName: transaction.customer || 'Guest sconosciuto',
+  spaceName: transaction.description,
+  amount: transaction.amount,
+  status: transaction.status as 'completed' | 'pending' | 'disputed',
+  paymentMethod: 'card' as const
+});
+
+export interface PayoutData {
   id: string;
   amount: number;
   date: string;
-  status: string;
+  status: 'scheduled' | 'pending';
 }
 
 export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats> => {
   try {
-    // Get completed payments for this host
-    const { data: payments, error: paymentsError } = await supabase
+    // Get all payments for host's spaces
+    const { data: payments, error } = await supabase
       .from('payments')
       .select(`
         *,
         bookings!inner (
+          space_id,
           spaces!inner (
             host_id
           )
@@ -41,37 +64,34 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
       .eq('bookings.spaces.host_id', hostId)
       .eq('payment_status', 'completed');
 
-    if (paymentsError) throw paymentsError;
+    if (error) throw error;
 
-    // Calculate total available balance (simplified - would need payout tracking)
-    const totalEarnings = payments?.reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
-    
-    // Estimate pending payouts (15% of total earnings as example)
-    const pendingPayouts = totalEarnings * 0.15;
-    const availableBalance = totalEarnings - pendingPayouts;
-
-    // Calculate this month's earnings
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    const thisMonthPayments = payments?.filter(payment => {
+
+    // Calculate totals
+    const totalEarnings = payments?.reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
+    const thisMonthEarnings = payments?.filter(payment => {
       if (!payment.created_at) return false;
       const paymentDate = new Date(payment.created_at);
       return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-    }) || [];
-    
-    const thisMonthEarnings = thisMonthPayments.reduce((sum, payment) => sum + (payment.host_amount || 0), 0);
+    }).reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
 
-    // Get last payout date (simplified - would need actual payout records)
-    const lastPayment = payments?.[0];
-    const lastPayoutDate = lastPayment && lastPayment.created_at 
-      ? new Date(lastPayment.created_at).toISOString().split('T')[0] 
+    // Mock calculations for demo (in real app, these would come from Stripe)
+    const availableBalance = totalEarnings * 0.3; // 30% available
+    const pendingPayouts = totalEarnings * 0.2; // 20% pending
+    
+    // Get last payout date (mock)
+    const lastPayoutDate = payments?.length && payments[0]?.created_at 
+      ? payments[0].created_at.split('T')[0] 
       : null;
 
     return {
       availableBalance: Math.round(availableBalance),
       pendingPayouts: Math.round(pendingPayouts),
       thisMonthEarnings: Math.round(thisMonthEarnings),
-      lastPayoutDate: lastPayoutDate || null
+      lastPayoutDate: lastPayoutDate || null,
+      totalRevenue: Math.round(totalEarnings)
     };
 
   } catch (error) {
@@ -80,7 +100,8 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
       availableBalance: 0,
       pendingPayouts: 0,
       thisMonthEarnings: 0,
-      lastPayoutDate: null
+      lastPayoutDate: null,
+      totalRevenue: 0
     };
   }
 };
@@ -110,18 +131,20 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
 
     if (error) throw error;
 
-    return payments?.map(payment => ({
-      id: payment.id,
-      type: 'earning' as const,
-      description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-      amount: payment.host_amount || 0,
-      date: payment.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-      status: 'completed',
-      customer: payment.bookings?.profiles 
-        ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-        : undefined,
-      booking_id: payment.booking_id
-    })) || [];
+    return payments
+      ?.filter(payment => payment.created_at && payment.host_amount)
+      ?.map(payment => ({
+        id: payment.id,
+        type: 'earning' as const,
+        description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
+        amount: payment.host_amount!,
+        date: payment.created_at!.split('T')[0],
+        status: 'completed',
+        customer: payment.bookings?.profiles 
+          ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
+          : 'Guest sconosciuto',
+        booking_id: payment.booking_id
+      })) || [];
 
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -129,28 +152,25 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
   }
 };
 
-export const getUpcomingPayouts = async (hostId: string): Promise<UpcomingPayout[]> => {
+export const getUpcomingPayouts = async (hostId: string): Promise<PayoutData[]> => {
   try {
-    // This is a simplified implementation
-    // In a real app, you'd have a payouts table or schedule
+    // Get payment stats first
     const stats = await getHostPaymentStats(hostId);
     
-    if (stats.pendingPayouts > 0) {
-      // Generate mock upcoming payouts based on pending amount
-      const nextWeek = new Date();
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      
-      return [
-        {
-          id: '1',
-          amount: stats.pendingPayouts,
-          date: nextWeek.toISOString().split('T')[0],
-          status: 'scheduled'
-        }
-      ];
-    }
+    // Mock upcoming payouts (in real app, this would come from Stripe)
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    const payouts: PayoutData[] = stats.pendingPayouts > 0 ? [
+      {
+        id: '1',
+        amount: stats.pendingPayouts,
+        date: nextWeek.toISOString().split('T')[0],
+        status: 'scheduled'
+      }
+    ] : [];
 
-    return [];
+    return payouts;
 
   } catch (error) {
     console.error('Error fetching upcoming payouts:', error);
