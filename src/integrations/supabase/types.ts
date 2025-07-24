@@ -1829,6 +1829,10 @@ export type Database = {
         Args: { host_id_param: string; year_param: number }
         Returns: Json
       }
+      calculate_weighted_space_rating: {
+        Args: { space_id_param: string }
+        Returns: number
+      }
       cancel_booking: {
         Args: {
           booking_id: string
@@ -1899,6 +1903,21 @@ export type Database = {
           end_time: string
           status: string
           user_id: string
+        }[]
+      }
+      get_space_reviews_with_details: {
+        Args: { space_id_param: string }
+        Returns: {
+          id: string
+          rating: number
+          content: string
+          created_at: string
+          author_id: string
+          author_first_name: string
+          author_last_name: string
+          author_profile_photo_url: string
+          booking_date: string
+          is_visible: boolean
         }[]
       }
       is_admin: {
@@ -1993,10 +2012,6 @@ export type Database = {
           error_message_param?: string
         }
         Returns: boolean
-      }
-      update_review_visibility: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       validate_and_reserve_slot: {
         Args: {

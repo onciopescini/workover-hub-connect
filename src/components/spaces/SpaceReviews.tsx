@@ -5,20 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star, MessageSquare, Filter, ThumbsUp } from "lucide-react";
-import { Review, calculateAverageRating } from "@/lib/review-utils";
+import { SpaceReview, calculateReviewStats, formatReviewAuthor, getTimeSinceReview } from "@/lib/space-review-utils";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
 interface SpaceReviewsProps {
   spaceId: string;
-  reviews: Review[];
+  reviews: SpaceReview[];
 }
 
 export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   
-  const averageRating = calculateAverageRating(reviews);
+  const { averageRating, totalReviews, ratingDistribution: distMap } = calculateReviewStats(reviews);
   const visibleReviews = reviews.filter(review => review.is_visible !== false);
   
   // Filter by rating if selected
@@ -148,13 +148,17 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
             <div key={review.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start gap-3 mb-3">
                 <Avatar className="w-10 h-10">
-                  <AvatarFallback>
-                    {(review.author_id || review.reviewer_id).substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  {review.author_profile_photo_url ? (
+                    <AvatarImage src={review.author_profile_photo_url} alt="Profile" />
+                  ) : (
+                    <AvatarFallback>
+                      {review.author_first_name?.[0] || 'U'}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm truncate">Ospite verificato</span>
+                    <span className="font-medium text-sm truncate">{formatReviewAuthor(review)}</span>
                     <Badge variant="outline" className="text-xs">
                       <ThumbsUp className="w-2 h-2 mr-1" />
                       Verificato
@@ -163,15 +167,15 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
                   <div className="flex items-center gap-2">
                     {renderStars(review.rating, 'sm')}
                     <span className="text-xs text-gray-500">
-                      {format(new Date(review.created_at), 'MMM yyyy', { locale: it })}
+                      {getTimeSinceReview(review.created_at)}
                     </span>
                   </div>
                 </div>
               </div>
               
-              {(review.content || review.comment) && (
+              {review.content && (
                 <p className="text-gray-700 text-sm leading-relaxed">
-                  {review.content || review.comment}
+                  {review.content}
                 </p>
               )}
             </div>

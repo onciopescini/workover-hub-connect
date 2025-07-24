@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from 'react-router-dom';
 import { Space } from "@/types/space";
-import { Review } from "@/lib/review-utils";
+import { SpaceReview } from "@/lib/space-review-utils";
 import { SpaceHeroSection } from './SpaceHeroSection';
 import { SpaceInfoCards } from './SpaceInfoCards';
 import { HostProfileSection } from './HostProfileSection';
@@ -26,7 +26,7 @@ interface ExtendedSpace extends Space {
 
 interface SpaceDetailContentProps {
   space: ExtendedSpace;
-  reviews: Review[];
+  reviews: SpaceReview[];
 }
 
 export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) {

@@ -5,7 +5,7 @@ import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Space } from '@/types/space';
-import { Review } from '@/lib/review-utils';
+import { useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -73,25 +73,7 @@ const SpaceDetail = () => {
     enabled: !!id
   });
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['space-reviews', id],
-    queryFn: async () => {
-      if (!id) return [];
-      
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('booking_id', id);
-
-      if (error) {
-        console.error('Error fetching reviews:', error);
-        return [];
-      }
-      
-      return data as Review[];
-    },
-    enabled: !!id
-  });
+  const { data: reviews = [] } = useSpaceReviews(id || '');
 
   // Loading state con debug info
   if (spaceLoading) {
