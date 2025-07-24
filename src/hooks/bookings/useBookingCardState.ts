@@ -49,24 +49,67 @@ export const useBookingCardState = ({
     
     if (booking.booking_date && booking.start_time) {
       try {
-        // Combine date and time to get the exact booking start
-        const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
+        // Create a more robust date string - ensure proper ISO format
+        const dateTimeString = `${booking.booking_date}T${booking.start_time}`;
+        const bookingStart = parseISO(dateTimeString);
         
-        // Can't cancel if current time is at or past the booking start time
-        canCancelByTime = isBefore(now, bookingStart);
+        // Validate that the parsed date is valid
+        if (isNaN(bookingStart.getTime())) {
+          console.error('Invalid booking date/time:', { 
+            booking_date: booking.booking_date, 
+            start_time: booking.start_time 
+          });
+          canCancelByTime = false;
+        } else {
+          // Can't cancel if current time is at or past the booking start time
+          // Using strict comparison to ensure past bookings cannot be cancelled
+          canCancelByTime = isBefore(now, bookingStart);
+          
+          // Additional safety check - if booking is more than 1 day in the past, definitely can't cancel
+          const oneDayAgo = addMinutes(now, -24 * 60);
+          if (isBefore(bookingStart, oneDayAgo)) {
+            canCancelByTime = false;
+          }
+        }
         
-        console.log('Cancellation check:', {
-          now: now.toISOString(),
-          bookingStart: bookingStart.toISOString(),
+        console.log('🔍 DETAILED Cancellation Analysis:', {
+          rawBookingDate: booking.booking_date,
+          rawStartTime: booking.start_time,
+          dateTimeString,
+          now: {
+            iso: now.toISOString(),
+            local: now.toLocaleString('it-IT'),
+            timestamp: now.getTime()
+          },
+          bookingStart: {
+            iso: bookingStart.toISOString(),
+            local: bookingStart.toLocaleString('it-IT'),
+            timestamp: bookingStart.getTime()
+          },
+          comparison: {
+            nowBeforeBooking: isBefore(now, bookingStart),
+            bookingBeforeNow: isBefore(bookingStart, now),
+            timeDifferenceMinutes: Math.round((bookingStart.getTime() - now.getTime()) / (1000 * 60))
+          },
           canCancelByTime,
-          bookingDate: booking.booking_date,
-          startTime: booking.start_time
+          bookingId: booking.id,
+          bookingStatus: booking.status
         });
       } catch (error) {
-        console.error('Error parsing booking date/time:', error);
+        console.error('❌ Error parsing booking date/time:', error, {
+          booking_date: booking.booking_date,
+          start_time: booking.start_time
+        });
         // If there's an error parsing, don't allow cancellation for safety
         canCancelByTime = false;
       }
+    } else {
+      console.warn('⚠️ Missing booking date or time:', {
+        booking_date: booking.booking_date,
+        start_time: booking.start_time,
+        bookingId: booking.id
+      });
+      canCancelByTime = false;
     }
     
     const canCancel = canCancelByStatus && canCancelByTime;
