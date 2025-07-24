@@ -71,7 +71,7 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
       availableBalance: Math.round(availableBalance),
       pendingPayouts: Math.round(pendingPayouts),
       thisMonthEarnings: Math.round(thisMonthEarnings),
-      lastPayoutDate: lastPayoutDate
+      lastPayoutDate: lastPayoutDate || null
     };
 
   } catch (error) {
@@ -115,7 +115,7 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
       type: 'earning' as const,
       description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
       amount: payment.host_amount || 0,
-      date: payment.created_at ? payment.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+      date: payment.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       status: 'completed',
       customer: payment.bookings?.profiles 
         ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`

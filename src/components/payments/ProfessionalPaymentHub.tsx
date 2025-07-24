@@ -6,19 +6,39 @@ import { PaymentOverviewTab } from './components/PaymentOverviewTab';
 import { PaymentTransactionsTab } from './components/PaymentTransactionsTab';
 import { PaymentForecastingTab } from './components/PaymentForecastingTab';
 import { PaymentReportsTab } from './components/PaymentReportsTab';
-import { 
-  getMockPaymentData, 
-  getMockRecentTransactions, 
-  getMockMonthlyForecast 
-} from './utils/payment-mock-data';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getHostPaymentStats, getHostTransactions, getUpcomingPayouts } from '@/lib/host/payment-data-service';
 
 export const ProfessionalPaymentHub: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter'>('month');
+  const { authState } = useAuth();
   
-  // Mock data
-  const paymentData = getMockPaymentData();
-  const recentTransactions = getMockRecentTransactions();
-  const monthlyForecast = getMockMonthlyForecast();
+  // Fetch real payment data
+  const { data: paymentData, isLoading: statsLoading } = useQuery({
+    queryKey: ['host-payment-stats', authState.user?.id],
+    queryFn: () => getHostPaymentStats(authState.user?.id || ''),
+    enabled: !!authState.user?.id,
+  });
+
+  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+    queryKey: ['host-transactions', authState.user?.id],
+    queryFn: () => getHostTransactions(authState.user?.id || ''),
+    enabled: !!authState.user?.id,
+  });
+
+  const { data: upcomingPayouts } = useQuery({
+    queryKey: ['upcoming-payouts', authState.user?.id],
+    queryFn: () => getUpcomingPayouts(authState.user?.id || ''),
+    enabled: !!authState.user?.id,
+  });
+
+  // Generate monthly forecast from real data
+  const monthlyForecast = paymentData ? [
+    { month: 'Gen', projected: paymentData.thisMonthEarnings * 1.1, actual: paymentData.thisMonthEarnings },
+    { month: 'Feb', projected: paymentData.thisMonthEarnings * 1.2, actual: null },
+    { month: 'Mar', projected: paymentData.thisMonthEarnings * 1.15, actual: null },
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -39,7 +59,7 @@ export const ProfessionalPaymentHub: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-6">
-          <PaymentTransactionsTab transactions={recentTransactions} />
+          <PaymentTransactionsTab transactions={transactions || []} />
         </TabsContent>
 
         <TabsContent value="forecasting" className="space-y-6">
