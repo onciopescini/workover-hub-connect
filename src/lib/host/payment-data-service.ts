@@ -111,7 +111,10 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
     const { data: payments, error } = await supabase
       .from('payments')
       .select(`
-        *,
+        id,
+        created_at,
+        host_amount,
+        booking_id,
         bookings!inner (
           space_id,
           spaces!inner (
@@ -126,28 +129,27 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
       `)
       .eq('bookings.spaces.host_id', hostId)
       .eq('payment_status', 'completed')
+      .not('created_at', 'is', null)
+      .not('host_amount', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20);
 
     if (error) throw error;
 
-    return payments
-      ?.filter(payment => payment.created_at && payment.host_amount)
-      ?.map(payment => {
-        const createdAt = payment.created_at!;
-        return {
-          id: payment.id,
-          type: 'earning' as const,
-          description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-          amount: payment.host_amount!,
-          date: createdAt.split('T')[0],
-          status: 'completed',
-          customer: payment.bookings?.profiles 
-            ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-            : 'Guest sconosciuto',
-          booking_id: payment.booking_id
-        };
-      }) || [];
+    if (!payments) return [];
+
+    return payments.map(payment => ({
+      id: payment.id,
+      type: 'earning' as const,
+      description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
+      amount: payment.host_amount!,
+      date: payment.created_at!.split('T')[0],
+      status: 'completed',
+      customer: payment.bookings?.profiles 
+        ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
+        : 'Guest sconosciuto',
+      booking_id: payment.booking_id
+    }));
 
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -163,13 +165,13 @@ export const getUpcomingPayouts = async (hostId: string): Promise<PayoutData[]> 
     // Mock upcoming payouts (in real app, this would come from Stripe)
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
-    const nextWeekStr = nextWeek.toISOString().split('T')[0];
+    const dateString = nextWeek.toISOString().split('T')[0];
     
     const payouts: PayoutData[] = stats.pendingPayouts > 0 ? [
       {
         id: '1',
         amount: stats.pendingPayouts,
-        date: nextWeekStr,
+        date: dateString,
         status: 'scheduled'
       }
     ] : [];
