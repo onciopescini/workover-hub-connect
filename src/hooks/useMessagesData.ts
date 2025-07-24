@@ -49,21 +49,31 @@ export const useMessagesData = (activeTab: string) => {
             .order("created_at", { ascending: false });
 
           if (!error && bookings) {
-            const bookingConversations = bookings.map(booking => ({
-              id: `booking-${booking.id}`,
-              type: 'booking' as const,
-              title: booking.space?.host ? 
-                `${booking.space.host.first_name} ${booking.space.host.last_name}` : 
-                'Host',
-              subtitle: booking.space?.title || 'Spazio',
-              avatar: booking.space?.host?.profile_photo_url ?? '',
-              status: booking.status as 'confirmed' | 'pending' | 'cancelled',
-              lastMessageTime: booking.updated_at ?? '',
-              businessContext: {
+            const bookingConversations = bookings.map(booking => {
+              const hostName = booking.space?.host ? 
+                `${booking.space.host.first_name} ${booking.space.host.last_name}`.trim() : 
+                'Host';
+              const spaceTitle = booking.space?.title || 'Spazio';
+              const bookingDate = new Date(booking.booking_date).toLocaleDateString('it-IT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              });
+              
+              return {
+                id: `booking-${booking.id}`,
                 type: 'booking' as const,
-                details: booking.space?.title
-              }
-            }));
+                title: `${spaceTitle} (${hostName})`,
+                subtitle: `Prenotazione del ${bookingDate}`,
+                avatar: booking.space?.host?.profile_photo_url ?? '',
+                status: booking.status as 'confirmed' | 'pending' | 'cancelled',
+                lastMessageTime: booking.updated_at ?? '',
+                businessContext: {
+                  type: 'booking' as const,
+                  details: booking.space?.title
+                }
+              };
+            });
             
             setConversations(prev => 
               activeTab === "all" ? 

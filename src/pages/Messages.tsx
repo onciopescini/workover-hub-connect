@@ -7,11 +7,32 @@ import { MessagesPageHeader } from "@/components/messaging/MessagesPageHeader";
 import { MessagesTabsManager } from "@/components/messaging/MessagesTabsManager";
 import { MessagesChatArea } from "@/components/messaging/MessagesChatArea";
 import { MessagesUnauthenticated } from "@/components/messaging/MessagesUnauthenticated";
+import { MessagesSettingsDialog } from "@/components/messaging/MessagesSettingsDialog";
+import { NewChatDialog } from "@/components/messaging/NewChatDialog";
 
 const Messages = () => {
   const { authState } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [newChatOpen, setNewChatOpen] = useState(false);
   const { availableHeight } = useViewportHeight();
+
+  const handleNewChat = () => {
+    // Check if user is coworker and has networking enabled
+    if (authState.profile?.role === 'coworker' && authState.profile?.networking_enabled) {
+      setNewChatOpen(true);
+    }
+  };
+
+  const handleSettings = () => {
+    setSettingsOpen(true);
+  };
+
+  const handleChatCreated = (chatId: string) => {
+    // Refresh conversations to show new chat
+    // refetch functionality would need to be added to useMessagesData
+    console.log('New chat created:', chatId);
+  };
   
   const {
     selectedConversationId,
@@ -32,7 +53,10 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 max-w-7xl mx-auto p-4 w-full flex flex-col">
-        <MessagesPageHeader />
+        <MessagesPageHeader 
+          onNewChat={handleNewChat}
+          onSettings={handleSettings}
+        />
 
         {/* Main Content - Flexible layout with calculated height */}
         <div 
@@ -60,6 +84,17 @@ const Messages = () => {
             />
           </div>
         </div>
+
+        <MessagesSettingsDialog
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+        />
+
+        <NewChatDialog
+          open={newChatOpen}
+          onOpenChange={setNewChatOpen}
+          onChatCreated={handleChatCreated}
+        />
       </div>
     </div>
   );
