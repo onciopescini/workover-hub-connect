@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/bidirectional-review-utils";
 import { differenceInHours, parseISO } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ReviewButtonProps {
   booking: BookingWithDetails;
@@ -22,6 +23,26 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
     hasWrittenReview: boolean;
     isVisible: boolean;
   } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkReviewStatus = async () => {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const status = await getBookingReviewStatus(booking.id, user.id, targetUserId);
+        setReviewStatus(status);
+      } catch (error) {
+        console.error('Error checking review status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkReviewStatus();
+  }, [booking.id, targetUserId]);
 
   const checkReviewEligibility = () => {
     const bookingDate = parseISO(booking.booking_date);
@@ -38,8 +59,28 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
 
   const { canReview, hoursUntilEligible } = checkReviewEligibility();
 
+  if (loading) {
+    return (
+      <Button variant="outline" size="sm" disabled className="flex items-center">
+        <Star className="w-4 h-4 mr-1" />
+        Caricamento...
+      </Button>
+    );
+  }
+
+  // Se ha già scritto una recensione, mostra il messaggio
+  if (reviewStatus?.hasWrittenReview) {
+    return (
+      <Button variant="outline" size="sm" disabled className="flex items-center">
+        <CheckCircle className="w-4 h-4 mr-1" />
+        Recensione Inviata
+      </Button>
+    );
+  }
+
   const handleReviewSuccess = () => {
     setDialogOpen(false);
+    setReviewStatus(prev => prev ? { ...prev, hasWrittenReview: true } : null);
     onReviewSubmitted?.();
   };
 

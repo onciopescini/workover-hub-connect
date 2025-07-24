@@ -52,19 +52,15 @@ export const useBookingCardState = ({
         // Combine date and time to get the exact booking start
         const bookingStart = parseISO(`${booking.booking_date}T${booking.start_time}`);
         
-        // Can't cancel if we're past the booking start time
-        // Using isAfter to check if current time is after booking start
-        const isBookingInPast = !isBefore(now, bookingStart);
-        canCancelByTime = !isBookingInPast;
+        // Can't cancel if current time is at or past the booking start time
+        canCancelByTime = isBefore(now, bookingStart);
         
-        console.log('Cancellation check (enhanced):', {
+        console.log('Cancellation check:', {
           now: now.toISOString(),
           bookingStart: bookingStart.toISOString(),
-          isBookingInPast,
           canCancelByTime,
           bookingDate: booking.booking_date,
-          startTime: booking.start_time,
-          timeDifference: bookingStart.getTime() - now.getTime()
+          startTime: booking.start_time
         });
       } catch (error) {
         console.error('Error parsing booking date/time:', error);
