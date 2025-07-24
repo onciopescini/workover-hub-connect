@@ -76,8 +76,8 @@ export const analyzeGuestProfile = async (userId: string, spaceId: string): Prom
 
     // Get last booking date
     const lastBooking = bookings
-      ?.filter(b => b.status === 'confirmed')
-      ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+      ?.filter(b => b.status === 'confirmed' && b.created_at)
+      ?.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())[0];
 
     const lastBookingDate = lastBooking?.created_at || null;
 

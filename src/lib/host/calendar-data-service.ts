@@ -73,6 +73,10 @@ export const getHostCalendarBookings = async (hostId: string, month?: number, ye
 };
 
 export const getHostCalendarStats = async (hostId: string): Promise<CalendarStats> => {
+  if (!hostId) {
+    throw new Error('Host ID is required');
+  }
+  
   try {
     const today = new Date().toISOString().split('T')[0];
     
@@ -82,10 +86,10 @@ export const getHostCalendarStats = async (hostId: string): Promise<CalendarStat
       .select(`
         id,
         spaces!inner (host_id)
-      `)
-      .eq('spaces.host_id', hostId)
-      .eq('booking_date', today)
-      .in('status', ['pending', 'confirmed']);
+       `)
+       .eq('spaces.host_id', hostId)
+       .eq('booking_date', today)
+       .in('status', ['pending', 'confirmed']);
 
     if (todayError) throw todayError;
 

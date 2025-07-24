@@ -133,18 +133,21 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
 
     return payments
       ?.filter(payment => payment.created_at && payment.host_amount)
-      ?.map(payment => ({
-        id: payment.id,
-        type: 'earning' as const,
-        description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-        amount: payment.host_amount!,
-        date: payment.created_at!.split('T')[0],
-        status: 'completed',
-        customer: payment.bookings?.profiles 
-          ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-          : 'Guest sconosciuto',
-        booking_id: payment.booking_id
-      })) || [];
+      ?.map(payment => {
+        const createdAt = payment.created_at!;
+        return {
+          id: payment.id,
+          type: 'earning' as const,
+          description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
+          amount: payment.host_amount!,
+          date: createdAt.split('T')[0],
+          status: 'completed',
+          customer: payment.bookings?.profiles 
+            ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
+            : 'Guest sconosciuto',
+          booking_id: payment.booking_id
+        };
+      }) || [];
 
   } catch (error) {
     console.error('Error fetching transactions:', error);
@@ -160,12 +163,13 @@ export const getUpcomingPayouts = async (hostId: string): Promise<PayoutData[]> 
     // Mock upcoming payouts (in real app, this would come from Stripe)
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
+    const nextWeekStr = nextWeek.toISOString().split('T')[0];
     
     const payouts: PayoutData[] = stats.pendingPayouts > 0 ? [
       {
         id: '1',
         amount: stats.pendingPayouts,
-        date: nextWeek.toISOString().split('T')[0],
+        date: nextWeekStr,
         status: 'scheduled'
       }
     ] : [];
