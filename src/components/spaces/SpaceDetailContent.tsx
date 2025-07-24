@@ -115,6 +115,8 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
           {space.host && (
             <HostProfileSection 
               host={space.host} 
+              averageRating={averageRating}
+              totalReviews={reviews.length}
               onMessageHost={handleMessageHost}
             />
           )}

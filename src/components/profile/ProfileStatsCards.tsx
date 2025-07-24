@@ -9,12 +9,12 @@ interface ProfileStatsCardsProps {
 }
 
 export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
-  // Mock data - in real implementation, these would come from actual queries
+  // Dati reali - da implementare con query appropriate quando disponibili
   const stats = {
-    totalBookings: 12,
-    averageRating: 4.8,
-    monthlyGrowth: 15,
-    totalEarnings: profile.role === 'host' ? 2450 : 0
+    totalBookings: 0,
+    averageRating: 0,
+    monthlyGrowth: 0,
+    totalEarnings: 0
   };
 
   const cards = [

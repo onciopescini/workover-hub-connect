@@ -74,17 +74,17 @@ export function EnhancedConnectionCard({ connection }: EnhancedConnectionCardPro
     }
   };
 
-  // Mock professional data - in real app this would come from user profile
+  // Dati profilo semplificati - i dati reali verranno integrati quando disponibili
   const professionalData = {
-    title: "Digital Marketing Specialist",
-    company: "Tech Solutions Inc.",
-    rating: 4.8,
-    reviewCount: 127,
-    responseTime: "2h",
-    isVerified: true,
-    isPremium: Math.random() > 0.5,
-    sharedSpaces: Math.floor(Math.random() * 5) + 1,
-    mutualConnections: Math.floor(Math.random() * 15) + 3
+    title: otherUser?.bio || "Coworker",
+    company: "", 
+    rating: 0,
+    reviewCount: 0,
+    responseTime: "",
+    isVerified: false,
+    isPremium: false,
+    sharedSpaces: 0,
+    mutualConnections: 0
   };
 
   const onlineStatus = getOnlineStatus();

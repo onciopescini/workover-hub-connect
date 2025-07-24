@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
+import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 
 interface EnhancedSpaceCardProps {
   space: Space;
@@ -29,6 +30,10 @@ interface EnhancedSpaceCardProps {
 export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onClick }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  
+  // Carica recensioni e rating reali
+  const { data: reviews = [] } = useSpaceReviews(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
 
   const getMainPhotos = () => {
     if (space.photos && space.photos.length > 0) {
@@ -56,11 +61,11 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
   };
 
   const photos = getMainPhotos();
-  const rating = 4.8; // Mock data - da sostituire con rating reale
-  const reviewCount = 127; // Mock data
-  const isVerified = true; // Mock data
-  const isSuperhost = true; // Mock data
-  const lastBooking = "2 ore fa"; // Mock data
+  const rating = weightedRating;
+  const reviewCount = reviews.length;
+  // Note: questi campi non esistono nel tipo Space, rimossi per ora
+  const isVerified = false; 
+  const isSuperhost = false;
 
   const renderStars = (rating: number) => {
     return (
@@ -184,17 +189,15 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
           </div>
 
           {/* Rating and Reviews */}
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center gap-1">
-              {renderStars(rating)}
-              <span className="font-medium text-sm ml-1">{rating}</span>
-              <span className="text-gray-600 text-sm">({reviewCount})</span>
+          {reviewCount > 0 && (
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-1">
+                {renderStars(rating)}
+                <span className="font-medium text-sm ml-1">{rating.toFixed(1)}</span>
+                <span className="text-gray-600 text-sm">({reviewCount})</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-gray-500 text-xs">
-              <Clock className="w-3 h-3" />
-              <span>Prenotato {lastBooking}</span>
-            </div>
-          </div>
+          )}
 
           {/* Location */}
           <div className="flex items-center gap-1 text-gray-600 mb-3">

@@ -7,6 +7,7 @@ import { MapPin, Star, Users, Wifi } from 'lucide-react';
 import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
 import { Space } from '@/types/space';
 import { frontendLogger } from '@/utils/frontend-logger';
+import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 
 interface SpaceCardProps {
   space: Space;
@@ -14,6 +15,8 @@ interface SpaceCardProps {
 }
 
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
+  const { data: reviews = [] } = useSpaceReviews(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];
@@ -70,10 +73,12 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-lg line-clamp-1">{space.title}</h3>
-            <div className="flex items-center gap-1 text-sm">
-              <Star className="h-4 w-4 text-yellow-400 fill-current" />
-              <span>4.8</span>
-            </div>
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-1 text-sm">
+                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                <span>{weightedRating.toFixed(1)}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-gray-600 mb-2">

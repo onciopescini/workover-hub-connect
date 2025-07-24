@@ -25,10 +25,17 @@ interface HostProfileSectionProps {
     location?: string;
     created_at: string;
   };
+  averageRating?: number | null;
+  totalReviews?: number;
   onMessageHost: () => void;
 }
 
-export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ host, onMessageHost }) => {
+export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ 
+  host, 
+  averageRating, 
+  totalReviews = 0, 
+  onMessageHost 
+}) => {
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -76,11 +83,13 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ host, on
             </div>
             
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                <span className="font-medium">4.9</span>
-                <span>(127 recensioni)</span>
-              </div>
+              {averageRating && totalReviews > 0 && (
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                  <span className="font-medium">{averageRating.toFixed(1)}</span>
+                  <span>({totalReviews} recensioni)</span>
+                </div>
+              )}
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 <span>{getJoinedDate()} su SpaceShare</span>

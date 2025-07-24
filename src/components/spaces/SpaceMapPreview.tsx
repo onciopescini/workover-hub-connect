@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
+import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 
 interface SpaceMapPreviewProps {
   space: Space;
@@ -13,6 +14,8 @@ interface SpaceMapPreviewProps {
 }
 
 export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewDetails }) => {
+  const { data: reviews = [] } = useSpaceReviews(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];
@@ -60,10 +63,12 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
         <div className="p-3">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-sm line-clamp-1">{space.title}</h3>
-            <div className="flex items-center gap-1 text-xs">
-              <Star className="h-3 w-3 text-yellow-400 fill-current" />
-              <span>4.8</span>
-            </div>
+            {reviews.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                <span>{weightedRating.toFixed(1)}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1 text-gray-600 mb-2">

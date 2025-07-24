@@ -54,8 +54,8 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
       case 'price_desc':
         return sorted.sort((a, b) => (b.price_per_day || 0) - (a.price_per_day || 0));
       case 'rating':
-        // Mock sorting by rating - sostituire con rating reale
-        return sorted.sort((a, b) => 4.8 - 4.7);
+        // Ordinamento per rating - necessita integrazione con sistema recensioni
+        return sorted;
       case 'newest':
         return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       case 'distance':
