@@ -4,7 +4,9 @@ import { FinancialMetricsCards } from './components/FinancialMetricsCards';
 import { FinancialMetricsCharts } from './components/FinancialMetricsCharts';
 import { FinancialMetricsInsights } from './components/FinancialMetricsInsights';
 import { FinancialMetricsProps } from './types/financial-metrics-types';
-import { getMonthlyData, getRevenueByCategory } from './utils/financial-metrics-data';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getHostFinancialMetrics } from '@/lib/host/financial-metrics-service';
 
 export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
   totalRevenue,
@@ -13,17 +15,33 @@ export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
   averageBookingValue,
   occupancyRate
 }) => {
-  const monthlyData = getMonthlyData(monthlyRevenue);
-  const revenueByCategory = getRevenueByCategory();
+  const { authState } = useAuth();
+  
+  // Fetch real financial metrics from Supabase
+  const { data: financialMetrics, isLoading } = useQuery({
+    queryKey: ['host-financial-metrics', authState.user?.id],
+    queryFn: () => getHostFinancialMetrics(authState.user?.id || ''),
+    enabled: !!authState.user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Use real data if available, otherwise fall back to props
+  const monthlyData = financialMetrics?.monthlyData || [];
+  const revenueByCategory = financialMetrics?.revenueByCategory || [];
+  const actualTotalRevenue = financialMetrics?.totalRevenue || totalRevenue;
+  const actualMonthlyRevenue = financialMetrics?.monthlyRevenue || monthlyRevenue;
+  const actualRevenueGrowth = financialMetrics?.revenueGrowth || revenueGrowth;
+  const actualAverageBookingValue = financialMetrics?.averageBookingValue || averageBookingValue;
+  const actualOccupancyRate = financialMetrics?.occupancyRate || occupancyRate;
 
   return (
     <div className="space-y-6">
       <FinancialMetricsCards
-        totalRevenue={totalRevenue}
-        monthlyRevenue={monthlyRevenue}
-        revenueGrowth={revenueGrowth}
-        averageBookingValue={averageBookingValue}
-        occupancyRate={occupancyRate}
+        totalRevenue={actualTotalRevenue}
+        monthlyRevenue={actualMonthlyRevenue}
+        revenueGrowth={actualRevenueGrowth}
+        averageBookingValue={actualAverageBookingValue}
+        occupancyRate={actualOccupancyRate}
       />
 
       <FinancialMetricsCharts
@@ -32,8 +50,8 @@ export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
       />
 
       <FinancialMetricsInsights
-        revenueGrowth={revenueGrowth}
-        occupancyRate={occupancyRate}
+        revenueGrowth={actualRevenueGrowth}
+        occupancyRate={actualOccupancyRate}
       />
     </div>
   );
