@@ -44,8 +44,12 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
 
     if (paymentsError) throw paymentsError;
 
-    // Calculate total revenue
-    const totalRevenue = payments?.reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
+    // Calculate total revenue with legacy support
+    const totalRevenue = payments?.reduce((sum, payment) => {
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
+      return sum + hostAmount;
+    }, 0) || 0;
 
     // Calculate monthly data
     const monthlyMap = new Map<string, { revenue: number; bookings: number }>();
@@ -63,7 +67,9 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
         const monthName = monthNames[month];
         if (monthName) {
           const current = monthlyMap.get(monthName) || { revenue: 0, bookings: 0 };
-          current.revenue += payment.host_amount || 0;
+          // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+          const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
+          current.revenue += hostAmount;
           current.bookings += 1;
           monthlyMap.set(monthName, current);
         }
@@ -99,7 +105,9 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
                        spaceTitle.toLowerCase().includes('sala') ? 'meeting_room' :
                        spaceTitle.toLowerCase().includes('desk') ? 'desk' : 'other';
       const current = categoryMap.get(spaceType) || 0;
-      categoryMap.set(spaceType, current + (payment.host_amount || 0));
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
+      categoryMap.set(spaceType, current + hostAmount);
     });
 
     const categoryColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];

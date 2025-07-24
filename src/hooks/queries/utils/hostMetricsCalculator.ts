@@ -29,30 +29,32 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
 
   const spaceIds = spaces.map(s => s.id);
 
-  // Get bookings with payments
+  // Get bookings with completed payments only
   const { data: bookings } = await supabase
     .from('bookings')
     .select(`
       *,
-      payments (
-        amount,
-        host_amount,
-        payment_status
-      )
-    `)
-    .in('space_id', spaceIds);
-
-  const { data: currentMonthBookings } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      payments (
+      payments!inner (
         amount,
         host_amount,
         payment_status
       )
     `)
     .in('space_id', spaceIds)
+    .eq('payments.payment_status', 'completed');
+
+  const { data: currentMonthBookings } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      payments!inner (
+        amount,
+        host_amount,
+        payment_status
+      )
+    `)
+    .in('space_id', spaceIds)
+    .eq('payments.payment_status', 'completed')
     .gte('created_at', format(startOfMonth(currentMonth), 'yyyy-MM-dd'))
     .lte('created_at', format(endOfMonth(currentMonth), 'yyyy-MM-dd'));
 
@@ -60,13 +62,14 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
     .from('bookings')
     .select(`
       *,
-      payments (
+      payments!inner (
         amount,
         host_amount,
         payment_status
       )
     `)
     .in('space_id', spaceIds)
+    .eq('payments.payment_status', 'completed')
     .gte('created_at', format(startOfMonth(lastMonth), 'yyyy-MM-dd'))
     .lte('created_at', format(endOfMonth(lastMonth), 'yyyy-MM-dd'));
 
@@ -77,17 +80,23 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
 
   const totalRevenue = bookings?.reduce((sum, booking) => {
     const payment = Array.isArray(booking.payments) ? booking.payments[0] : booking.payments;
-    return sum + (payment?.host_amount || 0);
+    // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+    const hostAmount = payment?.host_amount ?? (payment?.amount ? payment.amount / 1.05 : 0);
+    return sum + hostAmount;
   }, 0) || 0;
 
   const monthlyRevenue = currentMonthBookings?.reduce((sum, booking) => {
     const payment = Array.isArray(booking.payments) ? booking.payments[0] : booking.payments;
-    return sum + (payment?.host_amount || 0);
+    // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+    const hostAmount = payment?.host_amount ?? (payment?.amount ? payment.amount / 1.05 : 0);
+    return sum + hostAmount;
   }, 0) || 0;
 
   const lastMonthRevenue = lastMonthBookings?.reduce((sum, booking) => {
     const payment = Array.isArray(booking.payments) ? booking.payments[0] : booking.payments;
-    return sum + (payment?.host_amount || 0);
+    // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+    const hostAmount = payment?.host_amount ?? (payment?.amount ? payment.amount / 1.05 : 0);
+    return sum + hostAmount;
   }, 0) || 0;
 
   const revenueGrowth = lastMonthRevenue > 0 
@@ -107,7 +116,9 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
     ...space,
     revenue: bookings?.filter(b => b.space_id === space.id).reduce((sum, booking) => {
       const payment = Array.isArray(booking.payments) ? booking.payments[0] : booking.payments;
-      return sum + (payment?.host_amount || 0);
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+      const hostAmount = payment?.host_amount ?? (payment?.amount ? payment.amount / 1.05 : 0);
+      return sum + hostAmount;
     }, 0) || 0
   }));
 

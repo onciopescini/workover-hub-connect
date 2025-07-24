@@ -69,13 +69,22 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    // Calculate totals
-    const totalEarnings = payments?.reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
+    // Calculate totals with legacy support
+    const totalEarnings = payments?.reduce((sum, payment) => {
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
+      return sum + hostAmount;
+    }, 0) || 0;
+    
     const thisMonthEarnings = payments?.filter(payment => {
       if (!payment.created_at) return false;
       const paymentDate = new Date(payment.created_at);
       return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-    }).reduce((sum, payment) => sum + (payment.host_amount || 0), 0) || 0;
+    }).reduce((sum, payment) => {
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
+      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
+      return sum + hostAmount;
+    }, 0) || 0;
 
     // Mock calculations for demo (in real app, these would come from Stripe)
     const availableBalance = totalEarnings * 0.3; // 30% available
@@ -130,7 +139,7 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
         )
       `)
       .eq('bookings.spaces.host_id', hostId)
-      .in('payment_status', ['completed', 'pending'])
+      .eq('payment_status', 'completed')
       .not('created_at', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -143,8 +152,8 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
     
     for (const payment of payments) {
       if (payment.created_at && typeof payment.created_at === 'string') {
-        // Gestione host_amount null: calcolo da amount totale (stima 85% per l'host)
-        const hostAmount = payment.host_amount || (payment.amount * 0.85);
+        // Per pagamenti legacy con host_amount null, calcola come amount / 1.05 (rimuove il 5% fee del buyer)
+        const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
         
         transactions.push({
           id: payment.id,
@@ -152,7 +161,7 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
           description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
           amount: hostAmount,
           date: payment.created_at.split('T')[0] as string,
-          status: payment.payment_status === 'completed' ? 'completed' : 'pending',
+          status: 'completed', // Solo pagamenti completed
           customer: payment.bookings?.profiles 
             ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
             : 'Guest sconosciuto',
