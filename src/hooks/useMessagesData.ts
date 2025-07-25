@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage } from "@/lib/messaging-utils";
-import { fetchBookingMessages } from "@/lib/message-utils";
+import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage, sendMessage, fetchMessages as fetchBookingMessages } from "@/lib/messaging-utils";
 import { ConversationItem } from "@/types/messaging";
 import { isValidMessageWithSender } from "@/types/strict-type-guards";
 
@@ -19,7 +18,9 @@ export const useMessagesData = (activeTab: string) => {
   const [messages, setMessages] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch conversations based on active tab
+  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+
+  // Fetch conversations based on active tab and user role
   useEffect(() => {
     const fetchConversations = async () => {
       if (!authState.user?.id) return;
@@ -27,53 +28,126 @@ export const useMessagesData = (activeTab: string) => {
       setIsLoading(true);
       try {
         if (activeTab === "all" || activeTab === "bookings") {
-          // Fetch booking conversations
-          const { data: bookings, error } = await supabase
-            .from("bookings")
-            .select(`
-              *,
-              space:spaces (
-                id,
-                title,
-                host_id,
-                host:profiles!host_id (
+          let bookings: any[] = [];
+
+          if (isHost) {
+            // Host: fetch bookings for spaces they own
+            const { data: hostBookings, error } = await supabase
+              .from("bookings")
+              .select(`
+                *,
+                space:spaces!inner (
+                  id,
+                  title,
+                  host_id
+                ),
+                coworker:profiles!user_id (
                   id,
                   first_name,
                   last_name,
                   profile_photo_url
                 )
-              )
-            `)
-            .eq("user_id", authState.user.id)
-            .in("status", ["confirmed", "pending", "cancelled"])
-            .order("created_at", { ascending: false });
+              `)
+              .eq("space.host_id", authState.user.id)
+              .eq("status", "confirmed")
+              .gte("booking_date", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+              .order("created_at", { ascending: false });
 
-          if (!error && bookings) {
-            const bookingConversations = bookings.map(booking => {
-              const hostName = booking.space?.host ? 
-                `${booking.space.host.first_name} ${booking.space.host.last_name}`.trim() : 
-                'Host';
-              const spaceTitle = booking.space?.title || 'Spazio';
+            if (!error && hostBookings) {
+              bookings = hostBookings;
+            }
+          } else {
+            // Coworker: fetch their own bookings
+            const { data: coworkerBookings, error } = await supabase
+              .from("bookings")
+              .select(`
+                *,
+                space:spaces (
+                  id,
+                  title,
+                  host_id,
+                  host:profiles!host_id (
+                    id,
+                    first_name,
+                    last_name,
+                    profile_photo_url
+                  )
+                )
+              `)
+              .eq("user_id", authState.user.id)
+              .in("status", ["confirmed", "pending", "cancelled"])
+              .order("created_at", { ascending: false });
+
+            if (!error && coworkerBookings) {
+              bookings = coworkerBookings;
+            }
+          }
+
+          if (bookings) {
+            const bookingConversations = await Promise.all(bookings.map(async booking => {
+              let title: string;
+              let avatar: string;
+              
+              if (isHost) {
+                // For hosts: show coworker name
+                const coworkerName = booking.coworker ? 
+                  `${booking.coworker.first_name} ${booking.coworker.last_name}`.trim() : 
+                  'Coworker';
+                const spaceTitle = booking.space?.title || 'Spazio';
+                title = `${coworkerName} - ${spaceTitle}`;
+                avatar = booking.coworker?.profile_photo_url ?? '';
+              } else {
+                // For coworkers: show host name
+                const hostName = booking.space?.host ? 
+                  `${booking.space.host.first_name} ${booking.space.host.last_name}`.trim() : 
+                  'Host';
+                const spaceTitle = booking.space?.title || 'Spazio';
+                title = `${spaceTitle} (${hostName})`;
+                avatar = booking.space?.host?.profile_photo_url ?? '';
+              }
+
               const bookingDate = new Date(booking.booking_date).toLocaleDateString('it-IT', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric'
               });
+
+              // Get last message time and unread count
+              const { data: lastMessage } = await supabase
+                .from('messages')
+                .select('created_at')
+                .eq('booking_id', booking.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              const { data: unreadMessages } = await supabase
+                .from('messages')
+                .select('id')
+                .eq('booking_id', booking.id)
+                .neq('sender_id', authState.user?.id || '')
+                .eq('is_read', false);
               
               return {
                 id: `booking-${booking.id}`,
                 type: 'booking' as const,
-                title: `${spaceTitle} (${hostName})`,
+                title,
                 subtitle: `Prenotazione del ${bookingDate}`,
-                avatar: booking.space?.host?.profile_photo_url ?? '',
+                avatar,
                 status: booking.status as 'confirmed' | 'pending' | 'cancelled',
-                lastMessageTime: booking.updated_at ?? '',
+                lastMessageTime: lastMessage?.created_at || booking.updated_at || '',
+                unreadCount: unreadMessages?.length || 0,
                 businessContext: {
                   type: 'booking' as const,
                   details: booking.space?.title
                 }
               };
-            });
+            }));
+
+            // Sort by last message time
+            bookingConversations.sort((a, b) => 
+              new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+            );
             
             setConversations(prev => 
               activeTab === "all" ? 
@@ -130,9 +204,11 @@ export const useMessagesData = (activeTab: string) => {
         let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
-          fetchedMessages = await fetchBookingMessages(id ?? '');
+          const bookingMessages = await fetchBookingMessages(id ?? '');
+          fetchedMessages = bookingMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         } else if (type === 'private') {
-          fetchedMessages = await getPrivateMessages(id ?? '') as unknown as PrivateMessage[];
+          const privateMessages = await getPrivateMessages(id ?? '');
+          fetchedMessages = privateMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         }
 
         setMessages(fetchedMessages.map(msg => {
@@ -192,8 +268,9 @@ export const useMessagesData = (activeTab: string) => {
     try {
       if (type === 'private') {
         await sendPrivateMessage(id ?? '', content);
+      } else if (type === 'booking') {
+        await sendMessage(id ?? '', content);
       }
-      // Add booking message sending logic here
       
       // Refresh messages would trigger the useEffect above
     } catch (error) {
