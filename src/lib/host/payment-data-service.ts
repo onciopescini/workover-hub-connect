@@ -49,58 +49,35 @@ export interface PayoutData {
 
 export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats> => {
   try {
-    // Get all payments for host's spaces
-    const { data: payments, error } = await supabase
-      .from('payments')
-      .select(`
-        *,
-        bookings!inner (
-          space_id,
-          spaces!inner (
-            host_id
-          )
-        )
-      `)
-      .eq('bookings.spaces.host_id', hostId)
-      .eq('payment_status', 'completed');
+    // Usa la funzione database sicura per le metriche di base
+    const { data: hostMetrics, error: metricsError } = await supabase.rpc('get_host_metrics', {
+      host_id_param: hostId
+    });
 
-    if (error) throw error;
+    if (metricsError) {
+      console.error('Error fetching host metrics:', metricsError);
+      throw metricsError;
+    }
 
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    // Calculate totals with legacy support
-    const totalEarnings = payments?.reduce((sum, payment) => {
-      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
-      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
-      return sum + hostAmount;
-    }, 0) || 0;
+    const metrics = hostMetrics as any;
     
-    const thisMonthEarnings = payments?.filter(payment => {
-      if (!payment.created_at) return false;
-      const paymentDate = new Date(payment.created_at);
-      return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-    }).reduce((sum, payment) => {
-      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05
-      const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
-      return sum + hostAmount;
-    }, 0) || 0;
-
-    // Mock calculations for demo (in real app, these would come from Stripe)
-    const availableBalance = totalEarnings * 0.3; // 30% available
-    const pendingPayouts = totalEarnings * 0.2; // 20% pending
+    // Calcoli basati sulle metriche sicure
+    const totalRevenue = metrics?.totalRevenue || 0;
+    const monthlyRevenue = metrics?.monthlyRevenue || 0;
     
-    // Get last payout date (mock)
-    const lastPayoutDate = payments?.length && payments[0]?.created_at 
-      ? payments[0].created_at.split('T')[0] 
-      : null;
+    // Mock calculations per saldo e payouts (in un'app reale verrebbero da Stripe)
+    const availableBalance = totalRevenue * 0.3; // 30% disponibile
+    const pendingPayouts = totalRevenue * 0.2; // 20% in attesa di payout
+    
+    // Data ultimo payout (mock - in realtà andrebbe gestita separatamente)
+    const lastPayoutDate: string | null = totalRevenue > 0 ? new Date().toISOString().split('T')[0] || null : null;
 
     return {
       availableBalance: Math.round(availableBalance),
       pendingPayouts: Math.round(pendingPayouts),
-      thisMonthEarnings: Math.round(thisMonthEarnings),
-      lastPayoutDate: lastPayoutDate || null,
-      totalRevenue: Math.round(totalEarnings)
+      thisMonthEarnings: Math.round(monthlyRevenue),
+      lastPayoutDate,
+      totalRevenue: Math.round(totalRevenue)
     };
 
   } catch (error) {

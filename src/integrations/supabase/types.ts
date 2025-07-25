@@ -1891,6 +1891,10 @@ export type Database = {
         }
         Returns: string[]
       }
+      get_host_metrics: {
+        Args: { host_id_param: string }
+        Returns: Json
+      }
       get_space_availability_optimized: {
         Args: {
           space_id_param: string
