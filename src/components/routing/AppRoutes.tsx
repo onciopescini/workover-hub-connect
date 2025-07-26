@@ -50,6 +50,7 @@ const HostOnboarding = lazy(() => import("@/pages/HostOnboarding"));
 const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
+const SpaceRecap = lazy(() => import("@/pages/SpaceRecap"));
 
 // Admin pages
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
@@ -241,6 +242,11 @@ export const AppRoutes = () => {
         <Route path="space/edit/:id" element={
           <LazyWrapper>
             <SpaceEdit />
+          </LazyWrapper>
+        } />
+        <Route path="spaces/:spaceId/recap" element={
+          <LazyWrapper>
+            <SpaceRecap />
           </LazyWrapper>
         } />
         

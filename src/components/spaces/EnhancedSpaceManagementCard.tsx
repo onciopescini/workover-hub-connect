@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Space } from '@/types/space';
-import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw } from 'lucide-react';
+import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw, BarChart3 } from 'lucide-react';
 import { useAuth } from "@/hooks/auth/useAuth";
 
 interface EnhancedSpaceManagementCardProps {
@@ -13,6 +13,7 @@ interface EnhancedSpaceManagementCardProps {
   onEdit: (spaceId: string) => void;
   onDelete: (spaceId: string) => void;
   onRestore?: (spaceId: string) => void;
+  onRecap: (spaceId: string) => void;
   bookingsCount: number;
   monthlyRevenue: number;
 }
@@ -23,6 +24,7 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
   onEdit,
   onDelete,
   onRestore,
+  onRecap,
   bookingsCount,
   monthlyRevenue
 }) => {
@@ -109,6 +111,16 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   Vedi
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onRecap(space.id)}
+                  className="flex-1"
+                  disabled={isDeleted}
+                >
+                  <BarChart3 className="w-4 h-4 mr-1" />
+                  Recap
                 </Button>
                 <Button
                   size="sm"

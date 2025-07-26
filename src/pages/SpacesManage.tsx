@@ -172,6 +172,10 @@ const SpacesManage = () => {
     navigate(`/spaces/${spaceId}`);
   };
 
+  const handleRecapSpace = (spaceId: string) => {
+    navigate(`/host/spaces/${spaceId}/recap`);
+  };
+
   if (!authState.isAuthenticated) {
     return (
       <AppLayout title="Accesso Richiesto" subtitle="Effettua il login per gestire i tuoi spazi">
@@ -307,6 +311,7 @@ const SpacesManage = () => {
                   onEdit={handleEditSpace}
                   onDelete={handleDeleteSpace}
                   onRestore={handleRestoreSpace}
+                  onRecap={handleRecapSpace}
                   bookingsCount={0} // TODO: Calcolare dai bookings
                   monthlyRevenue={0} // TODO: Calcolare dai bookings
                 />

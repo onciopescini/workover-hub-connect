@@ -1895,6 +1895,10 @@ export type Database = {
         Args: { host_id_param: string }
         Returns: Json
       }
+      get_single_space_metrics: {
+        Args: { space_id_param: string }
+        Returns: Json
+      }
       get_space_availability_optimized: {
         Args: {
           space_id_param: string
