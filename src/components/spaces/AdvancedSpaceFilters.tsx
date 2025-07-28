@@ -17,8 +17,8 @@ import {
   Bookmark,
   RotateCcw
 } from 'lucide-react';
-import { GeographicSearch } from '@/components/shared/GeographicSearch';
-import { SpaceFilters, FilterChangeHandler, FormFieldValue, Coordinates } from '@/types/space-filters';
+import { Input } from '@/components/ui/input';
+import { SpaceFilters, FilterChangeHandler, FormFieldValue } from '@/types/space-filters';
 
 interface AdvancedSpaceFiltersProps {
   filters: SpaceFilters;
@@ -76,12 +76,8 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
     });
   };
 
-  const handleLocationChange = (location: string, coordinates?: Coordinates) => {
-    onFiltersChange({
-      ...filters,
-      location,
-      coordinates: coordinates || null
-    });
+  const handleLocationChange = (value: string) => {
+    updateFilter('location', value);
   };
 
   const handleAmenityToggle = (amenity: string) => {
@@ -262,16 +258,18 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Ricerca geografica */}
+            {/* City Search */}
             <div>
               <h4 className="font-medium mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Posizione
+                Città
               </h4>
-              <GeographicSearch
-                value={filters.location}
-                onChange={handleLocationChange}
-                placeholder="Cerca per città, quartiere o indirizzo..."
+              <Input
+                type="text"
+                placeholder="Cerca per città (es. Milano, Roma...)..."
+                value={filters.location || ''}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                className="w-full"
               />
             </div>
 

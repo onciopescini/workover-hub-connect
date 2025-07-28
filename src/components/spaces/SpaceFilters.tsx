@@ -11,8 +11,8 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Filter, X } from 'lucide-react';
 import { CATEGORY_OPTIONS, AMENITIES_OPTIONS, WORK_ENVIRONMENT_OPTIONS } from '@/types/space';
-import { GeographicSearch } from '@/components/shared/GeographicSearch';
-import { BasicSpaceFilters, FormFieldValue, Coordinates } from '@/types/space-filters';
+import { Input } from '@/components/ui/input';
+import { BasicSpaceFilters, FormFieldValue } from '@/types/space-filters';
 
 interface SpaceFiltersProps {
   filters: BasicSpaceFilters;
@@ -24,17 +24,8 @@ export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersCh
     onFiltersChange({ ...filters, [key]: value });
   };
 
-  const handleLocationSelect = (location: string, coordinates?: Coordinates) => {
-    const updatedFilters: BasicSpaceFilters = { 
-      ...filters, 
-      location
-    };
-    
-    if (coordinates) {
-      updatedFilters.coordinates = coordinates;
-    }
-    
-    onFiltersChange(updatedFilters);
+  const handleLocationChange = (value: string) => {
+    updateFilter('location', value);
   };
 
   const addAmenity = (amenity: string) => {
@@ -68,12 +59,14 @@ export const SpaceFilters: React.FC<SpaceFiltersProps> = ({ filters, onFiltersCh
     <div className="space-y-4">
       <h3 className="font-semibold text-lg">Filtri</h3>
       
-      {/* Location Search */}
+      {/* City Search */}
       <div>
-        <label className="block text-sm font-medium mb-2">Posizione</label>
-        <GeographicSearch
-          placeholder="Cerca città o indirizzo..."
-          onLocationSelect={handleLocationSelect}
+        <label className="block text-sm font-medium mb-2">Città</label>
+        <Input
+          type="text"
+          placeholder="Cerca per città (es. Milano, Roma...)..."
+          value={filters.location || ''}
+          onChange={(e) => handleLocationChange(e.target.value)}
           className="w-full"
         />
         {filters.location && (

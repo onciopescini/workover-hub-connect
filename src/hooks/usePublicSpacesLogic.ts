@@ -106,7 +106,9 @@ export const usePublicSpacesLogic = () => {
         query = query.gte('max_capacity', filters.capacity[0]);
       }
       if (filters.location) {
-        query = query.ilike('address', `%${filters.location}%`);
+        // Flexible city search: search in the address field for city names
+        const searchTerm = filters.location.trim().toLowerCase();
+        query = query.ilike('address', `%${searchTerm}%`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
