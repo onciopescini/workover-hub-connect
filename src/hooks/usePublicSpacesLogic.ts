@@ -106,7 +106,7 @@ export const usePublicSpacesLogic = () => {
         query = query.gte('max_capacity', filters.capacity[0]);
       }
       if (filters.location) {
-        query = query.ilike('city', `%${filters.location}%`);
+        query = query.ilike('address', `%${filters.location}%`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
