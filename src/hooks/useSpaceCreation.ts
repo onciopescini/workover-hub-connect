@@ -25,7 +25,7 @@ export const useSpaceCreation = () => {
           const isRestricted = await checkSpaceCreationRestriction();
           if (isRestricted) {
             toast.error("Non puoi creare nuovi spazi. Hai uno spazio sospeso che richiede la tua attenzione.");
-            navigate('/spaces/manage');
+            navigate('/host/spaces');
           }
         } catch (error) {
           console.error('Error checking space creation restriction:', error);

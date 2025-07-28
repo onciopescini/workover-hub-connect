@@ -301,7 +301,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       }
       
       // Redirect back to manage spaces
-      navigate("/spaces/manage");
+      navigate("/host/spaces");
     } catch (saveError) {
       error("Error saving space", saveError as Error, { 
         isEdit,
@@ -334,7 +334,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/spaces/manage")}
+            onClick={() => navigate("/host/spaces")}
             disabled={isSubmitting}
           >
             Cancel

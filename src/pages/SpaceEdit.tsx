@@ -19,7 +19,7 @@ const SpaceEdit = () => {
   const navigate = useNavigate();
   
   if (!id) {
-    navigate('/spaces/manage');
+    navigate('/host/spaces');
     return null;
   }
   const [space, setSpace] = useState<Space | null>(null);
@@ -29,7 +29,7 @@ const SpaceEdit = () => {
     const fetchSpace = async () => {
       if (!id) {
         toast.error("ID spazio non valido");
-        navigate('/spaces/manage');
+        navigate('/host/spaces');
         return;
       }
 
@@ -47,13 +47,13 @@ const SpaceEdit = () => {
         if (error) {
           console.error('❌ Error fetching space:', error);
           toast.error("Errore nel caricamento dello spazio");
-          navigate('/spaces/manage');
+          navigate('/host/spaces');
           return;
         }
 
         if (!data) {
           toast.error("Spazio non trovato o non hai i permessi per modificarlo");
-          navigate('/spaces/manage');
+          navigate('/host/spaces');
           return;
         }
 
@@ -62,7 +62,7 @@ const SpaceEdit = () => {
       } catch (error) {
         console.error('❌ Exception fetching space:', error);
         toast.error("Errore nel caricamento dello spazio");
-        navigate('/spaces/manage');
+        navigate('/host/spaces');
       } finally {
         setIsLoading(false);
       }
@@ -120,7 +120,7 @@ const SpaceEdit = () => {
               <p className="text-gray-600 mb-4">
                 Lo spazio richiesto non è stato trovato o non hai i permessi per modificarlo.
               </p>
-              <Button onClick={() => navigate('/spaces/manage')} className="bg-indigo-600 hover:bg-indigo-700">
+              <Button onClick={() => navigate('/host/spaces')} className="bg-indigo-600 hover:bg-indigo-700">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Torna alla Gestione Spazi
               </Button>
@@ -142,7 +142,7 @@ const SpaceEdit = () => {
           <div className="flex items-center justify-between mb-4">
             <Button 
               variant="outline" 
-              onClick={() => navigate('/spaces/manage')}
+              onClick={() => navigate('/host/spaces')}
               className="text-gray-600 hover:text-gray-800"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />

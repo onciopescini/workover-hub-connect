@@ -108,7 +108,7 @@ export const useSpaceFormSubmission = ({
         toast.success("Space created successfully!");
       }
       
-      navigate("/spaces/manage");
+      navigate("/host/spaces");
     } catch (error) {
       console.error("Error saving space:", error);
       toast.error("Failed to save space");

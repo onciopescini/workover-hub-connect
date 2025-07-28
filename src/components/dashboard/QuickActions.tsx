@@ -54,7 +54,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       title: 'Gestisci Spazi',
       description: 'Modifica i tuoi spazi',
       icon: <Settings className="w-5 h-5" />,
-      onClick: () => navigate('/spaces/manage')
+      onClick: () => navigate('/host/spaces')
     },
     {
       title: 'Analytics',

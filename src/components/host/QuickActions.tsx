@@ -25,7 +25,7 @@ export function QuickActions() {
           <Button 
             variant="outline" 
             className="h-12"
-            onClick={() => navigate("/spaces/manage")}
+            onClick={() => navigate("/host/spaces")}
           >
             <Calendar className="w-4 h-4 mr-2" />
             Gestisci Spazi

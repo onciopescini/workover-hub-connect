@@ -102,7 +102,7 @@ export const useSpaceEdit = (id: string | undefined) => {
       }
 
       toast.success("Space updated successfully!");
-      navigate('/spaces/manage');
+      navigate('/host/spaces');
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +129,7 @@ export const useSpaceEdit = (id: string | undefined) => {
       }
 
       toast.success("Space deleted successfully!");
-      navigate('/spaces/manage');
+      navigate('/host/spaces');
     } finally {
       setIsLoading(false);
     }

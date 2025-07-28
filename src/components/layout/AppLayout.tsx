@@ -48,7 +48,7 @@ export function AppLayout({
         { icon: Home, label: "Dashboard", href: "/host/dashboard" },
         { icon: Calendar, label: "Prenotazioni", href: "/bookings" },
         { icon: MessageSquare, label: "Messaggi", href: "/messages" },
-        { icon: CreditCard, label: "Spazi", href: "/spaces/manage" },
+        { icon: CreditCard, label: "Spazi", href: "/host/spaces" },
         { icon: Settings, label: "Host Dashboard", href: "/host/dashboard" },
       ];
     }
