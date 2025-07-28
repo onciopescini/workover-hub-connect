@@ -109,12 +109,12 @@ const SpacesManage = () => {
 
   const handleCreateSpace = () => {
     console.log('🔍 Navigating to space creation');
-    navigate('/space/new');
+    navigate('/host/space/new');
   };
 
   const handleEditSpace = (spaceId: string) => {
     console.log('🔍 Navigating to edit space:', spaceId);
-    navigate(`/space/edit/${spaceId}`);
+    navigate(`/host/space/edit/${spaceId}`);
   };
 
   const handleDeleteSpace = async (spaceId: string) => {
