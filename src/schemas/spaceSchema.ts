@@ -27,7 +27,7 @@ const RecurringAvailabilitySchema = z.object({
 // Exception availability schema
 const ExceptionAvailabilitySchema = z.object({
   date: z.string().min(1, "Data richiesta"),
-  available: z.boolean(),
+  enabled: z.boolean(), // Fixed: was 'available', should be 'enabled'
   slots: z.array(AvailabilitySlotSchema).optional(),
 });
 
@@ -71,13 +71,7 @@ export const SpaceFormSchema = z.object({
   price_per_day: z.number().min(0, "Il prezzo giornaliero deve essere >= 0"),
 
   // Availability
-  availability: AvailabilitySchema.refine(
-    (data) => {
-      // Check if at least one day has enabled slots
-      return Object.values(data.recurring).some(day => day.enabled && day.slots.length > 0);
-    },
-    { message: "Devi impostare almeno un giorno e orario di disponibilità" }
-  ),
+  availability: AvailabilitySchema,
 
   // Photos
   photos: z.array(z.string()).default([]),

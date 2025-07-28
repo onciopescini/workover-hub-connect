@@ -239,6 +239,27 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
   };
 
   const onSubmit = async (data: SpaceFormData) => {
+    console.log('🚀 Form submission started', { data, isEdit });
+    
+    // Add detailed form validation logging
+    const formErrors = form.formState.errors;
+    if (Object.keys(formErrors).length > 0) {
+      console.error('❌ Form validation errors:', formErrors);
+      toast.error("Please fix the errors in the form");
+      return;
+    }
+    
+    // Special validation for published spaces
+    if (data.published && data.availability) {
+      const hasAvailability = Object.values(data.availability.recurring).some(day => day.enabled && day.slots.length > 0);
+      if (!hasAvailability) {
+        console.error('❌ No availability set for published space');
+        toast.error("Devi impostare almeno un giorno e orario di disponibilità per pubblicare lo spazio");
+        return;
+      }
+    }
+    
+    console.log('✅ Form validation passed, proceeding with submission');
     setIsSubmitting(true);
     
     try {
@@ -268,22 +289,25 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         ideal_guest_tags: data.ideal_guest_tags,
         event_friendly_tags: data.event_friendly_tags,
         confirmation_type: data.confirmation_type,
-        availability: JSON.stringify(data.availability), // Convert to JSON string for database
+        availability: JSON.stringify(data.availability || defaultAvailability), // Convert to JSON string for database
         published: data.published,
         host_id: user.id,
       };
       
       if (isEdit && initialData) {
         // Update existing space
+        console.log('📝 Updating existing space:', initialData.id);
         const { error } = await supabase
           .from("spaces")
           .update(spaceData)
           .eq("id", initialData.id);
           
         if (error) {
+          console.error('❌ Update error:', error);
           throw error;
         }
         
+        console.log('✅ Space updated successfully');
         toast.success("Space updated successfully!");
       } else {
         // Create new space
@@ -301,6 +325,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       }
       
       // Redirect back to manage spaces
+      console.log('🔄 Navigating to /host/spaces');
       navigate("/host/spaces");
     } catch (saveError) {
       error("Error saving space", saveError as Error, { 
