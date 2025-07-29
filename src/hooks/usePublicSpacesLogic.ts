@@ -4,11 +4,12 @@
  * Extracted from PublicSpaces.tsx to separate concerns and improve maintainability.
  * Handles filters, location, and data fetching logic.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLocationParams } from '@/hooks/useLocationParams';
 import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
+import { useMapboxGeocoding } from '@/hooks/useMapboxGeocoding';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useLogger } from '@/hooks/useLogger';
 
@@ -41,12 +42,13 @@ const DEFAULT_FILTERS: SpaceFilters = {
 };
 
 export const usePublicSpacesLogic = () => {
-  const { initialCity, initialCoordinates } = useLocationParams();
+  const { initialCity, initialCoordinates, updateLocationParam } = useLocationParams();
   const [filters, setFilters] = useState<SpaceFilters>(DEFAULT_FILTERS);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   
   const { handleAsyncError } = useErrorHandler('PublicSpaces');
   const { warn, info } = useLogger({ context: 'usePublicSpacesLogic' });
+  const { geocodeAddress } = useMapboxGeocoding();
   
   const mapInteraction = useMapCardInteraction();
 
@@ -67,6 +69,41 @@ export const usePublicSpacesLogic = () => {
       setUserLocation({ lat: 41.9028, lng: 12.4964 });
     }
   }, []);
+
+  // Debounced geocoding for city search
+  useEffect(() => {
+    if (!filters.location || filters.location.trim().length < 3) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      info('Starting geocoding for city', { city: filters.location });
+      
+      try {
+        const results = await geocodeAddress(filters.location);
+        if (results.length > 0 && results[0]?.center) {
+          const coordinates = {
+            lat: results[0].center[1], // Mapbox returns [lng, lat]
+            lng: results[0].center[0]
+          };
+          
+          info('Geocoding successful', { city: filters.location, coordinates });
+          
+          // Update filters with coordinates
+          setFilters(prev => ({ ...prev, coordinates }));
+          
+          // Update URL with city and coordinates
+          updateLocationParam(filters.location, coordinates);
+        }
+      } catch (error) {
+        warn('Geocoding failed', { city: filters.location, error });
+        // If geocoding fails, still update URL with just the city name
+        updateLocationParam(filters.location);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [filters.location, geocodeAddress, updateLocationParam, info, warn]);
 
   // Spaces data fetching with React Query
   const spacesQuery = useQuery({

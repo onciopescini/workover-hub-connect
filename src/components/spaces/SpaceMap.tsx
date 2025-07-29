@@ -97,7 +97,18 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
       setMapReady(false);
       map.current?.remove();
     };
-  }, [userLocation, mapboxToken]);
+  }, [mapboxToken]);
+
+  // Update map center when userLocation changes
+  useEffect(() => {
+    if (!map.current || !mapReady || !userLocation) return;
+    
+    map.current.flyTo({
+      center: [userLocation.lng, userLocation.lat],
+      zoom: 11, // City-level zoom
+      essential: true
+    });
+  }, [userLocation, mapReady]);
 
   // Add/update markers
   useEffect(() => {
