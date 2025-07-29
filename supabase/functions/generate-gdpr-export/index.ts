@@ -100,86 +100,111 @@ async function collectUserData(userId: string) {
   };
 }
 
-function generatePDF(userData: any): Uint8Array {
-  // Simple PDF generation - in production you'd use a proper PDF library
-  const content = `
-ESPORTAZIONE DATI GDPR
+function generateTextExport(userData: any): Uint8Array {
+  const content = `ESPORTAZIONE DATI GDPR
 Data: ${new Date().toLocaleDateString('it-IT')}
+ID Utente: ${userData.profile?.id || 'Sconosciuto'}
 ==============================================
 
 === DATI PROFILO ===
 Nome: ${userData.profile?.first_name || ''} ${userData.profile?.last_name || ''}
-Email: ${userData.profile?.id || ''}
 Ruolo: ${userData.profile?.role || ''}
 Data registrazione: ${userData.profile?.created_at || ''}
+Ultimo accesso: ${userData.profile?.last_login_at || 'Mai'}
 Bio: ${userData.profile?.bio || 'N/A'}
 Professione: ${userData.profile?.profession || 'N/A'}
 Città: ${userData.profile?.city || 'N/A'}
+Telefono: ${userData.profile?.phone || 'N/A'}
+Sito web: ${userData.profile?.website || 'N/A'}
 Networking abilitato: ${userData.profile?.networking_enabled ? 'Sì' : 'No'}
+Account età confermata: ${userData.profile?.age_confirmed ? 'Sì' : 'No'}
+Onboarding completato: ${userData.profile?.onboarding_completed ? 'Sì' : 'No'}
 
-=== PRENOTAZIONI (${userData.bookings.length}) ===
-${userData.bookings.map((booking: any) => `
-- ID: ${booking.id}
-- Spazio: ${booking.spaces?.title || 'N/A'}
-- Data: ${booking.booking_date}
-- Stato: ${booking.status}
-- Creata: ${booking.created_at}
-- Importo: ${booking.payments?.[0]?.amount || 'N/A'}
-`).join('')}
+=== PRENOTAZIONI (${userData.bookings?.length || 0}) ===
+${userData.bookings?.map((booking: any, index: number) => `
+${index + 1}. ID: ${booking.id}
+   Spazio: ${booking.spaces?.title || 'N/A'}
+   Data: ${booking.booking_date}
+   Orario: ${booking.start_time || 'N/A'} - ${booking.end_time || 'N/A'}
+   Stato: ${booking.status}
+   Creata: ${booking.created_at}
+   ${booking.cancelled_at ? `Cancellata: ${booking.cancelled_at}` : ''}
+   ${booking.cancellation_reason ? `Motivo: ${booking.cancellation_reason}` : ''}
+   Importo: ${booking.payments?.[0]?.amount ? '€' + booking.payments[0].amount : 'N/A'}
+`).join('') || 'Nessuna prenotazione trovata.'}
 
-=== MESSAGGI INVIATI (${userData.messages.length}) ===
-${userData.messages.map((message: any) => `
-- Data: ${message.created_at}
-- Contenuto: ${message.content}
-- Prenotazione: ${message.bookings?.spaces?.title || 'N/A'}
-- Allegati: ${message.attachments ? JSON.stringify(message.attachments) : 'Nessuno'}
-`).join('')}
+=== MESSAGGI INVIATI (${userData.messages?.length || 0}) ===
+${userData.messages?.map((message: any, index: number) => `
+${index + 1}. Data: ${message.created_at}
+   Contenuto: ${message.content?.substring(0, 200)}${message.content?.length > 200 ? '...' : ''}
+   Prenotazione: ${message.bookings?.spaces?.title || 'N/A'}
+   Letto: ${message.is_read ? 'Sì' : 'No'}
+   Allegati: ${message.attachments?.length || 0} file
+`).join('') || 'Nessun messaggio trovato.'}
 
-=== RECENSIONI DATE (${userData.reviewsGiven.length}) ===
-${userData.reviewsGiven.map((review: any) => `
-- Data: ${review.created_at}
-- Valutazione: ${review.rating}/5
-- Contenuto: ${review.content || 'N/A'}
-- Spazio: ${review.bookings?.spaces?.title || 'N/A'}
-`).join('')}
+=== RECENSIONI DATE (${userData.reviewsGiven?.length || 0}) ===
+${userData.reviewsGiven?.map((review: any, index: number) => `
+${index + 1}. Data: ${review.created_at}
+   Valutazione: ${review.rating}/5
+   Contenuto: ${review.content?.substring(0, 300) || 'N/A'}${review.content?.length > 300 ? '...' : ''}
+   Spazio: ${review.bookings?.spaces?.title || 'N/A'}
+   Visibile: ${review.is_visible ? 'Sì' : 'No'}
+`).join('') || 'Nessuna recensione data.'}
 
-=== RECENSIONI RICEVUTE (${userData.reviewsReceived.length}) ===
-${userData.reviewsReceived.map((review: any) => `
-- Data: ${review.created_at}
-- Valutazione: ${review.rating}/5
-- Contenuto: ${review.content || 'N/A'}
-- Spazio: ${review.bookings?.spaces?.title || 'N/A'}
-`).join('')}
+=== RECENSIONI RICEVUTE (${userData.reviewsReceived?.length || 0}) ===
+${userData.reviewsReceived?.map((review: any, index: number) => `
+${index + 1}. Data: ${review.created_at}
+   Valutazione: ${review.rating}/5
+   Contenuto: ${review.content?.substring(0, 300) || 'N/A'}${review.content?.length > 300 ? '...' : ''}
+   Spazio: ${review.bookings?.spaces?.title || 'N/A'}
+   Visibile: ${review.is_visible ? 'Sì' : 'No'}
+`).join('') || 'Nessuna recensione ricevuta.'}
 
-=== CONNESSIONI (${userData.connections.length}) ===
-${userData.connections.map((conn: any) => `
-- Data: ${conn.created_at}
-- Stato: ${conn.status}
-- Tipo: ${conn.sender_id === userData.profile?.id ? 'Inviata' : 'Ricevuta'}
-- Partner: ${conn.sender_id === userData.profile?.id ? 
-  `${conn.receiver?.first_name} ${conn.receiver?.last_name}` : 
-  `${conn.sender?.first_name} ${conn.sender?.last_name}`}
-`).join('')}
+=== CONNESSIONI (${userData.connections?.length || 0}) ===
+${userData.connections?.map((conn: any, index: number) => `
+${index + 1}. Data: ${conn.created_at}
+   Stato: ${conn.status}
+   Scade: ${conn.expires_at || 'Mai'}
+   Tipo: ${conn.sender_id === userData.profile?.id ? 'Inviata' : 'Ricevuta'}
+   Partner: ${conn.sender_id === userData.profile?.id ? 
+     `${conn.receiver?.first_name || ''} ${conn.receiver?.last_name || ''}` : 
+     `${conn.sender?.first_name || ''} ${conn.sender?.last_name || ''}`}
+`).join('') || 'Nessuna connessione trovata.'}
 
-=== SPAZI OSPITATI (${userData.spaces.length}) ===
-${userData.spaces.map((space: any) => `
-- Nome: ${space.title}
-- Indirizzo: ${space.address}
-- Pubblicato: ${space.published ? 'Sì' : 'No'}
-- Prezzo: €${space.price_per_day}/giorno
-- Creato: ${space.created_at}
-- Capacità: ${space.capacity} persone
-`).join('')}
+=== SPAZI OSPITATI (${userData.spaces?.length || 0}) ===
+${userData.spaces?.map((space: any, index: number) => `
+${index + 1}. Nome: ${space.title}
+   Descrizione: ${space.description?.substring(0, 200)}${space.description?.length > 200 ? '...' : ''}
+   Indirizzo: ${space.address}
+   Pubblicato: ${space.published ? 'Sì' : 'No'}
+   Prezzo: €${space.price_per_day}/giorno
+   Creato: ${space.created_at}
+   Capacità: ${space.capacity} persone
+   Servizi: ${space.amenities?.join(', ') || 'Nessuno'}
+   ${space.is_suspended ? 'SOSPESO' : ''}
+`).join('') || 'Nessuno spazio ospitato.'}
 
-=== RICHIESTE GDPR (${userData.gdprRequests.length}) ===
-${userData.gdprRequests.map((req: any) => `
-- Tipo: ${req.request_type}
-- Data: ${req.requested_at}
-- Stato: ${req.status}
-- Note: ${req.notes || 'N/A'}
-`).join('')}
+=== RICHIESTE GDPR (${userData.gdprRequests?.length || 0}) ===
+${userData.gdprRequests?.map((req: any, index: number) => `
+${index + 1}. Tipo: ${req.request_type}
+   Data richiesta: ${req.requested_at}
+   Stato: ${req.status}
+   Stato elaborazione: ${req.processing_status || 'N/A'}
+   ${req.completed_at ? `Completata: ${req.completed_at}` : ''}
+   Note: ${req.notes || 'N/A'}
+`).join('') || 'Nessuna richiesta GDPR precedente.'}
 
 ==============================================
+RIEPILOGO DATI:
+- Profilo: ${userData.profile ? '1 record' : '0 record'}
+- Prenotazioni: ${userData.bookings?.length || 0} record
+- Messaggi: ${userData.messages?.length || 0} record  
+- Recensioni date: ${userData.reviewsGiven?.length || 0} record
+- Recensioni ricevute: ${userData.reviewsReceived?.length || 0} record
+- Connessioni: ${userData.connections?.length || 0} record
+- Spazi ospitati: ${userData.spaces?.length || 0} record
+- Richieste GDPR: ${userData.gdprRequests?.length || 0} record
+
 Questo documento contiene tutti i dati personali 
 associati al tuo account su CoWorkingConnect.
 
@@ -188,6 +213,7 @@ Per ulteriori informazioni sulla protezione dei dati:
 - Sito web: https://coworkingconnect.it/privacy
 
 Data esportazione: ${new Date().toISOString()}
+Dimensione file: ${new Blob([content]).size} bytes
 ==============================================
 `;
 
@@ -263,19 +289,19 @@ serve(async (req) => {
     
     // Collect user data
     const userData = await collectUserData(userId);
-    console.log('Data collected, generating PDF...');
+    console.log('Data collected, generating text export...');
 
-    // Generate PDF
-    const pdfData = generatePDF(userData);
-    console.log('PDF generated, size:', pdfData.length);
+    // Generate text export
+    const textData = generateTextExport(userData);
+    console.log('Text export generated, size:', textData.length);
 
-    // For now, we'll just upload the PDF. In production, you'd create a proper ZIP
-    const fileName = `${userId}/${downloadToken}/gdpr_export.pdf`;
+    // Upload as text file
+    const fileName = `${userId}/${downloadToken}/gdpr_export.txt`;
     
     const { error: uploadError } = await supabase.storage
       .from('gdpr-exports')
-      .upload(fileName, pdfData, {
-        contentType: 'application/pdf',
+      .upload(fileName, textData, {
+        contentType: 'text/plain; charset=utf-8',
         upsert: true
       });
 
@@ -300,7 +326,7 @@ serve(async (req) => {
         processing_status: 'completed',
         status: 'completed',
         export_file_url: signedUrlData.signedUrl,
-        file_size: pdfData.length,
+        file_size: textData.length,
         completed_at: new Date().toISOString()
       })
       .eq('id', newRequest.id);
@@ -310,7 +336,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       downloadUrl: signedUrlData.signedUrl,
-      fileSize: pdfData.length,
+      fileSize: textData.length,
       expiresAt: expiresAt.toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
