@@ -142,85 +142,10 @@ export function AppLayout({
               </div>
             </div>
 
-            {/* Right side - User info */}
-            <div className="flex items-center space-x-3">
-              <Badge variant="secondary" className="hidden sm:inline-flex">
-                {authState.profile?.role === "host" ? "Host" : 
-                 authState.profile?.role === "admin" ? "Admin" : "Coworker"}
-              </Badge>
-              
-              {showUserMenu ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="flex items-center space-x-2 h-auto p-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={authState.profile?.profile_photo_url || ""} />
-                        <AvatarFallback className="text-xs">
-                          {getUserInitials()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium text-gray-700 hidden md:inline">
-                        {getUserFullName()}
-                      </span>
-                      <ChevronDown className="h-4 w-4 text-gray-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">{getUserFullName()}</p>
-                      <p className="text-xs text-gray-500">{authState.user?.email}</p>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleViewProfile}>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Visualizza Profilo</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <span className="text-sm font-medium text-gray-700">
-                  {getUserFullName()}
-                </span>
-              )}
-            </div>
           </div>
         </div>
       </nav>
 
-      {/* Quick Navigation Bar (Only for hosts and admins) */}
-      {navLinks.length > 0 && (
-        <div className="bg-white border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-1 py-2 overflow-x-auto">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive = isCurrentPath(link.href);
-                
-                return (
-                  <Button
-                    key={link.href}
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => navigate(link.href)}
-                    className={`flex items-center gap-2 whitespace-nowrap ${
-                      isActive ? "bg-[#4F46E5] text-white" : ""
-                    }`}
-                    aria-label={link.label}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="hidden md:inline">{link.label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Suspension Banner */}
       {isSuspended && authState.profile && (
