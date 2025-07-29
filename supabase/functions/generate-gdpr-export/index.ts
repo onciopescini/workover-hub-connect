@@ -15,89 +15,146 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function collectUserData(userId: string) {
   console.log('Collecting user data for:', userId);
   
-  // Get profile data
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  try {
+    // Get profile data
+    console.log('Fetching profile data...');
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-  // Get bookings
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      spaces:space_id(id, title, address, host_id),
-      payments(*)
-    `)
-    .eq('user_id', userId);
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      // Don't fail completely, just log and continue
+    }
 
-  // Get messages
-  const { data: messages } = await supabase
-    .from('messages')
-    .select(`
-      *,
-      bookings:booking_id(
-        id,
-        spaces:space_id(title)
-      )
-    `)
-    .eq('sender_id', userId);
+    // Get bookings
+    console.log('Fetching bookings...');
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select(`
+        *,
+        spaces:space_id(id, title, address, host_id),
+        payments(*)
+      `)
+      .eq('user_id', userId);
 
-  // Get reviews given
-  const { data: reviewsGiven } = await supabase
-    .from('booking_reviews')
-    .select(`
-      *,
-      bookings:booking_id(
-        spaces:space_id(title)
-      )
-    `)
-    .eq('author_id', userId);
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError);
+    }
 
-  // Get reviews received
-  const { data: reviewsReceived } = await supabase
-    .from('booking_reviews')
-    .select(`
-      *,
-      bookings:booking_id(
-        spaces:space_id(title)
-      )
-    `)
-    .eq('target_id', userId);
+    // Get messages
+    console.log('Fetching messages...');
+    const { data: messages, error: messagesError } = await supabase
+      .from('messages')
+      .select(`
+        *,
+        bookings:booking_id(
+          id,
+          spaces:space_id(title)
+        )
+      `)
+      .eq('sender_id', userId);
 
-  // Get connections
-  const { data: connections } = await supabase
-    .from('connections')
-    .select(`
-      *,
-      sender:sender_id(first_name, last_name),
-      receiver:receiver_id(first_name, last_name)
-    `)
-    .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+    if (messagesError) {
+      console.error('Error fetching messages:', messagesError);
+    }
 
-  // Get GDPR requests
-  const { data: gdprRequests } = await supabase
-    .from('gdpr_requests')
-    .select('*')
-    .eq('user_id', userId);
+    // Get reviews given
+    console.log('Fetching reviews given...');
+    const { data: reviewsGiven, error: reviewsGivenError } = await supabase
+      .from('booking_reviews')
+      .select(`
+        *,
+        bookings:booking_id(
+          spaces:space_id(title)
+        )
+      `)
+      .eq('author_id', userId);
 
-  // Get user spaces if host
-  const { data: spaces } = await supabase
-    .from('spaces')
-    .select('*')
-    .eq('host_id', userId);
+    if (reviewsGivenError) {
+      console.error('Error fetching reviews given:', reviewsGivenError);
+    }
 
-  return {
-    profile,
-    bookings: bookings || [],
-    messages: messages || [],
-    reviewsGiven: reviewsGiven || [],
-    reviewsReceived: reviewsReceived || [],
-    connections: connections || [],
-    gdprRequests: gdprRequests || [],
-    spaces: spaces || []
-  };
+    // Get reviews received
+    console.log('Fetching reviews received...');
+    const { data: reviewsReceived, error: reviewsReceivedError } = await supabase
+      .from('booking_reviews')
+      .select(`
+        *,
+        bookings:booking_id(
+          spaces:space_id(title)
+        )
+      `)
+      .eq('target_id', userId);
+
+    if (reviewsReceivedError) {
+      console.error('Error fetching reviews received:', reviewsReceivedError);
+    }
+
+    // Get connections
+    console.log('Fetching connections...');
+    const { data: connections, error: connectionsError } = await supabase
+      .from('connections')
+      .select(`
+        *,
+        sender:sender_id(first_name, last_name),
+        receiver:receiver_id(first_name, last_name)
+      `)
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+    if (connectionsError) {
+      console.error('Error fetching connections:', connectionsError);
+    }
+
+    // Get GDPR requests
+    console.log('Fetching GDPR requests...');
+    const { data: gdprRequests, error: gdprError } = await supabase
+      .from('gdpr_requests')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (gdprError) {
+      console.error('Error fetching GDPR requests:', gdprError);
+    }
+
+    // Get user spaces if host
+    console.log('Fetching spaces...');
+    const { data: spaces, error: spacesError } = await supabase
+      .from('spaces')
+      .select('*')
+      .eq('host_id', userId);
+
+    if (spacesError) {
+      console.error('Error fetching spaces:', spacesError);
+    }
+
+    console.log('Data collection completed. Counts:', {
+      profile: profile ? 1 : 0,
+      bookings: bookings?.length || 0,
+      messages: messages?.length || 0,
+      reviewsGiven: reviewsGiven?.length || 0,
+      reviewsReceived: reviewsReceived?.length || 0,
+      connections: connections?.length || 0,
+      gdprRequests: gdprRequests?.length || 0,
+      spaces: spaces?.length || 0
+    });
+
+    return {
+      profile,
+      bookings: bookings || [],
+      messages: messages || [],
+      reviewsGiven: reviewsGiven || [],
+      reviewsReceived: reviewsReceived || [],
+      connections: connections || [],
+      gdprRequests: gdprRequests || [],
+      spaces: spaces || []
+    };
+  } catch (error) {
+    console.error('Error in collectUserData:', error);
+    throw error;
+  }
 }
 
 function generateTextExport(userData: any): Uint8Array {
@@ -221,28 +278,63 @@ Dimensione file: ${new Blob([content]).size} bytes
 }
 
 serve(async (req) => {
+  console.log('=== GDPR Export Function Called ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Processing GDPR export request...');
+    
     const authHeader = req.headers.get('authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 });
+      console.error('No authorization header found');
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized - No auth header' 
+      }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
+    console.log('Validating user token...');
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
-    if (authError || !user) {
-      return new Response('Unauthorized', { status: 401 });
+    if (authError) {
+      console.error('Auth error:', authError);
+      return new Response(JSON.stringify({ 
+        error: 'Authentication failed',
+        details: authError.message 
+      }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
+    if (!user) {
+      console.error('No user found from token');
+      return new Response(JSON.stringify({ 
+        error: 'No user found' 
+      }), { 
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('User authenticated:', user.id);
     const userId = user.id;
 
     // Check for existing active request
-    const { data: existingRequest } = await supabase
+    console.log('Checking for existing requests...');
+    const { data: existingRequest, error: checkError } = await supabase
       .from('gdpr_requests')
       .select('*')
       .eq('user_id', userId)
@@ -251,7 +343,19 @@ serve(async (req) => {
       .gte('expires_at', new Date().toISOString())
       .maybeSingle();
 
+    if (checkError) {
+      console.error('Error checking existing requests:', checkError);
+      return new Response(JSON.stringify({ 
+        error: 'Errore nel controllo richieste esistenti',
+        details: checkError.message 
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     if (existingRequest) {
+      console.log('Found existing request:', existingRequest.id);
       return new Response(JSON.stringify({ 
         error: 'Una richiesta di esportazione è già in corso' 
       }), { 
@@ -261,18 +365,25 @@ serve(async (req) => {
     }
 
     // Cancel previous requests
-    await supabase
+    console.log('Cancelling previous requests...');
+    const { error: cancelError } = await supabase
       .from('gdpr_requests')
       .update({ processing_status: 'cancelled' })
       .eq('user_id', userId)
       .eq('request_type', 'data_export')
       .neq('processing_status', 'completed');
 
+    if (cancelError) {
+      console.error('Error cancelling previous requests:', cancelError);
+      // Continue anyway, not critical
+    }
+
     // Create new request
+    console.log('Creating new GDPR request...');
     const downloadToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    const { data: newRequest } = await supabase
+    const { data: newRequest, error: insertError } = await supabase
       .from('gdpr_requests')
       .insert({
         user_id: userId,
@@ -284,6 +395,19 @@ serve(async (req) => {
       })
       .select()
       .single();
+
+    if (insertError || !newRequest) {
+      console.error('Error creating GDPR request:', insertError);
+      return new Response(JSON.stringify({ 
+        error: 'Errore nella creazione della richiesta',
+        details: insertError?.message || 'Nessun dato restituito'
+      }), { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('GDPR request created:', newRequest.id);
 
     console.log('Starting data collection...');
     
