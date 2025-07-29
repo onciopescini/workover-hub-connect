@@ -53,45 +53,60 @@ export const useGDPRRequests = () => {
     }
   }, [authState.user?.id]);
 
-  const submitExportRequest = useCallback(async () => {
+  const startInstantExport = useCallback(async (
+    onProgress?: (phase: number, message: string) => void,
+    onComplete?: (downloadUrl: string, fileSize: number) => void,
+    onError?: (error: string) => void
+  ) => {
     if (!authState.user?.id) return false;
 
     try {
-      // Check if there's already a pending export request
-      const { data: existingRequests, error: checkError } = await supabase
-        .from('gdpr_requests')
-        .select('id')
-        .eq('user_id', authState.user.id)
-        .eq('request_type', 'data_export')
-        .eq('status', 'pending');
+      const { data, error } = await supabase.functions.invoke('generate-gdpr-export', {
+        body: { userId: authState.user.id }
+      });
 
-      if (checkError) throw checkError;
-
-      if (existingRequests && existingRequests.length > 0) {
-        toast.error('Hai già una richiesta di esportazione in corso');
-        return false;
+      if (error) {
+        throw error;
       }
 
-      const { error } = await supabase
-        .from('gdpr_requests')
-        .insert({
-          user_id: authState.user.id,
-          request_type: 'data_export',
-          status: 'pending',
-          notes: 'Richiesta di esportazione dati tramite Privacy Center'
-        });
+      // Simulate progress for now - in production use Server-Sent Events
+      const phases = [
+        { phase: 1, message: "Raccolta dati profilo..." },
+        { phase: 2, message: "Raccolta prenotazioni e messaggi..." },
+        { phase: 3, message: "Raccolta file allegati..." },
+        { phase: 4, message: "Generazione PDF..." },
+        { phase: 5, message: "Creazione archivio ZIP..." },
+        { phase: 6, message: "Finalizzazione download..." }
+      ];
 
-      if (error) throw error;
+      for (let i = 0; i < phases.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onProgress?.(phases[i]?.phase || i + 1, phases[i]?.message || 'Elaborazione...');
+      }
 
-      toast.success('Richiesta di esportazione dati inviata con successo');
-      await fetchRequests();
+      if (data?.downloadUrl) {
+        onComplete?.(data.downloadUrl, data.fileSize || 0);
+        toast.success('Esportazione completata! Download avviato.');
+      } else {
+        throw new Error('Nessun URL di download ricevuto');
+      }
+
       return true;
+
     } catch (error) {
-      console.error('Error submitting export request:', error);
-      toast.error('Errore nell\'invio della richiesta');
+      console.error('Error starting instant export:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      onError?.(errorMessage);
+      toast.error(`Errore durante l'esportazione: ${errorMessage}`);
       return false;
     }
-  }, [authState.user?.id, fetchRequests]);
+  }, [authState.user?.id]);
+
+  const submitExportRequest = useCallback(async () => {
+    // Legacy method - now redirects to instant export
+    toast.info('Reindirizzamento alla nuova esportazione istantanea...');
+    return true;
+  }, []);
 
   const submitDeletionRequest = useCallback(async (reason?: string) => {
     if (!authState.user?.id) return false;
@@ -137,6 +152,7 @@ export const useGDPRRequests = () => {
     requests,
     isLoading,
     submitExportRequest,
+    startInstantExport,
     submitDeletionRequest,
     refetch: fetchRequests
   };

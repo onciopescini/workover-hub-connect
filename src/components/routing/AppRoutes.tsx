@@ -56,6 +56,7 @@ const SpaceRecap = lazy(() => import("@/pages/SpaceRecap"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminSpacesPage = lazy(() => import("@/pages/admin/AdminSpacesPage"));
+const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
 
 // Wrapper per lazy loading
 const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -102,6 +103,13 @@ export const AppRoutes = () => {
         <Route path="contact" element={<Contact />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
+        <Route path="privacy/export-request" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <PrivacyExportRequest />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
 
         {/* Protected routes */}
         <Route path="onboarding" element={

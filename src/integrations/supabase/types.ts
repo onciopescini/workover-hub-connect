@@ -857,10 +857,14 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string | null
+          download_token: string | null
+          expires_at: string | null
           export_file_url: string | null
+          file_size: number | null
           id: string
           notes: string | null
           processed_by: string | null
+          processing_status: string | null
           request_type: string
           requested_at: string
           status: string
@@ -870,10 +874,14 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string | null
+          download_token?: string | null
+          expires_at?: string | null
           export_file_url?: string | null
+          file_size?: number | null
           id?: string
           notes?: string | null
           processed_by?: string | null
+          processing_status?: string | null
           request_type: string
           requested_at?: string
           status?: string
@@ -883,10 +891,14 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string | null
+          download_token?: string | null
+          expires_at?: string | null
           export_file_url?: string | null
+          file_size?: number | null
           id?: string
           notes?: string | null
           processed_by?: string | null
+          processing_status?: string | null
           request_type?: string
           requested_at?: string
           status?: string
@@ -1844,6 +1856,10 @@ export type Database = {
       check_profile_access: {
         Args: { viewer_id: string; profile_id: string }
         Returns: Json
+      }
+      cleanup_expired_gdpr_exports: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_expired_slots: {
         Args: Record<PropertyKey, never>

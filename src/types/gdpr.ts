@@ -62,6 +62,25 @@ export interface CookieConsentLog {
   is_active: boolean;
 }
 
+// Enhanced GDPR Request interface for instant export
+export interface GDPRRequestInstant {
+  id: string;
+  user_id: string;
+  request_type: 'data_export' | 'data_deletion' | 'data_rectification';
+  status: 'pending' | 'completed' | 'rejected';
+  processing_status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  requested_at: string;
+  completed_at: string | null;
+  processed_by: string | null;
+  export_file_url: string | null;
+  download_token: string | null;
+  expires_at: string | null;
+  file_size: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Data Minimization Audit types
 export interface DataMinimizationAudit {
   id: string;
