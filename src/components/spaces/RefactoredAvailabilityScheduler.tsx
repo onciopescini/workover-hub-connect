@@ -1,10 +1,14 @@
 
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AvailabilityScheduler } from "./AvailabilityScheduler";
+import { AdvancedCalendarView, ConflictManagementSystem } from "./calendar";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 import { type AvailabilityData, type DaySchedule, type WeeklySchedule, type TimeSlot } from "@/types/availability";
+import { Calendar, Settings } from "lucide-react";
 
 // Robust normalization function that ensures strict AvailabilityData compliance
 const normalizeAvailabilityData = (data: any): AvailabilityData => {
@@ -39,7 +43,7 @@ const normalizeAvailabilityData = (data: any): AvailabilityData => {
     recurring: normalizeWeeklySchedule(data?.recurring),
     exceptions: Array.isArray(data?.exceptions) ? data.exceptions.map((exception: any) => ({
       date: String(exception?.date ?? ''),
-      available: Boolean(exception?.available ?? false),
+      enabled: Boolean(exception?.enabled ?? false),
       slots: Array.isArray(exception?.slots)
         ? exception.slots.map((slot: any): TimeSlot => ({
             start: String(slot?.start ?? '09:00'),
@@ -52,11 +56,32 @@ const normalizeAvailabilityData = (data: any): AvailabilityData => {
 
 export const RefactoredAvailabilityScheduler = () => {
   const form = useFormContext<SpaceFormData>();
+  const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Availability Schedule</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Gestione Disponibilità</CardTitle>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'basic' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('basic')}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Base
+            </Button>
+            <Button
+              variant={viewMode === 'advanced' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('advanced')}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Avanzato
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <FormField
@@ -65,18 +90,40 @@ export const RefactoredAvailabilityScheduler = () => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Set your availability <span className="text-red-500">*</span>
+                Imposta la tua disponibilità <span className="text-red-500">*</span>
               </FormLabel>
-              <AvailabilityScheduler
-                availability={normalizeAvailabilityData(field.value)}
-                onAvailabilityChange={(availability: AvailabilityData) => {
-                  // The data is already properly typed from AvailabilityScheduler
-                  // but we normalize again to be absolutely certain
-                  const normalizedAvailability = normalizeAvailabilityData(availability);
-                  field.onChange(normalizedAvailability);
-                }}
-                isSubmitting={false}
-              />
+              
+              {viewMode === 'basic' ? (
+                <AvailabilityScheduler
+                  availability={normalizeAvailabilityData(field.value)}
+                  onAvailabilityChange={(availability: AvailabilityData) => {
+                    const normalizedAvailability = normalizeAvailabilityData(availability);
+                    field.onChange(normalizedAvailability);
+                  }}
+                  isSubmitting={false}
+                />
+              ) : (
+                <div className="space-y-6">
+                  <ConflictManagementSystem
+                    availability={normalizeAvailabilityData(field.value)}
+                    bookings={[]} // TODO: Pass real bookings
+                    onConflictResolved={(bookingId, action) => {
+                      console.log('Conflict resolved:', bookingId, action);
+                    }}
+                  />
+                  
+                  <AdvancedCalendarView
+                    availability={normalizeAvailabilityData(field.value)}
+                    onAvailabilityChange={(availability: AvailabilityData) => {
+                      const normalizedAvailability = normalizeAvailabilityData(availability);
+                      field.onChange(normalizedAvailability);
+                    }}
+                    spaceId="calendar-space"
+                    bookings={[]} // TODO: Pass real bookings
+                  />
+                </div>
+              )}
+              
               <FormMessage />
             </FormItem>
           )}
