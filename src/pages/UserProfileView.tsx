@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, User, Calendar, MessageSquare, Globe, ExternalLink, MapPin, Briefcase, Lightbulb, Heart, Users, Handshake, Building, FileText, Bookmark } from "lucide-react";
+import { Star, User, Calendar, MessageSquare, Globe, ExternalLink, MapPin, Briefcase, Lightbulb, Heart, Users, Handshake, Building, FileText } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { supabase } from "@/integrations/supabase/client";
@@ -105,31 +105,32 @@ const UserProfileView = () => {
           setSpaces(spacesData || []);
         }
 
-        // Fetch reviews
+        // Fetch booking reviews - reviews received by the user
         const { data: reviewsData, error: reviewsError } = await supabase
-          .from('reviews')
+          .from('booking_reviews')
           .select('*')
-          .eq('reviewee_id', userId);
+          .eq('target_id', userId)
+          .eq('is_visible', true);
 
         if (reviewsError) {
-          console.error('Error fetching reviews:', reviewsError);
+          console.error('Error fetching booking reviews:', reviewsError);
         } else if (reviewsData && reviewsData.length > 0) {
-          const reviewerIds = reviewsData.map(r => r.reviewer_id);
-          const { data: reviewerProfiles } = await supabase
+          const authorIds = reviewsData.map(r => r.author_id);
+          const { data: authorProfiles } = await supabase
             .from('profiles')
             .select('id, first_name, last_name, profile_photo_url')
-            .in('id', reviewerIds);
+            .in('id', authorIds);
 
-          const profilesMap = new Map((reviewerProfiles || []).map(p => [p.id, p]));
+          const profilesMap = new Map((authorProfiles || []).map(p => [p.id, p]));
           
           const reviewsWithProfiles = reviewsData.map(review => ({
             ...review,
-            reviewer: profilesMap.get(review.reviewer_id) || null
+            reviewer: profilesMap.get(review.author_id) || null
           }));
           
           setReviews(reviewsWithProfiles.map(review => ({
             ...review,
-            comment: review.comment ?? '',
+            comment: review.content ?? '', // booking_reviews uses 'content' instead of 'comment'
             created_at: review.created_at ?? '',
             reviewer: review.reviewer ? {
               first_name: review.reviewer.first_name,
@@ -338,23 +339,15 @@ const UserProfileView = () => {
         </div>
 
         {/* Enhanced Action Buttons */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-3 max-w-md">
+        <div className="mb-8 flex justify-start">
           <Button 
             onClick={startPrivateChat}
             disabled={startingChat}
             size="lg"
-            className="flex-1 sm:flex-none min-w-[180px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            className="min-w-[200px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
           >
             <MessageSquare className="mr-2 h-5 w-5" />
             {startingChat ? 'Avvio chat...' : 'Invia Messaggio'}
-          </Button>
-          <Button 
-            variant="outline"
-            size="lg"
-            className="flex-1 sm:flex-none min-w-[180px] h-12 text-base font-semibold border-2 hover:bg-muted/50 transition-all duration-300 hover:scale-[1.02]"
-          >
-            <Bookmark className="mr-2 h-5 w-5" />
-            Salva Contatto
           </Button>
         </div>
 
