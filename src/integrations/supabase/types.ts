@@ -1442,51 +1442,6 @@ export type Database = {
           },
         ]
       }
-      reviews: {
-        Row: {
-          booking_id: string
-          comment: string | null
-          created_at: string | null
-          id: string
-          rating: number
-          reviewee_id: string
-          reviewer_id: string
-        }
-        Insert: {
-          booking_id: string
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          rating: number
-          reviewee_id: string
-          reviewer_id: string
-        }
-        Update: {
-          booking_id?: string
-          comment?: string | null
-          created_at?: string | null
-          id?: string
-          rating?: number
-          reviewee_id?: string
-          reviewer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_reviewer_id_profiles_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       space_tags: {
         Row: {
           created_at: string | null
