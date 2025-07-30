@@ -49,35 +49,35 @@ export const getUserReviews = async (userId: string): Promise<{
     // Get reviews given by user - fetch profiles separately
     const [givenResult, receivedResult] = await Promise.all([
       supabase
-        .from('reviews')
+        .from('booking_reviews')
         .select(`
           *,
-          booking:bookings!reviews_booking_id_fkey (
+          booking:bookings!booking_reviews_booking_id_fkey (
             booking_date,
             space:spaces!bookings_space_id_fkey (
               title
             )
           )
         `)
-        .eq('reviewer_id', userId),
+        .eq('author_id', userId),
       
       supabase
-        .from('reviews')
+        .from('booking_reviews')
         .select(`
           *,
-          booking:bookings!reviews_booking_id_fkey (
+          booking:bookings!booking_reviews_booking_id_fkey (
             booking_date,
             space:spaces!bookings_space_id_fkey (
               title
             )
           )
         `)
-        .eq('reviewee_id', userId)
+        .eq('target_id', userId)
     ]);
 
     // Get profile data separately for reviewees and reviewers
-    const givenRevieweeIds = (givenResult.data || []).map(r => r.reviewee_id);
-    const receivedReviewerIds = (receivedResult.data || []).map(r => r.reviewer_id);
+    const givenRevieweeIds = (givenResult.data || []).map(r => r.target_id);
+    const receivedReviewerIds = (receivedResult.data || []).map(r => r.author_id);
     
     const [revieweeProfiles, reviewerProfiles] = await Promise.all([
       givenRevieweeIds.length > 0 ? supabase
@@ -96,17 +96,21 @@ export const getUserReviews = async (userId: string): Promise<{
 
     const given = (givenResult.data || []).map(review => ({
       ...review,
-      comment: review.comment ?? '',
+      comment: review.content ?? '',
       created_at: review.created_at ?? '',
-      reviewee: revieweeProfilesMap.get(review.reviewee_id) || null,
+      reviewer_id: review.author_id,
+      reviewee_id: review.target_id,
+      reviewee: revieweeProfilesMap.get(review.target_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
     const received = (receivedResult.data || []).map(review => ({
       ...review,
-      comment: review.comment ?? '',
+      comment: review.content ?? '',
       created_at: review.created_at ?? '',
-      reviewer: reviewerProfilesMap.get(review.reviewer_id) || null,
+      reviewer_id: review.author_id,
+      reviewee_id: review.target_id,
+      reviewer: reviewerProfilesMap.get(review.author_id) || null,
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
@@ -120,9 +124,10 @@ export const getUserReviews = async (userId: string): Promise<{
 export const getUserAverageRating = async (userId: string): Promise<number | null> => {
   try {
     const { data, error } = await supabase
-      .from('reviews')
+      .from('booking_reviews')
       .select('rating')
-      .eq('reviewee_id', userId);
+      .eq('target_id', userId)
+      .eq('is_visible', true);
 
     if (error) {
       console.error('Error fetching user average rating:', error);

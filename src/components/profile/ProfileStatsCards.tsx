@@ -9,13 +9,84 @@ interface ProfileStatsCardsProps {
 }
 
 export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
-  // Dati reali - da implementare con query appropriate quando disponibili
-  const stats = {
+  const [stats, setStats] = React.useState({
     totalBookings: 0,
     averageRating: 0,
     monthlyGrowth: 0,
-    totalEarnings: 0
-  };
+    totalEarnings: 0,
+    reviewCount: 0
+  });
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      if (!profile.id) return;
+
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+
+        // Get bookings count
+        let allBookings: any[] = [];
+        
+        if (profile.role === 'host') {
+          // For hosts, get bookings through spaces
+          const { data: spaces } = await supabase
+            .from('spaces')
+            .select('id')
+            .eq('host_id', profile.id);
+          
+          if (spaces && spaces.length > 0) {
+            const { data: hostBookingsData } = await supabase
+              .from('bookings')
+              .select('id, status, created_at')
+              .in('space_id', spaces.map(s => s.id));
+            allBookings = hostBookingsData || [];
+          }
+        } else {
+          // For coworkers, get their bookings directly
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('id, status, created_at')
+            .eq('user_id', profile.id);
+          allBookings = bookings || [];
+        }
+
+        // Get reviews and average rating
+        const { data: reviews } = await supabase
+          .from('booking_reviews')
+          .select('rating')
+          .eq('target_id', profile.id)
+          .eq('is_visible', true);
+
+        const avgRating = reviews && reviews.length > 0 
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+          : 0;
+
+        // Get earnings for hosts
+        let earnings = 0;
+        if (profile.role === 'host' && allBookings.length > 0) {
+          const { data: payments } = await supabase
+            .from('payments')
+            .select('host_amount')
+            .in('booking_id', allBookings.map(b => b.id))
+            .eq('payment_status', 'completed');
+          
+          earnings = payments?.reduce((sum, p) => sum + (p.host_amount || 0), 0) || 0;
+        }
+
+        setStats({
+          totalBookings: allBookings.length,
+          averageRating: Math.round(avgRating * 10) / 10,
+          monthlyGrowth: 0, // Could calculate based on bookings trend
+          totalEarnings: earnings,
+          reviewCount: reviews?.length || 0
+        });
+      } catch (error) {
+        console.error('Error fetching profile stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, [profile.id, profile.role]);
 
   const cards = [
     {
@@ -24,7 +95,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
       icon: Calendar,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
-      description: 'Questo mese: +3'
+      description: `Totali: ${stats.totalBookings}`
     },
     {
       title: 'Rating Medio',
@@ -32,7 +103,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
       icon: Star,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50',
-      description: 'Basato su 8 recensioni'
+      description: `Basato su ${stats.reviewCount} recensioni`
     },
     {
       title: 'Crescita Mensile',

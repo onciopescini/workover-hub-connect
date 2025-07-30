@@ -25,13 +25,13 @@ export function TrustBadgesSection({ profile }: TrustBadgesSectionProps) {
       icon: Phone,
       color: 'text-blue-600'
     },
-    {
+    ...(profile.role === 'host' ? [{
       key: 'stripe',
       label: 'Pagamenti Configurati',
       verified: profile.stripe_connected || false,
       icon: CreditCard,
       color: 'text-purple-600'
-    }
+    }] : [])
   ];
 
   const trustScore = verificationItems.filter(item => item.verified).length;
