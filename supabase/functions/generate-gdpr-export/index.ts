@@ -21,53 +21,322 @@ console.log('🔧 Environment check:', {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// SUPER SIMPLIFIED data collection - JUST PROFILE
+// COMPLETE GDPR data collection with DEBUG logging
 async function collectUserData(userId: string) {
-  console.log('🔵 Starting MINIMAL data collection for user:', userId);
-  
+  console.log('🔵 Starting COMPLETE data collection for user:', userId);
+  const startTime = Date.now();
+  const userData: any = {
+    profile: null,
+    bookings: [],
+    spaces: [],
+    messages: [],
+    reviews_given: [],
+    reviews_received: [],
+    connections: [],
+    payments: [],
+    notifications: [],
+    gdpr_requests: [],
+    favorites: [],
+    reports: [],
+    events: [],
+    event_reviews_given: [],
+    event_reviews_received: [],
+    errors: []
+  };
+
+  // CHECKPOINT 1: Profile data
   try {
-    console.log('🔍 Fetching profile ONLY...');
+    console.log('📋 CHECKPOINT 1: Fetching profile...');
+    const profileStart = Date.now();
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, role, created_at, email')
+      .select('*')
       .eq('id', userId)
       .single();
 
     if (profileError) {
       console.error('❌ Profile error:', profileError);
-      throw new Error(`Profile fetch failed: ${profileError.message}`);
+      userData.errors.push(`Profile fetch failed: ${profileError.message}`);
+    } else {
+      userData.profile = profile;
+      console.log('✅ Profile fetched in', Date.now() - profileStart, 'ms');
     }
-
-    console.log('✅ Profile data:', profile);
-    return { profile };
-    
   } catch (error) {
-    console.error('🔴 collectUserData failed:', error);
-    throw error;
+    console.error('🔴 Profile section failed:', error);
+    userData.errors.push(`Profile section failed: ${error.message}`);
   }
+
+  // CHECKPOINT 2: Bookings
+  try {
+    console.log('📋 CHECKPOINT 2: Fetching bookings...');
+    const bookingsStart = Date.now();
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (bookingsError) {
+      console.error('❌ Bookings error:', bookingsError);
+      userData.errors.push(`Bookings fetch failed: ${bookingsError.message}`);
+    } else {
+      userData.bookings = bookings || [];
+      console.log(`✅ Bookings fetched: ${bookings?.length || 0} records in ${Date.now() - bookingsStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Bookings section failed:', error);
+    userData.errors.push(`Bookings section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 3: Spaces
+  try {
+    console.log('📋 CHECKPOINT 3: Fetching spaces...');
+    const spacesStart = Date.now();
+    const { data: spaces, error: spacesError } = await supabase
+      .from('spaces')
+      .select('*')
+      .eq('host_id', userId);
+
+    if (spacesError) {
+      console.error('❌ Spaces error:', spacesError);
+      userData.errors.push(`Spaces fetch failed: ${spacesError.message}`);
+    } else {
+      userData.spaces = spaces || [];
+      console.log(`✅ Spaces fetched: ${spaces?.length || 0} records in ${Date.now() - spacesStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Spaces section failed:', error);
+    userData.errors.push(`Spaces section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 4: Messages
+  try {
+    console.log('📋 CHECKPOINT 4: Fetching messages...');
+    const messagesStart = Date.now();
+    const { data: messages, error: messagesError } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('sender_id', userId);
+
+    if (messagesError) {
+      console.error('❌ Messages error:', messagesError);
+      userData.errors.push(`Messages fetch failed: ${messagesError.message}`);
+    } else {
+      userData.messages = messages || [];
+      console.log(`✅ Messages fetched: ${messages?.length || 0} records in ${Date.now() - messagesStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Messages section failed:', error);
+    userData.errors.push(`Messages section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 5: Reviews given
+  try {
+    console.log('📋 CHECKPOINT 5: Fetching reviews given...');
+    const reviewsStart = Date.now();
+    const { data: reviewsGiven, error: reviewsGivenError } = await supabase
+      .from('booking_reviews')
+      .select('*')
+      .eq('author_id', userId);
+
+    if (reviewsGivenError) {
+      console.error('❌ Reviews given error:', reviewsGivenError);
+      userData.errors.push(`Reviews given fetch failed: ${reviewsGivenError.message}`);
+    } else {
+      userData.reviews_given = reviewsGiven || [];
+      console.log(`✅ Reviews given fetched: ${reviewsGiven?.length || 0} records in ${Date.now() - reviewsStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Reviews given section failed:', error);
+    userData.errors.push(`Reviews given section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 6: Reviews received
+  try {
+    console.log('📋 CHECKPOINT 6: Fetching reviews received...');
+    const reviewsRecStart = Date.now();
+    const { data: reviewsReceived, error: reviewsReceivedError } = await supabase
+      .from('booking_reviews')
+      .select('*')
+      .eq('target_id', userId);
+
+    if (reviewsReceivedError) {
+      console.error('❌ Reviews received error:', reviewsReceivedError);
+      userData.errors.push(`Reviews received fetch failed: ${reviewsReceivedError.message}`);
+    } else {
+      userData.reviews_received = reviewsReceived || [];
+      console.log(`✅ Reviews received fetched: ${reviewsReceived?.length || 0} records in ${Date.now() - reviewsRecStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Reviews received section failed:', error);
+    userData.errors.push(`Reviews received section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 7: Connections
+  try {
+    console.log('📋 CHECKPOINT 7: Fetching connections...');
+    const connectionsStart = Date.now();
+    const { data: connections, error: connectionsError } = await supabase
+      .from('connections')
+      .select('*')
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+    if (connectionsError) {
+      console.error('❌ Connections error:', connectionsError);
+      userData.errors.push(`Connections fetch failed: ${connectionsError.message}`);
+    } else {
+      userData.connections = connections || [];
+      console.log(`✅ Connections fetched: ${connections?.length || 0} records in ${Date.now() - connectionsStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Connections section failed:', error);
+    userData.errors.push(`Connections section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 8: Payments
+  try {
+    console.log('📋 CHECKPOINT 8: Fetching payments...');
+    const paymentsStart = Date.now();
+    const { data: payments, error: paymentsError } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (paymentsError) {
+      console.error('❌ Payments error:', paymentsError);
+      userData.errors.push(`Payments fetch failed: ${paymentsError.message}`);
+    } else {
+      userData.payments = payments || [];
+      console.log(`✅ Payments fetched: ${payments?.length || 0} records in ${Date.now() - paymentsStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Payments section failed:', error);
+    userData.errors.push(`Payments section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 9: Notifications
+  try {
+    console.log('📋 CHECKPOINT 9: Fetching notifications...');
+    const notificationsStart = Date.now();
+    const { data: notifications, error: notificationsError } = await supabase
+      .from('user_notifications')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (notificationsError) {
+      console.error('❌ Notifications error:', notificationsError);
+      userData.errors.push(`Notifications fetch failed: ${notificationsError.message}`);
+    } else {
+      userData.notifications = notifications || [];
+      console.log(`✅ Notifications fetched: ${notifications?.length || 0} records in ${Date.now() - notificationsStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 Notifications section failed:', error);
+    userData.errors.push(`Notifications section failed: ${error.message}`);
+  }
+
+  // CHECKPOINT 10: GDPR requests
+  try {
+    console.log('📋 CHECKPOINT 10: Fetching GDPR requests...');
+    const gdprStart = Date.now();
+    const { data: gdprRequests, error: gdprError } = await supabase
+      .from('gdpr_requests')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (gdprError) {
+      console.error('❌ GDPR requests error:', gdprError);
+      userData.errors.push(`GDPR requests fetch failed: ${gdprError.message}`);
+    } else {
+      userData.gdpr_requests = gdprRequests || [];
+      console.log(`✅ GDPR requests fetched: ${gdprRequests?.length || 0} records in ${Date.now() - gdprStart}ms`);
+    }
+  } catch (error) {
+    console.error('🔴 GDPR requests section failed:', error);
+    userData.errors.push(`GDPR requests section failed: ${error.message}`);
+  }
+
+  const totalTime = Date.now() - startTime;
+  console.log(`🎯 Data collection completed in ${totalTime}ms`);
+  console.log(`📊 Summary: ${userData.errors.length} errors encountered`);
+  
+  if (userData.errors.length > 0) {
+    console.log('🔍 Errors encountered:', userData.errors);
+  }
+
+  return userData;
 }
 
-// MINIMAL text export
+// COMPLETE text export with all data
 function generateTextExport(userData: any): Uint8Array {
-  console.log('📝 Generating minimal text export...');
+  console.log('📝 Generating COMPLETE text export...');
   
-  const content = `DEBUG GDPR EXPORT
-=================
+  const content = `GDPR DATA EXPORT - COMPLETE DEBUG VERSION
+==========================================
 Date: ${new Date().toLocaleDateString('it-IT')}
 Time: ${new Date().toLocaleTimeString('it-IT')}
-
-PROFILE DATA:
-- ID: ${userData.profile?.id || 'Unknown'}
-- Name: ${userData.profile?.first_name || ''} ${userData.profile?.last_name || ''}
-- Role: ${userData.profile?.role || 'Unknown'}
-- Created: ${userData.profile?.created_at || 'Unknown'}
-
-This is a simplified debug export.
 Generated at: ${new Date().toISOString()}
-=================
+
+==========================================
+ERRORS ENCOUNTERED DURING COLLECTION
+==========================================
+${userData.errors.length > 0 ? userData.errors.map((error, i) => `${i + 1}. ${error}`).join('\n') : 'No errors encountered'}
+
+==========================================
+PROFILE DATA
+==========================================
+${userData.profile ? JSON.stringify(userData.profile, null, 2) : 'No profile data collected'}
+
+==========================================
+BOOKINGS (${userData.bookings?.length || 0} records)
+==========================================
+${userData.bookings?.length > 0 ? JSON.stringify(userData.bookings, null, 2) : 'No bookings found'}
+
+==========================================
+SPACES (${userData.spaces?.length || 0} records)
+==========================================
+${userData.spaces?.length > 0 ? JSON.stringify(userData.spaces, null, 2) : 'No spaces found'}
+
+==========================================
+MESSAGES (${userData.messages?.length || 0} records)
+==========================================
+${userData.messages?.length > 0 ? JSON.stringify(userData.messages, null, 2) : 'No messages found'}
+
+==========================================
+REVIEWS GIVEN (${userData.reviews_given?.length || 0} records)
+==========================================
+${userData.reviews_given?.length > 0 ? JSON.stringify(userData.reviews_given, null, 2) : 'No reviews given found'}
+
+==========================================
+REVIEWS RECEIVED (${userData.reviews_received?.length || 0} records)
+==========================================
+${userData.reviews_received?.length > 0 ? JSON.stringify(userData.reviews_received, null, 2) : 'No reviews received found'}
+
+==========================================
+CONNECTIONS (${userData.connections?.length || 0} records)
+==========================================
+${userData.connections?.length > 0 ? JSON.stringify(userData.connections, null, 2) : 'No connections found'}
+
+==========================================
+PAYMENTS (${userData.payments?.length || 0} records)
+==========================================
+${userData.payments?.length > 0 ? JSON.stringify(userData.payments, null, 2) : 'No payments found'}
+
+==========================================
+NOTIFICATIONS (${userData.notifications?.length || 0} records)
+==========================================
+${userData.notifications?.length > 0 ? JSON.stringify(userData.notifications, null, 2) : 'No notifications found'}
+
+==========================================
+GDPR REQUESTS (${userData.gdpr_requests?.length || 0} records)
+==========================================
+${userData.gdpr_requests?.length > 0 ? JSON.stringify(userData.gdpr_requests, null, 2) : 'No GDPR requests found'}
+
+==========================================
+END OF EXPORT
+==========================================
 `;
 
-  console.log('✅ Text content generated, length:', content.length);
+  console.log('✅ Complete text content generated, length:', content.length);
   return new TextEncoder().encode(content);
 }
 
