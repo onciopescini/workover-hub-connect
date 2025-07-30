@@ -1,6 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ProfessionalBreakdown {
+  profession: string;
+  count: number;
+  percentage: number;
+}
+
+export interface DemographicBreakdown {
+  city: string;
+  count: number;
+  percentage: number;
+}
+
+export interface BookingTrend {
+  month: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface PeakHour {
+  hour: number;
+  bookings: number;
+}
+
 export interface SpaceMetrics {
   space_title: string;
   total_bookings: number;
@@ -17,6 +40,12 @@ export interface SpaceMetrics {
   average_rating: number;
   occupancy_rate: number;
   booked_days_last_30: number;
+  conversion_rate: number;
+  total_views: number;
+  professional_breakdown: ProfessionalBreakdown[];
+  demographic_breakdown: DemographicBreakdown[];
+  booking_trends: BookingTrend[];
+  peak_hours: PeakHour[];
 }
 
 export const useSpaceMetrics = (spaceId: string) => {

@@ -44,10 +44,10 @@ export const SpaceManagementHeader = ({
             <Button 
               variant="outline" 
               className="border-white text-white hover:bg-white hover:text-indigo-600"
-              onClick={() => navigate('/host/analytics')}
+              onClick={() => navigate('/host/dashboard')}
             >
               <BarChart3 className="w-4 h-4 mr-2" />
-              Analytics
+              Dashboard
             </Button>
           </div>
         </div>
