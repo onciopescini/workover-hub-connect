@@ -30,6 +30,12 @@ export interface ProfileFormData {
   youtube_url: string;
   github_url: string;
   
+  // Collaboration
+  collaboration_availability: string;
+  collaboration_types: string[];
+  preferred_work_mode: string;
+  collaboration_description: string;
+  
   // Settings
   networking_enabled: boolean;
 }
@@ -65,11 +71,17 @@ export const useProfileForm = () => {
     youtube_url: authState.profile?.youtube_url || '',
     github_url: authState.profile?.github_url || '',
     
+    // Collaboration
+    collaboration_availability: authState.profile?.collaboration_availability ?? 'not_available',
+    collaboration_types: authState.profile?.collaboration_types ?? [],
+    preferred_work_mode: authState.profile?.preferred_work_mode ?? 'flessibile',
+    collaboration_description: authState.profile?.collaboration_description ?? '',
+    
     // Settings
     networking_enabled: authState.profile?.networking_enabled ?? true,
   });
 
-  const handleInputChange = (field: keyof ProfileFormData, value: string | boolean) => {
+  const handleInputChange = (field: keyof ProfileFormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

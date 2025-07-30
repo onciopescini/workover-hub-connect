@@ -31,6 +31,10 @@ const Onboarding = () => {
     interests: '',
     skills: '',
     networkingEnabled: true,
+    collaborationAvailability: 'not_available',
+    collaborationTypes: [] as string[],
+    preferredWorkMode: 'flessibile',
+    collaborationDescription: ''
   });
 
   const handleRoleSelect = (role: string) => {
@@ -58,9 +62,13 @@ const Onboarding = () => {
         profession: formData.profession,
         bio: formData.bio,
         location: formData.location,
-        interests: formData.interests,
-        skills: formData.skills,
-        networking_enabled: formData.networkingEnabled,
+      interests: formData.interests,
+      skills: formData.skills,
+      networking_enabled: formData.networkingEnabled,
+      collaboration_availability: formData.collaborationAvailability,
+      collaboration_types: formData.collaborationTypes,
+      preferred_work_mode: formData.preferredWorkMode,
+      collaboration_description: formData.collaborationDescription,
         onboarding_completed: true,
       });
 

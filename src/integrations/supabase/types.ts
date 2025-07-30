@@ -1230,6 +1230,9 @@ export type Database = {
           age_confirmed: boolean | null
           bio: string | null
           city: string | null
+          collaboration_availability: string | null
+          collaboration_description: string | null
+          collaboration_types: string[] | null
           competencies: string[] | null
           created_at: string
           data_retention_exempt: boolean | null
@@ -1251,6 +1254,7 @@ export type Database = {
           nickname: string | null
           onboarding_completed: boolean | null
           phone: string | null
+          preferred_work_mode: string | null
           profession: string | null
           profile_photo_url: string | null
           restriction_reason: string | null
@@ -1280,6 +1284,9 @@ export type Database = {
           age_confirmed?: boolean | null
           bio?: string | null
           city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
           competencies?: string[] | null
           created_at?: string
           data_retention_exempt?: boolean | null
@@ -1301,6 +1308,7 @@ export type Database = {
           nickname?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null
           restriction_reason?: string | null
@@ -1330,6 +1338,9 @@ export type Database = {
           age_confirmed?: boolean | null
           bio?: string | null
           city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
           competencies?: string[] | null
           created_at?: string
           data_retention_exempt?: boolean | null
@@ -1351,6 +1362,7 @@ export type Database = {
           nickname?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
+          preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null
           restriction_reason?: string | null

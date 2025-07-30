@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Briefcase, Globe, CreditCard, Save } from "lucide-react";
+import { User, Briefcase, Globe, CreditCard, Save, Users } from "lucide-react";
 import { useProfileForm } from "@/hooks/useProfileForm";
 import { BasicInfoTab } from "./BasicInfoTab";
 import { ProfessionalInfoTab } from "./ProfessionalInfoTab";
 import { SocialLinksTab } from "./SocialLinksTab";
+import { CollaborationTab } from "./CollaborationTab";
 import { SettingsTab } from "./SettingsTab";
 
 export const ProfileEditContainer = () => {
@@ -43,7 +44,7 @@ export const ProfileEditContainer = () => {
 
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="basic" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Base
@@ -55,6 +56,10 @@ export const ProfileEditContainer = () => {
             <TabsTrigger value="social" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Social
+            </TabsTrigger>
+            <TabsTrigger value="collaboration" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Collaborazioni
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
@@ -78,6 +83,13 @@ export const ProfileEditContainer = () => {
 
           <TabsContent value="social">
             <SocialLinksTab 
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+          </TabsContent>
+
+          <TabsContent value="collaboration">
+            <CollaborationTab 
               formData={formData}
               handleInputChange={handleInputChange}
             />

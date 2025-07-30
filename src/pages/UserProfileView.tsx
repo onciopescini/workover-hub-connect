@@ -34,6 +34,10 @@ interface UserProfile {
   interests?: string;
   competencies?: string[];
   industries?: string[];
+  collaboration_availability?: string;
+  collaboration_types?: string[];
+  preferred_work_mode?: string;
+  collaboration_description?: string;
   created_at: string;
 }
 
@@ -341,6 +345,47 @@ const UserProfileView = () => {
                   )}
 
                   {renderSocialLinks()}
+
+                  {/* Collaboration Section */}
+                  {(profile['collaboration_availability'] && profile['collaboration_availability'] !== 'not_available') && (
+                    <div className="mb-4">
+                      <h3 className="font-semibold mb-2">Disponibilità Collaborazioni</h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant={
+                            profile['collaboration_availability'] === 'available' ? 'default' : 
+                            profile['collaboration_availability'] === 'busy' ? 'secondary' : 'outline'
+                          }>
+                            {profile['collaboration_availability'] === 'available' ? '🟢 Disponibile' :
+                             profile['collaboration_availability'] === 'busy' ? '🟡 Occupato' : '🔴 Non Disponibile'}
+                          </Badge>
+                        </div>
+                        
+                        {Array.isArray(profile['collaboration_types']) && profile['collaboration_types'].length > 0 && (
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Tipi di collaborazione:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {(profile['collaboration_types'] as string[]).map((type, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">{type}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {typeof profile['preferred_work_mode'] === 'string' && profile['preferred_work_mode'] && (
+                          <div>
+                            <p className="text-sm text-gray-600">Modalità preferita: <span className="font-medium">{profile['preferred_work_mode']}</span></p>
+                          </div>
+                        )}
+                        
+                        {typeof profile['collaboration_description'] === 'string' && profile['collaboration_description'] && (
+                          <div>
+                            <p className="text-sm text-gray-700 italic">"{profile['collaboration_description']}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="mb-4">
                     <h3 className="font-semibold mb-2">Membro da</h3>
