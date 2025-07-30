@@ -26,7 +26,6 @@ export const OptimizedUnifiedHeader = () => {
     if (!authState.isAuthenticated) {
       return [
         { name: 'Spazi', href: '/spaces', icon: MapPin },
-        { name: 'Eventi', href: '/events', icon: Calendar },
         { name: 'Chi siamo', href: '/about', icon: Users },
         { name: 'FAQ', href: '/faq', icon: MessageSquare },
       ];
@@ -34,7 +33,7 @@ export const OptimizedUnifiedHeader = () => {
 
     const baseItems = [
       { name: 'Spazi', href: '/spaces', icon: MapPin },
-      { name: 'Eventi', href: '/events', icon: Calendar },
+      
       { name: 'Networking', href: '/networking', icon: Users },
       { name: 'Prenotazioni', href: '/bookings', icon: Calendar },
       { name: 'Messaggi', href: '/messages', icon: MessageSquare },

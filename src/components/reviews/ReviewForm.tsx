@@ -7,15 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Star } from 'lucide-react';
-import { addBookingReview, addEventReview } from '@/lib/bidirectional-review-utils';
+import { addBookingReview } from '@/lib/booking-review-utils';
 import { ReviewFormSchema, ReviewFormData } from '@/schemas/reviewSchema';
 import { useLogger } from '@/hooks/useLogger';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ReviewFormProps {
-  type: 'booking' | 'event';
-  bookingId?: string;
-  eventId?: string;
+  type: 'booking';
+  bookingId: string;
   targetId: string;
   targetName: string;
   onSuccess?: () => void;
@@ -24,7 +23,6 @@ interface ReviewFormProps {
 export function ReviewForm({
   type, 
   bookingId, 
-  eventId, 
   targetId, 
   targetName, 
   onSuccess 
@@ -51,25 +49,13 @@ export function ReviewForm({
         return;
       }
 
-      let success = false;
-
-      if (type === 'booking' && bookingId) {
-        success = await addBookingReview({
-          booking_id: bookingId,
-          target_id: targetId,
-          rating: data.rating,
-          content: data.content || null,
-          author_id: userData.user.id,
-        });
-      } else if (type === 'event' && eventId) {
-        success = await addEventReview({
-          event_id: eventId,
-          target_id: targetId,
-          rating: data.rating,
-          content: data.content || null,
-          author_id: userData.user.id,
-        });
-      }
+      const success = await addBookingReview({
+        booking_id: bookingId,
+        target_id: targetId,
+        rating: data.rating,
+        content: data.content || null,
+        author_id: userData.user.id,
+      });
       
       if (success) {
         form.reset();
@@ -82,8 +68,7 @@ export function ReviewForm({
         operation: 'submit_review',
         reviewType: type,
         targetId,
-        bookingId,
-        eventId
+        bookingId
       });
     }
   };

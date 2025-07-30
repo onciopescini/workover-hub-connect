@@ -18,7 +18,7 @@ export function InteractiveFeaturesSection() {
       icon: Users,
       title: "Networking Professionale",
       description: "Connettiti con professionisti verificati che condividono i tuoi obiettivi",
-      details: "Profili verificati, sistema di matching intelligente, chat sicura e eventi di networking",
+      details: "Profili verificati, sistema di matching intelligente e chat sicura",
       color: "from-emerald-500 to-teal-600"
     },
     {

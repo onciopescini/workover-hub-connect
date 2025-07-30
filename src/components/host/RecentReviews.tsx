@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ReviewWithDetails } from "@/types/review";
+import { BookingReviewWithDetails } from "@/types/review";
 import { Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 
 interface RecentReviewsProps {
-  reviews: ReviewWithDetails[];
+  reviews: BookingReviewWithDetails[];
   averageRating: number | null;
 }
 
@@ -40,16 +40,16 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
             <div key={review.id} className="p-3 rounded-lg border">
               <div className="flex items-start space-x-3">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={review.reviewer?.profile_photo_url || undefined} />
+                  <AvatarImage src={review.author?.profile_photo_url || undefined} />
                   <AvatarFallback>
-                    {review.reviewer?.first_name?.[0]}{review.reviewer?.last_name?.[0]}
+                    {review.author?.first_name?.[0]}{review.author?.last_name?.[0]}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm">
-                      {review.reviewer?.first_name} {review.reviewer?.last_name}
+                      {review.author?.first_name} {review.author?.last_name}
                     </p>
                     <div className="flex items-center space-x-1">
                       {[...Array(5)].map((_, i) => (
@@ -65,9 +65,9 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
                     </div>
                   </div>
                   
-                  {review.comment && (
+                  {review.content && (
                     <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                      {review.comment}
+                      {review.content}
                     </p>
                   )}
                   

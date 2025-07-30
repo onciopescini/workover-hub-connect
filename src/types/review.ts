@@ -1,18 +1,15 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-export type Review = Database["public"]["Tables"]["reviews"]["Row"];
-export type ReviewInsert = Database["public"]["Tables"]["reviews"]["Insert"];
-export type ReviewUpdate = Database["public"]["Tables"]["reviews"]["Update"];
+// Note: Legacy reviews table has been removed
+// All review functionality now uses booking_reviews and event_reviews tables
 
 // Nuovi tipi per le recensioni bidirezionali
 export type BookingReview = Database["public"]["Tables"]["booking_reviews"]["Row"];
 export type BookingReviewInsert = Database["public"]["Tables"]["booking_reviews"]["Insert"];
 export type BookingReviewUpdate = Database["public"]["Tables"]["booking_reviews"]["Update"];
 
-export type EventReview = Database["public"]["Tables"]["event_reviews"]["Row"];
-export type EventReviewInsert = Database["public"]["Tables"]["event_reviews"]["Insert"];
-export type EventReviewUpdate = Database["public"]["Tables"]["event_reviews"]["Update"];
+// Event reviews removed with events functionality
 
 export type BookingReviewWithDetails = BookingReview & {
   author?: {
@@ -34,42 +31,9 @@ export type BookingReviewWithDetails = BookingReview & {
   } | null;
 };
 
-export type EventReviewWithDetails = EventReview & {
-  author?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-  target?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-  event?: {
-    title: string;
-    date: string;
-  } | null;
-};
+// Event review details removed with events functionality
 
-export type ReviewWithDetails = Review & {
-  reviewer?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-  reviewee?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url: string | null;
-  } | null;
-  booking?: {
-    booking_date: string;
-    space: {
-      title: string;
-      address: string;
-    };
-  } | null;
-};
+// Legacy review details removed
 
 export const RATING_LABELS = {
   1: "Poor",

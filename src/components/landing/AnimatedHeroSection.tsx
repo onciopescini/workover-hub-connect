@@ -27,7 +27,7 @@ export function AnimatedHeroSection() {
           
           {/* Subtitle with fade-in animation */}
           <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in">
-            Scopri spazi di lavoro unici, connettiti con professionisti e partecipa a eventi
+            Scopri spazi di lavoro unici e connettiti con professionisti
             che trasformeranno la tua esperienza lavorativa.
           </p>
           

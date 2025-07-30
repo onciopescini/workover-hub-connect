@@ -62,12 +62,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       icon: <BarChart3 className="w-5 h-5" />,
       onClick: () => navigate('/host/analytics')
     },
-    {
-      title: 'Eventi',
-      description: 'Crea e gestisci eventi',
-      icon: <Users className="w-5 h-5" />,
-      onClick: () => navigate('/host/events')
-    }
   ];
 
   return (

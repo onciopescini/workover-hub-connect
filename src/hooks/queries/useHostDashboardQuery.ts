@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingWithDetails } from "@/types/booking";
-import { ReviewWithDetails } from "@/types/review";
+import { BookingReviewWithDetails } from "@/types/review";
 import { Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
 import { Json } from "@/integrations/supabase/types";

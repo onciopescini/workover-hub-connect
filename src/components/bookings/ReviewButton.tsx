@@ -5,7 +5,7 @@ import { Star, Clock, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { BookingWithDetails } from "@/types/booking";
-import { getBookingReviewStatus } from "@/lib/bidirectional-review-utils";
+import { getBookingReviewStatus } from "@/lib/booking-review-utils";
 import { differenceInHours, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 

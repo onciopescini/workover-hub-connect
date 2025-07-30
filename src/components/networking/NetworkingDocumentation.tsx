@@ -87,7 +87,7 @@ if (result.has_access) {
                     </h3>
                     <p className="text-sm text-gray-600">
                       Algoritmo intelligente per suggerimenti basati su spazi condivisi, 
-                      eventi e interessi comuni.
+                      e interessi comuni.
                     </p>
                   </div>
                   
@@ -245,7 +245,7 @@ if (result.has_access) {
                 {[
                   {
                     q: "Come funziona il sistema di suggerimenti?",
-                    a: "I suggerimenti sono basati su spazi condivisi, eventi partecipati e interessi comuni. L'algoritmo calcola un punteggio di compatibilità per ogni utente."
+                    a: "I suggerimenti sono basati su spazi condivisi e interessi comuni. L'algoritmo calcola un punteggio di compatibilità per ogni utente."
                   },
                   {
                     q: "Chi può vedere il mio profilo?",

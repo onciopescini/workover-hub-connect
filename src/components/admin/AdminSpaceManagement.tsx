@@ -216,7 +216,7 @@ export function AdminSpaceManagement() {
                 <SelectItem value="office">Ufficio</SelectItem>
                 <SelectItem value="meeting_room">Sala Riunioni</SelectItem>
                 <SelectItem value="coworking">Coworking</SelectItem>
-                <SelectItem value="event_space">Spazio Eventi</SelectItem>
+                
               </SelectContent>
             </Select>
           </div>

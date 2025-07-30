@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, MessageCircle, Calendar, TrendingUp } from 'lucide-react';
+import { Users, MessageCircle, TrendingUp } from 'lucide-react';
 import { EnhancedNetworkingStats } from '@/types/networking-dashboard';
 
 interface NetworkingStatsCardsProps {
@@ -31,17 +31,10 @@ export const NetworkingStatsCards = React.memo<NetworkingStatsCardsProps>(({ sta
       color: 'text-green-600',
       badge: `+${stats.connectionRate}% tasso accettazione`
     },
-    {
-      label: 'Eventi',
-      value: stats.eventsAttended,
-      icon: Calendar,
-      color: 'text-purple-600',
-      badge: 'Partecipati'
-    }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {statsData.map((stat, index) => (
         <Card key={index}>
           <CardContent className="p-4">

@@ -78,7 +78,7 @@ export const ConnectionSuggestions = () => {
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Suggerimenti di Connessione</h2>
           <p className="text-gray-600 mt-1">
-            Persone che potresti conoscere basate sui tuoi spazi ed eventi
+            Persone che potresti conoscere basate sui tuoi spazi condivisi
           </p>
         </div>
         <Button onClick={handleRefresh} variant="outline">
@@ -95,7 +95,7 @@ export const ConnectionSuggestions = () => {
               Nessun suggerimento disponibile
             </h3>
             <p className="text-gray-600 mb-4">
-              Partecipa a più spazi ed eventi per ricevere suggerimenti personalizzati
+              Partecipa a più spazi per ricevere suggerimenti personalizzati
             </p>
             <Button onClick={handleRefresh} variant="outline">
               <RefreshCw className="w-4 h-4 mr-2" />

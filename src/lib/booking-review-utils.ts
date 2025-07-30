@@ -1,7 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { BookingReviewWithDetails, EventReviewWithDetails, BookingReviewInsert, EventReviewInsert, ReviewStatus } from "@/types/review";
+import type { BookingReviewWithDetails, BookingReviewInsert, ReviewStatus } from "@/types/review";
 
 // Get booking reviews for a user
 export const getBookingReviews = async (userId: string): Promise<{
@@ -73,70 +72,6 @@ export const getBookingReviews = async (userId: string): Promise<{
   }
 };
 
-// Get event reviews for a user
-export const getEventReviews = async (userId: string): Promise<{
-  given: EventReviewWithDetails[];
-  received: EventReviewWithDetails[];
-}> => {
-  try {
-    // Reviews given by the user
-    const { data: givenReviews, error: givenError } = await supabase
-      .from("event_reviews")
-      .select(`
-        *,
-        author:profiles!author_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        target:profiles!target_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        event:events!event_id (
-          title,
-          date
-        )
-      `)
-      .eq("author_id", userId);
-
-    if (givenError) throw givenError;
-
-    // Reviews received by the user
-    const { data: receivedReviews, error: receivedError } = await supabase
-      .from("event_reviews")
-      .select(`
-        *,
-        author:profiles!author_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        target:profiles!target_id (
-          first_name,
-          last_name,
-          profile_photo_url
-        ),
-        event:events!event_id (
-          title,
-          date
-        )
-      `)
-      .eq("target_id", userId);
-
-    if (receivedError) throw receivedError;
-
-    return {
-      given: givenReviews as EventReviewWithDetails[] || [],
-      received: receivedReviews as EventReviewWithDetails[] || [],
-    };
-  } catch (error) {
-    console.error("Error fetching event reviews:", error);
-    return { given: [], received: [] };
-  }
-};
-
 // Add a booking review
 export const addBookingReview = async (review: BookingReviewInsert): Promise<boolean> => {
   try {
@@ -152,26 +87,6 @@ export const addBookingReview = async (review: BookingReviewInsert): Promise<boo
     return true;
   } catch (error) {
     console.error("Error adding booking review:", error);
-    toast.error("Errore nell'invio della recensione");
-    return false;
-  }
-};
-
-// Add an event review
-export const addEventReview = async (review: EventReviewInsert): Promise<boolean> => {
-  try {
-    const { error } = await supabase.from("event_reviews").insert(review);
-
-    if (error) {
-      toast.error("Errore nell'invio della recensione");
-      console.error(error);
-      return false;
-    }
-
-    toast.success("Recensione inviata con successo");
-    return true;
-  } catch (error) {
-    console.error("Error adding event review:", error);
     toast.error("Errore nell'invio della recensione");
     return false;
   }
@@ -224,62 +139,6 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
     return result;
   } catch (error) {
     console.error("Error getting booking review status:", error);
-    return {
-      canWriteReview: false,
-      hasWrittenReview: false,
-      hasReceivedReview: false,
-      isVisible: false
-    };
-  }
-};
-
-// Check review status for an event
-export const getEventReviewStatus = async (eventId: string, userId: string, targetId: string): Promise<ReviewStatus> => {
-  try {
-    // Check if user has written a review
-    const { data: userReview } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("event_id", eventId)
-      .eq("author_id", userId)
-      .eq("target_id", targetId)
-      .single();
-
-    // Check if target has written a review
-    const { data: targetReview } = await supabase
-      .from("event_reviews")
-      .select("*")
-      .eq("event_id", eventId)
-      .eq("author_id", targetId)
-      .eq("target_id", userId)
-      .single();
-
-    const hasWrittenReview = !!userReview;
-    const hasReceivedReview = !!targetReview;
-    const isVisible = userReview?.is_visible || false;
-
-    let daysUntilVisible: number | undefined;
-    if (userReview && !isVisible && userReview.created_at) {
-      const daysSinceCreation = Math.floor(
-        (Date.now() - new Date(userReview.created_at).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      daysUntilVisible = Math.max(0, 14 - daysSinceCreation);
-    }
-
-    const result: ReviewStatus = {
-      canWriteReview: !hasWrittenReview,
-      hasWrittenReview,
-      hasReceivedReview,
-      isVisible
-    };
-
-    if (daysUntilVisible !== undefined) {
-      result.daysUntilVisible = daysUntilVisible;
-    }
-
-    return result;
-  } catch (error) {
-    console.error("Error getting event review status:", error);
     return {
       canWriteReview: false,
       hasWrittenReview: false,

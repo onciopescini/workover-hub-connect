@@ -5,11 +5,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { BookingReviewWithDetails, EventReviewWithDetails } from '@/types/review';
+import { BookingReviewWithDetails } from '@/types/review';
 
 interface ReviewCardProps {
-  review: BookingReviewWithDetails | EventReviewWithDetails;
-  type: 'booking' | 'event';
+  review: BookingReviewWithDetails;
+  type: 'booking';
   showVisibility?: boolean;
 }
 

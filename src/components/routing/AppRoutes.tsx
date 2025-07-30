@@ -19,7 +19,6 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import AuthCallback from "@/pages/AuthCallback";
 import PublicSpaces from "@/pages/PublicSpaces";
-import PublicEvents from "@/pages/PublicEvents";
 import About from "@/pages/About";
 import FAQ from "@/pages/FAQ";
 import Contact from "@/pages/Contact";
@@ -41,7 +40,6 @@ const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
-const EventDetail = lazy(() => import("@/pages/EventDetail"));
 const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
 // Host pages
@@ -81,12 +79,6 @@ export const AppRoutes = () => {
         <Route path="spaces/:id" element={
           <LazyWrapper>
             <SpaceDetail />
-          </LazyWrapper>
-        } />
-        <Route path="events" element={<PublicEvents />} />
-        <Route path="events/:id" element={
-          <LazyWrapper>
-            <EventDetail />
           </LazyWrapper>
         } />
         
