@@ -106,7 +106,7 @@ export function ProfileDashboard() {
                   variant="outline" 
                   size="sm"
                   onClick={() => navigate(`/users/${profile.id}`)}
-                  className="flex-1 lg:flex-none border-white/20 text-white hover:bg-white/10"
+                  className="flex-1 lg:flex-none border-white/60 text-white bg-white/10 hover:bg-white/20"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   Anteprima
@@ -118,7 +118,7 @@ export function ProfileDashboard() {
                   variant="outline" 
                   size="sm"
                   onClick={() => navigate('/host')}
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className="border-white/60 text-white bg-white/10 hover:bg-white/20"
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Dashboard Host
