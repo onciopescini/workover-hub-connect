@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Users, Briefcase, CheckCircle } from "lucide-react";
+import { Users, Briefcase, CheckCircle, Mail } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
@@ -140,6 +140,67 @@ const Onboarding = () => {
     }
   };
 
+  // Resend email verification
+  const handleResendVerification = async () => {
+    try {
+      if (!authState.user?.email) return;
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: authState.user.email,
+      });
+      if (error) throw error;
+      toast.success("Email di verifica inviata! Controlla la tua casella di posta.");
+    } catch (e) {
+      toast.error("Impossibile inviare l'email di verifica. Riprova più tardi.");
+    }
+  };
+
+  // Autosave su server (debounced)
+  const autosaveTimer = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => {
+    if (!authState.user || authState.profile?.onboarding_completed) return;
+    window.clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = window.setTimeout(async () => {
+      try {
+        const uid = authState.user?.id;
+        if (!uid) return;
+        await supabase.from('profiles').update({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          role: formData.role,
+          profession: formData.profession,
+          bio: formData.bio,
+          location: formData.location,
+          interests: formData.interests,
+          skills: formData.skills,
+          networking_enabled: formData.networkingEnabled,
+          collaboration_availability: formData.collaborationAvailability,
+          collaboration_types: formData.collaborationTypes,
+          preferred_work_mode: formData.preferredWorkMode,
+          collaboration_description: formData.collaborationDescription,
+        }).eq('id', uid);
+      } catch {}
+    }, 800);
+    return () => window.clearTimeout(autosaveTimer.current);
+  }, [formData, authState.user?.id, authState.profile?.onboarding_completed]);
+
+  // Conferma uscita pagina se dati non completati
+  React.useEffect(() => {
+    const hasAnyData = Object.values(formData).some((v) => {
+      if (Array.isArray(v)) return v.length > 0;
+      if (typeof v === 'boolean') return v === true;
+      return typeof v === 'string' ? v.trim().length > 0 : false;
+    });
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!authState.profile?.onboarding_completed && hasAnyData) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [formData, authState.profile?.onboarding_completed]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
@@ -148,6 +209,15 @@ const Onboarding = () => {
           <CardDescription>
             Completiamo il tuo profilo per offrirti la migliore esperienza
           </CardDescription>
+          {authState.user && !authState.user.email_confirmed_at && (
+            <div className="mt-3 p-3 rounded-md bg-blue-50 text-blue-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>Email non verificata. Controlla la tua casella o invia di nuovo.</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={handleResendVerification}>Reinvia</Button>
+            </div>
+          )}
           <div className="flex justify-center space-x-2 mt-4">
             {[1, 2, 3].map((step) => (
               <div
