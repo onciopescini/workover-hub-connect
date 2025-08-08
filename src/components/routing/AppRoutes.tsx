@@ -1,5 +1,5 @@
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
 import QAValidationDashboard from "@/components/qa/QAValidationDashboard";
@@ -82,6 +82,8 @@ export const AppRoutes = () => {
             <SpaceDetail />
           </LazyWrapper>
         } />
+        {/* Legacy redirect from removed Events section */}
+        <Route path="events" element={<Navigate to="/networking" replace />} />
         
         {/* Public user profiles */}
         <Route path="users/:userId" element={

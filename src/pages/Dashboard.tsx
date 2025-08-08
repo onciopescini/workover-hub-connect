@@ -4,7 +4,7 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Calendar, Users, Building2, MessageSquare, Bell } from "lucide-react";
+import { MapPin, Users, Building2, MessageSquare, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
@@ -66,19 +66,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/events')}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Calendar className="h-5 w-5 text-emerald-600" />
-              Eventi
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 text-sm">
-              Partecipa a eventi e workshop professionali
-            </p>
-          </CardContent>
-        </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/bookings')}>
           <CardHeader className="pb-3">

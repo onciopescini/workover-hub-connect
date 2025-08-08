@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserX, Lock, User, MapPin, Calendar, Heart } from "lucide-react";
+import { UserX, Lock, User, MapPin, Users, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ProfileAccessResult } from "@/lib/profile-access-utils";
 
@@ -30,7 +30,7 @@ export const ProfileAccessDenied = ({ accessResult, profileName }: ProfileAccess
           icon: <Lock className="h-16 w-16 text-gray-400" />,
           title: "Accesso Limitato",
           description: `Non hai una connessione o contesto condiviso con ${profileName || 'questo utente'} per visualizzare il profilo completo.`,
-          suggestion: "Partecipa agli stessi spazi o eventi per sbloccare l'accesso al profilo.",
+          suggestion: "Partecipa agli stessi spazi o prenotazioni per sbloccare l'accesso al profilo.",
           actionText: "Esplora Spazi",
           action: () => navigate('/spaces')
         };
@@ -98,11 +98,11 @@ export const ProfileAccessDenied = ({ accessResult, profileName }: ProfileAccess
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => navigate('/events')}
+                onClick={() => navigate('/networking')}
                 className="flex-1"
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                Eventi
+                <Users className="h-4 w-4 mr-2" />
+                Networking
               </Button>
             </div>
           </div>

@@ -437,7 +437,7 @@ export class RegressionValidationSuite {
     try {
       // Check critical routes exist (this is a basic check)
       const criticalRoutes = [
-        '/', '/login', '/register', '/dashboard', '/spaces', '/events',
+        '/', '/login', '/register', '/dashboard', '/spaces', '/networking',
         '/profile', '/bookings', '/messages', '/validation', '/admin/users',
         '/regression-validation'
       ];

@@ -7,7 +7,7 @@ import { getUserWaitlists, leaveWaitlist } from "@/lib/waitlist-utils";
 import { WaitlistWithDetails } from "@/types/waitlist";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { Clock, X, Calendar, MapPin } from "lucide-react";
+import { Clock, X, MapPin } from "lucide-react";
 
 const UserWaitlists = () => {
   const [waitlists, setWaitlists] = useState<WaitlistWithDetails[]>([]);
@@ -54,13 +54,13 @@ const UserWaitlists = () => {
 
   return (
     <div className="space-y-4">
-      {waitlists.map((waitlist) => (
+      {waitlists.filter((w) => w.space_id).map((waitlist) => (
         <Card key={waitlist.id}>
           <CardHeader className="pb-3">
             <div className="flex justify-between items-start">
               <CardTitle className="text-lg flex items-center gap-2">
-                {waitlist.space_id ? <MapPin className="w-5 h-5" /> : <Calendar className="w-5 h-5" />}
-                {waitlist.space_title || waitlist.event_title}
+                <MapPin className="w-5 h-5" />
+                {waitlist.space_title}
               </CardTitle>
               <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                 Lista d'attesa
@@ -71,18 +71,11 @@ const UserWaitlists = () => {
             <div className="flex justify-between items-start">
               <div>
                 <div className="text-sm text-gray-600">
-                  {waitlist.space_id ? "Spazio" : "Evento"}
+                  Spazio
                   {waitlist.host_name && (
                     <span className="ml-2">• Host: {waitlist.host_name}</span>
                   )}
                 </div>
-                
-                {waitlist.event_date && (
-                  <div className="text-sm text-gray-600 mt-1">
-                    Data evento: {new Date(waitlist.event_date).toLocaleDateString('it-IT')}
-                  </div>
-                )}
-                
                 <div className="text-xs text-gray-500 mt-2">
                   In lista da {formatDistanceToNow(new Date(waitlist.created_at!), { 
                     addSuffix: true, 
@@ -90,7 +83,6 @@ const UserWaitlists = () => {
                   })}
                 </div>
               </div>
-              
               <Button
                 variant="outline"
                 size="sm"

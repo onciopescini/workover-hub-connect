@@ -29,7 +29,7 @@ export function AnimatedHeroSection() {
           {/* Subtitle with fade-in animation */}
           <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in">
             Scopri spazi di lavoro unici e connettiti con professionisti
-            che trasformeranno la tua esperienza lavorativa.
+            che trasformeranno la tua esperienza di networking.
           </p>
           
           {/* Enhanced Search Bar */}
@@ -58,9 +58,9 @@ export function AnimatedHeroSection() {
               size="lg" 
               variant="outline"
               className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/80 shadow-xl transform hover:scale-105 transition-all duration-300"
-              onClick={() => navigate('/events')}
+              onClick={() => navigate('/networking')}
             >
-              Scopri Eventi
+              Vai al Networking
             </Button>
             {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
               <Button

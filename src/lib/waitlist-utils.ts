@@ -111,8 +111,7 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
       .from('waitlists')
       .select(`
         *,
-        spaces:space_id(title, host_id, profiles:host_id(first_name, last_name)),
-        events:event_id(title, date, spaces:space_id(profiles:host_id(first_name, last_name)))
+        spaces:space_id(title, host_id, profiles:host_id(first_name, last_name))
       `)
       .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
@@ -123,10 +122,7 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
       ...item,
       created_at: item.created_at ?? '',
       space_title: item.spaces?.title ?? '',
-      event_title: item.events?.title ?? '',
-      event_date: item.events?.date ?? '',
-      host_name: (item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name) ||
-                 (item.events?.spaces?.profiles?.first_name + ' ' + item.events?.spaces?.profiles?.last_name) || ''
+      host_name: (item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name) || ''
     }));
   } catch (error) {
     console.error("Error fetching waitlists:", error);

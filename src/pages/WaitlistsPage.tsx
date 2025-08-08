@@ -9,7 +9,7 @@ const WaitlistsPage = () => {
         <CardHeader>
           <CardTitle className="text-2xl">Le mie liste d'attesa</CardTitle>
           <p className="text-gray-600">
-            Gestisci le tue liste d'attesa per spazi ed eventi
+            Gestisci le tue liste d'attesa per spazi
           </p>
         </CardHeader>
         <CardContent>
