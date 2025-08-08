@@ -1,5 +1,5 @@
-import React from 'react';
-import { unstable_useBlocker as useBlocker } from 'react-router';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { UNSAFE_NavigationContext } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +18,55 @@ interface NavigationGuardProps {
 }
 
 export const NavigationGuard: React.FC<NavigationGuardProps> = ({ when, title, description }) => {
-  const blocker = useBlocker(when);
-  const open = blocker.state === 'blocked';
+  const { navigator } = useContext(UNSAFE_NavigationContext) as any;
+  const [blocked, setBlocked] = useState(false);
+  const txRef = useRef<any>(null);
+  const unblockRef = useRef<null | (() => void)>(null);
+
+  useEffect(() => {
+    if (!when) {
+      if (unblockRef.current) {
+        unblockRef.current();
+        unblockRef.current = null;
+      }
+      txRef.current = null;
+      setBlocked(false);
+      return;
+    }
+    if (!navigator) return;
+    unblockRef.current = (navigator as any).block((tx: any) => {
+      txRef.current = tx;
+      setBlocked(true);
+    });
+    return () => {
+      if (unblockRef.current) {
+        unblockRef.current();
+        unblockRef.current = null;
+      }
+      txRef.current = null;
+      setBlocked(false);
+    };
+  }, [navigator, when]);
+
+  const open = blocked;
+
+  const handleCancel = () => {
+    txRef.current = null;
+    setBlocked(false);
+  };
+
+  const handleProceed = () => {
+    const tx = txRef.current;
+    if (tx) {
+      txRef.current = null;
+      if (unblockRef.current) {
+        unblockRef.current();
+        unblockRef.current = null;
+      }
+      setBlocked(false);
+      tx.retry();
+    }
+  };
 
   return (
     <AlertDialog open={open}>
@@ -31,8 +78,8 @@ export const NavigationGuard: React.FC<NavigationGuardProps> = ({ when, title, d
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => blocker.reset()}>Rimani e continua</AlertDialogCancel>
-          <AlertDialogAction onClick={() => blocker.proceed()}>Esci comunque</AlertDialogAction>
+          <AlertDialogCancel onClick={handleCancel}>Rimani e continua</AlertDialogCancel>
+          <AlertDialogAction onClick={handleProceed}>Esci comunque</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
