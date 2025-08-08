@@ -49,6 +49,7 @@ const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
 const SpaceRecap = lazy(() => import("@/pages/SpaceRecap"));
+const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 
 // Admin pages
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
@@ -247,6 +248,11 @@ export const AppRoutes = () => {
         <Route path="spaces/:spaceId/recap" element={
           <LazyWrapper>
             <SpaceRecap />
+          </LazyWrapper>
+        } />
+        <Route path="calendar" element={
+          <LazyWrapper>
+            <HostCalendar />
           </LazyWrapper>
         } />
         
