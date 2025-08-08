@@ -66,7 +66,7 @@ export const TemplatePicker: React.FC<TemplatePickerProps> = ({ typeFilter = "al
               <div key={t.id} className="flex items-center justify-between gap-3 p-2 border rounded-md">
                 <div>
                   <div className="text-sm font-medium">{t.name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{t.type.replaceAll("_", " ")}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{t.type.replace(/_/g, " ")}</div>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => onPick(t.content)}>
                   Usa

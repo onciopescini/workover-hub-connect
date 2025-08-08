@@ -65,14 +65,16 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
     const failed: { id: string; error: string }[] = [];
 
     for (const id of bookingIds) {
-      const { data, error } = await supabase.rpc("cancel_booking", {
+      const payload: { booking_id: string; cancelled_by_host: boolean; reason?: string } = {
         booking_id: id,
         cancelled_by_host: canActAsHost ? true : false,
-        reason: reason || null,
-      });
+        ...(reason ? { reason } : {}),
+      };
+      const { data, error } = await supabase.rpc("cancel_booking", payload);
 
-      if (error || (data && data.success === false)) {
-        failed.push({ id, error: error?.message || data?.error || "unknown_error" });
+      const result = (data as { success?: boolean; error?: string } | null);
+      if (error || (result && result.success === false)) {
+        failed.push({ id, error: error?.message || result?.error || "unknown_error" });
       } else {
         success.push(id);
       }

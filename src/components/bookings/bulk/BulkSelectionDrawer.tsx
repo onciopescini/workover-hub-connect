@@ -91,7 +91,7 @@ export const BulkSelectionDrawer: React.FC<BulkSelectionDrawerProps> = ({
 
   const previewText = useMemo(() => {
     if (action !== "message" || selectedBookings.length === 0 || !message) return "";
-    const sample = selectedBookings[0];
+    const sample = selectedBookings[0]!;
     return renderTemplate(message, sample, {
       first_name: authState.profile?.first_name || "",
       last_name: authState.profile?.last_name || "",
