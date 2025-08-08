@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star, MessageSquare, User, ArrowLeft } from "lucide-react";
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { getUserReviews, getUserAverageRating, ReviewWithDetails } from "@/lib/review-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -31,29 +34,29 @@ export default function Reviews() {
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchReviews = async () => {
+    if (!authState.user) return;
+
+    try {
+      setIsLoading(true);
+      const [reviewsData, avgRating] = await Promise.all([
+        getUserReviews(authState.user.id),
+        getUserAverageRating(authState.user.id)
+      ]);
+      
+      setReviews(reviewsData);
+      setAverageRating(avgRating);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchReviews = async () => {
-      if (!authState.user) return;
-
-      try {
-        setIsLoading(true);
-        const [reviewsData, avgRating] = await Promise.all([
-          getUserReviews(authState.user.id),
-          getUserAverageRating(authState.user.id)
-        ]);
-        
-        setReviews(reviewsData);
-        setAverageRating(avgRating);
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchReviews();
   }, [authState.user]);
-
+  useEffect(() => { document.title = 'Le mie recensioni | Reviews'; }, []);
   const renderStars = (rating: number) => {
     return [...Array(5)].map((_, i) => (
       <Star 
@@ -83,9 +86,76 @@ export default function Reviews() {
     }
   };
 
-  const ReviewCard = ({ review, type }: { review: ReviewWithDetails; type: 'given' | 'received' }) => {
+  const ReviewCard = ({ review, type, onChanged }: { review: ReviewWithDetails; type: 'given' | 'received'; onChanged: () => void }) => {
     const otherParty = getOtherPartyInfo(review, type);
-    
+    const [editOpen, setEditOpen] = useState(false);
+    const [editContent, setEditContent] = useState<string>(review.comment || '');
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDescription, setReportDescription] = useState('');
+
+    const canEdit = type === 'given' && review.created_at
+      ? differenceInMinutes(new Date(), new Date(review.created_at)) < 60
+      : false;
+
+    const handleDelete = async () => {
+      try {
+        const { error } = await supabase
+          .from('booking_reviews')
+          .delete()
+          .eq('id', review.id);
+        if (error) throw error;
+        toast.success('Recensione eliminata');
+        onChanged();
+      } catch (e) {
+        console.error(e);
+        toast.error('Errore nell\'eliminazione');
+      }
+    };
+
+    const handleEditSave = async () => {
+      try {
+        const { error } = await supabase
+          .from('booking_reviews')
+          .update({ content: editContent })
+          .eq('id', review.id);
+        if (error) throw error;
+        toast.success('Recensione aggiornata');
+        setEditOpen(false);
+        onChanged();
+      } catch (e) {
+        console.error(e);
+        toast.error('Errore nell\'aggiornamento');
+      }
+    };
+
+    const handleReport = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error('Devi essere autenticato');
+          return;
+        }
+        const { error } = await supabase
+          .from('reports')
+          .insert({
+            target_type: 'booking_review',
+            target_id: review.id,
+            reporter_id: user.id,
+            reason: reportReason || 'Altro',
+            description: reportDescription || null,
+          });
+        if (error) throw error;
+        toast.success('Segnalazione inviata');
+        setReportOpen(false);
+        setReportReason('');
+        setReportDescription('');
+      } catch (e) {
+        console.error(e);
+        toast.error('Errore durante la segnalazione');
+      }
+    };
+
     return (
       <Card className="mb-4">
         <CardContent className="p-4">
@@ -135,13 +205,73 @@ export default function Reviews() {
                 <Badge variant={type === 'given' ? 'default' : 'secondary'} className="text-xs">
                   {type === 'given' ? 'Scritta da me' : 'Ricevuta'}
                 </Badge>
-                <span className="text-xs text-gray-500">
-                  {formatDistanceToNow(new Date(review.created_at!), { 
-                    addSuffix: true, 
-                    locale: it 
-                  })}
-                </span>
+                <div className="flex items-center gap-2">
+                  {canEdit && (
+                    <>
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setEditOpen(true)}>
+                        Modifica
+                      </Button>
+                      <Button variant="destructive" size="sm" className="text-xs" onClick={handleDelete}>
+                        Elimina
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => setReportOpen(true)}>
+                    Segnala
+                  </Button>
+                </div>
               </div>
+
+              <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>Modifica recensione</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full border rounded p-2 text-sm"
+                      rows={4}
+                      aria-label="Contenuto recensione"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditOpen(false)}>Annulla</Button>
+                      <Button size="sm" onClick={handleEditSave}>Salva</Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle>Segnala recensione</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      placeholder="Motivo"
+                      className="w-full border rounded p-2 text-sm"
+                      aria-label="Motivo della segnalazione"
+                    />
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder="Descrizione (opzionale)"
+                      className="w-full border rounded p-2 text-sm"
+                      rows={4}
+                      aria-label="Descrizione della segnalazione"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setReportOpen(false)}>Annulla</Button>
+                      <Button size="sm" onClick={handleReport}>Invia</Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardContent>
@@ -241,7 +371,7 @@ export default function Reviews() {
               <EmptyState type="received" />
             ) : (
               reviews.received.map((review) => (
-                <ReviewCard key={review.id} review={review} type="received" />
+                <ReviewCard key={review.id} review={review} type="received" onChanged={fetchReviews} />
               ))
             )}
           </TabsContent>
@@ -251,7 +381,7 @@ export default function Reviews() {
               <EmptyState type="given" />
             ) : (
               reviews.given.map((review) => (
-                <ReviewCard key={review.id} review={review} type="given" />
+                <ReviewCard key={review.id} review={review} type="given" onChanged={fetchReviews} />
               ))
             )}
           </TabsContent>

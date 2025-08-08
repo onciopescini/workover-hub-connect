@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
-import { differenceInHours, parseISO } from "date-fns";
+import { differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ReviewButtonProps {
@@ -47,17 +47,22 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
   const checkReviewEligibility = () => {
     const bookingDate = parseISO(booking.booking_date);
     const hoursPassedSinceBooking = differenceInHours(new Date(), bookingDate);
-    
-    // Deve essere passato almeno 24 ore dalla prenotazione
-    const canReview = hoursPassedSinceBooking >= 24 && booking.status === 'confirmed';
-    
+    const daysSinceBooking = differenceInDays(new Date(), bookingDate);
+
+    const isConfirmed = booking.status === 'confirmed';
+    const isAfter24h = hoursPassedSinceBooking >= 24;
+    const expired = daysSinceBooking > 14;
+    const canReview = isConfirmed && isAfter24h && !expired;
+
     return {
       canReview,
-      hoursUntilEligible: Math.max(0, 24 - hoursPassedSinceBooking)
+      hoursUntilEligible: Math.max(0, 24 - hoursPassedSinceBooking),
+      expired,
+      daysUntilExpiry: Math.max(0, 14 - daysSinceBooking)
     };
   };
 
-  const { canReview, hoursUntilEligible } = checkReviewEligibility();
+  const { canReview, hoursUntilEligible, expired, daysUntilExpiry } = checkReviewEligibility();
 
   if (loading) {
     return (
@@ -87,8 +92,12 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
   if (!canReview) {
     return (
       <Button variant="outline" size="sm" disabled className="flex items-center">
-        <Clock className="w-4 h-4 mr-1" />
-        Recensione tra {Math.ceil(hoursUntilEligible)}h
+        {expired ? (
+          <Clock className="w-4 h-4 mr-1" />
+        ) : (
+          <Clock className="w-4 h-4 mr-1" />
+        )}
+        {expired ? 'Finestra recensione scaduta' : `Recensione tra ${Math.ceil(hoursUntilEligible)}h`}
       </Button>
     );
   }
