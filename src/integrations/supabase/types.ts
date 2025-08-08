@@ -946,6 +946,47 @@ export type Database = {
         }
         Relationships: []
       }
+      host_report_subscriptions: {
+        Row: {
+          created_at: string
+          day_of_month: number
+          enabled: boolean
+          frequency: string
+          host_id: string
+          id: string
+          last_sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_month?: number
+          enabled?: boolean
+          frequency?: string
+          host_id: string
+          id?: string
+          last_sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_month?: number
+          enabled?: boolean
+          frequency?: string
+          host_id?: string
+          id?: string
+          last_sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_report_subscriptions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       image_processing_jobs: {
         Row: {
           completed_at: string | null
@@ -1001,6 +1042,50 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          content: string
+          created_at: string
+          host_id: string
+          id: string
+          is_active: boolean
+          is_favorite: boolean
+          name: string
+          type: Database["public"]["Enums"]["message_template_type"]
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          host_id: string
+          id?: string
+          is_active?: boolean
+          is_favorite?: boolean
+          name: string
+          type?: Database["public"]["Enums"]["message_template_type"]
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          host_id?: string
+          id?: string
+          is_active?: boolean
+          is_favorite?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["message_template_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2029,6 +2114,7 @@ export type Database = {
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled"
       confirmation_type: "instant" | "host_approval"
+      message_template_type: "confirmation" | "reminder" | "cancellation_notice"
       space_category: "home" | "outdoor" | "professional"
       stripe_onboarding_state: "none" | "pending" | "completed" | "restricted"
       user_role: "host" | "coworker" | "admin"
@@ -2162,6 +2248,11 @@ export const Constants = {
     Enums: {
       booking_status: ["pending", "confirmed", "cancelled"],
       confirmation_type: ["instant", "host_approval"],
+      message_template_type: [
+        "confirmation",
+        "reminder",
+        "cancellation_notice",
+      ],
       space_category: ["home", "outdoor", "professional"],
       stripe_onboarding_state: ["none", "pending", "completed", "restricted"],
       user_role: ["host", "coworker", "admin"],

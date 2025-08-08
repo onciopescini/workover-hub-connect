@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useCallback, useMemo, useState } from 'react';
 import { BookingsDashboardHeader } from '../dashboard/BookingsDashboardHeader';
 import { BookingsDashboardFilters } from '../dashboard/BookingsDashboardFilters';
 import { BookingsDashboardContent } from '../dashboard/BookingsDashboardContent';
@@ -8,6 +9,12 @@ import { EnhancedBookingsDashboardDialogs } from './EnhancedBookingsDashboardDia
 import { BookingsDashboardState, BookingsStats } from '@/types/bookings/bookings-dashboard.types';
 import { BookingsActions } from '@/types/bookings/bookings-actions.types';
 import { BookingWithDetails } from '@/types/booking';
+import { Button } from '@/components/ui/button';
+import { exportBookingsToCSV } from '@/utils/csv/exportBookingsCsv';
+import { BulkSelectionDrawer } from '@/components/bookings/bulk/BulkSelectionDrawer';
+import { useBulkBookingActions } from '@/hooks/bookings/useBulkBookingActions';
+import { RealtimeBookingsSync } from '@/components/bookings/realtime/RealtimeBookingsSync';
+import { ReportSubscriptionToggle } from '@/components/host/reports/ReportSubscriptionToggle';
 
 interface EnhancedBookingsDashboardUIProps {
   dashboardState: BookingsDashboardState;
@@ -20,6 +27,7 @@ interface EnhancedBookingsDashboardUIProps {
   setMessageDialogOpen: (open: boolean) => void;
   setCancelDialogOpen: (open: boolean) => void;
   cancelBookingLoading: boolean;
+  refetch: () => void; // aggiunto per realtime/refresh post-azioni
 }
 
 export function EnhancedBookingsDashboardUI({
@@ -32,19 +40,66 @@ export function EnhancedBookingsDashboardUI({
   isChatEnabled,
   setMessageDialogOpen,
   setCancelDialogOpen,
-  cancelBookingLoading
+  cancelBookingLoading,
+  refetch
 }: EnhancedBookingsDashboardUIProps) {
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  const { confirmMultiple, cancelMultiple, groupMessage, loading: bulkLoading } = useBulkBookingActions({
+    onAfterAll: refetch,
+  });
+
+  const onExportCsv = useCallback(() => {
+    exportBookingsToCSV(filteredBookings);
+  }, [filteredBookings]);
+
+  const handleBulkConfirm = useCallback(async (ids: string[]) => {
+    await confirmMultiple(ids);
+  }, [confirmMultiple]);
+
+  const handleBulkCancel = useCallback(async (ids: string[], reason: string) => {
+    await cancelMultiple(ids, reason);
+  }, [cancelMultiple]);
+
+  const handleBulkMessage = useCallback(async (ids: string[], content: string) => {
+    // inviamo con template già renderizzato singolarmente nel server? Qui inviamo testo uguale
+    await groupMessage(ids, content);
+  }, [groupMessage]);
+
+  // Memo di bookings per drawer
+  const drawerBookings = useMemo(() => filteredBookings, [filteredBookings]);
+
   return (
     <EnhancedBookingsDashboardLayout>
       <PaymentSuccessHandler />
-      
+
+      {/* Realtime sync: aggiorna dashboard e quindi calendario avanzato */}
+      <RealtimeBookingsSync onChange={refetch} />
+
       <BookingsDashboardHeader
         totalBookings={enhancedStats.total}
         pendingCount={enhancedStats.pending}
         confirmedCount={enhancedStats.confirmed}
         totalRevenue={enhancedStats.totalRevenue}
       />
-      
+
+      {/* Toolbar azioni aggiuntive */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            Azioni Bulk
+          </Button>
+          <Button variant="outline" onClick={onExportCsv}>
+            Esporta CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Toggle report mensile (opt-in) */}
+      <div className="mb-4">
+        <ReportSubscriptionToggle />
+      </div>
+
       <BookingsDashboardFilters
         searchTerm={dashboardState.searchTerm}
         onSearchChange={actions.onSearchChange}
@@ -53,7 +108,7 @@ export function EnhancedBookingsDashboardUI({
         onDateRangeFilter={actions.onDateRangeFilter}
         onClearFilters={actions.onClearFilters}
       />
-      
+
       <BookingsDashboardContent
         isLoading={isLoading}
         bookings={filteredBookings}
@@ -72,7 +127,7 @@ export function EnhancedBookingsDashboardUI({
         onCancelBooking={actions.onCancelBooking}
         cancelBookingLoading={cancelBookingLoading}
       />
-      
+
       <EnhancedBookingsDashboardDialogs
         messageDialogOpen={dashboardState.dialogStates.messageDialog}
         setMessageDialogOpen={setMessageDialogOpen}
@@ -83,6 +138,17 @@ export function EnhancedBookingsDashboardUI({
         selectedBooking={dashboardState.selectedBooking}
         onCancelBooking={actions.onCancelBooking}
         cancelBookingLoading={cancelBookingLoading}
+      />
+
+      {/* Drawer per selezione bulk */}
+      <BulkSelectionDrawer
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        bookings={drawerBookings}
+        onConfirm={handleBulkConfirm}
+        onCancel={handleBulkCancel}
+        onGroupMessage={handleBulkMessage}
+        isProcessing={bulkLoading}
       />
     </EnhancedBookingsDashboardLayout>
   );
