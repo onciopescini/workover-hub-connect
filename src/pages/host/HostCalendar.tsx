@@ -89,7 +89,7 @@ const HostCalendar: React.FC = () => {
     const list = (data || []) as HostSpace[];
     setSpaces(list);
     if (!selectedSpaceId && list.length > 0) {
-      setSelectedSpaceId(list[0].id);
+      setSelectedSpaceId(list[0]?.id ?? null);
     }
   }, [userId, selectedSpaceId]);
 
@@ -99,7 +99,7 @@ const HostCalendar: React.FC = () => {
       .from("spaces")
       .select("availability")
       .eq("id", selectedSpaceId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Errore caricamento disponibilità", error);
@@ -156,7 +156,7 @@ const HostCalendar: React.FC = () => {
     setAvailability(normalized);
     const { error } = await supabase
       .from("spaces")
-      .update({ availability: normalized })
+      .update({ availability: normalized as any })
       .eq("id", selectedSpaceId);
     if (error) {
       console.error("Errore salvataggio disponibilità", error);
@@ -191,13 +191,14 @@ const HostCalendar: React.FC = () => {
                 <Button variant="ghost" size="sm" onClick={() => navigateMonth('today')}>Oggi</Button>
 
                 <Select
-                  value={selectedSpaceId ?? undefined}
+                  value={selectedSpaceId ?? ""}
                   onValueChange={(val) => setSelectedSpaceId(val)}
                 >
                   <SelectTrigger className="w-[220px]">
                     <SelectValue placeholder="Seleziona spazio" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50">
+                    <SelectItem value="" disabled>Seleziona spazio</SelectItem>
                     {spaces.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
                     ))}
