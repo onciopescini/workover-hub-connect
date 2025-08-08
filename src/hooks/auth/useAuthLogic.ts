@@ -52,8 +52,46 @@ export const useAuthLogic = () => {
       
       // Defer profile fetch per evitare deadlock
       setTimeout(async () => {
-        const profile = await fetchProfile(userId);
+        let profile = await fetchProfile(userId);
         const { data: { session } } = await supabase.auth.getSession();
+
+        // Se il profilo non esiste, prova a crearlo tramite edge function e ricarica
+        if (!profile && session?.user) {
+          try {
+            const firstName = (session.user.user_metadata?.['given_name']
+              || session.user.user_metadata?.['first_name']
+              || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ')[0]
+              || '');
+            const lastName = (session.user.user_metadata?.['family_name']
+              || session.user.user_metadata?.['last_name']
+              || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ').slice(1).join(' ')
+              || '');
+
+            const { data: created, error: createErr } = await supabase.functions.invoke('create-profile', {
+              body: {
+                user_id: session.user.id,
+                email: session.user.email,
+                first_name: firstName,
+                last_name: lastName,
+              }
+            });
+
+            if (createErr) {
+              // Silenziosamente logga, ma non bloccare
+              debug('create-profile error', { error: createErr });
+            } else if (created?.profile) {
+              profile = created.profile as Profile;
+            }
+          } catch (e) {
+            debug('create-profile invocation failed', { error: e });
+          }
+
+          // In ogni caso prova a ricaricare dal DB
+          if (!profile) {
+            profile = await fetchProfile(userId);
+          }
+        }
+
         updateAuthState(session, profile);
       }, 0);
     } else {
@@ -62,7 +100,7 @@ export const useAuthLogic = () => {
       const { data: { session } } = await supabase.auth.getSession();
       updateAuthState(session, cachedProfile);
     }
-  }, [fetchProfile, getCachedProfile, updateAuthState]);
+  }, [fetchProfile, getCachedProfile, updateAuthState, debug]);
 
   // Refresh profile forzato
   const refreshProfile = useCallback(async (): Promise<void> => {

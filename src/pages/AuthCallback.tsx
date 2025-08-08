@@ -38,6 +38,32 @@ const AuthCallback = () => {
 
           console.log('Profile found:', !!profile, profile?.role, profile?.onboarding_completed);
 
+          // Se il profilo non esiste, prova a crearlo e manda all'onboarding
+          if (!profile) {
+            try {
+              const firstName = (session.user.user_metadata?.['given_name']
+                || session.user.user_metadata?.['first_name']
+                || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ')[0]
+                || '');
+              const lastName = (session.user.user_metadata?.['family_name']
+                || session.user.user_metadata?.['last_name']
+                || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ').slice(1).join(' ')
+                || '');
+              await supabase.functions.invoke('create-profile', {
+                body: {
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  first_name: firstName,
+                  last_name: lastName,
+                }
+              });
+            } catch (e) {
+              console.warn('Create profile via callback failed', e);
+            }
+            navigate("/onboarding", { replace: true });
+            return;
+          }
+
           if (profile?.onboarding_completed) {
             // Redirect based on role
             switch (profile.role) {

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,42 @@ const Onboarding = () => {
     collaborationDescription: ''
   });
 
+  const draftKey = authState.user ? `onboarding_draft_${authState.user.id}` : null;
+
+  useEffect(() => {
+    if (!authState.user) return;
+    try {
+      if (draftKey) {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setFormData(prev => ({ ...prev, ...parsed }));
+          return;
+        }
+      }
+      // Prefill da profilo esistente se disponibile
+      setFormData(prev => ({
+        ...prev,
+        firstName: (authState.profile?.first_name as string | undefined) ?? prev.firstName,
+        lastName: (authState.profile?.last_name as string | undefined) ?? prev.lastName,
+        role: (authState.profile?.role as UserRole | undefined) ?? prev.role,
+        profession: (authState.profile?.profession as string | undefined) ?? prev.profession,
+        bio: (authState.profile?.bio as string | undefined) ?? prev.bio,
+        location: (authState.profile?.location as string | undefined) ?? prev.location,
+      }));
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authState.user?.id]);
+
+  useEffect(() => {
+    if (!authState.user || authState.profile?.onboarding_completed) return;
+    try {
+      if (draftKey) {
+        localStorage.setItem(draftKey, JSON.stringify(formData));
+      }
+    } catch {}
+  }, [formData, draftKey, authState.user, authState.profile?.onboarding_completed]);
+
   const handleRoleSelect = (role: string) => {
     setFormData({ ...formData, role: role as UserRole });
   };
@@ -73,6 +109,11 @@ const Onboarding = () => {
       });
 
       toast.success("Onboarding completato con successo!");
+      
+      // Pulisci eventuale bozza salvata
+      try {
+        if (draftKey) localStorage.removeItem(draftKey);
+      } catch {}
       
       // Redirect hosts to specialized onboarding
       if (formData.role === 'host') {

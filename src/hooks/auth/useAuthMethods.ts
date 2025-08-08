@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogger } from '@/hooks/useLogger';
-import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut } from '@/lib/auth-utils';
+import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut, cleanupAuthState } from '@/lib/auth-utils';
 import type { Profile } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -53,7 +53,15 @@ export const useAuthMethods = ({
 
   const signUp = useCallback(async (email: string, password: string): Promise<void> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Pulisci eventuale stato auth e prova sign out globale per evitare limbo
+      try {
+        cleanupAuthState();
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch {
+        // Ignora errori di cleanup
+      }
+
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
