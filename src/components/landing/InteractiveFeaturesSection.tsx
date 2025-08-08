@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { InteractiveCard } from '@/components/ui/InteractiveCard';
-import { MapPin, Users, Calendar, Shield, CreditCard, Clock } from 'lucide-react';
+import { MapPin, Users, Shield, CreditCard, Clock } from 'lucide-react';
 
 export function InteractiveFeaturesSection() {
   const [activeFeature, setActiveFeature] = useState<number | null>(null);
@@ -21,7 +21,6 @@ export function InteractiveFeaturesSection() {
       details: "Profili verificati, sistema di matching intelligente e chat sicura",
       color: "from-emerald-500 to-teal-600"
     },
-    {
     {
       icon: Shield,
       title: "Sicurezza Garantita",
