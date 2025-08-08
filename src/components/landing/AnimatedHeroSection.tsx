@@ -5,9 +5,10 @@ import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
 import { TypewriterText } from '@/components/ui/TypewriterText';
 import { GeographicSearch } from '@/components/shared/GeographicSearch';
 import { useNavigate } from 'react-router-dom';
-
+import { useAuth } from '@/hooks/auth/useAuth';
 export function AnimatedHeroSection() {
   const navigate = useNavigate();
+  const { authState } = useAuth();
 
   const dynamicWords = ['flessibile', 'smart', 'collaborativo', 'innovativo'];
 
@@ -61,6 +62,15 @@ export function AnimatedHeroSection() {
             >
               Scopri Eventi
             </Button>
+            {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+              <Button
+                size="lg"
+                onClick={() => navigate('/onboarding')}
+                className="bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl transform hover:scale-105 transition-all duration-300"
+              >
+                Completa Onboarding
+              </Button>
+            )}
           </div>
           
           {/* Trust Indicators */}

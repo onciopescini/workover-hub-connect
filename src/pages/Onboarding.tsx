@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Users, Briefcase, CheckCircle, Mail } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { NavigationGuard } from '@/components/navigation/NavigationGuard';
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 
@@ -184,13 +185,17 @@ const Onboarding = () => {
     return () => window.clearTimeout(autosaveTimer.current);
   }, [formData, authState.user?.id, authState.profile?.onboarding_completed]);
 
-  // Conferma uscita pagina se dati non completati
-  React.useEffect(() => {
-    const hasAnyData = Object.values(formData).some((v) => {
+  // Stato: ci sono dati parziali?
+  const hasAnyData = React.useMemo(() => {
+    return Object.values(formData).some((v) => {
       if (Array.isArray(v)) return v.length > 0;
       if (typeof v === 'boolean') return v === true;
       return typeof v === 'string' ? v.trim().length > 0 : false;
     });
+  }, [formData]);
+
+  // Conferma uscita tab/browser se dati non completati
+  React.useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (!authState.profile?.onboarding_completed && hasAnyData) {
         e.preventDefault();
@@ -199,16 +204,22 @@ const Onboarding = () => {
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [formData, authState.profile?.onboarding_completed]);
+  }, [hasAnyData, authState.profile?.onboarding_completed]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Benvenuto in Workover!</CardTitle>
-          <CardDescription>
-            Completiamo il tuo profilo per offrirti la migliore esperienza
-          </CardDescription>
+    <>
+      <NavigationGuard
+        when={Boolean(authState.isAuthenticated && !authState.profile?.onboarding_completed && hasAnyData)}
+        title="Vuoi lasciare l'onboarding?"
+        description="Hai modifiche non salvate. Uscendo potresti perdere i progressi. Vuoi davvero continuare?"
+      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Benvenuto in Workover!</CardTitle>
+            <CardDescription>
+              Completiamo il tuo profilo per offrirti la migliore esperienza
+            </CardDescription>
           {authState.user && !authState.user.email_confirmed_at && (
             <div className="mt-3 p-3 rounded-md bg-blue-50 text-blue-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -397,6 +408,7 @@ const Onboarding = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 

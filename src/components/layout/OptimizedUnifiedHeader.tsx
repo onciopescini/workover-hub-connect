@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube } from 'lucide-react';
+import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube, CheckCircle } from 'lucide-react';
 import { useLogger } from '@/hooks/useLogger';
 import {
   DropdownMenu,
@@ -177,6 +177,14 @@ export const OptimizedUnifiedHeader = () => {
                       </div>
                     </div>
                     <DropdownMenuSeparator />
+                    {authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/onboarding" className="flex items-center">
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          <span>Completa onboarding</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/dashboard" className="flex items-center">
                         <Home className="mr-2 h-4 w-4" />
