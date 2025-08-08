@@ -61,19 +61,13 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
 
     if (messagesError) throw messagesError;
 
-    // Get events attended
-    const { data: eventParticipations, error: eventsError } = await supabase
-      .from('event_participants')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (eventsError) throw eventsError;
+    // Events feature removed: no query for event participation
 
     // Calculate metrics
     const totalConnections = connections?.length || 0;
     const pendingCount = pendingRequests?.length || 0;
     const messagesThisWeek = messages?.length || 0;
-    const eventsAttended = eventParticipations?.length || 0;
+    const eventsAttended = 0;
 
     // Mock profile views (in real app, you'd track this)
     const profileViews = Math.floor(Math.random() * 50) + totalConnections * 2;
@@ -108,7 +102,7 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
 
     // Calculate engagement score based on activity
     const engagementScore = Math.min(100, Math.floor(
-      (messagesThisWeek * 3 + eventsAttended * 5 + weeklyGrowth * 2 + profileViews * 0.5)
+      (messagesThisWeek * 3 + weeklyGrowth * 2 + profileViews * 0.5)
     ));
 
     // Calculate networking score
@@ -177,11 +171,11 @@ export const calculateAchievements = (stats: NetworkingStats): Achievement[] => 
     },
     {
       id: '4',
-      title: 'Event Networker',
-      description: '5+ eventi',
-      unlocked: stats.eventsAttended >= 5,
-      progress: Math.min(100, (stats.eventsAttended / 5) * 100),
-      icon: 'calendar',
+      title: 'Space Explorer',
+      description: '5+ nuove connessioni questa settimana',
+      unlocked: stats.weeklyGrowth >= 5,
+      progress: Math.min(100, (stats.weeklyGrowth / 5) * 100),
+      icon: 'map',
       category: 'activity'
     },
     {

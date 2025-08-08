@@ -76,7 +76,7 @@ export function AdminTagManagement() {
       case "workspace_feature": return "bg-blue-100 text-blue-800";
       case "amenity": return "bg-green-100 text-green-800";
       case "seating_type": return "bg-purple-100 text-purple-800";
-      case "event_type": return "bg-orange-100 text-orange-800";
+      
       case "ideal_guest": return "bg-pink-100 text-pink-800";
       default: return "bg-gray-100 text-gray-800";
     }
@@ -87,7 +87,7 @@ export function AdminTagManagement() {
       case "workspace_feature": return "Caratteristica Workspace";
       case "amenity": return "Servizio";
       case "seating_type": return "Tipo Seduta";
-      case "event_type": return "Tipo Evento";
+      
       case "ideal_guest": return "Ospite Ideale";
       default: return category;
     }
@@ -128,7 +128,7 @@ export function AdminTagManagement() {
                 <SelectItem value="workspace_feature">Caratteristiche Workspace</SelectItem>
                 <SelectItem value="amenity">Servizi</SelectItem>
                 <SelectItem value="seating_type">Tipi Seduta</SelectItem>
-                <SelectItem value="event_type">Tipi Evento</SelectItem>
+                
                 <SelectItem value="ideal_guest">Ospiti Ideali</SelectItem>
               </SelectContent>
             </Select>

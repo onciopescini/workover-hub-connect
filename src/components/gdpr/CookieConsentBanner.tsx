@@ -116,7 +116,7 @@ export function CookieConsentBanner({ className }: CookieConsentBannerProps) {
                   <div className="flex items-center gap-1 text-xs text-gray-500">
                     <span>Leggi la nostra</span>
                     <a 
-                      href="/privacy-policy" 
+                      href="/privacy" 
                       className="text-indigo-600 hover:text-indigo-800 underline"
                       target="_blank"
                       rel="noopener noreferrer"

@@ -22,12 +22,6 @@ export function InteractiveFeaturesSection() {
       color: "from-emerald-500 to-teal-600"
     },
     {
-      icon: Calendar,
-      title: "Eventi Esclusivi",
-      description: "Workshop, masterclass e eventi di networking per la tua crescita professionale",
-      details: "Eventi curati da esperti, accreditamenti professionali, networking post-evento",
-      color: "from-purple-500 to-pink-600"
-    },
     {
       icon: Shield,
       title: "Sicurezza Garantita",

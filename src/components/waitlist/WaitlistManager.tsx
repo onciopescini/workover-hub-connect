@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Clock, Users, Search, UserPlus, X, Calendar, MapPin } from "lucide-react";
+import { Clock, Users, Search, UserPlus, X, MapPin } from "lucide-react";
 
 interface WaitlistEntry {
   id: string;
@@ -35,7 +35,7 @@ export function WaitlistManager() {
   const [waitlists, setWaitlists] = useState<WaitlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState<'all' | 'spaces' | 'events'>('all');
+  const [filter, setFilter] = useState<'all' | 'spaces' | 'events'>('spaces');
 
   useEffect(() => {
     fetchWaitlists();
@@ -58,7 +58,7 @@ export function WaitlistManager() {
 
       // Type-safe filtering to remove entries with missing relations
       const validWaitlists: WaitlistEntry[] = (data || [])
-        .filter(entry => entry.user) // Only include entries with valid user data
+        .filter(entry => entry.user && entry.space_id) // Only include entries with valid user and space
         .map(entry => ({
           ...entry,
           space_id: entry.space_id ?? '',
@@ -130,13 +130,9 @@ export function WaitlistManager() {
     const matchesSearch = 
       entry.user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.space?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.event?.title.toLowerCase().includes(searchTerm.toLowerCase());
+      entry.space?.title.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesFilter = 
-      filter === 'all' || 
-      (filter === 'spaces' && entry.space_id) ||
-      (filter === 'events' && entry.event_id);
+    const matchesFilter = entry.space_id;
 
     return matchesSearch && matchesFilter;
   });
@@ -177,29 +173,6 @@ export function WaitlistManager() {
             />
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              Tutti
-            </Button>
-            <Button
-              variant={filter === 'spaces' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('spaces')}
-            >
-              Spazi
-            </Button>
-            <Button
-              variant={filter === 'events' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('events')}
-            >
-              Eventi
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -231,19 +204,6 @@ export function WaitlistManager() {
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-purple-500" />
-              <div>
-                <div className="text-2xl font-bold">
-                  {waitlists.filter(w => w.event_id).length}
-                </div>
-                <div className="text-sm text-gray-600">Eventi</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Waitlist entries */}
@@ -284,26 +244,14 @@ export function WaitlistManager() {
                       </h3>
                       
                       <div className="flex items-center gap-2 mt-1">
-                        {entry.space_id ? (
-                          <Badge variant="secondary">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            Spazio: {entry.space?.title}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Evento: {entry.event?.title}
-                          </Badge>
-                        )}
+                        <Badge variant="secondary">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          Spazio: {entry.space?.title}
+                        </Badge>
                       </div>
                       
                       <div className="text-sm text-gray-500 mt-1">
                         In attesa dal {entry.created_at ? new Date(entry.created_at).toLocaleDateString('it-IT') : 'Data sconosciuta'}
-                        {entry.event?.date && (
-                          <span className="ml-2">
-                            • Evento: {new Date(entry.event.date).toLocaleDateString('it-IT')}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>

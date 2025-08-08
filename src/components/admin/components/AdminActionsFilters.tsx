@@ -62,7 +62,7 @@ export function AdminActionsFilters({
               <SelectItem value="all">Tutti</SelectItem>
               <SelectItem value="user">Utente</SelectItem>
               <SelectItem value="space">Spazio</SelectItem>
-              <SelectItem value="event">Evento</SelectItem>
+              
               <SelectItem value="tag">Tag</SelectItem>
               <SelectItem value="ticket">Ticket</SelectItem>
               <SelectItem value="report">Report</SelectItem>

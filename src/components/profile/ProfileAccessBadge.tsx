@@ -32,7 +32,7 @@ export const ProfileAccessBadge = ({ accessReason, visibilityLevel, className }:
           icon: <Users className="w-3 h-3" />,
           text: 'Contesto condiviso',
           variant: 'secondary' as const,
-          tooltip: 'Accesso completo tramite spazi/eventi condivisi'
+          tooltip: 'Accesso completo tramite spazi condivisi'
         };
       case 'suggestion_exists':
         return {
