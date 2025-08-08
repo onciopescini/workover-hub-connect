@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, MapPin, Calendar, Users, Eye, CheckCircle } from "lucide-react";
+import { UserPlus, MapPin, Users, Eye, CheckCircle } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { useProfileAccess } from "@/hooks/useProfileAccess";
 import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
@@ -19,7 +19,6 @@ interface SuggestionCardProps {
     score: number;
     shared_context?: {
       space_title?: string;
-      event_title?: string;
     };
     suggested_user?: {
       first_name: string;

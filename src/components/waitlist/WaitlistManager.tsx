@@ -13,7 +13,6 @@ interface WaitlistEntry {
   id: string;
   user_id: string;
   space_id: string | null;
-  event_id: string | null;
   created_at: string | null;
   user: {
     first_name: string;
@@ -24,19 +23,12 @@ interface WaitlistEntry {
     title: string;
     max_capacity: number;
   };
-  event?: {
-    title: string;
-    max_participants: number | null;
-    date: string;
-  };
 }
 
 export function WaitlistManager() {
   const [waitlists, setWaitlists] = useState<WaitlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState<'all' | 'spaces' | 'events'>('spaces');
-
   useEffect(() => {
     fetchWaitlists();
   }, []);
@@ -49,8 +41,7 @@ export function WaitlistManager() {
         .select(`
           *,
           user:profiles!user_id(first_name, last_name, profile_photo_url),
-          space:spaces(title, max_capacity),
-          event:events(title, max_participants, date)
+          space:spaces(title, max_capacity)
         `)
         .order('created_at', { ascending: false });
 
@@ -58,15 +49,13 @@ export function WaitlistManager() {
 
       // Type-safe filtering to remove entries with missing relations
       const validWaitlists: WaitlistEntry[] = (data || [])
-        .filter(entry => entry.user && entry.space_id) // Only include entries with valid user and space
+        .filter(entry => entry.user && entry.space_id)
         .map(entry => ({
           ...entry,
           space_id: entry.space_id ?? '',
-          event_id: entry.event_id ?? '',
           created_at: entry.created_at ?? new Date().toISOString(),
           user: entry.user as WaitlistEntry['user'],
-          space: entry.space ?? { title: '', max_capacity: 0 },
-          event: entry.event ?? { title: '', max_participants: 0, date: '' }
+          space: entry.space ?? { title: '', max_capacity: 0 }
         }));
 
       setWaitlists(validWaitlists);
@@ -78,30 +67,12 @@ export function WaitlistManager() {
     }
   };
 
-  const promoteUser = async (waitlistId: string, spaceId?: string, eventId?: string) => {
+  const promoteUser = async (waitlistId: string, spaceId?: string) => {
     try {
       if (spaceId) {
         // For spaces, we would need to create a booking
         // This is a simplified version - you'd need to implement actual booking logic
         toast.info('Funzionalità di promozione per spazi non ancora implementata');
-      } else if (eventId) {
-        // Add user to event participants
-        const { error: addError } = await supabase
-          .from('event_participants')
-          .insert({ event_id: eventId, user_id: waitlists.find(w => w.id === waitlistId)?.user_id ?? '' });
-
-        if (addError) throw addError;
-
-        // Remove from waitlist
-        const { error: removeError } = await supabase
-          .from('waitlists')
-          .delete()
-          .eq('id', waitlistId);
-
-        if (removeError) throw removeError;
-
-        toast.success('Utente promosso dall\'evento');
-        fetchWaitlists();
       }
     } catch (error) {
       console.error('Error promoting user:', error);
@@ -259,7 +230,7 @@ export function WaitlistManager() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
-                      onClick={() => promoteUser(entry.id, entry.space_id || undefined, entry.event_id || undefined)}
+                      onClick={() => promoteUser(entry.id, entry.space_id || undefined)}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />

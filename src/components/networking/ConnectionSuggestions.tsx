@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, MapPin, Calendar, Users, RefreshCw, Eye } from "lucide-react";
+import { UserPlus, MapPin, Users, RefreshCw, Eye } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { sendConnectionRequest } from "@/lib/networking-utils";
 import { useNavigate } from "react-router-dom";

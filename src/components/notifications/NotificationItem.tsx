@@ -97,9 +97,6 @@ export function NotificationItem({ notification, onMarkAsRead, onClick }: Notifi
                   {notification.metadata["space_title"] && (
                     <div>Spazio: {notification.metadata["space_title"]}</div>
                   )}
-                  {notification.metadata["event_title"] && (
-                    <div>Evento: {notification.metadata["event_title"]}</div>
-                  )}
                 </div>
               )}
             </div>
