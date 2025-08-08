@@ -494,13 +494,17 @@ const UserProfileView = () => {
                               Modalità preferita:
                             </p>
                             <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                              profile['preferred_work_mode'] === 'remote' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30' :
-                              profile['preferred_work_mode'] === 'hybrid' ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30' :
+                              (profile['preferred_work_mode'] === 'remote' || profile['preferred_work_mode'] === 'remoto') ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30' :
+                              (profile['preferred_work_mode'] === 'hybrid' || profile['preferred_work_mode'] === 'ibrido') ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30' :
+                              (profile['preferred_work_mode'] === 'office' || profile['preferred_work_mode'] === 'presenza' || profile['preferred_work_mode'] === 'in_presenza') ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30' :
+                              (profile['preferred_work_mode'] === 'flessibile' || profile['preferred_work_mode'] === 'flexible') ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/30' :
                               'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30'
                             }`}>
                               <span className="font-medium text-sm">
-                                {profile['preferred_work_mode'] === 'remote' ? '🏠 Remoto' : 
-                                 profile['preferred_work_mode'] === 'hybrid' ? '🔄 Ibrido' : '🏢 In presenza'}
+                                {(profile['preferred_work_mode'] === 'remote' || profile['preferred_work_mode'] === 'remoto') ? '🏠 Remoto' : 
+                                 (profile['preferred_work_mode'] === 'hybrid' || profile['preferred_work_mode'] === 'ibrido') ? '🔄 Ibrido' : 
+                                 (profile['preferred_work_mode'] === 'office' || profile['preferred_work_mode'] === 'presenza' || profile['preferred_work_mode'] === 'in_presenza') ? '🏢 In presenza' :
+                                 (profile['preferred_work_mode'] === 'flessibile' || profile['preferred_work_mode'] === 'flexible') ? '🧩 Flessibile' : String(profile['preferred_work_mode'])}
                               </span>
                             </div>
                           </div>
