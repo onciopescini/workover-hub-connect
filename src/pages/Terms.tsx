@@ -48,7 +48,7 @@ const Terms = () => {
                 <li>Ricerca e prenotazione di spazi di lavoro</li>
                 <li>Gestione di pagamenti e transazioni</li>
                 <li>Sistema di messaggistica tra utenti</li>
-                <li>Organizzazione di eventi e networking</li>
+                <li>Opportunità di networking</li>
                 <li>Sistema di recensioni e valutazioni</li>
               </ul>
             </CardContent>

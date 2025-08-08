@@ -26,7 +26,7 @@ export const ConnectionSuggestions = () => {
   };
 
   const handleViewProfile = (userId: string) => {
-    navigate(`/profile/${userId}`);
+    navigate(`/users/${userId}`);
   };
 
   const getUserInitials = (firstName?: string, lastName?: string) => {

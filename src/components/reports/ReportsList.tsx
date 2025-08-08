@@ -105,7 +105,7 @@ export function ReportsList() {
       case 'space':
         return 'Spazio';
       case 'event':
-        return 'Evento';
+        return 'Contenuto';
       case 'booking':
         return 'Prenotazione';
       default:

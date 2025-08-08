@@ -45,7 +45,7 @@ export const EnhancedSuggestionCard = ({ suggestion }: SuggestionCardProps) => {
   };
 
   const handleViewProfile = () => {
-    navigate(`/profile/${suggestion.suggested_user_id}`);
+    navigate(`/users/${suggestion.suggested_user_id}`);
   };
 
   const getUserInitials = (firstName?: string, lastName?: string) => {

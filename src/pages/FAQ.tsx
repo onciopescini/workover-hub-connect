@@ -15,7 +15,7 @@ const FAQ = () => {
       questions: [
         {
           question: "Cos'è Workover?",
-          answer: "Workover è una piattaforma che connette professionisti in cerca di spazi di lavoro flessibili con host che offrono i propri ambienti. Offriamo anche eventi e opportunità di networking per la community."
+          answer: "Workover è una piattaforma che connette professionisti in cerca di spazi di lavoro flessibili con host che offrono i propri ambienti. Offriamo anche opportunità di networking per la community."
         },
         {
           question: "Come funziona Workover?",

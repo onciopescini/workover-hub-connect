@@ -54,7 +54,7 @@ export const ValidationRunner = () => {
           
           <div className="text-xs text-gray-500">
             <p>• Payment Validation: Tests dual commission model (5%+5%) and Stripe calculations</p>
-            <p>• Full Platform Test: Validates all Sprint 1 features including GDPR, events, revenue</p>
+            <p>• Full Platform Test: Validates all Sprint 1 features including GDPR and revenue</p>
             <p>• Check browser console for detailed results</p>
           </div>
         </div>

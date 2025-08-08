@@ -37,7 +37,7 @@ const Search = () => {
           Cerca su Workover
         </h1>
         <p className="text-gray-600">
-          Trova spazi, eventi e professionisti
+          Trova spazi e professionisti
         </p>
       </div>
 
@@ -51,7 +51,7 @@ const Search = () => {
         <CardContent className="space-y-4">
           <form onSubmit={handleSearch} className="flex gap-4">
             <Input
-              placeholder="Cerca spazi, eventi o persone..."
+              placeholder="Cerca spazi o persone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1"

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, MessageSquare, User, AlertTriangle, CheckCircle, Clock, Building2 } from "lucide-react";
+import { MessageSquare, User, AlertTriangle, CheckCircle, Clock, Building2, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -166,8 +166,8 @@ export function ReportDetailsDialog({ report, isOpen, onClose, onUpdate }: Repor
                 )}
                 {report.target_type === 'event' && (
                   <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>Evento segnalato</span>
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <span>Contenuto storico non più disponibile</span>
                   </div>
                 )}
               </CardContent>

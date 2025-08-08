@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, RefreshCw, Users, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, RefreshCw, Users, MapPin } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { SuggestionCard } from "@/components/networking/SuggestionCard";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -40,7 +40,7 @@ export default function NetworkingDiscover() {
                   Scopri Coworker
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Trova persone con cui hai condiviso spazi ed eventi
+                  Trova persone con cui hai condiviso spazi
                 </p>
               </div>
             </div>
@@ -76,15 +76,6 @@ export default function NetworkingDiscover() {
             </p>
           </div>
           
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-green-600" />
-              <span className="font-medium text-green-900">Eventi Condivisi</span>
-            </div>
-            <p className="text-sm text-green-700">
-              Trova persone che hanno partecipato agli stessi eventi che hai frequentato
-            </p>
-          </div>
         </div>
 
         {/* Suggestions */}
@@ -95,7 +86,7 @@ export default function NetworkingDiscover() {
               Nessun suggerimento disponibile
             </h3>
             <p className="text-gray-600 mb-4">
-              Partecipa a più spazi ed eventi per ricevere suggerimenti di connessione personalizzati
+              Partecipa a più spazi per ricevere suggerimenti di connessione personalizzati
             </p>
             <Button 
               onClick={handleRefresh}

@@ -41,7 +41,7 @@ export function ConnectionRequestCard({ connection, type }: ConnectionRequestCar
 
   const handleViewProfile = () => {
     if (!otherUser) return;
-    navigate(`/profile/${otherUser.id}`);
+    navigate(`/users/${otherUser.id}`);
   };
 
   const getInitials = (firstName: string = '', lastName: string = '') => {
