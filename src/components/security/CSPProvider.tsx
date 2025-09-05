@@ -37,10 +37,10 @@ export const CSPProvider: React.FC<CSPProviderProps> = ({ children }) => {
     xContentType.content = 'nosniff';
     document.head.appendChild(xContentType);
 
-    // Set X-Frame-Options to prevent clickjacking
+    // Set X-Frame-Options conditionally to allow Lovable preview iframe
     const xFrameOptions = document.createElement('meta');
     xFrameOptions.httpEquiv = 'X-Frame-Options';
-    xFrameOptions.content = 'DENY';
+    xFrameOptions.content = window.location.hostname.includes('lovable.app') ? 'SAMEORIGIN' : 'DENY';
     document.head.appendChild(xFrameOptions);
 
     return () => {
