@@ -5,7 +5,6 @@ export interface SpaceReview {
   rating: number;
   content: string | null;
   created_at: string;
-  author_id: string;
   author_first_name: string;
   author_last_name: string;
   author_profile_photo_url: string | null;
