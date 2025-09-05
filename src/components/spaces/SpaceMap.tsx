@@ -130,15 +130,18 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
         
         const markerEl = document.createElement('div');
         markerEl.className = 'space-marker';
-        markerEl.innerHTML = `
-          <div class="w-auto min-w-[60px] h-8 bg-white rounded-full border-2 ${
-            isHighlighted ? 'border-indigo-600 bg-indigo-50 scale-110 shadow-lg' : 'border-indigo-600'
-          } shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 ${
-            isHighlighted ? 'animate-pulse' : ''
-          }">
-            €${space.price_per_hour}
-          </div>
-        `;
+        
+        // Create marker content safely without innerHTML
+        const markerContent = document.createElement('div');
+        markerContent.className = `w-auto min-w-[60px] h-8 bg-white rounded-full border-2 ${
+          isHighlighted ? 'border-indigo-600 bg-indigo-50 scale-110 shadow-lg' : 'border-indigo-600'
+        } shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 ${
+          isHighlighted ? 'animate-pulse' : ''
+        }`;
+        
+        // Safely set text content to prevent XSS
+        markerContent.textContent = `€${space.price_per_hour}`;
+        markerEl.appendChild(markerContent);
         
         markerEl.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -213,15 +216,25 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
 
     try {
       const userMarkerEl = document.createElement('div');
-      userMarkerEl.innerHTML = `
-        <div class="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
-      `;
+      
+      // Create user location marker safely without innerHTML
+      const userMarkerContent = document.createElement('div');
+      userMarkerContent.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse';
+      userMarkerEl.appendChild(userMarkerContent);
       
       new mapboxgl.Marker(userMarkerEl)
         .setLngLat([userLocation.lng, userLocation.lat])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 })
-            .setHTML('<div class="p-2"><p class="text-sm font-medium">La tua posizione</p></div>')
+            .setDOMContent((() => {
+              const popupContent = document.createElement('div');
+              popupContent.className = 'p-2';
+              const text = document.createElement('p');
+              text.className = 'text-sm font-medium';
+              text.textContent = 'La tua posizione';
+              popupContent.appendChild(text);
+              return popupContent;
+            })())
         )
         .addTo(map.current);
     } catch (error) {

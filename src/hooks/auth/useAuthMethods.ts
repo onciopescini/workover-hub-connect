@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogger } from '@/hooks/useLogger';
 import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut, cleanupAuthState } from '@/lib/auth-utils';
+import { containsSuspiciousContent } from '@/utils/security';
 import type { Profile } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -162,6 +163,13 @@ export const useAuthMethods = ({
     if (!currentUser) throw new Error('User not authenticated');
 
     try {
+      // Security validation before processing
+      Object.entries(updates).forEach(([key, value]) => {
+        if (typeof value === 'string' && containsSuspiciousContent(value)) {
+          throw new Error(`Invalid content detected in field: ${key}`);
+        }
+      });
+
       const sanitized = sanitizeProfileUpdates(updates);
       const { error } = await supabase
         .from('profiles')
