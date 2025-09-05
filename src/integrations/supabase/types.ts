@@ -532,6 +532,42 @@ export type Database = {
         }
         Relationships: []
       }
+      data_access_logs: {
+        Row: {
+          access_type: string
+          accessed_user_id: string | null
+          column_names: string[] | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          table_name: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_user_id?: string | null
+          column_names?: string[] | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          table_name: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_user_id?: string | null
+          column_names?: string[] | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       data_breach_log: {
         Row: {
           affected_data_types: string[]
@@ -1474,6 +1510,39 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          id: string
+          identifier: string
+          updated_at: string | null
+          window_start: string | null
+        }
+        Insert: {
+          action: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          updated_at?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          action?: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          updated_at?: string | null
+          window_start?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_notes: string | null
@@ -1909,6 +1978,15 @@ export type Database = {
         Args: { profile_id: string; viewer_id: string }
         Returns: Json
       }
+      check_rate_limit: {
+        Args: {
+          p_action: string
+          p_identifier: string
+          p_max_attempts?: number
+          p_window_minutes?: number
+        }
+        Returns: Json
+      }
       cleanup_expired_gdpr_exports: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2010,6 +2088,15 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      log_sensitive_data_access: {
+        Args: {
+          p_access_type: string
+          p_accessed_user_id: string
+          p_column_names: string[]
+          p_table_name: string
+        }
+        Returns: undefined
       }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
