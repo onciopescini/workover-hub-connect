@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Star, TrendingUp, Euro } from "lucide-react";
 import { Profile } from "@/types/auth";
+import { getUserPublicReviews } from "@/lib/user-review-utils";
 
 interface ProfileStatsCardsProps {
   profile: Profile;
@@ -50,15 +51,11 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
           allBookings = bookings || [];
         }
 
-        // Get reviews and average rating
-        const { data: reviews } = await supabase
-          .from('booking_reviews')
-          .select('rating')
-          .eq('target_id', profile.id)
-          .eq('is_visible', true);
+        // Get reviews using the secure RPC function
+        const publicReviews = await getUserPublicReviews(profile.id);
 
-        const avgRating = reviews && reviews.length > 0 
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+        const avgRating = publicReviews && publicReviews.length > 0 
+          ? publicReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / publicReviews.length 
           : 0;
 
         // Get earnings for hosts
@@ -78,7 +75,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
           averageRating: Math.round(avgRating * 10) / 10,
           monthlyGrowth: 0, // Could calculate based on bookings trend
           totalEarnings: earnings,
-          reviewCount: reviews?.length || 0
+          reviewCount: publicReviews?.length || 0
         });
       } catch (error) {
         console.error('Error fetching profile stats:', error);

@@ -13,6 +13,7 @@ import { ProfileAccessDenied } from "@/components/profile/ProfileAccessDenied";
 import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
 import { isCompleteProfile } from "@/types/strict-type-guards";
+import { getUserPublicReviews, UserPublicReview } from "@/lib/user-review-utils";
 
 interface UserProfile {
   id: string;
@@ -105,38 +106,19 @@ const UserProfileView = () => {
           setSpaces(spacesData || []);
         }
 
-        // Fetch booking reviews - reviews received by the user
-        const { data: reviewsData, error: reviewsError } = await supabase
-          .from('booking_reviews')
-          .select('*')
-          .eq('target_id', userId)
-          .eq('is_visible', true);
-
-        if (reviewsError) {
-          console.error('Error fetching booking reviews:', reviewsError);
-        } else if (reviewsData && reviewsData.length > 0) {
-          const authorIds = reviewsData.map(r => r.author_id);
-          const { data: authorProfiles } = await supabase
-            .from('profiles')
-            .select('id, first_name, last_name, profile_photo_url')
-            .in('id', authorIds);
-
-          const profilesMap = new Map((authorProfiles || []).map(p => [p.id, p]));
-          
-          const reviewsWithProfiles = reviewsData.map(review => ({
-            ...review,
-            reviewer: profilesMap.get(review.author_id) || null
-          }));
-          
-          setReviews(reviewsWithProfiles.map(review => ({
+        // Fetch booking reviews - reviews received by the user with sanitized data
+        const publicReviews = await getUserPublicReviews(userId);
+        
+        if (publicReviews && publicReviews.length > 0) {
+          setReviews(publicReviews.map((review: UserPublicReview) => ({
             ...review,
             comment: review.content ?? '', // booking_reviews uses 'content' instead of 'comment'
             created_at: review.created_at ?? '',
-            reviewer: review.reviewer ? {
-              first_name: review.reviewer.first_name,
-              last_name: review.reviewer.last_name,
-              profile_photo_url: review.reviewer.profile_photo_url ?? ''
-            } : undefined
+            reviewer: {
+              first_name: review.author_first_name,
+              last_name: review.author_last_name,
+              profile_photo_url: review.author_profile_photo_url ?? ''
+            }
           })));
         }
       }
