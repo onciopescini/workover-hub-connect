@@ -49,19 +49,24 @@ export interface SpaceWithHostInfo extends PublicSpace {
 }
 
 /**
- * Get public profile data (filtered for privacy)
+ * Get public profile data (filtered for privacy) - Using secure function
  */
 export const getPublicProfile = async (profileId: string): Promise<PublicProfile | null> => {
   try {
     const { data, error } = await supabase
-      .rpc('get_public_profile', { profile_id_param: profileId });
+      .rpc('get_safe_public_profile', { profile_id_param: profileId });
 
     if (error) {
       console.error('Error fetching public profile:', error);
       return null;
     }
 
-    return data?.[0] || null;
+    // Handle the JSON response from the secure function
+    if (data && typeof data === 'object' && !Array.isArray(data) && !(data as any).error) {
+      return data as unknown as PublicProfile;
+    }
+
+    return null;
   } catch (error) {
     console.error('Error in getPublicProfile:', error);
     return null;

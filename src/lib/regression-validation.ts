@@ -148,10 +148,11 @@ export class RegressionValidationSuite {
       }
 
       // Test cancellation function
+      const futureDate = new Date(Date.now() + 86400000).toISOString().split('T')[0] || '2024-12-31';
       const { data: cancellationTest, error: cancellationError } = await supabase
         .rpc('calculate_cancellation_fee', {
-          booking_date: new Date(Date.now() + 86400000).toISOString().split('T')[0] as any,
-          price_amount: 100
+          booking_date_param: futureDate,
+          price_per_day_param: 100
         });
 
       if (cancellationError) {
