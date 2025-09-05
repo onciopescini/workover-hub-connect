@@ -2088,6 +2088,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_safe_public_profile: {
+        Args: { profile_id_param: string }
+        Returns: Json
+      }
       get_single_space_metrics: {
         Args: { space_id_param: string }
         Returns: Json
