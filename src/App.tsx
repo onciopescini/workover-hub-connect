@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
+import { CSPProvider } from "@/components/security/CSPProvider";
 import { AppRoutes } from "@/components/routing/AppRoutes";
 import { ProductionMonitoring } from "@/components/shared/ProductionMonitoring";
 
@@ -27,25 +28,27 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <ProductionMonitoring>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-            }}
-          />
-          <BrowserRouter>
-            <AuthProvider>
-              <GDPRProvider>
-                <AppRoutes />
-              </GDPRProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ProductionMonitoring>
+    <CSPProvider>
+      <ProductionMonitoring>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+              }}
+            />
+            <BrowserRouter>
+              <AuthProvider>
+                <GDPRProvider>
+                  <AppRoutes />
+                </GDPRProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ProductionMonitoring>
+    </CSPProvider>
   );
 }
 

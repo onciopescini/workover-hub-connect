@@ -2041,6 +2041,45 @@ export type Database = {
         Args: { host_id_param: string }
         Returns: Json
       }
+      get_public_profile: {
+        Args: { profile_id_param: string }
+        Returns: {
+          bio: string
+          city: string
+          collaboration_availability: string
+          collaboration_description: string
+          created_at: string
+          first_name: string
+          id: string
+          interests: string
+          job_title: string
+          last_name: string
+          networking_enabled: boolean
+          nickname: string
+          profession: string
+          profile_photo_url: string
+          skills: string
+        }[]
+      }
+      get_public_spaces: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          amenities: string[]
+          capacity: number
+          city: string
+          country: string
+          created_at: string
+          description: string
+          id: string
+          images: string[]
+          is_available: boolean
+          price_per_day: number
+          rating: number
+          space_type: string
+          title: string
+          total_reviews: number
+        }[]
+      }
       get_single_space_metrics: {
         Args: { space_id_param: string }
         Returns: Json
@@ -2071,6 +2110,31 @@ export type Database = {
           id: string
           is_visible: boolean
           rating: number
+        }[]
+      }
+      get_space_with_host_info: {
+        Args: { space_id_param: string }
+        Returns: {
+          address: string
+          amenities: string[]
+          capacity: number
+          city: string
+          country: string
+          created_at: string
+          description: string
+          host_bio: string
+          host_first_name: string
+          host_id: string
+          host_last_name: string
+          host_profile_photo_url: string
+          id: string
+          images: string[]
+          is_available: boolean
+          price_per_day: number
+          rating: number
+          space_type: string
+          title: string
+          total_reviews: number
         }[]
       }
       get_user_public_reviews: {
