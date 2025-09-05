@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1882,7 +1882,7 @@ export type Database = {
     }
     Functions: {
       approve_tag: {
-        Args: { tag_id: string; approver_id: string }
+        Args: { approver_id: string; tag_id: string }
         Returns: Json
       }
       calculate_cancellation_fee: {
@@ -1906,7 +1906,7 @@ export type Database = {
         Returns: Json
       }
       check_profile_access: {
-        Args: { viewer_id: string; profile_id: string }
+        Args: { profile_id: string; viewer_id: string }
         Returns: Json
       }
       cleanup_expired_gdpr_exports: {
@@ -1923,17 +1923,17 @@ export type Database = {
       }
       create_image_processing_job: {
         Args: {
-          space_id_param: string
           original_path_param: string
           original_size_param?: number
+          space_id_param: string
         }
         Returns: string
       }
       detect_data_breach: {
         Args: {
-          breach_nature: string
           affected_count?: number
           affected_data_types?: string[]
+          breach_nature: string
           breach_severity?: string
           manual_report?: boolean
         }
@@ -1953,9 +1953,9 @@ export type Database = {
       }
       get_alternative_time_slots: {
         Args: {
-          space_id_param: string
           date_param: string
           duration_hours_param: number
+          space_id_param: string
         }
         Returns: string[]
       }
@@ -1969,14 +1969,14 @@ export type Database = {
       }
       get_space_availability_optimized: {
         Args: {
+          end_date_param: string
           space_id_param: string
           start_date_param: string
-          end_date_param: string
         }
         Returns: {
           booking_date: string
-          start_time: string
           end_time: string
+          start_time: string
           status: string
           user_id: string
         }[]
@@ -1984,16 +1984,16 @@ export type Database = {
       get_space_reviews_with_details: {
         Args: { space_id_param: string }
         Returns: {
-          id: string
-          rating: number
-          content: string
-          created_at: string
-          author_id: string
           author_first_name: string
+          author_id: string
           author_last_name: string
           author_profile_photo_url: string
           booking_date: string
+          content: string
+          created_at: string
+          id: string
           is_visible: boolean
+          rating: number
         }[]
       }
       is_admin: {
@@ -2002,12 +2002,12 @@ export type Database = {
       }
       log_admin_access: {
         Args: {
-          p_table_name: string
-          p_record_id: string
           p_action: string
           p_ip_address?: unknown
-          p_user_agent?: string
           p_metadata?: Json
+          p_record_id: string
+          p_table_name: string
+          p_user_agent?: string
         }
         Returns: string
       }
@@ -2021,44 +2021,44 @@ export type Database = {
       }
       moderate_space: {
         Args: {
-          space_id: string
           approve: boolean
           moderator_id: string
           rejection_reason?: string
+          space_id: string
         }
         Returns: Json
       }
       process_data_rectification: {
         Args: {
-          request_id: string
-          approved: boolean
           admin_notes?: string
+          approved: boolean
           corrections_applied?: Json
+          request_id: string
         }
         Returns: Json
       }
       reactivate_user: {
-        Args: { target_user_id: string; reactivated_by_admin: string }
+        Args: { reactivated_by_admin: string; target_user_id: string }
         Returns: Json
       }
       request_data_deletion: {
-        Args: { target_user_id: string; deletion_reason?: string }
+        Args: { deletion_reason?: string; target_user_id: string }
         Returns: Json
       }
       request_space_revision: {
-        Args: { space_id: string; host_id: string; revision_notes: string }
+        Args: { host_id: string; revision_notes: string; space_id: string }
         Returns: Json
       }
       review_report: {
-        Args: { report_id: string; new_status: string; admin_notes?: string }
+        Args: { admin_notes?: string; new_status: string; report_id: string }
         Returns: Json
       }
       review_space_revision: {
         Args: {
-          space_id: string
           admin_id: string
-          approved: boolean
           admin_notes?: string
+          approved: boolean
+          space_id: string
         }
         Returns: Json
       }
@@ -2067,45 +2067,45 @@ export type Database = {
         Returns: Json
       }
       suspend_space_with_bookings: {
-        Args: { space_id: string; admin_id: string; suspension_reason: string }
+        Args: { admin_id: string; space_id: string; suspension_reason: string }
         Returns: Json
       }
       suspend_user: {
         Args: {
-          target_user_id: string
           reason: string
           suspended_by_admin: string
+          target_user_id: string
         }
         Returns: Json
       }
       update_image_processing_job: {
         Args: {
-          job_id_param: string
-          status_param: string
-          optimized_path_param?: string
-          optimized_size_param?: number
           compression_ratio_param?: number
           error_message_param?: string
+          job_id_param: string
+          optimized_path_param?: string
+          optimized_size_param?: number
+          status_param: string
         }
         Returns: boolean
       }
       validate_and_reserve_slot: {
         Args: {
-          space_id_param: string
-          date_param: string
-          start_time_param: string
-          end_time_param: string
-          user_id_param: string
           confirmation_type_param: string
+          date_param: string
+          end_time_param: string
+          space_id_param: string
+          start_time_param: string
+          user_id_param: string
         }
         Returns: Json
       }
       validate_booking_slot_with_lock: {
         Args: {
-          space_id_param: string
           date_param: string
-          start_time_param: string
           end_time_param: string
+          space_id_param: string
+          start_time_param: string
           user_id_param: string
         }
         Returns: Json
