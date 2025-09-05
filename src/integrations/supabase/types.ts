@@ -2063,7 +2063,20 @@ export type Database = {
         Args: { space_id_param: string }
         Returns: {
           author_first_name: string
-          author_id: string
+          author_last_name: string
+          author_profile_photo_url: string
+          booking_date: string
+          content: string
+          created_at: string
+          id: string
+          is_visible: boolean
+          rating: number
+        }[]
+      }
+      get_user_public_reviews: {
+        Args: { target_id_param: string }
+        Returns: {
+          author_first_name: string
           author_last_name: string
           author_profile_photo_url: string
           booking_date: string
