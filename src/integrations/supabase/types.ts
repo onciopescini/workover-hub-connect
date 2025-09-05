@@ -2061,6 +2061,10 @@ export type Database = {
           skills: string
         }[]
       }
+      get_public_profile_safe: {
+        Args: { profile_id_param: string }
+        Returns: Json
+      }
       get_public_spaces: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -2079,6 +2083,10 @@ export type Database = {
           title: string
           total_reviews: number
         }[]
+      }
+      get_public_spaces_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_single_space_metrics: {
         Args: { space_id_param: string }
