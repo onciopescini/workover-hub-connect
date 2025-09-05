@@ -25,8 +25,9 @@ export const CSPProvider: React.FC<CSPProviderProps> = ({ children }) => {
         "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
         "worker-src 'self' blob:",
         "object-src 'none'",
-        "base-uri 'self'"
-      ].join('; ');
+          "base-uri 'self'",
+          "frame-ancestors 'self' https://*.lovable.app"
+        ].join('; ');
       
       document.head.appendChild(cspMeta);
     }
@@ -37,11 +38,6 @@ export const CSPProvider: React.FC<CSPProviderProps> = ({ children }) => {
     xContentType.content = 'nosniff';
     document.head.appendChild(xContentType);
 
-    // Set X-Frame-Options conditionally to allow Lovable preview iframe
-    const xFrameOptions = document.createElement('meta');
-    xFrameOptions.httpEquiv = 'X-Frame-Options';
-    xFrameOptions.content = window.location.hostname.includes('lovable.app') ? 'SAMEORIGIN' : 'DENY';
-    document.head.appendChild(xFrameOptions);
 
     return () => {
       // Cleanup is optional since meta tags are typically persistent
