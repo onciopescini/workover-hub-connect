@@ -1955,7 +1955,7 @@ export type Database = {
         Returns: Json
       }
       calculate_cancellation_fee: {
-        Args: { booking_date: string; price_amount: number }
+        Args: { booking_date_param: string; price_per_day_param: number }
         Returns: number
       }
       calculate_dac7_thresholds: {
