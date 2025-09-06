@@ -1979,12 +1979,7 @@ export type Database = {
         Returns: Json
       }
       check_rate_limit: {
-        Args: {
-          p_action: string
-          p_identifier: string
-          p_max_attempts?: number
-          p_window_minutes?: number
-        }
+        Args: { p_action: string; p_identifier: string }
         Returns: Json
       }
       cleanup_expired_gdpr_exports: {
@@ -2185,7 +2180,7 @@ export type Database = {
           p_column_names: string[]
           p_table_name: string
         }
-        Returns: undefined
+        Returns: Json
       }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
