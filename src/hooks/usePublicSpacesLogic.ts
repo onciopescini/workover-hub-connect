@@ -111,51 +111,55 @@ export const usePublicSpacesLogic = () => {
     queryFn: async () => {
       info('Fetching public spaces with filters', { filters });
       
-      let query = supabase
-        .from('spaces')
-        .select(`
-          *,
-          profiles!spaces_host_id_fkey (
-            first_name,
-            last_name,
-            profile_photo_url
-          )
-        `)
-        .eq('published', true);
+      // Use secure function that doesn't expose host_id
+      const { data: spaces, error: spacesError } = await supabase.rpc('get_public_spaces');
+      
+      if (spacesError) {
+        info('Failed to fetch spaces', { error: spacesError });
+        throw spacesError;
+      }
 
-      // Apply filters
+      let filteredSpaces = spaces || [];
+
+      // Apply filters to the fetched data (client-side filtering)
       if (filters.category) {
-        query = query.eq('category', filters.category as 'home' | 'outdoor' | 'professional');
+        filteredSpaces = filteredSpaces.filter(space => space.category === filters.category);
       }
       if (filters.workEnvironment) {
-        query = query.eq('work_environment', filters.workEnvironment as 'silent' | 'controlled' | 'dynamic');
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.work_environment === filters.workEnvironment
+        );
       }
       if (filters.priceRange[1] < 200) {
-        query = query.lte('price_per_day', filters.priceRange[1]);
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.price_per_day <= filters.priceRange[1]
+        );
       }
       if (filters.priceRange[0] > 0) {
-        query = query.gte('price_per_day', filters.priceRange[0]);
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.price_per_day >= filters.priceRange[0]
+        );
       }
       if (filters.capacity[1] < 20) {
-        query = query.lte('max_capacity', filters.capacity[1]);
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.max_capacity <= filters.capacity[1]
+        );
       }
       if (filters.capacity[0] > 1) {
-        query = query.gte('max_capacity', filters.capacity[0]);
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.max_capacity >= filters.capacity[0]
+        );
       }
       if (filters.location) {
         // Flexible city search: search in the address field for city names
         const searchTerm = filters.location.trim().toLowerCase();
-        query = query.ilike('address', `%${searchTerm}%`);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
+        filteredSpaces = filteredSpaces.filter(space => 
+          space.address?.toLowerCase().includes(searchTerm)
+        );
       }
       
-      info(`Successfully fetched ${data?.length || 0} spaces`);
-      return data || [];
+      info(`Successfully fetched and filtered ${filteredSpaces.length} spaces`);
+      return filteredSpaces;
     },
   });
 

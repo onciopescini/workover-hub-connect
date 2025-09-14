@@ -2063,20 +2063,28 @@ export type Database = {
       get_public_spaces: {
         Args: Record<PropertyKey, never>
         Returns: {
+          address: string
           amenities: string[]
-          capacity: number
-          city: string
-          country: string
+          category: string
+          confirmation_type: string
           created_at: string
           description: string
+          host_first_name: string
+          host_last_name: string
+          host_profile_photo: string
           id: string
-          images: string[]
-          is_available: boolean
+          ideal_guest: string
+          latitude: number
+          longitude: number
+          max_capacity: number
+          photos: string[]
           price_per_day: number
-          rating: number
-          space_type: string
+          published: boolean
+          seating_type: string
+          subcategory: string
           title: string
-          total_reviews: number
+          work_environment: string
+          workspace_features: string[]
         }[]
       }
       get_public_spaces_safe: {
@@ -2124,24 +2132,29 @@ export type Database = {
         Returns: {
           address: string
           amenities: string[]
-          capacity: number
-          city: string
-          country: string
+          availability: Json
+          category: string
+          confirmation_type: string
           created_at: string
           description: string
           host_bio: string
           host_first_name: string
-          host_id: string
           host_last_name: string
-          host_profile_photo_url: string
+          host_networking_enabled: boolean
+          host_profile_photo: string
           id: string
-          images: string[]
-          is_available: boolean
+          ideal_guest: string
+          latitude: number
+          longitude: number
+          max_capacity: number
+          photos: string[]
           price_per_day: number
-          rating: number
-          space_type: string
+          published: boolean
+          seating_type: string
+          subcategory: string
           title: string
-          total_reviews: number
+          work_environment: string
+          workspace_features: string[]
         }[]
       }
       get_user_public_reviews: {

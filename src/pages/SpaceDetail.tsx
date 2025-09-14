@@ -23,49 +23,71 @@ const SpaceDetail = () => {
       
       console.log('🔵 SpaceDetail - Fetching space with ID:', id);
       
-      const { data, error } = await supabase
-        .from('spaces')
-        .select(`
-          *,
-          host:profiles!spaces_host_id_fkey (
-            id,
-            first_name,
-            last_name,
-            profile_photo_url,
-            bio,
-            location,
-            created_at
-          )
-        `)
-        .eq('id', id)
-        .single();
+      const { data, error } = await supabase.rpc('get_space_with_host_info', {
+        space_id_param: id
+      });
 
       if (error) {
         console.error('🔴 SpaceDetail - Database error:', error);
         throw error;
       }
       
-      if (!data) {
+      if (!data || data.length === 0) {
         console.error('🔴 SpaceDetail - No space found for ID:', id);
         throw new Error('Space not found');
       }
       
+      const spaceData = Array.isArray(data) ? data[0] : data;
+      
+      if (!spaceData) {
+        throw new Error('Space not found');
+      }
+      
       console.log('✅ SpaceDetail - Space fetched successfully:', {
-        id: data.id,
-        title: data.title,
-        confirmation_type: data.confirmation_type,
-        published: data.published,
-        is_suspended: data.is_suspended
+        id: spaceData.id,
+        title: spaceData.title,
+        confirmation_type: spaceData.confirmation_type,
+        published: spaceData.published
       });
       
-      return data as Space & {
+      // Transform the response to match expected interface
+      return {
+        ...spaceData,
+        // Add missing fields to match Space type
+        capacity: spaceData.max_capacity,
+        approved_at: null,
+        approved_by: null,
+        deleted_at: null,
+        host_id: 'hidden-for-security',
+        is_suspended: false,
+        rejection_reason: null,
+        revision_notes: null,
+        revision_requested: false,
+        suspended_at: null,
+        suspended_by: null,
+        updated_at: spaceData.created_at,
+        tags: [],
+        space_type: null,
+        city: null,
+        country: null,
+        images: spaceData.photos,
+        pending_approval: false,
+        space_creation_restricted: false,
+        host: {
+          id: 'host-id', // We don't expose the real host_id for security
+          first_name: spaceData.host_first_name,
+          last_name: spaceData.host_last_name,
+          profile_photo_url: spaceData.host_profile_photo,
+          bio: spaceData.host_bio,
+          created_at: new Date().toISOString()
+        }
+      } as unknown as Space & {
         host?: {
           id: string;
           first_name: string;
           last_name: string;
           profile_photo_url: string | null;
           bio?: string;
-          location?: string;
           created_at: string;
         };
       };

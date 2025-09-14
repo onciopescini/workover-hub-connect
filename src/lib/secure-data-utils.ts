@@ -26,26 +26,53 @@ export interface PublicSpace {
   id: string;
   title: string;
   description: string | null;
+  category: string;
+  subcategory: string | null;
+  photos: string[];
   price_per_day: number;
-  city: string | null;
-  country: string | null;
-  space_type: string | null;
-  capacity: number | null;
-  amenities: string[] | null;
-  images: string[] | null;
-  rating: number;
-  total_reviews: number;
-  is_available: boolean;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  max_capacity: number;
+  workspace_features: string[];
+  amenities: string[];
+  work_environment: string;
+  seating_type: string;
+  ideal_guest: string;
+  confirmation_type: string;
+  published: boolean;
   created_at: string;
-}
-
-export interface SpaceWithHostInfo extends PublicSpace {
-  address: string | null;
-  host_id: string;
   host_first_name: string;
   host_last_name: string;
-  host_profile_photo_url: string | null;
+  host_profile_photo: string | null;
+}
+
+export interface SpaceWithHostInfo {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  subcategory: string | null;
+  photos: string[];
+  price_per_day: number;
+  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  max_capacity: number;
+  workspace_features: string[];
+  amenities: string[];
+  work_environment: string;
+  seating_type: string;
+  ideal_guest: string;
+  confirmation_type: string;
+  published: boolean;
+  created_at: string;
+  availability: any;
+  host_first_name: string;
+  host_last_name: string;
+  host_profile_photo: string | null;
   host_bio: string | null;
+  host_networking_enabled: boolean;
 }
 
 /**
@@ -106,7 +133,13 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
       return null;
     }
 
-    return data?.[0] || null;
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return null;
+    }
+
+    // Handle both array and single object responses
+    const spaceData = Array.isArray(data) ? data[0] : data;
+    return spaceData as SpaceWithHostInfo;
   } catch (error) {
     console.error('Error in getSpaceWithHostInfo:', error);
     return null;
