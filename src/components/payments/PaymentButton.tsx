@@ -36,7 +36,20 @@ const PaymentButton = ({
     try {
       info('Starting payment process', { bookingId, breakdown });
       
-      const session = await createPaymentSession(bookingId, amount, currency);
+      // This component needs space details for the new API
+      toast.error("PaymentButton deprecato - usa TwoStepBookingForm");
+      return;
+      
+      /*
+      const session = await createPaymentSession(
+        bookingId, 
+        spaceId,        // Need space ID
+        durationHours,  // Need duration 
+        pricePerHour,   // Need price per hour
+        pricePerDay,    // Need price per day
+        hostStripeAccountId // Need host stripe account
+      );
+      */
       
       if (session?.payment_url) {
         info('Redirecting to Stripe Checkout', { paymentUrl: session.payment_url });

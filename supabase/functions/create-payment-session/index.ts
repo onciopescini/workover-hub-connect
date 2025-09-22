@@ -80,7 +80,10 @@ serve(async (req) => {
     } = body;
 
     if (!space_id || durationHours == null || pricePerHour == null || pricePerDay == null || !host_stripe_account_id) {
-      throw new Error('Missing required fields');
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
     }
 
     // Input validation for pricing values

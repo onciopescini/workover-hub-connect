@@ -39,7 +39,11 @@ export const calculatePaymentBreakdown = (baseAmount: number) => {
 // Create payment session for booking with dual commission model
 export const createPaymentSession = async (
   bookingId: string,
-  baseAmount: number,
+  spaceId: string,
+  durationHours: number,
+  pricePerHour: number,
+  pricePerDay: number,
+  hostStripeAccountId: string,
   currency: string = "EUR"
 ): Promise<PaymentSession | null> => {
   try {
@@ -49,17 +53,26 @@ export const createPaymentSession = async (
       return null;
     }
 
-    // Calculate breakdown with dual commission model
-    const breakdown = calculatePaymentBreakdown(baseAmount);
+    // Check if host has Stripe account configured
+    if (!hostStripeAccountId) {
+      toast.error("Host non collegato a Stripe", {
+        description: "Impossibile procedere con il pagamento. Contatta il proprietario dello spazio."
+      });
+      return null;
+    }
 
-    console.log('🔵 Payment breakdown:', breakdown);
+    console.log('🔵 Creating payment session with full payload:', {
+      spaceId, durationHours, pricePerHour, pricePerDay, hostStripeAccountId
+    });
 
     const { data, error } = await supabase.functions.invoke('create-payment-session', {
       body: {
+        space_id: spaceId,
         booking_id: bookingId,
-        base_amount: baseAmount,
-        currency,
-        user_id: user.user.id
+        durationHours,
+        pricePerHour,
+        pricePerDay,
+        host_stripe_account_id: hostStripeAccountId,
       }
     });
 

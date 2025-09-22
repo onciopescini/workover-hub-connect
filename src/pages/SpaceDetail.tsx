@@ -51,8 +51,12 @@ const SpaceDetail = () => {
       });
       
       // Transform the response to match expected interface
+      // Add title/name compatibility 
+      const title = spaceData.title ?? spaceData.name ?? 'Spazio';
+      
       return {
         ...spaceData,
+        title, // Ensure title is always defined
         // Add missing fields to match Space type
         capacity: spaceData.max_capacity,
         approved_at: null,
