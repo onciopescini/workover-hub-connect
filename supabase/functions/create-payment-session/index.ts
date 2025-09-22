@@ -1,220 +1,187 @@
+// supabase/functions/create-payment-session/index.ts
+// Deno Edge Function - Stripe Checkout (Connect) con pricing coerente UI/server
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "npm:stripe";
-import { ErrorHandler } from "../shared/error-handler.ts";
+import Stripe from 'npm:stripe@14.25.0';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// CORS base
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Payment calculator with dual commission model
-function calculatePaymentBreakdown(baseAmount: number) {
-  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
-  const buyerTotalAmount = baseAmount + buyerFeeAmount;
-  
-  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
-  const hostNetPayout = baseAmount - hostFeeAmount;
-  
-  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+// Util pricing (duplicata qui per evitare import client-side)
+type PricingInput = {
+  durationHours: number;
+  pricePerHour: number;
+  pricePerDay: number;
+  serviceFeePct: number; // es. 0.12
+  vatPct: number;        // es. 0.22
+  stripeTaxEnabled?: boolean;
+};
+type PricingOutput = {
+  base: number;
+  serviceFee: number;
+  vat: number;
+  total: number;
+  isDayRate: boolean;
+  breakdownLabel: string;
+};
+const round = (n: number) => Math.round(n * 100) / 100;
 
+function computePricing(i: PricingInput): PricingOutput {
+  const isDayRate = i.durationHours >= 8;
+  const base = isDayRate ? i.pricePerDay : i.durationHours * i.pricePerHour;
+  const serviceFee = round(base * i.serviceFeePct);
+  const vat = i.stripeTaxEnabled ? 0 : round((base + serviceFee) * i.vatPct);
+  const total = round(base + serviceFee + vat);
   return {
-    baseAmount,
-    buyerFeeAmount,
-    buyerTotalAmount,
-    hostFeeAmount,
-    hostNetPayout,
-    platformRevenue
+    base: round(base),
+    serviceFee,
+    vat,
+    total,
+    isDayRate,
+    breakdownLabel: isDayRate
+      ? `Tariffa giornaliera (${i.durationHours}h)`
+      : `${i.durationHours}h × €${i.pricePerHour}/h`,
   };
 }
 
 serve(async (req) => {
+  // Preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    ErrorHandler.logInfo('Create payment session started');
+    // Supabase client (user-scoped via token)
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
 
-    // Validate environment variables
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    // Read pricing environment variables
-    const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.12');
-    const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
-    const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
-    
-    // Get the origin from the request to build correct redirect URLs
-    const origin = req.headers.get('origin') ?? (Deno.env.get('SITE_URL') ?? 'https://workover.example');
+    // Auth
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData } = await supabase.auth.getUser(token);
+    const user = userData?.user;
+    if (!user?.email) throw new Error('User not authenticated or email missing');
 
-    if (!stripeSecretKey) {
-      ErrorHandler.logError('STRIPE_SECRET_KEY not found', null, { operation: 'env_validation' });
-      throw new Error('Stripe configuration missing');
+    // Body
+    const body = await req.json();
+    const {
+      space_id,
+      durationHours,
+      pricePerHour,
+      pricePerDay,
+      host_stripe_account_id,
+      booking_id,
+    } = body;
+
+    if (!space_id || durationHours == null || pricePerHour == null || pricePerDay == null || !host_stripe_account_id) {
+      throw new Error('Missing required fields');
     }
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      ErrorHandler.logError('Supabase configuration missing', null, { operation: 'env_validation' });
-      throw new Error('Supabase configuration missing');
-    }
-
-    const stripe = new Stripe(stripeSecretKey, {
+    // Stripe init con API version valida
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2024-06-20',
     });
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
+    // Env lato server (NO VITE_* qui)
+    const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.12');
+    const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
+    const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
+
+    // Pricing server-side
+    const pricing = computePricing({
+      durationHours: Number(durationHours),
+      pricePerHour: Number(pricePerHour),
+      pricePerDay: Number(pricePerDay),
+      serviceFeePct,
+      vatPct,
+      stripeTaxEnabled,
     });
 
-    // Parse request body
-    const { booking_id, base_amount, currency = "EUR", user_id } = await req.json();
+    // Customer (riutilizza se esiste)
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    const customerId = customers.data[0]?.id;
 
-    if (!booking_id || !base_amount || !user_id) {
-      throw new Error('Missing required parameters');
-    }
+    // unit_amount in centesimi
+    const unitAmount = Math.round(
+      (stripeTaxEnabled ? pricing.base + pricing.serviceFee : pricing.total) * 100
+    );
 
-    ErrorHandler.logInfo('Creating payment session', {
-      booking_id,
-      base_amount,
-      currency,
-      user_id
-    });
+    // Origin fallback sicuro
+    const origin =
+      req.headers.get('origin') ??
+      Deno.env.get('SITE_URL') ??
+      'https://workover.example';
 
-    // Calculate breakdown
-    const breakdown = calculatePaymentBreakdown(base_amount);
-
-    // Get booking and space details
-    const { data: booking, error: bookingError } = await supabaseAdmin
-      .from('bookings')
-      .select(`
-        *,
-        spaces!inner (
-          id,
-          title,
-          host_id,
-          confirmation_type,
-          profiles!inner (
-            stripe_account_id,
-            stripe_connected
-          )
-        )
-      `)
-      .eq('id', booking_id)
-      .single();
-
-    if (bookingError || !booking) {
-      ErrorHandler.logError('Error fetching booking', bookingError, { 
-        operation: 'fetch_booking',
-        booking_id 
-      });
-      throw new Error('Booking not found');
-    }
-
-    const hostStripeAccount = booking.spaces.profiles.stripe_account_id;
-    const isHostConnected = booking.spaces.profiles.stripe_connected;
-
-    if (!isHostConnected || !hostStripeAccount) {
-      throw new Error('Host Stripe account not connected');
-    }
-
-    // Create Stripe checkout session with destination charge
+    // Checkout Session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      customer_update: customerId ? { address: 'auto' } : undefined,
       line_items: [
         {
           price_data: {
-            currency: currency.toLowerCase(),
+            currency: 'eur',
             product_data: {
-              name: `Prenotazione: ${booking.spaces.title}`,
-              description: `Prenotazione per ${booking.booking_date}`,
+              name: 'WorkOver - Prenotazione spazio',
+              description: pricing.breakdownLabel,
             },
-            unit_amount: Math.round(breakdown.buyerTotalAmount * 100), // Convert to cents
+            unit_amount: unitAmount,
+            tax_behavior: stripeTaxEnabled ? 'exclusive' : 'inclusive',
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${origin}/bookings?cancelled=true`,
-      metadata: {
-        booking_id: booking_id,
-        base_amount: base_amount.toString(),
-        user_id: user_id,
-        host_id: booking.spaces.host_id,
-        space_id: booking.spaces.id,
-        buyer_fee: breakdown.buyerFeeAmount.toString(),
-        host_fee: breakdown.hostFeeAmount.toString(),
-        platform_revenue: breakdown.platformRevenue.toString(),
-        host_payout: breakdown.hostNetPayout.toString()
-      },
+      automatic_tax: { enabled: stripeTaxEnabled },
       payment_intent_data: {
-        application_fee_amount: Math.round(breakdown.platformRevenue * 100), // Platform fee in cents
-        transfer_data: {
-          destination: hostStripeAccount,
+        application_fee_amount: Math.round(pricing.serviceFee * 100),
+        transfer_data: { destination: host_stripe_account_id },
+        metadata: {
+          booking_id: booking_id || '',
+          space_id,
+          user_id: user.id,
+          duration_hours: String(durationHours),
+          base_amount: String(pricing.base),
+          service_fee: String(pricing.serviceFee),
+          vat_amount: String(pricing.vat),
+          total_amount: String(pricing.total),
+          pricing_type: pricing.isDayRate ? 'day' : 'hour',
         },
       },
+      metadata: {
+        booking_id: booking_id || '',
+        space_id,
+        user_id: user.id,
+      },
+      success_url: `${origin}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/booking-cancelled`,
     });
 
-    ErrorHandler.logSuccess('Stripe session created', {
-      sessionId: session.id,
-      hostAccount: hostStripeAccount,
-      applicationFee: Math.round(breakdown.platformRevenue * 100)
-    });
-
-    // Create payment record
-    const { error: paymentError } = await supabaseAdmin
-      .from('payments')
-      .insert({
-        user_id: user_id,
-        booking_id: booking_id,
-        amount: breakdown.buyerTotalAmount,
-        currency: currency,
-        payment_status: 'pending',
-        method: 'stripe',
-        stripe_session_id: session.id,
-        host_amount: breakdown.hostNetPayout,
-        platform_fee: breakdown.platformRevenue
-      });
-
-    if (paymentError) {
-      ErrorHandler.logError('Error creating payment record', paymentError, {
-        operation: 'create_payment_record',
-        booking_id,
-        session_id: session.id
-      });
-      throw new Error('Failed to create payment record');
-    }
-
-    ErrorHandler.logSuccess('Payment record created successfully');
-
-    return new Response(JSON.stringify({
-      payment_url: session.url,
-      session_id: session.id,
-      breakdown: breakdown
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error: any) {
-    ErrorHandler.logError('Error in create-payment-session function', error, {
-      operation: 'create_payment_session',
-      error_message: error.message
-    });
-    
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error'
+      JSON.stringify({
+        url: session.url,
+        serverTotals: {
+          base: pricing.base,
+          serviceFee: pricing.serviceFee,
+          vat: pricing.vat,
+          total: pricing.total,
+          stripeTaxEnabled,
+          unitAmount: unitAmount / 100,
+        },
       }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
+  } catch (err: any) {
+    console.error('Payment session creation error:', err);
+    return new Response(JSON.stringify({ error: String(err?.message ?? err) }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
   }
 });
