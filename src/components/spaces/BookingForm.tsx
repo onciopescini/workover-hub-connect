@@ -238,15 +238,24 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
         });
         
         setTimeout(() => {
+          // For legacy multi-day booking, use simplified parameters
+          const startDateTime = new Date(`${firstSlot.date}T${firstSlot.startTime}:00`);
+          const endDateTime = new Date(`${firstSlot.date}T${firstSlot.endTime}:00`);
+          const durationHours = Math.abs((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60));
+          
           handlePaymentFlow(
             reservation.booking_id!,
-            totalPrice,
+            spaceId,
+            durationHours,
+            pricePerHour || pricePerDay / 8,
+            pricePerDay,
+            hostStripeAccountId || '',
             () => {
               info('Payment flow completed successfully', { bookingId: reservation.booking_id });
               setReservationStep('payment');
               onSuccess();
             },
-            (paymentError) => {
+            (paymentError: string) => {
               error('Payment flow error', new Error(paymentError), { 
                 bookingId: reservation.booking_id,
                 totalAmount: totalPrice 

@@ -37,62 +37,15 @@ const PaymentButton = ({
       info('Starting payment process', { bookingId, breakdown });
       
       // This component needs space details for the new API
-      toast.error("PaymentButton deprecato - usa TwoStepBookingForm");
+      toast.error("PaymentButton deprecato - usa TwoStepBookingForm", {
+        description: (
+          <>
+            Usa il componente TwoStepBookingForm per il nuovo flusso di pagamento
+            <span data-testid="payment-error-toast" className="sr-only">payment-error</span>
+          </>
+        ),
+      });
       return;
-      
-      /*
-      const session = await createPaymentSession(
-        bookingId, 
-        spaceId,        // Need space ID
-        durationHours,  // Need duration 
-        pricePerHour,   // Need price per hour
-        pricePerDay,    // Need price per day
-        hostStripeAccountId // Need host stripe account
-      );
-      */
-      
-      if (session?.payment_url) {
-        info('Redirecting to Stripe Checkout', { paymentUrl: session.payment_url });
-        
-        // Apri Stripe Checkout in una nuova finestra
-        const checkoutWindow = window.open(session.payment_url, '_blank');
-        
-        if (checkoutWindow) {
-          // Controlla periodicamente se la finestra è stata chiusa
-          const checkClosed = setInterval(async () => {
-            if (checkoutWindow.closed) {
-              clearInterval(checkClosed);
-              info('Checkout window closed, validating payment', { sessionId: session.session_id });
-              
-              // Valida il pagamento
-              try {
-                const isValid = await validatePayment(session.session_id);
-                if (isValid) {
-                  toast.success("Pagamento completato con successo!");
-                  onPaymentSuccess?.();
-                } else {
-                  toast.info("Pagamento non completato o annullato");
-                }
-                } catch (validationError) {
-                  error('Error validating payment', validationError as Error, { sessionId: session.session_id });
-                  toast.error("Errore nella validazione del pagamento");
-                }
-            }
-          }, 1000);
-          
-          // Timeout di sicurezza (10 minuti)
-          setTimeout(() => {
-            clearInterval(checkClosed);
-            if (!checkoutWindow.closed) {
-              checkoutWindow.close();
-            }
-          }, 600000);
-        } else {
-          toast.error("Impossibile aprire la finestra di pagamento");
-        }
-      } else {
-        toast.error("Errore nella creazione della sessione di pagamento");
-      }
     } catch (paymentError) {
       error('Payment error', paymentError as Error, { bookingId, amount });
       toast.error("Errore nel processare il pagamento");

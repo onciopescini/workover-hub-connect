@@ -26,7 +26,9 @@ export const reserveBookingSlot = async (
   date: string,
   startTime: string,
   endTime: string,
-  confirmationType: string
+  confirmationType: string = 'instant',
+  bufferMinutes: number = 0,
+  slotInterval: number = 30
 ): Promise<SlotReservationResult | null> => {
   try {
     console.log('🔵 reserveBookingSlot - Starting reservation:', {
@@ -123,17 +125,27 @@ export const calculateBookingTotal = (pricePerDay: number, startTime: string, en
 
 export const handlePaymentFlow = async (
   bookingId: string,
-  amount: number,
+  spaceId: string,
+  durationHours: number,
+  pricePerHour: number,
+  pricePerDay: number,
+  hostStripeAccountId: string,
   onSuccess: () => void,
   onError: (message: string) => void
 ) => {
   try {
     console.log('🔵 handlePaymentFlow - Starting payment flow:', {
-      bookingId,
-      amount
+      bookingId, spaceId, durationHours, pricePerHour, pricePerDay
     });
     
-    const paymentSession = await createPaymentSession(bookingId, amount);
+    const paymentSession = await createPaymentSession(
+      bookingId, 
+      spaceId, 
+      durationHours, 
+      pricePerHour, 
+      pricePerDay, 
+      hostStripeAccountId
+    );
     
     if (!paymentSession) {
       console.error('🔴 handlePaymentFlow - Failed to create payment session');

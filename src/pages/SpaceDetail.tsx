@@ -45,9 +45,9 @@ const SpaceDetail = () => {
       
       console.log('✅ SpaceDetail - Space fetched successfully:', {
         id: spaceData.id,
-        title: spaceData.title,
+        title: spaceData.title ?? spaceData.name ?? 'Spazio',
         confirmation_type: spaceData.confirmation_type,
-        published: spaceData.published
+        published: spaceData.published ?? true
       });
       
       // Transform the response to match expected interface
@@ -74,15 +74,16 @@ const SpaceDetail = () => {
         space_type: null,
         city: null,
         country: null,
-        images: spaceData.photos,
+        images: spaceData.photos || [],
         pending_approval: false,
         space_creation_restricted: false,
+        published: spaceData.published ?? true,
         host: {
           id: 'host-id', // We don't expose the real host_id for security
-          first_name: spaceData.host_first_name,
-          last_name: spaceData.host_last_name,
-          profile_photo_url: spaceData.host_profile_photo,
-          bio: spaceData.host_bio,
+          first_name: spaceData.host_first_name ?? '',
+          last_name: spaceData.host_last_name ?? '',
+          profile_photo_url: spaceData.host_profile_photo ?? null,
+          bio: spaceData.host_bio ?? '',
           created_at: new Date().toISOString()
         }
       } as unknown as Space & {
