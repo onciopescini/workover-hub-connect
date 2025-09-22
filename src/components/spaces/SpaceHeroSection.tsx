@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
+import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Verified, Award, Share, Heart } from "lucide-react";
-import { OptimizedImage } from "@/components/ui/OptimizedImage";
+import { SpacePhotoGallery } from "./SpacePhotoGallery";
 
 interface SpaceHeroSectionProps {
   space: {
@@ -21,8 +20,6 @@ interface SpaceHeroSectionProps {
 }
 
 export const SpaceHeroSection: React.FC<SpaceHeroSectionProps> = ({ space }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showAllPhotos, setShowAllPhotos] = useState(false);
 
   const renderStars = (rating: number) => {
     return (
@@ -107,41 +104,10 @@ export const SpaceHeroSection: React.FC<SpaceHeroSectionProps> = ({ space }) => 
       </div>
 
       {/* Photo Gallery */}
-      <Card className="overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2 h-96">
-          {/* Main Image */}
-          <div className="md:col-span-2 relative">
-            <OptimizedImage
-              src={space.photos[currentImageIndex] || '/placeholder.svg'}
-              alt={space.title}
-              className="w-full h-full object-cover rounded-l-lg cursor-pointer"
-              onClick={() => setShowAllPhotos(true)}
-            />
-          </div>
-          
-          {/* Thumbnail Grid */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-2">
-            {space.photos.slice(1, 5).map((photo, index) => (
-              <div key={index} className="relative">
-                <OptimizedImage
-                  src={photo}
-                  alt={`${space.title} - Foto ${index + 2}`}
-                  className="w-full h-full object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => setCurrentImageIndex(index + 1)}
-                />
-                {index === 3 && space.photos.length > 5 && (
-                  <div 
-                    className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white font-semibold cursor-pointer rounded"
-                    onClick={() => setShowAllPhotos(true)}
-                  >
-                    +{space.photos.length - 5} foto
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
+      <SpacePhotoGallery 
+        photos={space.photos}
+        spaceTitle={space.title}
+      />
     </div>
   );
 };
