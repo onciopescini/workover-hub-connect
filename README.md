@@ -99,6 +99,25 @@ src/
 - **Error Boundaries**: Graceful error handling throughout the application
 - **Optimistic Updates**: Enhanced UX with React Query optimistic mutations
 
+### UI Patterns
+
+#### Photo Gallery Lightbox
+The `SpacePhotoGallery` component implements a 5-tile Airbnb-style gallery with full accessibility support:
+- **5-tile Layout**: One large main image + 4 smaller tiles in 2x2 grid
+- **Lightbox Modal**: Full-screen photo viewing with keyboard navigation (←/→ arrows, Esc)
+- **Touch Support**: Swipe gestures for mobile navigation
+- **Accessibility**: Focus trap, screen reader support, ARIA labels
+- **Performance**: Image prefetching, lazy loading, optimized aspect ratios
+
+Usage:
+```tsx
+<SpacePhotoGallery 
+  photos={space.photos} 
+  spaceTitle={space.title}
+  className="mb-6" 
+/>
+```
+
 ## 🚀 Deployment
 
 ### Staging Environment

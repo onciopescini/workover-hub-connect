@@ -29,8 +29,13 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
 
   if (!photos || photos.length === 0) {
     return (
-      <div className={cn("w-full h-96 bg-gray-100 rounded-2xl flex items-center justify-center", className)}>
-        <span className="text-gray-500">Nessuna foto disponibile</span>
+      <div 
+        className={cn("w-full h-96 bg-muted rounded-2xl flex items-center justify-center", className)}
+        role="status"
+        aria-live="polite"
+        data-testid="no-photos-message"
+      >
+        <span className="text-muted-foreground">Nessuna foto disponibile</span>
       </div>
     );
   }
@@ -48,9 +53,12 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
             <OptimizedImage
               src={displayPhotos[0]}
               alt={`${spaceTitle} - Foto principale`}
-              className="w-full h-full object-cover transition-opacity hover:opacity-90"
+              className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
+              style={{ aspectRatio: '16/9' }}
+              decoding="async"
               onClick={() => openLightbox(0)}
               priority={true}
+              data-testid="gallery-tile-0"
             />
           </div>
 
@@ -65,9 +73,12 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
                   <OptimizedImage
                     src={photo}
                     alt={`${spaceTitle} - Foto ${photoIndex + 1}`}
-                    className="w-full h-full object-cover transition-opacity hover:opacity-90"
+                    className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
+                    style={{ aspectRatio: '4/3' }}
+                    decoding="async"
                     onClick={() => openLightbox(photoIndex)}
                     priority={photoIndex <= 2}
+                    data-testid={`gallery-tile-${photoIndex}`}
                   />
                   
                   {/* Show remaining count overlay on last image */}
@@ -89,9 +100,11 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
                 {Array.from({ length: 4 - (displayPhotos.length - 1) }).map((_, index) => (
                   <div 
                     key={`empty-${index}`}
-                    className="bg-gray-100 flex items-center justify-center"
+                    className="bg-muted rounded-lg flex items-center justify-center"
+                    aria-hidden="true"
+                    data-testid={`empty-slot-${index}`}
                   >
-                    <span className="text-gray-400 text-sm">Foto non disponibile</span>
+                    <span className="text-muted-foreground text-sm">Foto non disponibile</span>
                   </div>
                 ))}
               </>
@@ -106,6 +119,7 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
             size="sm"
             onClick={() => openLightbox(0)}
             className="bg-white/90 text-black hover:bg-white shadow-lg"
+            data-testid="show-all-photos-button"
           >
             Mostra tutte le foto ({photos.length})
           </Button>

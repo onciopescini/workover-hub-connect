@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
@@ -24,13 +24,18 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
   const [showThumbnails, setShowThumbnails] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  
+  // Focus management refs
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const firstFocusableRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Reset index when initialIndex changes
   useEffect(() => {
     setCurrentIndex(initialIndex);
   }, [initialIndex]);
 
-  // Keyboard navigation
+  // Focus management and keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
@@ -49,7 +54,22 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
           onClose();
           break;
         case 'Tab':
-          // Allow tab navigation within modal
+          // Handle focus trap
+          if (modalRef.current) {
+            const focusableElements = modalRef.current.querySelectorAll(
+              'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0] as HTMLElement;
+            const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+            if (e.shiftKey && document.activeElement === firstElement) {
+              e.preventDefault();
+              lastElement?.focus();
+            } else if (!e.shiftKey && document.activeElement === lastElement) {
+              e.preventDefault();
+              firstElement?.focus();
+            }
+          }
           break;
         default:
           break;
@@ -57,9 +77,21 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
     };
 
     if (isOpen) {
+      // Store the trigger element for focus restoration
+      triggerRef.current = document.activeElement as HTMLElement;
+      
       document.addEventListener('keydown', handleKeyDown);
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
+      
+      // Focus the first focusable element
+      setTimeout(() => {
+        firstFocusableRef.current?.focus();
+      }, 100);
+    } else {
+      // Restore focus to trigger element
+      setTimeout(() => {
+        triggerRef.current?.focus();
+      }, 100);
     }
 
     return () => {
@@ -67,6 +99,22 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, currentIndex, photos.length]);
+
+  // Prefetch adjacent images
+  useEffect(() => {
+    if (!isOpen || photos.length <= 1) return;
+    
+    const prevIndex = currentIndex === 0 ? photos.length - 1 : currentIndex - 1;
+    const nextIndex = currentIndex === photos.length - 1 ? 0 : currentIndex + 1;
+    
+    // Prefetch previous and next images
+    [prevIndex, nextIndex].forEach(index => {
+      if (photos[index]) {
+        const img = new Image();
+        img.src = photos[index];
+      }
+    });
+  }, [currentIndex, photos, isOpen]);
 
   const navigatePrevious = useCallback(() => {
     setCurrentIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
@@ -116,18 +164,27 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         className="max-w-none w-screen h-screen p-0 bg-black/95"
-        aria-label={`Galleria foto di ${spaceTitle}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lightbox-title"
+        data-testid="photo-lightbox"
       >
-        <div className="relative w-full h-full flex flex-col">
+        <div ref={modalRef} className="relative w-full h-full flex flex-col">
+          {/* Hidden title for screen readers */}
+          <h2 id="lightbox-title" className="sr-only">
+            Foto di {spaceTitle}
+          </h2>
           {/* Header */}
           <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4">
             <div className="flex items-center gap-4">
               <Button
+                ref={firstFocusableRef}
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
                 className="text-white hover:bg-white/10 rounded-full p-2"
                 aria-label="Chiudi galleria"
+                data-testid="close-button"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -141,7 +198,8 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
               size="sm"
               onClick={() => setShowThumbnails(!showThumbnails)}
               className="text-white hover:bg-white/10 rounded-full p-2"
-              aria-label="Mostra miniature"
+              aria-label={showThumbnails ? "Nascondi miniature" : "Mostra miniature"}
+              data-testid="thumbnail-toggle"
             >
               <Grid3X3 className="w-5 h-5" />
             </Button>
@@ -159,7 +217,10 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
                 src={photos[currentIndex]}
                 alt={`${spaceTitle} - Foto ${currentIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
+                style={{ aspectRatio: 'auto' }}
+                decoding="async"
                 priority={currentIndex <= 2}
+                data-testid={`lightbox-image-${currentIndex}`}
               />
             </div>
           </div>
@@ -172,6 +233,7 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
             className="absolute left-4 top-1/2 -translate-y-1/2 z-40 text-white hover:bg-white/10 rounded-full p-2"
             aria-label="Foto precedente"
             disabled={photos.length <= 1}
+            data-testid="prev-button"
           >
             <ChevronLeft className="w-6 h-6" />
           </Button>
@@ -183,6 +245,7 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
             className="absolute right-4 top-1/2 -translate-y-1/2 z-40 text-white hover:bg-white/10 rounded-full p-2"
             aria-label="Foto successiva"
             disabled={photos.length <= 1}
+            data-testid="next-button"
           >
             <ChevronRight className="w-6 h-6" />
           </Button>
