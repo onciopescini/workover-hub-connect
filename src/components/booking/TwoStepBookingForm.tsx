@@ -134,7 +134,7 @@ export function TwoStepBookingForm({
       }));
       
       // Generate base time slots
-      const baseSlots = generateTimeSlots(slotInterval);
+      const baseSlots = generateTimeSlots(interval);
       
       // Mark unavailable slots based on blocked intervals (including buffer)
       const updatedSlots = baseSlots.map(slot => {
@@ -239,7 +239,11 @@ export function TwoStepBookingForm({
               <span data-testid="lock-error-toast" className="sr-only">lock-error</span>
             </>, 
             {
-              description: "Qualcun altro ha prenotato questo orario. Seleziona un altro slot.",
+              description: (
+                <>
+                  Qualcun altro ha prenotato questo orario. Seleziona un altro slot.
+                </>
+              ),
               action: {
                 label: "Aggiorna",
                 onClick: () => {
