@@ -9,6 +9,22 @@ import { cn } from "@/lib/utils";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
 import type { TimeSlot, SelectedTimeRange } from './TwoStepBookingForm';
 
+// Helper functions for safe HH:MM parsing
+function parseHHMM(time: string): [number, number] {
+  const parts = time.split(':');
+  const hour = parseInt(parts[0] || '0');
+  const minute = parseInt(parts[1] || '0');
+  return [hour, minute];
+}
+
+function addMinutesHHMM(time: string, minutes: number): string {
+  const [hour, minute] = parseHHMM(time);
+  const totalMinutes = hour * 60 + minute + minutes;
+  const newHour = Math.floor(totalMinutes / 60);
+  const newMinute = totalMinutes % 60;
+  return `${newHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
+}
+
 interface TimeSlotSelectionStepProps {
   selectedDate: Date;
   availableSlots: TimeSlot[];
@@ -70,20 +86,17 @@ export function TimeSlotSelectionStep({
         return;
       }
 
-      const startTime = availableSlots[actualStart]?.time;
-      if (!startTime) return;
+      const startSlot = availableSlots[actualStart];
+      const endSlot = availableSlots[actualEnd];
       
-      const endSlotIndex = actualEnd + 1;
-      const endTime = endSlotIndex < availableSlots.length 
-        ? availableSlots[endSlotIndex]?.time || '20:00'
-        : '20:00';
+      if (!startSlot || !endSlot) return;
       
-      const startParts = startTime.split(':');
-      const endParts = endTime.split(':');
-      const startHour = parseInt(startParts[0]);
-      const startMinute = parseInt(startParts[1]);
-      const endHour = parseInt(endParts[0]);
-      const endMinute = parseInt(endParts[1]);
+      const startTime = startSlot.time;
+      const slotInterval = 30; // Default 30-minute intervals
+      const endTime = addMinutesHHMM(endSlot.time, slotInterval);
+      
+      const [startHour, startMinute] = parseHHMM(startTime);
+      const [endHour, endMinute] = parseHHMM(endTime);
       
       const duration = (endHour + endMinute / 60) - (startHour + startMinute / 60);
       
