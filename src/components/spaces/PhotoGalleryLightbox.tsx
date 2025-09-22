@@ -217,7 +217,7 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
                 src={photos[currentIndex]}
                 alt={`${spaceTitle} - Foto ${currentIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
-                style={{ aspectRatio: 'auto' }}
+                aspectRatio="auto"
                 decoding="async"
                 priority={currentIndex <= 2}
                 data-testid={`lightbox-image-${currentIndex}`}
@@ -270,6 +270,9 @@ export const PhotoGalleryLightbox: React.FC<PhotoGalleryLightboxProps> = ({
                       src={photo}
                       alt={`${spaceTitle} - Miniatura ${index + 1}`}
                       className="w-full h-full object-cover"
+                      width={64}
+                      height={64}
+                      decoding="async"
                     />
                   </button>
                 ))}

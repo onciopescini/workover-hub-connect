@@ -54,7 +54,8 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
               src={displayPhotos[0]}
               alt={`${spaceTitle} - Foto principale`}
               className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
-              style={{ aspectRatio: '16/9' }}
+              width={800}
+              height={600}
               decoding="async"
               onClick={() => openLightbox(0)}
               priority={true}
@@ -74,7 +75,8 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
                     src={photo}
                     alt={`${spaceTitle} - Foto ${photoIndex + 1}`}
                     className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
-                    style={{ aspectRatio: '4/3' }}
+                    width={400}
+                    height={300}
                     decoding="async"
                     onClick={() => openLightbox(photoIndex)}
                     priority={photoIndex <= 2}

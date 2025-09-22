@@ -9,6 +9,7 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   fallbackSrc?: string;
   quality?: number;
   onLoadComplete?: () => void;
+  aspectRatio?: string;
 }
 
 export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
@@ -24,6 +25,10 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
     onLoadComplete,
     onLoad,
     onError,
+    aspectRatio,
+    style,
+    width,
+    height,
     ...props
   }, ref) => {
     const [currentSrc, setCurrentSrc] = useState(src);
@@ -55,11 +60,20 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
       return null;
     }
 
+    // Ensure dimensions are set to prevent CLS
+    const imageStyle = {
+      ...style,
+      ...(aspectRatio && { aspectRatio }),
+    };
+
     return (
       <img
         ref={ref}
         src={currentSrc}
         alt={alt}
+        width={width}
+        height={height}
+        style={imageStyle}
         className={cn(
           'transition-opacity duration-300',
           isLoading && 'opacity-0',
@@ -70,6 +84,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         onLoad={handleLoad}
         onError={handleError}
         loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
         {...props}
       />
     );
