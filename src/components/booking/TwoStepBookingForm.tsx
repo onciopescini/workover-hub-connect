@@ -492,15 +492,11 @@ export function TwoStepBookingForm({
               >
                 {bookingState.isReserving ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     <span data-testid="checkout-loading-spinner" className="sr-only">loading</span>
                     Prenotando...
                   </>
                 ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Conferma
-                  </>
+                  <>Conferma</>
                 )}
               </Button>
             </>

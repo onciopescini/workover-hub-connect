@@ -31,7 +31,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
     import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true' ||
     (typeof window !== 'undefined' && (
       window.localStorage.getItem('VITE_BOOKING_TWO_STEP') === 'true' ||
-      window.localStorage.getItem('enable-two-step-booking') === 'true' // backward compat per E2E
+      window.localStorage.getItem('enable-two-step-booking') === 'true'
     ));
   
   // If 2-step booking is enabled, use the new component
