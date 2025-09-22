@@ -8,11 +8,13 @@ import { useBookingConflictCheck } from "@/hooks/useBookingConflictCheck";
 import { useLogger } from "@/hooks/useLogger";
 import { BookingSlot, MultiDayBookingData } from "@/types/booking";
 import { BookingSlotItem } from "./BookingSlotItem";
+import { TwoStepBookingForm } from "../booking/TwoStepBookingForm";
 import { differenceInHours } from 'date-fns';
 
 interface BookingFormProps {
   spaceId: string;
   pricePerDay: number;
+  pricePerHour?: number;
   confirmationType: string;
   onSuccess: () => void;
   onError: (message: string) => void;
@@ -22,7 +24,25 @@ const generateSlotId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-export function BookingForm({ spaceId, pricePerDay, confirmationType, onSuccess, onError }: BookingFormProps) {
+export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, onSuccess, onError }: BookingFormProps) {
+  // Check feature flag for 2-step booking
+  const useTwoStepBooking = import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true';
+  
+  // If 2-step booking is enabled, use the new component
+  if (useTwoStepBooking) {
+    return (
+      <TwoStepBookingForm
+        spaceId={spaceId}
+        pricePerDay={pricePerDay}
+        pricePerHour={pricePerHour || pricePerDay / 8} // Default to 8-hour workday
+        confirmationType={confirmationType}
+        onSuccess={onSuccess}
+        onError={onError}
+      />
+    );
+  }
+  
+  // Original multi-day booking form logic continues below...
   const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([
     {
       id: generateSlotId(),

@@ -11,6 +11,7 @@ interface StickyBookingCardProps {
   space: {
     id: string;
     price_per_day: number;
+    price_per_hour?: number;
     max_capacity: number;
     title: string;
     confirmation_type?: string;
@@ -74,6 +75,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           <BookingForm
             spaceId={space.id}
             pricePerDay={space.price_per_day}
+            pricePerHour={space.price_per_hour || space.price_per_day / 8}
             confirmationType={confirmationType}
             onSuccess={() => {
               onBookingSuccess();

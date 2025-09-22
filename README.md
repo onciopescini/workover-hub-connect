@@ -118,6 +118,23 @@ Usage:
 />
 ```
 
+#### Booking Flow 2-Step
+The `TwoStepBookingForm` provides an enhanced booking experience with availability filtering:
+- **Date Selection**: Calendar with disabled unavailable dates
+- **Time Slots**: Real-time availability checking with slot locking
+- **Concurrency Protection**: Race condition handling with slot reservations
+- **Dynamic Pricing**: Automatic switching between hourly/daily rates at 8h threshold
+- **Feature Flag**: `VITE_BOOKING_TWO_STEP=true` (fallback to original form if disabled)
+
+Usage:
+```tsx
+// Enabled via environment variable
+VITE_BOOKING_TWO_STEP=true
+
+// Uses validate_and_reserve_slot RPC for concurrency locks
+// Integrates with existing payment flow seamlessly
+```
+
 ## 🚀 Deployment
 
 ### Staging Environment

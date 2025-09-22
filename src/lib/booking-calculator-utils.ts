@@ -12,6 +12,30 @@ export interface BookingDetails {
   validationStatus: 'server-validated' | 'client-checked';
 }
 
+export interface TwoStepBookingPricing {
+  basePrice: number;
+  isDayRate: boolean;
+  breakdown: string;
+}
+
+export const calculateTwoStepBookingPrice = (
+  durationHours: number,
+  pricePerHour: number,
+  pricePerDay: number
+): TwoStepBookingPricing => {
+  const isDayRate = durationHours >= 8;
+  const basePrice = isDayRate ? pricePerDay : durationHours * pricePerHour;
+  const breakdown = isDayRate 
+    ? `Tariffa giornaliera (${durationHours}h)`
+    : `${durationHours}h × €${pricePerHour}/h`;
+
+  return {
+    basePrice,
+    isDayRate,
+    breakdown
+  };
+};
+
 export const calculateBookingDetails = (
   selectedDate: Date,
   selectedStartTime: string,
@@ -25,17 +49,8 @@ export const calculateBookingDetails = (
   
   const hours = differenceInHours(endDateTime, startDateTime);
   
-  // Enhanced price calculation
-  let totalCost = 0;
-  let priceBreakdown = '';
-  
-  if (hours >= 8 && space.price_per_day) {
-    totalCost = space.price_per_day;
-    priceBreakdown = `Giornata intera (${hours}h)`;
-  } else {
-    totalCost = hours * space.price_per_hour;
-    priceBreakdown = `${hours}h × €${space.price_per_hour}`;
-  }
+  // Enhanced price calculation using the new function
+  const pricing = calculateTwoStepBookingPrice(hours, space.price_per_hour, space.price_per_day || 0);
 
   // Validation status
   const isValid = hours > 0 && 
@@ -47,8 +62,8 @@ export const calculateBookingDetails = (
     date: format(selectedDate, 'dd/MM/yyyy'),
     timeRange: `${selectedStartTime} - ${selectedEndTime}`,
     duration: hours,
-    priceBreakdown,
-    totalCost,
+    priceBreakdown: pricing.breakdown,
+    totalCost: pricing.basePrice,
     isValid,
     validationStatus: conflictCheck.validated ? 'server-validated' : 'client-checked'
   };
