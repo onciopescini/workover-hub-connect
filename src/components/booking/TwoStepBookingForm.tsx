@@ -438,6 +438,7 @@ export function TwoStepBookingForm({
         <div className="flex gap-3 pt-4">
           {canGoBack && (
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 const prevStep = {
@@ -456,6 +457,7 @@ export function TwoStepBookingForm({
           
           {currentStep === 'DATE' && (
             <Button
+              type="button"
               onClick={() => {
                 if (bookingState.selectedDate) {
                   setCurrentStep('TIME');
@@ -470,6 +472,7 @@ export function TwoStepBookingForm({
           
           {currentStep === 'TIME' && (
             <Button
+              type="button"
               onClick={handleContinueToSummary}
               disabled={!canContinue}
             >
@@ -486,6 +489,7 @@ export function TwoStepBookingForm({
                 </div>
               )}
               <Button
+                type="button"
                 onClick={handleConfirmBooking}
                 disabled={bookingState.isReserving || !hostStripeAccountId}
                 className="min-w-32"

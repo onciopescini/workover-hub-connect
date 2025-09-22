@@ -118,12 +118,13 @@ WorkoverHub Connect is a comprehensive platform that bridges the gap between pro
 
 ### Key Features
 
-- **🏢 Space Booking System**: Seamless reservation management for coworking spaces, meeting rooms, and event venues
+- **🏢 Space Booking System**: Seamless reservation management for coworking spaces, meeting rooms, and event venues with 2-step booking flow
 - **🤝 Professional Networking**: Connect with like-minded professionals through our intelligent suggestion system
 - **📅 Event Management**: Create, discover, and participate in community events and professional gatherings
 - **💰 Integrated Payments**: Secure payment processing with Stripe Connect for hosts and seamless checkout for users
 - **📊 Advanced Analytics**: Comprehensive dashboards for hosts and administrators with revenue insights
 - **🔐 Enterprise Security**: GDPR-compliant data handling with robust authentication and authorization
+- **⚡ Concurrency Protection**: Advanced slot locking system prevents double bookings and handles race conditions
 
 ## 🚀 Quick Start
 
@@ -228,16 +229,29 @@ The `TwoStepBookingForm` provides an enhanced booking experience with availabili
 - **Date Selection**: Calendar with disabled unavailable dates
 - **Time Slots**: Real-time availability checking with slot locking
 - **Concurrency Protection**: Race condition handling with slot reservations
-- **Dynamic Pricing**: Automatic switching between hourly/daily rates at 8h threshold
-- **Feature Flag**: `VITE_BOOKING_TWO_STEP=true` (fallback to original form if disabled)
+- **Dynamic Pricing**: Automatic switching between hourly/daily rates at 8h threshold  
+- **Feature Flag**: `VITE_BOOKING_TWO_STEP=true` or localStorage override
+- **RPC Integration**: Uses `get_space_availability_optimized` and `validate_and_reserve_slot`
 
-Usage:
-```tsx
-// Enabled via environment variable
+Environment Variables:
+```env
+# Client-side
 VITE_BOOKING_TWO_STEP=true
+VITE_SERVICE_FEE_PCT=0.12
+VITE_DEFAULT_VAT_PCT=0.22
 
-// Uses validate_and_reserve_slot RPC for concurrency locks
-// Integrates with existing payment flow seamlessly
+# Server-side (Edge Functions)
+SERVICE_FEE_PCT=0.12
+DEFAULT_VAT_PCT=0.22
+ENABLE_STRIPE_TAX=false|true
+SITE_URL=https://your-domain.com
+```
+
+Development Override:
+```javascript
+// For testing Tax modes
+localStorage.setItem('ENABLE_STRIPE_TAX', 'true'|'false');
+localStorage.setItem('enable-two-step-booking', 'true'); // E2E compat
 ```
 
 ## 🚀 Deployment

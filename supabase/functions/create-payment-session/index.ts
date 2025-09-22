@@ -83,6 +83,25 @@ serve(async (req) => {
       throw new Error('Missing required fields');
     }
 
+    // Input validation for pricing values
+    const numDurationHours = Number(durationHours);
+    const numPricePerHour = Number(pricePerHour);
+    const numPricePerDay = Number(pricePerDay);
+    
+    if (
+      numDurationHours <= 0 ||
+      numPricePerHour < 0 ||
+      numPricePerDay < 0 ||
+      !Number.isFinite(numDurationHours) ||
+      !Number.isFinite(numPricePerHour) ||
+      !Number.isFinite(numPricePerDay)
+    ) {
+      return new Response(JSON.stringify({ error: 'Invalid pricing input' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
     // Stripe init con API version valida
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2024-06-20',
@@ -93,11 +112,19 @@ serve(async (req) => {
     const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
     const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
 
-    // Pricing server-side
+    // Validate environment percentages
+    if (serviceFeePct < 0 || serviceFeePct > 1 || vatPct < 0 || vatPct > 1) {
+      return new Response(JSON.stringify({ error: 'Invalid pricing configuration' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Pricing server-side with validated inputs
     const pricing = computePricing({
-      durationHours: Number(durationHours),
-      pricePerHour: Number(pricePerHour),
-      pricePerDay: Number(pricePerDay),
+      durationHours: numDurationHours,
+      pricePerHour: numPricePerHour,
+      pricePerDay: numPricePerDay,
       serviceFeePct,
       vatPct,
       stripeTaxEnabled,
@@ -107,10 +134,18 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    // unit_amount in centesimi
-    const unitAmount = Math.round(
-      (stripeTaxEnabled ? pricing.base + pricing.serviceFee : pricing.total) * 100
-    );
+    // unit_amount in centesimi - clamp to 2 decimals before conversion
+    const baseAmount = stripeTaxEnabled ? pricing.base + pricing.serviceFee : pricing.total;
+    const clampedAmount = Math.round(baseAmount * 100) / 100; // Ensure 2 decimal places
+    const unitAmount = Math.round(clampedAmount * 100);
+    
+    if (!Number.isFinite(unitAmount) || unitAmount <= 0) {
+      console.warn('Invalid unit amount calculated:', { baseAmount, clampedAmount, unitAmount, pricing });
+      return new Response(JSON.stringify({ error: 'Invalid amount calculated' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
     // Origin fallback sicuro
     const origin =
