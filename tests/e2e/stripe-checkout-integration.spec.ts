@@ -17,19 +17,19 @@ test.describe('Stripe Checkout Integration', () => {
   test('should complete booking flow to Stripe Checkout with Tax OFF', async ({ page }) => {
     // Set environment to simulate Tax OFF
     await page.addInitScript(() => {
-      window.ENV = { ...window.ENV, ENABLE_STRIPE_TAX: 'false' };
+      localStorage.setItem('ENABLE_STRIPE_TAX', 'false');
     });
 
     // Step 1: Select tomorrow's date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowButton = page.locator(`[data-date="${tomorrow.toISOString().split('T')[0]}"]`);
-    await tomorrowButton.click();
+    await page.getByTestId('date-picker-trigger').click();
+    await page.getByTestId('date-picker-calendar').getByRole('gridcell', { name: tomorrow.getDate().toString() }).click();
     await page.getByTestId('date-step-continue').click();
 
     // Step 2: Select time range (10:00-13:00)
-    await page.locator('[data-time="10:00"]').click();
-    await page.locator('[data-time="13:00"]').click();
+    await page.getByTestId('time-slot-10_00').click();
+    await page.getByTestId('time-slot-13_00').click();
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Step 3: Verify pricing display shows VAT percentage
@@ -77,18 +77,18 @@ test.describe('Stripe Checkout Integration', () => {
   test('should complete booking flow to Stripe Checkout with Tax ON', async ({ page }) => {
     // Set environment to simulate Tax ON
     await page.addInitScript(() => {
-      window.ENV = { ...window.ENV, ENABLE_STRIPE_TAX: 'true' };
+      localStorage.setItem('ENABLE_STRIPE_TAX', 'true');
     });
 
     // Complete booking flow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowButton = page.locator(`[data-date="${tomorrow.toISOString().split('T')[0]}"]`);
-    await tomorrowButton.click();
+    await page.getByTestId('date-picker-trigger').click();
+    await page.getByTestId('date-picker-calendar').getByRole('gridcell', { name: tomorrow.getDate().toString() }).click();
     await page.getByTestId('date-step-continue').click();
 
-    await page.locator('[data-time="10:00"]').click();
-    await page.locator('[data-time="13:00"]').click();
+    await page.getByTestId('time-slot-10_00').click();
+    await page.getByTestId('time-slot-13_00').click();
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Verify pricing display shows "calculated at checkout"
@@ -123,12 +123,12 @@ test.describe('Stripe Checkout Integration', () => {
     // Complete booking flow to summary step
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowButton = page.locator(`[data-date="${tomorrow.toISOString().split('T')[0]}"]`);
-    await tomorrowButton.click();
+    await page.getByTestId('date-picker-trigger').click();
+    await page.getByTestId('date-picker-calendar').getByRole('gridcell', { name: tomorrow.getDate().toString() }).click();
     await page.getByTestId('date-step-continue').click();
 
-    await page.locator('[data-time="10:00"]').click();
-    await page.locator('[data-time="13:00"]').click();
+    await page.getByTestId('time-slot-10_00').click();
+    await page.getByTestId('time-slot-13_00').click();
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Mock payment session error
@@ -166,12 +166,12 @@ test.describe('Stripe Checkout Integration', () => {
     // Complete flow to summary
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowButton = page.locator(`[data-date="${tomorrow.toISOString().split('T')[0]}"]`);
-    await tomorrowButton.click();
+    await page.getByTestId('date-picker-trigger').click();
+    await page.getByTestId('date-picker-calendar').getByRole('gridcell', { name: tomorrow.getDate().toString() }).click();
     await page.getByTestId('date-step-continue').click();
 
-    await page.locator('[data-time="10:00"]').click();
-    await page.locator('[data-time="13:00"]').click();
+    await page.getByTestId('time-slot-10_00').click();
+    await page.getByTestId('time-slot-13_00').click();
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Verify confirm button is disabled and hint is shown
@@ -183,16 +183,16 @@ test.describe('Stripe Checkout Integration', () => {
     // Complete flow to summary
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowButton = page.locator(`[data-date="${tomorrow.toISOString().split('T')[0]}"]`);
-    await tomorrowButton.click();
+    await page.getByTestId('date-picker-trigger').click();
+    await page.getByTestId('date-picker-calendar').getByRole('gridcell', { name: tomorrow.getDate().toString() }).click();
     await page.getByTestId('date-step-continue').click();
 
-    await page.locator('[data-time="10:00"]').click();
-    await page.locator('[data-time="13:00"]').click();
+    await page.getByTestId('time-slot-10_00').click();
+    await page.getByTestId('time-slot-13_00').click();
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Mock slot lock conflict
-    await page.route('**/rpc/validate_and_reserve_slot', async route => {
+    await page.route('**/rest/v1/rpc/validate_and_reserve_slot', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -213,6 +213,6 @@ test.describe('Stripe Checkout Integration', () => {
     await page.getByRole('button', { name: /aggiorna/i }).click();
     
     // Should return to TIME step
-    await expect(page.locator('[data-time="10:00"]')).toBeVisible();
+    await expect(page.getByTestId('time-slot-10_00')).toBeVisible();
   });
 });

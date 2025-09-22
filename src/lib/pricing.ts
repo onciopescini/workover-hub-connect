@@ -47,5 +47,10 @@ export function getDefaultVatPct(): number {
 }
 
 export function isStripeTaxEnabled(): boolean {
+  if (typeof window !== 'undefined') {
+    const override = window.localStorage.getItem('ENABLE_STRIPE_TAX');
+    if (override === 'true') return true;
+    if (override === 'false') return false;
+  }
   return import.meta.env['ENABLE_STRIPE_TAX'] === 'true';
 }

@@ -70,6 +70,16 @@ npm run test:e2e
 ```
 Tests complete booking flows with both tax modes and error scenarios.
 
+### Development Override
+In development/testing, you can override the tax mode using localStorage:
+```javascript
+// Force Tax OFF
+localStorage.setItem('ENABLE_STRIPE_TAX', 'false');
+
+// Force Tax ON  
+localStorage.setItem('ENABLE_STRIPE_TAX', 'true');
+```
+
 ## Stripe Connect Integration
 
 This implementation uses Stripe Connect for marketplace payments:

@@ -320,15 +320,15 @@ export function TwoStepBookingForm({
 
       if (fnError || !sessionData?.url) {
         error('Payment session creation failed', fnError, { spaceId, bookingState });
-        toast.error('Errore nella creazione della sessione di pagamento', {
-          description: fnError?.message || 'Impossibile procedere con il pagamento',
-        });
-        
-        // Add test id for error toast
-        const errorToast = document.querySelector('[data-sonner-toast]:last-child');
-        if (errorToast) {
-          errorToast.setAttribute('data-testid', 'payment-error-toast');
-        }
+        toast.error(
+          <>
+            Errore nella creazione della sessione di pagamento
+            <span data-testid="payment-error-toast" className="sr-only">payment-error</span>
+          </>, 
+          {
+            description: fnError?.message || 'Impossibile procedere con il pagamento',
+          }
+        );
         return;
       }
 
@@ -493,7 +493,8 @@ export function TwoStepBookingForm({
               >
                 {bookingState.isReserving ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" data-testid="checkout-loading-spinner" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span data-testid="checkout-loading-spinner" className="sr-only">loading</span>
                     Prenotando...
                   </>
                 ) : (
