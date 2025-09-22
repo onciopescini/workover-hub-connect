@@ -34,6 +34,7 @@ interface TimeSlotSelectionStepProps {
   pricePerHour: number;
   pricePerDay: number;
   bufferMinutes: number;
+  slotInterval?: number;
 }
 
 export function TimeSlotSelectionStep({
@@ -44,12 +45,13 @@ export function TimeSlotSelectionStep({
   isLoading,
   pricePerHour,
   pricePerDay,
-  bufferMinutes
+  bufferMinutes,
+  slotInterval = 30
 }: TimeSlotSelectionStepProps) {
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
   const [focusedSlotIndex, setFocusedSlotIndex] = useState<number>(-1);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Reset selection when slots change
   useEffect(() => {
@@ -86,13 +88,30 @@ export function TimeSlotSelectionStep({
         return;
       }
 
+      // Check contiguity: each slot should be followed by the next expected slot
+      for (let i = actualStart; i < actualEnd; i++) {
+        const currentSlot = availableSlots[i];
+        const nextSlot = availableSlots[i + 1];
+        
+        if (!currentSlot || !nextSlot) {
+          setSelectionStart(slotTime); // Start new selection - invalid slots
+          return;
+        }
+        
+        const expectedNextTime = addMinutesHHMM(currentSlot.time, slotInterval);
+        
+        if (nextSlot.time !== expectedNextTime) {
+          setSelectionStart(slotTime); // Start new selection - slots not contiguous
+          return;
+        }
+      }
+
       const startSlot = availableSlots[actualStart];
       const endSlot = availableSlots[actualEnd];
       
       if (!startSlot || !endSlot) return;
       
       const startTime = startSlot.time;
-      const slotInterval = 30; // Default 30-minute intervals
       const endTime = addMinutesHHMM(endSlot.time, slotInterval);
       
       const [startHour, startMinute] = parseHHMM(startTime);
@@ -252,12 +271,10 @@ export function TimeSlotSelectionStep({
         aria-label="Griglia slot orari"
       >
         {availableSlotsList.map((slot, index) => (
-          <Button
+          <button
             key={slot.time}
-            variant="outline"
-            size="sm"
             className={cn(
-              "h-10 text-xs font-medium transition-all",
+              "h-10 text-xs font-medium transition-all px-3 py-2 rounded-md border",
               {
                 "bg-green-50 border-green-200 text-green-800 hover:bg-green-100": 
                   slot.available && !isSlotInRange(slot.time) && !isSlotInPreview(slot.time),
@@ -282,14 +299,15 @@ export function TimeSlotSelectionStep({
             tabIndex={index === 0 || index === focusedSlotIndex ? 0 : -1}
           >
             {slot.time}
-          </Button>
+          </button>
         ))}
       </div>
 
       {/* Instructions */}
       <div 
         className="text-center text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg"
-        role="region"
+        role="status"
+        aria-live="polite"
         aria-label="Istruzioni selezione"
       >
         {!selectionStart ? (

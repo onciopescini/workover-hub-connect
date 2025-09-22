@@ -331,6 +331,7 @@ export function TwoStepBookingForm({
             pricePerHour={pricePerHour}
             pricePerDay={pricePerDay}
             bufferMinutes={bufferMinutes}
+            slotInterval={slotInterval}
           />
         )}
         

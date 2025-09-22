@@ -26,7 +26,10 @@ const generateSlotId = () => {
 
 export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, onSuccess, onError }: BookingFormProps) {
   // Check feature flag for 2-step booking
-  const useTwoStepBooking = import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true';
+  const useTwoStepBooking =
+    import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true' ||
+    (typeof window !== 'undefined' &&
+      window.localStorage.getItem('VITE_BOOKING_TWO_STEP') === 'true');
   
   // If 2-step booking is enabled, use the new component
   if (useTwoStepBooking) {
@@ -38,6 +41,8 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
         confirmationType={confirmationType}
         onSuccess={onSuccess}
         onError={onError}
+        bufferMinutes={0} // Default buffer
+        slotInterval={30} // Default 30-minute slots
       />
     );
   }
