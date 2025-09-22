@@ -14,6 +14,22 @@ import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
+// Helper functions for time calculations
+function parseHHMM(time: string): [number, number] {
+  const parts = time.split(':');
+  const hour = parseInt(parts[0] || '0');
+  const minute = parseInt(parts[1] || '0');
+  return [hour, minute];
+}
+
+function addMinutesHHMM(time: string, minutes: number): string {
+  const [hour, minute] = parseHHMM(time);
+  const totalMinutes = hour * 60 + minute + minutes;
+  const newHour = Math.floor(totalMinutes / 60);
+  const newMinute = totalMinutes % 60;
+  return `${newHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
+}
+
 interface TwoStepBookingFormProps {
   spaceId: string;
   pricePerDay: number;
@@ -110,23 +126,24 @@ export function TwoStepBookingForm({
       const dateStr = format(date, 'yyyy-MM-dd');
       const availability = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
       
+      // Create blocked intervals with buffer
+      const interval = slotInterval ?? 30;
+      const blocked = availability.map((booking: any) => ({
+        start: addMinutesHHMM(booking.start_time, -bufferMinutes),
+        end: addMinutesHHMM(booking.end_time, bufferMinutes),
+      }));
+      
       // Generate base time slots
       const baseSlots = generateTimeSlots(slotInterval);
       
-      // Mark unavailable slots based on existing bookings and reservations
+      // Mark unavailable slots based on blocked intervals (including buffer)
       const updatedSlots = baseSlots.map(slot => {
-        const isUnavailable = availability.some((booking: any) => {
-          const bookingStart = booking.start_time;
-          const bookingEnd = booking.end_time;
-          
-          // Check if slot overlaps with existing booking
-          return slot.time >= bookingStart && slot.time < bookingEnd;
-        });
+        const isBlocked = blocked.some(({start, end}) => slot.time >= start && slot.time < end);
         
         return {
           ...slot,
-          available: !isUnavailable,
-          reserved: isUnavailable
+          available: !isBlocked,
+          reserved: isBlocked
         };
       });
       
@@ -217,7 +234,10 @@ export function TwoStepBookingForm({
         
         if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
           toast.error(
-            "⚠️ Slot non più disponibile", 
+            <>
+              ⚠️ Slot non più disponibile
+              <span data-testid="lock-error-toast" className="sr-only">lock-error</span>
+            </>, 
             {
               description: "Qualcun altro ha prenotato questo orario. Seleziona un altro slot.",
               action: {
