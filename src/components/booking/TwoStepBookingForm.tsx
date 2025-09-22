@@ -11,6 +11,7 @@ import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogger } from "@/hooks/useLogger";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
+import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -39,6 +40,7 @@ interface TwoStepBookingFormProps {
   onError: (message: string) => void;
   bufferMinutes?: number;
   slotInterval?: number; // 15 or 30 minutes
+  hostStripeAccountId?: string; // Optional for Stripe Connect payments
 }
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
@@ -78,7 +80,8 @@ export function TwoStepBookingForm({
   onSuccess, 
   onError,
   bufferMinutes = 0,
-  slotInterval = 30
+  slotInterval = 30,
+  hostStripeAccountId
 }: TwoStepBookingFormProps) {
   const [currentStep, setCurrentStep] = useState<BookingStep>('DATE');
   const [bookingState, setBookingState] = useState<BookingState>({
@@ -276,20 +279,83 @@ export function TwoStepBookingForm({
 
       info('Slot reserved successfully', { bookingId: responseData.booking_id });
       
-      // Calculate final price for payment
-      const pricing = calculateTwoStepBookingPrice(
-        bookingState.selectedRange.duration,
+      // Check if host has Stripe account configured
+      if (!hostStripeAccountId) {
+        toast.error('Host non collegato a Stripe', {
+          description: 'Impossibile procedere con il pagamento. Contatta il proprietario dello spazio.'
+        });
+        return;
+      }
+
+      // Calculate pricing for Stripe payment
+      const pricing = computePricing({
+        durationHours: bookingState.selectedRange.duration,
         pricePerHour,
-        pricePerDay
+        pricePerDay,
+        serviceFeePct: getServiceFeePct(),
+        vatPct: getDefaultVatPct(),
+        stripeTaxEnabled: isStripeTaxEnabled()
+      });
+
+      debug('Creating Stripe payment session', { 
+        pricing, 
+        bookingId: responseData.booking_id,
+        hostStripeAccountId 
+      });
+
+      // Create Stripe Checkout session
+      const { data: sessionData, error: fnError } = await supabase.functions.invoke(
+        'create-payment-session',
+        {
+          body: {
+            space_id: spaceId,
+            booking_id: responseData.booking_id,
+            durationHours: bookingState.selectedRange.duration,
+            pricePerHour,
+            pricePerDay,
+            host_stripe_account_id: hostStripeAccountId,
+          }
+        }
       );
+
+      if (fnError || !sessionData?.url) {
+        error('Payment session creation failed', fnError, { spaceId, bookingState });
+        toast.error('Errore nella creazione della sessione di pagamento', {
+          description: fnError?.message || 'Impossibile procedere con il pagamento',
+        });
+        
+        // Add test id for error toast
+        const errorToast = document.querySelector('[data-sonner-toast]:last-child');
+        if (errorToast) {
+          errorToast.setAttribute('data-testid', 'payment-error-toast');
+        }
+        return;
+      }
+
+      // Log pricing comparison for debugging (non-blocking)
+      if (sessionData.serverTotals) {
+        const clientTotal = pricing.total;
+        const serverTotal = sessionData.serverTotals.total;
+        if (Math.abs(clientTotal - serverTotal) > 0.01) {
+          console.warn('Pricing mismatch detected:', {
+            client: { total: clientTotal, pricing },
+            server: { total: serverTotal, totals: sessionData.serverTotals }
+          });
+        }
+      }
+
+      info('Payment session created successfully', { 
+        sessionUrl: sessionData.url,
+        serverTotals: sessionData.serverTotals
+      });
 
       toast.success('Slot riservato! Reindirizzamento al pagamento...', {
         icon: <CheckCircle className="w-4 h-4" />
       });
 
-      // For now, we'll call onSuccess - in a real implementation this would trigger payment flow
+      // Redirect to Stripe Checkout
       setTimeout(() => {
-        onSuccess();
+        window.location.href = sessionData.url;
       }, 1500);
 
     } catch (err) {
@@ -413,23 +479,31 @@ export function TwoStepBookingForm({
           )}
           
           {currentStep === 'SUMMARY' && (
-            <Button
-              onClick={handleConfirmBooking}
-              disabled={bookingState.isReserving}
-              className="min-w-32"
-            >
-              {bookingState.isReserving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Prenotando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Conferma
-                </>
+            <>
+              {!hostStripeAccountId && (
+                <div className="text-sm text-muted-foreground mb-2 text-center">
+                  <AlertTriangle className="w-4 h-4 inline mr-1" />
+                  Host non collegato a Stripe
+                </div>
               )}
-            </Button>
+              <Button
+                onClick={handleConfirmBooking}
+                disabled={bookingState.isReserving || !hostStripeAccountId}
+                className="min-w-32"
+              >
+                {bookingState.isReserving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" data-testid="checkout-loading-spinner" />
+                    Prenotando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Conferma
+                  </>
+                )}
+              </Button>
+            </>
           )}
         </div>
       </CardContent>

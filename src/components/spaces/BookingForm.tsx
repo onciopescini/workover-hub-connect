@@ -18,13 +18,14 @@ interface BookingFormProps {
   confirmationType: string;
   onSuccess: () => void;
   onError: (message: string) => void;
+  hostStripeAccountId?: string; // Required for Stripe Connect payments
 }
 
 const generateSlotId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, onSuccess, onError }: BookingFormProps) {
+export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, onSuccess, onError, hostStripeAccountId }: BookingFormProps) {
   // Check feature flag for 2-step booking
   const useTwoStepBooking =
     import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true' ||
@@ -43,6 +44,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
         onError={onError}
         bufferMinutes={0} // Default buffer
         slotInterval={30} // Default 30-minute slots
+        {...(hostStripeAccountId && { hostStripeAccountId })}
       />
     );
   }

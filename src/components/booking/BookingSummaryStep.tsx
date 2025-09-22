@@ -130,11 +130,9 @@ export function BookingSummaryStep({
               <span className="text-sm text-muted-foreground">
                 IVA {stripeTaxEnabled ? '' : `(${Math.round(getDefaultVatPct() * 100)}%)`}
               </span>
-              {stripeTaxEnabled ? (
-                <span className="text-sm text-muted-foreground italic">calcolata al pagamento</span>
-              ) : (
-                <span className="font-medium">€{pricing.vat.toFixed(2)}</span>
-              )}
+              <span>
+                {stripeTaxEnabled ? 'calcolata al pagamento' : `€${pricing.vat.toFixed(2)}`}
+              </span>
             </div>
 
             <Separator />

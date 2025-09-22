@@ -1,3 +1,98 @@
+# WorkOver - Stripe Checkout Integration
+
+## Overview
+This project implements a complete Stripe Checkout integration for a two-step booking system with support for both tax-inclusive and Stripe Tax modes.
+
+## Environment Variables
+
+### Client-side (Frontend)
+```env
+VITE_SERVICE_FEE_PCT=0.12          # Platform service fee (12%)
+VITE_DEFAULT_VAT_PCT=0.22          # Default VAT rate (22%) - Italy
+ENABLE_STRIPE_TAX=false            # Enable Stripe automatic tax calculation
+```
+
+### Server-side (Edge Functions)
+```env
+STRIPE_SECRET_KEY=sk_live_...      # Stripe secret key
+SERVICE_FEE_PCT=0.12               # Platform service fee (server-side)
+DEFAULT_VAT_PCT=0.22               # Default VAT rate (server-side)
+ENABLE_STRIPE_TAX=false            # Enable Stripe automatic tax calculation
+SITE_URL=https://your-domain.com   # Your production domain for Stripe redirects
+```
+
+## Tax Modes
+
+### Tax OFF (ENABLE_STRIPE_TAX=false)
+- VAT is calculated client-side and server-side
+- UI shows "IVA (22%)" with calculated amount
+- Stripe receives total amount including VAT
+- `tax_behavior: 'inclusive'` in Stripe
+- `automatic_tax.enabled: false`
+
+### Tax ON (ENABLE_STRIPE_TAX=true)  
+- VAT calculation is handled by Stripe
+- UI shows "IVA calcolata al pagamento"
+- Stripe receives base + service fee only
+- `tax_behavior: 'exclusive'` in Stripe  
+- `automatic_tax.enabled: true`
+
+## Payment Flow
+
+1. **Date Selection**: User selects booking date
+2. **Time Selection**: User selects time range with real-time pricing
+3. **Summary**: Shows detailed price breakdown
+4. **Slot Lock**: `validate_and_reserve_slot` reserves the booking
+5. **Payment Session**: `create-payment-session` creates Stripe Checkout
+6. **Redirect**: User is redirected to Stripe Checkout
+7. **Success/Cancel**: User returns to success or cancel page
+
+## Key Features
+
+- **Concurrency Protection**: Slot locking prevents double bookings
+- **Price Consistency**: Server validates client-side calculations
+- **Tax Flexibility**: Supports both manual and Stripe Tax modes
+- **Error Handling**: Comprehensive error states and user feedback
+- **Mobile Responsive**: Works on all device sizes
+- **Accessibility**: ARIA labels and keyboard navigation
+
+## Testing
+
+### Unit Tests
+```bash
+npm run test:unit
+```
+Tests pricing calculations for various scenarios including edge cases and rounding.
+
+### E2E Tests  
+```bash
+npm run test:e2e
+```
+Tests complete booking flows with both tax modes and error scenarios.
+
+## Stripe Connect Integration
+
+This implementation uses Stripe Connect for marketplace payments:
+- **Application Fee**: Collected as service fee from each transaction
+- **Direct Charges**: Payments go directly to host's connected account
+- **Platform Commission**: Automatically deducted as application fee
+
+## Security Notes
+
+- All sensitive operations happen server-side in edge functions
+- Client-side pricing is validated server-side before payment
+- Stripe handles PCI compliance for payment processing
+- User authentication required for all booking operations
+
+## Deployment
+
+1. Set up Supabase project with required environment variables
+2. Deploy edge functions (automatic with Lovable)
+3. Configure Stripe Connect accounts for hosts
+4. Set production domain in SITE_URL environment variable
+
+---
+
 # WorkoverHub Connect 🚀
 
 > Modern platform for coworking space bookings, professional networking, and community events
