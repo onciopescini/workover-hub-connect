@@ -112,54 +112,55 @@ export const usePublicSpacesLogic = () => {
       info('Fetching public spaces with filters', { filters });
       
       // Use secure function that doesn't expose host_id
-      const { data: spaces, error: spacesError } = await supabase.rpc('get_public_spaces');
+      const { data: spacesData, error: spacesError } = await supabase.rpc('get_public_spaces_safe');
       
       if (spacesError) {
         info('Failed to fetch spaces', { error: spacesError });
         throw spacesError;
       }
 
+      const spaces = Array.isArray(spacesData) ? spacesData as any[] : [];
       let filteredSpaces = spaces || [];
 
       // Apply filters to the fetched data (client-side filtering)
       if (filters.category) {
-        filteredSpaces = filteredSpaces.filter(space => space.category === filters.category);
+        filteredSpaces = filteredSpaces.filter((space: any) => space && space.category === filters.category);
       }
       if (filters.workEnvironment) {
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.work_environment === filters.workEnvironment
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.work_environment === filters.workEnvironment
         );
       }
       if (filters.priceRange[1] < 200) {
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.price_per_day <= filters.priceRange[1]
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.price_per_day <= filters.priceRange[1]
         );
       }
       if (filters.priceRange[0] > 0) {
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.price_per_day >= filters.priceRange[0]
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.price_per_day >= filters.priceRange[0]
         );
       }
       if (filters.capacity[1] < 20) {
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.max_capacity <= filters.capacity[1]
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.max_capacity <= filters.capacity[1]
         );
       }
       if (filters.capacity[0] > 1) {
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.max_capacity >= filters.capacity[0]
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.max_capacity >= filters.capacity[0]
         );
       }
       if (filters.location) {
         // Flexible city search: search in the address field for city names
         const searchTerm = filters.location.trim().toLowerCase();
-        filteredSpaces = filteredSpaces.filter(space => 
-          space.address?.toLowerCase().includes(searchTerm)
+        filteredSpaces = filteredSpaces.filter((space: any) => 
+          space && space.address?.toLowerCase().includes(searchTerm)
         );
       }
       
-      info(`Successfully fetched and filtered ${filteredSpaces.length} spaces`);
-      return filteredSpaces;
+      info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);
+      return Array.isArray(filteredSpaces) ? filteredSpaces : [];
     },
   });
 

@@ -21,12 +21,11 @@ export const CSPProvider: React.FC<CSPProviderProps> = ({ children }) => {
         "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
         "img-src 'self' data: https: blob:",
         "font-src 'self' https://fonts.gstatic.com",
-        "connect-src 'self' https://api.mapbox.com https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
+        "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://plausible.io https://*.supabase.co wss://*.supabase.co https://api.stripe.com",
         "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
         "worker-src 'self' blob:",
         "object-src 'none'",
-          "base-uri 'self'",
-          "frame-ancestors 'self' https://*.lovable.app"
+        "base-uri 'self'"
         ].join('; ');
       
       document.head.appendChild(cspMeta);

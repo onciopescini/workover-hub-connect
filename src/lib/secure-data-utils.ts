@@ -106,14 +106,19 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
 export const getPublicSpaces = async (): Promise<PublicSpace[]> => {
   try {
     const { data, error } = await supabase
-      .rpc('get_public_spaces');
+      .rpc('get_public_spaces_safe');
 
     if (error) {
       console.error('Error fetching public spaces:', error);
       return [];
     }
 
-    return data || [];
+    // Handle JSON response from safe function
+    if (Array.isArray(data)) {
+      return data as any[];
+    }
+    
+    return [];
   } catch (error) {
     console.error('Error in getPublicSpaces:', error);
     return [];
