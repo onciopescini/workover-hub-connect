@@ -101,26 +101,50 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
 };
 
 /**
- * Get all public spaces (without host info for privacy)
+ * Get all public spaces (robust fallback strategy)
  */
-export const getPublicSpaces = async (): Promise<PublicSpace[]> => {
+export const getPublicSpaces = async (): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
-      .rpc('get_public_spaces_safe');
+    // 1) Prova nuovo RPC "safe"
+    let { data, error } = await supabase.rpc('get_public_spaces_safe');
 
     if (error) {
-      console.error('Error fetching public spaces:', error);
-      return [];
+      console.error('[get_public_spaces_safe] error', {
+        message: error.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        code: (error as any)?.code,
+      });
+
+      // 2) Fallback: RPC storico (se esiste nel tuo DB)
+      const alt = await supabase.rpc('get_public_spaces');
+      if (!alt.error && Array.isArray(alt.data)) {
+        return alt.data as any[];
+      }
+
+      // 3) Fallback finale: query diretta tabella/view pubblica
+      const direct = await supabase
+        .from('spaces') // oppure la tua view "spaces_public_view"
+        .select('id,title,price_per_day,category,work_environment,max_capacity,address,created_at,photos,description,subcategory,latitude,longitude,workspace_features,amenities,seating_type,ideal_guest,confirmation_type,published')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (direct.error) {
+        console.error('[spaces fallback] error', {
+          message: direct.error.message,
+          details: (direct.error as any)?.details,
+        });
+        return [];
+      }
+      return direct.data ?? [];
     }
 
-    // Handle JSON response from safe function
-    if (Array.isArray(data)) {
-      return data as any[];
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error in getPublicSpaces:', error);
+    return Array.isArray(data) ? (data as any[]) : [];
+  } catch (err: any) {
+    console.error('Error in getPublicSpaces', {
+      message: err?.message ?? String(err),
+    });
     return [];
   }
 };
