@@ -55,7 +55,9 @@ export function BookingCalculatorDetails({
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">IVA (22%)</span>
+            <span className="text-sm text-muted-foreground">
+              IVA {stripeTaxEnabled ? '' : `(${Math.round(getDefaultVatPct() * 100)}%)`}
+            </span>
             {stripeTaxEnabled ? (
               <span className="text-sm text-muted-foreground italic">calcolata al pagamento</span>
             ) : (

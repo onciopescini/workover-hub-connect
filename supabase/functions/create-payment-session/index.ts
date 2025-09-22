@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14.21.0";
+import Stripe from "npm:stripe";
 import { ErrorHandler } from "../shared/error-handler.ts";
 
 const corsHeaders = {
@@ -42,8 +42,13 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
+    // Read pricing environment variables
+    const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.12');
+    const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
+    const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
+    
     // Get the origin from the request to build correct redirect URLs
-    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000';
+    const origin = req.headers.get('origin') ?? (Deno.env.get('SITE_URL') ?? 'https://workover.example');
 
     if (!stripeSecretKey) {
       ErrorHandler.logError('STRIPE_SECRET_KEY not found', null, { operation: 'env_validation' });
@@ -56,7 +61,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2024-06-20',
     });
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
