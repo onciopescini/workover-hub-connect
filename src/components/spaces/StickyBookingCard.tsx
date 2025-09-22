@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Euro, Shield, Clock, CheckCircle, AlertTriangle } from "lucide-react";
-import { BookingForm } from './BookingForm';
+import { TwoStepBookingForm } from './TwoStepBookingForm';
 import { useLogger } from "@/hooks/useLogger";
 
 interface StickyBookingCardProps {
@@ -71,7 +71,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           </div>
         </CardHeader>
         <CardContent>
-          <BookingForm
+          <TwoStepBookingForm
             spaceId={space.id}
             pricePerDay={space.price_per_day}
             confirmationType={confirmationType}
