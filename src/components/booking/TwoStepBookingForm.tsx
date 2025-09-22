@@ -320,15 +320,14 @@ export function TwoStepBookingForm({
 
       if (fnError || !sessionData?.url) {
         error('Payment session creation failed', fnError, { spaceId, bookingState });
-        toast.error(
-          <>
-            Errore nella creazione della sessione di pagamento
-            <span data-testid="payment-error-toast" className="sr-only">payment-error</span>
-          </>, 
-          {
-            description: fnError?.message || 'Impossibile procedere con il pagamento',
-          }
-        );
+        toast.error('Errore nella creazione della sessione di pagamento', {
+          description: (
+            <>
+              Impossibile procedere con il pagamento
+              <span data-testid="payment-error-toast" className="sr-only">payment-error</span>
+            </>
+          ),
+        });
         return;
       }
 
