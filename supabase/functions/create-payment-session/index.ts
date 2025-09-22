@@ -88,35 +88,22 @@ serve(async (req) => {
     const numPricePerHour = Number(pricePerHour);
     const numPricePerDay = Number(pricePerDay);
     
-    if (
-      numDurationHours <= 0 ||
-      numPricePerHour < 0 ||
-      numPricePerDay < 0 ||
-      !Number.isFinite(numDurationHours) ||
-      !Number.isFinite(numPricePerHour) ||
-      !Number.isFinite(numPricePerDay)
-    ) {
-      return new Response(JSON.stringify({ error: 'Invalid pricing input' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    // Stripe init con API version valida
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2024-06-20',
-    });
-
     // Env lato server (NO VITE_* qui)
     const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.12');
     const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
     const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
-
-    // Validate environment percentages
-    if (serviceFeePct < 0 || serviceFeePct > 1 || vatPct < 0 || vatPct > 1) {
-      return new Response(JSON.stringify({ error: 'Invalid pricing configuration' }), {
+    
+    // Comprehensive input validation - return 400 for any invalid inputs
+    if (
+      !Number.isFinite(numDurationHours) || numDurationHours <= 0 ||
+      !Number.isFinite(numPricePerHour) || numPricePerHour < 0 ||
+      !Number.isFinite(numPricePerDay) || numPricePerDay < 0 ||
+      !Number.isFinite(serviceFeePct) || serviceFeePct < 0 || serviceFeePct > 1 ||
+      !Number.isFinite(vatPct) || vatPct < 0 || vatPct > 1
+    ) {
+      return new Response(JSON.stringify({ error: 'Invalid pricing input' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+        status: 400,
       });
     }
 
