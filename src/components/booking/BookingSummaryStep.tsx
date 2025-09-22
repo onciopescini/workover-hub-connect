@@ -2,10 +2,10 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Euro, CheckCircle, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
+import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
 import type { SelectedTimeRange } from './TwoStepBookingForm';
 
 interface BookingSummaryStepProps {
@@ -23,20 +23,18 @@ export function BookingSummaryStep({
   pricePerDay,
   confirmationType
 }: BookingSummaryStepProps) {
-  const pricing = calculateTwoStepBookingPrice(
-    selectedRange.duration,
+  const stripeTaxEnabled = isStripeTaxEnabled();
+  
+  const pricing = computePricing({
+    durationHours: selectedRange.duration,
     pricePerHour,
-    pricePerDay
-  );
+    pricePerDay,
+    serviceFeePct: getServiceFeePct(),
+    vatPct: getDefaultVatPct(),
+    stripeTaxEnabled
+  });
 
   const isInstantBooking = confirmationType === 'instant';
-  
-  // Calculate service fee (example: 5% of base price)
-  const serviceFee = pricing.basePrice * 0.05;
-  const subtotal = pricing.basePrice + serviceFee;
-  // VAT placeholder (would be calculated based on actual requirements)
-  const vatAmount = subtotal * 0.22; // 22% IVA example
-  const totalAmount = subtotal + vatAmount;
 
   return (
     <div className="space-y-6">
@@ -108,38 +106,42 @@ export function BookingSummaryStep({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                {pricing.isDayRate 
-                  ? `Tariffa giornaliera (${selectedRange.duration}h)`
-                  : `${selectedRange.duration}h × €${pricePerHour}/h`
-                }
+                {pricing.breakdownLabel}
               </span>
-              <span className="font-medium">€{pricing.basePrice.toFixed(2)}</span>
+              <span className="font-medium">€{pricing.base.toFixed(2)}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Service fee</span>
-              <span className="font-medium">€{serviceFee.toFixed(2)}</span>
+              <div className="flex items-center gap-1">
+                <span className="text-sm text-muted-foreground">Service fee</span>
+                <Info className="w-3 h-3 text-muted-foreground" />
+              </div>
+              <span className="font-medium">€{pricing.serviceFee.toFixed(2)}</span>
             </div>
 
             <Separator />
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Subtotale</span>
-              <span className="font-medium">€{subtotal.toFixed(2)}</span>
+              <span className="font-medium">€{(pricing.base + pricing.serviceFee).toFixed(2)}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">IVA (22%)</span>
-              <span className="font-medium">€{vatAmount.toFixed(2)}</span>
+              {stripeTaxEnabled ? (
+                <span className="text-sm text-muted-foreground italic">calcolata al pagamento</span>
+              ) : (
+                <span className="font-medium">€{pricing.vat.toFixed(2)}</span>
+              )}
             </div>
 
             <Separator />
 
-            <div className="flex items-center justify-between text-lg font-semibold">
+            <div className="flex items-center justify-between text-lg font-semibold" aria-live="polite">
               <span>Totale</span>
               <div className="flex items-center">
                 <Euro className="w-4 h-4 mr-1" />
-                <span>€{totalAmount.toFixed(2)}</span>
+                <span>€{pricing.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
