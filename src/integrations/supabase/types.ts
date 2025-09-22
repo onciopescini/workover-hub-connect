@@ -2234,8 +2234,14 @@ export type Database = {
           confirmation_type: string
           created_at: string
           description: string
+          host_bio: string
+          host_first_name: string
+          host_last_name: string
+          host_networking_enabled: boolean
+          host_profile_photo: string
           host_stripe_account_id: string
           id: string
+          ideal_guest: string
           latitude: number
           longitude: number
           max_capacity: number
@@ -2243,7 +2249,10 @@ export type Database = {
           photos: string[]
           price_per_day: number
           price_per_hour: number
+          published: boolean
+          seating_type: string
           subcategory: string
+          title: string
           work_environment: string
           workspace_features: string[]
         }[]

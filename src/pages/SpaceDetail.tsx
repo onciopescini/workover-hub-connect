@@ -45,14 +45,14 @@ const SpaceDetail = () => {
       
       console.log('✅ SpaceDetail - Space fetched successfully:', {
         id: spaceData.id,
-        title: spaceData.title ?? spaceData.name ?? 'Spazio',
+        title: (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio',
         confirmation_type: spaceData.confirmation_type,
-        published: spaceData.published ?? true
+        published: (spaceData as any).published ?? true
       });
       
       // Transform the response to match expected interface
       // Add title/name compatibility 
-      const title = spaceData.title ?? spaceData.name ?? 'Spazio';
+      const title = (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio';
       
       return {
         ...spaceData,
@@ -77,13 +77,13 @@ const SpaceDetail = () => {
         images: spaceData.photos || [],
         pending_approval: false,
         space_creation_restricted: false,
-        published: spaceData.published ?? true,
+        published: (spaceData as any).published ?? true,
         host: {
           id: 'host-id', // We don't expose the real host_id for security
-          first_name: spaceData.host_first_name ?? '',
-          last_name: spaceData.host_last_name ?? '',
-          profile_photo_url: spaceData.host_profile_photo ?? null,
-          bio: spaceData.host_bio ?? '',
+          first_name: (spaceData as any).host_first_name ?? '',
+          last_name: (spaceData as any).host_last_name ?? '',
+          profile_photo_url: (spaceData as any).host_profile_photo ?? null,
+          bio: (spaceData as any).host_bio ?? '',
           created_at: new Date().toISOString()
         }
       } as unknown as Space & {
