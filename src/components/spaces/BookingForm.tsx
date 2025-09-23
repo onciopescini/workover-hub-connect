@@ -243,6 +243,8 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
           const endDateTime = new Date(`${firstSlot.date}T${firstSlot.endTime}:00`);
           const durationHours = Math.abs((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60));
           
+          console.debug('BookingForm → host_stripe_account_id', hostStripeAccountId);
+          
           handlePaymentFlow(
             reservation.booking_id!,
             spaceId,
@@ -422,7 +424,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
           <Button
             type="submit"
             className="w-full"
-            disabled={isProcessing || validSlots.length === 0}
+            disabled={isProcessing || validSlots.length === 0 || (confirmationType === 'instant' && !hostStripeAccountId)}
           >
             {isProcessing ? (
               <>
@@ -443,7 +445,13 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
             )}
           </Button>
           
-          {confirmationType === 'instant' && (
+          {confirmationType === 'instant' && !hostStripeAccountId && (
+            <p className="text-sm text-red-600 mt-2">
+              Host non collegato a Stripe — impossibile procedere al pagamento.
+            </p>
+          )}
+          
+          {confirmationType === 'instant' && hostStripeAccountId && (
             <p className="text-xs text-center text-gray-500">
               Sarai reindirizzato a Stripe per completare il pagamento
             </p>
