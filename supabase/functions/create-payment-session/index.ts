@@ -79,11 +79,21 @@ serve(async (req) => {
       booking_id,
     } = body;
 
-    if (!space_id || durationHours == null || pricePerHour == null || pricePerDay == null || !host_stripe_account_id) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+    // Required fields validation with detailed error response
+    if (!space_id || !booking_id || !Number.isFinite(Number(durationHours)) ||
+        !Number.isFinite(Number(pricePerHour)) || !Number.isFinite(Number(pricePerDay)) ||
+        !host_stripe_account_id) {
+      return new Response(JSON.stringify({
+        error: 'Missing required fields',
+        missing: {
+          space_id: !!space_id,
+          booking_id: !!booking_id,
+          durationHours: Number.isFinite(Number(durationHours)),
+          pricePerHour: Number.isFinite(Number(pricePerHour)),
+          pricePerDay: Number.isFinite(Number(pricePerDay)),
+          host_stripe_account_id: !!host_stripe_account_id,
+        }
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
     }
 
     // Input validation for pricing values
@@ -118,6 +128,11 @@ serve(async (req) => {
       serviceFeePct,
       vatPct,
       stripeTaxEnabled,
+    });
+
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
     });
 
     // Customer (riutilizza se esiste)

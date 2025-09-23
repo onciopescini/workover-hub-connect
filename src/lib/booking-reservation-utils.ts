@@ -134,8 +134,18 @@ export const handlePaymentFlow = async (
   onError: (message: string) => void
 ) => {
   try {
+    // Guard: check if host has Stripe account
+    if (!hostStripeAccountId) {
+      console.error('🔴 handlePaymentFlow - Host not connected to Stripe');
+      toast.error('Host non collegato a Stripe', {
+        description: 'Impossibile procedere con il pagamento. Contatta il proprietario dello spazio.',
+      });
+      onError('HOST_STRIPE_ACCOUNT_MISSING');
+      return;
+    }
+
     console.log('🔵 handlePaymentFlow - Starting payment flow:', {
-      bookingId, spaceId, durationHours, pricePerHour, pricePerDay
+      bookingId, spaceId, durationHours, pricePerHour, pricePerDay, hostStripeAccountId
     });
     
     const paymentSession = await createPaymentSession(
