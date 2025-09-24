@@ -15,7 +15,7 @@ interface SpaceMapProps {
   highlightedSpaceId?: string | null;
 }
 
-export const SpaceMap: React.FC<SpaceMapProps> = ({ 
+export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({ 
   spaces, 
   userLocation, 
   onSpaceClick,
@@ -30,6 +30,21 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+
+  // Memoize callbacks to prevent re-renders
+  const handleSpaceClick = useCallback((spaceId: string) => {
+    onSpaceClick(spaceId);
+  }, [onSpaceClick]);
+
+  // Memoize spaces processing to prevent unnecessary recalculations  
+  const processedSpaces = useMemo(() => {
+    return spaces?.filter(space => 
+      space.latitude && 
+      space.longitude && 
+      !isNaN(Number(space.latitude)) && 
+      !isNaN(Number(space.longitude))
+    ) || [];
+  }, [spaces]);
 
   // Memoized spaces with proper key generation
   const memoizedSpaces = useMemo(() => {
@@ -278,4 +293,4 @@ export const SpaceMap: React.FC<SpaceMapProps> = ({
       )}
     </div>
   );
-};
+});

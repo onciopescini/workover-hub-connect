@@ -43,7 +43,9 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           https://maps.googleapis.com
           https://www.google-analytics.com
           https://stats.g.doubleclick.net
-          https://plausible.io;
+          https://plausible.io
+          https://api.mapbox.com
+          https://events.mapbox.com;
         media-src 'self' https: blob:;
         worker-src 'self' blob:;
         child-src 'self' https://js.stripe.com;
