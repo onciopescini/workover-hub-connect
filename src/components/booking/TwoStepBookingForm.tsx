@@ -255,7 +255,7 @@ export function TwoStepBookingForm({
         user_id_param: user.user.id,
         guests_count_param: bookingState.guestsCount,
         confirmation_type_param: confirmationType
-      });
+      } as any);
 
       if (rpcError) {
         error('Slot reservation failed', rpcError, { spaceId, bookingState });

@@ -28,7 +28,8 @@ export const reserveBookingSlot = async (
   endTime: string,
   confirmationType: string = 'instant',
   bufferMinutes: number = 0,
-  slotInterval: number = 30
+  slotInterval: number = 30,
+  guestsCount: number = 1
 ): Promise<SlotReservationResult | null> => {
   try {
     console.log('🔵 reserveBookingSlot - Starting reservation:', {
@@ -54,8 +55,9 @@ export const reserveBookingSlot = async (
       start_time_param: startTime,
       end_time_param: endTime,
       user_id_param: user.user.id,
+      guests_count_param: guestsCount,
       confirmation_type_param: confirmationType
-    });
+    } as any);
 
     if (error) {
       console.error('🔴 reserveBookingSlot - RPC error:', error);
