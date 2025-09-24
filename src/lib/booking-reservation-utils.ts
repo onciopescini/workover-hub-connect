@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { createUtcIsoString, nowUtc } from "@/lib/date-utils";
 import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";

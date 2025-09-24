@@ -2,6 +2,8 @@
 import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { it } from "date-fns/locale";
+import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-utils";
+import { canCancelBooking } from "@/lib/booking-datetime-utils";
 import { BookingWithDetails } from "@/types/booking";
 import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -182,7 +184,25 @@ export const EnhancedBookingCard = ({
   };
 
   const otherParty = getOtherParty();
-  const formattedDate = format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it });
+  
+  // Use UTC-aware date formatting
+  const dateTimeFormatted = booking.booking_date && booking.start_time 
+    ? (() => {
+        const parsed = parseBookingDateTime(booking.booking_date, booking.start_time);
+        return parsed.isValid && parsed.utcDate 
+          ? formatBookingDateTime(parsed.utcDate)
+          : { 
+              date: format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it }),
+              time: `${booking.start_time} - ${booking.end_time || ''}`,
+              fullDateTime: format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it })
+            };
+      })()
+    : { 
+        date: 'Data non disponibile',
+        time: 'Orario non disponibile',
+        fullDateTime: 'Data e orario non disponibili'
+      };
+  
   const statusInfo = getBookingStatusInfo();
   const chatState = getChatButtonState();
 
@@ -235,17 +255,17 @@ export const EnhancedBookingCard = ({
           <div className="text-right">
             <div className="flex items-center text-sm text-gray-600 mb-1">
               <Calendar className="w-4 h-4 mr-1" />
-              {formattedDate}
+              {dateTimeFormatted.date}
             </div>
             {booking.start_time && booking.end_time && (
               <p className="text-xs text-gray-500">
-                {booking.start_time} - {booking.end_time}
+                {dateTimeFormatted.time}
               </p>
             )}
             {booking.slot_reserved_until && booking.status === 'pending' && (
               <p className="text-xs text-orange-600 mt-1">
                 <Clock className="w-3 h-3 inline mr-1" />
-                Slot riservato fino: {format(new Date(booking.slot_reserved_until), 'HH:mm')}
+                Slot riservato fino: {formatUtcDateForDisplay(booking.slot_reserved_until, 'HH:mm')}
               </p>
             )}
           </div>
