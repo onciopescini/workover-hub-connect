@@ -29,13 +29,14 @@ export class WebhookValidator {
       const rawBody = await req.arrayBuffer();
       const bodyText = new TextDecoder("utf-8").decode(rawBody);
 
-      ErrorHandler.logInfo('Webhook validation debug', {
+    ErrorHandler.logInfo('Webhook validation debug', {
         bodyLength: bodyText.length,
         hasSignature: !!signature,
         hasSecret: !!webhookSecret
       });
 
-      const event = stripe.webhooks.constructEvent(bodyText, signature!, webhookSecret);
+      // CRITICAL FIX: Use async version for Deno edge functions
+      const event = await stripe.webhooks.constructEventAsync(bodyText, signature!, webhookSecret);
       
       if (!Validators.validateStripeEvent(event)) {
         return { success: false, error: 'Invalid event structure' };
