@@ -6,7 +6,6 @@ import { Space } from '@/types/space';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceMapPreview } from './SpaceMapPreview';
 import { createRoot } from 'react-dom/client';
-import { useLogger } from "@/hooks/useLogger";
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -21,7 +20,6 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   onSpaceClick,
   highlightedSpaceId 
 }) => {
-  const { error: logError, info } = useLogger({ context: 'SpaceMap' });
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -61,9 +59,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) {
-          logError('Error fetching Mapbox token', error as Error, {
-            operation: 'fetch_mapbox_token'
-          });
+          console.error('Error fetching Mapbox token:', error);
           setError('Impossibile caricare la mappa');
           return;
         }
@@ -74,9 +70,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           setError('Token Mapbox non configurato');
         }
       } catch (err) {
-        logError('Error fetching Mapbox token', err as Error, {
-          operation: 'fetch_mapbox_token_exception'
-        });
+        console.error('Error fetching Mapbox token:', err);
         setError('Errore nel caricamento della mappa');
       } finally {
         setIsLoadingToken(false);
@@ -86,17 +80,25 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     fetchMapboxToken();
   }, []);
 
-  // Initialize map with enhanced debugging and container monitoring
+  // Stabilized user location ref to prevent re-initialization
+  const stableUserLocation = useRef(userLocation);
+  const mapInitialized = useRef(false);
+
+  // Update stable user location
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || map.current) return;
+    stableUserLocation.current = userLocation;
+  }, [userLocation]);
+
+  // Initialize map once with stable dependencies
+  useEffect(() => {
+    if (!mapContainer.current || !mapboxToken || map.current || mapInitialized.current) return;
 
     const container = mapContainer.current;
     const containerRect = container.getBoundingClientRect();
     
-    info('Initializing Mapbox map', { 
+    console.log('🗺️ Initializing Mapbox map', { 
       hasToken: !!mapboxToken,
-      containerSize: { width: containerRect.width, height: containerRect.height },
-      userLocation 
+      containerSize: { width: containerRect.width, height: containerRect.height }
     });
     
     // Verifica dimensioni container
@@ -108,12 +110,13 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     
     try {
       mapboxgl.accessToken = mapboxToken;
+      mapInitialized.current = true;
       
       map.current = new mapboxgl.Map({
         container: container,
         style: 'mapbox://styles/mapbox/light-v11',
-        center: userLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
-        zoom: userLocation ? 12 : 6,
+        center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
+        zoom: stableUserLocation.current ? 12 : 6,
         attributionControl: false,
         renderWorldCopies: false
       });
@@ -122,7 +125,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
       // Handle map events
       map.current.on('load', () => {
-        info('Map loaded successfully');
+        console.log('✅ Map loaded successfully');
         setMapReady(true);
         setError(null);
         
@@ -130,7 +133,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         setTimeout(() => {
           if (map.current && mapContainer.current) {
             map.current.resize();
-            info('Map resized after load');
+            console.log('🔄 Map resized after load');
           }
         }, 100);
       });
@@ -152,58 +155,78 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     }
 
     return () => {
-      info('Cleaning up map');
+      console.log('🧹 Cleaning up map');
       if (map.current) {
         setMapReady(false);
         map.current.remove();
         map.current = null;
       }
+      mapInitialized.current = false;
     };
-  }, [mapboxToken, userLocation, info]);
+  }, [mapboxToken]);
 
-  // Enhanced container size monitoring with debugging
+  // Debounced container size monitoring to prevent resize loops
   useEffect(() => {
     if (!mapContainer.current) return;
 
     const container = mapContainer.current;
+    let resizeTimeout: NodeJS.Timeout;
     
     resizeObserver.current = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        setContainerSize({ width, height });
         
-        info('Container resized', { width, height });
-        
-        if (map.current && mapReady && width > 0 && height > 0) {
-          try {
-            map.current.resize();
-            info('Map resize triggered', { width, height });
-          } catch (error) {
-            console.warn('Map resize failed:', error);
-          }
-        }
+        // Debounce resize to prevent loops
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          setContainerSize(prevSize => {
+            // Only update if size actually changed
+            if (prevSize.width !== width || prevSize.height !== height) {
+              console.log('📐 Container resized:', { width, height });
+              
+              if (map.current && mapReady && width > 0 && height > 0) {
+                try {
+                  map.current.resize();
+                  console.log('🔄 Map resize triggered');
+                } catch (error) {
+                  console.warn('Map resize failed:', error);
+                }
+              }
+              return { width, height };
+            }
+            return prevSize;
+          });
+        }, 100); // 100ms debounce
       }
     });
     
     resizeObserver.current.observe(container);
     
     return () => {
+      clearTimeout(resizeTimeout);
       if (resizeObserver.current) {
         resizeObserver.current.disconnect();
         resizeObserver.current = null;
       }
     };
-  }, [mapReady, info]);
+  }, [mapReady]);
 
-  // Update map center when userLocation changes
+  // Update map center when userLocation changes with stabilized reference
   useEffect(() => {
     if (!map.current || !mapReady || !userLocation) return;
     
-    map.current.flyTo({
-      center: [userLocation.lng, userLocation.lat],
-      zoom: 11, // City-level zoom
-      essential: true
-    });
+    // Only fly to if location is different from current center
+    const currentCenter = map.current.getCenter();
+    const distance = Math.abs(currentCenter.lng - userLocation.lng) + Math.abs(currentCenter.lat - userLocation.lat);
+    
+    if (distance > 0.001) { // Only update if meaningful distance change
+      map.current.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 11,
+        essential: true
+      });
+      console.log('🎯 Map center updated to user location');
+    }
   }, [userLocation, mapReady]);
 
   // Add/update markers
@@ -283,10 +306,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
               });
             }
           } catch (error) {
-            logError('Error creating popup', error as Error, {
-              operation: 'create_popup',
-              spaceId: space.id
-            });
+            console.error('Error creating popup:', error);
           }
         });
 
@@ -298,10 +318,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           markers.current[space.id] = marker;
         }
       } catch (error) {
-        logError('Failed to add marker for space', error as Error, {
-          operation: 'add_marker',
-          spaceId: space.id
-        });
+        console.error('Failed to add marker for space:', error);
       }
     });
   }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId]);
@@ -334,10 +351,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         )
         .addTo(map.current);
     } catch (error) {
-      logError('Error adding user location marker', error as Error, {
-        operation: 'add_user_location_marker',
-        userLocation
-      });
+      console.error('Error adding user location marker:', error);
     }
   }, [userLocation, mapReady]);
 
