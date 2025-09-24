@@ -1,33 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WorkoverHub Connect - Coworking Spaces, Networking & Events</title>
-    <meta name="description" content="Modern platform for coworking space bookings, professional networking, and community events. Connect with like-minded professionals and discover productive workspaces." />
-    <meta name="author" content="WorkoverHub Team" />
-    <meta name="keywords" content="coworking, workspace, networking, events, professional community, office rental, hot desk, meeting rooms" />
+    <title>Workover - Piattaforma Coworking Professionale in Italia</title>
+    <meta name="description" content="La piattaforma leader per spazi coworking, networking professionale ed eventi. Prenota spazi di lavoro, connettiti con professionisti e scopri opportunità in tutta Italia." />
+    <meta name="author" content="Workover Team" />
+    <meta name="keywords" content="coworking Italia, spazi lavoro condivisi, networking professionale, uffici temporanei, meeting room, hot desk, eventi business, workspace Milano Roma" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:title" content="WorkoverHub Connect - Coworking Spaces, Networking & Events" />
-    <meta property="og:description" content="Modern platform for coworking space bookings, professional networking, and community events. Connect with like-minded professionals and discover productive workspaces." />
+    <meta property="og:title" content="Workover - Piattaforma Coworking Professionale in Italia" />
+    <meta property="og:description" content="Prenota spazi coworking, connettiti con professionisti e partecipa a eventi. La community di riferimento per il lavoro flessibile in Italia." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://workoverhub.com/og-image.png" />
-    <meta property="og:url" content="https://workoverhub.com" />
-    <meta property="og:site_name" content="WorkoverHub Connect" />
+    <meta property="og:image" content="https://workover.app/og-image.jpg" />
+    <meta property="og:url" content="https://workover.app" />
+    <meta property="og:site_name" content="Workover" />
+    <meta property="og:locale" content="it_IT" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="WorkoverHub Connect" />
-    <meta name="twitter:description" content="Modern platform for coworking space bookings, professional networking, and community events." />
-    <meta name="twitter:image" content="https://workoverhub.com/og-image.png" />
+    <meta name="twitter:title" content="Workover - Coworking e Networking Professionale" />
+    <meta name="twitter:description" content="La piattaforma italiana per spazi coworking, networking ed eventi professionali. Scopri il futuro del lavoro flessibile." />
+    <meta name="twitter:image" content="https://workover.app/og-image.jpg" />
+    <meta name="twitter:site" content="@workover_app" />
+
+    <!-- Additional SEO -->
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <link rel="canonical" href="https://workover.app" />
+    
+    <!-- Language and Region -->
+    <meta name="language" content="Italian" />
+    <meta name="geo.region" content="IT" />
+    <meta name="geo.placename" content="Italia" />
+    
+    <!-- Mobile optimization -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <!-- Theme colors -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-title" content="Workover" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Plausible Analytics - GDPR Compliant -->
-    <script defer data-domain="workoverhub.com" src="https://plausible.io/js/script.js"></script>
+    <script defer data-domain="workover.app" src="https://plausible.io/js/script.js"></script>
     
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://khtqwzvrxzsgfhsslwyz.supabase.co">
+    <link rel="dns-prefetch" href="https://plausible.io">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.tsx" as="script">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Workover",
+      "url": "https://workover.app",
+      "description": "Piattaforma per spazi coworking, networking professionale ed eventi in Italia",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://workover.app/spaces?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Workover",
+        "logo": "https://workover.app/logo.png",
+        "sameAs": [
+          "https://www.linkedin.com/company/workover",
+          "https://twitter.com/workover_app"
+        ]
+      }
+    }
+    </script>
   </head>
 
   <body>
