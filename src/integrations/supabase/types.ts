@@ -2374,14 +2374,22 @@ export type Database = {
         Returns: boolean
       }
       validate_and_reserve_slot: {
-        Args: {
-          confirmation_type_param: string
-          date_param: string
-          end_time_param: string
-          space_id_param: string
-          start_time_param: string
-          user_id_param: string
-        }
+        Args:
+          | {
+              confirmation_type_param: string
+              date_param: string
+              end_time_param: string
+              space_id_param: string
+              start_time_param: string
+              user_id_param: string
+            }
+          | {
+              date_param: string
+              end_time_param: string
+              space_id_param: string
+              start_time_param: string
+              user_id_param: string
+            }
         Returns: Json
       }
       validate_booking_slot_with_lock: {
