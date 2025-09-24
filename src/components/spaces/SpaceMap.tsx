@@ -323,7 +323,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="relative w-full min-h-[420px] md:min-h-[520px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-[420px] md:h-[520px] rounded-lg overflow-hidden">
       <div ref={mapContainer} id="space-map-container" className="absolute inset-0" />
       
       {memoizedSpaces.length > 0 && (
