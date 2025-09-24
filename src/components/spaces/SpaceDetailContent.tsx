@@ -22,6 +22,8 @@ interface ExtendedSpace extends Space {
     location?: string;
     created_at: string;
   };
+  host_stripe_account_id?: string;
+  host_stripe_connected?: boolean;
 }
 
 interface SpaceDetailContentProps {
@@ -97,7 +99,9 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     price_per_day: space.price_per_day,
     max_capacity: space.max_capacity,
     title: space.title,
-    confirmation_type: space.confirmation_type || 'host_approval'
+    confirmation_type: space.confirmation_type || 'host_approval',
+    host_stripe_account_id: space.host_stripe_account_id ?? '',
+    host_stripe_connected: space.host_stripe_connected ?? false
   };
 
   return (
