@@ -243,7 +243,14 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
           const endDateTime = new Date(`${firstSlot.date}T${firstSlot.endTime}:00`);
           const durationHours = Math.abs((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60));
           
-          console.debug('BookingForm → host_stripe_account_id', hostStripeAccountId);
+          console.log('🔵 BookingForm → handlePaymentFlow payload', {
+            bookingId: reservation.booking_id,
+            spaceId,
+            durationHours,
+            pricePerHour: pricePerHour || pricePerDay / 8,
+            pricePerDay,
+            host_stripe_account_id: hostStripeAccountId || ''
+          });
           
           handlePaymentFlow(
             reservation.booking_id!,

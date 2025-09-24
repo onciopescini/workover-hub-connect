@@ -76,7 +76,14 @@ export const createPaymentSession = async (
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('🔴 createPaymentSession - Edge function error:', {
+        status: error.status,
+        message: error.message,
+        details: error
+      });
+      throw error;
+    }
     
     return data as PaymentSession;
   } catch (error) {

@@ -144,8 +144,9 @@ export const handlePaymentFlow = async (
       return;
     }
 
-    console.log('🔵 handlePaymentFlow - Starting payment flow:', {
-      bookingId, spaceId, durationHours, pricePerHour, pricePerDay, hostStripeAccountId
+    console.log('🔵 handlePaymentFlow payload', {
+      bookingId, spaceId, durationHours, pricePerHour, pricePerDay,
+      host_stripe_account_id: hostStripeAccountId
     });
     
     const paymentSession = await createPaymentSession(

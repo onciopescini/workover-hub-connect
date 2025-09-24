@@ -16,6 +16,7 @@ interface StickyBookingCardProps {
     title: string;
     confirmation_type?: string;
     host_stripe_account_id?: string; // Required for Stripe Connect payments
+    host_stripe_connected?: boolean; // Informational only
   };
   isAuthenticated: boolean;
   onLoginRequired: () => void;
@@ -33,9 +34,13 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   const { debug } = useLogger({ context: 'StickyBookingCard' });
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  
   // Confirmation type handling
   const confirmationType = space.confirmation_type || 'host_approval';
   const isInstantBooking = confirmationType === 'instant';
+  
+  // Stripe account check
+  const canCheckout = Boolean(space?.host_stripe_account_id);
   
   debug('Space confirmation type validation', {
     operation: 'validate_confirmation_type',
@@ -183,12 +188,26 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
           </div>
         </div>
 
+        {/* Stripe Warning */}
+        {!canCheckout && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 text-sm">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Host non collegato a Stripe</span>
+            </div>
+            <p className="text-red-600 text-xs mt-1">
+              Impossibile procedere con il pagamento. Contatta il proprietario.
+            </p>
+          </div>
+        )}
+
         {/* Action Button */}
         {isAuthenticated ? (
           <Button 
             onClick={() => setShowBookingForm(true)}
             className="w-full"
             size="lg"
+            disabled={!canCheckout}
           >
             <Euro className="w-4 h-4 mr-2" />
             {isInstantBooking ? 'Prenota ora' : 'Richiedi prenotazione'}
@@ -198,6 +217,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             onClick={onLoginRequired}
             className="w-full"
             size="lg"
+            disabled={!canCheckout}
           >
             Accedi per prenotare
           </Button>

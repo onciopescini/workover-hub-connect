@@ -84,14 +84,14 @@ serve(async (req) => {
         !Number.isFinite(Number(pricePerHour)) || !Number.isFinite(Number(pricePerDay)) ||
         !host_stripe_account_id) {
       return new Response(JSON.stringify({
-        error: 'Missing required fields',
+        error: 'Invalid or missing fields',
         missing: {
-          space_id: !!space_id,
-          booking_id: !!booking_id,
-          durationHours: Number.isFinite(Number(durationHours)),
-          pricePerHour: Number.isFinite(Number(pricePerHour)),
-          pricePerDay: Number.isFinite(Number(pricePerDay)),
-          host_stripe_account_id: !!host_stripe_account_id,
+          space_id: !space_id,
+          booking_id: !booking_id,
+          durationHours: !(Number.isFinite(Number(durationHours)) && Number(durationHours) > 0),
+          pricePerHour: !(Number.isFinite(Number(pricePerHour)) && Number(pricePerHour) >= 0),
+          pricePerDay: !(Number.isFinite(Number(pricePerDay)) && Number(pricePerDay) >= 0),
+          host_stripe_account_id: !host_stripe_account_id,
         }
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
     }
