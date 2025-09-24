@@ -83,6 +83,32 @@ export class EnhancedPaymentService {
     
     for (const field of requiredFields) {
       if (!session.metadata?.[field]) {
+        // Special handling for base_amount - try to retrieve from PaymentIntent
+        if (field === 'base_amount' && session.payment_intent) {
+          try {
+            ErrorHandler.logInfo('Attempting to retrieve base_amount from PaymentIntent', {
+              sessionId: session.id,
+              paymentIntentId: session.payment_intent
+            });
+            
+            const stripe = StripeConfig.getInstance();
+            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+            
+            if (paymentIntent.metadata?.base_amount) {
+              // Copy the base_amount to session metadata for consistency
+              session.metadata = session.metadata || {};
+              session.metadata.base_amount = paymentIntent.metadata.base_amount;
+              
+              ErrorHandler.logSuccess('Retrieved base_amount from PaymentIntent', {
+                baseAmount: paymentIntent.metadata.base_amount
+              });
+              continue;
+            }
+          } catch (error) {
+            ErrorHandler.logError('Failed to retrieve base_amount from PaymentIntent', error);
+          }
+        }
+        
         ErrorHandler.logError(`Missing required metadata field: ${field}`, {
           sessionId: session.id,
           metadata: session.metadata

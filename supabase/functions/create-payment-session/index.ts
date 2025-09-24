@@ -198,9 +198,15 @@ serve(async (req) => {
         booking_id: booking_id || '',
         space_id,
         user_id: user.id,
+        duration_hours: String(durationHours),
+        base_amount: String(pricing.base),
+        service_fee: String(pricing.serviceFee),
+        vat_amount: String(pricing.vat),
+        total_amount: String(pricing.total),
+        pricing_type: pricing.isDayRate ? 'day' : 'hour',
       },
-      success_url: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/bookings?canceled=1`,
+      success_url: `${origin}/bookings?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/bookings?cancelled=true`,
     });
 
     return new Response(

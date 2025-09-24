@@ -15,7 +15,7 @@ export const PaymentSuccessHandler: React.FC = () => {
   const cancelled = searchParams.get('cancelled') === 'true';
   
   const { isLoading, isSuccess, error, bookingId } = usePaymentVerification(
-    success ? sessionId : null
+    sessionId // Always verify if session_id is present, regardless of success parameter
   );
 
   // Clear URL parameters after handling
