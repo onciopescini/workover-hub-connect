@@ -138,8 +138,8 @@ export const sanitizeHtml = (html: string, allowedTags?: string[]): string => {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: allowedTags || defaultAllowedTags,
     ALLOWED_ATTR: ['class'],
-    REMOVE_TAGS: ['script', 'object', 'embed', 'form', 'input'],
-    REMOVE_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+    FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
   });
 };
 

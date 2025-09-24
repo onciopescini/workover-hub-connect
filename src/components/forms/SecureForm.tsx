@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useFormRateLimit } from '@/hooks/useRateLimit';
+import { useRateLimit } from '@/hooks/useRateLimit';
 import { validateInput, sanitizeText, sanitizeHtml } from '@/lib/input-sanitization';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -122,14 +122,17 @@ export function SecureForm<T>({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [securityWarnings, setSecurityWarnings] = useState<string[]>([]);
-  const { submitWithRateLimit, isChecking } = useFormRateLimit(endpoint);
+  const { checkRateLimit, isChecking } = useRateLimit();
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsSubmitting(true);
     setErrors([]);
     setSecurityWarnings([]);
 
     try {
+      const formData = new FormData(e.currentTarget);
+      
       // Convert FormData to object
       const data: any = {};
       for (const [key, value] of formData.entries()) {
@@ -165,21 +168,20 @@ export function SecureForm<T>({
 
       if (warnings.length > 0) {
         setSecurityWarnings(warnings);
-        // Still proceed but log warnings
         console.warn('Security warnings detected:', warnings);
       }
 
-      // Submit with rate limiting
-      const submitFunction = async () => {
-        await onSubmit(validation.data);
-      };
-
-      if (rateLimitBypass) {
-        await submitFunction();
-      } else {
-        await submitWithRateLimit(submitFunction);
+      // Check rate limit if not bypassed
+      if (!rateLimitBypass) {
+        const rateLimitCheck = await checkRateLimit({ endpoint });
+        
+        if (!rateLimitCheck.allowed) {
+          const retryAfter = rateLimitCheck.retryAfter || 60;
+          throw new Error(`Troppi tentativi. Riprova tra ${retryAfter} secondi.`);
+        }
       }
 
+      await onSubmit(validation.data);
       onSuccess?.();
       
     } catch (error) {
@@ -236,7 +238,7 @@ export function SecureForm<T>({
       )}
 
       <form 
-        action={handleSubmit}
+        onSubmit={handleSubmit}
         className="space-y-4"
         noValidate
       >

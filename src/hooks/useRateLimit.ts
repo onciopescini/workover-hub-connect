@@ -1,130 +1,152 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
 
-interface RateLimitResult {
+interface RateLimitResponse {
   allowed: boolean;
-  remaining: number;
-  resetTime: number;
-  message?: string;
+  limit?: number;
+  remaining?: number;
+  resetTime?: number;
+  retryAfter?: number;
+  error?: string;
 }
 
-interface UseRateLimitReturn {
-  checkRateLimit: (action: 'login' | 'password_reset', identifier?: string) => Promise<RateLimitResult>;
-  isRateLimited: boolean;
-  remainingTime: number;
-  message: string;
+interface RateLimitOptions {
+  endpoint: string;
+  identifier?: string;
+  skipCheck?: boolean;
 }
 
-// Type validation function for API response
-const validateRateLimitResponse = (data: unknown): RateLimitResult => {
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid rate limit response: not an object');
-  }
+export const useRateLimit = () => {
+  const [isChecking, setIsChecking] = useState(false);
 
-  const response = data as Record<string, unknown>;
+  const checkRateLimit = useCallback(async (options: RateLimitOptions): Promise<RateLimitResponse> => {
+    if (options.skipCheck) {
+      return { allowed: true };
+    }
 
-  if (typeof response['allowed'] !== 'boolean') {
-    throw new Error('Invalid rate limit response: missing or invalid allowed field');
-  }
-
-  if (typeof response['remaining'] !== 'number') {
-    throw new Error('Invalid rate limit response: missing or invalid remaining field');
-  }
-
-  if (typeof response['resetTime'] !== 'number') {
-    throw new Error('Invalid rate limit response: missing or invalid resetTime field');
-  }
-
-  if (response['message'] !== undefined && typeof response['message'] !== 'string') {
-    throw new Error('Invalid rate limit response: invalid message field');
-  }
-
-  const result: RateLimitResult = {
-    allowed: response['allowed'] as boolean,
-    remaining: response['remaining'] as number,
-    resetTime: response['resetTime'] as number
-  };
-
-  if (response['message'] !== undefined) {
-    result.message = response['message'] as string;
-  }
-
-  return result;
-};
-
-export const useRateLimit = (): UseRateLimitReturn => {
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const [remainingTime, setRemainingTime] = useState(0);
-  const [message, setMessage] = useState('');
-
-  const checkRateLimit = useCallback(async (
-    action: 'login' | 'password_reset', 
-    identifier?: string
-  ): Promise<RateLimitResult> => {
+    setIsChecking(true);
+    
     try {
-      const { data, error } = await supabase.functions.invoke('auth-rate-limit', {
-        body: { action, identifier }
+      // Create identifier from user ID, IP, or fallback
+      const identifier = options.identifier || 'anonymous';
+
+      const { data, error } = await supabase.functions.invoke('rate-limiter', {
+        body: {
+          endpoint: options.endpoint,
+          identifier,
+          userAgent: navigator.userAgent,
+          ip: null // Will be detected server-side if needed
+        }
       });
 
       if (error) {
-        logger.error('Rate limit check failed', { action, ...(identifier && { identifier }) }, error);
-        // Fail closed - deny the request if rate limit check fails
-        return {
-          allowed: false,
-          remaining: 0,
-          resetTime: Date.now() + 60000,
-          message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
-        };
+        console.error('Rate limit check error:', error);
+        // Allow request on error to not block legitimate users
+        return { allowed: true, error: error.message };
       }
 
-      // Validate and parse response data
-      const result = validateRateLimitResponse(data);
-      
-      if (!result.allowed) {
-        setIsRateLimited(true);
-        setMessage(result.message || 'Troppi tentativi. Riprova più tardi.');
-        
-        // Calculate remaining time
-        const remainingSeconds = Math.ceil((result.resetTime - Date.now()) / 1000);
-        setRemainingTime(remainingSeconds);
-        
-        // Start countdown
-        const countdown = setInterval(() => {
-          setRemainingTime(prev => {
-            if (prev <= 1) {
-              clearInterval(countdown);
-              setIsRateLimited(false);
-              setMessage('');
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        setIsRateLimited(false);
-        setRemainingTime(0);
-        setMessage('');
-      }
-
-      return result;
-    } catch (error) {
-      logger.error('Rate limit check error', { action, ...(identifier && { identifier }) }, error as Error);
-      // Fail closed
+      // Transform response to match expected format
       return {
-        allowed: false,
-        remaining: 0,
-        resetTime: Date.now() + 60000,
-        message: 'Servizio temporaneamente non disponibile. Riprova più tardi.'
+        allowed: data?.allowed || true,
+        limit: data?.limit,
+        remaining: data?.remaining,
+        resetTime: data?.resetTime,
+        retryAfter: data?.retryAfter,
+        error: data?.error
       };
+    } catch (error) {
+      console.error('Rate limit check failed:', error);
+      // Allow request on error
+      return { allowed: true, error: 'Rate limit check failed' };
+    } finally {
+      setIsChecking(false);
     }
   }, []);
 
   return {
     checkRateLimit,
-    isRateLimited,
-    remainingTime,
-    message
+    isChecking
   };
 };
+
+// Rate limit decorator for functions
+export const withRateLimit = (endpoint: string, options?: { identifier?: string }) => {
+  return function <T extends (...args: any[]) => Promise<any>>(
+    target: any,
+    propertyName: string,
+    descriptor: TypedPropertyDescriptor<T>
+  ) {
+    const method = descriptor.value!;
+
+    descriptor.value = (async function (this: any, ...args: any[]) {
+      const rateLimitResponse = await checkRateLimitStandalone(endpoint, options?.identifier);
+      
+      if (!rateLimitResponse.allowed) {
+        throw new Error(`Rate limit exceeded. Try again in ${rateLimitResponse.retryAfter} seconds.`);
+      }
+
+      return method.apply(this, args);
+    }) as T;
+  };
+};
+
+// Standalone rate limit check
+export const checkRateLimitStandalone = async (
+  endpoint: string, 
+  identifier?: string
+): Promise<RateLimitResponse> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('rate-limiter', {
+      body: {
+        endpoint,
+        identifier: identifier || 'anonymous',
+        userAgent: navigator.userAgent,
+        ip: null
+      }
+    });
+
+    if (error) {
+      console.error('Rate limit check error:', error);
+      return { allowed: true, error: error.message };
+    }
+
+    return {
+      allowed: data?.allowed || true,
+      limit: data?.limit,
+      remaining: data?.remaining,
+      resetTime: data?.resetTime,
+      retryAfter: data?.retryAfter,
+      error: data?.error
+    };
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+    return { allowed: true, error: 'Rate limit check failed' };
+  }
+};
+
+// Rate limit middleware for form submissions
+export const useFormRateLimit = (endpoint: string) => {
+  const { checkRateLimit, isChecking } = useRateLimit();
+
+  const submitWithRateLimit = useCallback(async <T>(
+    submitFunction: () => Promise<T>
+  ): Promise<T> => {
+    const rateLimitCheck = await checkRateLimit({ endpoint });
+    
+    if (!rateLimitCheck.allowed) {
+      const retryAfter = rateLimitCheck.retryAfter || 60;
+      throw new Error(
+        `Troppi tentativi. Riprova tra ${retryAfter} secondi.`
+      );
+    }
+
+    return submitFunction();
+  }, [checkRateLimit, endpoint]);
+
+  return {
+    submitWithRateLimit,
+    isChecking
+  };
+};
+
+export default useRateLimit;

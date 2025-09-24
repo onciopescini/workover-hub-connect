@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     const { data: currentRequests, error: countError } = await supabase
       .from('rate_limits')
       .select('*')
-      .eq('key', rateLimitKey)
+      .eq('rate_limit_key', rateLimitKey)
       .gte('created_at', new Date(windowStart).toISOString())
 
     if (countError) {
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase
       .from('rate_limits')
       .insert({
-        key: rateLimitKey,
+        rate_limit_key: rateLimitKey,
         endpoint,
         identifier,
         user_agent: userAgent || null,
