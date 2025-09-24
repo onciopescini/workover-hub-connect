@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -45,7 +45,10 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
     { value: 'newest', label: 'Più recenti', icon: Clock }
   ];
 
-  const getSortedSpaces = () => {
+  // Memoized sorting per ottimizzare performance
+  const sortedSpaces = useMemo(() => {
+    if (!spaces.length) return [];
+    
     let sorted = [...spaces];
     
     switch (sortBy) {
@@ -64,7 +67,7 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
       default:
         return sorted;
     }
-  };
+  }, [spaces, sortBy]);
 
   const renderSkeletonCards = () => {
     return Array.from({ length: 6 }).map((_, index) => (
@@ -82,7 +85,6 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
     ));
   };
 
-  const sortedSpaces = getSortedSpaces();
   const currentSortOption = sortOptions.find(option => option.value === sortBy);
 
   return (

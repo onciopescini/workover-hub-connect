@@ -21,15 +21,17 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   onSpaceClick,
   highlightedSpaceId 
 }) => {
-  const { error: logError } = useLogger({ context: 'SpaceMap' });
+  const { error: logError, info } = useLogger({ context: 'SpaceMap' });
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const popups = useRef<mapboxgl.Popup[]>([]);
+  const resizeObserver = useRef<ResizeObserver | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   // Memoize callbacks to prevent re-renders
   const handleSpaceClick = useCallback((spaceId: string) => {
@@ -84,30 +86,53 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     fetchMapboxToken();
   }, []);
 
-  // Initialize map - Versione migliorata con debug
+  // Initialize map with enhanced debugging and container monitoring
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current) return;
 
-    console.log('🗺️ Initializing Mapbox map with token:', mapboxToken ? 'Available' : 'Missing');
+    const container = mapContainer.current;
+    const containerRect = container.getBoundingClientRect();
+    
+    info('Initializing Mapbox map', { 
+      hasToken: !!mapboxToken,
+      containerSize: { width: containerRect.width, height: containerRect.height },
+      userLocation 
+    });
+    
+    // Verifica dimensioni container
+    if (containerRect.width === 0 || containerRect.height === 0) {
+      console.warn('⚠️ Map container has zero dimensions:', containerRect);
+      setError('Contenitore mappa non visibile');
+      return;
+    }
     
     try {
       mapboxgl.accessToken = mapboxToken;
       
       map.current = new mapboxgl.Map({
-        container: mapContainer.current,
+        container: container,
         style: 'mapbox://styles/mapbox/light-v11',
         center: userLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
         zoom: userLocation ? 12 : 6,
-        attributionControl: false
+        attributionControl: false,
+        renderWorldCopies: false
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
       // Handle map events
       map.current.on('load', () => {
-        console.log('✅ Map loaded successfully');
+        info('Map loaded successfully');
         setMapReady(true);
         setError(null);
+        
+        // Force resize after load
+        setTimeout(() => {
+          if (map.current && mapContainer.current) {
+            map.current.resize();
+            info('Map resized after load');
+          }
+        }, 100);
       });
 
       map.current.on('error', (e) => {
@@ -121,38 +146,54 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         popups.current = [];
       });
 
-      // Force resize after a short delay to ensure proper rendering
-      setTimeout(() => {
-        if (map.current) {
-          map.current.resize();
-          console.log('🔄 Map resized');
-        }
-      }, 200);
-
     } catch (error) {
       console.error('❌ Error initializing map:', error);
       setError('Errore nell\'inizializzazione della mappa');
     }
 
     return () => {
-      console.log('🧹 Cleaning up map');
+      info('Cleaning up map');
       if (map.current) {
         setMapReady(false);
         map.current.remove();
         map.current = null;
       }
     };
-  }, [mapboxToken, userLocation]);
+  }, [mapboxToken, userLocation, info]);
 
-  // Observe container size and force Mapbox resize
+  // Enhanced container size monitoring with debugging
   useEffect(() => {
-    if (!mapContainer.current || !map.current) return;
-    const ro = new ResizeObserver(() => {
-      try { map.current?.resize(); } catch {}
+    if (!mapContainer.current) return;
+
+    const container = mapContainer.current;
+    
+    resizeObserver.current = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setContainerSize({ width, height });
+        
+        info('Container resized', { width, height });
+        
+        if (map.current && mapReady && width > 0 && height > 0) {
+          try {
+            map.current.resize();
+            info('Map resize triggered', { width, height });
+          } catch (error) {
+            console.warn('Map resize failed:', error);
+          }
+        }
+      }
     });
-    ro.observe(mapContainer.current);
-    return () => ro.disconnect();
-  }, [mapReady]);
+    
+    resizeObserver.current.observe(container);
+    
+    return () => {
+      if (resizeObserver.current) {
+        resizeObserver.current.disconnect();
+        resizeObserver.current = null;
+      }
+    };
+  }, [mapReady, info]);
 
   // Update map center when userLocation changes
   useEffect(() => {
@@ -323,12 +364,38 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="relative w-full h-[420px] md:h-[520px] rounded-lg overflow-hidden">
-      <div ref={mapContainer} id="space-map-container" className="absolute inset-0" />
+    <div className="relative w-full h-full min-h-[420px] rounded-lg overflow-hidden bg-muted/20">
+      <div 
+        ref={mapContainer} 
+        id="space-map-container" 
+        className="absolute inset-0" 
+        style={{ minHeight: '420px' }}
+      />
+      
+      {/* Debug info per sviluppo */}
+      {process.env['NODE_ENV'] === 'development' && (
+        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs p-2 rounded">
+          Container: {containerSize.width}x{containerSize.height}
+          <br />
+          Ready: {mapReady ? '✅' : '❌'}
+          <br />
+          Token: {mapboxToken ? '✅' : '❌'}
+        </div>
+      )}
       
       {memoizedSpaces.length > 0 && (
-        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-          <span className="text-sm text-gray-700">{memoizedSpaces.length} spazi disponibili</span>
+        <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border">
+          <span className="text-sm text-foreground font-medium">{memoizedSpaces.length} spazi disponibili</span>
+        </div>
+      )}
+      
+      {/* Enhanced loading state */}
+      {!mapReady && !error && (
+        <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Caricamento mappa...</p>
+          </div>
         </div>
       )}
     </div>

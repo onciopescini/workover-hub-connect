@@ -9,6 +9,9 @@ import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
 import { AdvancedSpaceFilters } from '@/components/spaces/AdvancedSpaceFilters';
 import { PublicSpacesHeader } from './PublicSpacesHeader';
 import { Space, SpaceFilters, FilterChangeHandler, SpaceClickHandler, Coordinates } from '@/types/space-filters';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface PublicSpacesContentProps {
   filters: SpaceFilters;
@@ -31,6 +34,10 @@ export const PublicSpacesContent = ({
   onSpaceClick,
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
+  
+  // Enhanced error handling per la mappa
+  const mapError = !mapCenter && "Impossibile determinare la posizione per la mappa";
+  
   return (
     <SplitScreenLayout
       filters={
@@ -41,15 +48,33 @@ export const PublicSpacesContent = ({
             onFiltersChange={onFiltersChange}
             totalResults={spaces?.length || 0}
           />
+          
+          {mapError && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {mapError}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       }
       map={
-        <SpaceMap 
-          spaces={spaces || []} 
-          userLocation={mapCenter}
-          onSpaceClick={onMapSpaceClick}
-          highlightedSpaceId={highlightedId}
-        />
+        <div className="relative h-full">
+          <SpaceMap 
+            spaces={spaces || []} 
+            userLocation={mapCenter}
+            onSpaceClick={onMapSpaceClick}
+            highlightedSpaceId={highlightedId}
+          />
+          
+          {/* Overlay di caricamento per la mappa */}
+          {isLoading && (
+            <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
+              <LoadingSpinner />
+            </div>
+          )}
+        </div>
       }
       cards={
         <EnhancedSpaceCardsGrid 

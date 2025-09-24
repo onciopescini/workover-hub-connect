@@ -43,8 +43,14 @@ const DEFAULT_FILTERS: SpaceFilters = {
 
 export const usePublicSpacesLogic = () => {
   const { initialCity, initialCoordinates, updateLocationParam } = useLocationParams();
-  const [filters, setFilters] = useState<SpaceFilters>(DEFAULT_FILTERS);
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [filters, setFilters] = useState<SpaceFilters>(() => ({
+    ...DEFAULT_FILTERS,
+    location: initialCity || '',
+    coordinates: initialCoordinates
+  }));
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(() => 
+    initialCoordinates || { lat: 41.9028, lng: 12.4964 }
+  );
   
   const { handleAsyncError } = useErrorHandler('PublicSpaces');
   const { warn, info } = useLogger({ context: 'usePublicSpacesLogic' });
@@ -52,23 +58,20 @@ export const usePublicSpacesLogic = () => {
   
   const mapInteraction = useMapCardInteraction();
 
-  // Set initial city and coordinates from URL params
-  useEffect(() => {
-    if (initialCity && !filters.location) {
-      setFilters(prev => ({ 
-        ...prev, 
-        location: initialCity,
-        coordinates: initialCoordinates
-      }));
-    }
-  }, [initialCity, initialCoordinates, filters.location]);
-
-  // Initialize default location (Rome) - geolocation moved to user action
-  useEffect(() => {
-    if (!userLocation) {
-      setUserLocation({ lat: 41.9028, lng: 12.4964 });
-    }
-  }, []);
+  // Memoized geocoding function to prevent re-renders
+  const stableGeocodeAddress = useCallback(geocodeAddress, [geocodeAddress]);
+  
+  // Stable filter key for React Query to prevent unnecessary refetches
+  const filterKey = JSON.stringify({
+    category: filters.category,
+    priceRange: filters.priceRange,
+    workEnvironment: filters.workEnvironment,
+    location: filters.location,
+    capacity: filters.capacity,
+    verified: filters.verified,
+    superhost: filters.superhost,
+    instantBook: filters.instantBook
+  });
 
   // Debounced geocoding for city search
   useEffect(() => {
@@ -79,8 +82,8 @@ export const usePublicSpacesLogic = () => {
     const timer = setTimeout(async () => {
       info('Starting geocoding for city', { city: filters.location });
       
-      try {
-        const results = await geocodeAddress(filters.location);
+        try {
+        const results = await stableGeocodeAddress(filters.location);
         if (results.length > 0 && results[0]?.center) {
           const coordinates = {
             lat: results[0].center[1], // Mapbox returns [lng, lat]
@@ -103,11 +106,11 @@ export const usePublicSpacesLogic = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [filters.location, geocodeAddress, updateLocationParam, info, warn]);
+  }, [filters.location, stableGeocodeAddress, updateLocationParam, info, warn]);
 
-  // Spaces data fetching with React Query
+  // Spaces data fetching with React Query - optimized
   const spacesQuery = useQuery({
-    queryKey: ['public-spaces', filters],
+    queryKey: ['public-spaces', filterKey],
     queryFn: async () => {
       info('Fetching public spaces with filters', { filters });
       
@@ -162,6 +165,9 @@ export const usePublicSpacesLogic = () => {
       info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);
       return Array.isArray(filteredSpaces) ? filteredSpaces : [];
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
   });
 
   const handleFiltersChange = (newFilters: SpaceFilters) => {
