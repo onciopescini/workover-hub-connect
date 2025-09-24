@@ -150,7 +150,7 @@ export function ProfileDashboard() {
                     Dashboard Host
                   </Button>
                   
-                  {!authState.profile?.stripe_connected && (
+                  {(!authState.profile?.stripe_account_id || !authState.profile?.stripe_connected) && (
                     <Button 
                       onClick={handleConnectStripe}
                       size="sm"
@@ -172,12 +172,17 @@ export function ProfileDashboard() {
         <div className="max-w-7xl mx-auto px-4 pb-4">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <div className="flex items-center justify-between">
-              <StripeStatusPill 
-                isConnected={authState.profile?.stripe_connected || false}
-                onboardingStatus={authState.profile?.stripe_onboarding_status || 'none'}
-              />
+              <div className="flex items-center gap-3">
+                <StripeStatusPill 
+                  isConnected={authState.profile?.stripe_connected || false}
+                  onboardingStatus={authState.profile?.stripe_onboarding_status || 'none'}
+                />
+                <span className="text-xs text-gray-500 font-mono">
+                  ID: {authState.profile?.stripe_account_id?.slice(-8) || '-'}
+                </span>
+              </div>
               
-              {!authState.profile?.stripe_connected ? (
+              {(!authState.profile?.stripe_account_id || !authState.profile?.stripe_connected) && (
                 <Button 
                   onClick={handleConnectStripe}
                   size="sm"
@@ -186,10 +191,6 @@ export function ProfileDashboard() {
                   <CreditCard className="w-4 h-4 mr-2" />
                   Configura pagamenti
                 </Button>
-              ) : (
-                <span className="text-xs text-gray-500 font-mono">
-                  Stripe ID: {authState.profile.stripe_account_id?.slice(-8)}
-                </span>
               )}
             </div>
           </div>

@@ -69,14 +69,12 @@ export const HostDashboardHeader: React.FC<HostDashboardHeaderProps> = ({
             isConnected={authState.profile?.stripe_connected || false}
             onboardingStatus={authState.profile?.stripe_onboarding_status || 'none'}
           />
-          {authState.profile?.stripe_account_id && (
-            <span className="text-xs text-gray-500 font-mono">
-              ID: {authState.profile.stripe_account_id.slice(-8)}
-            </span>
-          )}
+          <span className="text-xs text-gray-500 font-mono">
+            ID: {authState.profile?.stripe_account_id?.slice(-8) || '-'}
+          </span>
         </div>
 
-        {!authState.profile?.stripe_connected && (
+        {(!authState.profile?.stripe_account_id || !authState.profile?.stripe_connected) && (
           <Button 
             onClick={handleConnectStripe}
             size="sm"
