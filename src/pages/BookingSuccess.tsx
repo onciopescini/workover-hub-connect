@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { usePaymentVerification } from '@/hooks/usePaymentVerification';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 
 const BookingSuccess: React.FC = () => {
   const { id: spaceId } = useParams<{ id: string }>();
@@ -12,12 +12,42 @@ const BookingSuccess: React.FC = () => {
   
   const { isLoading, isSuccess, error } = usePaymentVerification(sessionId);
 
+  // If no space ID is available, show error state
+  if (!spaceId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="flex justify-center">
+            <AlertTriangle className="h-16 w-16 text-orange-500" />
+          </div>
+          
+          <h1 className="text-2xl font-bold text-foreground">
+            Errore nel caricamento
+          </h1>
+          
+          <p className="text-muted-foreground">
+            Non è possibile trovare i dettagli della prenotazione. Controlla le tue prenotazioni o torna alla homepage.
+          </p>
+          
+          <div className="space-y-2">
+            <Button onClick={() => navigate('/bookings')} className="w-full">
+              Vedi le mie prenotazioni
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/spaces')}
+              className="w-full"
+            >
+              Torna agli spazi
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleBackToSpace = () => {
-    if (spaceId) {
-      navigate(`/spaces/${spaceId}`);
-    } else {
-      navigate('/spaces');
-    }
+    navigate(`/spaces/${spaceId}`);
   };
 
   return (
