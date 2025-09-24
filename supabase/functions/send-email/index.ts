@@ -3,6 +3,34 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
 import { ErrorHandler } from "../shared/error-handler.ts";
 
+// Import all template functions
+import { 
+  bookingConfirmationTemplate, 
+  bookingPendingTemplate, 
+  bookingCancelledTemplate, 
+  bookingReminderTemplate 
+} from "./_templates/booking-templates.ts";
+import { 
+  newBookingRequestTemplate, 
+  hostPayoutProcessedTemplate, 
+  spaceApprovedTemplate, 
+  spaceRejectedTemplate 
+} from "./_templates/host-templates.ts";
+import { 
+  welcomeTemplate, 
+  passwordResetTemplate, 
+  emailVerificationTemplate, 
+  accountSuspendedTemplate, 
+  profileVerifiedTemplate 
+} from "./_templates/user-templates.ts";
+import { 
+  newUserRegistrationTemplate, 
+  reportSubmittedTemplate, 
+  systemErrorTemplate, 
+  highTrafficAlertTemplate, 
+  backupCompletedTemplate 
+} from "./_templates/admin-templates.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -27,39 +55,35 @@ interface EmailRequest {
   data?: any;
 }
 
+// Enhanced email template registry with new professional templates
 const emailTemplates = {
-  welcome: (data: any) => ({
-    subject: "Benvenuto in Workover! 🎉",
-    html: `
-      <h1>Benvenuto in Workover, ${data.firstName}!</h1>
-      <p>Siamo entusiasti di averti nella nostra community di coworker e host.</p>
-      <p>Ecco cosa puoi fare ora:</p>
-      <ul>
-        <li>Completa il tuo profilo</li>
-        <li>Esplora gli spazi di coworking disponibili</li>
-        <li>Connettiti con altri professionisti</li>
-      </ul>
-      <p><a href="${data.dashboardUrl}" style="background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Vai alla Dashboard</a></p>
-      <p>Buon lavoro!<br>Il Team Workover</p>
-    `
-  }),
+  // User Templates
+  welcome: welcomeTemplate,
+  password_reset: passwordResetTemplate,
+  email_verification: emailVerificationTemplate,
+  account_suspended: accountSuspendedTemplate,
+  profile_verified: profileVerifiedTemplate,
+  
+  // Booking Templates
+  booking_confirmation: bookingConfirmationTemplate,
+  booking_pending: bookingPendingTemplate,
+  booking_cancelled: bookingCancelledTemplate,
+  booking_reminder: bookingReminderTemplate,
+  
+  // Host Templates
+  new_booking_request: newBookingRequestTemplate,
+  host_payout_processed: hostPayoutProcessedTemplate,
+  space_approved: spaceApprovedTemplate,
+  space_rejected: spaceRejectedTemplate,
+  
+  // Admin Templates
+  new_user_registration: newUserRegistrationTemplate,
+  report_submitted: reportSubmittedTemplate,
+  system_error: systemErrorTemplate,
+  high_traffic_alert: highTrafficAlertTemplate,
+  backup_completed: backupCompletedTemplate,
 
-  booking_confirmation: (data: any) => ({
-    subject: "Prenotazione Confermata - Workover",
-    html: `
-      <h1>Prenotazione Confermata! ✅</h1>
-      <p>La tua prenotazione è stata confermata con successo.</p>
-      <p><strong>Dettagli:</strong></p>
-      <ul>
-        <li>ID Prenotazione: ${data.booking_id}</li>
-        <li>Importo: €${(data.amount / 100).toFixed(2)}</li>
-        <li>Valuta: ${data.currency?.toUpperCase()}</li>
-      </ul>
-      <p>Riceverai ulteriori dettagli dall'host a breve.</p>
-      <p>Buon lavoro!<br>Il Team Workover</p>
-    `
-  }),
-
+  // Legacy templates for backward compatibility
   stripe_setup_complete: (data: any) => ({
     subject: "Setup Stripe Completato - Workover",
     html: `
@@ -93,18 +117,6 @@ const emailTemplates = {
       <p>${data.reviewerName} ha lasciato una recensione con ${data.rating} stelle.</p>
       <p><strong>Commento:</strong> "${data.comment}"</p>
       <p><a href="${data.reviewUrl}" style="background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Visualizza Recensione</a></p>
-      <p>Il Team Workover</p>
-    `
-  }),
-
-  booking_cancelled: (data: any) => ({
-    subject: "Prenotazione Cancellata - Workover",
-    html: `
-      <h1>Prenotazione Cancellata</h1>
-      <p>La prenotazione per "${data.spaceTitle}" è stata cancellata.</p>
-      <p><strong>Motivo:</strong> ${data.reason || 'Non specificato'}</p>
-      ${data.cancellationFee > 0 ? `<p><strong>Penale:</strong> €${data.cancellationFee}</p>` : ''}
-      <p>Per ulteriori informazioni, contatta il supporto.</p>
       <p>Il Team Workover</p>
     `
   }),
