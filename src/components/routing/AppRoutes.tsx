@@ -44,6 +44,7 @@ const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
 // Host pages
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
+const StripeReturn = lazy(() => import("@/pages/host/StripeReturn"));
 const HostOnboarding = lazy(() => import("@/pages/HostOnboarding"));
 const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
@@ -250,6 +251,11 @@ export const AppRoutes = () => {
         <Route path="spaces/:spaceId/recap" element={
           <LazyWrapper>
             <SpaceRecap />
+          </LazyWrapper>
+        } />
+        <Route path="stripe/return" element={
+          <LazyWrapper>
+            <StripeReturn />
           </LazyWrapper>
         } />
         <Route path="calendar" element={
