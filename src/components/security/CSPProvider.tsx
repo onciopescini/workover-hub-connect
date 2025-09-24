@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 
 const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
-    // Enhanced Content Security Policy
-    const setAdvancedSecurityHeaders = () => {
+    // Only set CSP meta tag for dynamic content security
+    // Other security headers are handled by nginx in production
+    const setCSPForDynamicContent = () => {
       // Remove existing CSP meta tags to avoid conflicts
       const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
       existingCSP.forEach(el => el.remove());
 
-      // Advanced Content Security Policy
+      // Only set essential CSP for dynamic content
       const cspMeta = document.createElement('meta');
       cspMeta.httpEquiv = 'Content-Security-Policy';
       cspMeta.content = `
@@ -20,7 +21,8 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           https://maps.googleapis.com 
           https://www.googletagmanager.com 
           https://www.google-analytics.com
-          https://plausible.io;
+          https://plausible.io
+          https://cdn.gpteng.co;
         style-src 'self' 'unsafe-inline' 
           https://fonts.googleapis.com 
           https://cdn.jsdelivr.net
@@ -49,94 +51,11 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         object-src 'none';
         base-uri 'self';
         form-action 'self' https://khtqwzvrxzsgfhsslwyz.supabase.co;
-        frame-ancestors 'none';
         manifest-src 'self';
         upgrade-insecure-requests;
       `.replace(/\s+/g, ' ').trim();
       
       document.head.appendChild(cspMeta);
-
-      // X-Content-Type-Options
-      const noSniffMeta = document.createElement('meta');
-      noSniffMeta.httpEquiv = 'X-Content-Type-Options';
-      noSniffMeta.content = 'nosniff';
-      document.head.appendChild(noSniffMeta);
-
-      // X-Frame-Options
-      const frameOptionsMeta = document.createElement('meta');
-      frameOptionsMeta.httpEquiv = 'X-Frame-Options';
-      frameOptionsMeta.content = 'DENY';
-      document.head.appendChild(frameOptionsMeta);
-
-      // X-XSS-Protection
-      const xssProtectionMeta = document.createElement('meta');
-      xssProtectionMeta.httpEquiv = 'X-XSS-Protection';
-      xssProtectionMeta.content = '1; mode=block';
-      document.head.appendChild(xssProtectionMeta);
-
-      // Referrer Policy
-      const referrerPolicyMeta = document.createElement('meta');
-      referrerPolicyMeta.name = 'referrer';
-      referrerPolicyMeta.content = 'strict-origin-when-cross-origin';
-      document.head.appendChild(referrerPolicyMeta);
-
-      // Enhanced Permissions Policy
-      const permissionsPolicyMeta = document.createElement('meta');
-      permissionsPolicyMeta.httpEquiv = 'Permissions-Policy';
-      permissionsPolicyMeta.content = [
-        'accelerometer=()',
-        'ambient-light-sensor=()',
-        'autoplay=()',
-        'battery=()',
-        'camera=()',
-        'cross-origin-isolated=()',
-        'display-capture=()',
-        'document-domain=()',
-        'encrypted-media=()',
-        'execution-while-not-rendered=()',
-        'execution-while-out-of-viewport=()',
-        'fullscreen=(self)',
-        'geolocation=()',
-        'gyroscope=()',
-        'keyboard-map=()',
-        'magnetometer=()',
-        'microphone=()',
-        'midi=()',
-        'navigation-override=()',
-        'payment=(self)',
-        'picture-in-picture=()',
-        'publickey-credentials-get=()',
-        'screen-wake-lock=()',
-        'sync-xhr=()',
-        'usb=()',
-        'web-share=()',
-        'xr-spatial-tracking=()'
-      ].join(', ');
-      document.head.appendChild(permissionsPolicyMeta);
-
-      // Cross-Origin-Embedder-Policy
-      const coepMeta = document.createElement('meta');
-      coepMeta.httpEquiv = 'Cross-Origin-Embedder-Policy';
-      coepMeta.content = 'unsafe-none';
-      document.head.appendChild(coepMeta);
-
-      // Cross-Origin-Opener-Policy
-      const coopMeta = document.createElement('meta');
-      coopMeta.httpEquiv = 'Cross-Origin-Opener-Policy';
-      coopMeta.content = 'same-origin-allow-popups';
-      document.head.appendChild(coopMeta);
-
-      // Cross-Origin-Resource-Policy
-      const corpMeta = document.createElement('meta');
-      corpMeta.httpEquiv = 'Cross-Origin-Resource-Policy';
-      corpMeta.content = 'cross-origin';
-      document.head.appendChild(corpMeta);
-
-      // Strict-Transport-Security (HSTS)
-      const hstsMeta = document.createElement('meta');
-      hstsMeta.httpEquiv = 'Strict-Transport-Security';
-      hstsMeta.content = 'max-age=31536000; includeSubDomains; preload';
-      document.head.appendChild(hstsMeta);
     };
 
     // Security event listeners
@@ -198,7 +117,7 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       return () => observer.disconnect();
     };
 
-    setAdvancedSecurityHeaders();
+    setCSPForDynamicContent();
     const cleanup = setupSecurityEventListeners();
 
     return cleanup;

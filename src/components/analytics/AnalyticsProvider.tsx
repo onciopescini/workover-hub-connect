@@ -18,12 +18,39 @@ interface AnalyticsProviderProps {
 // Analytics configuration
 const ANALYTICS_CONFIG = {
   plausible: {
-    domain: 'workover.app',
-    enabled: true
+    domain: import.meta.env.PROD ? 'workover.app' : window.location.hostname,
+    enabled: true,
+    apiHost: import.meta.env.PROD ? 'https://plausible.io' : null // Use proxy in dev
   },
   gtag: {
     measurementId: 'G-XXXXXXXXXX', // Replace with actual GA4 ID
     enabled: false // Enable when ready
+  }
+};
+
+// Rate limiting for analytics calls
+let analyticsQueue: Array<() => void> = [];
+let isProcessingQueue = false;
+
+const processAnalyticsQueue = () => {
+  if (isProcessingQueue || analyticsQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  const batch = analyticsQueue.splice(0, 3); // Process max 3 events at once
+  
+  batch.forEach(fn => {
+    try {
+      fn();
+    } catch (error) {
+      console.warn('Analytics event failed:', error);
+    }
+  });
+  
+  isProcessingQueue = false;
+  
+  // Continue processing if queue has more items
+  if (analyticsQueue.length > 0) {
+    setTimeout(processAnalyticsQueue, 200); // 200ms delay between batches
   }
 };
 
@@ -53,18 +80,32 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   const trackEvent = (eventName: string, properties?: Record<string, any>) => {
     if (!shouldTrack) return;
 
-    // Plausible Analytics
-    if (ANALYTICS_CONFIG.plausible.enabled && window.plausible) {
-      window.plausible(eventName, properties ? { props: properties } : {});
-    }
+    // Add to queue to prevent rate limiting
+    analyticsQueue.push(() => {
+      // Plausible Analytics with error handling
+      if (ANALYTICS_CONFIG.plausible.enabled && window.plausible) {
+        try {
+          window.plausible(eventName, properties ? { props: properties } : {});
+        } catch (error) {
+          console.warn('Plausible tracking failed:', error);
+        }
+      }
 
-    // Google Analytics 4
-    if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
-      window.gtag('event', eventName, {
-        ...properties,
-        send_to: ANALYTICS_CONFIG.gtag.measurementId
-      });
-    }
+      // Google Analytics 4
+      if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
+        try {
+          window.gtag('event', eventName, {
+            ...properties,
+            send_to: ANALYTICS_CONFIG.gtag.measurementId
+          });
+        } catch (error) {
+          console.warn('Google Analytics tracking failed:', error);
+        }
+      }
+    });
+
+    // Process queue
+    processAnalyticsQueue();
 
     // Console log in development
     if (!isProduction) {
@@ -75,21 +116,34 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   const trackPageView = (path: string, title?: string) => {
     if (!shouldTrack) return;
 
-    // Plausible automatically tracks page views
-    // But we can send custom page view events if needed
-
-    // Google Analytics 4
-    if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
-      window.gtag('config', ANALYTICS_CONFIG.gtag.measurementId, {
-        page_path: path,
-        page_title: title
-      });
+    // Debounce page views to prevent excessive calls
+    const debounceKey = `pageview-${path}`;
+    const currentWindow = window as any;
+    
+    if (currentWindow[debounceKey]) {
+      clearTimeout(currentWindow[debounceKey]);
     }
 
-    // Console log in development
-    if (!isProduction) {
-      console.log('📊 Page View:', path, title);
-    }
+    currentWindow[debounceKey] = setTimeout(() => {
+      // Plausible automatically tracks page views, no need to send custom events
+      
+      // Google Analytics 4
+      if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
+        try {
+          window.gtag('config', ANALYTICS_CONFIG.gtag.measurementId, {
+            page_path: path,
+            page_title: title
+          });
+        } catch (error) {
+          console.warn('Google Analytics page view failed:', error);
+        }
+      }
+
+      // Console log in development
+      if (!isProduction) {
+        console.log('📊 Page View:', path, title);
+      }
+    }, 100); // 100ms debounce
   };
 
   const identifyUser = (userId: string, traits?: Record<string, any>) => {
