@@ -2240,8 +2240,8 @@ export type Database = {
           host_networking_enabled: boolean
           host_profile_photo: string
           host_stripe_account_id: string
+          host_stripe_connected: boolean
           id: string
-          ideal_guest: string
           latitude: number
           longitude: number
           max_capacity: number
