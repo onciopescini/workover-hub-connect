@@ -1,0 +1,52 @@
+{
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:post-deploy": "playwright test --grep @post-deploy",
+    "migrate": "node scripts/migration-runner.js",
+    "migrate:create": "node scripts/migration-runner.js create",
+    "migrate:run": "node scripts/migration-runner.js run",
+    "migrate:rollback": "node scripts/migration-runner.js rollback",
+    "migrate:status": "node scripts/migration-runner.js status",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:staging": "./scripts/deploy.sh staging",
+    "deploy:production": "./scripts/deploy.sh production",
+    "deploy:rollback": "./scripts/deploy.sh production --rollback",
+    "security:scan": "npm audit --audit-level high",
+    "security:fix": "npm audit fix",
+    "docker:build": "docker build -t workover-app .",
+    "docker:run": "docker run -p 3000:3000 workover-app",
+    "health-check": "curl -f http://localhost:3000/health || exit 1"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/src/test/setup.ts"],
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/test/**/*",
+      "!src/main.tsx",
+      "!src/vite-env.d.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  }
+}

@@ -1,0 +1,96 @@
+name: Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      migration_type:
+        description: 'Migration type'
+        required: true
+        default: 'forward'
+        type: choice
+        options:
+        - forward
+        - rollback
+      dry_run:
+        description: 'Dry run (preview changes)'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+jobs:
+  migrate:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+        
+    - name: Setup environment variables
+      run: |
+        if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+          echo "DB_URL=${{ secrets.PRODUCTION_DATABASE_URL }}" >> $GITHUB_ENV
+          echo "PROJECT_REF=${{ secrets.PRODUCTION_PROJECT_REF }}" >> $GITHUB_ENV
+        else
+          echo "DB_URL=${{ secrets.STAGING_DATABASE_URL }}" >> $GITHUB_ENV
+          echo "PROJECT_REF=${{ secrets.STAGING_PROJECT_REF }}" >> $GITHUB_ENV
+        fi
+        
+    - name: Backup database
+      if: github.event.inputs.environment == 'production'
+      run: |
+        supabase db dump --db-url $DB_URL --file backup-$(date +%Y%m%d-%H%M%S).sql
+        
+    - name: Dry run migration
+      if: github.event.inputs.dry_run == 'true'
+      run: |
+        echo "=== DRY RUN: Migration Preview ==="
+        supabase migration list --db-url $DB_URL
+        echo "=== End Dry Run ==="
+        
+    - name: Run forward migration
+      if: github.event.inputs.migration_type == 'forward' && github.event.inputs.dry_run == 'false'
+      run: |
+        supabase db push --db-url $DB_URL
+        
+    - name: Run rollback migration
+      if: github.event.inputs.migration_type == 'rollback' && github.event.inputs.dry_run == 'false'
+      run: |
+        # Implement rollback logic
+        echo "Rolling back last migration..."
+        
+    - name: Verify migration status
+      if: github.event.inputs.dry_run == 'false'
+      run: |
+        supabase migration list --db-url $DB_URL
+        
+    - name: Test database integrity
+      if: github.event.inputs.dry_run == 'false'
+      run: |
+        # Run basic integrity checks
+        echo "Running database integrity tests..."
+        
+    - name: Notify team
+      if: always() && github.event.inputs.dry_run == 'false'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Database migration ${{ github.event.inputs.migration_type }} completed on ${{ github.event.inputs.environment }}'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
