@@ -35,16 +35,16 @@ function App() {
     <HelmetProvider>
       <CSPProvider>
         <ProductionMonitoring>
-          <AnalyticsProvider>
-            <QueryClientProvider client={queryClient}>
-              <TooltipProvider>
-                <Toaster 
-                  position="top-right"
-                  toastOptions={{
-                    duration: 4000,
-                  }}
-                />
-                <BrowserRouter>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                }}
+              />
+              <BrowserRouter>
+                <AnalyticsProvider>
                   <AuthProvider>
                     <GDPRProvider>
                       <PerformanceMonitor />
@@ -53,10 +53,10 @@ function App() {
                       <AppRoutes />
                     </GDPRProvider>
                   </AuthProvider>
-                </BrowserRouter>
-              </TooltipProvider>
-            </QueryClientProvider>
-          </AnalyticsProvider>
+                </AnalyticsProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </QueryClientProvider>
         </ProductionMonitoring>
       </CSPProvider>
     </HelmetProvider>
