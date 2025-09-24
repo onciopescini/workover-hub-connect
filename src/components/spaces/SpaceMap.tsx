@@ -84,35 +84,65 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     fetchMapboxToken();
   }, []);
 
-  // Initialize map
+  // Initialize map - Versione migliorata con debug
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    if (!mapContainer.current || !mapboxToken || map.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
+    console.log('🗺️ Initializing Mapbox map with token:', mapboxToken ? 'Available' : 'Missing');
     
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: userLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
-      zoom: 12,
-    });
+    try {
+      mapboxgl.accessToken = mapboxToken;
+      
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: userLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
+        zoom: userLocation ? 12 : 6,
+        attributionControl: false
+      });
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    map.current.on('click', () => {
-      popups.current.forEach(popup => popup.remove());
-      popups.current = [];
-    });
+      // Handle map events
+      map.current.on('load', () => {
+        console.log('✅ Map loaded successfully');
+        setMapReady(true);
+        setError(null);
+      });
 
-    map.current.on('style.load', () => {
-      setMapReady(true);
-    });
+      map.current.on('error', (e) => {
+        console.error('❌ Map error:', e.error);
+        setError('Errore nel caricamento della mappa');
+      });
+
+      map.current.on('click', () => {
+        // Close all popups when clicking on map
+        popups.current.forEach(popup => popup.remove());
+        popups.current = [];
+      });
+
+      // Force resize after a short delay to ensure proper rendering
+      setTimeout(() => {
+        if (map.current) {
+          map.current.resize();
+          console.log('🔄 Map resized');
+        }
+      }, 200);
+
+    } catch (error) {
+      console.error('❌ Error initializing map:', error);
+      setError('Errore nell\'inizializzazione della mappa');
+    }
 
     return () => {
-      setMapReady(false);
-      map.current?.remove();
+      console.log('🧹 Cleaning up map');
+      if (map.current) {
+        setMapReady(false);
+        map.current.remove();
+        map.current = null;
+      }
     };
-  }, [mapboxToken]);
+  }, [mapboxToken, userLocation]);
 
   // Update map center when userLocation changes
   useEffect(() => {

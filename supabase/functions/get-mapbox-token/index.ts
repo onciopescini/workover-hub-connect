@@ -14,15 +14,15 @@ serve(async (req) => {
   }
 
   try {
-    // Cambiato il nome della variabile per matchare il secret in Supabase
-    const mapboxToken = Deno.env.get("NEXT_PUBLIC_MAPBOX_TOKEN");
+    // Usa il nome corretto del secret configurato in Supabase
+    const mapboxToken = Deno.env.get("MAPBOX_ACCESS_TOKEN");
     
     ErrorHandler.logInfo('Mapbox token check', { 
       hasToken: !!mapboxToken 
     });
     
     if (!mapboxToken) {
-      ErrorHandler.logError('NEXT_PUBLIC_MAPBOX_TOKEN environment variable not set', null);
+      ErrorHandler.logError('MAPBOX_ACCESS_TOKEN environment variable not set', null);
       return new Response(
         JSON.stringify({ error: "Mapbox token not configured" }),
         {
