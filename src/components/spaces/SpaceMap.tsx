@@ -144,6 +144,16 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     };
   }, [mapboxToken, userLocation]);
 
+  // Observe container size and force Mapbox resize
+  useEffect(() => {
+    if (!mapContainer.current || !map.current) return;
+    const ro = new ResizeObserver(() => {
+      try { map.current?.resize(); } catch {}
+    });
+    ro.observe(mapContainer.current);
+    return () => ro.disconnect();
+  }, [mapReady]);
+
   // Update map center when userLocation changes
   useEffect(() => {
     if (!map.current || !mapReady || !userLocation) return;
@@ -313,8 +323,8 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="relative w-full min-h-[420px] md:min-h-[520px] rounded-lg overflow-hidden">
+      <div ref={mapContainer} id="space-map-container" className="absolute inset-0" />
       
       {memoizedSpaces.length > 0 && (
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
