@@ -67,6 +67,7 @@
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^12.19.1",
     "input-otp": "^1.2.4",
+    "isomorphic-dompurify": "^2.28.0",
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",
     "lucide-react": "^0.462.0",
