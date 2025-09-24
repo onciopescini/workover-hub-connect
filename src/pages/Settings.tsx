@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, User, Bell, Shield, CreditCard } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, CreditCard, Users } from 'lucide-react';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -20,10 +20,25 @@ const Settings = () => {
       </div>
 
       <div className="grid gap-6">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/settings/networking')}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              Networking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Gestisci le tue preferenze di networking e collaborazione
+            </p>
+            <Button variant="outline">Gestisci Networking</Button>
+          </CardContent>
+        </Card>
+
         <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/profile/edit')}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
+              <User className="h-5 w-5 text-green-600" />
               Profilo
             </CardTitle>
           </CardHeader>
@@ -38,7 +53,7 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-green-600" />
+              <Bell className="h-5 w-5 text-orange-600" />
               Notifiche
             </CardTitle>
           </CardHeader>
@@ -68,7 +83,7 @@ const Settings = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-orange-600" />
+              <CreditCard className="h-5 w-5 text-red-600" />
               Pagamenti
             </CardTitle>
           </CardHeader>

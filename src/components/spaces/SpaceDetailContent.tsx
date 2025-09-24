@@ -11,6 +11,7 @@ import { StickyBookingCard } from './StickyBookingCard';
 import { SpaceReviews } from './SpaceReviews';
 import { toast } from 'sonner';
 import { createOrGetPrivateChat } from "@/lib/networking-utils";
+import { WhoWorksHere } from './WhoWorksHere';
 
 interface ExtendedSpace extends Space {
   host?: {
@@ -125,6 +126,9 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
             />
           )}
           
+          {/* Who Works Here Widget */}
+          <WhoWorksHere spaceId={space.id} />
+
           {/* Reviews Section */}
           <SpaceReviews spaceId={space.id} reviews={reviews} />
         </div>

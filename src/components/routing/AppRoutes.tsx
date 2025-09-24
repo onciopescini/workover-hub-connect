@@ -39,6 +39,7 @@ const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
 const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const NetworkingSettings = lazy(() => import("@/pages/NetworkingSettings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
 const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
@@ -204,6 +205,14 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <Settings />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="settings/networking" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <NetworkingSettings />
             </LazyWrapper>
           </AuthProtected>
         } />
