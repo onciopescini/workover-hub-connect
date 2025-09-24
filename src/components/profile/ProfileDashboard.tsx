@@ -25,34 +25,12 @@ import { ProfileStatsCards } from './ProfileStatsCards';
 import { ProfileCompletionWidget } from './ProfileCompletionWidget';
 import { TrustBadgesSection } from './TrustBadgesSection';
 import { SocialLinksSection } from './SocialLinksSection';
-import { StripeStatusPill } from '../host/StripeStatusPill';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import HostStripeStatus from "@/components/payments/HostStripeStatus";
 
 export function ProfileDashboard() {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
-  const handleConnectStripe = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-connect-onboarding-link');
-      
-      if (error) {
-        console.error('Stripe Connect error:', error);
-        toast.error('Errore durante la connessione con Stripe');
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error('Link di onboarding non ricevuto');
-      }
-    } catch (error) {
-      console.error('Failed to create Stripe Connect link:', error);
-      toast.error('Errore durante la connessione con Stripe');
-    }
-  };
 
   if (!authState.profile) {
     return (
@@ -151,14 +129,7 @@ export function ProfileDashboard() {
                   </Button>
                   
                   {(!authState.profile?.stripe_account_id || !authState.profile?.stripe_connected) && (
-                    <Button 
-                      onClick={handleConnectStripe}
-                      size="sm"
-                      className="bg-[#635bff] hover:bg-[#5b54f0] text-white w-full"
-                    >
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Collega Stripe
-                    </Button>
+                    <HostStripeStatus className="w-full" />
                   )}
                 </div>
               )}
@@ -171,28 +142,7 @@ export function ProfileDashboard() {
       {profile.role === 'host' && (
         <div className="max-w-7xl mx-auto px-4 pb-4">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <StripeStatusPill 
-                  isConnected={authState.profile?.stripe_connected || false}
-                  onboardingStatus={authState.profile?.stripe_onboarding_status || 'none'}
-                />
-                <span className="text-xs text-gray-500 font-mono">
-                  ID: {authState.profile?.stripe_account_id?.slice(-8) || '-'}
-                </span>
-              </div>
-              
-              {(!authState.profile?.stripe_account_id || !authState.profile?.stripe_connected) && (
-                <Button 
-                  onClick={handleConnectStripe}
-                  size="sm"
-                  className="bg-[#635bff] hover:bg-[#5b54f0] text-white"
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Configura pagamenti
-                </Button>
-              )}
-            </div>
+            <HostStripeStatus />
           </div>
         </div>
       )}
