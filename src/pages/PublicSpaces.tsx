@@ -29,6 +29,7 @@ const PublicSpaces = () => {
   } = usePublicSpacesLogic();
 
   const handleSpaceClick = (spaceId: string) => {
+    if (!spaceId || spaceId === 'undefined') return;
     handleCardClick(spaceId);
     navigate(`/spaces/${spaceId}`);
   };

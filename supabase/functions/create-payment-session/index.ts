@@ -199,8 +199,8 @@ serve(async (req) => {
         space_id,
         user_id: user.id,
       },
-      success_url: `${origin}/spaces/${space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/spaces/${space_id}/booking-cancelled`,
+      success_url: `${origin}/bookings?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/bookings?canceled=1`,
     });
 
     return new Response(
