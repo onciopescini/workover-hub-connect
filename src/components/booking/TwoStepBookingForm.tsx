@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { TimeSlotSelectionStep } from "./TimeSlotSelectionStep";
 import { BookingSummaryStep } from "./BookingSummaryStep";
+import { GuestsSelector } from './GuestsSelector';
+import { PolicyDisplay } from '../spaces/PolicyDisplay';
+import { Checkbox } from '@/components/ui/checkbox';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogger } from "@/hooks/useLogger";
@@ -36,6 +39,9 @@ interface TwoStepBookingFormProps {
   pricePerDay: number;
   pricePerHour: number;
   confirmationType: string;
+  maxCapacity: number;
+  cancellationPolicy?: string;
+  rules?: string;
   onSuccess: () => void;
   onError: (message: string) => void;
   bufferMinutes?: number;
@@ -62,6 +68,7 @@ export interface BookingState {
   selectedDate: Date | null;
   availableSlots: TimeSlot[];
   selectedRange: SelectedTimeRange | null;
+  guestsCount: number;
   isLoadingSlots: boolean;
   isReserving: boolean;
 }
@@ -76,7 +83,10 @@ export function TwoStepBookingForm({
   spaceId, 
   pricePerDay, 
   pricePerHour,
-  confirmationType, 
+  confirmationType,
+  maxCapacity,
+  cancellationPolicy = 'moderate',
+  rules,
   onSuccess, 
   onError,
   bufferMinutes = 0,
@@ -88,9 +98,11 @@ export function TwoStepBookingForm({
     selectedDate: null,
     availableSlots: [],
     selectedRange: null,
+    guestsCount: 1,
     isLoadingSlots: false,
     isReserving: false
   });
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
 
   const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
 
@@ -192,6 +204,13 @@ export function TwoStepBookingForm({
     }));
   };
 
+  const handleGuestsChange = (count: number) => {
+    setBookingState(prev => ({
+      ...prev,
+      guestsCount: count
+    }));
+  };
+
   const handleContinueToSummary = () => {
     if (!bookingState.selectedRange) {
       toast.error('Seleziona un orario per continuare');
@@ -204,6 +223,11 @@ export function TwoStepBookingForm({
   const handleConfirmBooking = async () => {
     if (!bookingState.selectedDate || !bookingState.selectedRange) {
       toast.error('Completa tutti i passaggi prima di confermare');
+      return;
+    }
+
+    if (!acceptedPolicy && (cancellationPolicy || rules)) {
+      toast.error('Devi accettare le policy e regole per continuare');
       return;
     }
 
@@ -229,6 +253,7 @@ export function TwoStepBookingForm({
         start_time_param: bookingState.selectedRange.startTime,
         end_time_param: bookingState.selectedRange.endTime,
         user_id_param: user.user.id,
+        guests_count_param: bookingState.guestsCount,
         confirmation_type_param: confirmationType
       });
 
@@ -425,13 +450,48 @@ export function TwoStepBookingForm({
         )}
         
         {currentStep === 'SUMMARY' && (
-          <BookingSummaryStep
-            selectedDate={bookingState.selectedDate!}
-            selectedRange={bookingState.selectedRange!}
-            pricePerHour={pricePerHour}
-            pricePerDay={pricePerDay}
-            confirmationType={confirmationType}
-          />
+          <>
+            <BookingSummaryStep
+              selectedDate={bookingState.selectedDate!}
+              selectedRange={bookingState.selectedRange!}
+              pricePerHour={pricePerHour}
+              pricePerDay={pricePerDay}
+              confirmationType={confirmationType}
+              guestsCount={bookingState.guestsCount}
+            />
+            
+            {/* Policy and Rules Display */}
+            {(cancellationPolicy || rules) && (
+              <div className="mt-6">
+                <PolicyDisplay 
+                  cancellationPolicy={cancellationPolicy}
+                  rules={rules || ''}
+                />
+                
+                {/* Policy Acceptance */}
+                <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="accept-policy"
+                      checked={acceptedPolicy}
+                      onCheckedChange={(checked: boolean) => setAcceptedPolicy(checked)}
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor="accept-policy"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        Accetto le policy di cancellazione e le regole della casa
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Confermo di aver letto e accettato le condizioni di prenotazione
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Navigation */}

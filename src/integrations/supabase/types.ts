@@ -261,6 +261,7 @@ export type Database = {
           cancelled_by_host: boolean | null
           created_at: string | null
           end_time: string | null
+          guests_count: number
           id: string
           payment_required: boolean | null
           payment_session_id: string | null
@@ -280,6 +281,7 @@ export type Database = {
           cancelled_by_host?: boolean | null
           created_at?: string | null
           end_time?: string | null
+          guests_count?: number
           id?: string
           payment_required?: boolean | null
           payment_session_id?: string | null
@@ -299,6 +301,7 @@ export type Database = {
           cancelled_by_host?: boolean | null
           created_at?: string | null
           end_time?: string | null
+          guests_count?: number
           id?: string
           payment_required?: boolean | null
           payment_session_id?: string | null
@@ -1681,6 +1684,9 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           availability: Json | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
           capacity: number | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
@@ -1719,6 +1725,9 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
           capacity?: number | null
           category: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
@@ -1757,6 +1766,9 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["space_category"]
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
@@ -2405,6 +2417,7 @@ export type Database = {
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled"
+      cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
       space_category: "home" | "outdoor" | "professional"
@@ -2539,6 +2552,7 @@ export const Constants = {
   public: {
     Enums: {
       booking_status: ["pending", "confirmed", "cancelled"],
+      cancellation_policy: ["flexible", "moderate", "strict"],
       confirmation_type: ["instant", "host_approval"],
       message_template_type: [
         "confirmation",

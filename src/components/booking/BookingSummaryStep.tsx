@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info } from "lucide-react";
+import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info, Users } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
@@ -14,6 +14,7 @@ interface BookingSummaryStepProps {
   pricePerHour: number;
   pricePerDay: number;
   confirmationType: string;
+  guestsCount?: number;
 }
 
 export function BookingSummaryStep({
@@ -21,7 +22,8 @@ export function BookingSummaryStep({
   selectedRange,
   pricePerHour,
   pricePerDay,
-  confirmationType
+  confirmationType,
+  guestsCount = 1
 }: BookingSummaryStepProps) {
   const stripeTaxEnabled = isStripeTaxEnabled();
   
@@ -76,6 +78,21 @@ export function BookingSummaryStep({
                 </div>
               </div>
             </div>
+
+            {/* Guests */}
+            {guestsCount > 1 && (
+              <div className="flex items-start gap-3">
+                <Users className="w-5 h-5 text-muted-foreground mt-0.5" />
+                <div className="flex-1">
+                  <div className="font-medium">
+                    {guestsCount} ospiti
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Numero di persone per la prenotazione
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Confirmation Type */}
             <div className="flex items-start gap-3">

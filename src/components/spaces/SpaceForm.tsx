@@ -13,6 +13,7 @@ import { AddressAutocomplete } from "./AddressAutocomplete";
 import { AvailabilityEditor } from "@/components/ui/AvailabilityEditor";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
 import type { Space } from "@/types/space";
+import { CancellationPolicySection } from './CancellationPolicySection';
 
 interface SpaceFormProps {
   initialData?: Space | undefined;
@@ -234,6 +235,21 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
             setUploadingPhotos={setUploadingPhotos}
             processingJobs={processingJobs}
             setProcessingJobs={setProcessingJobs}
+          />
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Policy e Regole</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <CancellationPolicySection
+            cancellationPolicy={formData['cancellation_policy'] || 'moderate'}
+            rules={formData['rules'] || ''}
+            onInputChange={handleInputChange}
+            isSubmitting={isSubmitting}
+            errors={errors}
           />
         </CardContent>
       </Card>

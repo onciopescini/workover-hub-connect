@@ -83,6 +83,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             pricePerDay={space.price_per_day}
             pricePerHour={space.price_per_hour || space.price_per_day / 8}
             confirmationType={confirmationType}
+            maxCapacity={space.max_capacity}
             hostStripeAccountId={space.host_stripe_account_id ?? ''}
             onSuccess={() => {
               onBookingSuccess();

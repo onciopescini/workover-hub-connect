@@ -16,6 +16,9 @@ interface BookingFormProps {
   pricePerDay: number;
   pricePerHour?: number;
   confirmationType: string;
+  maxCapacity: number;
+  cancellationPolicy?: string;
+  rules?: string;
   onSuccess: () => void;
   onError: (message: string) => void;
   hostStripeAccountId?: string; // Required for Stripe Connect payments
@@ -25,7 +28,7 @@ const generateSlotId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, onSuccess, onError, hostStripeAccountId }: BookingFormProps) {
+export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId }: BookingFormProps) {
   // Check feature flag for 2-step booking
   const useTwoStepBooking =
     import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true' ||
@@ -42,6 +45,9 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
         pricePerDay={pricePerDay}
         pricePerHour={pricePerHour || pricePerDay / 8} // Default to 8-hour workday
         confirmationType={confirmationType}
+        maxCapacity={maxCapacity}
+        cancellationPolicy={cancellationPolicy || 'moderate'}
+        rules={rules || ''}
         onSuccess={onSuccess}
         onError={onError}
         bufferMinutes={0} // Default buffer
