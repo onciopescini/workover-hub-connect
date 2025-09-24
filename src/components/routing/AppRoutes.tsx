@@ -57,6 +57,8 @@ const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminSpacesPage = lazy(() => import("@/pages/admin/AdminSpacesPage"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
+const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
+const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
 
 // Wrapper per lazy loading
 const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -81,6 +83,16 @@ export const AppRoutes = () => {
         <Route path="spaces/:id" element={
           <LazyWrapper>
             <SpaceDetail />
+          </LazyWrapper>
+        } />
+        <Route path="spaces/:id/booking-success" element={
+          <LazyWrapper>
+            <BookingSuccess />
+          </LazyWrapper>
+        } />
+        <Route path="spaces/:id/booking-cancelled" element={
+          <LazyWrapper>
+            <BookingCancelled />
           </LazyWrapper>
         } />
         {/* Legacy redirect from removed Events section */}
