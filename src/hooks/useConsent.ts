@@ -26,9 +26,14 @@ const DEFAULT_SETTINGS: ConsentSettings = {
 export const useConsent = () => {
   const [settings, setSettings] = useState<ConsentSettings>(DEFAULT_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoadingFromStorage, setIsLoadingFromStorage] = useState(false);
 
-  // Load consent from localStorage on mount
+  // Load consent from localStorage on mount - OTTIMIZZATO per evitare caricamenti multipli
   useEffect(() => {
+    if (isLoaded || isLoadingFromStorage) return; // Evita caricamenti multipli
+    
+    setIsLoadingFromStorage(true);
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -44,24 +49,29 @@ export const useConsent = () => {
           setSettings(DEFAULT_SETTINGS);
         } else {
           setSettings(parsed);
-          consentLogger.info('Consent loaded from storage', {
-            action: 'consent_loaded',
-            bannerDismissed: parsed.bannerDismissed,
-            consentGiven: Object.entries(parsed.consent).filter(([key, value]) => 
-              key !== 'timestamp' && key !== 'version' && value === true
-            ).map(([key]) => key)
-          });
+          // Riduci il logging per evitare spam nei logs
+          if (process.env['NODE_ENV'] === 'development') {
+            consentLogger.info('Consent loaded from storage', {
+              action: 'consent_loaded',
+              bannerDismissed: parsed.bannerDismissed,
+              consentGiven: Object.entries(parsed.consent).filter(([key, value]) => 
+                typeof value === 'boolean' && value
+              ).map(([key]) => key)
+            });
+          }
         }
+      } else {
+        setSettings(DEFAULT_SETTINGS);
       }
     } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Unknown error');
-      consentLogger.error('Error loading consent from storage', {
-        action: 'consent_load_error'
-      }, normalizedError);
+      const normalizedError = error instanceof Error ? error : new Error('Failed to load consent from storage');
+      consentLogger.error('Failed to load consent from storage', normalizedError);
       setSettings(DEFAULT_SETTINGS);
+    } finally {
+      setIsLoaded(true);
+      setIsLoadingFromStorage(false);
     }
-    setIsLoaded(true);
-  }, []);
+  }, []); // Rimuove dipendenze per caricare solo una volta
 
   // Save consent to localStorage
   const saveConsent = useCallback((newSettings: ConsentSettings) => {

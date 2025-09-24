@@ -276,9 +276,11 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
     }
   }, [debug, enableDebugMode]);
 
-  // Component lifecycle tracking
+  // Component lifecycle tracking - OTTIMIZZATO per evitare re-render
   useEffect(() => {
-    if (enablePerformanceTracking) {
+    let mounted = true;
+    
+    if (enablePerformanceTracking && mounted) {
       info(`useLogger hook mounted`, {
         event: 'hook_mount',
         context: contextRef.current,
@@ -287,6 +289,7 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
     }
 
     return () => {
+      mounted = false;
       // Clean up active timers
       activeTimersRef.current.clear();
       
@@ -297,7 +300,7 @@ export const useLogger = (options: UseLoggerOptions = {}): UseLoggerReturn => {
         });
       }
     };
-  }, [info, enablePerformanceTracking, enableDebugMode]);
+  }, []); // Rimuove dipendenze per evitare re-mount continui
 
   // Auto-track context changes
   useEffect(() => {
