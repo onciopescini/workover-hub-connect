@@ -166,7 +166,7 @@ export const handlePaymentFlow = async (
 
     console.log('🔵 handlePaymentFlow - Payment session created:', {
       sessionId: paymentSession.session_id,
-      paymentUrl: paymentSession.payment_url
+      paymentUrl: paymentSession.url
     });
     
     // Store session ID in booking for tracking
@@ -179,10 +179,10 @@ export const handlePaymentFlow = async (
       console.warn('⚠️ handlePaymentFlow - Failed to update booking with session ID:', updateError);
     }
 
-    console.log('🔵 handlePaymentFlow - Redirecting to Stripe:', paymentSession.payment_url);
+    console.log('🔵 handlePaymentFlow - Redirecting to Stripe:', paymentSession.url);
     
     // Redirect to Stripe Checkout
-    window.location.href = paymentSession.payment_url;
+    window.location.href = paymentSession.url;
     
   } catch (error) {
     console.error('🔴 handlePaymentFlow - Error:', error);

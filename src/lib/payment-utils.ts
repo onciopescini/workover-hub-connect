@@ -85,6 +85,13 @@ export const createPaymentSession = async (
       throw error;
     }
     
+    console.log('🔵 createPaymentSession - Received data:', data);
+    
+    if (!data?.url) {
+      console.error('🔴 createPaymentSession - No URL in response:', data);
+      throw new Error('URL di pagamento non ricevuto dal server');
+    }
+    
     return data as PaymentSession;
   } catch (error) {
     console.error("Error creating payment session:", error);

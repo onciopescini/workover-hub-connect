@@ -7,7 +7,7 @@ export type PaymentUpdate = Database["public"]["Tables"]["payments"]["Update"];
 
 export interface PaymentSession {
   id: string;
-  payment_url: string;
+  url: string;
   session_id: string;
 }
 
