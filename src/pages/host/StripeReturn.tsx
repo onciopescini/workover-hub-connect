@@ -1,56 +1,35 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { toast } from 'sonner';
 
 const StripeReturn: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { refreshProfile } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
   const state = searchParams.get('state');
 
   useEffect(() => {
-    const refreshData = async () => {
-      setIsRefreshing(true);
+    (async () => {
       try {
-        await refreshProfile();
-        if (state === 'success') {
-          toast.success('Onboarding Stripe completato! Puoi ora accettare pagamenti.');
-        } else if (state === 'refresh') {
-          toast.warning('Onboarding Stripe interrotto. Puoi riprovare dalla dashboard.');
-        }
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-    refreshData();
+        await refreshProfile?.();
+        if (state === 'success') toast.success('Onboarding Stripe completato!');
+        else if (state === 'refresh') toast.warning('Onboarding interrotto, puoi riprovare.');
+      } catch {/* no-op */}
+    })();
   }, [state, refreshProfile]);
 
-  // UI minimale: titolo + pulsante per tornare alla dashboard host
   return (
-    <div className="max-w-xl mx-auto p-6 text-center">
-      <h1 className="text-2xl font-semibold mb-2">
+    <div className="p-6 max-w-md mx-auto">
+      <h1 className="text-xl font-semibold mb-2">Collegamento Stripe</h1>
+      <p className="mb-4">
         {state === 'success'
-          ? 'Onboarding completato'
+          ? 'Il tuo account Stripe è stato configurato correttamente.'
           : state === 'refresh'
-          ? 'Onboarding interrotto'
-          : 'Stato sconosciuto'}
-      </h1>
-      <p className="text-muted-foreground mb-6">
-        {isRefreshing
-          ? 'Aggiornamento dello stato in corso...'
-          : state === 'success'
-          ? 'Il tuo account Stripe è configurato.'
-          : state === 'refresh'
-          ? 'Puoi riprovare in qualsiasi momento.'
-          : 'Controlla la tua dashboard per i dettagli.'}
+          ? 'Onboarding interrotto. Puoi riprovare dalla tua dashboard.'
+          : 'Stato sconosciuto. Torna alla dashboard.'}
       </p>
-      <button
-        onClick={() => navigate('/host')}
-        className="btn btn-primary w-full"
-      >
+      <button className="btn btn-primary w-full" onClick={() => navigate('/host')}>
         Vai alla Dashboard Host
       </button>
     </div>
