@@ -30,8 +30,8 @@ const ANALYTICS_CONFIG = {
 declare global {
   interface Window {
     plausible?: (eventName: string, options?: { props?: Record<string, any> }) => void;
-    gtag?: (...args: any[]) => void;
-    dataLayer?: any[];
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 

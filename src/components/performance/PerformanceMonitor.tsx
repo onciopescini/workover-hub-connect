@@ -39,8 +39,8 @@ export const PerformanceMonitor: React.FC = () => {
           });
         });
 
-        webVitals.onFID((metric: any) => {
-          trackEvent('web_vital_fid', {
+        webVitals.onINP((metric: any) => {
+          trackEvent('web_vital_inp', {
             value: Math.round(metric.value),
             rating: metric.rating,
             page: window.location.pathname

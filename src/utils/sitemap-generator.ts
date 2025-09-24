@@ -1,6 +1,6 @@
 interface SitemapUrl {
   loc: string;
-  lastmod?: string;
+  lastmod?: string | undefined;
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
 }
@@ -25,51 +25,55 @@ class SitemapGenerator {
     ];
 
     staticPages.forEach(page => {
-      this.addUrl({
+      const url: SitemapUrl = {
         loc: `${this.baseUrl}${page.path}`,
-        lastmod: new Date().toISOString().split('T')[0],
         changefreq: page.changefreq,
         priority: page.priority
-      });
+      };
+      url.lastmod = new Date().toISOString().split('T')[0];
+      this.addUrl(url);
     });
   }
 
   // Add dynamic space pages
   async addSpacePages() {
     try {
-      // This would be called from a server-side script or build process
-      // For now, we'll simulate the structure
       const spaces = await this.fetchSpaces();
       
       spaces.forEach(space => {
-        this.addUrl({
+        const url: SitemapUrl = {
           loc: `${this.baseUrl}/spaces/${space.id}`,
-          lastmod: space.updated_at || new Date().toISOString().split('T')[0],
           changefreq: 'weekly',
           priority: 0.8
-        });
+        };
+        if (space.updated_at) {
+          url.lastmod = space.updated_at;
+        }
+        this.addUrl(url);
       });
 
       // Add space category pages
       const categories = ['meeting-rooms', 'private-offices', 'hot-desks', 'event-spaces'];
       categories.forEach(category => {
-        this.addUrl({
+        const url: SitemapUrl = {
           loc: `${this.baseUrl}/spaces/category/${category}`,
-          lastmod: new Date().toISOString().split('T')[0],
           changefreq: 'daily',
           priority: 0.7
-        });
+        };
+        url.lastmod = new Date().toISOString().split('T')[0];
+        this.addUrl(url);
       });
 
       // Add location-based pages
       const locations = await this.fetchPopularLocations();
       locations.forEach(location => {
-        this.addUrl({
+        const url: SitemapUrl = {
           loc: `${this.baseUrl}/spaces/location/${encodeURIComponent(location.city)}`,
-          lastmod: new Date().toISOString().split('T')[0],
           changefreq: 'daily',  
           priority: 0.7
-        });
+        };
+        url.lastmod = new Date().toISOString().split('T')[0];
+        this.addUrl(url);
       });
 
     } catch (error) {
@@ -83,12 +87,15 @@ class SitemapGenerator {
       const events = await this.fetchActiveEvents();
       
       events.forEach(event => {
-        this.addUrl({
+        const url: SitemapUrl = {
           loc: `${this.baseUrl}/events/${event.id}`,
-          lastmod: event.updated_at || new Date().toISOString().split('T')[0],
           changefreq: 'weekly',
           priority: 0.6
-        });
+        };
+        if (event.updated_at) {
+          url.lastmod = event.updated_at;
+        }
+        this.addUrl(url);
       });
     } catch (error) {
       console.error('Error adding event pages to sitemap:', error);
@@ -101,12 +108,15 @@ class SitemapGenerator {
       const profiles = await this.fetchPublicProfiles();
       
       profiles.forEach(profile => {
-        this.addUrl({
+        const url: SitemapUrl = {
           loc: `${this.baseUrl}/profile/${profile.id}`,
-          lastmod: profile.updated_at || new Date().toISOString().split('T')[0],
           changefreq: 'monthly',
           priority: 0.4
-        });
+        };
+        if (profile.updated_at) {
+          url.lastmod = profile.updated_at;
+        }
+        this.addUrl(url);
       });
     } catch (error) {
       console.error('Error adding profile pages to sitemap:', error);
@@ -126,12 +136,13 @@ class SitemapGenerator {
     ];
 
     helpPages.forEach(page => {
-      this.addUrl({
+      const url: SitemapUrl = {
         loc: `${this.baseUrl}/help/${page}`,
-        lastmod: new Date().toISOString().split('T')[0],
         changefreq: 'monthly',
         priority: 0.5
-      });
+      };
+      url.lastmod = new Date().toISOString().split('T')[0];
+      this.addUrl(url);
     });
   }
 
@@ -232,7 +243,6 @@ Crawl-delay: 1`;
 
   // Mock data fetchers (replace with actual API calls)
   private async fetchSpaces() {
-    // In a real implementation, this would fetch from your API
     return [
       { id: '1', updated_at: '2024-01-15' },
       { id: '2', updated_at: '2024-01-14' }
@@ -266,7 +276,7 @@ Crawl-delay: 1`;
 
   // Build complete sitemap
   async build(): Promise<{ xml: string; robotsTxt: string }> {
-    this.urls = []; // Reset URLs
+    this.urls = [];
     
     this.addStaticPages();
     await this.addSpacePages();
@@ -281,22 +291,13 @@ Crawl-delay: 1`;
   }
 }
 
-// Export singleton instance
 export const sitemapGenerator = new SitemapGenerator();
 
-// Utility function to generate and save sitemap (for build scripts)
 export async function generateSitemap(): Promise<void> {
   try {
     const { xml, robotsTxt } = await sitemapGenerator.build();
-    
-    // In a real implementation, these would be saved to public directory
     console.log('Generated sitemap.xml');
     console.log('Generated robots.txt');
-    
-    // Save files (this would be handled by build process)
-    // fs.writeFileSync('public/sitemap.xml', xml);
-    // fs.writeFileSync('public/robots.txt', robotsTxt);
-    
   } catch (error) {
     console.error('Error generating sitemap:', error);
   }
