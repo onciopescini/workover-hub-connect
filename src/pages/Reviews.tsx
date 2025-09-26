@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star, MessageSquare, User, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { getUserReviews, getUserAverageRating, ReviewWithDetails } from "@/lib/review-utils";
+import { getBookingReviews, getUserAverageRating } from "@/lib/booking-review-utils";
+import type { BookingReviewWithDetails } from "@/types/review";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,8 +29,8 @@ export default function Reviews() {
   const navigate = useNavigate();
   const { authState } = useAuth();
   const [reviews, setReviews] = useState<{
-    given: ReviewWithDetails[];
-    received: ReviewWithDetails[];
+    given: BookingReviewWithDetails[];
+    received: BookingReviewWithDetails[];
   }>({ given: [], received: [] });
   const [averageRating, setAverageRating] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +41,7 @@ export default function Reviews() {
     try {
       setIsLoading(true);
       const [reviewsData, avgRating] = await Promise.all([
-        getUserReviews(authState.user.id),
+        getBookingReviews(authState.user.id),
         getUserAverageRating(authState.user.id)
       ]);
       
@@ -70,26 +71,26 @@ export default function Reviews() {
     ));
   };
 
-  const getOtherPartyInfo = (review: ReviewWithDetails, type: 'given' | 'received') => {
+  const getOtherPartyInfo = (review: BookingReviewWithDetails, type: 'given' | 'received') => {
     if (type === 'given') {
       return {
-        name: `${review.reviewee?.first_name} ${review.reviewee?.last_name}`,
-        photo: review.reviewee?.profile_photo_url,
-        role: review.reviewee ? "Coworker" : "Host"
+        name: `${review.target?.first_name || ''} ${review.target?.last_name || ''}`.trim() || 'Utente',
+        photo: review.target?.profile_photo_url,
+        role: "Utente"
       };
     } else {
       return {
-        name: `${review.reviewer?.first_name} ${review.reviewer?.last_name}`,
-        photo: review.reviewer?.profile_photo_url,
-        role: review.reviewer ? "Coworker" : "Host"
+        name: `${review.author?.first_name || ''} ${review.author?.last_name || ''}`.trim() || 'Utente',
+        photo: review.author?.profile_photo_url,
+        role: "Utente"
       };
     }
   };
 
-  const ReviewCard = ({ review, type, onChanged }: { review: ReviewWithDetails; type: 'given' | 'received'; onChanged: () => void }) => {
+  const ReviewCard = ({ review, type, onChanged }: { review: BookingReviewWithDetails; type: 'given' | 'received'; onChanged: () => void }) => {
     const otherParty = getOtherPartyInfo(review, type);
     const [editOpen, setEditOpen] = useState(false);
-    const [editContent, setEditContent] = useState<string>(review.comment || '');
+    const [editContent, setEditContent] = useState<string>(review.content || '');
     const [reportOpen, setReportOpen] = useState(false);
     const [reportReason, setReportReason] = useState('');
     const [reportDescription, setReportDescription] = useState('');
@@ -195,9 +196,9 @@ export default function Reviews() {
                 </p>
               </div>
               
-              {review.comment && (
+              {review.content && (
                 <p className="text-sm text-gray-700 mt-2 line-clamp-3">
-                  {review.comment}
+                  {review.content}
                 </p>
               )}
               

@@ -176,3 +176,29 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
     };
   }
 };
+
+// Get user's average rating from received booking reviews
+export const getUserAverageRating = async (userId: string): Promise<number | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('booking_reviews')
+      .select('rating')
+      .eq('target_id', userId)
+      .eq('is_visible', true);
+
+    if (error) {
+      console.error('Error fetching user average rating:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const total = data.reduce((sum, review) => sum + review.rating, 0);
+    return total / data.length;
+  } catch (error) {
+    console.error('Error calculating average rating:', error);
+    return null;
+  }
+};

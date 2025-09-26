@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Star, TrendingUp, Euro } from "lucide-react";
 import { Profile } from "@/types/auth";
@@ -10,6 +11,7 @@ interface ProfileStatsCardsProps {
 }
 
 export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
+  const navigate = useNavigate();
   const [stats, setStats] = React.useState({
     totalBookings: 0,
     averageRating: 0,
@@ -135,7 +137,13 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {cards.map((card) => (
-            <div key={card.title} className="relative p-4 border rounded-lg hover:shadow-md transition-shadow">
+            <div 
+              key={card.title} 
+              className={`relative p-4 border rounded-lg hover:shadow-md transition-shadow ${
+                card.title === 'Rating Medio' ? 'cursor-pointer hover:bg-gray-50' : ''
+              }`}
+              onClick={card.title === 'Rating Medio' ? () => navigate('/reviews') : undefined}
+            >
               <div className="flex items-center justify-between mb-2">
                 <div className={`p-2 rounded-lg ${card.bgColor}`}>
                   <card.icon className={`w-4 h-4 ${card.color}`} />
