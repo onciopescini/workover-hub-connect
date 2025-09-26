@@ -63,7 +63,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Profile section failed:', error);
-    userData.errors.push(`Profile section failed: ${error.message}`);
+    userData.errors.push(`Profile section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 2: Bookings
@@ -84,7 +84,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Bookings section failed:', error);
-    userData.errors.push(`Bookings section failed: ${error.message}`);
+    userData.errors.push(`Bookings section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 3: Spaces
@@ -105,7 +105,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Spaces section failed:', error);
-    userData.errors.push(`Spaces section failed: ${error.message}`);
+    userData.errors.push(`Spaces section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 4: Messages
@@ -126,7 +126,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Messages section failed:', error);
-    userData.errors.push(`Messages section failed: ${error.message}`);
+    userData.errors.push(`Messages section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 5: Reviews given
@@ -147,7 +147,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Reviews given section failed:', error);
-    userData.errors.push(`Reviews given section failed: ${error.message}`);
+    userData.errors.push(`Reviews given section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 6: Reviews received
@@ -168,7 +168,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Reviews received section failed:', error);
-    userData.errors.push(`Reviews received section failed: ${error.message}`);
+    userData.errors.push(`Reviews received section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 7: Connections
@@ -189,7 +189,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Connections section failed:', error);
-    userData.errors.push(`Connections section failed: ${error.message}`);
+    userData.errors.push(`Connections section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 8: Payments
@@ -210,7 +210,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Payments section failed:', error);
-    userData.errors.push(`Payments section failed: ${error.message}`);
+    userData.errors.push(`Payments section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 9: Notifications
@@ -231,7 +231,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 Notifications section failed:', error);
-    userData.errors.push(`Notifications section failed: ${error.message}`);
+    userData.errors.push(`Notifications section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // CHECKPOINT 10: GDPR requests
@@ -252,7 +252,7 @@ async function collectUserData(userId: string) {
     }
   } catch (error) {
     console.error('🔴 GDPR requests section failed:', error);
-    userData.errors.push(`GDPR requests section failed: ${error.message}`);
+    userData.errors.push(`GDPR requests section failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   const totalTime = Date.now() - startTime;
@@ -279,7 +279,7 @@ Generated at: ${new Date().toISOString()}
 ==========================================
 ERRORS ENCOUNTERED DURING COLLECTION
 ==========================================
-${userData.errors.length > 0 ? userData.errors.map((error, i) => `${i + 1}. ${error}`).join('\n') : 'No errors encountered'}
+${userData.errors.length > 0 ? userData.errors.map((error: string, i: number) => `${i + 1}. ${error}`).join('\n') : 'No errors encountered'}
 
 ==========================================
 PROFILE DATA
@@ -487,15 +487,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('🔴 FATAL ERROR:', error);
-    console.error('🔍 Error details:', {
+    const errorDetails = error instanceof Error ? {
       name: error.name,
       message: error.message,
       stack: error.stack?.substring(0, 500)
-    });
+    } : { message: String(error) };
+    console.error('🔍 Error details:', errorDetails);
     
     return new Response(JSON.stringify({ 
       error: 'Export failed',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

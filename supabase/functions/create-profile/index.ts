@@ -28,8 +28,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let user_id, email, first_name, last_name, role, bio, linkedin_url;
+
   try {
-    const { 
+    ({ 
       user_id, 
       email, 
       first_name, 
@@ -37,7 +39,7 @@ serve(async (req) => {
       role = 'coworker',
       bio,
       linkedin_url 
-    }: ProfileRequest = await req.json();
+    } = await req.json() as ProfileRequest);
 
     ErrorHandler.logInfo('Creating profile for user', {
       user_id,
@@ -147,10 +149,11 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    ErrorHandler.logError('Error creating/updating profile', error, {
-      user_id,
-      email
-    });
+    const contextData = {
+      user_id: user_id || 'unknown',
+      email: email || 'unknown'
+    };
+    ErrorHandler.logError('Error creating/updating profile', error, contextData);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

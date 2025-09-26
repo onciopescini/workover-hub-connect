@@ -26,8 +26,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let action, target_id, admin_id, reason, approve;
+  
   try {
-    const { action, target_id, admin_id, reason, approve }: AdminActionRequest = await req.json();
+    ({ action, target_id, admin_id, reason, approve } = await req.json() as AdminActionRequest);
 
     ErrorHandler.logInfo('Admin action initiated', {
       action,
@@ -173,9 +175,9 @@ serve(async (req) => {
 
   } catch (error: any) {
     ErrorHandler.logError('Error executing admin action', error, {
-      action,
-      target_id,
-      admin_id
+      action: action || 'unknown',
+      target_id: target_id || 'unknown',
+      admin_id: admin_id || 'unknown'
     });
     return new Response(
       JSON.stringify({ error: error.message }),
