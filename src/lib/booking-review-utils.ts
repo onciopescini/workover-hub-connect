@@ -102,7 +102,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
       .eq("booking_id", bookingId)
       .eq("author_id", userId)
       .eq("target_id", targetId)
-      .single();
+      .maybeSingle();
 
     // Check if target has written a review
     const { data: targetReview } = await supabase
@@ -111,7 +111,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
       .eq("booking_id", bookingId)
       .eq("author_id", targetId)
       .eq("target_id", userId)
-      .single();
+      .maybeSingle();
 
     const hasWrittenReview = !!userReview;
     const hasReceivedReview = !!targetReview;
