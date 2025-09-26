@@ -13,12 +13,12 @@ export class WebhookValidator {
     const signature = req.headers.get('stripe-signature');
     
     if (!Validators.validateWebhookSignature(signature)) {
-      ErrorHandler.logError('Missing stripe-signature header');
+      ErrorHandler.logError('Missing stripe-signature header', new Error('Missing signature'));
       return { success: false, error: 'Missing signature' };
     }
 
     if (!Validators.validateWebhookSecret(webhookSecret)) {
-      ErrorHandler.logError('Missing STRIPE_WEBHOOK_SECRET environment variable');
+      ErrorHandler.logError('Missing STRIPE_WEBHOOK_SECRET environment variable', new Error('Missing webhook secret'));
       return { success: false, error: 'Webhook secret not configured' };
     }
 

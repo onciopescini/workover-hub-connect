@@ -41,8 +41,8 @@ serve(async (req) => {
     );
   } catch (error) {
     ErrorHandler.logError('Error in get-mapbox-token function', error, {
-      errorMessage: error.message,
-      stack: error.stack
+      errorMessage: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     });
     return new Response(
       JSON.stringify({ error: "Internal server error" }),

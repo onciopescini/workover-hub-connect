@@ -72,11 +72,11 @@ serve(async (req) => {
           user_id: booking.user_id,
           type: 'review',
           title: 'Lascia una recensione',
-          content: `La tua prenotazione presso "${booking.spaces.title}" è terminata. Lascia una recensione per condividere la tua esperienza!`,
+          content: `La tua prenotazione presso "${(booking.spaces as any).title}" è terminata. Lascia una recensione per condividere la tua esperienza!`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
-            target_user_id: booking.spaces.host_id,
+            space_title: (booking.spaces as any).title,
+            target_user_id: (booking.spaces as any).host_id,
             review_type: 'booking'
           }
         });
@@ -93,13 +93,13 @@ serve(async (req) => {
       const { error: hostNotificationError } = await supabaseAdmin
         .from('user_notifications')
         .insert({
-          user_id: booking.spaces.host_id,
+          user_id: (booking.spaces as any).host_id,
           type: 'review',
           title: 'Lascia una recensione',
-          content: `La prenotazione presso "${booking.spaces.title}" è terminata. Lascia una recensione per il coworker!`,
+          content: `La prenotazione presso "${(booking.spaces as any).title}" è terminata. Lascia una recensione per il coworker!`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
+            space_title: (booking.spaces as any).title,
             target_user_id: booking.user_id,
             review_type: 'booking'
           }

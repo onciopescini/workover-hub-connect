@@ -90,14 +90,14 @@ export async function handleCheckoutSessionCompleted(
     let notificationTitle = '';
     let notificationContent = '';
 
-    if (booking.spaces.confirmation_type === 'instant') {
+    if ((booking.spaces as any).confirmation_type === 'instant') {
       newStatus = 'confirmed';
       notificationTitle = 'Prenotazione confermata!';
-      notificationContent = `La tua prenotazione presso "${booking.spaces.title}" è stata confermata automaticamente. Buon lavoro!`;
+      notificationContent = `La tua prenotazione presso "${(booking.spaces as any).title}" è stata confermata automaticamente. Buon lavoro!`;
     } else {
       newStatus = 'pending';
       notificationTitle = 'Prenotazione in attesa di approvazione';
-      notificationContent = `La tua prenotazione presso "${booking.spaces.title}" è in attesa di approvazione dall'host. Riceverai una notifica appena verrà confermata.`;
+      notificationContent = `La tua prenotazione presso "${(booking.spaces as any).title}" è in attesa di approvazione dall'host. Riceverai una notifica appena verrà confermata.`;
     }
 
     // Update booking status

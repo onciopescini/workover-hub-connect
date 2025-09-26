@@ -65,7 +65,8 @@ serve(async (req) => {
     const jobId = jobData
 
     // Start background processing
-    EdgeRuntime.waitUntil(processImageAsync(supabaseClient, jobId, filePath, user.id))
+    // Process image asynchronously
+    processImageAsync(supabaseClient, jobId, filePath, user.id).catch(console.error)
 
     return new Response(
       JSON.stringify({ 
@@ -87,7 +88,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error) 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -167,14 +168,14 @@ async function processImageAsync(
   } catch (error) {
     ErrorHandler.logError('Background image processing failed', error, {
       jobId,
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     });
     
     // Update job as failed
     await supabaseClient.rpc('update_image_processing_job', {
       job_id_param: jobId,
       status_param: 'failed',
-      error_message_param: error.message
+      error_message_param: error instanceof Error ? error.message : String(error)
     })
   }
 }
@@ -196,13 +197,13 @@ async function convertToWebP(imageBuffer: ArrayBuffer): Promise<ArrayBuffer> {
     }
     
     // Encode to WebP with quality setting
-    const webpBuffer = await image.encodeWebP(85) // 85% quality for good balance
+    const webpBuffer = await (image as any).encodeWebP(85) // 85% quality for good balance
     
     return webpBuffer.buffer
   } catch (error) {
     ErrorHandler.logError('WebP conversion failed', error, {
-      errorMessage: error.message
+      errorMessage: error instanceof Error ? error.message : String(error)
     });
-    throw new Error(`Image conversion failed: ${error.message}`)
+    throw new Error(`Image conversion failed: ${error instanceof Error ? error.message : String(error)}`)
   }
 }

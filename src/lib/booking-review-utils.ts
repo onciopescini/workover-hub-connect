@@ -95,6 +95,35 @@ export const addBookingReview = async (review: BookingReviewInsert): Promise<boo
 // Check review status for a booking
 export const getBookingReviewStatus = async (bookingId: string, userId: string, targetId: string): Promise<ReviewStatus> => {
   try {
+    // Get booking details to check completion status and payment
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .select(`
+        *,
+        payments (
+          payment_status
+        )
+      `)
+      .eq("id", bookingId)
+      .maybeSingle();
+
+    if (bookingError || !booking) {
+      console.error("Error fetching booking:", bookingError);
+      return {
+        canWriteReview: false,
+        hasWrittenReview: false,
+        hasReceivedReview: false,
+        isVisible: false
+      };
+    }
+
+    // Check if booking is completed (date + end_time has passed)
+    const bookingEndTime = new Date(`${booking.booking_date}T${booking.end_time || '18:00:00'}`);
+    const isBookingCompleted = bookingEndTime < new Date();
+
+    // Check if payment is completed
+    const isPaymentCompleted = booking.payments?.some((payment: any) => payment.payment_status === 'completed') || false;
+
     // Check if user has written a review
     const { data: userReview } = await supabase
       .from("booking_reviews")
@@ -126,7 +155,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
     }
 
     const result: ReviewStatus = {
-      canWriteReview: !hasWrittenReview,
+      canWriteReview: !hasWrittenReview && isBookingCompleted && isPaymentCompleted,
       hasWrittenReview,
       hasReceivedReview,
       isVisible
