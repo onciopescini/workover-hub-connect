@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Star, Clock, CheckCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
@@ -110,12 +110,12 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
           Lascia Recensione
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md" aria-describedby="review-dialog-description">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Recensione per {targetUserName}</DialogTitle>
-          <p id="review-dialog-description" className="text-sm text-muted-foreground">
+          <DialogDescription>
             Condividi la tua esperienza con questo utente
-          </p>
+          </DialogDescription>
         </DialogHeader>
         <ReviewForm
           type="booking"

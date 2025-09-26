@@ -1,7 +1,7 @@
 // supabase/functions/create-payment-session/index.ts
 // Deno Edge Function - Stripe Checkout (Connect) con pricing coerente UI/server
 
-import Stripe from 'npm:stripe@14.25.0';
+import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
