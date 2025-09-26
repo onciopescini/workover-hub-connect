@@ -35,6 +35,7 @@ const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 const Bookings = lazy(() => import("@/pages/Bookings"));
 const Messages = lazy(() => import("@/pages/Messages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
+const ChatThread = lazy(() => import("@/pages/ChatThread"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
 const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
@@ -165,6 +166,14 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <Messages />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="messages/conversation/:conversationId" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <ChatThread />
             </LazyWrapper>
           </AuthProtected>
         } />

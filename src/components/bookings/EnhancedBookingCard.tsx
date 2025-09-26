@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
+import { MessagesButton } from "@/components/messaging/MessagesButton";
 
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
@@ -273,17 +274,11 @@ export const EnhancedBookingCard = ({
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2 mt-4">
-          <Button
+          <MessagesButton 
+            booking={booking}
             variant={chatState.enabled ? "outline" : "secondary"}
-            size="sm"
-            className="flex items-center"
-            onClick={() => chatState.enabled && onOpenMessageDialog(booking.id, booking.space?.title || "Spazio")}
             disabled={!chatState.enabled}
-            title={chatState.tooltip || undefined}
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            {chatState.text}
-          </Button>
+          />
           
           {/* Review button - only show for completed bookings */}
           {booking.status === 'confirmed' && otherParty.id && isChatEnabled && (
