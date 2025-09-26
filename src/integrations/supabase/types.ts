@@ -1303,6 +1303,13 @@ export type Database = {
             referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "user_conversations_view"
+            referencedColumns: ["conversation_id"]
+          },
         ]
       }
       notifications: {
@@ -2123,6 +2130,76 @@ export type Database = {
             | null
         }
         Relationships: []
+      }
+      user_conversations_view: {
+        Row: {
+          booking_id: string | null
+          conversation_id: string | null
+          coworker_id: string | null
+          created_at: string | null
+          host_id: string | null
+          last_message: string | null
+          last_message_at: string | null
+          last_sender_first_name: string | null
+          last_sender_id: string | null
+          last_sender_is_me: boolean | null
+          last_sender_last_name: string | null
+          me_id: string | null
+          me_is_host: boolean | null
+          message_count: number | null
+          other_first_name: string | null
+          other_last_name: string | null
+          other_profile_photo_url: string | null
+          other_role: Database["public"]["Enums"]["user_role"] | null
+          other_user_id: string | null
+          space_id: string | null
+          space_title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["last_sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
