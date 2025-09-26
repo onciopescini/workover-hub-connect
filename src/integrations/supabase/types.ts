@@ -466,6 +466,78 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          booking_id: string | null
+          coworker_id: string
+          created_at: string
+          host_id: string
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          space_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          coworker_id: string
+          created_at?: string
+          host_id: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          space_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          coworker_id?: string
+          created_at?: string
+          host_id?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          space_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cookie_consent_log: {
         Row: {
           analytics_consent: boolean
@@ -1176,6 +1248,7 @@ export type Database = {
           attachments: Json | null
           booking_id: string
           content: string
+          conversation_id: string | null
           created_at: string | null
           id: string
           is_read: boolean | null
@@ -1185,6 +1258,7 @@ export type Database = {
           attachments?: Json | null
           booking_id: string
           content: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
@@ -1194,6 +1268,7 @@ export type Database = {
           attachments?: Json | null
           booking_id?: string
           content?: string
+          conversation_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
@@ -1219,6 +1294,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -2129,6 +2211,15 @@ export type Database = {
       get_host_metrics: {
         Args: { host_id_param: string }
         Returns: Json
+      }
+      get_or_create_conversation: {
+        Args: {
+          p_booking_id: string
+          p_coworker_id: string
+          p_host_id: string
+          p_space_id: string
+        }
+        Returns: string
       }
       get_public_profile: {
         Args: { profile_id_param: string }
