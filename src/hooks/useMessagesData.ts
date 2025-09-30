@@ -112,8 +112,8 @@ export const useMessagesData = (activeTab: string) => {
                 year: 'numeric'
               });
 
-              // Get last message time and unread count
-              const { data: lastMessage } = await supabase
+              // Get last message time and unread count with proper error handling
+              const { data: lastMessage, error: lastMsgError } = await supabase
                 .from('messages')
                 .select('created_at')
                 .eq('booking_id', booking.id)
@@ -121,12 +121,20 @@ export const useMessagesData = (activeTab: string) => {
                 .limit(1)
                 .maybeSingle();
 
-              const { data: unreadMessages } = await supabase
+              if (lastMsgError) {
+                console.warn('Error fetching last message for booking', booking.id, lastMsgError);
+              }
+
+              const { data: unreadMessages, error: unreadError } = await supabase
                 .from('messages')
                 .select('id')
                 .eq('booking_id', booking.id)
                 .neq('sender_id', authState.user?.id || '')
                 .eq('is_read', false);
+
+              if (unreadError) {
+                console.warn('Error fetching unread messages for booking', booking.id, unreadError);
+              }
               
               return {
                 id: `booking-${booking.id}`,
@@ -205,13 +213,22 @@ export const useMessagesData = (activeTab: string) => {
         const type = parts[0];
         const id = parts.slice(1).join('-');
         
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(id)) {
+          console.error('Invalid UUID format:', id, 'from conversation ID:', selectedConversationId);
+          return;
+        }
+        
         let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
-          const bookingMessages = await fetchBookingMessages(id ?? '');
+          console.log('Fetching booking messages for ID:', id);
+          const bookingMessages = await fetchBookingMessages(id);
           fetchedMessages = bookingMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         } else if (type === 'private') {
-          const privateMessages = await getPrivateMessages(id ?? '');
+          console.log('Fetching private messages for ID:', id);
+          const privateMessages = await getPrivateMessages(id);
           fetchedMessages = privateMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         }
 
@@ -228,7 +245,8 @@ export const useMessagesData = (activeTab: string) => {
           };
         }));
       } catch (error) {
-        console.error("Error fetching messages:", error);
+        console.error("Error fetching messages for conversation:", selectedConversationId, error);
+        setMessages([]);
       }
     };
 
@@ -268,22 +286,34 @@ export const useMessagesData = (activeTab: string) => {
   }, [selectedConversationId, authState.user?.id]);
 
   const handleSendMessage = async (content: string, attachments?: File[]) => {
-    if (!selectedConversationId) return;
+    if (!selectedConversationId) {
+      console.warn('No conversation selected');
+      return;
+    }
 
     const parts = selectedConversationId.split('-');
     const type = parts[0];
     const id = parts.slice(1).join('-');
     
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid UUID format when sending message:', id);
+      throw new Error('Invalid conversation ID format');
+    }
+    
     try {
+      console.log(`Sending ${type} message to ID:`, id);
+      
       if (type === 'private') {
-        await sendPrivateMessage(id ?? '', content);
+        await sendPrivateMessage(id, content);
       } else if (type === 'booking') {
-        await sendMessage(id ?? '', content);
+        await sendMessage(id, content);
       }
       
       // Refresh messages would trigger the useEffect above
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error(`Error sending ${type} message:`, error);
       throw error;
     }
   };
