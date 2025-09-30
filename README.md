@@ -1,328 +1,337 @@
-# WorkOver - Stripe Checkout Integration
+# WorkOver - Workspace Booking Platform
 
-## Overview
-This project implements a complete Stripe Checkout integration for a two-step booking system with support for both tax-inclusive and Stripe Tax modes.
-
-## Environment Variables
-
-### Client-side (Frontend)
-```env
-VITE_SERVICE_FEE_PCT=0.12          # Platform service fee (12%)
-VITE_DEFAULT_VAT_PCT=0.22          # Default VAT rate (22%) - Italy
-ENABLE_STRIPE_TAX=false            # Enable Stripe automatic tax calculation
-```
-
-### Server-side (Edge Functions)
-```env
-STRIPE_SECRET_KEY=sk_live_...      # Stripe secret key
-SERVICE_FEE_PCT=0.12               # Platform service fee (server-side)
-DEFAULT_VAT_PCT=0.22               # Default VAT rate (server-side)
-ENABLE_STRIPE_TAX=false            # Enable Stripe automatic tax calculation
-SITE_URL=https://your-domain.com   # Your production domain for Stripe redirects
-```
-
-## Tax Modes
-
-### Tax OFF (ENABLE_STRIPE_TAX=false)
-- VAT is calculated client-side and server-side
-- UI shows "IVA (22%)" with calculated amount
-- Stripe receives total amount including VAT
-- `tax_behavior: 'inclusive'` in Stripe
-- `automatic_tax.enabled: false`
-
-### Tax ON (ENABLE_STRIPE_TAX=true)  
-- VAT calculation is handled by Stripe
-- UI shows "IVA calcolata al pagamento"
-- Stripe receives base + service fee only
-- `tax_behavior: 'exclusive'` in Stripe  
-- `automatic_tax.enabled: true`
-
-## Payment Flow
-
-1. **Date Selection**: User selects booking date
-2. **Time Selection**: User selects time range with real-time pricing
-3. **Summary**: Shows detailed price breakdown
-4. **Slot Lock**: `validate_and_reserve_slot` reserves the booking
-5. **Payment Session**: `create-payment-session` creates Stripe Checkout
-6. **Redirect**: User is redirected to Stripe Checkout
-7. **Success/Cancel**: User returns to success or cancel page
-
-## Key Features
-
-- **Concurrency Protection**: Slot locking prevents double bookings
-- **Price Consistency**: Server validates client-side calculations
-- **Tax Flexibility**: Supports both manual and Stripe Tax modes
-- **Error Handling**: Comprehensive error states and user feedback
-- **Mobile Responsive**: Works on all device sizes
-- **Accessibility**: ARIA labels and keyboard navigation
-
-## Testing
-
-### Unit Tests
-```bash
-npm run test:unit
-```
-Tests pricing calculations for various scenarios including edge cases and rounding.
-
-### E2E Tests  
-```bash
-npm run test:e2e
-```
-Tests complete booking flows with both tax modes and error scenarios.
-
-### Development Override
-In development/testing, you can override the tax mode using localStorage:
-```javascript
-// Force Tax OFF
-localStorage.setItem('ENABLE_STRIPE_TAX', 'false');
-
-// Force Tax ON  
-localStorage.setItem('ENABLE_STRIPE_TAX', 'true');
-```
-
-## Stripe Connect Integration
-
-This implementation uses Stripe Connect for marketplace payments:
-- **Application Fee**: Collected as service fee from each transaction
-- **Direct Charges**: Payments go directly to host's connected account
-- **Platform Commission**: Automatically deducted as application fee
-
-## Security Notes
-
-- All sensitive operations happen server-side in edge functions
-- Client-side pricing is validated server-side before payment
-- Stripe handles PCI compliance for payment processing
-- User authentication required for all booking operations
-
-## Deployment
-
-1. Set up Supabase project with required environment variables
-2. Deploy edge functions (automatic with Lovable)
-3. Configure Stripe Connect accounts for hosts
-4. Set production domain in SITE_URL environment variable
-
----
-
-# WorkoverHub Connect 🚀
-
-> Modern platform for coworking space bookings, professional networking, and community events
-
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-
-## 🌟 Overview
-
-WorkoverHub Connect is a comprehensive platform that bridges the gap between professionals and productive workspaces. Whether you're a digital nomad seeking the perfect coworking spot, a community builder organizing events, or a space host looking to maximize your venue's potential, WorkoverHub Connect provides the tools you need.
-
-### Key Features
-
-- **🏢 Space Booking System**: Seamless reservation management for coworking spaces, meeting rooms, and event venues with 2-step booking flow
-- **🤝 Professional Networking**: Connect with like-minded professionals through our intelligent suggestion system
-- **📅 Event Management**: Create, discover, and participate in community events and professional gatherings
-- **💰 Integrated Payments**: Secure payment processing with Stripe Connect for hosts and seamless checkout for users
-- **📊 Advanced Analytics**: Comprehensive dashboards for hosts and administrators with revenue insights
-- **🔐 Enterprise Security**: GDPR-compliant data handling with robust authentication and authorization
-- **⚡ Concurrency Protection**: Advanced slot locking system prevents double bookings and handles race conditions
+A modern, full-stack workspace booking platform built with React, TypeScript, and Supabase. Connect coworkers with flexible workspaces for productive remote work.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** 18+ and npm
-- **Supabase** account and project
-- **Stripe** account for payment processing
+- **Node.js**: 18.x or higher
+- **npm**: 9.x or higher (or yarn/pnpm)
+- **Supabase Account**: For backend services
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/workoverhub/workoverhub-connect.git
-cd workoverhub-connect
+git clone <repository-url>
+cd workover-app
 
 # Install dependencies
 npm install
+
+# Configure environment variables
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
 
 # Start development server
 npm run dev
 ```
 
-### Environment Setup
+The application will be available at `http://localhost:5173`
 
-1. **Supabase Configuration**: Already configured for project ID `c2ec9501-6094-4703-9d15-50c43aa5d48f`
-2. **Database Setup**: Run migrations in Supabase dashboard
-3. **Authentication**: Supabase Auth is pre-configured with RLS policies
-
-### Development Commands
-
-```bash
-npm run dev          # Start development server
-npm run build        # Production build
-npm run test         # Run test suite
-npm run lint         # ESLint checking
-npm run preview      # Preview production build
-```
-
-## 🏗️ Architecture
-
-### Tech Stack
-
-- **Frontend**: React 18 + TypeScript + Vite
-- **UI Framework**: Tailwind CSS + shadcn/ui components
-- **State Management**: React Query + React Context
-- **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Authentication**: Supabase Auth with RLS
-- **Payments**: Stripe Connect
-- **File Storage**: Supabase Storage with image optimization
-
-### Project Structure
+## 🏗️ Project Structure
 
 ```
 src/
 ├── components/          # Reusable UI components
-│   ├── ui/             # Base shadcn/ui components
+│   ├── ui/             # Base UI components (shadcn/ui)
+│   ├── auth/           # Authentication components
+│   ├── booking/        # Booking flow components
+│   ├── spaces/         # Space management components
 │   ├── admin/          # Admin dashboard components
-│   ├── host/           # Host management interfaces
-│   ├── shared/         # Cross-feature components
-│   └── layout/         # Layout and navigation
+│   └── monitoring/     # SRE & performance monitoring
 ├── hooks/              # Custom React hooks
-│   ├── auth/           # Authentication logic
-│   ├── queries/        # React Query hooks
-│   └── ...
+│   ├── auth/           # Authentication hooks
+│   ├── booking/        # Booking-related hooks
+│   └── spaces/         # Space management hooks
 ├── lib/                # Utility functions and services
-├── pages/              # Route components
+│   ├── auth/           # Authentication utilities
+│   ├── booking/        # Booking business logic
+│   ├── logger.ts       # Structured logging system
+│   └── supabase/       # Database utilities
+├── pages/              # Application pages/routes
 ├── types/              # TypeScript type definitions
-└── integrations/       # External service integrations
-    └── supabase/       # Supabase client and types
+├── config/             # Centralized configuration
+│   └── app.config.ts   # App configuration
+├── constants/          # Application constants
+│   └── index.ts        # Business rules, time constants
+└── utils/              # Helper functions
 ```
 
-### Key Design Patterns
+## 🛠️ Development
 
-- **Component Composition**: Modular, reusable components with clear separation of concerns
-- **Custom Hooks**: Business logic abstracted into reusable hooks
-- **Type Safety**: Comprehensive TypeScript coverage with strict mode enabled
-- **Error Boundaries**: Graceful error handling throughout the application
-- **Optimistic Updates**: Enhanced UX with React Query optimistic mutations
+### Available Scripts
 
-### UI Patterns
+```bash
+# Development
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run preview          # Preview production build
 
-#### Photo Gallery Lightbox
-The `SpacePhotoGallery` component implements a 5-tile Airbnb-style gallery with full accessibility support:
-- **5-tile Layout**: One large main image + 4 smaller tiles in 2x2 grid
-- **Lightbox Modal**: Full-screen photo viewing with keyboard navigation (←/→ arrows, Esc)
-- **Touch Support**: Swipe gestures for mobile navigation
-- **Accessibility**: Focus trap, screen reader support, ARIA labels
-- **Performance**: Image prefetching, lazy loading, optimized aspect ratios
+# Code Quality
+npm run lint             # Lint code with ESLint
+npm run type-check       # TypeScript type checking
 
-Usage:
-```tsx
-<SpacePhotoGallery 
-  photos={space.photos} 
-  spaceTitle={space.title}
-  className="mb-6" 
-/>
+# Testing
+npm run test             # Run unit tests
+npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Run tests with coverage
+npm run test:e2e         # Run E2E tests with Playwright
+npm run test:e2e:ui      # Run E2E tests in interactive mode
+
+# Database
+npm run migrate          # Run database migrations
+npm run migrate:status   # Check migration status
 ```
-
-#### Booking Flow 2-Step
-The `TwoStepBookingForm` provides an enhanced booking experience with availability filtering:
-- **Date Selection**: Calendar with disabled unavailable dates
-- **Time Slots**: Real-time availability checking with slot locking
-- **Concurrency Protection**: Race condition handling with slot reservations
-- **Dynamic Pricing**: Automatic switching between hourly/daily rates at 8h threshold  
-- **Feature Flag**: `VITE_BOOKING_TWO_STEP=true` or localStorage override
-- **RPC Integration**: Uses `get_space_availability_optimized` and `validate_and_reserve_slot`
-
-Environment Variables:
-```env
-# Client-side
-VITE_BOOKING_TWO_STEP=true
-VITE_SERVICE_FEE_PCT=0.12
-VITE_DEFAULT_VAT_PCT=0.22
-
-# Server-side (Edge Functions)
-SERVICE_FEE_PCT=0.12
-DEFAULT_VAT_PCT=0.22
-ENABLE_STRIPE_TAX=false|true
-SITE_URL=https://your-domain.com
-```
-
-Development Override:
-```javascript
-// For testing Tax modes
-localStorage.setItem('ENABLE_STRIPE_TAX', 'true'|'false');
-localStorage.setItem('enable-two-step-booking', 'true'); // E2E compat
-```
-
-## 🚀 Deployment
-
-### Staging Environment
-
-The application is automatically deployable through Lovable's integrated deployment system:
-
-1. **Build Verification**: `npm run build` - Ensures TypeScript compilation
-2. **Testing**: `npm run test` - Runs comprehensive test suite
-3. **Deploy**: Use Lovable's "Publish" button for instant deployment
-
-### Production Considerations
-
-- **Performance**: Code splitting and lazy loading implemented
-- **Security**: GDPR compliance, RLS policies, and secure authentication
-- **Monitoring**: Error boundaries and logging for production debugging
-- **SEO**: Meta tags, structured data, and social media optimization
-
-### Environment Variables
-
-All sensitive configuration is managed through Supabase secrets:
-- Stripe API keys for payment processing
-- Mapbox tokens for location services
-- Email service credentials
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTING.md) for details.
 
 ### Development Workflow
 
+1. **Create a new branch** for your feature
+2. **Make changes** and test locally
+3. **Run linting**: `npm run lint`
+4. **Run type checks**: `npm run type-check`
+5. **Run tests**: `npm test`
+6. **Commit changes** following conventional commits
+7. **Push and create PR**
+
+## 🔧 Key Technologies
+
+### Frontend
+- **React 18**: UI framework
+- **TypeScript**: Type safety
+- **Tailwind CSS**: Utility-first styling
+- **Radix UI**: Accessible component primitives
+- **shadcn/ui**: Pre-built component library
+- **Framer Motion**: Animations
+- **React Query**: Server state management
+- **React Router**: Client-side routing
+
+### Backend
+- **Supabase**: PostgreSQL database, authentication, storage
+- **Edge Functions**: Serverless backend logic
+- **Row Level Security**: Fine-grained access control
+
+### Developer Tools
+- **Vite**: Fast build tool
+- **ESLint**: Code linting
+- **Prettier**: Code formatting
+- **Jest**: Unit testing
+- **Playwright**: E2E testing
+
+### Monitoring & Analytics
+- **Sentry**: Error tracking
+- **Custom SRE Dashboard**: Performance metrics
+- **Plausible**: Privacy-first analytics
+
+## 🏢 Core Features
+
+### For Coworkers (Guests)
+- 🔍 **Browse & Search**: Find workspaces by location, amenities, and price
+- 📅 **Real-time Booking**: Instant or request-based booking with conflict resolution
+- 💳 **Secure Payments**: Stripe integration with VAT handling
+- ⭐ **Reviews & Ratings**: Rate your workspace experience
+- 💬 **Direct Messaging**: Communicate with hosts
+- 🤝 **Networking**: Connect with other coworkers
+
+### For Hosts
+- 📝 **Space Management**: Create and manage workspace listings
+- 📊 **Analytics Dashboard**: Track bookings, revenue, and performance
+- 💰 **Revenue Tracking**: Monitor earnings and payouts
+- 📅 **Availability Management**: Set custom availability schedules
+- 📧 **Guest Communication**: Built-in messaging system
+- 🔔 **Notifications**: Real-time booking updates
+
+### For Admins
+- 🛡️ **Content Moderation**: Approve spaces and handle reports
+- 👥 **User Management**: Suspend/reactivate users
+- 📊 **SRE Dashboard**: Monitor system health and performance
+- 🔐 **GDPR Compliance**: Data export and deletion tools
+- 📈 **Platform Analytics**: Business intelligence and metrics
+
+## 🔐 Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```bash
+# Supabase Configuration (Required)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
+
+# Feature Flags (Optional)
+VITE_BOOKING_TWO_STEP=true
+VITE_ENABLE_STRIPE_TAX=false
+VITE_ENABLE_NETWORKING=true
+
+# External Services (Optional)
+VITE_MAPBOX_ACCESS_TOKEN=your-mapbox-token
+VITE_STRIPE_PUBLISHABLE_KEY=your-stripe-key
+VITE_SENTRY_DSN=your-sentry-dsn
+VITE_POSTHOG_KEY=your-posthog-key
+
+# Analytics (Optional)
+VITE_PLAUSIBLE_DOMAIN=workover.app
+
+# Performance Tuning (Optional)
+VITE_CACHE_TIMEOUT=300000
+VITE_RETRY_ATTEMPTS=3
+VITE_LOG_BUFFER_SIZE=50
+```
+
+## 🚦 Testing
+
+### Unit Tests
+
+```bash
+npm run test              # Run all tests
+npm run test:watch        # Watch mode for TDD
+npm run test:coverage     # Generate coverage report
+```
+
+### E2E Tests
+
+```bash
+npm run test:e2e          # Run all E2E tests
+npm run test:e2e:ui       # Interactive mode with Playwright UI
+npm run test:smoke        # Run smoke tests only
+npm run test:post-deploy  # Run post-deployment tests
+```
+
+### Test Structure
+
+```
+src/
+├── __tests__/          # Unit tests
+│   ├── components/     # Component tests
+│   ├── hooks/          # Hook tests
+│   └── utils/          # Utility tests
+└── e2e/                # E2E tests
+    ├── auth.spec.ts
+    ├── booking.spec.ts
+    └── spaces.spec.ts
+```
+
+## 📊 Monitoring & Performance
+
+### SRE Dashboard
+
+Access the admin SRE dashboard at `/admin/sre` to monitor:
+
+- **API Latency**: P50, P95, P99 percentiles
+- **Error Rates**: Real-time error tracking
+- **Active Sessions**: Current user activity
+- **Database Performance**: Query performance metrics
+- **Memory Usage**: Client-side memory monitoring
+
+### Performance Metrics
+
+The application automatically tracks:
+- **Core Web Vitals**: LCP, FID, CLS
+- **Component Render Times**: Performance bottleneck detection
+- **API Response Times**: Backend latency monitoring
+- **Error Rates**: Application stability metrics
+
+### Error Tracking
+
+Integrated with Sentry for:
+- Real-time error reporting
+- Stack trace analysis
+- User session replay
+- Performance monitoring
+
+## 🔒 Security & Compliance
+
+### GDPR Compliance
+- User data export functionality
+- Right to be forgotten (data deletion)
+- Cookie consent management
+- Privacy-first analytics
+
+### Security Features
+- Row Level Security (RLS) policies
+- Secure authentication with Supabase Auth
+- XSS protection
+- CSRF protection
+- Rate limiting on sensitive endpoints
+
+### DAC7 Compliance
+- Automatic income threshold tracking
+- Host reporting for tax compliance
+- Transaction history
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
 1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-3. **Commit** changes: `git commit -m 'Add amazing feature'`
-4. **Push** to branch: `git push origin feature/amazing-feature`
-5. **Open** a Pull Request
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes**
+4. **Run tests**: `npm test`
+5. **Run linting**: `npm run lint`
+6. **Commit**: `git commit -m 'feat: add amazing feature'`
+7. **Push**: `git push origin feature/amazing-feature`
+8. **Open a Pull Request**
 
-### Code Quality Standards
+### Commit Convention
 
-- **TypeScript Strict Mode**: Full type safety enforcement
-- **ESLint Configuration**: Consistent code style and best practices
-- **Testing**: Unit tests for utilities, integration tests for components
-- **Documentation**: JSDoc comments for all public APIs
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-## 📊 Performance & Analytics
+```
+feat: add new booking feature
+fix: resolve date picker bug
+docs: update README
+style: format code with prettier
+refactor: simplify booking logic
+test: add unit tests for auth
+chore: update dependencies
+```
 
-- **Bundle Size**: Optimized with Vite and dynamic imports
-- **Loading Performance**: Lazy routing and component loading
-- **Database Optimization**: Indexed queries and efficient RLS policies
-- **Real-time Updates**: Supabase real-time subscriptions for live data
+## 📝 Code Quality Standards
 
-## 🔒 Security & Privacy
+- **ESLint**: Enforced code style and best practices
+- **Prettier**: Consistent code formatting
+- **TypeScript**: Strict type checking enabled
+- **Test Coverage**: Target 80%+ coverage
+- **Component Size**: Max 100 lines per function
+- **Complexity**: Max cyclomatic complexity of 15
 
-- **GDPR Compliance**: Data export, deletion, and consent management
-- **Authentication**: Secure JWT-based auth with refresh tokens
-- **Authorization**: Row-Level Security policies for data access
-- **Data Encryption**: End-to-end encryption for sensitive data
+## 🐛 Troubleshooting
 
-## 📞 Support & Community
+### Common Issues
 
-- **Documentation**: Comprehensive guides and API documentation
-- **Issues**: [GitHub Issues](https://github.com/workoverhub/workoverhub-connect/issues)
-- **Community**: Join our [Discord](https://discord.gg/workoverhub) for discussions
+**Development server won't start**
+```bash
+# Clear cache and reinstall
+rm -rf node_modules package-lock.json
+npm install
+```
 
-## 📝 License
+**Type errors after pulling changes**
+```bash
+# Regenerate Supabase types
+npm run type-check
+```
 
-This project is proprietary software. All rights reserved by WorkoverHub Team.
+**Database connection issues**
+- Verify Supabase credentials in `.env.local`
+- Check Supabase project status
+- Ensure RLS policies are configured
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- [Supabase](https://supabase.com) - Backend infrastructure
+- [shadcn/ui](https://ui.shadcn.com) - UI components
+- [Radix UI](https://www.radix-ui.com) - Accessible primitives
+- [Tailwind CSS](https://tailwindcss.com) - Styling framework
+
+## 📞 Support
+
+For support, email support@workover.app or join our Discord community.
 
 ---
 
-**Made with ❤️ by the WorkoverHub Team**
-
-*Empowering professionals to find their perfect workspace and build meaningful connections.*
+Built with ❤️ by the WorkOver team
