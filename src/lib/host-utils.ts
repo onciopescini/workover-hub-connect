@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostSpaces = async (hostId: string) => {
-  console.log('🔍 getHostSpaces: Fetching ALL spaces for host:', hostId);
+  sreLogger.debug('getHostSpaces: Fetching ALL spaces for host', { hostId });
   
   try {
     const { data, error } = await supabase
@@ -12,28 +12,31 @@ export const getHostSpaces = async (hostId: string) => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('❌ Error fetching host spaces:', error);
+      sreLogger.error('Error fetching host spaces', { hostId }, error as Error);
       throw error;
     }
 
-    console.log('✅ getHostSpaces: Found', data?.length || 0, 'spaces for host');
-    console.log('📊 Spaces data:', data?.map(space => ({
-      id: space.id,
-      title: space.title,
-      published: space.published,
-      is_suspended: space.is_suspended,
-      host_id: space.host_id
-    })));
+    sreLogger.debug('getHostSpaces: Found spaces', { 
+      hostId,
+      spacesCount: data?.length || 0,
+      spaces: data?.map(space => ({
+        id: space.id,
+        title: space.title,
+        published: space.published,
+        is_suspended: space.is_suspended,
+        host_id: space.host_id
+      }))
+    });
     
     return data || [];
   } catch (error) {
-    console.error('❌ getHostSpaces: Exception:', error);
+    sreLogger.error('getHostSpaces: Exception occurred', { hostId }, error as Error);
     throw error;
   }
 };
 
 export const getHostBookings = async (hostId: string) => {
-  console.log('🔍 getHostBookings: Fetching bookings for host:', hostId);
+  sreLogger.debug('getHostBookings: Fetching bookings for host', { hostId });
   
   try {
     // First get host's spaces
@@ -43,12 +46,12 @@ export const getHostBookings = async (hostId: string) => {
       .eq('host_id', hostId);
 
     if (spacesError) {
-      console.error('❌ Error fetching host spaces:', spacesError);
+      sreLogger.error('Error fetching host spaces', { hostId }, spacesError as Error);
       throw spacesError;
     }
 
     if (!spaces || spaces.length === 0) {
-      console.log('📝 No spaces found for host');
+      sreLogger.debug('No spaces found for host', { hostId });
       return [];
     }
 
@@ -85,14 +88,14 @@ export const getHostBookings = async (hostId: string) => {
       .order('created_at', { ascending: false });
 
     if (bookingsError) {
-      console.error('❌ Error fetching host bookings:', bookingsError);
+      sreLogger.error('Error fetching host bookings', { hostId, spaceIds }, bookingsError as Error);
       throw bookingsError;
     }
 
-    console.log('✅ getHostBookings: Found', bookings?.length || 0, 'bookings');
+    sreLogger.debug('getHostBookings: Found bookings', { hostId, bookingsCount: bookings?.length || 0 });
     return bookings || [];
   } catch (error) {
-    console.error('❌ getHostBookings: Exception:', error);
+    sreLogger.error('getHostBookings: Exception occurred', { hostId }, error as Error);
     throw error;
   }
 };

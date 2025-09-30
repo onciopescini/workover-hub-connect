@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle, AlertTriangle, Play, Zap, Database } from "lucide-react";
 import { regressionValidator } from "@/lib/regression-validation";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const RegressionValidationRunner = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -26,7 +27,7 @@ export const RegressionValidationRunner = () => {
         const validationResults = await regressionValidator.runFullRegression();
         setResults(validationResults);
       } catch (error) {
-        console.error('❌ Auto-run regression validation failed:', error);
+        sreLogger.error('Auto-run regression validation failed', {}, error as Error);
         setResults({
           passed: [],
           warnings: [],
@@ -51,7 +52,7 @@ export const RegressionValidationRunner = () => {
       const validationResults = await regressionValidator.runFullRegression();
       setResults(validationResults);
     } catch (error) {
-      console.error('❌ Regression validation failed:', error);
+      sreLogger.error('Regression validation failed', {}, error as Error);
       setResults({
         passed: [],
         warnings: [],

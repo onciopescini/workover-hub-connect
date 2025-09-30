@@ -12,6 +12,7 @@ import {
   Camera 
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface PhotoUploaderProps {
   photoFiles: File[];
@@ -147,7 +148,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       // Upload successful - photos ready for use
     } catch (error) {
       toast.error('Errore durante il caricamento delle foto');
-      console.error('Upload error:', error);
+      sreLogger.error('Photo upload error', { photoCount: photoFiles.length }, error as Error);
     } finally {
       setUploadingPhotos(false);
       setUploadProgress(0);
