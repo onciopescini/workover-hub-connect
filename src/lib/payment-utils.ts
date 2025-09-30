@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Importa il tipo Payment dalla tabella Supabase
 type Payment = {
@@ -61,8 +61,14 @@ export const createPaymentSession = async (
       return null;
     }
 
-    console.log('🔵 Creating payment session with full payload:', {
-      spaceId, durationHours, pricePerHour, pricePerDay, hostStripeAccountId
+    sreLogger.debug('Creating payment session with full payload', {
+      component: 'PaymentUtils',
+      action: 'createPaymentSession',
+      spaceId,
+      durationHours,
+      pricePerHour,
+      pricePerDay,
+      hostStripeAccountId
     });
 
     const { data, error } = await supabase.functions.invoke('create-payment-session', {
@@ -77,24 +83,40 @@ export const createPaymentSession = async (
     });
 
     if (error) {
-      console.error('🔴 createPaymentSession - Edge function error:', {
-        status: error.status,
-        message: error.message,
-        details: error
-      });
+      sreLogger.error('createPaymentSession - Edge function error', {
+        component: 'PaymentUtils',
+        action: 'createPaymentSession',
+        spaceId,
+        bookingId,
+        status: (error as any).status,
+        message: (error as any).message
+      }, error as Error);
       throw error;
     }
     
-    console.log('🔵 createPaymentSession - Received data:', data);
+    sreLogger.debug('createPaymentSession - Received data', {
+      component: 'PaymentUtils',
+      action: 'createPaymentSession',
+      hasUrl: !!data?.url
+    });
     
     if (!data?.url) {
-      console.error('🔴 createPaymentSession - No URL in response:', data);
+      sreLogger.error('createPaymentSession - No URL in response', {
+        component: 'PaymentUtils',
+        action: 'createPaymentSession',
+        data
+      });
       throw new Error('URL di pagamento non ricevuto dal server');
     }
     
     return data as PaymentSession;
   } catch (error) {
-    console.error("Error creating payment session:", error);
+    sreLogger.error("Error creating payment session", {
+      component: 'PaymentUtils',
+      action: 'createPaymentSession',
+      spaceId,
+      bookingId
+    }, error as Error);
     toast.error("Errore nella creazione della sessione di pagamento");
     return null;
   }
@@ -115,7 +137,11 @@ export const getPaymentStatus = async (bookingId: string): Promise<string | null
     
     return data?.payment_status || null;
   } catch (error) {
-    console.error("Error fetching payment status:", error);
+    sreLogger.error("Error fetching payment status", {
+      component: 'PaymentUtils',
+      action: 'getPaymentStatus',
+      bookingId
+    }, error as Error);
     return null;
   }
 };
@@ -147,7 +173,12 @@ export const getUserPayments = async (): Promise<Payment[]> => {
       created_at: payment.created_at ?? ''
     }));
   } catch (error) {
-    console.error("Error fetching user payments:", error);
+    const { data: user } = await supabase.auth.getUser();
+    sreLogger.error("Error fetching user payments", {
+      component: 'PaymentUtils',
+      action: 'getUserPayments',
+      userId: user?.user?.id
+    }, error as Error);
     return [];
   }
 };
@@ -168,7 +199,13 @@ export const recordPayment = async (paymentData: Omit<PaymentInsert, 'user_id'>)
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error recording payment:", error);
+    const { data: user } = await supabase.auth.getUser();
+    sreLogger.error("Error recording payment", {
+      component: 'PaymentUtils',
+      action: 'recordPayment',
+      userId: user?.user?.id,
+      bookingId: paymentData.booking_id
+    }, error as Error);
     return false;
   }
 };
@@ -184,7 +221,11 @@ export const validatePayment = async (sessionId: string): Promise<boolean> => {
     
     return data?.success || false;
   } catch (error) {
-    console.error("Error validating payment:", error);
+    sreLogger.error("Error validating payment", {
+      component: 'PaymentUtils',
+      action: 'validatePayment',
+      sessionId
+    }, error as Error);
     return false;
   }
 };

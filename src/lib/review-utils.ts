@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface Review {
   id: string;
@@ -116,7 +116,11 @@ export const getUserReviews = async (userId: string): Promise<{
 
     return { given, received };
   } catch (error) {
-    console.error('Error fetching user reviews:', error);
+    sreLogger.error('Error fetching user reviews', {
+      component: 'ReviewUtils',
+      action: 'getUserReviews',
+      userId
+    }, error as Error);
     return { given: [], received: [] };
   }
 };
@@ -130,7 +134,11 @@ export const getUserAverageRating = async (userId: string): Promise<number | nul
       .eq('is_visible', true);
 
     if (error) {
-      console.error('Error fetching user average rating:', error);
+      sreLogger.error('Error fetching user average rating', {
+        component: 'ReviewUtils',
+        action: 'getUserAverageRating',
+        userId
+      }, error as Error);
       return null;
     }
 
@@ -141,7 +149,11 @@ export const getUserAverageRating = async (userId: string): Promise<number | nul
     const total = data.reduce((sum, review) => sum + review.rating, 0);
     return total / data.length;
   } catch (error) {
-    console.error('Error calculating average rating:', error);
+    sreLogger.error('Error calculating average rating', {
+      component: 'ReviewUtils',
+      action: 'getUserAverageRating',
+      userId
+    }, error as Error);
     return null;
   }
 };

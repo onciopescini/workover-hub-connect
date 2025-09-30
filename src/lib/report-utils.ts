@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ReportInsert, Report } from "@/types/report";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Create a new report
 export const createReport = async (reportData: Omit<ReportInsert, 'reporter_id'>): Promise<boolean> => {
@@ -12,7 +12,13 @@ export const createReport = async (reportData: Omit<ReportInsert, 'reporter_id'>
       return false;
     }
 
-    console.log("Creating report:", { ...reportData, reporter_id: user.user.id });
+    sreLogger.debug("Creating report", {
+      component: 'ReportUtils',
+      action: 'createReport',
+      reporterId: user.user.id,
+      targetType: reportData.target_type,
+      targetId: reportData.target_id
+    });
 
     const { error } = await supabase
       .from('reports')
@@ -22,14 +28,23 @@ export const createReport = async (reportData: Omit<ReportInsert, 'reporter_id'>
       });
 
     if (error) {
-      console.error("Error creating report:", error);
+      sreLogger.error("Error creating report", {
+        component: 'ReportUtils',
+        action: 'createReport',
+        reporterId: user.user.id,
+        targetType: reportData.target_type
+      }, error as Error);
       throw error;
     }
     
     toast.success("Segnalazione inviata con successo");
     return true;
   } catch (error) {
-    console.error("Error creating report:", error);
+    sreLogger.error("Error creating report", {
+      component: 'ReportUtils',
+      action: 'createReport',
+      targetType: reportData.target_type
+    }, error as Error);
     toast.error("Errore nell'invio della segnalazione");
     return false;
   }
@@ -59,7 +74,12 @@ export const getUserReports = async (): Promise<Report[]> => {
       updated_at: report.updated_at ?? ''
     }));
   } catch (error) {
-    console.error("Error fetching reports:", error);
+    const { data: user } = await supabase.auth.getUser();
+    sreLogger.error("Error fetching reports", {
+      component: 'ReportUtils',
+      action: 'getUserReports',
+      userId: user?.user?.id
+    }, error as Error);
     return [];
   }
 };
@@ -67,16 +87,26 @@ export const getUserReports = async (): Promise<Report[]> => {
 // Admin function to get all reports with reporter information
 export const getAllReports = async (): Promise<Report[]> => {
   try {
-    console.log("Fetching all reports for admin...");
+    sreLogger.debug("Fetching all reports for admin", {
+      component: 'ReportUtils',
+      action: 'getAllReports'
+    });
     
     // Check if current user is admin first
     const { data: currentUser } = await supabase.auth.getUser();
     if (!currentUser?.user) {
-      console.log("No authenticated user");
+      sreLogger.debug("No authenticated user", {
+        component: 'ReportUtils',
+        action: 'getAllReports'
+      });
       return [];
     }
 
-    console.log("Current user ID:", currentUser.user.id);
+    sreLogger.debug("Current user ID", {
+      component: 'ReportUtils',
+      action: 'getAllReports',
+      userId: currentUser.user.id
+    });
 
     // Verify admin status
     const { data: profile } = await supabase
@@ -85,10 +115,20 @@ export const getAllReports = async (): Promise<Report[]> => {
       .eq('id', currentUser.user.id)
       .single();
 
-    console.log("User profile:", profile);
+    sreLogger.debug("User profile", {
+      component: 'ReportUtils',
+      action: 'getAllReports',
+      userId: currentUser.user.id,
+      role: profile?.role
+    });
 
     if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      console.log("User is not admin or is suspended");
+      sreLogger.debug("User is not admin or is suspended", {
+        component: 'ReportUtils',
+        action: 'getAllReports',
+        userId: currentUser.user.id,
+        role: profile?.role
+      });
       return [];
     }
     
@@ -104,12 +144,18 @@ export const getAllReports = async (): Promise<Report[]> => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching reports:", error);
+      sreLogger.error("Error fetching reports", {
+        component: 'ReportUtils',
+        action: 'getAllReports'
+      }, error as Error);
       throw error;
     }
     
-    console.log("Fetched reports:", data);
-    console.log("Number of reports found:", data?.length || 0);
+    sreLogger.debug("Fetched reports", {
+      component: 'ReportUtils',
+      action: 'getAllReports',
+      reportsCount: data?.length || 0
+    });
     
     return (data || []).map(report => ({
       ...report,
@@ -121,7 +167,10 @@ export const getAllReports = async (): Promise<Report[]> => {
       updated_at: report.updated_at ?? ''
     }));
   } catch (error) {
-    console.error("Error fetching all reports:", error);
+    sreLogger.error("Error fetching all reports", {
+      component: 'ReportUtils',
+      action: 'getAllReports'
+    }, error as Error);
     return [];
   }
 };
@@ -133,7 +182,12 @@ export const reviewReport = async (
   adminNotes?: string
 ): Promise<boolean> => {
   try {
-    console.log("Reviewing report:", { reportId, status, adminNotes });
+    sreLogger.debug("Reviewing report", {
+      component: 'ReportUtils',
+      action: 'reviewReport',
+      reportId,
+      status
+    });
     
     // Handle exactOptionalPropertyTypes for admin_notes
     const rpcParams: any = {
@@ -148,7 +202,12 @@ export const reviewReport = async (
     const { data, error } = await supabase.rpc('review_report', rpcParams);
 
     if (error) {
-      console.error("Error reviewing report:", error);
+      sreLogger.error("Error reviewing report", {
+        component: 'ReportUtils',
+        action: 'reviewReport',
+        reportId,
+        status
+      }, error as Error);
       throw error;
     }
     
@@ -162,7 +221,12 @@ export const reviewReport = async (
       return false;
     }
   } catch (error) {
-    console.error("Error reviewing report:", error);
+    sreLogger.error("Error reviewing report", {
+      component: 'ReportUtils',
+      action: 'reviewReport',
+      reportId,
+      status
+    }, error as Error);
     toast.error("Errore nell'aggiornamento della segnalazione");
     return false;
   }
