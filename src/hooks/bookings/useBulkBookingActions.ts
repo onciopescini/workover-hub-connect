@@ -27,18 +27,34 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
     const success: string[] = [];
     const failed: { id: string; error: string }[] = [];
 
-    for (const id of bookingIds) {
-      const { error } = await supabase
+    try {
+      // OPTIMIZED: Single batch update instead of N queries
+      const { data: updatedBookings, error } = await supabase
         .from("bookings")
         .update({ status: "confirmed" })
-        .eq("id", id);
+        .in("id", bookingIds)
+        .eq("status", "pending")
+        .select("id");
 
       if (error) {
-        failed.push({ id, error: error.message });
+        console.error("Error confirming bookings:", error);
+        bookingIds.forEach(id => failed.push({ id, error: error.message }));
       } else {
-        success.push(id);
+        const confirmedIds = updatedBookings?.map(b => b.id) || [];
+        success.push(...confirmedIds);
+        
+        // Mark failed bookings
+        bookingIds.forEach(id => {
+          if (!confirmedIds.includes(id)) {
+            failed.push({ id, error: "not_confirmed" });
+          }
+        });
+        
+        success.forEach(() => opts?.onAfterEach?.());
       }
-      opts?.onAfterEach?.();
+    } catch (error: any) {
+      console.error("Bulk confirm error:", error);
+      bookingIds.forEach(id => failed.push({ id, error: error.message }));
     }
 
     setLoading(false);
@@ -64,21 +80,54 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
     const success: string[] = [];
     const failed: { id: string; error: string }[] = [];
 
-    for (const id of bookingIds) {
-      const payload: { booking_id: string; cancelled_by_host: boolean; reason?: string } = {
-        booking_id: id,
-        cancelled_by_host: canActAsHost ? true : false,
-        ...(reason ? { reason } : {}),
-      };
-      const { data, error } = await supabase.rpc("cancel_booking", payload);
+    try {
+      // OPTIMIZED: Batch fetch booking details first (single query)
+      const { data: bookings, error: fetchError } = await supabase
+        .from("bookings")
+        .select("id, user_id, space_id, spaces!inner(host_id)")
+        .in("id", bookingIds);
 
-      const result = (data as { success?: boolean; error?: string } | null);
-      if (error || (result && result.success === false)) {
-        failed.push({ id, error: error?.message || result?.error || "unknown_error" });
-      } else {
-        success.push(id);
+      if (fetchError || !bookings) {
+        bookingIds.forEach(id => failed.push({ id, error: fetchError?.message || "fetch_failed" }));
+        setLoading(false);
+        opts?.onAfterAll?.();
+        return { success, failed };
       }
-      opts?.onAfterEach?.();
+
+      // Process cancellations in parallel
+      const results = await Promise.allSettled(
+        bookings.map(async (booking) => {
+          const payload = {
+            booking_id: booking.id,
+            cancelled_by_host: booking.spaces.host_id === authState.user?.id,
+            ...(reason ? { reason } : {}),
+          };
+          
+          const { data, error } = await supabase.rpc("cancel_booking", payload);
+          const result = data as { success?: boolean; error?: string } | null;
+          
+          if (error || (result && result.success === false)) {
+            throw new Error(error?.message || result?.error || "cancel_failed");
+          }
+          
+          return booking.id;
+        })
+      );
+
+      results.forEach((result, idx) => {
+        const booking = bookings[idx];
+        if (!booking) return;
+        
+        if (result.status === "fulfilled") {
+          success.push(booking.id);
+          opts?.onAfterEach?.();
+        } else {
+          failed.push({ id: booking.id, error: result.reason?.message || "unknown_error" });
+        }
+      });
+    } catch (error: any) {
+      console.error("Bulk cancel error:", error);
+      bookingIds.forEach(id => failed.push({ id, error: error.message }));
     }
 
     setLoading(false);

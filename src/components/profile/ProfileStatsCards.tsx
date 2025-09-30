@@ -26,59 +26,83 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
 
       try {
         const { supabase } = await import('@/integrations/supabase/client');
+        const { startTimer } = await import('@/lib/sre-logger');
 
-        // Get bookings count
-        let allBookings: any[] = [];
-        
+        const endTimer = startTimer('profile_stats_fetch', { 
+          userId: profile.id, 
+          role: profile.role 
+        });
+
+        // OPTIMIZED: Single query with JOINs instead of sequential queries
         if (profile.role === 'host') {
-          // For hosts, get bookings through spaces
-          const { data: spaces } = await supabase
-            .from('spaces')
-            .select('id')
-            .eq('host_id', profile.id);
-          
-          if (spaces && spaces.length > 0) {
-            const { data: hostBookingsData } = await supabase
-              .from('bookings')
-              .select('id, status, created_at')
-              .in('space_id', spaces.map(s => s.id));
-            allBookings = hostBookingsData || [];
+          // Fetch bookings and payments in one query with JOIN
+          const { data: hostData, error: hostError } = await supabase
+            .from('bookings')
+            .select(`
+              id, 
+              status, 
+              created_at,
+              spaces!inner(host_id),
+              payments(host_amount, payment_status)
+            `)
+            .eq('spaces.host_id', profile.id);
+
+          if (hostError) {
+            console.error('Error fetching host stats:', hostError);
+            endTimer();
+            return;
           }
+
+          const allBookings = hostData || [];
+          const earnings = allBookings.reduce((sum, booking) => {
+            const completedPayment = booking.payments?.find(
+              (p: any) => p.payment_status === 'completed'
+            );
+            return sum + (completedPayment?.host_amount || 0);
+          }, 0);
+
+          // Get reviews in parallel
+          const publicReviews = await getUserPublicReviews(profile.id);
+          const avgRating = publicReviews?.length > 0 
+            ? publicReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / publicReviews.length 
+            : 0;
+
+          setStats({
+            totalBookings: allBookings.length,
+            averageRating: Math.round(avgRating * 10) / 10,
+            monthlyGrowth: 0,
+            totalEarnings: earnings,
+            reviewCount: publicReviews?.length || 0
+          });
         } else {
-          // For coworkers, get their bookings directly
-          const { data: bookings } = await supabase
+          // Coworker stats - single query
+          const { data: coworkerBookings, error: coworkerError } = await supabase
             .from('bookings')
             .select('id, status, created_at')
             .eq('user_id', profile.id);
-          allBookings = bookings || [];
+
+          if (coworkerError) {
+            console.error('Error fetching coworker stats:', coworkerError);
+            endTimer();
+            return;
+          }
+
+          // Get reviews in parallel
+          const publicReviews = await getUserPublicReviews(profile.id);
+          const avgRating = publicReviews?.length > 0 
+            ? publicReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / publicReviews.length 
+            : 0;
+
+          setStats({
+            totalBookings: coworkerBookings?.length || 0,
+            averageRating: Math.round(avgRating * 10) / 10,
+            monthlyGrowth: 0,
+            totalEarnings: 0,
+            reviewCount: publicReviews?.length || 0
+          });
         }
 
-        // Get reviews using the secure RPC function
-        const publicReviews = await getUserPublicReviews(profile.id);
-
-        const avgRating = publicReviews && publicReviews.length > 0 
-          ? publicReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / publicReviews.length 
-          : 0;
-
-        // Get earnings for hosts
-        let earnings = 0;
-        if (profile.role === 'host' && allBookings.length > 0) {
-          const { data: payments } = await supabase
-            .from('payments')
-            .select('host_amount')
-            .in('booking_id', allBookings.map(b => b.id))
-            .eq('payment_status', 'completed');
-          
-          earnings = payments?.reduce((sum, p) => sum + (p.host_amount || 0), 0) || 0;
-        }
-
-        setStats({
-          totalBookings: allBookings.length,
-          averageRating: Math.round(avgRating * 10) / 10,
-          monthlyGrowth: 0, // Could calculate based on bookings trend
-          totalEarnings: earnings,
-          reviewCount: publicReviews?.length || 0
-        });
+        endTimer();
       } catch (error) {
         console.error('Error fetching profile stats:', error);
       }

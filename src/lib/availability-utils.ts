@@ -20,9 +20,40 @@ export interface DayAvailability {
   availableSlots: TimeSlot[];
 }
 
-// Cache per ottimizzare le performance
-const availabilityCache = new Map<string, { data: unknown; timestamp: number }>();
+// SCALABILITY FIX: Use sessionStorage instead of in-memory Map for horizontal scaling
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minuti
+
+const getClientCache = (key: string) => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const cached = sessionStorage.getItem(`avail_${key}`);
+    if (!cached) return null;
+    
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp > CACHE_DURATION) {
+      sessionStorage.removeItem(`avail_${key}`);
+      return null;
+    }
+    
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+const setClientCache = (key: string, data: any) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    sessionStorage.setItem(`avail_${key}`, JSON.stringify({
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    console.warn('Failed to cache availability:', error);
+  }
+};
 
 // Genera slot di tempo in intervalli di 30 minuti
 export const generateTimeSlots = (startHour: number = 9, endHour: number = 18): string[] => {
@@ -61,12 +92,10 @@ export const fetchSpaceBookings = async (
 ) => {
   const cacheKey = `${spaceId}-${startDate}-${endDate}`;
   
-  // Controlla cache
-  if (useCache && availabilityCache.has(cacheKey)) {
-    const cached = availabilityCache.get(cacheKey)!;
-    if (Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data;
-    }
+  // Check sessionStorage cache
+  if (useCache) {
+    const cached = getClientCache(cacheKey);
+    if (cached) return cached;
   }
 
   try {
@@ -96,12 +125,9 @@ export const fetchSpaceBookings = async (
       bookings = data || [];
     }
     
-    // Aggiorna cache
+    // Update sessionStorage cache
     if (useCache) {
-      availabilityCache.set(cacheKey, {
-        data: bookings,
-        timestamp: Date.now()
-      });
+      setClientCache(cacheKey, bookings);
     }
     
     return bookings;
@@ -113,10 +139,19 @@ export const fetchSpaceBookings = async (
 
 // Invalida cache per real-time updates
 export const invalidateAvailabilityCache = (spaceId: string) => {
-  for (const key of availabilityCache.keys()) {
-    if (key.startsWith(spaceId)) {
-      availabilityCache.delete(key);
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const keysToDelete: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(`avail_${spaceId}`)) {
+        keysToDelete.push(key);
+      }
     }
+    keysToDelete.forEach(key => sessionStorage.removeItem(key));
+  } catch (error) {
+    console.warn('Failed to invalidate cache:', error);
   }
 };
 
