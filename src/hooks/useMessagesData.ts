@@ -119,7 +119,7 @@ export const useMessagesData = (activeTab: string) => {
                 .eq('booking_id', booking.id)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
               const { data: unreadMessages } = await supabase
                 .from('messages')
@@ -200,7 +200,11 @@ export const useMessagesData = (activeTab: string) => {
       if (!selectedConversationId) return;
 
       try {
-        const [type, id] = selectedConversationId.split('-');
+        // Correctly parse type and full UUID (UUIDs contain hyphens!)
+        const parts = selectedConversationId.split('-');
+        const type = parts[0];
+        const id = parts.slice(1).join('-');
+        
         let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
@@ -235,7 +239,10 @@ export const useMessagesData = (activeTab: string) => {
     fetchMessages();
 
     // Set up real-time subscription for messages
-    const [type, id] = selectedConversationId.split('-');
+    const parts = selectedConversationId.split('-');
+    const type = parts[0];
+    const id = parts.slice(1).join('-');
+    
     const tableName = type === 'booking' ? 'messages' : 'private_messages';
     const filterField = type === 'booking' ? 'booking_id' : 'chat_id';
 
@@ -263,7 +270,9 @@ export const useMessagesData = (activeTab: string) => {
   const handleSendMessage = async (content: string, attachments?: File[]) => {
     if (!selectedConversationId) return;
 
-    const [type, id] = selectedConversationId.split('-');
+    const parts = selectedConversationId.split('-');
+    const type = parts[0];
+    const id = parts.slice(1).join('-');
     
     try {
       if (type === 'private') {
