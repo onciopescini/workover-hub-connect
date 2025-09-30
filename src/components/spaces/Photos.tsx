@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Image, Loader2, Check, AlertCircle } from "lucide-react";
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
@@ -11,6 +10,7 @@ import {
   generateOptimizedImageUrls,
   type ImageProcessingJob 
 } from '@/lib/image-optimization';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface PhotosProps {
   photoPreviewUrls: string[];
@@ -106,7 +106,10 @@ export const Photos = ({
           }
         }
       } catch (error) {
-        console.error('Failed to subscribe to job updates:', error);
+        sreLogger.error('Failed to subscribe to job updates', { 
+          context: 'Photos',
+          jobId 
+        }, error as Error);
       }
     });
 

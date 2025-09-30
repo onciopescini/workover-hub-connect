@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +11,7 @@ import { SpaceReviews } from './SpaceReviews';
 import { toast } from 'sonner';
 import { createOrGetPrivateChat } from "@/lib/networking-utils";
 import { WhoWorksHere } from './WhoWorksHere';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ExtendedSpace extends Space {
   host?: {
@@ -61,7 +61,10 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
         toast.error("Impossibile avviare la chat");
       }
     } catch (error) {
-      console.error('Error starting private chat:', error);
+      sreLogger.error('Error starting private chat', { 
+        context: 'SpaceDetailContent',
+        hostId: space.host?.id 
+      }, error as Error);
       toast.error("Errore nell'avvio della chat");
     } finally {
       setStartingChat(false);

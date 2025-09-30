@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { format } from 'date-fns';
 import { AvailabilityFeedback } from './AvailabilityFeedback';
 import { ConflictHandler } from './ConflictHandler';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface TimeSlotPickerProps {
   selectedDate: Date | undefined;
@@ -187,7 +187,13 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
         setAlternativeSlots([]);
       }
     } catch (error) {
-      console.error('Error checking conflicts:', error);
+      sreLogger.error('Error checking conflicts', { 
+        context: 'TimeSlotPicker',
+        spaceId,
+        date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined,
+        startTime,
+        endTime
+      }, error as Error);
       // In caso di errore, procedi comunque
       onTimeSelection(startTime, endTime);
     } finally {

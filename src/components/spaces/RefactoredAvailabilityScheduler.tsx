@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { AdvancedCalendarView, ConflictManagementSystem } from "./calendar";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 import { type AvailabilityData, type DaySchedule, type WeeklySchedule, type TimeSlot } from "@/types/availability";
 import { Calendar, Settings } from "lucide-react";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Robust normalization function that ensures strict AvailabilityData compliance
 const normalizeAvailabilityData = (data: any): AvailabilityData => {
@@ -108,7 +108,11 @@ export const RefactoredAvailabilityScheduler = () => {
                     availability={normalizeAvailabilityData(field.value)}
                     bookings={[]} // TODO: Pass real bookings
                     onConflictResolved={(bookingId, action) => {
-                      console.log('Conflict resolved:', bookingId, action);
+                      sreLogger.info('Conflict resolved', { 
+                        context: 'RefactoredAvailabilityScheduler',
+                        bookingId, 
+                        action 
+                      });
                     }}
                   />
                   
