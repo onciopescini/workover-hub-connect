@@ -8,12 +8,12 @@ import OnboardingBanner from '@/components/auth/OnboardingBanner';
 
 export function MainLayout() {
   return (
-    <div className="h-screen bg-gray-50 w-full flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-gray-50 w-full flex flex-col">
       <OptimizedUnifiedHeader />
       {/* Banner onboarding globale */}
       <OnboardingBanner />
-      <main className="w-full flex-1 overflow-hidden">
-        <div className="w-full h-full">
+      <main className="w-full flex-1">
+        <div className="w-full">
           <Outlet />
         </div>
       </main>
