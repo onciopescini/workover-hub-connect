@@ -12,7 +12,7 @@ export function MainLayout() {
       <OptimizedUnifiedHeader />
       {/* Banner onboarding globale */}
       <OnboardingBanner />
-      <main className="w-full flex-1 overflow-auto">
+      <main className="w-full flex-1 overflow-hidden">
         <div className="w-full h-full">
           <Outlet />
         </div>
