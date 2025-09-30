@@ -194,17 +194,6 @@ const Onboarding = () => {
     });
   }, [formData]);
 
-  // Conferma uscita tab/browser se dati non completati
-  React.useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (!authState.profile?.onboarding_completed && hasAnyData) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [hasAnyData, authState.profile?.onboarding_completed]);
 
   return (
     <>
