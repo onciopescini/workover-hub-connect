@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface NetworkingStats {
   totalConnections: number;
@@ -119,7 +120,11 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
     };
 
   } catch (error) {
-    console.error('Error fetching networking stats:', error);
+    sreLogger.error('Error fetching networking stats', {
+      component: 'NetworkingDataService',
+      action: 'getNetworkingStats',
+      userId
+    }, error as Error);
     return {
       totalConnections: 0,
       pendingRequests: 0,

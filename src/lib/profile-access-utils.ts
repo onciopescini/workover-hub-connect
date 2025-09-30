@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface ProfileAccessResult {
   has_access: boolean;
@@ -40,7 +41,12 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
     });
 
     if (error) {
-      console.error('Error checking profile access:', error);
+      sreLogger.error('Error checking profile access', {
+        component: 'ProfileAccessUtils',
+        action: 'checkProfileAccess',
+        viewerId: user.user.id,
+        profileId
+      }, error as Error);
       return {
         has_access: false,
         access_reason: 'error',
@@ -54,14 +60,23 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
       return responseData;
     }
 
-    console.error('Invalid response format from check_profile_access:', data);
+    sreLogger.error('Invalid response format from check_profile_access', {
+      component: 'ProfileAccessUtils',
+      action: 'checkProfileAccess',
+      profileId,
+      data
+    });
     return {
       has_access: false,
       access_reason: 'error',
       message: 'Formato risposta non valido'
     };
   } catch (error) {
-    console.error('Unexpected error checking profile access:', error);
+    sreLogger.error('Unexpected error checking profile access', {
+      component: 'ProfileAccessUtils',
+      action: 'checkProfileAccess',
+      profileId
+    }, error as Error);
     return {
       has_access: false,
       access_reason: 'error',
@@ -92,7 +107,11 @@ export const fetchUserProfileWithAccess = async (userId: string) => {
       .single();
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
+      sreLogger.error('Error fetching profile', {
+        component: 'ProfileAccessUtils',
+        action: 'fetchUserProfileWithAccess',
+        userId
+      }, profileError as Error);
       return {
         profile: null,
         accessResult: {
@@ -110,7 +129,11 @@ export const fetchUserProfileWithAccess = async (userId: string) => {
       hasAccess: true
     };
   } catch (error) {
-    console.error('Error in fetchUserProfileWithAccess:', error);
+    sreLogger.error('Error in fetchUserProfileWithAccess', {
+      component: 'ProfileAccessUtils',
+      action: 'fetchUserProfileWithAccess',
+      userId
+    }, error as Error);
     return {
       profile: null,
       accessResult: {

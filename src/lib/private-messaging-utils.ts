@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { PrivateChat, PrivateMessage } from "@/types/networking";
 import { toast } from "@/hooks/use-toast";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Trova o crea una chat privata tra due utenti
 export const findOrCreatePrivateChat = async (participantId: string): Promise<PrivateChat | null> => {
@@ -73,7 +73,11 @@ export const findOrCreatePrivateChat = async (participantId: string): Promise<Pr
 
     return newChat as unknown as PrivateChat;
   } catch (error) {
-    console.error("Error finding/creating private chat:", error);
+    sreLogger.error("Error finding/creating private chat", {
+      component: 'PrivateMessagingUtils',
+      action: 'findOrCreatePrivateChat',
+      participantId
+    }, error as Error);
     toast({
       title: "Errore",
       description: "Impossibile aprire la chat",
@@ -106,7 +110,11 @@ export const fetchPrivateMessages = async (chatId: string): Promise<PrivateMessa
     
     return data as unknown as PrivateMessage[];
   } catch (error) {
-    console.error("Error fetching private messages:", error);
+    sreLogger.error("Error fetching private messages", {
+      component: 'PrivateMessagingUtils',
+      action: 'fetchPrivateMessages',
+      chatId
+    }, error as Error);
     return [];
   }
 };
@@ -149,7 +157,11 @@ export const sendPrivateMessage = async (
     
     return data as unknown as PrivateMessage;
   } catch (error) {
-    console.error("Error sending private message:", error);
+    sreLogger.error("Error sending private message", {
+      component: 'PrivateMessagingUtils',
+      action: 'sendPrivateMessage',
+      chatId
+    }, error as Error);
     toast({
       title: "Errore nell'invio del messaggio",
       description: "Riprova più tardi",
@@ -186,7 +198,12 @@ export const uploadPrivateMessageAttachment = async (file: File): Promise<string
 
     return publicUrl;
   } catch (error) {
-    console.error("Error uploading attachment:", error);
+    sreLogger.error("Error uploading attachment", {
+      component: 'PrivateMessagingUtils',
+      action: 'uploadPrivateMessageAttachment',
+      fileName: file.name,
+      fileSize: file.size
+    }, error as Error);
     toast({
       title: "Errore caricamento file",
       description: "Impossibile caricare l'allegato",
@@ -208,7 +225,11 @@ export const markPrivateMessageAsRead = async (messageId: string): Promise<void>
       throw error;
     }
   } catch (error) {
-    console.error("Error marking message as read:", error);
+    sreLogger.error("Error marking message as read", {
+      component: 'PrivateMessagingUtils',
+      action: 'markPrivateMessageAsRead',
+      messageId
+    }, error as Error);
   }
 };
 
@@ -247,7 +268,10 @@ export const fetchUserPrivateChats = async (): Promise<PrivateChat[]> => {
 
     return data as unknown as PrivateChat[];
   } catch (error) {
-    console.error("Error fetching private chats:", error);
+    sreLogger.error("Error fetching private chats", {
+      component: 'PrivateMessagingUtils',
+      action: 'fetchUserPrivateChats'
+    }, error as Error);
     return [];
   }
 };

@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostSpaces = async (hostId: string) => {
   const { data, error } = await supabase
@@ -10,7 +10,11 @@ export const getHostSpaces = async (hostId: string) => {
     .eq('is_suspended', false);
 
   if (error) {
-    console.error('Error fetching host spaces:', error);
+    sreLogger.error('Error fetching host spaces', {
+      component: 'SpaceUtils',
+      action: 'getHostSpaces',
+      hostId
+    }, error as Error);
     throw error;
   }
 
