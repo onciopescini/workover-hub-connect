@@ -1,8 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "@/components/LoadingScreen";
+import { sreLogger } from '@/lib/sre-logger';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
@@ -11,17 +11,21 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('Auth callback started');
+        sreLogger.debug('Auth callback started', { component: 'AuthCallback' });
         
         // Check if we have a session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          sreLogger.error('Session error', { component: 'AuthCallback' }, sessionError as Error);
           throw sessionError;
         }
 
-        console.log('Session found:', !!session, session?.user?.email);
+        sreLogger.debug('Session found', { 
+          hasSession: !!session, 
+          userEmail: session?.user?.email,
+          component: 'AuthCallback'
+        });
 
         if (session) {
           // Check if user has completed onboarding
@@ -32,11 +36,16 @@ const AuthCallback = () => {
             .maybeSingle();
 
           if (profileError) {
-            console.error('Profile error:', profileError);
+            sreLogger.error('Profile error', { userId: session.user.id, component: 'AuthCallback' }, profileError as Error);
             throw profileError;
           }
 
-          console.log('Profile found:', !!profile, profile?.role, profile?.onboarding_completed);
+          sreLogger.debug('Profile found', { 
+            hasProfile: !!profile, 
+            role: profile?.role, 
+            onboardingCompleted: profile?.onboarding_completed,
+            component: 'AuthCallback'
+          });
 
           // Se il profilo non esiste, prova a crearlo e manda all'onboarding
           if (!profile) {
@@ -58,7 +67,7 @@ const AuthCallback = () => {
                 }
               });
             } catch (e) {
-              console.warn('Create profile via callback failed', e);
+              sreLogger.warn('Create profile via callback failed', { userId: session.user.id, component: 'AuthCallback' });
             }
             navigate("/onboarding", { replace: true });
             return;
@@ -79,15 +88,15 @@ const AuthCallback = () => {
                 break;
             }
           } else {
-            console.log('Redirecting to onboarding');
+            sreLogger.debug('Redirecting to onboarding', { userId: session.user.id, component: 'AuthCallback' });
             navigate("/onboarding", { replace: true });
           }
         } else {
-          console.log('No session, redirecting to login');
+          sreLogger.debug('No session, redirecting to login', { component: 'AuthCallback' });
           navigate("/login", { replace: true });
         }
       } catch (error) {
-        console.error("Auth callback error:", error);
+        sreLogger.error("Auth callback error", { component: 'AuthCallback' }, error as Error);
         setError("Errore durante l'autenticazione. Prova ad accedere di nuovo.");
         setTimeout(() => {
           navigate("/login", { replace: true });

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
@@ -6,34 +5,34 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Space } from '@/types/space';
 import { useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { sreLogger } from '@/lib/sre-logger';
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
   
-  // Debug logging per tracciare l'ID
-  console.log('🔍 SpaceDetail - ID from URL:', id);
+  sreLogger.debug('SpaceDetail - ID from URL', { spaceId: id, component: 'SpaceDetail' });
   
   const { data: space, isLoading: spaceLoading, error: spaceError } = useQuery({
     queryKey: ['space', id],
     queryFn: async () => {
       if (!id) {
-        console.error('🔴 SpaceDetail - No space ID provided');
+        sreLogger.error('No space ID provided', { component: 'SpaceDetail' }, new Error('Space ID not provided'));
         throw new Error('Space ID not provided');
       }
       
-      console.log('🔵 SpaceDetail - Fetching space with ID:', id);
+      sreLogger.debug('Fetching space with ID', { spaceId: id, component: 'SpaceDetail' });
       
       const { data, error } = await supabase.rpc('get_space_with_host_info', {
         space_id_param: id
       });
 
       if (error) {
-        console.error('🔴 SpaceDetail - Database error:', error);
+        sreLogger.error('Database error', { spaceId: id, component: 'SpaceDetail' }, error as Error);
         throw error;
       }
       
       if (!data || data.length === 0) {
-        console.error('🔴 SpaceDetail - No space found for ID:', id);
+        sreLogger.error('No space found for ID', { spaceId: id, component: 'SpaceDetail' }, new Error('Space not found'));
         throw new Error('Space not found');
       }
       
@@ -43,11 +42,12 @@ const SpaceDetail = () => {
         throw new Error('Space not found');
       }
       
-      console.log('✅ SpaceDetail - Space fetched successfully:', {
-        id: spaceData.id,
+      sreLogger.debug('Space fetched successfully', {
+        spaceId: spaceData.id,
         title: (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio',
         confirmation_type: spaceData.confirmation_type,
-        published: (spaceData as any).published ?? true
+        published: (spaceData as any).published ?? true,
+        component: 'SpaceDetail'
       });
       
       // Transform the response to match expected interface
@@ -106,7 +106,7 @@ const SpaceDetail = () => {
 
   // Loading state con debug info
   if (spaceLoading) {
-    console.log('🔄 SpaceDetail - Loading space...');
+    sreLogger.debug('Loading space', { spaceId: id, component: 'SpaceDetail' });
     return (
       <div className="container mx-auto py-8 flex items-center justify-center">
         <div className="text-center">
@@ -120,7 +120,7 @@ const SpaceDetail = () => {
 
   // Error state con dettagli
   if (spaceError) {
-    console.error('🔴 SpaceDetail - Error state:', spaceError);
+    sreLogger.error('Error state', { spaceId: id, component: 'SpaceDetail' }, spaceError as Error);
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
@@ -151,7 +151,7 @@ const SpaceDetail = () => {
 
   // Space not found
   if (!space) {
-    console.warn('⚠️ SpaceDetail - Space not found');
+    sreLogger.warn('Space not found', { spaceId: id, component: 'SpaceDetail' });
     return (
       <div className="container mx-auto py-8">
         <div className="text-center">
@@ -172,7 +172,7 @@ const SpaceDetail = () => {
   }
 
   // Success - render space details
-  console.log('✅ SpaceDetail - Rendering space details');
+  sreLogger.debug('Rendering space details', { spaceId: space.id, component: 'SpaceDetail' });
   return (
     <div className="container mx-auto py-8">
       <SpaceDetailContent space={space} reviews={reviews} />

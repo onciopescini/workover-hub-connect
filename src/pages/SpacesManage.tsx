@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -10,6 +9,7 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SpaceManagementHeader } from "@/components/spaces/SpaceManagementHeader";
 import { EnhancedSpaceManagementCard } from "@/components/spaces/EnhancedSpaceManagementCard";
+import { sreLogger } from '@/lib/sre-logger';
 
 const SpacesManage = () => {
   const { authState } = useAuth();
@@ -22,7 +22,7 @@ const SpacesManage = () => {
   const isAdmin = authState.profile?.role === 'admin';
 
   const fetchSpaces = async () => {
-    console.log('🔍 SpacesManage: Current auth state:', {
+    sreLogger.debug('SpacesManage: Current auth state', {
       userId: authState.user?.id,
       userEmail: authState.user?.email,
       userRole: authState.profile?.role,
@@ -32,12 +32,12 @@ const SpacesManage = () => {
     });
 
     if (!authState.user?.id) {
-      console.log('❌ No user ID available, waiting...');
+      sreLogger.debug('No user ID available, waiting', { component: 'SpacesManage' });
       return;
     }
 
     try {
-      console.log('🔍 Fetching spaces for user:', authState.user.id);
+      sreLogger.debug('Fetching spaces for user', { userId: authState.user.id, component: 'SpacesManage' });
       
       const { supabase } = await import("@/integrations/supabase/client");
       
@@ -63,25 +63,32 @@ const SpacesManage = () => {
       const { data: spacesData, error } = await query;
       
       if (error) {
-        console.error("❌ SpacesManage: Error fetching spaces:", error);
+        sreLogger.error("Error fetching spaces", { userId: authState.user.id, component: 'SpacesManage' }, error as Error);
         toast.error("Errore nel caricamento degli spazi.");
         return;
       }
       
-      console.log('✅ SpacesManage: Fetched spaces:', spacesData);
+      sreLogger.debug('Spaces fetched successfully', { 
+        count: spacesData?.length || 0, 
+        userId: authState.user.id,
+        component: 'SpacesManage'
+      });
       
-      console.log('📊 Spaces details:', spacesData?.map(space => ({
-        id: space.id,
-        title: space.title,
-        host_id: space.host_id,
-        published: space.published,
-        is_suspended: space.is_suspended,
-        deleted_at: space.deleted_at
-      })));
+      sreLogger.debug('Spaces details', { 
+        spaces: spacesData?.map(space => ({
+          id: space.id,
+          title: space.title,
+          host_id: space.host_id,
+          published: space.published,
+          is_suspended: space.is_suspended,
+          deleted_at: space.deleted_at
+        })),
+        component: 'SpacesManage'
+      });
       
       setSpaces(spacesData || []);
     } catch (error) {
-      console.error("❌ SpacesManage: Error fetching spaces:", error);
+      sreLogger.error("Error fetching spaces", { userId: authState.user.id, component: 'SpacesManage' }, error as Error);
       toast.error("Errore nel caricamento degli spazi.");
     }
   };
@@ -108,12 +115,12 @@ const SpacesManage = () => {
   };
 
   const handleCreateSpace = () => {
-    console.log('🔍 Navigating to space creation');
+    sreLogger.debug('Navigating to space creation', { component: 'SpacesManage' });
     navigate('/host/space/new');
   };
 
   const handleEditSpace = (spaceId: string) => {
-    console.log('🔍 Navigating to edit space:', spaceId);
+    sreLogger.debug('Navigating to edit space', { spaceId, component: 'SpacesManage' });
     navigate(`/host/space/edit/${spaceId}`);
   };
 
@@ -132,14 +139,14 @@ const SpacesManage = () => {
         .eq('host_id', authState.user?.id ?? '');
 
       if (error) {
-        console.error("Error soft-deleting space:", error);
+        sreLogger.error("Error soft-deleting space", { spaceId, userId: authState.user?.id, component: 'SpacesManage' }, error as Error);
         toast.error("Errore nell'eliminazione dello spazio.");
       } else {
         setSpaces(spaces.filter(space => space.id !== spaceId));
         toast.success("Spazio eliminato con successo.");
       }
     } catch (error) {
-      console.error("Error soft-deleting space:", error);
+      sreLogger.error("Error soft-deleting space", { spaceId, userId: authState.user?.id, component: 'SpacesManage' }, error as Error);
       toast.error("Errore nell'eliminazione dello spazio.");
     }
   };
@@ -156,14 +163,14 @@ const SpacesManage = () => {
       });
 
       if (error) {
-        console.error("Error restoring space:", error);
+        sreLogger.error("Error restoring space", { spaceId, component: 'SpacesManage' }, error as Error);
         toast.error("Errore nel ripristino dello spazio.");
       } else {
         await fetchSpaces(); // Refresh the spaces list
         toast.success("Spazio ripristinato con successo.");
       }
     } catch (error) {
-      console.error("Error restoring space:", error);
+      sreLogger.error("Error restoring space", { spaceId, component: 'SpacesManage' }, error as Error);
       toast.error("Errore nel ripristino dello spazio.");
     }
   };

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface Message {
   id: string;
@@ -65,7 +66,7 @@ export default function ChatThread() {
           .single();
 
         if (convError) {
-          console.error('Error loading conversation:', convError);
+          sreLogger.error('Error loading conversation', { conversationId, component: 'ChatThread' }, convError as Error);
           toast.error('Conversazione non trovata');
           navigate('/messages');
           return;
@@ -77,7 +78,7 @@ export default function ChatThread() {
         const messagesData = await fetchConversationMessages(conversationId);
         setMessages(messagesData as Message[]);
       } catch (error) {
-        console.error('Error loading chat data:', error);
+        sreLogger.error('Error loading chat data', { conversationId, component: 'ChatThread' }, error as Error);
         toast.error('Errore nel caricamento della chat');
       } finally {
         setIsLoading(false);
@@ -91,7 +92,7 @@ export default function ChatThread() {
   useEffect(() => {
     if (!conversationId) return;
     
-    console.log('[ChatThread] Setting up realtime for conversation:', conversationId);
+    sreLogger.debug('Setting up realtime for conversation', { conversationId, component: 'ChatThread' });
     
     const channel = supabase
       .channel(`messages:conv:${conversationId}`)
@@ -101,7 +102,11 @@ export default function ChatThread() {
         table: 'messages',
         filter: `conversation_id=eq.${conversationId}`,
       }, async (payload) => {
-        console.log('[ChatThread] New message received:', payload.new);
+        sreLogger.debug('New message received', { 
+          conversationId, 
+          messageId: (payload.new as any).id,
+          component: 'ChatThread'
+        });
         
         // Fetch sender details for the new message
         const { data: senderData } = await supabase
@@ -118,11 +123,11 @@ export default function ChatThread() {
         setMessages((prev) => [...prev, newMessage]);
       })
       .subscribe((status) => {
-        console.log('[ChatThread] Realtime status:', status);
+        sreLogger.debug('Realtime status', { conversationId, status, component: 'ChatThread' });
       });
     
     return () => {
-      console.log('[ChatThread] Cleaning up realtime channel');
+      sreLogger.debug('Cleaning up realtime channel', { conversationId, component: 'ChatThread' });
       supabase.removeChannel(channel);
     };
   }, [conversationId]);
@@ -150,7 +155,7 @@ export default function ChatThread() {
       });
       setText('');
     } catch (error) {
-      console.error('Error sending message:', error);
+      sreLogger.error('Error sending message', { conversationId, component: 'ChatThread' }, error as Error);
       toast.error('Errore nell\'invio del messaggio');
     } finally {
       setIsSending(false);

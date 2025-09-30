@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -12,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Space } from "@/types/space";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 const SpaceEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +35,7 @@ const SpaceEdit = () => {
 
       try {
         setIsLoading(true);
-        console.log('🔍 Fetching space for edit:', id);
+        sreLogger.debug('Fetching space for edit', { spaceId: id, component: 'SpaceEdit' });
         
         const { data, error } = await supabase
           .from('spaces')
@@ -45,7 +45,7 @@ const SpaceEdit = () => {
           .single();
 
         if (error) {
-          console.error('❌ Error fetching space:', error);
+          sreLogger.error('Error fetching space', { spaceId: id, userId: authState.user?.id, component: 'SpaceEdit' }, error as Error);
           toast.error("Errore nel caricamento dello spazio");
           navigate('/host/spaces');
           return;
@@ -57,10 +57,10 @@ const SpaceEdit = () => {
           return;
         }
 
-        console.log('✅ Space loaded for edit:', data);
+        sreLogger.debug('Space loaded for edit', { spaceId: id, title: data.title, component: 'SpaceEdit' });
         setSpace(data);
       } catch (error) {
-        console.error('❌ Exception fetching space:', error);
+        sreLogger.error('Exception fetching space', { spaceId: id, component: 'SpaceEdit' }, error as Error);
         toast.error("Errore nel caricamento dello spazio");
         navigate('/host/spaces');
       } finally {
