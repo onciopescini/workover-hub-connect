@@ -14,6 +14,7 @@ import { Search, MessageCircle, Users } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ConnectedUser {
   id: string;
@@ -117,7 +118,7 @@ export const NewChatDialog = ({ open, onOpenChange, onChatCreated }: NewChatDial
 
       setConnectedUsers(uniqueUsers);
     } catch (error) {
-      console.error('Error fetching connected users:', error);
+      sreLogger.error('Error fetching connected users', { userId: authState.user?.id }, error as Error);
       toast.error('Errore nel caricamento degli utenti connessi');
     } finally {
       setIsLoading(false);
@@ -156,7 +157,7 @@ export const NewChatDialog = ({ open, onOpenChange, onChatCreated }: NewChatDial
       
       return newChat.id;
     } catch (error) {
-      console.error('Error creating private chat:', error);
+      sreLogger.error('Error creating private chat', { userId: authState.user?.id, otherUserId }, error as Error);
       return null;
     }
   };
@@ -175,7 +176,7 @@ export const NewChatDialog = ({ open, onOpenChange, onChatCreated }: NewChatDial
         toast.error('Errore nel creare la chat');
       }
     } catch (error) {
-      console.error('Error starting chat:', error);
+      sreLogger.error('Error starting chat', { userId: authState.user?.id, targetUserId: user.id }, error as Error);
       toast.error('Errore nell\'avviare la chat');
     } finally {
       setIsStartingChat(null);

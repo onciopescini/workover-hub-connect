@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { findOrCreatePrivateChat } from "@/lib/private-messaging-utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface StartChatButtonProps {
   targetUserId: string;
@@ -51,7 +52,7 @@ export const StartChatButton = ({ targetUserId, onChatStarted }: StartChatButton
 
         setCanStartChat(!!connection);
       } catch (error) {
-        console.error("Error checking chat access:", error);
+        sreLogger.error('Error checking chat access', { userId: authState.user?.id, targetUserId }, error as Error);
         setCanStartChat(false);
       } finally {
         setIsCheckingAccess(false);
@@ -82,7 +83,7 @@ export const StartChatButton = ({ targetUserId, onChatStarted }: StartChatButton
         });
       }
     } catch (error) {
-      console.error("Error starting chat:", error);
+      sreLogger.error('Error starting chat', { userId: authState.user?.id, targetUserId }, error as Error);
       toast({
         title: "Errore",
         description: "Impossibile avviare la chat. Riprova più tardi.",

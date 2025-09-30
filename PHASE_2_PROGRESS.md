@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 48/674 (7.1%)
+## 📊 Overall Progress: 58/674 (8.6%)
 
-### ✅ Completed Files (8 files, 48 replacements)
+### ✅ Completed Files (14 files, 58 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -68,6 +68,48 @@
   - Added sreLogger import
   - Consolidated multiple console.log into single structured log calls
   - Improved validation result logging with full context
+
+#### 9. `src/components/messaging/MessagesSettingsDialog.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 2 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced notification settings error logging with context
+
+#### 10. `src/components/messaging/NewChatDialog.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 3 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced chat creation error logging with userId context
+
+#### 11. `src/components/messaging/StartChatButton.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 2 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced chat access check error logging
+
+#### 12. `src/components/bookings/ReviewButton.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 1 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced review status check error logging
+
+#### 13. `src/components/bookings/SmartBookingActions.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 1 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced guest analysis error logging
+
+#### 14. `src/components/reviews/ReviewCard.tsx` ✓
+- **Status**: Complete
+- **Replacements**: 1 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced report submission error logging
 
 ---
 
@@ -153,12 +195,12 @@
 
 | Phase | Files | Console Statements | Status | ETA |
 |-------|-------|-------------------|---------|-----|
-| **Phase 2.1** | 6 | 25/674 (3.7%) | ✅ Complete | Done |
-| **Phase 2.2** | 15 | ~100 statements | 🔄 In Progress | 1 day |
+| **Phase 2.1** | 8 | 48/674 (7.1%) | ✅ Complete | Done |
+| **Phase 2.2** | 6 | 10/674 (1.5%) | ✅ Complete | Done |
 | **Phase 2.3** | 20 | ~150 statements | 📋 Planned | 2 days |
 | **Phase 2.4** | 30 | ~200 statements | 📋 Planned | 3 days |
-| **Phase 2.5** | 63 | ~199 statements | 📋 Planned | 4 days |
-| **Total** | 134 | 674 statements | 🎯 | 10 days |
+| **Phase 2.5** | 70 | ~266 statements | 📋 Planned | 4 days |
+| **Total** | 134 | 674 statements | 🎯 | 8 days |
 
 ---
 
@@ -204,10 +246,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 48/674 (7.1%)
-- **Files cleaned**: 8/134 (6.0%)
+- **Console statements cleaned**: 58/674 (8.6%)
+- **Files cleaned**: 14/134 (10.4%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 48/674 (7.1%)
+- **ESLint warnings resolved**: 58/674 (8.6%)
 
 ---
 
@@ -233,5 +275,5 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 1 & Payment Flow Complete  
-**Next Update**: After Batch 2 completion
+**Last Updated**: 2025-09-30 - Batch 4 (Messaging, Reviews, Bookings) Complete  
+**Next Update**: After Batch 5 completion

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { BookingWithDetails } from '@/types/booking';
 import { analyzeGuestProfile, generateBookingRecommendation, GuestProfile, BookingRecommendation } from '@/lib/bookings/smart-booking-service';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface SmartBookingActionsProps {
   booking: BookingWithDetails;
@@ -51,7 +52,7 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
         setGuestProfile(profile);
         setRecommendation(rec);
       } catch (error) {
-        console.error('Error analyzing guest:', error);
+        sreLogger.error('Error analyzing guest', { bookingId: booking.id, userId: booking.user_id }, error as Error);
       } finally {
         setIsAnalyzing(false);
       }

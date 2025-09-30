@@ -14,6 +14,7 @@ import { Archive, Bell, Shield, Info } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface MessagesSettingsDialogProps {
   open: boolean;
@@ -45,7 +46,7 @@ export const MessagesSettingsDialog = ({ open, onOpenChange }: MessagesSettingsD
       setIsCoworker(data.role === 'coworker');
       setNetworkingNotifications(data.networking_enabled || false);
     } catch (error) {
-      console.error('Error fetching notification settings:', error);
+      sreLogger.error('Error fetching notification settings', { userId: authState.user?.id }, error as Error);
     }
   };
 
@@ -64,7 +65,7 @@ export const MessagesSettingsDialog = ({ open, onOpenChange }: MessagesSettingsD
       setNetworkingNotifications(enabled);
       toast.success(enabled ? 'Notifiche networking attivate' : 'Notifiche networking disattivate');
     } catch (error) {
-      console.error('Error updating notification settings:', error);
+      sreLogger.error('Error updating notification settings', { userId: authState.user?.id, enabled }, error as Error);
       toast.error('Errore nell\'aggiornare le impostazioni');
     } finally {
       setIsLoading(false);

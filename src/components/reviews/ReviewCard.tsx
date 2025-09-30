@@ -10,6 +10,7 @@ import { it } from 'date-fns/locale';
 import { BookingReviewWithDetails } from '@/types/review';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ReviewCardProps {
   review: BookingReviewWithDetails;
@@ -49,7 +50,7 @@ export function ReviewCard({ review, type, showVisibility = false }: ReviewCardP
       setReportReason("");
       setReportDescription("");
     } catch (e) {
-      console.error(e);
+      sreLogger.error('Error submitting review report', { reviewId: review.id }, e as Error);
       toast.error('Errore durante l\'invio della segnalazione');
     }
   };

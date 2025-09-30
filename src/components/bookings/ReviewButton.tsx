@@ -8,6 +8,7 @@ import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
 import { differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ReviewButtonProps {
   booking: BookingWithDetails;
@@ -35,7 +36,7 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
         const status = await getBookingReviewStatus(booking.id, user.id, targetUserId);
         setReviewStatus(status);
       } catch (error) {
-        console.error('Error checking review status:', error);
+        sreLogger.error('Error checking review status', { bookingId: booking.id, targetUserId }, error as Error);
       } finally {
         setLoading(false);
       }
