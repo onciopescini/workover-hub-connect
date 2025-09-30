@@ -41,8 +41,8 @@ export default function ModernMessages() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="w-full h-full bg-background flex flex-col overflow-hidden">
-        <div className="container mx-auto px-4 py-6 max-w-[1800px] h-full flex flex-col overflow-hidden">
+      <div className="w-full bg-background flex flex-col">
+        <div className="container mx-auto px-4 py-6 max-w-[1800px] h-[calc(100vh-220px)] flex flex-col overflow-hidden">
           <MessagesPageHeader
             onNewChat={() => navigate('/networking')}
             onSettings={() => setSettingsOpen(true)}
@@ -50,13 +50,13 @@ export default function ModernMessages() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 mt-6 overflow-hidden">
             {/* Sidebar - Lista conversazioni */}
-            <div className="lg:col-span-4 xl:col-span-3 flex flex-col h-full overflow-hidden">
+            <div className="lg:col-span-4 xl:col-span-3 flex flex-col h-full">
               <ConversationSearchBar 
                 value={searchQuery}
                 onChange={setSearchQuery}
               />
               
-              <div className="mt-4 flex-1 min-h-0 overflow-hidden">
+              <div className="mt-4 flex-1 min-h-0">
                 <MessagesTabsManager
                   activeTab={activeTab}
                   onTabChange={(tab) => setActiveTab(tab as 'all' | 'bookings' | 'private')}
