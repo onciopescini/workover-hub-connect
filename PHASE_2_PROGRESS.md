@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 183/674 (27.2%)
+## 📊 Overall Progress: 198/674 (29.4%)
 
-### ✅ Completed Files (48 files, 183 replacements)
+### ✅ Completed Files (52 files, 198 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 183/674 (27.2%)
-- **Files cleaned**: 48/134 (35.8%)
+- **Console statements cleaned**: 198/674 (29.4%)
+- **Files cleaned**: 52/134 (38.8%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 183/674 (27.2%)
+- **ESLint warnings resolved**: 198/674 (29.4%)
 
 ---
 
@@ -305,8 +305,48 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 12 (Rate Limit & Space Hooks) Complete  
-**Next Update**: After Batch 13 completion
+**Last Updated**: 2025-09-30 - Batch 13 (Space Form & User Action Hooks) Complete  
+**Next Update**: After Batch 14 completion
+
+---
+
+## Batch 13: Space Form & User Action Hooks Cleanup (4 files, 15 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/useSpaceFormSubmission.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for space save error (with isEdit and spaceId context)
+     - Error properly typed with Error cast
+
+2. ✅ **src/hooks/useSpaceRevisionStatus.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for revision info fetch error (with spaceId context)
+     - Error properly typed with Error cast
+
+3. ✅ **src/hooks/useUnreadCount.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for unread counts fetch error (with userId context)
+     - Error properly typed with Error cast
+
+4. ✅ **src/hooks/useUserActions.ts**
+   - Status: Complete
+   - Console statements replaced: 12 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for user activation error (with userId context) - 2 occurrences
+     - Replaced console.error for user deactivation error (with userId context) - 2 occurrences
+     - Replaced console.error for promote to admin error (with userId context) - 2 occurrences
+     - Replaced console.error for demote from admin error (with userId context) - 2 occurrences
+     - All errors properly typed with Error cast
 
 ---
 

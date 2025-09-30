@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UnreadCounts {
   bookingMessages: number;
@@ -47,7 +48,7 @@ export const useUnreadCount = () => {
 
       setCounts(newCounts);
     } catch (error) {
-      console.error("Error fetching unread counts:", error);
+      sreLogger.error("Error fetching unread counts", { userId: authState.user?.id }, error as Error);
       setCounts({ bookingMessages: 0, privateMessages: 0, total: 0 });
     } finally {
       setIsLoading(false);

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminUser } from '@/types/admin-user';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUser>) => void) => {
   const handleActivateUser = async (userId: string) => {
@@ -11,7 +12,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         .eq('id', userId);
 
       if (error) {
-        console.error('Error activating user:', error);
+        sreLogger.error('Error activating user', { userId }, error as Error);
         toast.error('Failed to activate user');
         return;
       }
@@ -19,7 +20,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
       updateUser(userId, { is_suspended: false });
       toast.success('User activated successfully');
     } catch (error) {
-      console.error('Error activating user:', error);
+      sreLogger.error('Error activating user', { userId }, error as Error);
       toast.error('Failed to activate user');
     }
   };
@@ -32,7 +33,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         .eq('id', userId);
 
       if (error) {
-        console.error('Error deactivating user:', error);
+        sreLogger.error('Error deactivating user', { userId }, error as Error);
         toast.error('Failed to deactivate user');
         return;
       }
@@ -40,7 +41,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
       updateUser(userId, { is_suspended: true });
       toast.success('User deactivated successfully');
     } catch (error) {
-      console.error('Error deactivating user:', error);
+      sreLogger.error('Error deactivating user', { userId }, error as Error);
       toast.error('Failed to deactivate user');
     }
   };
@@ -53,7 +54,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         .eq('id', userId);
 
       if (error) {
-        console.error('Error promoting user to admin:', error);
+        sreLogger.error('Error promoting user to admin', { userId }, error as Error);
         toast.error('Failed to promote user to admin');
         return;
       }
@@ -61,7 +62,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
       updateUser(userId, { role: 'admin' });
       toast.success('User promoted to admin successfully');
     } catch (error) {
-      console.error('Error promoting user to admin:', error);
+      sreLogger.error('Error promoting user to admin', { userId }, error as Error);
       toast.error('Failed to promote user to admin');
     }
   };
@@ -74,7 +75,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         .eq('id', userId);
 
       if (error) {
-        console.error('Error demoting user from admin:', error);
+        sreLogger.error('Error demoting user from admin', { userId }, error as Error);
         toast.error('Failed to demote user from admin');
         return;
       }
@@ -82,7 +83,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
       updateUser(userId, { role: 'coworker' });
       toast.success('User demoted from admin successfully');
     } catch (error) {
-      console.error('Error demoting user from admin:', error);
+      sreLogger.error('Error demoting user from admin', { userId }, error as Error);
       toast.error('Failed to demote user from admin');
     }
   };

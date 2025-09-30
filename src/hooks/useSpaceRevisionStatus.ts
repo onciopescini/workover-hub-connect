@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface SpaceRevisionInfo {
   id: string;
@@ -34,7 +35,7 @@ export function useSpaceRevisionStatus(spaceId: string | null, autoRefresh: bool
       setSpaceInfo(data);
       setLastUpdated(new Date());
     } catch (error) {
-      console.error('Error fetching space revision info:', error);
+      sreLogger.error('Error fetching space revision info', { spaceId }, error as Error);
       setSpaceInfo(null);
     } finally {
       setIsLoading(false);

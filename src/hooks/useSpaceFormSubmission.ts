@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UseSpaceFormSubmissionProps {
   formData: Omit<Partial<SpaceInsert>, 'availability'>;
@@ -110,7 +111,7 @@ export const useSpaceFormSubmission = ({
       
       navigate("/host/spaces");
     } catch (error) {
-      console.error("Error saving space:", error);
+      sreLogger.error("Error saving space", { isEdit, spaceId: initialDataId }, error as Error);
       toast.error("Failed to save space");
     } finally {
       setIsSubmitting(false);
