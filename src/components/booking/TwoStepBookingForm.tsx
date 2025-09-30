@@ -431,9 +431,10 @@ export function TwoStepBookingForm({
         const clientTotal = pricing.total;
         const serverTotal = sessionData.serverTotals.total;
         if (Math.abs(clientTotal - serverTotal) > 0.01) {
-          console.warn('Pricing mismatch detected:', {
+          error('Pricing mismatch detected', new Error('Client/Server pricing mismatch'), {
             client: { total: clientTotal, pricing },
-            server: { total: serverTotal, totals: sessionData.serverTotals }
+            server: { total: serverTotal, totals: sessionData.serverTotals },
+            difference: Math.abs(clientTotal - serverTotal)
           });
         }
       }

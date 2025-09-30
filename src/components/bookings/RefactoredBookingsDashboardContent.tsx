@@ -6,8 +6,11 @@ import { BookingsDashboardContent } from './dashboard/BookingsDashboardContent';
 import { BookingsDashboardError } from './dashboard/BookingsDashboardError';
 import { PaymentSuccessHandler } from './PaymentSuccessHandler';
 import { frontendLogger } from '@/utils/frontend-logger';
+import { useRenderTracking } from '@/hooks/useMetricsCollection';
 
 export function RefactoredBookingsDashboardContent() {
+  useRenderTracking('RefactoredBookingsDashboardContent');
+  
   const {
     dashboardState,
     filteredBookings,

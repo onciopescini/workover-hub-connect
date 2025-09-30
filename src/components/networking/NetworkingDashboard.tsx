@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { NetworkingDashboardContainer } from './dashboard/NetworkingDashboardContainer';
+import { useRenderTracking } from '@/hooks/useMetricsCollection';
 
 interface NetworkingDashboardProps {
   stats: {
@@ -13,5 +14,6 @@ interface NetworkingDashboardProps {
 }
 
 export const NetworkingDashboard: React.FC<NetworkingDashboardProps> = (props) => {
+  useRenderTracking('NetworkingDashboard');
   return <NetworkingDashboardContainer {...props} />;
 };

@@ -38,11 +38,11 @@ const processAnalyticsQueue = () => {
   isProcessingQueue = true;
   const batch = analyticsQueue.splice(0, 3); // Process max 3 events at once
   
-  batch.forEach(fn => {
+    batch.forEach(fn => {
     try {
       fn();
     } catch (error) {
-      console.warn('Analytics event failed:', error);
+      // Silently fail, analytics shouldn't break the app
     }
   });
   
@@ -87,7 +87,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
         try {
           window.plausible(eventName, properties ? { props: properties } : {});
         } catch (error) {
-          console.warn('Plausible tracking failed:', error);
+          // Silently fail
         }
       }
 
@@ -99,7 +99,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
             send_to: ANALYTICS_CONFIG.gtag.measurementId
           });
         } catch (error) {
-          console.warn('Google Analytics tracking failed:', error);
+          // Silently fail
         }
       }
     });
@@ -107,10 +107,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
     // Process queue
     processAnalyticsQueue();
 
-    // Console log in development
-    if (!isProduction) {
-      console.log('📊 Analytics Event:', eventName, properties);
-    }
+    // Development logging removed - use SRE logger instead
   };
 
   const trackPageView = (path: string, title?: string) => {
@@ -135,13 +132,8 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
             page_title: title
           });
         } catch (error) {
-          console.warn('Google Analytics page view failed:', error);
+          // Silently fail
         }
-      }
-
-      // Console log in development
-      if (!isProduction) {
-        console.log('📊 Page View:', path, title);
       }
     }, 100); // 100ms debounce
   };

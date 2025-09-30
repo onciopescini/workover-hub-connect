@@ -72,7 +72,7 @@ export const PerformanceMonitor: React.FC = () => {
         });
 
       } catch (error) {
-        console.warn('Failed to load web-vitals:', error);
+        // Silently fail in production, web-vitals not critical
       }
     };
 
@@ -143,7 +143,7 @@ export const PerformanceMonitor: React.FC = () => {
         
         observer.observe({ entryTypes: ['longtask'] });
       } catch (error) {
-        console.warn('Long task observer not supported:', error);
+        // Long task observer not supported, skip silently
       }
     }
   };
@@ -177,7 +177,7 @@ export const PerformanceMonitor: React.FC = () => {
         
         observer.observe({ entryTypes: ['resource'] });
       } catch (error) {
-        console.warn('Resource observer not supported:', error);
+        // Resource observer not supported, skip silently
       }
     }
   };

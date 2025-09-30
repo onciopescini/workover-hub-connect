@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { logInfo, logError } from '@/lib/sre-logger';
 
 interface MessagesButtonProps {
   booking: {
@@ -47,7 +48,8 @@ export function MessagesButton({
         return;
       }
 
-      console.log('[MessagesButton] Creating conversation for booking:', {
+      logInfo('Creating conversation for booking', {
+        component: 'MessagesButton',
         bookingId: booking.id,
         hostId,
         coworkerId,
@@ -61,10 +63,18 @@ export function MessagesButton({
         bookingId: booking.id,
       });
 
-      console.log('[MessagesButton] Navigating to conversation:', conversationId);
+      logInfo('Navigating to conversation', {
+        component: 'MessagesButton',
+        conversationId,
+        bookingId: booking.id
+      });
       navigate(`/messages/conversation/${conversationId}`);
     } catch (e: any) {
-      console.error('[MessagesButton] Error opening messages:', e);
+      logError('Error opening messages', {
+        component: 'MessagesButton',
+        bookingId: booking.id,
+        error: e.message
+      }, e);
       toast.error('Errore durante l\'apertura della chat');
     } finally {
       setIsLoading(false);

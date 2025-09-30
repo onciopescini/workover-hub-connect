@@ -68,11 +68,6 @@ export const EnhancedBookingCard = ({
         
         // Validate that the parsed date is valid
         if (isNaN(bookingStartLocal.getTime())) {
-          console.error('❌ Invalid booking date/time in EnhancedBookingCard:', { 
-            booking_date: booking.booking_date, 
-            start_time: booking.start_time,
-            bookingId: booking.id
-          });
           canCancelByTime = false;
         } else {
           // Can't cancel if current time is at or past the booking start time
@@ -84,49 +79,11 @@ export const EnhancedBookingCard = ({
             canCancelByTime = false;
           }
         }
-        
-        console.log('🔍 EnhancedBookingCard Cancellation Check (with timezone):', {
-          bookingId: booking.id,
-          rawBookingDate: booking.booking_date,
-          rawStartTime: booking.start_time,
-          dateTimeString,
-          timeZone,
-          nowUTC: {
-            iso: now.toISOString(),
-            local: now.toLocaleString('it-IT')
-          },
-          nowLocal: {
-            iso: nowLocal.toISOString(),
-            local: nowLocal.toLocaleString('it-IT')
-          },
-          bookingStartUTC: {
-            iso: bookingStartUTC.toISOString(),
-            local: bookingStartUTC.toLocaleString('it-IT')
-          },
-          bookingStartLocal: {
-            iso: bookingStartLocal.toISOString(),
-            local: bookingStartLocal.toLocaleString('it-IT')
-          },
-          timeDifferenceMinutes: Math.round((bookingStartLocal.getTime() - nowLocal.getTime()) / (1000 * 60)),
-          canCancelByStatus,
-          canCancelByTime,
-          finalCanCancel: canCancelByStatus && canCancelByTime
-        });
       } catch (error) {
-        console.error('❌ Error parsing booking date/time in EnhancedBookingCard:', error, {
-          booking_date: booking.booking_date,
-          start_time: booking.start_time,
-          bookingId: booking.id
-        });
         // If there's an error parsing, don't allow cancellation for safety
         canCancelByTime = false;
       }
     } else {
-      console.warn('⚠️ Missing booking date or time in EnhancedBookingCard:', {
-        booking_date: booking.booking_date,
-        start_time: booking.start_time,
-        bookingId: booking.id
-      });
       canCancelByTime = false;
     }
     
