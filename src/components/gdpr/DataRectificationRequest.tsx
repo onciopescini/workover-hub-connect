@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Edit3, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { validateInput } from "@/lib/validation/input-schemas";
+import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 interface DataRectificationRequestProps {
   onRequestSubmitted?: () => void;
@@ -48,11 +51,28 @@ export const DataRectificationRequest = ({ onRequestSubmitted }: DataRectificati
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) throw new Error("Not authenticated");
 
+      // Validate input with Zod schema
+      const rectificationSchema = z.object({
+        data_field: z.string().min(1).max(50),
+        current_value: z.string().max(500),
+        requested_value: z.string().min(1).max(500),
+        reason: z.string().min(10).max(1000)
+      });
+
+      const validation = validateInput(rectificationSchema, requestData);
+      
+      if (!validation.success) {
+        toast.error(validation.errors[0] || "Dati non validi");
+        return;
+      }
+
+      const validatedData = validation.data;
+
       const requestNotes = `
-Campo dati: ${dataFields.find(f => f.value === requestData.data_field)?.label}
-Valore attuale: ${requestData.current_value || 'Non specificato'}
-Valore richiesto: ${requestData.requested_value}
-Motivo: ${requestData.reason}
+Campo dati: ${dataFields.find(f => f.value === validatedData.data_field)?.label}
+Valore attuale: ${validatedData.current_value || 'Non specificato'}
+Valore richiesto: ${validatedData.requested_value}
+Motivo: ${validatedData.reason}
       `.trim();
 
       const { error } = await supabase
@@ -75,7 +95,9 @@ Motivo: ${requestData.reason}
       });
       onRequestSubmitted?.();
     } catch (error) {
-      console.error("Error submitting rectification request:", error);
+      logger.error("Error submitting rectification request", { 
+        component: "DataRectificationRequest" 
+      }, error instanceof Error ? error : undefined);
       toast.error("Errore nell'invio della richiesta");
     } finally {
       setIsSubmitting(false);

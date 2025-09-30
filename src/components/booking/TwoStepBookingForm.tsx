@@ -270,67 +270,94 @@ export function TwoStepBookingForm({
         endTime: bookingState.selectedRange.endTime
       });
 
-      const { data, error: rpcError } = await supabase.rpc('validate_and_reserve_slot', {
-        space_id_param: spaceId,
-        date_param: format(bookingState.selectedDate, 'yyyy-MM-dd'),
-        start_time_param: bookingState.selectedRange.startTime,
-        end_time_param: bookingState.selectedRange.endTime,
-        user_id_param: user.user.id,
-        guests_count_param: bookingState.guestsCount,
-        confirmation_type_param: confirmationType
-      } as any);
+      // Retry logic for critical booking operation
+      let data = null;
+      let rpcError = null;
+      const maxRetries = 3;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const result = await supabase.rpc('validate_and_reserve_slot', {
+          space_id_param: spaceId,
+          date_param: format(bookingState.selectedDate, 'yyyy-MM-dd'),
+          start_time_param: bookingState.selectedRange.startTime,
+          end_time_param: bookingState.selectedRange.endTime,
+          user_id_param: user.user.id,
+          guests_count_param: bookingState.guestsCount,
+          confirmation_type_param: confirmationType
+        } as any);
 
-      if (rpcError) {
-        error('Slot reservation failed', rpcError, { spaceId, bookingState });
+        data = result.data;
+        rpcError = result.error;
+
+        // Success - exit retry loop
+        if (!rpcError && data) {
+          break;
+        }
+
+        // Transient errors - retry
+        const isTransientError = rpcError?.code === 'PGRST301' || 
+                                  rpcError?.message?.includes('connection');
         
-        // Handle capacity errors
-        if (rpcError.message?.includes('Posti insufficienti') || rpcError.message?.includes('available_spots')) {
-          toast.error(
-            <>
-              ⚠️ Posti insufficienti
-              <span data-testid="capacity-error-toast" className="sr-only">capacity-error</span>
-            </>, 
-            {
-              description: rpcError.message || 'Non ci sono abbastanza posti disponibili per questo orario.',
-              action: {
-                label: "Aggiorna",
-                onClick: () => {
-                  if (bookingState.selectedDate) {
-                    fetchAvailableSlots(bookingState.selectedDate);
-                    setCurrentStep('TIME');
+        if (isTransientError && attempt < maxRetries) {
+          const delay = 1000 * attempt;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          debug(`Retrying booking attempt ${attempt + 1}/${maxRetries}`, { spaceId });
+          continue;
+        }
+
+        // Non-transient error or max retries reached - handle error
+        if (rpcError) {
+          error('Slot reservation failed', rpcError, { spaceId, bookingState, attempt });
+          
+          // Handle capacity errors
+          if (rpcError.message?.includes('Posti insufficienti') || rpcError.message?.includes('available_spots')) {
+            toast.error(
+              <>
+                ⚠️ Posti insufficienti
+                <span data-testid="capacity-error-toast" className="sr-only">capacity-error</span>
+              </>, 
+              {
+                description: rpcError.message || 'Non ci sono abbastanza posti disponibili per questo orario.',
+                action: {
+                  label: "Aggiorna",
+                  onClick: () => {
+                    if (bookingState.selectedDate) {
+                      fetchAvailableSlots(bookingState.selectedDate);
+                      setCurrentStep('TIME');
+                    }
                   }
                 }
               }
-            }
-          );
-        } else if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
-          toast.error(
-            <>
-              ⚠️ Slot non più disponibile
-              <span data-testid="lock-error-toast" className="sr-only">lock-error</span>
-            </>, 
-            {
-              description: (
-                <>
-                  Qualcun altro ha prenotato questo orario. Seleziona un altro slot.
-                </>
-              ),
-              action: {
-                label: "Aggiorna",
-                onClick: () => {
-                  if (bookingState.selectedDate) {
-                    fetchAvailableSlots(bookingState.selectedDate);
-                    setCurrentStep('TIME');
+            );
+          } else if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
+            toast.error(
+              <>
+                ⚠️ Slot non più disponibile
+                <span data-testid="lock-error-toast" className="sr-only">lock-error</span>
+              </>, 
+              {
+                description: (
+                  <>
+                    Qualcun altro ha prenotato questo orario. Seleziona un altro slot.
+                  </>
+                ),
+                action: {
+                  label: "Aggiorna",
+                  onClick: () => {
+                    if (bookingState.selectedDate) {
+                      fetchAvailableSlots(bookingState.selectedDate);
+                      setCurrentStep('TIME');
+                    }
                   }
-                }
-              },
-              duration: 5000
-            }
-          );
-        } else {
-          onError('Errore nella prenotazione: ' + rpcError.message);
+                },
+                duration: 5000
+              }
+            );
+          } else {
+            onError('Errore nella prenotazione: ' + rpcError.message);
+          }
+          return;
         }
-        return;
       }
 
       if (!data || typeof data !== 'object') {
