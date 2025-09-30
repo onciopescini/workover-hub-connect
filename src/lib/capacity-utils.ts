@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 /**
  * Get available capacity for a specific time slot
@@ -22,7 +23,10 @@ export async function getAvailableCapacity(
       .single();
 
     if (spaceError || !space) {
-      console.error('Error fetching space capacity:', spaceError);
+      sreLogger.error('Error fetching space capacity', { 
+        context: 'getAvailableCapacity',
+        spaceId 
+      }, spaceError as Error);
       return { availableSpots: 0, maxCapacity: 0, totalBooked: 0 };
     }
 
@@ -40,7 +44,13 @@ export async function getAvailableCapacity(
       );
 
     if (bookingsError) {
-      console.error('Error fetching bookings:', bookingsError);
+      sreLogger.error('Error fetching bookings', { 
+        context: 'getAvailableCapacity',
+        spaceId,
+        date,
+        startTime,
+        endTime
+      }, bookingsError as Error);
       return { 
         availableSpots: space.max_capacity, 
         maxCapacity: space.max_capacity, 
@@ -57,7 +67,13 @@ export async function getAvailableCapacity(
       totalBooked
     };
   } catch (error) {
-    console.error('Error in getAvailableCapacity:', error);
+    sreLogger.error('Error in getAvailableCapacity', { 
+      context: 'getAvailableCapacity',
+      spaceId,
+      date,
+      startTime,
+      endTime
+    }, error as Error);
     return { availableSpots: 0, maxCapacity: 0, totalBooked: 0 };
   }
 }

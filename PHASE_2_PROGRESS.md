@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 223/674 (33.1%)
+## 📊 Overall Progress: 245/674 (36.4%)
 
-### ✅ Completed Files (66 files, 223 replacements)
+### ✅ Completed Files (71 files, 245 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 223/674 (33.1%)
-- **Files cleaned**: 66/134 (49.3%)
+- **Console statements cleaned**: 245/674 (36.4%)
+- **Files cleaned**: 71/134 (53.0%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 223/674 (33.1%)
+- **ESLint warnings resolved**: 245/674 (36.4%)
 
 ---
 
@@ -305,8 +305,62 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 16 (Space Components Batch 1) Complete  
-**Next Update**: After Batch 17 completion
+**Last Updated**: 2025-09-30 - Batch 17 (Lib Utils & Services) Complete  
+**Next Update**: After Batch 18 completion
+
+---
+
+## Batch 17: Lib Utils & Services Cleanup (5 files, 22 console.*)
+
+### Files Processed
+1. ✅ **src/lib/admin-test-utils.ts**
+   - Status: Complete
+   - Console statements replaced: 10 (8 console.log, 2 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.log with sreLogger.debug for testing admin action logging (with userId, profile, role context)
+     - Replaced console.log with sreLogger.info for successful test log creation (with adminId context)
+     - Replaced console.error with sreLogger.error for test log and section view errors (with adminId, section context)
+     - All errors properly typed with Error cast
+
+2. ✅ **src/lib/ai/ai-insights-service.ts**
+   - Status: Complete
+   - Console statements replaced: 3 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for AI insights generation error (with hostId context)
+     - Replaced console.error for market analysis error (with hostId context)
+     - Replaced console.error for host metrics calculation error (with hostId context)
+     - All errors properly typed with Error cast
+
+3. ✅ **src/lib/availability-rpc.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for RPC availability fetch error (with spaceId, startDate, endDate context)
+     - Replaced console.error for RPC slot validation error (with spaceId, date, startTime, endTime, userId context)
+     - Replaced console.error for invalid response structure (with spaceId, data context)
+     - Replaced console.error for alternative slots error (with spaceId, date, durationHours context)
+     - All errors properly typed with Error cast
+
+4. ✅ **src/lib/bookings/smart-booking-service.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for guest profile analysis error (with userId, spaceId context)
+     - Error properly typed with Error cast
+
+5. ✅ **src/lib/capacity-utils.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for space capacity fetch error (with spaceId context)
+     - Replaced console.error for bookings fetch error (with spaceId, date, startTime, endTime context)
+     - Replaced console.error for getAvailableCapacity error (with spaceId, date, startTime, endTime context)
+     - All errors properly typed with Error cast
 
 ---
 

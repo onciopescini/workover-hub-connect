@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface AIInsight {
   id: string;
@@ -171,7 +172,10 @@ export const generateAIInsights = async (hostId: string): Promise<AIInsight[]> =
     return insights;
 
   } catch (error) {
-    console.error('Error generating AI insights:', error);
+    sreLogger.error('Error generating AI insights', { 
+      context: 'generateAIInsights',
+      hostId 
+    }, error as Error);
     return [];
   }
 };
@@ -222,7 +226,10 @@ export const generateMarketAnalysis = async (hostId: string): Promise<MarketAnal
     };
 
   } catch (error) {
-    console.error('Error generating market analysis:', error);
+    sreLogger.error('Error generating market analysis', { 
+      context: 'generateMarketAnalysis',
+      hostId 
+    }, error as Error);
     return {
       competitorPricing: {
         your_average: 0,
@@ -318,7 +325,10 @@ const getHostMetrics = async (hostId: string): Promise<InsightMetrics> => {
     };
 
   } catch (error) {
-    console.error('Error calculating host metrics:', error);
+    sreLogger.error('Error calculating host metrics', { 
+      context: 'getHostMetrics',
+      hostId 
+    }, error as Error);
     return {
       totalRevenue: 0,
       bookingCount: 0,

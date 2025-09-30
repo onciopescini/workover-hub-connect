@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BookingWithDetails } from '@/types/booking';
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface BookingRecommendation {
   action: 'auto-approve' | 'approve' | 'review' | 'reject';
@@ -103,7 +104,11 @@ export const analyzeGuestProfile = async (userId: string, spaceId: string): Prom
     };
 
   } catch (error) {
-    console.error('Error analyzing guest profile:', error);
+    sreLogger.error('Error analyzing guest profile', { 
+      context: 'analyzeGuestProfile',
+      userId,
+      spaceId 
+    }, error as Error);
     return {
       totalBookings: 0,
       completedBookings: 0,

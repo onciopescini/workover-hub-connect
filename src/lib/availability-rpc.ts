@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Interface per il risultato di validazione RPC
 interface BookingConflict {
@@ -43,7 +43,12 @@ export const fetchOptimizedSpaceAvailability = async (
   });
 
   if (error) {
-    console.error('RPC availability fetch error:', error);
+    sreLogger.error('RPC availability fetch error', { 
+      context: 'fetchOptimizedSpaceAvailability',
+      spaceId,
+      startDate,
+      endDate
+    }, error as Error);
     throw error;
   }
 
@@ -67,13 +72,24 @@ export const validateBookingSlotWithLock = async (
   });
 
   if (error) {
-    console.error('RPC slot validation error:', error);
+    sreLogger.error('RPC slot validation error', { 
+      context: 'validateBookingSlotWithLock',
+      spaceId,
+      date,
+      startTime,
+      endTime,
+      userId
+    }, error as Error);
     throw error;
   }
 
   // Valida la struttura della risposta con il type guard
   if (!isValidationResult(data)) {
-    console.error('Invalid response structure from validate_booking_slot_with_lock:', data);
+    sreLogger.error('Invalid response structure from validate_booking_slot_with_lock', { 
+      context: 'validateBookingSlotWithLock',
+      spaceId,
+      data 
+    }, new Error('Invalid response format'));
     throw new Error('Invalid response format from validation RPC');
   }
 
@@ -93,7 +109,12 @@ export const getAlternativeTimeSlots = async (
   });
 
   if (error) {
-    console.error('Error getting alternative slots:', error);
+    sreLogger.error('Error getting alternative slots', { 
+      context: 'getAlternativeTimeSlots',
+      spaceId,
+      date,
+      durationHours
+    }, error as Error);
     return [];
   }
 

@@ -1,19 +1,19 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Funzione per testare la creazione di log delle azioni admin
 export const testAdminActionLogging = async (): Promise<boolean> => {
   try {
-    console.log("Testing admin action logging...");
+    sreLogger.debug('Testing admin action logging', { context: 'testAdminActionLogging' });
     
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
-      console.log("No authenticated user");
+      sreLogger.debug('No authenticated user', { context: 'testAdminActionLogging' });
       return false;
     }
 
-    console.log("Current user ID:", user.user.id);
+    sreLogger.debug('Current user ID', { context: 'testAdminActionLogging', userId: user.user.id });
 
     // Verifica che l'utente sia admin
     const { data: profile } = await supabase
@@ -22,10 +22,14 @@ export const testAdminActionLogging = async (): Promise<boolean> => {
       .eq('id', user.user.id)
       .single();
 
-    console.log("User profile:", profile);
+    sreLogger.debug('User profile', { context: 'testAdminActionLogging', profile });
 
     if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      console.log("User is not admin or is suspended");
+      sreLogger.debug('User is not admin or is suspended', { 
+        context: 'testAdminActionLogging',
+        role: profile?.role,
+        isSuspended: profile?.is_suspended
+      });
       return false;
     }
 
@@ -45,14 +49,22 @@ export const testAdminActionLogging = async (): Promise<boolean> => {
       });
 
     if (error) {
-      console.error("Error creating test log:", error);
+      sreLogger.error('Error creating test log', { 
+        context: 'testAdminActionLogging',
+        adminId: user.user.id
+      }, error as Error);
       return false;
     }
 
-    console.log("Test log created successfully");
+    sreLogger.info('Test log created successfully', { 
+      context: 'testAdminActionLogging',
+      adminId: user.user.id
+    });
     return true;
   } catch (error) {
-    console.error("Error in testAdminActionLogging:", error);
+    sreLogger.error('Error in testAdminActionLogging', { 
+      context: 'testAdminActionLogging' 
+    }, error as Error);
     return false;
   }
 };
@@ -85,8 +97,15 @@ export const logAdminSectionView = async (section: string): Promise<void> => {
         }
       });
 
-    console.log(`Logged admin view of ${section} section`);
+    sreLogger.info('Logged admin view of section', { 
+      context: 'logAdminSectionView',
+      section,
+      adminId: user.user.id
+    });
   } catch (error) {
-    console.error("Error logging admin section view:", error);
+    sreLogger.error('Error logging admin section view', { 
+      context: 'logAdminSectionView',
+      section 
+    }, error as Error);
   }
 };
