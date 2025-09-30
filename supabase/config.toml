@@ -1,5 +1,7 @@
-
 project_id = "khtqwzvrxzsgfhsslwyz"
+
+[functions.health-check]
+verify_jwt = false
 
 [functions.stripe-webhooks]
 verify_jwt = false
