@@ -22,6 +22,7 @@ import { useCallback, useEffect } from 'react';
 import posthog from 'posthog-js';
 import * as Sentry from '@sentry/react';
 import { useConsent } from '@/hooks/useConsent';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface AnalyticsEvent {
   name: string;
@@ -65,7 +66,7 @@ export const useAnalytics = () => {
       }
     } catch (error) {
       Sentry.captureException(error);
-      console.warn('Analytics tracking failed:', error);
+      sreLogger.warn('Analytics tracking failed', {}, error as Error);
     }
   }, [consent?.analytics]);
 
@@ -96,7 +97,7 @@ export const useAnalytics = () => {
       }
     } catch (error) {
       Sentry.captureException(error);
-      console.warn('Pageview tracking failed:', error);
+      sreLogger.warn('Pageview tracking failed', {}, error as Error);
     }
   }, [consent?.analytics]);
 
@@ -124,7 +125,7 @@ export const useAnalytics = () => {
       });
     } catch (error) {
       Sentry.captureException(error);
-      console.warn('User identification failed:', error);
+      sreLogger.warn('User identification failed', {}, error as Error);
     }
   }, [consent?.analytics]);
 
@@ -142,7 +143,7 @@ export const useAnalytics = () => {
       Sentry.setUser(null);
     } catch (error) {
       Sentry.captureException(error);
-      console.warn('Analytics reset failed:', error);
+      sreLogger.warn('Analytics reset failed', {}, error as Error);
     }
   }, []);
 

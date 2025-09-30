@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface UseAsyncOperationOptions {
   successMessage?: string;
@@ -32,7 +33,7 @@ export function useAsyncOperation(options: UseAsyncOperationOptions = {}): UseAs
       
       return result;
     } catch (error) {
-      console.error('Async operation failed:', error);
+      sreLogger.error('Async operation failed', {}, error as Error);
       
       const errorMessage = options.errorMessage || 'Si è verificato un errore';
       toast.error(errorMessage);

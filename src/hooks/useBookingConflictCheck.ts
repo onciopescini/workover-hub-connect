@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { checkRealTimeConflicts, validateBookingSlotWithLock } from '@/lib/availability-utils';
 import { Space } from '@/types/space';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface BookingConflict {
   id: string;
@@ -76,7 +77,7 @@ export const useBookingConflictCheck = (
              validated: validationResult.valid
            });
         } catch (validationError) {
-          console.warn('Server validation failed, using client-side result:', validationError);
+          sreLogger.warn('Server validation failed, using client-side result', {}, validationError as Error);
           setConflictCheck({
             checking: false,
             hasConflict: false,
@@ -84,7 +85,7 @@ export const useBookingConflictCheck = (
           });
         }
       } catch (error) {
-        console.error('Error checking conflicts:', error);
+        sreLogger.error('Error checking conflicts', {}, error as Error);
         setConflictCheck({ checking: false, hasConflict: false, validated: false });
       }
     };

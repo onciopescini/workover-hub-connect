@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface Booking {
   id: string;
@@ -56,7 +57,7 @@ export const useBookingsFixed = () => {
           .eq('user_id', authState.user.id);
 
         if (error) {
-          console.error('Error fetching bookings:', error);
+          sreLogger.error('Error fetching bookings', {}, error);
           setError(error.message);
         } else {
           // Transform the data to match our interface
@@ -74,7 +75,7 @@ export const useBookingsFixed = () => {
           setBookings(typedData);
         }
       } catch (err: unknown) {
-        console.error('Unexpected error:', err);
+        sreLogger.error('Unexpected error fetching bookings', {}, err as Error);
         setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       } finally {
         setLoading(false);
@@ -97,7 +98,7 @@ export const useBookingsFixed = () => {
         .eq('id', bookingId);
 
       if (error) {
-        console.error('Error cancelling booking:', error);
+        sreLogger.error('Error cancelling booking', { bookingId }, error);
         setError(error.message);
         toast.error('Failed to cancel booking');
       } else {
@@ -109,7 +110,7 @@ export const useBookingsFixed = () => {
         toast.success('Booking cancelled successfully');
       }
     } catch (err: unknown) {
-      console.error('Unexpected error:', err);
+      sreLogger.error('Unexpected error cancelling booking', {}, err as Error);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
       toast.error('An unexpected error occurred');
     } finally {

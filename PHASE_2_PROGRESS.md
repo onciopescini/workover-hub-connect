@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 99/674 (14.7%)
-- **Files cleaned**: 23/134 (17.2%)
+- **Console statements cleaned**: 113/674 (16.8%)
+- **Files cleaned**: 28/134 (20.9%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 99/674 (14.7%)
+- **ESLint warnings resolved**: 113/674 (16.8%)
 
 ---
 
@@ -305,10 +305,63 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 7 (Hooks Cleanup) Complete  
-**Next Update**: After Batch 8 completion
+**Last Updated**: 2025-09-30 - Batch 8 (More Hooks) Complete  
+**Next Update**: After Batch 9 completion
 
 ---
+
+## Batch 8: More Hooks Cleanup (5 files, 14 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/useAnalytics.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.warn)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.warn in trackEvent error handler
+     - Replaced console.warn in pageview error handler
+     - Replaced console.warn in identify error handler
+     - Replaced console.warn in reset error handler
+     - All errors properly typed with Error cast
+
+2. ✅ **src/hooks/useAsyncOperation.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error in async operation failure handler
+     - Error properly typed with Error cast
+
+3. ✅ **src/hooks/useBookingConflictCheck.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (1 console.warn, 1 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.warn for server validation failure
+     - Replaced console.error for conflict check error
+     - All errors properly typed with Error cast
+
+4. ✅ **src/hooks/useBookings.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetch bookings error
+     - Replaced console.error for unexpected fetch error
+     - Replaced console.error for cancel booking error (with bookingId context)
+     - Replaced console.error for unexpected cancel error
+     - All errors properly typed with Error cast
+
+5. ✅ **src/hooks/useBookingsFixed.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetch bookings error
+     - Replaced console.error for unexpected fetch error
+     - Replaced console.error for cancel booking error (with bookingId context)
+     - Replaced console.error for unexpected cancel error
+     - All errors properly typed with Error cast
 
 ## Batch 7: Hooks Cleanup (5 files, 13 console.*)
 
