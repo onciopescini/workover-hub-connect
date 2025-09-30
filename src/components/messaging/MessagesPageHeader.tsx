@@ -13,8 +13,8 @@ export const MessagesPageHeader = ({ onNewChat, onSettings }: MessagesPageHeader
     <div className="mb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Centro Messaggi</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Centro Messaggi</h1>
+          <p className="text-muted-foreground">
             Gestisci tutte le tue conversazioni di prenotazioni e networking
           </p>
         </div>

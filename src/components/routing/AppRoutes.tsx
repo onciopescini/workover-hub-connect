@@ -33,7 +33,7 @@ const Profile = lazy(() => import("@/pages/Profile"));
 const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
 const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 const Bookings = lazy(() => import("@/pages/Bookings"));
-const Messages = lazy(() => import("@/pages/Messages"));
+const ModernMessages = lazy(() => import("@/pages/ModernMessages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
@@ -166,7 +166,7 @@ export const AppRoutes = () => {
         <Route path="messages" element={
           <AuthProtected>
             <LazyWrapper>
-              <Messages />
+              <ModernMessages />
             </LazyWrapper>
           </AuthProtected>
         } />

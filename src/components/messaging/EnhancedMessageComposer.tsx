@@ -66,14 +66,14 @@ export const EnhancedMessageComposer = ({
   };
 
   return (
-    <div className="border-t bg-white p-4 space-y-3">
+    <div className="border-t bg-card p-4 space-y-3">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {attachments.map((file, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 text-sm"
+              className="flex items-center gap-2 bg-accent rounded-lg px-3 py-2 text-sm"
             >
               {file.type.startsWith('image/') ? (
                 <Image className="w-4 h-4 text-blue-500" />
@@ -83,7 +83,7 @@ export const EnhancedMessageComposer = ({
               <span className="truncate max-w-32">{file.name}</span>
               <button
                 onClick={() => removeAttachment(index)}
-                className="text-red-500 hover:text-red-700"
+                className="text-destructive hover:text-destructive/80 font-bold"
               >
                 ×
               </button>
@@ -100,7 +100,7 @@ export const EnhancedMessageComposer = ({
             size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || isLoading}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Paperclip className="w-4 h-4" />
           </Button>
@@ -109,7 +109,7 @@ export const EnhancedMessageComposer = ({
             variant="ghost"
             size="icon"
             disabled={disabled || isLoading}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Smile className="w-4 h-4" />
           </Button>
