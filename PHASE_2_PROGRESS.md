@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 367/674 (54.5%)
+## 📊 Overall Progress: 403/674 (59.8%)
 
-### ✅ Completed Files (91 files, 367 replacements)
+### ✅ Completed Files (95 files, 403 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -175,6 +175,15 @@
   - `src/lib/host-utils.ts` (11 - RE-CLEANED: was marked done but not actually replaced)
   - `src/components/ui/PhotoUploader.tsx` (1)
   - `src/components/validation/RegressionValidationRunner.tsx` (2)
+
+#### 34-37. Batch 23: Config & Utils RE-CLEAN ✓
+- **Status**: Complete  
+- **Replacements**: 36 console statements → sreLogger
+- **Files**:
+  - `src/config/app.config.ts` (3)
+  - `src/lib/messaging-utils.ts` (15 - RE-CLEANED: was marked done in Batch 19 but not actually replaced)
+  - `src/lib/networking-utils.ts` (13 - RE-CLEANED: was marked done in Batch 19 but not actually replaced)
+  - `src/lib/notification-utils.ts` (5 - RE-CLEANED: was marked done in Batch 19 but not actually replaced)
 
 ---
 

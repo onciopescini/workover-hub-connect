@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { UserNotification, NotificationCounts } from "@/types/notification";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Fetch user notifications
 export const getUserNotifications = async (limit?: number): Promise<UserNotification[]> => {
@@ -37,7 +38,7 @@ export const getUserNotifications = async (limit?: number): Promise<UserNotifica
 
     return notifications;
   } catch (error) {
-    console.error("Error fetching notifications:", error);
+    sreLogger.error("Error fetching notifications", {}, error as Error);
     return [];
   }
 };
@@ -65,7 +66,7 @@ export const getNotificationCounts = async (): Promise<NotificationCounts> => {
 
     return { total, unread, byType };
   } catch (error) {
-    console.error("Error fetching notification counts:", error);
+    sreLogger.error("Error fetching notification counts", {}, error as Error);
     return { total: 0, unread: 0, byType: {} };
   }
 };
@@ -80,7 +81,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error marking notification as read:", error);
+    sreLogger.error("Error marking notification as read", { notificationId }, error as Error);
     return false;
   }
 };
@@ -94,7 +95,7 @@ export const markAllNotificationsAsRead = async (): Promise<boolean> => {
     toast.success("Tutte le notifiche sono state marcate come lette");
     return true;
   } catch (error) {
-    console.error("Error marking all notifications as read:", error);
+    sreLogger.error("Error marking all notifications as read", {}, error as Error);
     toast.error("Errore nel marcare le notifiche come lette");
     return false;
   }
@@ -128,7 +129,7 @@ export const createNotification = async (
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error creating notification:", error);
+    sreLogger.error("Error creating notification", { userId, type, title }, error as Error);
     return false;
   }
 };

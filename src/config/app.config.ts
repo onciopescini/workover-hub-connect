@@ -5,6 +5,8 @@
  * This ensures type safety and centralized management of all app settings.
  */
 
+import { sreLogger } from '@/lib/sre-logger';
+
 interface AppConfig {
   api: {
     supabaseUrl: string;
@@ -38,7 +40,7 @@ interface AppConfig {
 const getEnvVar = (key: string, defaultValue?: string): string => {
   const value = import.meta.env[key];
   if (!value && !defaultValue) {
-    console.warn(`Missing environment variable: ${key}`);
+    sreLogger.warn(`Missing environment variable`, { key });
   }
   return value || defaultValue || '';
 };
@@ -122,8 +124,8 @@ export const validateConfig = (): { valid: boolean; errors: string[] } => {
 if (import.meta.env.DEV) {
   const validation = validateConfig();
   if (!validation.valid) {
-    console.error('❌ Configuration validation failed:', validation.errors);
+    sreLogger.error('Configuration validation failed', { errors: validation.errors });
   } else {
-    console.log('✅ Configuration validated successfully');
+    sreLogger.info('Configuration validated successfully');
   }
 }

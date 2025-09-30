@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Connection, ConnectionSuggestion, PrivateChat, PrivateMessage } from "@/types/networking";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Fetch user connections
 export const getUserConnections = async (): Promise<Connection[]> => {
@@ -42,7 +43,7 @@ export const getUserConnections = async (): Promise<Connection[]> => {
       updated_at: conn.updated_at ?? ''
     }));
   } catch (error) {
-    console.error("Error fetching connections:", error);
+    sreLogger.error("Error fetching connections", {}, error as Error);
     return [];
   }
 };
@@ -76,7 +77,7 @@ export const sendConnectionRequest = async (receiverId: string): Promise<boolean
     toast.success("Richiesta di connessione inviata!");
     return true;
   } catch (error) {
-    console.error("Error sending connection request:", error);
+    sreLogger.error("Error sending connection request", { receiverId }, error as Error);
     toast.error("Errore nell'invio della richiesta");
     return false;
   }
@@ -95,7 +96,7 @@ export const acceptConnectionRequest = async (connectionId: string): Promise<boo
     toast.success("Connessione accettata!");
     return true;
   } catch (error) {
-    console.error("Error accepting connection:", error);
+    sreLogger.error("Error accepting connection", { connectionId }, error as Error);
     toast.error("Errore nell'accettare la connessione");
     return false;
   }
@@ -114,7 +115,7 @@ export const rejectConnectionRequest = async (connectionId: string): Promise<boo
     toast.success("Connessione rifiutata");
     return true;
   } catch (error) {
-    console.error("Error rejecting connection:", error);
+    sreLogger.error("Error rejecting connection", { connectionId }, error as Error);
     toast.error("Errore nel rifiutare la connessione");
     return false;
   }
@@ -133,7 +134,7 @@ export const removeConnection = async (connectionId: string): Promise<boolean> =
     toast.success("Connessione rimossa");
     return true;
   } catch (error) {
-    console.error("Error removing connection:", error);
+    sreLogger.error("Error removing connection", { connectionId }, error as Error);
     toast.error("Errore nella rimozione della connessione");
     return false;
   }
@@ -153,7 +154,7 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
       .single();
 
     if (!currentUser?.networking_enabled) {
-      console.log("Current user has networking disabled");
+      sreLogger.debug("Current user has networking disabled", { userId: user.user.id });
       return [];
     }
 
@@ -190,7 +191,7 @@ export const getConnectionSuggestions = async (): Promise<ConnectionSuggestion[]
       created_at: suggestion.created_at ?? new Date().toISOString()
     }));
   } catch (error) {
-    console.error("Error fetching suggestions:", error);
+    sreLogger.error("Error fetching suggestions", {}, error as Error);
     return [];
   }
 };
@@ -201,7 +202,7 @@ export const generateSuggestions = async (): Promise<void> => {
     const { error } = await supabase.rpc('generate_connection_suggestions');
     if (error) throw error;
   } catch (error) {
-    console.error("Error generating suggestions:", error);
+    sreLogger.error("Error generating suggestions", {}, error as Error);
   }
 };
 
@@ -257,7 +258,7 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       }
     }));
   } catch (error) {
-    console.error("Error fetching private chats:", error);
+    sreLogger.error("Error fetching private chats", {}, error as Error);
     return [];
   }
 };
@@ -297,7 +298,7 @@ export const createOrGetPrivateChat = async (otherUserId: string): Promise<strin
     if (error) throw error;
     return newChat?.id || null;
   } catch (error) {
-    console.error("Error creating/getting private chat:", error);
+    sreLogger.error("Error creating/getting private chat", { otherUserId }, error as Error);
     return null;
   }
 };
@@ -319,7 +320,7 @@ export const sendPrivateMessage = async (chatId: string, content: string): Promi
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error("Error sending private message:", error);
+    sreLogger.error("Error sending private message", { chatId, content }, error as Error);
     return false;
   }
 };
@@ -360,7 +361,7 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
       }
     }));
   } catch (error) {
-    console.error("Error fetching private messages:", error);
+    sreLogger.error("Error fetching private messages", { chatId }, error as Error);
     return [];
   }
 };

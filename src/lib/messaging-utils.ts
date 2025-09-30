@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface Message {
   id: string;
@@ -71,7 +72,7 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching messages:', error);
+      sreLogger.error('Error fetching messages', { bookingId }, error as Error);
       throw error;
     }
 
@@ -97,7 +98,7 @@ export const fetchMessages = async (bookingId: string): Promise<Message[]> => {
       return message;
     }) || [];
   } catch (error) {
-    console.error('Error in fetchMessages:', error);
+    sreLogger.error('Error in fetchMessages', { bookingId }, error as Error);
     return [];
   }
 };
@@ -131,7 +132,7 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       .order('last_message_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching private chats:', error);
+      sreLogger.error('Error fetching private chats', { userId: user.user.id }, error as Error);
       throw error;
     }
 
@@ -141,7 +142,7 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
       last_message_at: chat.last_message_at ?? ''
     })) || [];
   } catch (error) {
-    console.error('Error in getUserPrivateChats:', error);
+    sreLogger.error('Error in getUserPrivateChats', {}, error as Error);
     return [];
   }
 };
@@ -155,7 +156,7 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching private messages:', error);
+      sreLogger.error('Error fetching private messages', { chatId }, error as Error);
       throw error;
     }
 
@@ -169,7 +170,7 @@ export const getPrivateMessages = async (chatId: string): Promise<PrivateMessage
       attachments: Array.isArray(msg.attachments) ? msg.attachments as string[] : []
     })) || [];
   } catch (error) {
-    console.error('Error in getPrivateMessages:', error);
+    sreLogger.error('Error in getPrivateMessages', { chatId }, error as Error);
     return [];
   }
 };
@@ -191,14 +192,14 @@ export const sendPrivateMessage = async (chatId: string, content: string): Promi
       });
 
     if (error) {
-      console.error('Error sending private message:', error);
+      sreLogger.error('Error sending private message', { chatId, content }, error as Error);
       toast.error('Errore nell\'invio del messaggio');
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in sendPrivateMessage:', error);
+    sreLogger.error('Error in sendPrivateMessage', { chatId }, error as Error);
     return false;
   }
 };
@@ -216,7 +217,7 @@ export const sendMessage = async (bookingId: string, content: string): Promise<M
       .single();
 
     if (error) {
-      console.error('Error sending message:', error);
+      sreLogger.error('Error sending message', { bookingId, content }, error as Error);
       toast.error('Errore nell\'invio del messaggio');
       throw error;
     }
@@ -231,7 +232,7 @@ export const sendMessage = async (bookingId: string, content: string): Promise<M
       attachments: Array.isArray(data.attachments) ? data.attachments as string[] : []
     };
   } catch (error) {
-    console.error('Error in sendMessage:', error);
+    sreLogger.error('Error in sendMessage', { bookingId }, error as Error);
     return null;
   }
 };
@@ -253,7 +254,7 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       .upload(filePath, file);
       
     if (uploadError) {
-      console.error("Upload error:", uploadError);
+      sreLogger.error("Upload error", { fileName: file.name, fileSize: file.size }, uploadError as Error);
       throw uploadError;
     }
     
@@ -263,7 +264,7 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       
     return data.publicUrl;
   } catch (error) {
-    console.error("Error in uploadMessageAttachment:", error);
+    sreLogger.error("Error in uploadMessageAttachment", { fileName: file.name }, error as Error);
     toast.error('Errore nell\'upload del file');
     return null;
   }
@@ -277,13 +278,13 @@ export const markMessageAsRead = async (messageId: string): Promise<boolean> => 
       .eq('id', messageId);
 
     if (error) {
-      console.error('Error marking message as read:', error);
+      sreLogger.error('Error marking message as read', { messageId }, error as Error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error in markMessageAsRead:', error);
+    sreLogger.error('Error in markMessageAsRead', { messageId }, error as Error);
     return false;
   }
 };
@@ -297,13 +298,13 @@ export const getUnreadMessagesCount = async (userId: string): Promise<number> =>
       .eq('is_read', false);
 
     if (error) {
-      console.error('Error getting unread messages count:', error);
+      sreLogger.error('Error getting unread messages count', { userId }, error as Error);
       return 0;
     }
 
     return data?.length || 0;
   } catch (error) {
-    console.error('Error in getUnreadMessagesCount:', error);
+    sreLogger.error('Error in getUnreadMessagesCount', { userId }, error as Error);
     return 0;
   }
 };
