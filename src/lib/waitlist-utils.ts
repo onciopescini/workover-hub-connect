@@ -42,46 +42,6 @@ export const joinSpaceWaitlist = async (spaceId: string): Promise<boolean> => {
   }
 };
 
-// Join event waitlist
-export const joinEventWaitlist = async (eventId: string): Promise<boolean> => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) {
-      toast.error("Devi essere autenticato per unirti alla lista d'attesa");
-      return false;
-    }
-
-    // Check if already in waitlist
-    const { data: existing } = await supabase
-      .from('waitlists')
-      .select('id')
-      .eq('user_id', user.user.id)
-      .eq('event_id', eventId)
-      .single();
-
-    if (existing) {
-      toast.info("Sei già nella lista d'attesa per questo evento");
-      return false;
-    }
-
-    const { error } = await supabase
-      .from('waitlists')
-      .insert({
-        user_id: user.user.id,
-        event_id: eventId
-      });
-
-    if (error) throw error;
-    
-    toast.success("Aggiunto alla lista d'attesa!");
-    return true;
-  } catch (error) {
-    console.error("Error joining event waitlist:", error);
-    toast.error("Errore nell'unirsi alla lista d'attesa dell'evento");
-    return false;
-  }
-};
-
 // Leave waitlist
 export const leaveWaitlist = async (waitlistId: string): Promise<boolean> => {
   try {
@@ -148,8 +108,6 @@ export const getSpaceWaitlist = async (spaceId: string): Promise<WaitlistWithDet
       ...item,
       created_at: item.created_at ?? '',
       space_title: '',
-      event_title: '',
-      event_date: '',
       host_name: ''
     }));
   } catch (error) {
@@ -175,53 +133,5 @@ export const isInSpaceWaitlist = async (spaceId: string): Promise<string | null>
   } catch (error) {
     console.error("Error checking space waitlist:", error);
     return null;
-  }
-};
-
-// Check if user is in event waitlist
-export const isInEventWaitlist = async (eventId: string): Promise<string | null> => {
-  try {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) return null;
-
-    const { data } = await supabase
-      .from('waitlists')
-      .select('id')
-      .eq('user_id', user.user.id)
-      .eq('event_id', eventId)
-      .single();
-
-    return data?.id || null;
-  } catch (error) {
-    console.error("Error checking event waitlist:", error);
-    return null;
-  }
-};
-
-// Get waitlist for event (admin/host view)
-export const getEventWaitlist = async (eventId: string): Promise<WaitlistWithDetails[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('waitlists')
-      .select(`
-        *,
-        profiles:user_id(first_name, last_name, profile_photo_url)
-      `)
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    
-    return (data || []).map(item => ({
-      ...item,
-      created_at: item.created_at ?? '',
-      space_title: '',
-      event_title: '',
-      event_date: '',
-      host_name: ''
-    }));
-  } catch (error) {
-    console.error("Error fetching event waitlist:", error);
-    return [];
   }
 };

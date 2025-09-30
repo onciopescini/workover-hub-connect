@@ -9,7 +9,6 @@ interface UseNetworkingDashboardProps {
     totalConnections: number;
     pendingRequests: number;
     messagesThisWeek: number;
-    eventsAttended: number;
     profileViews: number;
     connectionRate: number;
   };
@@ -38,7 +37,7 @@ export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): 
     const monthlyGrowth = Math.floor(Math.random() * 50) + 10;
     
     const engagementScore = Math.min(100, Math.floor(
-      (stats.messagesThisWeek * 2 + stats.eventsAttended * 5 + stats.profileViews) / 2
+      (stats.messagesThisWeek * 2 + stats.profileViews) / 2
     ));
     
     const networkingScore = Math.min(100, Math.floor(

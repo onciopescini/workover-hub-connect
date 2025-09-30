@@ -12,7 +12,6 @@ interface LazyNetworkingDashboardProps {
     totalConnections: number;
     pendingRequests: number;
     messagesThisWeek: number;
-    eventsAttended: number;
     profileViews: number;
     connectionRate: number;
   };

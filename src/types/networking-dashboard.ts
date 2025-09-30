@@ -2,7 +2,6 @@ export interface EnhancedNetworkingStats {
   totalConnections: number;
   pendingRequests: number;
   messagesThisWeek: number;
-  eventsAttended: number;
   profileViews: number;
   connectionRate: number;
   // Enhanced metrics
@@ -39,7 +38,6 @@ export interface NetworkingDashboardProps {
     totalConnections: number;
     pendingRequests: number;
     messagesThisWeek: number;
-    eventsAttended: number;
     profileViews: number;
     connectionRate: number;
   };

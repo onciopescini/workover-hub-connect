@@ -31,10 +31,7 @@ export class RegressionValidationSuite {
       // 2. Bookings System
       await this.validateBookingsSystem();
       
-      // 3. Events Management
-      await this.validateEventsManagement();
-      
-      // 4. GDPR Compliance
+      // 3. GDPR Compliance
       await this.validateGDPRCompliance();
       
       // 5. User Profiles
@@ -166,63 +163,6 @@ export class RegressionValidationSuite {
     } catch (error) {
       this.errors.push(`Bookings validation error: ${error}`);
       console.log('❌ Bookings validation failed:', error);
-    }
-  }
-
-  private async validateEventsManagement(): Promise<void> {
-    console.log('\n🎉 VALIDATING EVENTS MANAGEMENT');
-    console.log('-'.repeat(50));
-    
-    try {
-      // Test events table structure
-      const { data: events, error: eventsError } = await supabase
-        .from('events')
-        .select(`
-          *,
-          space:spaces(id, title, address),
-          creator:profiles!fk_events_created_by(id, first_name, last_name)
-        `)
-        .limit(1);
-
-      if (eventsError) {
-        this.errors.push(`Events query failed: ${eventsError.message}`);
-      } else {
-        console.log('✅ Events table structure validated');
-      }
-
-      // Test event participants structure
-      const { data: participants, error: participantsError } = await supabase
-        .from('event_participants')
-        .select(`
-          *,
-          user:profiles!fk_event_participants_user_id(id, first_name, last_name),
-          event:events(id, title, max_participants)
-        `)
-        .limit(1);
-
-      if (participantsError) {
-        this.errors.push(`Event participants query failed: ${participantsError.message}`);
-      } else {
-        console.log('✅ Event participants structure validated');
-      }
-
-      // Test waitlist functionality
-      const { data: waitlist, error: waitlistError } = await supabase
-        .from('waitlists')
-        .select('*')
-        .limit(1);
-
-      if (waitlistError) {
-        this.errors.push(`Waitlist query failed: ${waitlistError.message}`);
-      } else {
-        console.log('✅ Waitlist structure validated');
-      }
-
-      this.results.push({ module: 'Events Management', status: 'PASSED', details: 'Event creation, participants, and waitlist functionality validated' });
-      
-    } catch (error) {
-      this.errors.push(`Events validation error: ${error}`);
-      console.log('❌ Events validation failed:', error);
     }
   }
 

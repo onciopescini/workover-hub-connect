@@ -12,10 +12,7 @@ export class Sprint1ValidationSuite {
     console.log('='.repeat(60));
     
     try {
-      // 1. Event Management Validation
-      await this.validateEventManagement();
-      
-      // 2. Host Revenue Dashboard Validation
+      // 1. Host Revenue Dashboard Validation
       await this.validateHostRevenue();
       
       // 3. GDPR Privacy Center Validation
@@ -33,69 +30,6 @@ export class Sprint1ValidationSuite {
     } catch (error) {
       console.error('❌ VALIDATION SUITE FAILED:', error);
       toast.error('Validation suite encountered an error');
-    }
-  }
-  
-  private async validateEventManagement(): Promise<void> {
-    console.log('\n📅 VALIDATING EVENT MANAGEMENT');
-    console.log('-'.repeat(40));
-    
-    try {
-      // Test event creation endpoint
-      const testEventData = {
-        title: 'Test Event Validation',
-        description: 'Auto-generated test event',
-        date: new Date(Date.now() + 86400000).toISOString(),
-        max_participants: 10,
-        space_id: null // Will need a valid space_id in real scenario
-      };
-      
-      console.log('✓ Event data structure validation passed');
-      
-      // Test events query structure
-      const { data: events, error: eventsError } = await supabase
-        .from('events')
-        .select(`
-          *,
-          space:spaces(id, title, address),
-          creator:profiles!fk_events_created_by(id, first_name, last_name)
-        `)
-        .limit(1);
-      
-      if (eventsError) {
-        console.log('❌ Events query failed:', eventsError.message);
-      } else {
-        console.log('✓ Events query structure is valid');
-      }
-      
-      // Test event participants structure
-      const { data: participants, error: participantsError } = await supabase
-        .from('event_participants')
-        .select(`
-          *,
-          user:profiles!fk_event_participants_user_id(id, first_name, last_name)
-        `)
-        .limit(1);
-      
-      if (participantsError) {
-        console.log('❌ Event participants query failed:', participantsError.message);
-      } else {
-        console.log('✓ Event participants query structure is valid');
-      }
-      
-      this.results.push({
-        category: 'Event Management',
-        status: 'PASSED',
-        details: 'Event CRUD operations and queries validated'
-      });
-      
-    } catch (error) {
-      console.log('❌ Event Management validation failed:', error);
-      this.results.push({
-        category: 'Event Management',
-        status: 'FAILED',
-        error: error
-      });
     }
   }
   

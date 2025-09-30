@@ -2,36 +2,28 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Clock, X } from "lucide-react";
-import { joinSpaceWaitlist, joinEventWaitlist, leaveWaitlist, isInSpaceWaitlist, isInEventWaitlist } from "@/lib/waitlist-utils";
+import { joinSpaceWaitlist, leaveWaitlist, isInSpaceWaitlist } from "@/lib/waitlist-utils";
 
 interface WaitlistButtonProps {
-  type: "space" | "event";
   targetId: string;
   disabled?: boolean;
   className?: string;
 }
 
-const WaitlistButton = ({ type, targetId, disabled = false, className }: WaitlistButtonProps) => {
+const WaitlistButton = ({ targetId, disabled = false, className }: WaitlistButtonProps) => {
   const [isInWaitlist, setIsInWaitlist] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [waitlistId, setWaitlistId] = useState<string | null>(null);
 
   useEffect(() => {
     checkWaitlistStatus();
-  }, [targetId, type]);
+  }, [targetId]);
 
   const checkWaitlistStatus = async () => {
-    if (type === "space") {
-      const waitlistIdResult = await isInSpaceWaitlist(targetId);
-      const inWaitlist = waitlistIdResult !== null;
-      setIsInWaitlist(inWaitlist);
-      setWaitlistId(waitlistIdResult);
-    } else {
-      const waitlistIdResult = await isInEventWaitlist(targetId);
-      const inWaitlist = waitlistIdResult !== null;
-      setIsInWaitlist(inWaitlist);
-      setWaitlistId(waitlistIdResult);
-    }
+    const waitlistIdResult = await isInSpaceWaitlist(targetId);
+    const inWaitlist = waitlistIdResult !== null;
+    setIsInWaitlist(inWaitlist);
+    setWaitlistId(waitlistIdResult);
   };
 
   const handleWaitlistAction = async () => {
@@ -45,13 +37,7 @@ const WaitlistButton = ({ type, targetId, disabled = false, className }: Waitlis
           setWaitlistId(null);
         }
       } else {
-        let success = false;
-        if (type === "space") {
-          success = await joinSpaceWaitlist(targetId);
-        } else {
-          success = await joinEventWaitlist(targetId);
-        }
-        
+        const success = await joinSpaceWaitlist(targetId);
         if (success) {
           setIsInWaitlist(true);
           await checkWaitlistStatus();

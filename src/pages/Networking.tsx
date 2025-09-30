@@ -29,7 +29,6 @@ const Networking = () => {
     totalConnections: getActiveConnections().length,
     pendingRequests: getReceivedRequests().length,
     messagesThisWeek: 24,
-    eventsAttended: 0,
     profileViews: 89,
     connectionRate: 78
   };

@@ -4,7 +4,6 @@ export interface NetworkingStats {
   totalConnections: number;
   pendingRequests: number;
   messagesThisWeek: number;
-  eventsAttended: number;
   profileViews: number;
   connectionRate: number;
   weeklyGrowth: number;
@@ -61,13 +60,10 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
 
     if (messagesError) throw messagesError;
 
-    // Events feature removed: no query for event participation
-
     // Calculate metrics
     const totalConnections = connections?.length || 0;
     const pendingCount = pendingRequests?.length || 0;
     const messagesThisWeek = messages?.length || 0;
-    const eventsAttended = 0;
 
     // Mock profile views (in real app, you'd track this)
     const profileViews = Math.floor(Math.random() * 50) + totalConnections * 2;
@@ -114,7 +110,6 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
       totalConnections,
       pendingRequests: pendingCount,
       messagesThisWeek,
-      eventsAttended,
       profileViews,
       connectionRate,
       weeklyGrowth,
@@ -129,7 +124,6 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
       totalConnections: 0,
       pendingRequests: 0,
       messagesThisWeek: 0,
-      eventsAttended: 0,
       profileViews: 0,
       connectionRate: 0,
       weeklyGrowth: 0,

@@ -67,21 +67,6 @@ export interface ConnectionRequest {
   expires_at?: string;
 }
 
-// Events types
-export interface EventData {
-  id: string;
-  title: string;
-  description?: string;
-  date: string;
-  city?: string;
-  status: string;
-  image_url?: string;
-  max_participants: number;
-  current_participants: number;
-  created_by?: string;
-  space_id: string;
-  created_at: string;
-}
 
 // Report types
 export interface ReportData {

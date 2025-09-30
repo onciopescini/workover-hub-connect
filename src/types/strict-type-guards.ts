@@ -165,34 +165,6 @@ export function isValidMessageWithSender(value: unknown): value is {
   );
 }
 
-// Safe event data validation
-export function isValidEventData(value: unknown): value is {
-  id: string;
-  title: string;
-  description: string | null;
-  date: string;
-  space_id: string;
-  created_by: string | null;
-  created_at: string | null;
-  max_participants: number | null;
-  current_participants: number | null;
-  image_url: string | null;
-  status: string | null;
-  city: string | null;
-  [key: string]: unknown;
-} {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    hasProperty(value, 'id') &&
-    hasProperty(value, 'title') &&
-    hasProperty(value, 'space_id') &&
-    typeof (value as Record<string, unknown>)['id'] === 'string' &&
-    typeof (value as Record<string, unknown>)['title'] === 'string' &&
-    typeof (value as Record<string, unknown>)['space_id'] === 'string'
-  );
-}
-
 // Complete profile validation
 export function isCompleteProfile(value: unknown): value is Record<string, unknown> & {
   id: string;

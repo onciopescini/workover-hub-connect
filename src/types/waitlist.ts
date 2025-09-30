@@ -7,7 +7,5 @@ export type WaitlistUpdate = Database["public"]["Tables"]["waitlists"]["Update"]
 
 export interface WaitlistWithDetails extends Waitlist {
   space_title?: string;
-  event_title?: string;
   host_name?: string;
-  event_date?: string;
 }
