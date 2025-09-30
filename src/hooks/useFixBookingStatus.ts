@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useFixBookingStatus = () => {
   const [isFixing, setIsFixing] = useState(false);
@@ -10,7 +11,7 @@ export const useFixBookingStatus = () => {
     setIsFixing(true);
     
     try {
-      console.log('🔧 Fixing booking status for:', bookingId);
+      sreLogger.debug('Fixing booking status', { bookingId });
       
       // Get booking details
       const { data: booking, error: bookingError } = await supabase
@@ -77,7 +78,7 @@ export const useFixBookingStatus = () => {
         return false;
       }
     } catch (error) {
-      console.error('Error fixing booking status:', error);
+      sreLogger.error('Error fixing booking status', { bookingId }, error as Error);
       toast.error('Errore nella correzione dello stato della prenotazione');
       return false;
     } finally {

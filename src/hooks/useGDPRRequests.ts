@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface GDPRRequest {
   id: string;
@@ -46,7 +47,7 @@ export const useGDPRRequests = () => {
       
       setRequests(typedRequests);
     } catch (error) {
-      console.error('Error fetching GDPR requests:', error);
+      sreLogger.error('Error fetching GDPR requests', {}, error as Error);
       toast.error('Errore nel caricamento delle richieste');
     } finally {
       setIsLoading(false);
@@ -94,7 +95,7 @@ export const useGDPRRequests = () => {
       return true;
 
     } catch (error) {
-      console.error('Error starting instant export:', error);
+      sreLogger.error('Error starting instant export', {}, error as Error);
       const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
       onError?.(errorMessage);
       toast.error(`Errore durante l'esportazione: ${errorMessage}`);
@@ -138,7 +139,7 @@ export const useGDPRRequests = () => {
       await fetchRequests();
       return true;
     } catch (error) {
-      console.error('Error submitting deletion request:', error);
+      sreLogger.error('Error submitting deletion request', {}, error as Error);
       toast.error('Errore nell\'invio della richiesta');
       return false;
     }

@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface GeocodeResult {
   place_name: string;
@@ -43,7 +44,7 @@ export const useMapboxGeocoding = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore nella geocodifica';
       setError(errorMessage);
-      console.error('Geocoding error:', err);
+      sreLogger.error('Geocoding error', {}, err as Error);
       return [];
     } finally {
       setIsLoading(false);
@@ -74,7 +75,7 @@ export const useMapboxGeocoding = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore nel reverse geocoding';
       setError(errorMessage);
-      console.error('Reverse geocoding error:', err);
+      sreLogger.error('Reverse geocoding error', {}, err as Error);
       return 'Posizione sconosciuta';
     } finally {
       setIsLoading(false);

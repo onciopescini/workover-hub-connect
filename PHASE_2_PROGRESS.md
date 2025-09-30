@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 113/674 (16.8%)
-- **Files cleaned**: 28/134 (20.9%)
+- **Console statements cleaned**: 128/674 (19.0%)
+- **Files cleaned**: 33/134 (24.6%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 113/674 (16.8%)
+- **ESLint warnings resolved**: 128/674 (19.0%)
 
 ---
 
@@ -305,10 +305,66 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 8 (More Hooks) Complete  
-**Next Update**: After Batch 9 completion
+**Last Updated**: 2025-09-30 - Batch 9 (Networking & GDPR Hooks) Complete  
+**Next Update**: After Batch 10 completion
 
 ---
+
+## Batch 9: Networking & GDPR Hooks Cleanup (5 files, 15 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/useFixBookingStatus.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (1 console.log, 1 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.log with sreLogger.debug for booking status fix
+     - Replaced console.error in error handler with proper context
+     - Added bookingId context to error logs
+
+2. ✅ **src/hooks/useGDPRRequests.ts**
+   - Status: Complete
+   - Console statements replaced: 3 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetch GDPR requests error
+     - Replaced console.error for instant export error
+     - Replaced console.error for deletion request error
+     - All errors properly typed with Error cast
+
+3. ✅ **src/hooks/useHealthCheck.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error in health check failure handler
+     - Error properly typed with Error cast
+
+4. ✅ **src/hooks/useMapboxGeocoding.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for geocoding error
+     - Replaced console.error for reverse geocoding error
+     - All errors properly typed with Error cast
+
+5. ✅ **src/hooks/useMessagesData.ts**
+   - Status: Complete
+   - Console statements replaced: 7 (2 console.warn, 2 console.log, 3 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.warn for last message fetch errors (with bookingId context)
+     - Replaced console.warn for unread messages fetch errors (with bookingId context)
+     - Replaced console.error for conversations fetch error
+     - Replaced console.error for invalid UUID format (with context)
+     - Replaced console.log with sreLogger.debug for fetching messages
+     - Replaced console.error for messages fetch error (with conversationId context)
+     - Replaced console.warn for no conversation selected
+     - Replaced console.error for invalid UUID when sending message
+     - Replaced console.log with sreLogger.debug for sending messages
+     - Replaced console.error for send message error (with type context)
+     - All errors properly typed with Error cast
 
 ## Batch 8: More Hooks Cleanup (5 files, 14 console.*)
 

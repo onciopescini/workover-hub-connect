@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
@@ -33,7 +34,7 @@ export const useHealthCheck = (intervalMs = 60000) => {
           responseTime: data.metrics?.responseTime
         });
       } catch (error) {
-        console.error('[HealthCheck] Failed:', error);
+        sreLogger.error('HealthCheck failed', {}, error as Error);
         setHealth(prev => ({
           ...prev,
           status: 'unhealthy',

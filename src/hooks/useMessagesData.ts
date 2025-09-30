@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage, sendMessage, fetchMessages as fetchBookingMessages } from "@/lib/messaging-utils";
 import { ConversationItem } from "@/types/messaging";
 import { isValidMessageWithSender } from "@/types/strict-type-guards";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface PrivateMessage {
   sender?: { first_name: string; last_name: string; profile_photo_url?: string };
@@ -122,7 +123,7 @@ export const useMessagesData = (activeTab: string) => {
                 .maybeSingle();
 
               if (lastMsgError) {
-                console.warn('Error fetching last message for booking', booking.id, lastMsgError);
+                sreLogger.warn('Error fetching last message for booking', { bookingId: booking.id }, lastMsgError);
               }
 
               const { data: unreadMessages, error: unreadError } = await supabase
@@ -133,7 +134,7 @@ export const useMessagesData = (activeTab: string) => {
                 .eq('is_read', false);
 
               if (unreadError) {
-                console.warn('Error fetching unread messages for booking', booking.id, unreadError);
+                sreLogger.warn('Error fetching unread messages for booking', { bookingId: booking.id }, unreadError);
               }
               
               return {
@@ -193,7 +194,7 @@ export const useMessagesData = (activeTab: string) => {
           );
         }
       } catch (error) {
-        console.error("Error fetching conversations:", error);
+        sreLogger.error("Error fetching conversations", {}, error as Error);
       } finally {
         setIsLoading(false);
       }
@@ -216,18 +217,18 @@ export const useMessagesData = (activeTab: string) => {
         // Validate UUID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(id)) {
-          console.error('Invalid UUID format:', id, 'from conversation ID:', selectedConversationId);
+          sreLogger.error('Invalid UUID format', { id, conversationId: selectedConversationId });
           return;
         }
         
         let fetchedMessages: Array<Record<string, unknown>> = [];
 
         if (type === 'booking') {
-          console.log('Fetching booking messages for ID:', id);
+          sreLogger.debug('Fetching booking messages', { id });
           const bookingMessages = await fetchBookingMessages(id);
           fetchedMessages = bookingMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         } else if (type === 'private') {
-          console.log('Fetching private messages for ID:', id);
+          sreLogger.debug('Fetching private messages', { id });
           const privateMessages = await getPrivateMessages(id);
           fetchedMessages = privateMessages.map(msg => ({ ...msg } as Record<string, unknown>));
         }
@@ -245,7 +246,7 @@ export const useMessagesData = (activeTab: string) => {
           };
         }));
       } catch (error) {
-        console.error("Error fetching messages for conversation:", selectedConversationId, error);
+        sreLogger.error("Error fetching messages for conversation", { conversationId: selectedConversationId }, error as Error);
         setMessages([]);
       }
     };
@@ -287,7 +288,7 @@ export const useMessagesData = (activeTab: string) => {
 
   const handleSendMessage = async (content: string, attachments?: File[]) => {
     if (!selectedConversationId) {
-      console.warn('No conversation selected');
+      sreLogger.warn('No conversation selected');
       return;
     }
 
@@ -298,12 +299,12 @@ export const useMessagesData = (activeTab: string) => {
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      console.error('Invalid UUID format when sending message:', id);
+      sreLogger.error('Invalid UUID format when sending message', { id });
       throw new Error('Invalid conversation ID format');
     }
     
     try {
-      console.log(`Sending ${type} message to ID:`, id);
+      sreLogger.debug(`Sending ${type} message`, { id });
       
       if (type === 'private') {
         await sendPrivateMessage(id, content);
@@ -313,7 +314,7 @@ export const useMessagesData = (activeTab: string) => {
       
       // Refresh messages would trigger the useEffect above
     } catch (error) {
-      console.error(`Error sending ${type} message:`, error);
+      sreLogger.error(`Error sending ${type} message`, { type }, error as Error);
       throw error;
     }
   };
