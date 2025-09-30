@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 export async function getOrCreateConversation(params: {
   hostId: string;
@@ -8,7 +9,7 @@ export async function getOrCreateConversation(params: {
 }): Promise<string> {
   const { hostId, coworkerId, spaceId, bookingId } = params;
   
-  console.log('[getOrCreateConversation] Creating conversation with params:', params);
+  sreLogger.info('Creating conversation', { hostId, coworkerId, spaceId, bookingId });
   
   const { data, error } = await supabase.rpc('get_or_create_conversation', {
     p_host_id: hostId,
@@ -18,11 +19,11 @@ export async function getOrCreateConversation(params: {
   });
   
   if (error || !data) {
-    console.error('[getOrCreateConversation] error', error);
+    sreLogger.error('getOrCreateConversation error', { params }, error as Error | undefined);
     throw new Error(error?.message || 'Unable to create conversation');
   }
   
-  console.log('[getOrCreateConversation] Created/found conversation:', data);
+  sreLogger.info('Created/found conversation', { conversationId: data });
   return data as string;
 }
 
@@ -34,7 +35,7 @@ export async function sendMessageToConversation(params: {
 }) {
   const { conversationId, bookingId, content, senderId } = params;
   
-  console.log('[sendMessageToConversation] Sending message with params:', params);
+  sreLogger.info('Sending message', { conversationId, bookingId, senderId });
   
   const messageData: any = {
     conversation_id: conversationId,
@@ -54,16 +55,16 @@ export async function sendMessageToConversation(params: {
     .single();
 
   if (error) {
-    console.error('[sendMessageToConversation] error', error);
+    sreLogger.error('sendMessageToConversation error', { conversationId }, error as Error);
     throw new Error(error.message);
   }
   
-  console.log('[sendMessageToConversation] Message sent:', data);
+  sreLogger.info('Message sent', { messageId: data.id });
   return data;
 }
 
 export async function fetchConversations(userId: string) {
-  console.log('[fetchConversations] Fetching conversations for user:', userId);
+  sreLogger.info('Fetching conversations', { userId });
   
   const { data, error } = await supabase
     .from('conversations')
@@ -79,16 +80,16 @@ export async function fetchConversations(userId: string) {
     .limit(50);
     
   if (error) {
-    console.error('[fetchConversations] error', error);
+    sreLogger.error('fetchConversations error', { userId }, error as Error);
     throw new Error(error.message);
   }
   
-  console.log('[fetchConversations] Found conversations:', data?.length || 0);
+  sreLogger.info('Found conversations', { userId, count: data?.length || 0 });
   return data || [];
 }
 
 export async function fetchConversationMessages(conversationId: string) {
-  console.log('[fetchConversationMessages] Fetching messages for conversation:', conversationId);
+  sreLogger.info('Fetching conversation messages', { conversationId });
   
   const { data, error } = await supabase
     .from('messages')
@@ -100,10 +101,10 @@ export async function fetchConversationMessages(conversationId: string) {
     .order('created_at', { ascending: true });
     
   if (error) {
-    console.error('[fetchConversationMessages] error', error);
+    sreLogger.error('fetchConversationMessages error', { conversationId }, error as Error);
     throw new Error(error.message);
   }
   
-  console.log('[fetchConversationMessages] Found messages:', data?.length || 0);
+  sreLogger.info('Found messages', { conversationId, count: data?.length || 0 });
   return data || [];
 }

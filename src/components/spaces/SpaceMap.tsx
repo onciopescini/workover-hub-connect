@@ -6,6 +6,7 @@ import { Space } from '@/types/space';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceMapPreview } from './SpaceMapPreview';
 import { createRoot } from 'react-dom/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -59,7 +60,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) {
-          console.error('Error fetching Mapbox token:', error);
+          sreLogger.error('Error fetching Mapbox token', {}, error);
           setError('Impossibile caricare la mappa');
           return;
         }
@@ -70,7 +71,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           setError('Token Mapbox non configurato');
         }
       } catch (err) {
-        console.error('Error fetching Mapbox token:', err);
+        sreLogger.error('Error fetching Mapbox token', {}, err as Error);
         setError('Errore nel caricamento della mappa');
       } finally {
         setIsLoadingToken(false);
@@ -96,14 +97,14 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     const container = mapContainer.current;
     const containerRect = container.getBoundingClientRect();
     
-    console.log('🗺️ Initializing Mapbox map', { 
+    sreLogger.debug('Initializing Mapbox map', { 
       hasToken: !!mapboxToken,
       containerSize: { width: containerRect.width, height: containerRect.height }
     });
     
     // Verifica dimensioni container
     if (containerRect.width === 0 || containerRect.height === 0) {
-      console.warn('⚠️ Map container has zero dimensions:', containerRect);
+      sreLogger.warn('Map container has zero dimensions', { containerRect });
       setError('Contenitore mappa non visibile');
       return;
     }
@@ -125,7 +126,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
       // Handle map events
       map.current.on('load', () => {
-        console.log('✅ Map loaded successfully');
+        sreLogger.debug('Map loaded successfully');
         setMapReady(true);
         setError(null);
         
@@ -133,13 +134,13 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         setTimeout(() => {
           if (map.current && mapContainer.current) {
             map.current.resize();
-            console.log('🔄 Map resized after load');
+            sreLogger.debug('Map resized after load');
           }
         }, 100);
       });
 
       map.current.on('error', (e) => {
-        console.error('❌ Map error:', e.error);
+        sreLogger.error('Map error', { error: e.error });
         setError('Errore nel caricamento della mappa');
       });
 
@@ -150,12 +151,12 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       });
 
     } catch (error) {
-      console.error('❌ Error initializing map:', error);
+      sreLogger.error('Error initializing map', {}, error as Error);
       setError('Errore nell\'inizializzazione della mappa');
     }
 
     return () => {
-      console.log('🧹 Cleaning up map');
+      sreLogger.debug('Cleaning up map');
       if (map.current) {
         setMapReady(false);
         map.current.remove();
@@ -182,14 +183,14 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           setContainerSize(prevSize => {
             // Only update if size actually changed
             if (prevSize.width !== width || prevSize.height !== height) {
-              console.log('📐 Container resized:', { width, height });
+              sreLogger.debug('Container resized', { width, height });
               
               if (map.current && mapReady && width > 0 && height > 0) {
                 try {
                   map.current.resize();
-                  console.log('🔄 Map resize triggered');
+                  sreLogger.debug('Map resize triggered');
                 } catch (error) {
-                  console.warn('Map resize failed:', error);
+                  sreLogger.warn('Map resize failed', {}, error as Error);
                 }
               }
               return { width, height };
@@ -225,7 +226,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         zoom: 11,
         essential: true
       });
-      console.log('🎯 Map center updated to user location');
+      sreLogger.debug('Map center updated to user location');
     }
   }, [userLocation, mapReady]);
 
@@ -306,7 +307,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
               });
             }
           } catch (error) {
-            console.error('Error creating popup:', error);
+            sreLogger.error('Error creating popup', { spaceId: space.id }, error as Error);
           }
         });
 
@@ -318,7 +319,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           markers.current[space.id] = marker;
         }
       } catch (error) {
-        console.error('Failed to add marker for space:', error);
+        sreLogger.error('Failed to add marker for space', { spaceId: space.id }, error as Error);
       }
     });
   }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId]);
@@ -351,7 +352,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         )
         .addTo(map.current);
     } catch (error) {
-      console.error('Error adding user location marker:', error);
+      sreLogger.error('Error adding user location marker', { userLocation }, error as Error);
     }
   }, [userLocation, mapReady]);
 

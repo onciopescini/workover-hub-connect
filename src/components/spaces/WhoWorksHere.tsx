@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { useNetworking } from "@/hooks/useNetworking";
 import { sendConnectionRequest, createOrGetPrivateChat } from "@/lib/networking-utils";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface CoworkerProfile {
   id: string;
@@ -115,7 +116,7 @@ export function WhoWorksHere({ spaceId, className = "" }: WhoWorksHereProps) {
 
       setCoworkers(coworkersList);
     } catch (error) {
-      console.error('Error fetching coworkers:', error);
+      sreLogger.error('Error fetching coworkers', { spaceId }, error as Error);
       toast.error('Errore nel caricamento dei coworker');
     } finally {
       setIsLoading(false);
@@ -131,7 +132,7 @@ export function WhoWorksHere({ spaceId, className = "" }: WhoWorksHereProps) {
         toast.success('Richiesta di connessione inviata!');
       }
     } catch (error) {
-      console.error('Error sending connection request:', error);
+      sreLogger.error('Error sending connection request', { userId }, error as Error);
       toast.error('Errore nell\'invio della richiesta');
     } finally {
       setSendingRequests(prev => {
@@ -152,7 +153,7 @@ export function WhoWorksHere({ spaceId, className = "" }: WhoWorksHereProps) {
         toast.error("Impossibile avviare la chat");
       }
     } catch (error) {
-      console.error('Error starting chat:', error);
+      sreLogger.error('Error starting chat', { userId }, error as Error);
       toast.error("Errore nell'avvio della chat");
     } finally {
       setStartingChats(prev => {

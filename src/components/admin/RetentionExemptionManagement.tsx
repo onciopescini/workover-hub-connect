@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Shield, ShieldOff, Search, UserCheck, Users, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ProfileWithExemption {
   id: string;
@@ -42,7 +43,7 @@ export const RetentionExemptionManagement = () => {
       if (error) throw error;
       setProfiles((data || []) as ProfileWithExemption[]);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      sreLogger.error('Error fetching profiles', {}, error as Error);
       toast.error("Errore nel caricamento dei profili");
     } finally {
       setIsLoading(false);
@@ -73,7 +74,7 @@ export const RetentionExemptionManagement = () => {
       toast.success(!currentExempt ? "Esenzione concessa" : "Esenzione revocata");
       fetchProfiles();
     } catch (error) {
-      console.error("Error toggling exemption:", error);
+      sreLogger.error('Error toggling exemption', { profileId, currentExempt }, error as Error);
       toast.error("Errore nell'aggiornamento dell'esenzione");
     }
   };
