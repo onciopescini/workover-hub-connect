@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ErrorHandler } from "../shared/error-handler.ts";
@@ -7,11 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const supabaseAdmin = createClient(
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-  Deno.env.get('SERVICE_ROLE_KEY')!
-);
 
 interface ProfileRequest {
   user_id: string;
@@ -24,10 +18,27 @@ interface ProfileRequest {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight before initializing anything
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders, status: 200 });
   }
 
+  // Initialize Supabase admin client after CORS check
+  const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    ErrorHandler.logError('Missing environment variables', new Error('NEXT_PUBLIC_SUPABASE_URL or SERVICE_ROLE_KEY not set'));
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error' }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
   let user_id, email, first_name, last_name, role, bio, linkedin_url;
 
   try {

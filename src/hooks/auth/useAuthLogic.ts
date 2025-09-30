@@ -77,8 +77,29 @@ export const useAuthLogic = () => {
             });
 
             if (createErr) {
-              // Silenziosamente logga, ma non bloccare
               debug('create-profile error', { error: createErr });
+              
+              // Fallback: prova inserimento diretto se edge function fallisce
+              try {
+                const { data: insertedProfile, error: insertErr } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: session.user.id,
+                    first_name: firstName,
+                    last_name: lastName,
+                    role: 'coworker',
+                    onboarding_completed: false,
+                  })
+                  .select()
+                  .single();
+                
+                if (!insertErr && insertedProfile) {
+                  profile = insertedProfile as Profile;
+                  debug('Profile created via direct insert fallback');
+                }
+              } catch (fallbackErr) {
+                debug('Direct profile insert fallback also failed', { error: fallbackErr });
+              }
             } else if (created?.profile) {
               profile = created.profile as Profile;
             }

@@ -19,7 +19,7 @@ export const useProfileCache = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         logError('Error fetching profile from database', error as Error, {
