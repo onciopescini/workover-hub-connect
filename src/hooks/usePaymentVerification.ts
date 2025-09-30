@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validatePayment } from '@/lib/payment-utils';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface PaymentVerificationResult {
   isLoading: boolean;
@@ -27,7 +28,7 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
       setError(null);
 
       try {
-        console.log('🔵 Verifying payment for session:', sessionId);
+        sreLogger.debug('Verifying payment', { sessionId });
 
         // Call the validate-payment function
         const { data, error: functionError } = await supabase.functions.invoke('validate-payment', {
@@ -38,7 +39,7 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
           throw new Error(functionError.message || 'Payment verification failed');
         }
 
-        console.log('🔵 Payment verification result:', data);
+        sreLogger.debug('Payment verification result', { success: data?.success, bookingId: data?.booking_id });
 
         if (data?.success) {
           setIsSuccess(true);
@@ -53,13 +54,13 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
             duration: 5000
           });
 
-          console.log('🔵 Booking queries invalidated - UI should refresh automatically');
+          sreLogger.info('Booking queries invalidated', { bookingId: data.booking_id });
         } else {
           throw new Error('Payment verification failed');
         }
 
       } catch (err: unknown) {
-        console.error('🔴 Error verifying payment:', err);
+        sreLogger.error('Error verifying payment', { sessionId }, err as Error);
         setError(err instanceof Error ? err.message : 'Errore nella verifica del pagamento');
         toast.error('Errore nella verifica del pagamento. Contatta il supporto se il problema persiste.');
       } finally {

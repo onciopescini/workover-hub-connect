@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { startImageOptimization } from "@/lib/image-optimization";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UsePhotoUploadManagerProps {
   photoFiles: File[];
@@ -60,7 +61,7 @@ export const usePhotoUploadManager = ({
             });
 
           if (error) {
-            console.error("Upload error:", error);
+            sreLogger.error('Upload error', { fileName }, error);
             continue;
           }
 
@@ -76,9 +77,9 @@ export const usePhotoUploadManager = ({
             );
             
             newProcessingJobs.push(optimizationJobId);
-            console.log('Started optimization job:', optimizationJobId);
+            sreLogger.info('Started optimization job', { optimizationJobId, fileName });
           } catch (optimizationError) {
-            console.warn('Failed to start optimization:', optimizationError);
+            sreLogger.warn('Failed to start optimization', { fileName }, optimizationError as Error);
           }
 
           const urlIndex = newPreviewUrls.indexOf(previewUrl);
@@ -87,7 +88,7 @@ export const usePhotoUploadManager = ({
             URL.revokeObjectURL(previewUrl);
           }
         } catch (error) {
-          console.error("Error processing file:", file.name, error);
+          sreLogger.error('Error processing file', { fileName: file.name }, error as Error);
         }
       }
       
@@ -96,7 +97,7 @@ export const usePhotoUploadManager = ({
       onProcessingJobsChange([...processingJobs, ...newProcessingJobs]);
       
     } catch (error) {
-      console.error("Error uploading photos:", error);
+      sreLogger.error('Error uploading photos', {}, error as Error);
       toast.error("Errore nel caricamento delle foto");
     } finally {
       onUploadingChange(false);

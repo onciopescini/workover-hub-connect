@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 149/674 (22.1%)
-- **Files cleaned**: 38/134 (28.4%)
+- **Console statements cleaned**: 163/674 (24.2%)
+- **Files cleaned**: 43/134 (32.1%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 149/674 (22.1%)
+- **ESLint warnings resolved**: 163/674 (24.2%)
 
 ---
 
@@ -305,10 +305,63 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 10 (Networking & Utils Hooks) Complete  
-**Next Update**: After Batch 11 completion
+**Last Updated**: 2025-09-30 - Batch 11 (Payment, Photo & Profile Hooks) Complete  
+**Next Update**: After Batch 12 completion
 
 ---
+
+## Batch 11: Payment, Photo & Profile Hooks Cleanup (5 files, 14 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/usePaymentVerification.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (3 console.log, 1 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.log with sreLogger.debug for payment verification (with sessionId context)
+     - Replaced console.log with sreLogger.debug for payment result
+     - Replaced console.log with sreLogger.info for booking queries invalidation
+     - Replaced console.error in catch block with sreLogger.error (with sessionId context)
+     - All errors properly typed with Error cast
+
+2. ✅ **src/hooks/usePhotoUploadManager.ts**
+   - Status: Complete
+   - Console statements replaced: 5 (3 console.error, 1 console.log, 1 console.warn)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for upload error (with fileName context)
+     - Replaced console.log with sreLogger.info for optimization job start (with optimizationJobId and fileName)
+     - Replaced console.warn with sreLogger.warn for optimization failure (with fileName context)
+     - Replaced console.error for file processing error (with fileName context)
+     - Replaced console.error for photos upload error
+     - All errors properly typed with Error cast
+
+3. ✅ **src/hooks/useProfile.ts**
+   - Status: Complete
+   - Console statements replaced: 3 (2 console.log, 1 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.log with sreLogger.debug for refresh debounce
+     - Replaced console.log with sreLogger.info for profile refresh success
+     - Replaced console.error with sreLogger.error for profile refresh error
+     - All errors properly typed with Error cast
+
+4. ✅ **src/hooks/useProfileAccess.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for checking profile access error (with userId context)
+     - Replaced console.error for fetching profile error (with userId context)
+     - All errors properly typed with Error cast
+
+5. ✅ **src/hooks/useProfileForm.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for profile update error
+     - Error properly typed with Error cast
 
 ## Batch 10: Networking & Utils Hooks Cleanup (5 files, 21 console.*)
 

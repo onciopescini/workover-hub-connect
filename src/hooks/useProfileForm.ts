@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface ProfileFormData {
   // Basic Info
@@ -93,7 +94,7 @@ export const useProfileForm = () => {
       await updateProfile(formData);
       toast.success("Profilo aggiornato con successo");
     } catch (error) {
-      console.error("Error updating profile:", error);
+      sreLogger.error('Error updating profile', {}, error as Error);
       toast.error("Errore nell'aggiornamento del profilo");
     } finally {
       setIsLoading(false);

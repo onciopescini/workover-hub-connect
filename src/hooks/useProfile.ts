@@ -1,6 +1,7 @@
 
 import { useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useProfile = () => {
   const { authState, refreshProfile } = useAuth();
@@ -18,7 +19,7 @@ export const useProfile = () => {
     // Add stronger debounce - don't refresh if last refresh was less than 10 seconds ago
     const now = Date.now();
     if (now - lastRefreshTimeRef.current < 10000) {
-      console.log('[useProfile] Refresh debounced - too soon after last refresh');
+      sreLogger.debug('Refresh debounced - too soon after last refresh');
       return;
     }
     
@@ -35,11 +36,11 @@ export const useProfile = () => {
       
       // Only log success once per session to prevent spam
       if (!hasLoggedSuccessRef.current) {
-        console.log('[useProfile] Profile refreshed successfully');
+        sreLogger.info('Profile refreshed successfully');
         hasLoggedSuccessRef.current = true;
       }
     } catch (error) {
-      console.error('[useProfile] Error refreshing profile:', error);
+      sreLogger.error('Error refreshing profile', {}, error as Error);
     } finally {
       // Reset flag after longer delay to prevent rapid successive calls
       refreshTimeoutRef.current = setTimeout(() => {

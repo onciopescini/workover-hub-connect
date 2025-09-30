@@ -8,6 +8,7 @@ import {
   ProfileAccessResult 
 } from "@/lib/profile-access-utils";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UseProfileAccessProps {
   userId: string;
@@ -41,7 +42,7 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
         }
       }
     } catch (err: unknown) {
-      console.error('Error checking profile access:', err);
+      sreLogger.error('Error checking profile access', { userId }, err as Error);
       setError(err instanceof Error ? err.message : 'Errore nella verifica dell\'accesso');
     } finally {
       setIsLoading(false);
@@ -71,7 +72,7 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
         }
       }
     } catch (err: unknown) {
-      console.error('Error fetching profile:', err);
+      sreLogger.error('Error fetching profile', { userId }, err as Error);
       setError(err instanceof Error ? err.message : 'Errore nel recupero del profilo');
     } finally {
       setIsLoading(false);
