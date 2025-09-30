@@ -194,6 +194,48 @@ export type Database = {
           },
         ]
       }
+      availability_cache: {
+        Row: {
+          cache_key: string
+          created_at: string | null
+          data: Json
+          expires_at: string
+          id: string
+          space_id: string | null
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string | null
+          data: Json
+          expires_at: string
+          id?: string
+          space_id?: string | null
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string | null
+          data?: Json
+          expires_at?: string
+          id?: string
+          space_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_cache_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_cache_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_reviews: {
         Row: {
           author_id: string
@@ -1395,6 +1437,41 @@ export type Database = {
           },
         ]
       }
+      performance_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       private_chats: {
         Row: {
           created_at: string | null
@@ -2010,6 +2087,41 @@ export type Database = {
           },
         ]
       }
+      user_session_state: {
+        Row: {
+          expires_at: string
+          id: string
+          session_data: Json
+          session_key: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          session_data: Json
+          session_key: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          session_data?: Json
+          session_key?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waitlists: {
         Row: {
           created_at: string | null
@@ -2235,6 +2347,10 @@ export type Database = {
         Args: { p_action: string; p_identifier: string }
         Returns: Json
       }
+      cleanup_expired_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_expired_gdpr_exports: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2276,6 +2392,10 @@ export type Database = {
       generate_connection_suggestions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_aggregated_metrics: {
+        Args: { metric_type_param: string; time_window_hours?: number }
+        Returns: Json
       }
       get_alternative_time_slots: {
         Args: {
