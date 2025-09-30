@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EnhancedMessageComposer } from "./EnhancedMessageComposer";
 import { EnhancedMessageBubble } from "./EnhancedMessageBubble";
-import { VirtualizedMessageList } from "./VirtualizedMessageList";
 import { Search, MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { ConversationItem } from "@/types/messaging";
 
@@ -89,7 +88,8 @@ export const MessagesChatArea = ({
 
       {/* Messages - Flexible height with scrolling */}
       <CardContent className="flex-1 p-0 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-hidden">
+        {/* Message Area - Scrollable */}
+        <ScrollArea className="flex-1 min-h-0">
           {messages.length === 0 ? (
             <div className="text-center py-8 sm:py-12 text-muted-foreground p-4">
               <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground/30" />
@@ -97,13 +97,33 @@ export const MessagesChatArea = ({
               <p className="text-sm">Inizia la conversazione!</p>
             </div>
           ) : (
-            <VirtualizedMessageList 
-              messages={messages}
-              height={400}
-              selectedConversation={selectedConversation}
-            />
+            <div className="p-4">
+              <div className="space-y-4">
+                {messages.map((message, index) => (
+                  <EnhancedMessageBubble
+                    key={(message['id'] as string) || `msg-${index}`}
+                    id={(message['id'] as string) || `msg-${index}`}
+                    content={message['content'] as string}
+                    senderName={message['senderName'] as string}
+                    senderAvatar={message['senderAvatar'] as string}
+                    timestamp={message['created_at'] as string}
+                    isCurrentUser={message['isCurrentUser'] as boolean}
+                    isRead={message['is_read'] as boolean}
+                    attachments={message['attachments'] as any[] || []}
+                    businessContext={
+                      selectedConversation.id.startsWith('booking-') ? {
+                        type: 'booking' as const,
+                        details: selectedConversation.subtitle
+                      } : {
+                        type: 'general' as const
+                      }
+                    }
+                  />
+                ))}
+              </div>
+            </div>
           )}
-        </div>
+        </ScrollArea>
 
         {/* Message Composer - Fixed at bottom */}
         <div className="flex-shrink-0 border-t">
