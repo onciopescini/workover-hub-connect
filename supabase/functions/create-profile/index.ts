@@ -52,16 +52,22 @@ serve(async (req) => {
       linkedin_url 
     } = await req.json() as ProfileRequest);
 
+    // Validate required fields (only user_id and email are mandatory)
+    if (!user_id || !email) {
+      throw new Error('Missing required fields: user_id, email');
+    }
+
+    // Provide fallbacks for first_name and last_name
+    const finalFirstName = first_name || email.split('@')[0];
+    const finalLastName = last_name || '';
+
     ErrorHandler.logInfo('Creating profile for user', {
       user_id,
       email,
-      role
+      role,
+      first_name: finalFirstName,
+      last_name: finalLastName
     });
-
-    // Validate required fields
-    if (!user_id || !email || !first_name || !last_name) {
-      throw new Error('Missing required fields: user_id, email, first_name, last_name');
-    }
 
     // Check if profile already exists
     const { data: existingProfile } = await supabaseAdmin
@@ -78,8 +84,8 @@ serve(async (req) => {
       const { data: updatedProfile, error: updateError } = await supabaseAdmin
         .from('profiles')
         .update({
-          first_name,
-          last_name,
+          first_name: finalFirstName,
+          last_name: finalLastName,
           role,
           bio,
           linkedin_url,
@@ -108,8 +114,8 @@ serve(async (req) => {
       .from('profiles')
       .insert({
         id: user_id,
-        first_name,
-        last_name,
+        first_name: finalFirstName,
+        last_name: finalLastName,
         role,
         bio,
         linkedin_url,
@@ -136,7 +142,7 @@ serve(async (req) => {
           type: 'welcome',
           to: email,
           data: {
-            firstName: first_name,
+            firstName: finalFirstName,
             dashboardUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.app'}/dashboard`
           }
         }

@@ -35,7 +35,6 @@ export const getSkipRedirectPaths = (): string[] => [
   '/login', 
   '/register', 
   '/auth/callback', 
-  '/', 
   '/onboarding'
 ];
 
