@@ -1,3 +1,5 @@
+import { appConfig } from '@/config/app.config';
+
 export interface PricingInput {
   durationHours: number;
   pricePerHour: number;
@@ -39,11 +41,11 @@ export function computePricing(input: PricingInput): PricingOutput {
 
 // Environment variable helpers
 export function getServiceFeePct(): number {
-  return Number(import.meta.env['VITE_SERVICE_FEE_PCT']) || 0.12;
+  return appConfig.pricing.serviceFeePct;
 }
 
 export function getDefaultVatPct(): number {
-  return Number(import.meta.env['VITE_DEFAULT_VAT_PCT']) || 0.22;
+  return appConfig.pricing.defaultVatPct;
 }
 
 export function isStripeTaxEnabled(): boolean {
@@ -52,5 +54,5 @@ export function isStripeTaxEnabled(): boolean {
     if (override === 'true') return true;
     if (override === 'false') return false;
   }
-  return import.meta.env['ENABLE_STRIPE_TAX'] === 'true';
+  return appConfig.features.stripeTax;
 }

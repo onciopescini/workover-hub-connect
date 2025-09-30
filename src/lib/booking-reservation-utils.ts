@@ -4,6 +4,7 @@ import { createUtcIsoString, nowUtc } from "@/lib/date-utils";
 import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Type guard per validare SlotReservationResult
 function isSlotReservationResult(data: unknown): data is SlotReservationResult {
@@ -33,7 +34,9 @@ export const reserveBookingSlot = async (
   guestsCount: number = 1
 ): Promise<SlotReservationResult | null> => {
   try {
-    console.log('🔵 reserveBookingSlot - Starting reservation:', {
+    sreLogger.info('Starting booking reservation', {
+      component: 'booking-reservation-utils',
+      action: 'reserve_slot',
       spaceId,
       date,
       startTime,
@@ -43,12 +46,19 @@ export const reserveBookingSlot = async (
 
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
-      console.error('🔴 reserveBookingSlot - User not authenticated');
+      sreLogger.warn('User not authenticated for booking', {
+        component: 'booking-reservation-utils',
+        action: 'reserve_slot'
+      });
       toast.error("Devi essere autenticato per prenotare");
       return null;
     }
 
-    console.log('🔵 reserveBookingSlot - Calling validate_and_reserve_slot RPC');
+    sreLogger.info('Calling validate_and_reserve_slot RPC', {
+      component: 'booking-reservation-utils',
+      action: 'rpc_call',
+      spaceId
+    });
 
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', {
       space_id_param: spaceId,
@@ -61,7 +71,12 @@ export const reserveBookingSlot = async (
     } as any);
 
     if (error) {
-      console.error('🔴 reserveBookingSlot - RPC error:', error);
+      sreLogger.error('RPC error during slot reservation', {
+        component: 'booking-reservation-utils',
+        action: 'rpc_error',
+        spaceId,
+        date
+      }, error instanceof Error ? error : new Error(String(error)));
       
       // Provide more specific error messages
       let errorMessage = "Errore nella prenotazione dello slot";
@@ -77,26 +92,45 @@ export const reserveBookingSlot = async (
       return null;
     }
 
-    console.log('🔵 reserveBookingSlot - RPC response:', data);
+    sreLogger.info('RPC response received', {
+      component: 'booking-reservation-utils',
+      action: 'rpc_success',
+      hasData: !!data
+    });
 
     // Valida la struttura della risposta con il type guard
     if (!isSlotReservationResult(data)) {
-      console.error('🔴 reserveBookingSlot - Invalid response structure:', data);
+      sreLogger.error('Invalid response structure from RPC', {
+        component: 'booking-reservation-utils',
+        action: 'response_validation',
+        dataType: typeof data
+      }, new Error('Invalid RPC response structure'));
       toast.error("Errore nel formato della risposta del server");
       return null;
     }
 
     if (!data.success) {
-      console.error('🔴 reserveBookingSlot - Reservation failed:', data.error);
+      sreLogger.warn('Reservation failed', {
+        component: 'booking-reservation-utils',
+        action: 'reservation_failed',
+        error: data.error
+      });
       toast.error(data.error || "Errore nella prenotazione");
       return null;
     }
 
-    console.log('✅ reserveBookingSlot - Reservation successful:', data);
+    sreLogger.info('Reservation successful', {
+      component: 'booking-reservation-utils',
+      action: 'reservation_success',
+      bookingId: data.booking_id
+    });
     return data;
 
   } catch (error) {
-    console.error('🔴 reserveBookingSlot - Unexpected error:', error);
+    sreLogger.error('Unexpected error during reservation', {
+      component: 'booking-reservation-utils',
+      action: 'reserve_slot'
+    }, error instanceof Error ? error : new Error(String(error)));
     toast.error("Errore imprevisto nella prenotazione");
     return null;
   }
@@ -111,7 +145,9 @@ export const calculateBookingTotal = (pricePerDay: number, startTime: string, en
     // Assuming 8-hour workday for daily pricing
     const total = Math.round((hours * (pricePerDay / 8)) * 100) / 100;
     
-    console.log('🔵 calculateBookingTotal:', {
+    sreLogger.info('Booking total calculated', {
+      component: 'booking-reservation-utils',
+      action: 'calculate_total',
       pricePerDay,
       startTime,
       endTime,
@@ -121,7 +157,13 @@ export const calculateBookingTotal = (pricePerDay: number, startTime: string, en
     
     return total;
   } catch (error) {
-    console.error('🔴 calculateBookingTotal - Error:', error);
+    sreLogger.error('Error calculating booking total', {
+      component: 'booking-reservation-utils',
+      action: 'calculate_total',
+      pricePerDay,
+      startTime,
+      endTime
+    }, error instanceof Error ? error : new Error(String(error)));
     return 0;
   }
 };
@@ -139,7 +181,11 @@ export const handlePaymentFlow = async (
   try {
     // Guard: check if host has Stripe account
     if (!hostStripeAccountId) {
-      console.error('🔴 handlePaymentFlow - Host not connected to Stripe');
+      sreLogger.error('Host not connected to Stripe', {
+        component: 'booking-reservation-utils',
+        action: 'payment_flow',
+        spaceId
+      }, new Error('HOST_STRIPE_ACCOUNT_MISSING'));
       toast.error('Host non collegato a Stripe', {
         description: 'Impossibile procedere con il pagamento. Contatta il proprietario dello spazio.',
       });
@@ -147,9 +193,12 @@ export const handlePaymentFlow = async (
       return;
     }
 
-    console.log('🔵 handlePaymentFlow payload', {
-      bookingId, spaceId, durationHours, pricePerHour, pricePerDay,
-      host_stripe_account_id: hostStripeAccountId
+    sreLogger.info('Initiating payment flow', {
+      component: 'booking-reservation-utils',
+      action: 'payment_flow',
+      bookingId,
+      spaceId,
+      durationHours
     });
     
     const paymentSession = await createPaymentSession(
@@ -162,14 +211,20 @@ export const handlePaymentFlow = async (
     );
     
     if (!paymentSession) {
-      console.error('🔴 handlePaymentFlow - Failed to create payment session');
+      sreLogger.error('Failed to create payment session', {
+        component: 'booking-reservation-utils',
+        action: 'payment_flow',
+        bookingId
+      }, new Error('Payment session creation failed'));
       onError("Errore nella creazione della sessione di pagamento");
       return;
     }
 
-    console.log('🔵 handlePaymentFlow - Payment session created:', {
+    sreLogger.info('Payment session created', {
+      component: 'booking-reservation-utils',
+      action: 'payment_session_created',
       sessionId: paymentSession.session_id,
-      paymentUrl: paymentSession.url
+      hasUrl: !!paymentSession.url
     });
     
     // Store session ID in booking for tracking
@@ -179,16 +234,29 @@ export const handlePaymentFlow = async (
       .eq('id', bookingId);
 
     if (updateError) {
-      console.warn('⚠️ handlePaymentFlow - Failed to update booking with session ID:', updateError);
+      sreLogger.warn('Failed to update booking with session ID', {
+        component: 'booking-reservation-utils',
+        action: 'update_booking',
+        bookingId,
+        error: updateError.message
+      });
     }
 
-    console.log('🔵 handlePaymentFlow - Redirecting to Stripe:', paymentSession.url);
+    sreLogger.info('Redirecting to Stripe Checkout', {
+      component: 'booking-reservation-utils',
+      action: 'redirect_to_stripe',
+      url: paymentSession.url
+    });
     
     // Redirect to Stripe Checkout
     window.location.href = paymentSession.url;
     
   } catch (error) {
-    console.error('🔴 handlePaymentFlow - Error:', error);
+    sreLogger.error('Error in payment flow', {
+      component: 'booking-reservation-utils',
+      action: 'payment_flow',
+      bookingId
+    }, error instanceof Error ? error : new Error(String(error)));
     onError("Errore nel flusso di pagamento");
   }
 };
@@ -210,13 +278,19 @@ export const getSpacesWithConnectedHosts = async () => {
       .eq('profiles.stripe_connected', true);
 
     if (error) {
-      console.error('Error fetching spaces with connected hosts:', error);
+      sreLogger.error('Error fetching spaces with connected hosts', {
+        component: 'booking-reservation-utils',
+        action: 'fetch_connected_hosts'
+      }, error instanceof Error ? error : new Error(String(error)));
       return [];
     }
 
     return data || [];
   } catch (error) {
-    console.error('Unexpected error fetching spaces:', error);
+    sreLogger.error('Unexpected error fetching spaces', {
+      component: 'booking-reservation-utils',
+      action: 'fetch_connected_hosts'
+    }, error instanceof Error ? error : new Error(String(error)));
     return [];
   }
 };

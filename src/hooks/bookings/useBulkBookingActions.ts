@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { sreLogger } from '@/lib/sre-logger';
 
 type BulkResult = {
   success: string[];
@@ -37,7 +38,11 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
         .select("id");
 
       if (error) {
-        console.error("Error confirming bookings:", error);
+        sreLogger.error('Error confirming bookings', {
+          component: 'useBulkBookingActions',
+          action: 'confirm_multiple',
+          bookingCount: bookingIds.length
+        }, error instanceof Error ? error : new Error(String(error)));
         bookingIds.forEach(id => failed.push({ id, error: error.message }));
       } else {
         const confirmedIds = updatedBookings?.map(b => b.id) || [];
@@ -53,7 +58,10 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
         success.forEach(() => opts?.onAfterEach?.());
       }
     } catch (error: any) {
-      console.error("Bulk confirm error:", error);
+      sreLogger.error('Bulk confirm error', {
+        component: 'useBulkBookingActions',
+        action: 'confirm_multiple'
+      }, error instanceof Error ? error : new Error(String(error)));
       bookingIds.forEach(id => failed.push({ id, error: error.message }));
     }
 
@@ -126,7 +134,10 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
         }
       });
     } catch (error: any) {
-      console.error("Bulk cancel error:", error);
+      sreLogger.error('Bulk cancel error', {
+        component: 'useBulkBookingActions',
+        action: 'cancel_multiple'
+      }, error instanceof Error ? error : new Error(String(error)));
       bookingIds.forEach(id => failed.push({ id, error: error.message }));
     }
 
