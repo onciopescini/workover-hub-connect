@@ -1,5 +1,6 @@
 
 import { useState, useCallback, useRef } from 'react';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface OptimizedLoadingState {
   isLoading: boolean;
@@ -105,7 +106,7 @@ export function useOptimizedLoading(options: UseOptimizedLoadingOptions = {}) {
       setProgress(100);
       return result;
     } catch (error) {
-      console.error('Operation failed:', error);
+      sreLogger.error('Operation failed', {}, error as Error);
       setError(error instanceof Error ? error.message : 'Operazione fallita');
       return null;
     } finally {

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserNotification, NotificationCounts } from '@/types/notification';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useNotifications = () => {
   const { authState } = useAuth();
@@ -27,7 +28,7 @@ export const useNotifications = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching notifications:', error);
+        sreLogger.error('Error fetching notifications', {}, error);
         toast.error('Failed to load notifications');
         return;
       }

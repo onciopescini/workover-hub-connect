@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminUser } from '@/types/admin-user';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useAdminUsers = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -18,7 +19,7 @@ export const useAdminUsers = () => {
         .select('*');
 
       if (error) {
-        console.error('Error fetching users:', error);
+        sreLogger.error('Error fetching users', {}, error);
         toast.error('Failed to fetch users');
         return;
       }
@@ -32,7 +33,7 @@ export const useAdminUsers = () => {
         setUsers(usersWithParsedData);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      sreLogger.error('Error fetching users', {}, error as Error);
       toast.error('Failed to fetch users');
     } finally {
       setIsLoading(false);

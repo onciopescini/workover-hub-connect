@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Connection, ConnectionSuggestion } from "@/types/networking";
 import { User } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UseNetworkingProps {
   initialSuggestions?: ConnectionSuggestion[];
@@ -30,7 +31,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .single();
 
       if (!currentUser?.networking_enabled) {
-        console.log("Current user has networking disabled");
+        sreLogger.debug('Current user has networking disabled');
         setSuggestions([]);
         setIsLoading(false);
         return;
@@ -53,7 +54,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .order('score', { ascending: false });
 
       if (error) {
-        console.error("Error fetching connection suggestions:", error);
+        sreLogger.error('Error fetching connection suggestions', {}, error);
         setError(error.message);
         toast.error("Failed to load connection suggestions.");
       } else {
@@ -72,7 +73,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setSuggestions(typedSuggestions);
       }
     } catch (err: unknown) {
-      console.error("Unexpected error fetching connection suggestions:", err);
+      sreLogger.error('Unexpected error fetching connection suggestions', {}, err as Error);
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while loading suggestions.");
     } finally {
@@ -107,7 +108,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .or(`sender_id.eq.${authState.user?.id},receiver_id.eq.${authState.user?.id}`);
 
       if (error) {
-        console.error("Error fetching connections:", error);
+        sreLogger.error('Error fetching connections', {}, error);
         setError(error.message);
         toast.error("Failed to load connections.");
       } else {
@@ -121,7 +122,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setConnections(typedConnections);
       }
     } catch (err: unknown) {
-      console.error("Unexpected error fetching connections:", err);
+      sreLogger.error('Unexpected error fetching connections', {}, err as Error);
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while loading connections.");
     } finally {
@@ -137,7 +138,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
       const { error: refreshError } = await supabase.functions.invoke('refresh-connection-suggestions');
 
       if (refreshError) {
-        console.error("Error refreshing connection suggestions:", refreshError);
+        sreLogger.error('Error refreshing connection suggestions', {}, refreshError);
         setError(refreshError.message);
         toast.error("Failed to refresh connection suggestions.");
       } else {
@@ -145,7 +146,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         await fetchSuggestions();
       }
     } catch (err: unknown) {
-      console.error("Unexpected error refreshing connection suggestions:", err);
+      sreLogger.error('Unexpected error refreshing connection suggestions', {}, err as Error);
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while refreshing suggestions.");
     } finally {
@@ -167,7 +168,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         ]);
 
       if (error) {
-        console.error("Error sending connection request:", error);
+        sreLogger.error('Error sending connection request', { receiverId }, error);
         toast.error("Failed to send connection request.");
         return false;
       } else {
@@ -176,7 +177,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         return true;
       }
     } catch (err: unknown) {
-      console.error("Unexpected error sending connection request:", err);
+      sreLogger.error('Unexpected error sending connection request', {}, err as Error);
       toast.error("An unexpected error occurred while sending the connection request.");
       return false;
     }
@@ -190,7 +191,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .eq('id', connectionId);
 
       if (error) {
-        console.error("Error accepting connection request:", error);
+        sreLogger.error('Error accepting connection request', { connectionId }, error);
         toast.error("Failed to accept connection request.");
         return false;
       } else {
@@ -199,7 +200,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         return true;
       }
     } catch (err: unknown) {
-      console.error("Unexpected error accepting connection request:", err);
+      sreLogger.error('Unexpected error accepting connection request', {}, err as Error);
       toast.error("An unexpected error occurred while accepting the connection request.");
       return false;
     }
@@ -213,7 +214,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .eq('id', connectionId);
 
       if (error) {
-        console.error("Error rejecting connection request:", error);
+        sreLogger.error('Error rejecting connection request', { connectionId }, error);
         toast.error("Failed to reject connection request.");
         return false;
       } else {
@@ -222,7 +223,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         return true;
       }
     } catch (err: unknown) {
-      console.error("Unexpected error rejecting connection request:", err);
+      sreLogger.error('Unexpected error rejecting connection request', {}, err as Error);
       toast.error("An unexpected error occurred while rejecting the connection request.");
       return false;
     }
@@ -236,7 +237,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .eq('id', connectionId);
 
       if (error) {
-        console.error("Error removing connection:", error);
+        sreLogger.error('Error removing connection', { connectionId }, error);
         toast.error("Failed to remove connection.");
         return false;
       } else {
@@ -245,7 +246,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         return true;
       }
     } catch (err: unknown) {
-      console.error("Unexpected error removing connection:", err);
+      sreLogger.error('Unexpected error removing connection', {}, err as Error);
       toast.error("An unexpected error occurred while removing the connection.");
       return false;
     }

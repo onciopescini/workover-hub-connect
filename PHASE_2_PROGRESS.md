@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 128/674 (19.0%)
-- **Files cleaned**: 33/134 (24.6%)
+- **Console statements cleaned**: 149/674 (22.1%)
+- **Files cleaned**: 38/134 (28.4%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 128/674 (19.0%)
+- **ESLint warnings resolved**: 149/674 (22.1%)
 
 ---
 
@@ -305,10 +305,62 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 9 (Networking & GDPR Hooks) Complete  
-**Next Update**: After Batch 10 completion
+**Last Updated**: 2025-09-30 - Batch 10 (Networking & Utils Hooks) Complete  
+**Next Update**: After Batch 11 completion
 
 ---
+
+## Batch 10: Networking & Utils Hooks Cleanup (5 files, 21 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/useNetworking.ts**
+   - Status: Complete
+   - Console statements replaced: 15 (1 console.log, 14 console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.log with sreLogger.debug for networking disabled
+     - Replaced console.error for fetch connection suggestions errors
+     - Replaced console.error for fetch connections errors
+     - Replaced console.error for refresh suggestions errors
+     - Replaced console.error for send connection request errors (with receiverId context)
+     - Replaced console.error for accept connection request errors (with connectionId context)
+     - Replaced console.error for reject connection request errors (with connectionId context)
+     - Replaced console.error for remove connection errors (with connectionId context)
+     - All errors properly typed with Error cast
+
+2. ✅ **src/hooks/queries/utils/hostMetricsCalculator.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching host metrics error (with hostId context)
+     - Replaced console.error for calculating host metrics error (with hostId context)
+     - All errors properly typed with Error cast
+
+3. ✅ **src/hooks/useAdminUsers.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching users error
+     - Replaced console.error in catch block for unexpected errors
+     - All errors properly typed with Error cast
+
+4. ✅ **src/hooks/useNotifications.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching notifications error
+     - Error properly typed with Error cast
+
+5. ✅ **src/hooks/useOptimizedLoading.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error in withLoading operation failure
+     - Error properly typed with Error cast
 
 ## Batch 9: Networking & GDPR Hooks Cleanup (5 files, 15 console.*)
 

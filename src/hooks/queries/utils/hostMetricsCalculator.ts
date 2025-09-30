@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { HostDashboardMetrics } from "../types/hostDashboardTypes";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const calculateHostMetrics = async (hostId: string): Promise<HostDashboardMetrics> => {
   try {
@@ -10,7 +11,7 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
     });
 
     if (error) {
-      console.error('Error fetching host metrics:', error);
+      sreLogger.error('Error fetching host metrics', { hostId }, error);
       throw error;
     }
 
@@ -43,7 +44,7 @@ export const calculateHostMetrics = async (hostId: string): Promise<HostDashboar
       topPerformingSpace: metrics.topPerformingSpace,
     };
   } catch (error) {
-    console.error('Error calculating host metrics:', error);
+    sreLogger.error('Error calculating host metrics', { hostId }, error as Error);
     return {
       totalRevenue: 0,
       monthlyRevenue: 0,
