@@ -8,16 +8,19 @@ interface GuestsSelectorProps {
   maxCapacity: number;
   onGuestsChange: (count: number) => void;
   disabled?: boolean;
+  availableSpots?: number; // Number of spots still available (considering other bookings)
 }
 
 export function GuestsSelector({ 
   guestsCount, 
   maxCapacity, 
   onGuestsChange, 
-  disabled = false 
+  disabled = false,
+  availableSpots 
 }: GuestsSelectorProps) {
+  const effectiveMax = availableSpots !== undefined ? availableSpots : maxCapacity;
   const canDecrement = guestsCount > 1;
-  const canIncrement = guestsCount < maxCapacity;
+  const canIncrement = guestsCount < effectiveMax;
 
   const handleDecrement = () => {
     if (canDecrement) {
@@ -42,7 +45,11 @@ export function GuestsSelector({
         <div className="flex flex-col">
           <span className="text-sm font-medium">Numero di ospiti</span>
           <span className="text-xs text-muted-foreground">
-            Massimo {maxCapacity} ospiti
+            {availableSpots !== undefined ? (
+              <>Disponibili: {availableSpots}/{maxCapacity} posti</>
+            ) : (
+              <>Massimo {maxCapacity} ospiti</>
+            )}
           </span>
         </div>
         

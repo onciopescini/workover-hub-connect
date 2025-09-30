@@ -11,6 +11,7 @@ import { GuestsSelector } from './GuestsSelector';
 import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
+import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogger } from "@/hooks/useLogger";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
@@ -69,6 +70,7 @@ export interface BookingState {
   availableSlots: TimeSlot[];
   selectedRange: SelectedTimeRange | null;
   guestsCount: number;
+  availableSpots: number | null;
   isLoadingSlots: boolean;
   isReserving: boolean;
 }
@@ -99,6 +101,7 @@ export function TwoStepBookingForm({
     availableSlots: [],
     selectedRange: null,
     guestsCount: 1,
+    availableSpots: null,
     isLoadingSlots: false,
     isReserving: false
   });
@@ -195,13 +198,33 @@ export function TwoStepBookingForm({
     setCurrentStep('TIME');
   };
 
-  const handleTimeRangeSelect = (range: SelectedTimeRange) => {
+  const handleTimeRangeSelect = async (range: SelectedTimeRange) => {
     debug('Time range selected', range);
     
     setBookingState(prev => ({
       ...prev,
       selectedRange: range
     }));
+
+    // Fetch available capacity for the selected time slot
+    if (bookingState.selectedDate) {
+      const capacity = await getAvailableCapacity(
+        spaceId,
+        format(bookingState.selectedDate, 'yyyy-MM-dd'),
+        range.startTime,
+        range.endTime
+      );
+      
+      setBookingState(prev => ({
+        ...prev,
+        availableSpots: capacity.availableSpots,
+        guestsCount: Math.min(prev.guestsCount, capacity.availableSpots) // Adjust guests if needed
+      }));
+
+      if (capacity.availableSpots === 0) {
+        toast.warning('Attenzione: questo slot è al completo');
+      }
+    }
   };
 
   const handleGuestsChange = (count: number) => {
@@ -260,7 +283,27 @@ export function TwoStepBookingForm({
       if (rpcError) {
         error('Slot reservation failed', rpcError, { spaceId, bookingState });
         
-        if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
+        // Handle capacity errors
+        if (rpcError.message?.includes('Posti insufficienti') || rpcError.message?.includes('available_spots')) {
+          toast.error(
+            <>
+              ⚠️ Posti insufficienti
+              <span data-testid="capacity-error-toast" className="sr-only">capacity-error</span>
+            </>, 
+            {
+              description: rpcError.message || 'Non ci sono abbastanza posti disponibili per questo orario.',
+              action: {
+                label: "Aggiorna",
+                onClick: () => {
+                  if (bookingState.selectedDate) {
+                    fetchAvailableSlots(bookingState.selectedDate);
+                    setCurrentStep('TIME');
+                  }
+                }
+              }
+            }
+          );
+        } else if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
           toast.error(
             <>
               ⚠️ Slot non più disponibile
@@ -436,17 +479,28 @@ export function TwoStepBookingForm({
         )}
         
         {currentStep === 'TIME' && (
-          <TimeSlotSelectionStep
-            selectedDate={bookingState.selectedDate!}
-            availableSlots={bookingState.availableSlots}
-            selectedRange={bookingState.selectedRange}
-            onRangeSelect={handleTimeRangeSelect}
-            isLoading={bookingState.isLoadingSlots}
-            pricePerHour={pricePerHour}
-            pricePerDay={pricePerDay}
-            bufferMinutes={bufferMinutes}
-            slotInterval={slotInterval}
-          />
+          <div className="space-y-6">
+            <TimeSlotSelectionStep
+              selectedDate={bookingState.selectedDate!}
+              availableSlots={bookingState.availableSlots}
+              selectedRange={bookingState.selectedRange}
+              onRangeSelect={handleTimeRangeSelect}
+              isLoading={bookingState.isLoadingSlots}
+              pricePerHour={pricePerHour}
+              pricePerDay={pricePerDay}
+              bufferMinutes={bufferMinutes}
+              slotInterval={slotInterval}
+            />
+            
+            {bookingState.selectedRange && (
+              <GuestsSelector
+                guestsCount={bookingState.guestsCount}
+                maxCapacity={maxCapacity}
+                onGuestsChange={handleGuestsChange}
+                availableSpots={bookingState.availableSpots ?? maxCapacity}
+              />
+            )}
+          </div>
         )}
         
         {currentStep === 'SUMMARY' && (
