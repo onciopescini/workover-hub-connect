@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminWarning } from "@/types/admin";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Warning management functions
 export const createWarning = async (warning: Omit<AdminWarning, "id" | "created_at" | "updated_at">): Promise<void> => {
@@ -13,7 +14,7 @@ export const createWarning = async (warning: Omit<AdminWarning, "id" | "created_
     if (error) throw error;
     toast.success("Warning inviato con successo");
   } catch (error) {
-    console.error("Error creating warning:", error);
+    sreLogger.error('Error creating warning', { warning }, error as Error);
     toast.error("Errore nell'invio del warning");
     throw error;
   }
@@ -30,7 +31,7 @@ export const getUserWarnings = async (userId: string): Promise<AdminWarning[]> =
     if (error) throw error;
     return data as AdminWarning[];
   } catch (error) {
-    console.error("Error fetching user warnings:", error);
+    sreLogger.error('Error fetching user warnings', { userId }, error as Error);
     throw error;
   }
 };

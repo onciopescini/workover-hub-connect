@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlobalTag } from "@/types/admin";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Tag management functions
 export const getAllTags = async (): Promise<GlobalTag[]> => {
@@ -14,7 +15,7 @@ export const getAllTags = async (): Promise<GlobalTag[]> => {
     if (error) throw error;
     return data as GlobalTag[];
   } catch (error) {
-    console.error("Error fetching tags:", error);
+    sreLogger.error('Error fetching tags', {}, error as Error);
     throw error;
   }
 };
@@ -38,7 +39,7 @@ export const approveTag = async (tagId: string): Promise<void> => {
 
     toast.success("Tag approvato con successo");
   } catch (error) {
-    console.error("Error approving tag:", error);
+    sreLogger.error('Error approving tag', { tagId }, error as Error);
     toast.error("Errore nell'approvazione del tag");
     throw error;
   }

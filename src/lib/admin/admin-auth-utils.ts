@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Check if current user is admin
 export const isCurrentUserAdmin = async (): Promise<boolean> => {
@@ -15,7 +16,7 @@ export const isCurrentUserAdmin = async (): Promise<boolean> => {
 
     return profile?.role === "admin" && !profile?.is_suspended;
   } catch (error) {
-    console.error("Error checking admin status:", error);
+    sreLogger.error('Error checking admin status', {}, error as Error);
     return false;
   }
 };

@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminSpace } from "@/types/admin";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Space management functions
 export const getAllSpaces = async (): Promise<AdminSpace[]> => {
@@ -14,7 +15,7 @@ export const getAllSpaces = async (): Promise<AdminSpace[]> => {
     if (error) throw error;
     return data as AdminSpace[];
   } catch (error) {
-    console.error("Error fetching spaces:", error);
+    sreLogger.error('Error fetching spaces', {}, error as Error);
     throw error;
   }
 };
@@ -45,7 +46,7 @@ export const moderateSpace = async (spaceId: string, approve: boolean, rejection
 
     toast.success(approve ? "Spazio approvato" : "Spazio rifiutato");
   } catch (error) {
-    console.error("Error moderating space:", error);
+    sreLogger.error('Error moderating space', { spaceId, approve }, error as Error);
     toast.error("Errore nella moderazione dello spazio");
     throw error;
   }

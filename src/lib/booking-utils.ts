@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CancelBookingResponse } from "@/types/booking";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Calculate cancellation fee based on booking date
 export const calculateCancellationFee = (bookingDate: string, pricePerDay: number): { fee: number; percentage: string; description: string } => {
@@ -54,7 +55,7 @@ export const cancelBooking = async (
     const { data, error } = await supabase.rpc('cancel_booking', rpcParams);
 
     if (error) {
-      console.error("Error cancelling booking:", error);
+      sreLogger.error('Error cancelling booking', { bookingId, cancelledByHost }, error as Error);
       toast.error("Errore nella cancellazione della prenotazione");
       return { success: false, error: error.message };
     }
@@ -84,7 +85,7 @@ export const cancelBooking = async (
       fee: result.cancellation_fee || 0 
     };
   } catch (error) {
-    console.error("Error cancelling booking:", error);
+    sreLogger.error('Error cancelling booking', { bookingId, cancelledByHost }, error as Error);
     toast.error("Errore nella cancellazione della prenotazione");
     return { success: false, error: "Errore di rete" };
   }

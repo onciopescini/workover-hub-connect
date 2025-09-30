@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { BookingReviewWithDetails, BookingReviewInsert, ReviewStatus } from "@/types/review";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Get booking reviews for a user
 export const getBookingReviews = async (userId: string): Promise<{
@@ -67,7 +68,7 @@ export const getBookingReviews = async (userId: string): Promise<{
       received: receivedReviews as BookingReviewWithDetails[] || [],
     };
   } catch (error) {
-    console.error("Error fetching booking reviews:", error);
+    sreLogger.error('Error fetching booking reviews', { userId }, error as Error);
     return { given: [], received: [] };
   }
 };
@@ -79,14 +80,14 @@ export const addBookingReview = async (review: BookingReviewInsert): Promise<boo
 
     if (error) {
       toast.error("Errore nell'invio della recensione");
-      console.error(error);
+      sreLogger.error('Error adding booking review', { review }, error as Error);
       return false;
     }
 
     toast.success("Recensione inviata con successo");
     return true;
   } catch (error) {
-    console.error("Error adding booking review:", error);
+    sreLogger.error('Error adding booking review', { review }, error as Error);
     toast.error("Errore nell'invio della recensione");
     return false;
   }
@@ -108,7 +109,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
       .maybeSingle();
 
     if (bookingError || !booking) {
-      console.error("Error fetching booking:", bookingError);
+      sreLogger.error('Error fetching booking', { bookingId }, bookingError as Error | undefined);
       return {
         canWriteReview: false,
         hasWrittenReview: false,
@@ -167,7 +168,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
 
     return result;
   } catch (error) {
-    console.error("Error getting booking review status:", error);
+    sreLogger.error('Error getting booking review status', { bookingId, userId, targetId }, error as Error);
     return {
       canWriteReview: false,
       hasWrittenReview: false,
@@ -187,7 +188,7 @@ export const getUserAverageRating = async (userId: string): Promise<number | nul
       .eq('is_visible', true);
 
     if (error) {
-      console.error('Error fetching user average rating:', error);
+      sreLogger.error('Error fetching user average rating', { userId }, error as Error);
       return null;
     }
 
@@ -198,7 +199,7 @@ export const getUserAverageRating = async (userId: string): Promise<number | nul
     const total = data.reduce((sum, review) => sum + review.rating, 0);
     return total / data.length;
   } catch (error) {
-    console.error('Error calculating average rating:', error);
+    sreLogger.error('Error calculating average rating', { userId }, error as Error);
     return null;
   }
 };

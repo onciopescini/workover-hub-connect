@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/types/admin";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Get admin dashboard stats
 export const getAdminStats = async (): Promise<AdminStats> => {
@@ -59,7 +60,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
       totalRevenue
     };
   } catch (error) {
-    console.error("Error fetching admin stats:", error);
+    sreLogger.error('Error fetching admin stats', {}, error as Error);
     throw error;
   }
 };
