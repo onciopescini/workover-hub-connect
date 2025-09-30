@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 86/674 (12.8%)
-- **Files cleaned**: 18/134 (13.4%)
+- **Console statements cleaned**: 99/674 (14.7%)
+- **Files cleaned**: 23/134 (17.2%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 86/674 (12.8%)
+- **ESLint warnings resolved**: 99/674 (14.7%)
 
 ---
 
@@ -305,5 +305,58 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 5 (SpaceMap, Admin, Conversations) Complete  
-**Next Update**: After Batch 6 completion
+**Last Updated**: 2025-09-30 - Batch 7 (Hooks Cleanup) Complete  
+**Next Update**: After Batch 8 completion
+
+---
+
+## Batch 7: Hooks Cleanup (5 files, 13 console.*)
+
+### Files Processed
+1. ✅ **src/hooks/bookings/useBookingCardState.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (2 console.error, 1 console.log, 1 console.warn)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for invalid booking dates
+     - Replaced console.log for cancellation analysis with sreLogger.debug
+     - Replaced console.error for date parsing errors
+     - Replaced console.warn for missing booking data
+     - All errors properly typed with Error cast
+
+2. ✅ **src/hooks/queries/bookings/useCancelBookingMutation.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error in RPC error handler
+     - Replaced console.error in onError handler
+     - Added proper context metadata
+
+3. ✅ **src/hooks/queries/useBookingsQuery.ts**
+   - Status: Complete
+   - Console statements replaced: 3 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for coworker bookings error
+     - Replaced console.error for host bookings error
+     - Replaced console.error in mutation onError handler
+     - Added userId context to all error logs
+
+4. ✅ **src/hooks/queries/useSpaceMetrics.ts**
+   - Status: Complete
+   - Console statements replaced: 1 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for space metrics fetch error
+     - Added spaceId context
+
+5. ✅ **src/hooks/queries/useUsersQuery.ts**
+   - Status: Complete
+   - Console statements replaced: 3 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error in suspend user mutation
+     - Replaced console.error in reactivate user mutation
+     - Replaced console.error in create warning mutation
+     - All errors properly typed with Error cast

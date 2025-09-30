@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface ProfessionalBreakdown {
   profession: string;
@@ -59,7 +60,7 @@ export const useSpaceMetrics = (spaceId: string) => {
       });
 
       if (error) {
-        console.error('Error fetching space metrics:', error);
+        sreLogger.error('Error fetching space metrics', { spaceId }, error);
         throw error;
       }
 

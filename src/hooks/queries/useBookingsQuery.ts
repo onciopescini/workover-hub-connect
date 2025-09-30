@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { BookingWithDetails } from "@/types/booking";
 import { cancelBooking } from "@/lib/booking-utils";
 import { logger } from "@/lib/logger";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Query Keys
 export const bookingKeys = {
@@ -37,7 +38,7 @@ const fetchBookings = async (userId: string, userRole?: string): Promise<Booking
     .order("booking_date", { ascending: false });
 
   if (coworkerError) {
-    console.error('Coworker bookings error:', coworkerError);
+    sreLogger.error('Coworker bookings error', { userId }, coworkerError);
     throw coworkerError;
   }
 
@@ -70,7 +71,7 @@ const fetchBookings = async (userId: string, userRole?: string): Promise<Booking
     if (!hostError && hostBookingsRaw) {
       hostBookings = hostBookingsRaw;
     } else if (hostError) {
-      console.error('Host bookings error:', hostError);
+      sreLogger.error('Host bookings error', { userId }, hostError);
     }
   }
 
@@ -187,7 +188,7 @@ export const useCancelBookingMutation = () => {
       toast.success("Prenotazione cancellata con successo");
     },
     onError: (error) => {
-      console.error("Error cancelling booking:", error);
+      sreLogger.error("Error cancelling booking", {}, error as Error);
       toast.error("Errore nella cancellazione della prenotazione");
     },
   });

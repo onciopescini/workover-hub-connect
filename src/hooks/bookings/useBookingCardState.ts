@@ -4,6 +4,7 @@ import { it } from "date-fns/locale";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingCardDisplayData, UserRole } from '@/types/bookings/bookings-ui.types';
 import { BookingCardActions } from '@/types/bookings/bookings-actions.types';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UseBookingCardStateProps {
   booking: BookingWithDetails;
@@ -55,7 +56,7 @@ export const useBookingCardState = ({
         
         // Validate that the parsed date is valid
         if (isNaN(bookingStart.getTime())) {
-          console.error('Invalid booking date/time:', { 
+          sreLogger.error('Invalid booking date/time', { 
             booking_date: booking.booking_date, 
             start_time: booking.start_time 
           });
@@ -72,39 +73,24 @@ export const useBookingCardState = ({
           }
         }
         
-        console.log('🔍 DETAILED Cancellation Analysis:', {
+        sreLogger.debug('Cancellation analysis', {
           rawBookingDate: booking.booking_date,
           rawStartTime: booking.start_time,
           dateTimeString,
-          now: {
-            iso: now.toISOString(),
-            local: now.toLocaleString('it-IT'),
-            timestamp: now.getTime()
-          },
-          bookingStart: {
-            iso: bookingStart.toISOString(),
-            local: bookingStart.toLocaleString('it-IT'),
-            timestamp: bookingStart.getTime()
-          },
-          comparison: {
-            nowBeforeBooking: isBefore(now, bookingStart),
-            bookingBeforeNow: isBefore(bookingStart, now),
-            timeDifferenceMinutes: Math.round((bookingStart.getTime() - now.getTime()) / (1000 * 60))
-          },
           canCancelByTime,
           bookingId: booking.id,
           bookingStatus: booking.status
         });
       } catch (error) {
-        console.error('❌ Error parsing booking date/time:', error, {
+        sreLogger.error('Error parsing booking date/time', {
           booking_date: booking.booking_date,
           start_time: booking.start_time
-        });
+        }, error as Error);
         // If there's an error parsing, don't allow cancellation for safety
         canCancelByTime = false;
       }
     } else {
-      console.warn('⚠️ Missing booking date or time:', {
+      sreLogger.warn('Missing booking date or time', {
         booking_date: booking.booking_date,
         start_time: booking.start_time,
         bookingId: booking.id

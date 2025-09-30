@@ -4,6 +4,7 @@ import { getAllUsers, suspendUser, reactivateUser, createWarning, getUserWarning
 import { AdminProfile, AdminWarning } from "@/types/admin";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Query Keys
 export const userKeys = {
@@ -65,7 +66,7 @@ export const useSuspendUserMutation = () => {
       toast.success("Utente sospeso con successo");
     },
     onError: (error) => {
-      console.error("Error suspending user:", error);
+      sreLogger.error("Error suspending user", {}, error as Error);
       toast.error("Errore nella sospensione dell'utente");
     },
   });
@@ -84,7 +85,7 @@ export const useReactivateUserMutation = () => {
       toast.success("Utente riattivato con successo");
     },
     onError: (error) => {
-      console.error("Error reactivating user:", error);
+      sreLogger.error("Error reactivating user", {}, error as Error);
       toast.error("Errore nella riattivazione dell'utente");
     },
   });
@@ -111,7 +112,7 @@ export const useCreateWarningMutation = () => {
       toast.success("Warning inviato con successo");
     },
     onError: (error) => {
-      console.error("Error creating warning:", error);
+      sreLogger.error("Error creating warning", {}, error as Error);
       toast.error("Errore nell'invio del warning");
     },
   });
