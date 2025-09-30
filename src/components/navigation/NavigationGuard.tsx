@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { UNSAFE_NavigationContext } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useBlocker } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,58 +18,35 @@ interface NavigationGuardProps {
 }
 
 export const NavigationGuard: React.FC<NavigationGuardProps> = ({ when, title, description }) => {
-  const { navigator } = useContext(UNSAFE_NavigationContext) as any;
-  const [blocked, setBlocked] = useState(false);
-  const txRef = useRef<any>(null);
-  const unblockRef = useRef<null | (() => void)>(null);
+  const [showDialog, setShowDialog] = useState(false);
+
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      when && currentLocation.pathname !== nextLocation.pathname
+  );
 
   useEffect(() => {
-    if (!when) {
-      if (unblockRef.current) {
-        unblockRef.current();
-        unblockRef.current = null;
-      }
-      txRef.current = null;
-      setBlocked(false);
-      return;
+    if (blocker.state === 'blocked') {
+      setShowDialog(true);
     }
-    if (!navigator) return;
-    unblockRef.current = (navigator as any).block((tx: any) => {
-      txRef.current = tx;
-      setBlocked(true);
-    });
-    return () => {
-      if (unblockRef.current) {
-        unblockRef.current();
-        unblockRef.current = null;
-      }
-      txRef.current = null;
-      setBlocked(false);
-    };
-  }, [navigator, when]);
-
-  const open = blocked;
+  }, [blocker.state]);
 
   const handleCancel = () => {
-    txRef.current = null;
-    setBlocked(false);
+    setShowDialog(false);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
+    }
   };
 
   const handleProceed = () => {
-    const tx = txRef.current;
-    if (tx) {
-      txRef.current = null;
-      if (unblockRef.current) {
-        unblockRef.current();
-        unblockRef.current = null;
-      }
-      setBlocked(false);
-      tx.retry();
+    setShowDialog(false);
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
     }
   };
 
   return (
-    <AlertDialog open={open}>
+    <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title ?? "Vuoi lasciare questa pagina?"}</AlertDialogTitle>
