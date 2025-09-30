@@ -1,3 +1,4 @@
+import { sreLogger } from '@/lib/sre-logger';
 
 // Stripe integration validation utilities
 export interface StripeValidationResult {
@@ -63,33 +64,27 @@ export const validateStripeAmounts = (basePrice: number): StripeValidationResult
 export const logStripeValidationResults = (basePrice: number): void => {
   const result = validateStripeAmounts(basePrice);
   
-  console.log(`🔍 STRIPE VALIDATION: ${result.testCase}`);
-  console.log(`Status: ${result.validationStatus}`);
-  console.log(`Base Price: €${result.basePrice}`);
-  console.log(`Buyer Total: €${result.buyerTotalPrice}`);
-  console.log(`Host Payout: €${result.hostPayout}`);
-  console.log(`Stripe Session Amount: ${result.stripeSessionAmount} cents`);
-  console.log(`Stripe Application Fee: ${result.stripeApplicationFee} cents`);
-  console.log(`Host Transfer Amount: ${result.hostTransferAmount} cents`);
-  
-  if (result.errors.length > 0) {
-    console.log('❌ Errors:');
-    result.errors.forEach(error => console.log(`  • ${error}`));
-  } else {
-    console.log('✅ All validations passed');
-  }
-  console.log('---');
+  sreLogger.info('STRIPE VALIDATION', {
+    testCase: result.testCase,
+    validationStatus: result.validationStatus,
+    basePrice: result.basePrice,
+    buyerTotalPrice: result.buyerTotalPrice,
+    hostPayout: result.hostPayout,
+    stripeSessionAmount: result.stripeSessionAmount,
+    stripeApplicationFee: result.stripeApplicationFee,
+    hostTransferAmount: result.hostTransferAmount,
+    errors: result.errors
+  });
 };
 
 // Run comprehensive Stripe validation
 export const runStripeValidationSuite = (): void => {
-  console.log('🚀 RUNNING STRIPE VALIDATION SUITE');
-  console.log('=====================================');
+  sreLogger.info('RUNNING STRIPE VALIDATION SUITE');
   
   const testPrices = [20, 150, 75, 500];
   testPrices.forEach(price => {
     logStripeValidationResults(price);
   });
   
-  console.log('Stripe validation suite completed.');
+  sreLogger.info('Stripe validation suite completed');
 };

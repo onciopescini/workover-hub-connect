@@ -1,38 +1,38 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const checkAndUpdateStripeStatus = async (userId: string): Promise<boolean> => {
   try {
-    console.log('🔵 Checking Stripe status for user:', userId);
+    sreLogger.info('Checking Stripe status for user', { userId });
     
     const { data, error } = await supabase.functions.invoke('check-stripe-status');
     
     if (error) {
-      console.error('🔴 Error checking Stripe status:', error);
+      sreLogger.error('Error checking Stripe status', { userId }, error);
       return false;
     }
     
-    console.log('🔵 Stripe status check result:', data);
+    sreLogger.info('Stripe status check result', { userId, connected: data?.connected });
     return data?.connected || false;
   } catch (error) {
-    console.error('🔴 Error in checkAndUpdateStripeStatus:', error);
+    sreLogger.error('Error in checkAndUpdateStripeStatus', { userId }, error as Error);
     return false;
   }
 };
 
 export const fixCurrentStripeIssue = async (): Promise<void> => {
   try {
-    console.log('🔵 Running one-time Stripe status fix...');
+    sreLogger.info('Running one-time Stripe status fix');
     
     const { data, error } = await supabase.functions.invoke('fix-stripe-status');
     
     if (error) {
-      console.error('🔴 Error fixing Stripe status:', error);
+      sreLogger.error('Error fixing Stripe status', {}, error);
       return;
     }
     
-    console.log('✅ Stripe status fix completed:', data);
+    sreLogger.info('Stripe status fix completed', { result: data });
   } catch (error) {
-    console.error('🔴 Error in fixCurrentStripeIssue:', error);
+    sreLogger.error('Error in fixCurrentStripeIssue', {}, error as Error);
   }
 };

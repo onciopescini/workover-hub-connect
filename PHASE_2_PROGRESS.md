@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 25/674 (3.7%)
+## 📊 Overall Progress: 48/674 (7.1%)
 
-### ✅ Completed Files (6 files, 25 replacements)
+### ✅ Completed Files (8 files, 48 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -37,6 +37,37 @@
   - Replaced form validation logging
   - Replaced error handling
   - Replaced navigation logging
+
+#### 5. `src/lib/booking-reservation-utils.ts` ✓
+- **Status**: Complete
+- **Replacements**: 20 console statements → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced all booking validation logging
+  - Added structured context to all logs
+
+#### 6. `src/hooks/bookings/useBulkBookingActions.ts` ✓
+- **Status**: Complete
+- **Replacements**: 2 console.error → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced error logging with structured format
+
+#### 7. `src/lib/stripe-status-utils.ts` ✓
+- **Status**: Complete
+- **Replacements**: 9 console statements → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Replaced Stripe status checks logging
+  - Added structured context (userId, data) to logs
+
+#### 8. `src/lib/stripe-validation.ts` ✓
+- **Status**: Complete
+- **Replacements**: 14 console statements → sreLogger
+- **Changes**:
+  - Added sreLogger import
+  - Consolidated multiple console.log into single structured log calls
+  - Improved validation result logging with full context
 
 ---
 
@@ -173,10 +204,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 25/674 (3.7%)
-- **Files cleaned**: 6/134 (4.5%)
+- **Console statements cleaned**: 48/674 (7.1%)
+- **Files cleaned**: 8/134 (6.0%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 25/674 (3.7%)
+- **ESLint warnings resolved**: 48/674 (7.1%)
 
 ---
 
@@ -202,5 +233,5 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Phase 2.1 Complete  
-**Next Update**: After Batch 1 completion
+**Last Updated**: 2025-09-30 - Batch 1 & Payment Flow Complete  
+**Next Update**: After Batch 2 completion
