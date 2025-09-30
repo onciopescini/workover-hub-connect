@@ -18,6 +18,7 @@ import {
   FileText
 } from "lucide-react";
 import { ReportDetailsDialog } from "./ReportDetailsDialog";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface Report {
   id: string;
@@ -76,7 +77,11 @@ export function ReportsList() {
         reviewed_by: report.reviewed_by || ''
       })));
     } catch (error) {
-      console.error('Error fetching reports:', error);
+      sreLogger.error('Failed to fetch reports list', { 
+        component: 'ReportsList',
+        filter,
+        userId: authState.user?.id 
+      }, error as Error);
       toast.error('Errore nel caricamento delle segnalazioni');
     } finally {
       setIsLoading(false);

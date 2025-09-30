@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { SpaceFilters, FilterChangeHandler, FormFieldValue } from '@/types/space-filters';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface AdvancedSpaceFiltersProps {
   filters: SpaceFilters;
@@ -125,7 +126,11 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
           lng: position.coords.longitude
         });
       }, (error) => {
-        console.warn('Geolocation error:', error);
+        sreLogger.warn('Geolocation access denied or failed', { 
+          component: 'AdvancedSpaceFilters',
+          errorCode: error.code,
+          errorMessage: error.message 
+        });
       }, {
         enableHighAccuracy: true,
         timeout: 10000,

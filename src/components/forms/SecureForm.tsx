@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle } from 'lucide-react';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface SecureFormProps<T> {
   schema: z.ZodSchema<T>;
@@ -168,7 +169,11 @@ export function SecureForm<T>({
 
       if (warnings.length > 0) {
         setSecurityWarnings(warnings);
-        console.warn('Security warnings detected:', warnings);
+        sreLogger.warn('Security warnings detected in form submission', { 
+          component: 'SecureForm',
+          endpoint,
+          warningCount: warnings.length 
+        });
       }
 
       // Check rate limit if not bypassed

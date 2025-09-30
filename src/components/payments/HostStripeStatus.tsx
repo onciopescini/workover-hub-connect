@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StripeStatusPill } from "@/components/host/StripeStatusPill";
 import { CreditCard } from "lucide-react";
+import { sreLogger } from '@/lib/sre-logger';
 
 type Props = {
   className?: string;
@@ -28,7 +29,10 @@ export default function HostStripeStatus({ className = "" }: Props) {
       }
       window.location.href = data.url;
     } catch (e: any) {
-      console.error("Stripe Connect error:", e);
+      sreLogger.error('Stripe Connect onboarding link creation failed', { 
+        component: 'HostStripeStatus',
+        userId: authState.user?.id 
+      }, e as Error);
       toast.error("Errore durante la connessione con Stripe");
     } finally {
       setLoading(false);

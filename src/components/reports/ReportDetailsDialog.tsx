@@ -11,6 +11,7 @@ import { MessageSquare, User, AlertTriangle, CheckCircle, Clock, Building2, File
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ReportDetailsDialogProps {
   report: any;
@@ -44,7 +45,11 @@ export function ReportDetailsDialog({ report, isOpen, onClose, onUpdate }: Repor
         .eq("id", report.id);
 
       if (error) {
-        console.error("Error resolving report:", error);
+        sreLogger.error('Failed to resolve report', { 
+          component: 'ReportDetailsDialog',
+          reportId: report.id,
+          reviewedBy: authState.user?.id 
+        }, error as Error);
         toast.error("Failed to resolve report.");
       } else {
         toast.success("Report resolved successfully!");
