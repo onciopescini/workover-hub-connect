@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface FavoriteSpace {
   id: string;
@@ -40,7 +41,10 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error fetching favorite spaces:', error);
+      sreLogger.error('Error fetching favorite spaces', { 
+        context: 'getFavoriteSpaces',
+        userId 
+      }, error as Error);
       throw error;
     }
 
@@ -49,7 +53,10 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       created_at: item.created_at ?? ''
     }));
   } catch (error) {
-    console.error('Error in getFavoriteSpaces:', error);
+    sreLogger.error('Error in getFavoriteSpaces', { 
+      context: 'getFavoriteSpaces',
+      userId 
+    }, error as Error);
     return [];
   }
 };
@@ -70,13 +77,20 @@ export const isSpaceFavorited = async (spaceId: string): Promise<boolean> => {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error checking favorite status:', error);
+      sreLogger.error('Error checking favorite status', { 
+        context: 'isSpaceFavorited',
+        spaceId,
+        userId: user.user.id 
+      }, error as Error);
       return false;
     }
 
     return !!data;
   } catch (error) {
-    console.error('Error in isSpaceFavorited:', error);
+    sreLogger.error('Error in isSpaceFavorited', { 
+      context: 'isSpaceFavorited',
+      spaceId 
+    }, error as Error);
     return false;
   }
 };
@@ -97,7 +111,11 @@ export const addToFavorites = async (spaceId: string): Promise<boolean> => {
       });
 
     if (error) {
-      console.error('Error adding to favorites:', error);
+      sreLogger.error('Error adding to favorites', { 
+        context: 'addToFavorites',
+        spaceId,
+        userId: user.user.id 
+      }, error as Error);
       toast.error('Errore nell\'aggiunta ai preferiti');
       return false;
     }
@@ -105,7 +123,10 @@ export const addToFavorites = async (spaceId: string): Promise<boolean> => {
     toast.success('Aggiunto ai preferiti');
     return true;
   } catch (error) {
-    console.error('Error in addToFavorites:', error);
+    sreLogger.error('Error in addToFavorites', { 
+      context: 'addToFavorites',
+      spaceId 
+    }, error as Error);
     toast.error('Errore nell\'aggiunta ai preferiti');
     return false;
   }
@@ -126,7 +147,11 @@ export const removeFromFavorites = async (spaceId: string): Promise<boolean> => 
       .eq('space_id', spaceId);
 
     if (error) {
-      console.error('Error removing from favorites:', error);
+      sreLogger.error('Error removing from favorites', { 
+        context: 'removeFromFavorites',
+        spaceId,
+        userId: user.user.id 
+      }, error as Error);
       toast.error('Errore nella rimozione dai preferiti');
       return false;
     }
@@ -134,7 +159,10 @@ export const removeFromFavorites = async (spaceId: string): Promise<boolean> => 
     toast.success('Rimosso dai preferiti');
     return true;
   } catch (error) {
-    console.error('Error in removeFromFavorites:', error);
+    sreLogger.error('Error in removeFromFavorites', { 
+      context: 'removeFromFavorites',
+      spaceId 
+    }, error as Error);
     toast.error('Errore nella rimozione dai preferiti');
     return false;
   }

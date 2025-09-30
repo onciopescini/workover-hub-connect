@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface MonthlyData {
   month: string;
@@ -30,7 +31,10 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     });
 
     if (metricsError) {
-      console.error('Error fetching host metrics:', metricsError);
+      sreLogger.error('Error fetching host metrics', { 
+        context: 'getHostFinancialMetrics',
+        hostId 
+      }, metricsError as Error);
       throw metricsError;
     }
 
@@ -66,7 +70,11 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     };
 
   } catch (error) {
-    console.error('Error fetching financial metrics:', error);
+    sreLogger.error('Error fetching financial metrics', { 
+      context: 'getHostFinancialMetrics',
+      hostId,
+      year 
+    }, error as Error);
     
     // Return fallback data
     return {

@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 245/674 (36.4%)
+## 📊 Overall Progress: 269/674 (39.9%)
 
-### ✅ Completed Files (71 files, 245 replacements)
+### ✅ Completed Files (76 files, 269 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 245/674 (36.4%)
-- **Files cleaned**: 71/134 (53.0%)
+- **Console statements cleaned**: 269/674 (39.9%)
+- **Files cleaned**: 76/134 (56.7%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 245/674 (36.4%)
+- **ESLint warnings resolved**: 269/674 (39.9%)
 
 ---
 
@@ -305,8 +305,66 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 17 (Lib Utils & Services) Complete  
-**Next Update**: After Batch 18 completion
+**Last Updated**: 2025-09-30 - Batch 18 (Message & Host Utils) Complete  
+**Next Update**: After Batch 19 completion
+
+---
+
+## Batch 18: Message & Host Utils Cleanup (5 files, 24 console.*)
+
+### Files Processed
+1. ✅ **src/lib/favorites-utils.ts**
+   - Status: Complete
+   - Console statements replaced: 8 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching favorite spaces (with userId context)
+     - Replaced console.error for checking favorite status (with spaceId, userId context)
+     - Replaced console.error for adding to favorites (with spaceId, userId context)
+     - Replaced console.error for removing from favorites (with spaceId, userId context)
+     - All errors properly typed with Error cast
+
+2. ✅ **src/lib/host/calendar-data-service.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for calendar data fetch error (with hostId context)
+     - Replaced console.error for calendar stats fetch error (with hostId context)
+     - All errors properly typed with Error cast
+
+3. ✅ **src/lib/host/financial-metrics-service.ts**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for host metrics fetch error (with hostId context)
+     - Replaced console.error for financial metrics fetch error (with hostId, year context)
+     - All errors properly typed with Error cast
+
+4. ✅ **src/lib/host/payment-data-service.ts**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for host metrics fetch error (with hostId context)
+     - Replaced console.error for payment stats fetch error (with hostId context)
+     - Replaced console.error for transactions fetch error (with hostId context)
+     - Replaced console.error for upcoming payouts fetch error (with hostId context)
+     - All errors properly typed with Error cast
+
+5. ✅ **src/lib/message-utils.ts**
+   - Status: Complete
+   - Console statements replaced: 8 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching messages error (with bookingId context)
+     - Replaced console.error for fetching profiles error (with bookingId, senderIds context)
+     - Replaced console.error for sending message error (with bookingId context)
+     - Replaced console.error for fetching sender profile error (with bookingId, userId context)
+     - Replaced console.error for upload error (with fileName, fileSize, userId context)
+     - Replaced console.error for marking message as read error (with messageId context)
+     - All errors properly typed with Error cast
 
 ---
 

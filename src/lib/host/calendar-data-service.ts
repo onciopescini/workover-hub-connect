@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface CalendarMetrics {
   todayBookings: number;
@@ -128,7 +129,10 @@ export const getHostCalendarData = async (hostId: string): Promise<CalendarMetri
     };
 
   } catch (error) {
-    console.error('Error fetching calendar data:', error);
+    sreLogger.error('Error fetching calendar data', { 
+      context: 'getHostCalendarData',
+      hostId 
+    }, error as Error);
     return {
       todayBookings: 0,
       weekBookings: 0,
@@ -187,7 +191,10 @@ export const getHostCalendarStats = async (hostId: string): Promise<CalendarStat
     };
 
   } catch (error) {
-    console.error('Error fetching calendar stats:', error);
+    sreLogger.error('Error fetching calendar stats', { 
+      context: 'getHostCalendarStats',
+      hostId 
+    }, error as Error);
     return {
       metrics: {
         todayBookings: 0,

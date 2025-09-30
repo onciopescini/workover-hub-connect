@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface PaymentStats {
   availableBalance: number;
@@ -55,7 +56,10 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
     });
 
     if (metricsError) {
-      console.error('Error fetching host metrics:', metricsError);
+      sreLogger.error('Error fetching host metrics', { 
+        context: 'getHostPaymentStats',
+        hostId 
+      }, metricsError as Error);
       throw metricsError;
     }
 
@@ -81,7 +85,10 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
     };
 
   } catch (error) {
-    console.error('Error fetching payment stats:', error);
+    sreLogger.error('Error fetching payment stats', { 
+      context: 'getHostPaymentStats',
+      hostId 
+    }, error as Error);
     return {
       availableBalance: 0,
       pendingPayouts: 0,
@@ -150,7 +157,10 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
     return transactions;
 
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    sreLogger.error('Error fetching transactions', { 
+      context: 'getHostTransactions',
+      hostId 
+    }, error as Error);
     return [];
   }
 };
@@ -177,7 +187,10 @@ export const getUpcomingPayouts = async (hostId: string): Promise<PayoutData[]> 
     return payouts;
 
   } catch (error) {
-    console.error('Error fetching upcoming payouts:', error);
+    sreLogger.error('Error fetching upcoming payouts', { 
+      context: 'getUpcomingPayouts',
+      hostId 
+    }, error as Error);
     return [];
   }
 };

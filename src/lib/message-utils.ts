@@ -1,8 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
 import { toast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Helper function to safely convert Json array to string array
 const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
@@ -34,7 +34,10 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       .order("created_at", { ascending: true });
 
     if (messagesError) {
-      console.error("Error fetching messages:", messagesError);
+      sreLogger.error('Error fetching messages', { 
+        context: 'fetchBookingMessages',
+        bookingId 
+      }, messagesError as Error);
       throw messagesError;
     }
 
@@ -52,7 +55,11 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
       .in("id", senderIds);
 
     if (profilesError) {
-      console.error("Error fetching profiles:", profilesError);
+      sreLogger.error('Error fetching profiles', { 
+        context: 'fetchBookingMessages',
+        bookingId,
+        senderIds 
+      }, profilesError as Error);
       // Non lanciamo errore qui, continuiamo senza i profili
     }
 
@@ -78,7 +85,10 @@ export const fetchBookingMessages = async (bookingId: string): Promise<Message[]
     
     return messages;
   } catch (error) {
-    console.error("Error in fetchBookingMessages:", error);
+    sreLogger.error('Error in fetchBookingMessages', { 
+      context: 'fetchBookingMessages',
+      bookingId 
+    }, error as Error);
     return [];
   }
 };
@@ -116,7 +126,10 @@ export const sendBookingMessage = async (
       .single();
     
     if (error) {
-      console.error("Error sending message:", error);
+      sreLogger.error('Error sending message', { 
+        context: 'sendBookingMessage',
+        bookingId 
+      }, error as Error);
       throw error;
     }
 
@@ -128,7 +141,11 @@ export const sendBookingMessage = async (
       .single();
 
     if (profileError) {
-      console.error("Error fetching sender profile:", profileError);
+      sreLogger.error('Error fetching sender profile', { 
+        context: 'sendBookingMessage',
+        bookingId,
+        userId: user.user.id 
+      }, profileError as Error);
     }
     
     const message: Message = {
@@ -147,7 +164,10 @@ export const sendBookingMessage = async (
     
     return message;
   } catch (error) {
-    console.error("Error in sendBookingMessage:", error);
+    sreLogger.error('Error in sendBookingMessage', { 
+      context: 'sendBookingMessage',
+      bookingId 
+    }, error as Error);
     toast({
       title: "Errore nell'invio del messaggio",
       description: "Riprova più tardi",
@@ -177,7 +197,12 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       .upload(filePath, file);
       
     if (uploadError) {
-      console.error("Upload error:", uploadError);
+      sreLogger.error('Upload error', { 
+        context: 'uploadMessageAttachment',
+        fileName: file.name,
+        fileSize: file.size,
+        userId: user.user.id 
+      }, uploadError as Error);
       throw uploadError;
     }
     
@@ -188,7 +213,10 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       
     return data.publicUrl;
   } catch (error) {
-    console.error("Error in uploadMessageAttachment:", error);
+    sreLogger.error('Error in uploadMessageAttachment', { 
+      context: 'uploadMessageAttachment',
+      fileName: file.name 
+    }, error as Error);
     toast({
       title: "Errore nell'upload del file",
       description: "Riprova con un file più piccolo o formato diverso",
@@ -207,10 +235,16 @@ export const markMessageAsRead = async (messageId: string): Promise<void> => {
       .eq("id", messageId);
       
     if (error) {
-      console.error("Error marking message as read:", error);
+      sreLogger.error('Error marking message as read', { 
+        context: 'markMessageAsRead',
+        messageId 
+      }, error as Error);
       throw error;
     }
   } catch (error) {
-    console.error("Error in markMessageAsRead:", error);
+    sreLogger.error('Error in markMessageAsRead', { 
+      context: 'markMessageAsRead',
+      messageId 
+    }, error as Error);
   }
 };
