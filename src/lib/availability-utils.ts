@@ -6,6 +6,8 @@ import {
   validateBookingSlotWithLock as rpcValidateBookingSlot,
   ValidationResult
 } from './availability-rpc';
+import { sreLogger } from '@/lib/sre-logger';
+import { TIME_CONSTANTS } from '@/constants';
 
 export interface TimeSlot {
   start: string;
@@ -21,7 +23,7 @@ export interface DayAvailability {
 }
 
 // SCALABILITY FIX: Use sessionStorage instead of in-memory Map for horizontal scaling
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minuti
+const CACHE_DURATION = TIME_CONSTANTS.CACHE_DURATION;
 
 const getClientCache = (key: string) => {
   if (typeof window === 'undefined') return null;
@@ -51,7 +53,11 @@ const setClientCache = (key: string, data: any) => {
       timestamp: Date.now()
     }));
   } catch (error) {
-    console.warn('Failed to cache availability:', error);
+    sreLogger.warn('Failed to cache availability', {
+      component: 'availability-utils',
+      action: 'cache_write',
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 };
 
@@ -106,7 +112,12 @@ export const fetchSpaceBookings = async (
       try {
         bookings = await fetchOptimizedSpaceAvailability(spaceId, startDate, endDate);
       } catch (rpcError) {
-        console.warn('RPC fallback to standard query:', rpcError);
+        sreLogger.warn('RPC fallback to standard query', {
+          component: 'availability-utils',
+          action: 'fetch_bookings',
+          spaceId,
+          error: rpcError instanceof Error ? rpcError.message : String(rpcError)
+        });
         useRPC = false;
       }
     }
@@ -132,7 +143,13 @@ export const fetchSpaceBookings = async (
     
     return bookings;
   } catch (error) {
-    console.error('Error fetching space bookings:', error);
+    sreLogger.error('Error fetching space bookings', {
+      component: 'availability-utils',
+      action: 'fetch_bookings',
+      spaceId,
+      startDate,
+      endDate
+    }, error instanceof Error ? error : new Error(String(error)));
     return [];
   }
 };
@@ -151,7 +168,11 @@ export const invalidateAvailabilityCache = (spaceId: string) => {
     }
     keysToDelete.forEach(key => sessionStorage.removeItem(key));
   } catch (error) {
-    console.warn('Failed to invalidate cache:', error);
+    sreLogger.warn('Failed to invalidate cache', {
+      component: 'availability-utils',
+      action: 'cache_invalidate',
+      spaceId
+    });
   }
 };
 
@@ -265,7 +286,13 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
       
       setAvailability(availabilityMap);
     } catch (error) {
-      console.error('Error fetching availability:', error);
+      sreLogger.error('Error fetching availability', {
+        component: 'useSpaceAvailability',
+        action: 'fetch_availability',
+        spaceId,
+        startDate,
+        endDate
+      }, error instanceof Error ? error : new Error(String(error)));
       setError('Errore nel caricamento della disponibilità');
     } finally {
       setLoading(false);
@@ -287,7 +314,12 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
           filter: `space_id=eq.${spaceId}`
         },
         (payload) => {
-          console.log('Real-time booking update:', payload);
+          sreLogger.info('Real-time booking update received', {
+            component: 'useSpaceAvailability',
+            action: 'realtime_update',
+            spaceId,
+            eventType: payload.eventType
+          });
           // Invalida cache e ricarica
           invalidateAvailabilityCache(spaceId);
           fetchAvailability(true);
@@ -343,7 +375,14 @@ export const checkRealTimeConflicts = async (
       conflictingBookings: data || []
     };
   } catch (error) {
-    console.error('Error checking real-time conflicts:', error);
+    sreLogger.error('Error checking real-time conflicts', {
+      component: 'availability-utils',
+      action: 'check_conflicts',
+      spaceId,
+      date,
+      startTime,
+      endTime
+    }, error instanceof Error ? error : new Error(String(error)));
     return { hasConflict: false, conflictingBookings: [] };
   }
 };
@@ -360,7 +399,14 @@ export const validateBookingSlotWithLock = async (
     const result = await rpcValidateBookingSlot(spaceId, date, startTime, endTime, userId);
     return result;
   } catch (error) {
-    console.error('Server validation failed:', error);
+    sreLogger.warn('Server validation failed, using client-side fallback', {
+      component: 'availability-utils',
+      action: 'validate_booking_slot',
+      spaceId,
+      date,
+      startTime,
+      endTime
+    });
     // Fallback to client-side validation
     const { hasConflict, conflictingBookings } = await checkRealTimeConflicts(
       spaceId, date, startTime, endTime
@@ -406,7 +452,13 @@ export const fetchMultipleSpacesAvailability = async (
 
     return groupedBookings;
   } catch (error) {
-    console.error('Error fetching multiple spaces availability:', error);
+    sreLogger.error('Error fetching multiple spaces availability', {
+      component: 'availability-utils',
+      action: 'fetch_multiple_spaces',
+      spaceIds,
+      startDate,
+      endDate
+    }, error instanceof Error ? error : new Error(String(error)));
     return {};
   }
 };

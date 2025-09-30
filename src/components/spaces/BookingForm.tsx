@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { reserveBookingSlot, calculateBookingTotal, handlePaymentFlow } from "@/lib/booking-reservation-utils";
 import { useBookingConflictCheck } from "@/hooks/useBookingConflictCheck";
 import { useLogger } from "@/hooks/useLogger";
+import { sreLogger } from '@/lib/sre-logger';
 import { BookingSlot, MultiDayBookingData } from "@/types/booking";
 import { BookingSlotItem } from "./BookingSlotItem";
 import { TwoStepBookingForm } from "../booking/TwoStepBookingForm";
@@ -249,13 +250,14 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
           const endDateTime = new Date(`${firstSlot.date}T${firstSlot.endTime}:00`);
           const durationHours = Math.abs((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60));
           
-          console.log('🔵 BookingForm → handlePaymentFlow payload', {
+          sreLogger.info('Payment flow initiated', {
+            component: 'BookingForm',
+            action: 'payment_flow',
             bookingId: reservation.booking_id,
             spaceId,
             durationHours,
             pricePerHour: pricePerHour || pricePerDay / 8,
-            pricePerDay,
-            host_stripe_account_id: hostStripeAccountId || ''
+            pricePerDay
           });
           
           handlePaymentFlow(

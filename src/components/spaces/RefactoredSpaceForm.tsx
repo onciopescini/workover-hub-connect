@@ -18,6 +18,7 @@ import { RefactoredPhotos } from "./RefactoredPhotos";
 import { RefactoredPublishingOptions } from "./RefactoredPublishingOptions";
 import { startImageOptimization } from "@/lib/image-optimization";
 import { useLogger } from "@/hooks/useLogger";
+import { sreLogger } from '@/lib/sre-logger';
 import type { Space } from "@/types/space";
 
 interface RefactoredSpaceFormProps {
@@ -239,12 +240,20 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
   };
 
   const onSubmit = async (data: SpaceFormData) => {
-    console.log('🚀 Form submission started', { data, isEdit });
+    sreLogger.info('Space form submission started', { 
+      component: 'RefactoredSpaceForm',
+      action: 'form_submit',
+      isEdit 
+    });
     
     // Add detailed form validation logging
     const formErrors = form.formState.errors;
     if (Object.keys(formErrors).length > 0) {
-      console.error('❌ Form validation errors:', formErrors);
+      sreLogger.error('Form validation errors', {
+        component: 'RefactoredSpaceForm',
+        action: 'validation_failed',
+        errors: formErrors
+      }, new Error('Form validation failed'));
       toast.error("Please fix the errors in the form");
       return;
     }
@@ -253,13 +262,19 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     if (data.published && data.availability) {
       const hasAvailability = Object.values(data.availability.recurring).some(day => day.enabled && day.slots.length > 0);
       if (!hasAvailability) {
-        console.error('❌ No availability set for published space');
+        sreLogger.warn('No availability set for published space', {
+          component: 'RefactoredSpaceForm',
+          action: 'validation_warning'
+        });
         toast.error("Devi impostare almeno un giorno e orario di disponibilità per pubblicare lo spazio");
         return;
       }
     }
     
-    console.log('✅ Form validation passed, proceeding with submission');
+    sreLogger.info('Form validation passed', {
+      component: 'RefactoredSpaceForm',
+      action: 'validation_success'
+    });
     setIsSubmitting(true);
     
     try {
@@ -296,18 +311,30 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       
       if (isEdit && initialData) {
         // Update existing space
-        console.log('📝 Updating existing space:', initialData.id);
+        sreLogger.info('Updating existing space', {
+          component: 'RefactoredSpaceForm',
+          action: 'update_space',
+          spaceId: initialData.id
+        });
         const { error } = await supabase
           .from("spaces")
           .update(spaceData)
           .eq("id", initialData.id);
           
         if (error) {
-          console.error('❌ Update error:', error);
+          sreLogger.error('Space update failed', {
+            component: 'RefactoredSpaceForm',
+            action: 'update_space',
+            spaceId: initialData.id
+          }, error instanceof Error ? error : new Error(String(error)));
           throw error;
         }
         
-        console.log('✅ Space updated successfully');
+        sreLogger.info('Space updated successfully', {
+          component: 'RefactoredSpaceForm',
+          action: 'update_success',
+          spaceId: initialData.id
+        });
         toast.success("Space updated successfully!");
       } else {
         // Create new space
@@ -325,7 +352,10 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       }
       
       // Redirect back to manage spaces
-      console.log('🔄 Navigating to /host/spaces');
+      sreLogger.info('Navigating to manage spaces', {
+        component: 'RefactoredSpaceForm',
+        action: 'navigation'
+      });
       navigate("/host/spaces");
     } catch (saveError) {
       error("Error saving space", saveError as Error, { 

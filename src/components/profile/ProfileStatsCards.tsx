@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Star, TrendingUp, Euro } from "lucide-react";
 import { Profile } from "@/types/auth";
 import { getUserPublicReviews } from "@/lib/user-review-utils";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ProfileStatsCardsProps {
   profile: Profile;
@@ -48,7 +49,11 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
             .eq('spaces.host_id', profile.id);
 
           if (hostError) {
-            console.error('Error fetching host stats:', hostError);
+            sreLogger.error('Error fetching host stats', {
+              component: 'ProfileStatsCards',
+              action: 'fetch_host_stats',
+              userId: profile.id
+            }, hostError instanceof Error ? hostError : new Error(String(hostError)));
             endTimer();
             return;
           }
@@ -82,7 +87,11 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
             .eq('user_id', profile.id);
 
           if (coworkerError) {
-            console.error('Error fetching coworker stats:', coworkerError);
+            sreLogger.error('Error fetching coworker stats', {
+              component: 'ProfileStatsCards',
+              action: 'fetch_coworker_stats',
+              userId: profile.id
+            }, coworkerError instanceof Error ? coworkerError : new Error(String(coworkerError)));
             endTimer();
             return;
           }
@@ -104,7 +113,12 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
 
         endTimer();
       } catch (error) {
-        console.error('Error fetching profile stats:', error);
+        sreLogger.error('Error fetching profile stats', {
+          component: 'ProfileStatsCards',
+          action: 'fetch_stats',
+          userId: profile.id,
+          role: profile.role
+        }, error instanceof Error ? error : new Error(String(error)));
       }
     };
 
