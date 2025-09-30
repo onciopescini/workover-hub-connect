@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { sreLogger } from '@/lib/sre-logger';
 
 const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
@@ -64,10 +65,9 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const setupSecurityEventListeners = () => {
       // Detect and log CSP violations
       document.addEventListener('securitypolicyviolation', (e) => {
-        console.warn('CSP Violation:', {
+        sreLogger.warn('CSP Violation', {
           blockedURI: e.blockedURI,
           violatedDirective: e.violatedDirective,
-          originalPolicy: e.originalPolicy,
           sourceFile: e.sourceFile,
           lineNumber: e.lineNumber
         });
@@ -81,7 +81,7 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         
         if (!isAllowedElement) {
           e.preventDefault();
-          console.warn('Unauthorized paste attempt blocked');
+          sreLogger.warn('Unauthorized paste attempt blocked', {});
         }
       });
 
@@ -95,13 +95,13 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 
                 // Check for suspicious script injections
                 if (element.tagName === 'SCRIPT' && !element.hasAttribute('data-approved')) {
-                  console.warn('Suspicious script injection detected:', element);
+                  sreLogger.warn('Suspicious script injection detected', { tagName: element.tagName });
                   element.remove();
                 }
                 
                 // Check for suspicious iframe injections
                 if (element.tagName === 'IFRAME' && !element.hasAttribute('data-approved')) {
-                  console.warn('Suspicious iframe injection detected:', element);
+                  sreLogger.warn('Suspicious iframe injection detected', { tagName: element.tagName });
                   element.remove();
                 }
               }

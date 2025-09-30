@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Clock, Users, Search, UserPlus, X, MapPin } from "lucide-react";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface WaitlistEntry {
   id: string;
@@ -60,7 +61,7 @@ export function WaitlistManager() {
 
       setWaitlists(validWaitlists);
     } catch (error) {
-      console.error('Error fetching waitlists:', error);
+      sreLogger.error('Error fetching waitlists', {}, error as Error);
       toast.error('Errore nel caricamento delle liste d\'attesa');
     } finally {
       setIsLoading(false);
@@ -75,7 +76,7 @@ export function WaitlistManager() {
         toast.info('Funzionalità di promozione per spazi non ancora implementata');
       }
     } catch (error) {
-      console.error('Error promoting user:', error);
+      sreLogger.error('Error promoting user', { waitlistId, spaceId }, error as Error);
       toast.error('Errore nella promozione dell\'utente');
     }
   };
@@ -92,7 +93,7 @@ export function WaitlistManager() {
       toast.success('Utente rimosso dalla lista d\'attesa');
       fetchWaitlists();
     } catch (error) {
-      console.error('Error removing from waitlist:', error);
+      sreLogger.error('Error removing from waitlist', { waitlistId }, error as Error);
       toast.error('Errore nella rimozione dalla lista d\'attesa');
     }
   };

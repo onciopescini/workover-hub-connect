@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 198/674 (29.4%)
+## 📊 Overall Progress: 214/674 (31.8%)
 
-### ✅ Completed Files (52 files, 198 replacements)
+### ✅ Completed Files (57 files, 214 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -276,10 +276,10 @@
 - [ ] ESLint passing with 0 console.* warnings (Currently: 649 warnings)
 
 ### Current Metrics
-- **Console statements cleaned**: 198/674 (29.4%)
-- **Files cleaned**: 52/134 (38.8%)
+- **Console statements cleaned**: 214/674 (31.8%)
+- **Files cleaned**: 57/134 (42.5%)
 - **Config migrations**: 1/50+ (2%)
-- **ESLint warnings resolved**: 198/674 (29.4%)
+- **ESLint warnings resolved**: 214/674 (31.8%)
 
 ---
 
@@ -305,8 +305,63 @@
 
 ---
 
-**Last Updated**: 2025-09-30 - Batch 13 (Space Form & User Action Hooks) Complete  
-**Next Update**: After Batch 14 completion
+**Last Updated**: 2025-09-30 - Batch 14 (Security & Component Hooks) Complete  
+**Next Update**: After Batch 15 completion
+
+---
+
+## Batch 14: Security & Component Hooks Cleanup (5 files, 16 console.*)
+
+### Files Processed
+1. ✅ **src/components/security/CSPProvider.tsx**
+   - Status: Complete
+   - Console statements replaced: 4 (console.warn)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.warn for CSP violations (with blockedURI, violatedDirective, sourceFile, lineNumber context)
+     - Replaced console.warn for unauthorized paste attempts
+     - Replaced console.warn for suspicious script injection (with tagName context)
+     - Replaced console.warn for suspicious iframe injection (with tagName context)
+     - All warnings properly structured with context
+
+2. ✅ **src/components/host/onboarding/HostOnboardingWizard.tsx**
+   - Status: Complete
+   - Console statements replaced: 4 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for saving return URL errors (with userId context) - 2 occurrences
+     - Replaced console.error for Stripe return handling error (with userId context)
+     - Replaced console.error for onboarding completion error (with userId context)
+     - All errors properly typed with Error cast
+
+3. ✅ **src/components/spaces/calendar/ConflictManagementSystem.tsx**
+   - Status: Complete
+   - Console statements replaced: 3 (2 console.error, 1 console.warn)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for cancel_booking error (with bookingId context)
+     - Replaced console.warn for notifications insert failure (with bookingId and targetUserId context)
+     - Replaced console.error for notify error (with bookingId context)
+     - All errors properly typed with Error cast
+
+4. ✅ **src/components/waitlist/WaitlistManager.tsx**
+   - Status: Complete
+   - Console statements replaced: 3 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching waitlists error
+     - Replaced console.error for promoting user error (with waitlistId and spaceId context)
+     - Replaced console.error for removing from waitlist error (with waitlistId context)
+     - All errors properly typed with Error cast
+
+5. ✅ **src/components/settings/NetworkingPreferences.tsx**
+   - Status: Complete
+   - Console statements replaced: 2 (console.error)
+   - Changes:
+     - Added sreLogger import
+     - Replaced console.error for fetching networking settings error (with userId context)
+     - Replaced console.error for saving settings error (with userId context)
+     - All errors properly typed with Error cast
 
 ---
 

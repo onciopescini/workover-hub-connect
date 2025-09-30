@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { type AvailabilityData } from "@/types/availability";
 import { useToast } from "@/hooks/use-toast";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface ConflictManagementSystemProps {
   availability: AvailabilityData;
@@ -105,7 +106,7 @@ export const ConflictManagementSystem = ({
         description: "Prenotazione annullata e rimborso avviato automaticamente.",
       });
     } catch (error) {
-      console.error('cancel_booking error', error);
+      sreLogger.error('cancel_booking error', { bookingId }, error as Error);
       toast({
         title: "Errore",
         description: "Impossibile cancellare la prenotazione.",
@@ -137,7 +138,7 @@ export const ConflictManagementSystem = ({
           }
         });
         if (error) {
-          console.warn('notifications insert failed, proceeding with UI-only notice', error);
+          sreLogger.warn('notifications insert failed, proceeding with UI-only notice', { bookingId, targetUserId }, error as Error);
         }
       }
 
@@ -147,7 +148,7 @@ export const ConflictManagementSystem = ({
         description: "L'ospite è stato informato del conflitto (se possibile).",
       });
     } catch (error) {
-      console.error('notify error', error);
+      sreLogger.error('notify error', { bookingId }, error as Error);
       toast({
         title: "Errore",
         description: "Errore nell'invio della notifica",

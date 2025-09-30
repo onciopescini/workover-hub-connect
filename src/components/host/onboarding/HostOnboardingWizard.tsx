@@ -12,6 +12,7 @@ import { StripeSetup } from "@/components/host/StripeSetup";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface HostOnboardingWizardProps {
   onComplete?: () => void;
@@ -69,10 +70,10 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             .eq('id', authState.user.id);
             
           if (error) {
-            console.error("Errore nel salvare l'URL di ritorno:", error);
+            sreLogger.error("Errore nel salvare l'URL di ritorno", { userId: authState.user.id }, error as Error);
           }
         } catch (error) {
-          console.error("Errore nel salvare l'URL di ritorno:", error);
+          sreLogger.error("Errore nel salvare l'URL di ritorno", { userId: authState.user.id }, error as Error);
         }
       }
     };
@@ -96,7 +97,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
         setIsProcessingStripeReturn(false);
       }, 1500);
     } catch (error) {
-      console.error("Error handling Stripe return:", error);
+      sreLogger.error("Error handling Stripe return", { userId: authState.user?.id }, error as Error);
       toast.error("Errore nel processare il ritorno da Stripe");
       setIsProcessingStripeReturn(false);
     }
@@ -129,7 +130,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       onComplete?.();
       navigate("/host/dashboard");
     } catch (error) {
-      console.error("Error completing onboarding:", error);
+      sreLogger.error("Error completing onboarding", { userId: authState.user?.id }, error as Error);
       toast.error("Errore durante il completamento dell'onboarding");
     }
   };

@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface NetworkingSettings {
   networking_enabled: boolean;
@@ -68,7 +69,7 @@ export function NetworkingPreferences() {
         });
       }
     } catch (error) {
-      console.error('Error fetching networking settings:', error);
+      sreLogger.error('Error fetching networking settings', { userId: authState.user?.id }, error as Error);
       toast.error('Errore nel caricamento delle impostazioni');
     } finally {
       setIsLoading(false);
@@ -93,7 +94,7 @@ export function NetworkingPreferences() {
       setHasChanges(false);
       toast.success('Impostazioni salvate con successo!');
     } catch (error) {
-      console.error('Error saving settings:', error);
+      sreLogger.error('Error saving settings', { userId: authState.user?.id }, error as Error);
       toast.error('Errore nel salvataggio delle impostazioni');
     } finally {
       setIsSaving(false);
