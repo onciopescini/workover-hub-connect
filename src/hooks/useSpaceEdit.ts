@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Space } from "@/types/space";
+import { sreLogger } from '@/lib/sre-logger';
 
 type SpaceCategory = 'home' | 'outdoor' | 'professional';
 type WorkEnvironment = 'silent' | 'controlled' | 'dynamic';
@@ -35,7 +36,7 @@ export const useSpaceEdit = (id: string | undefined) => {
       setIsLoading(true);
       try {
         if (!id) {
-          console.error("Space ID is missing");
+          sreLogger.error("Space ID is missing", {});
           return;
         }
 
@@ -46,7 +47,7 @@ export const useSpaceEdit = (id: string | undefined) => {
           .single();
 
         if (error) {
-          console.error("Error fetching space:", error);
+          sreLogger.error("Error fetching space", { spaceId: id }, error as Error);
           toast.error("Failed to load space details.");
           return;
         }
@@ -74,7 +75,7 @@ export const useSpaceEdit = (id: string | undefined) => {
 
   const handleUpdateSpace = async () => {
     if (!id) {
-      console.error("Space ID is missing");
+      sreLogger.error("Space ID is missing for update", {});
       return;
     }
 
@@ -96,7 +97,7 @@ export const useSpaceEdit = (id: string | undefined) => {
         .eq('id', id);
 
       if (error) {
-        console.error("Error updating space:", error);
+        sreLogger.error("Error updating space", { spaceId: id }, error as Error);
         toast.error("Failed to update space.");
         return;
       }
@@ -110,7 +111,7 @@ export const useSpaceEdit = (id: string | undefined) => {
 
   const handleDeleteSpace = async () => {
     if (!id) {
-      console.error("Space ID is missing");
+      sreLogger.error("Space ID is missing for delete", {});
       return;
     }
 
@@ -123,7 +124,7 @@ export const useSpaceEdit = (id: string | undefined) => {
         .eq('id', id);
 
       if (error) {
-        console.error("Error deleting space:", error);
+        sreLogger.error("Error deleting space", { spaceId: id }, error as Error);
         toast.error("Failed to delete space.");
         return;
       }

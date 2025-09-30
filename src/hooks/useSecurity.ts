@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { sanitizeHtml, sanitizeUrl, containsSuspiciousContent } from '@/utils/security';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useSecurity = () => {
   
@@ -12,13 +13,13 @@ export const useSecurity = () => {
       });
       
       if (error) {
-        console.error('Rate limit check failed:', error);
+        sreLogger.error('Rate limit check failed', { identifier, action }, error as Error);
         return { allowed: false, message: 'Security check failed' };
       }
       
       return data;
     } catch (error) {
-      console.error('Rate limit error:', error);
+      sreLogger.error('Rate limit error', { identifier, action }, error as Error);
       return { allowed: false, message: 'Security check failed' };
     }
   }, []);
@@ -37,7 +38,7 @@ export const useSecurity = () => {
         p_access_type: accessType
       });
     } catch (error) {
-      console.error('Failed to log data access:', error);
+      sreLogger.error('Failed to log data access', { accessedUserId, tableName, accessType }, error as Error);
     }
   }, []);
 

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface RateLimitResponse {
   allowed: boolean;
@@ -40,7 +41,7 @@ export const useRateLimit = () => {
       });
 
       if (error) {
-        console.error('Rate limit check error:', error);
+        sreLogger.error('Rate limit check error', { endpoint: options.endpoint }, error as Error);
         // Allow request on error to not block legitimate users
         return { allowed: true, error: error.message };
       }
@@ -55,7 +56,7 @@ export const useRateLimit = () => {
         error: data?.error
       };
     } catch (error) {
-      console.error('Rate limit check failed:', error);
+      sreLogger.error('Rate limit check failed', { endpoint: options.endpoint }, error as Error);
       // Allow request on error
       return { allowed: true, error: 'Rate limit check failed' };
     } finally {
@@ -106,7 +107,7 @@ export const checkRateLimitStandalone = async (
     });
 
     if (error) {
-      console.error('Rate limit check error:', error);
+      sreLogger.error('Rate limit check error', { endpoint }, error as Error);
       return { allowed: true, error: error.message };
     }
 
@@ -119,7 +120,7 @@ export const checkRateLimitStandalone = async (
       error: data?.error
     };
   } catch (error) {
-    console.error('Rate limit check failed:', error);
+    sreLogger.error('Rate limit check failed', { endpoint }, error as Error);
     return { allowed: true, error: 'Rate limit check failed' };
   }
 };

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import type { Space, SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
+import { sreLogger } from '@/lib/sre-logger';
 
 interface UseSpaceFormStateProps {
   initialData?: Space | undefined;
@@ -62,7 +63,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
             parsedAvailability = availabilityJson as AvailabilityData;
           }
         } catch (error) {
-          console.error("Error parsing availability:", error);
+          sreLogger.error("Error parsing availability", { spaceId: initialData?.id }, error as Error);
         }
       }
 

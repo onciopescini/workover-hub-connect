@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const useSpaceCreation = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🔍 useSpaceCreation: Current auth state', {
+  sreLogger.debug('useSpaceCreation: Current auth state', {
     isLoading: authState.isLoading,
-    user: authState.user?.id,
-    profile: authState.profile,
+    userId: authState.user?.id,
     role: authState.profile?.role
   });
 
@@ -20,7 +20,7 @@ export const useSpaceCreation = () => {
   useEffect(() => {
     const checkRestriction = async () => {
       if (authState.user && authState.profile?.role === 'host') {
-        console.log('🔍 Checking space creation restrictions for host');
+        sreLogger.debug('Checking space creation restrictions for host', { userId: authState.user.id });
         try {
           const isRestricted = await checkSpaceCreationRestriction();
           if (isRestricted) {
@@ -28,7 +28,7 @@ export const useSpaceCreation = () => {
             navigate('/host/spaces');
           }
         } catch (error) {
-          console.error('Error checking space creation restriction:', error);
+          sreLogger.error('Error checking space creation restriction', { userId: authState.user.id }, error as Error);
         }
       }
     };
@@ -39,7 +39,7 @@ export const useSpaceCreation = () => {
   // Ensure only hosts can access
   useEffect(() => {
     if (authState.profile && authState.profile.role !== "host") {
-      console.log('🚫 Non-host trying to access space creation:', authState.profile.role);
+      sreLogger.warn('Non-host trying to access space creation', { role: authState.profile.role, userId: authState.user?.id });
       toast.error("Solo gli host possono creare spazi");
       navigate("/dashboard");
     }
