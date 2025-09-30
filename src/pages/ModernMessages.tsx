@@ -41,14 +41,14 @@ export default function ModernMessages() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen w-full bg-background">
-        <div className="container mx-auto px-4 py-6 max-w-[1800px]">
+      <div className="w-full h-full bg-background flex flex-col">
+        <div className="container mx-auto px-4 py-6 max-w-[1800px] flex-1 flex flex-col overflow-hidden">
           <MessagesPageHeader
             onNewChat={() => navigate('/networking')}
             onSettings={() => setSettingsOpen(true)}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 mt-6">
             {/* Sidebar - Lista conversazioni */}
             <div className="lg:col-span-4 xl:col-span-3 flex flex-col h-full">
               <ConversationSearchBar 

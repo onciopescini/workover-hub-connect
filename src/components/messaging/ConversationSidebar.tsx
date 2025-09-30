@@ -19,7 +19,7 @@ export const ConversationSidebar = ({
 }: ConversationSidebarProps) => {
   return (
     <Card className="h-full flex flex-col overflow-hidden border-border">
-      <ScrollArea className="h-full">
+      <ScrollArea className="flex-1">
         {conversations.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground p-4">
             <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
