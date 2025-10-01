@@ -4,6 +4,7 @@ import { executeValidationSuite } from './validation-runner';
 import { runStripeValidationSuite } from './stripe-validation';
 import { calculatePaymentBreakdown } from './payment-utils';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 // Comprehensive regression validation suite for Sprint 1
 export class RegressionValidationSuite {
@@ -17,8 +18,7 @@ export class RegressionValidationSuite {
     errors: string[];
     summary: string;
   }> {
-    console.log('🚀 WORKOVER SPRINT 1 REGRESSION VALIDATION SUITE');
-    console.log('='.repeat(70));
+    sreLogger.info('🚀 WORKOVER SPRINT 1 REGRESSION VALIDATION SUITE', { action: 'regression_validation_start' });
     
     this.results = [];
     this.warnings = [];
@@ -55,15 +55,14 @@ export class RegressionValidationSuite {
       return this.generateFinalReport();
       
     } catch (error) {
-      console.error('❌ REGRESSION VALIDATION FAILED:', error);
+      sreLogger.error('❌ REGRESSION VALIDATION FAILED', { action: 'regression_validation_failed' }, error as Error);
       this.errors.push(`Critical validation failure: ${error}`);
       return this.generateFinalReport();
     }
   }
 
   private async validatePaymentsAndStripe(): Promise<void> {
-    console.log('\n💳 VALIDATING PAYMENTS & STRIPE INTEGRATION');
-    console.log('-'.repeat(50));
+    sreLogger.info('💳 VALIDATING PAYMENTS & STRIPE INTEGRATION', { action: 'validate_payments_start' });
     
     try {
       // Test dual commission model calculations
@@ -96,7 +95,7 @@ export class RegressionValidationSuite {
       
       if (paymentCalculationsValid) {
         this.results.push({ module: 'Payments & Stripe', status: 'PASSED', details: 'Dual commission model and Stripe destination charges validated' });
-        console.log('✅ Payment calculations and Stripe integration validated');
+        sreLogger.info('✅ Payment calculations and Stripe integration validated', { action: 'payments_validated' });
       }
       
       // Run existing payment validation suite
@@ -107,13 +106,12 @@ export class RegressionValidationSuite {
       
     } catch (error) {
       this.errors.push(`Payment validation error: ${error}`);
-      console.log('❌ Payment validation failed:', error);
+      sreLogger.error('❌ Payment validation failed', { action: 'payments_validation_failed' }, error as Error);
     }
   }
 
   private async validateBookingsSystem(): Promise<void> {
-    console.log('\n📅 VALIDATING BOOKINGS SYSTEM');
-    console.log('-'.repeat(50));
+    sreLogger.info('📅 VALIDATING BOOKINGS SYSTEM', { action: 'validate_bookings_start' });
     
     try {
       // Test bookings table structure with new foreign key
@@ -129,7 +127,7 @@ export class RegressionValidationSuite {
       if (bookingsError) {
         this.errors.push(`Bookings query with new FK failed: ${bookingsError.message}`);
       } else {
-        console.log('✅ Bookings table structure with foreign key validated');
+        sreLogger.info('✅ Bookings table structure with foreign key validated', { action: 'bookings_structure_validated' });
       }
 
       // Test booking status enum
@@ -141,7 +139,7 @@ export class RegressionValidationSuite {
       if (statusError) {
         this.errors.push(`Booking status enum validation failed: ${statusError.message}`);
       } else {
-        console.log('✅ Booking status enum validated');
+        sreLogger.info('✅ Booking status enum validated', { action: 'booking_status_validated' });
       }
 
       // Test cancellation function
@@ -155,20 +153,19 @@ export class RegressionValidationSuite {
       if (cancellationError) {
         this.errors.push(`Cancellation fee calculation failed: ${cancellationError.message}`);
       } else {
-        console.log('✅ Cancellation fee calculation validated');
+        sreLogger.info('✅ Cancellation fee calculation validated', { action: 'cancellation_fee_validated' });
       }
 
       this.results.push({ module: 'Bookings System', status: 'PASSED', details: 'Booking queries, foreign key relationship, status enum, and cancellation logic validated' });
       
     } catch (error) {
       this.errors.push(`Bookings validation error: ${error}`);
-      console.log('❌ Bookings validation failed:', error);
+      sreLogger.error('❌ Bookings validation failed', { action: 'bookings_validation_failed' }, error as Error);
     }
   }
 
   private async validateGDPRCompliance(): Promise<void> {
-    console.log('\n🔒 VALIDATING GDPR COMPLIANCE');
-    console.log('-'.repeat(50));
+    sreLogger.info('🔒 VALIDATING GDPR COMPLIANCE', { action: 'validate_gdpr_start' });
     
     try {
       // Test GDPR requests table
@@ -180,7 +177,7 @@ export class RegressionValidationSuite {
       if (gdprError) {
         this.errors.push(`GDPR requests query failed: ${gdprError.message}`);
       } else {
-        console.log('✅ GDPR requests table validated');
+        sreLogger.info('✅ GDPR requests table validated', { action: 'gdpr_requests_validated' });
       }
 
       // Test cookie consent log
@@ -192,7 +189,7 @@ export class RegressionValidationSuite {
       if (cookieError) {
         this.errors.push(`Cookie consent log query failed: ${cookieError.message}`);
       } else {
-        console.log('✅ Cookie consent log validated');
+        sreLogger.info('✅ Cookie consent log validated', { action: 'cookie_consent_validated' });
       }
 
       // Test export function
@@ -204,20 +201,19 @@ export class RegressionValidationSuite {
       if (exportError && !exportError.message.includes('Unauthorized')) {
         this.warnings.push(`Export user data function issue: ${exportError.message}`);
       } else {
-        console.log('✅ Export user data RPC validated');
+        sreLogger.info('✅ Export user data RPC validated', { action: 'export_data_validated' });
       }
 
       this.results.push({ module: 'GDPR Compliance', status: 'PASSED', details: 'GDPR requests, cookie consent, and data export functionality validated' });
       
     } catch (error) {
       this.errors.push(`GDPR validation error: ${error}`);
-      console.log('❌ GDPR validation failed:', error);
+      sreLogger.error('❌ GDPR validation failed', { action: 'gdpr_validation_failed' }, error as Error);
     }
   }
 
   private async validateUserProfiles(): Promise<void> {
-    console.log('\n👤 VALIDATING USER PROFILES');
-    console.log('-'.repeat(50));
+    sreLogger.info('👤 VALIDATING USER PROFILES', { action: 'validate_profiles_start' });
     
     try {
       // Test profiles table structure with NEW fields
@@ -234,7 +230,7 @@ export class RegressionValidationSuite {
       if (profilesError) {
         this.errors.push(`Profiles query with new fields failed: ${profilesError.message}`);
       } else {
-        console.log('✅ Profiles table structure with new fields validated');
+        sreLogger.info('✅ Profiles table structure with new fields validated', { action: 'profiles_structure_validated' });
         
         // Check if new fields are accessible
     if (profiles && profiles.length > 0) {
@@ -242,7 +238,7 @@ export class RegressionValidationSuite {
       if (profile) {
         const hasNewFields = 'phone' in profile && 'city' in profile && 'profession' in profile && 'competencies' in profile && 'industries' in profile;
           if (hasNewFields) {
-            console.log('✅ New profile fields (phone, city, profession, competencies, industries) are accessible');
+            sreLogger.info('✅ New profile fields (phone, city, profession, competencies, industries) are accessible', { action: 'new_fields_accessible' });
           } else {
             this.warnings.push('New profile fields may not be properly accessible');
           }
@@ -251,19 +247,18 @@ export class RegressionValidationSuite {
   }
 
       // Test role enum
-      console.log('✅ User role enum structure validated');
+      sreLogger.info('✅ User role enum structure validated', { action: 'role_enum_validated' });
 
       this.results.push({ module: 'User Profiles', status: 'PASSED', details: 'Profile fields including new fields (phone, city, profession, competencies, industries), roles, and user management validated' });
       
     } catch (error) {
       this.errors.push(`User profiles validation error: ${error}`);
-      console.log('❌ User profiles validation failed:', error);
+      sreLogger.error('❌ User profiles validation failed', { action: 'profiles_validation_failed' }, error as Error);
     }
   }
 
   private async validateMessagingNetworking(): Promise<void> {
-    console.log('\n💬 VALIDATING MESSAGING & NETWORKING');
-    console.log('-'.repeat(50));
+    sreLogger.info('💬 VALIDATING MESSAGING & NETWORKING', { action: 'validate_messaging_start' });
     
     try {
       // Test private chats structure
@@ -275,7 +270,7 @@ export class RegressionValidationSuite {
       if (chatsError) {
         this.errors.push(`Private chats query failed: ${chatsError.message}`);
       } else {
-        console.log('✅ Private chats structure validated');
+        sreLogger.info('✅ Private chats structure validated', { action: 'private_chats_validated' });
       }
 
       // Test private messages
@@ -287,7 +282,7 @@ export class RegressionValidationSuite {
       if (messagesError) {
         this.errors.push(`Private messages query failed: ${messagesError.message}`);
       } else {
-        console.log('✅ Private messages structure validated');
+        sreLogger.info('✅ Private messages structure validated', { action: 'private_messages_validated' });
       }
 
       // Test connections
@@ -299,7 +294,7 @@ export class RegressionValidationSuite {
       if (connectionsError) {
         this.errors.push(`Connections query failed: ${connectionsError.message}`);
       } else {
-        console.log('✅ Connections structure validated');
+        sreLogger.info('✅ Connections structure validated', { action: 'connections_validated' });
       }
 
       // Test connection suggestions
@@ -311,20 +306,19 @@ export class RegressionValidationSuite {
       if (suggestionsError) {
         this.errors.push(`Connection suggestions query failed: ${suggestionsError.message}`);
       } else {
-        console.log('✅ Connection suggestions validated');
+        sreLogger.info('✅ Connection suggestions validated', { action: 'connection_suggestions_validated' });
       }
 
       this.results.push({ module: 'Messaging & Networking', status: 'PASSED', details: 'Private messaging, connections, and networking features validated' });
       
     } catch (error) {
       this.errors.push(`Messaging & networking validation error: ${error}`);
-      console.log('❌ Messaging & networking validation failed:', error);
+      sreLogger.error('❌ Messaging & networking validation failed', { action: 'messaging_validation_failed' }, error as Error);
     }
   }
 
   private async validateAdminPanel(): Promise<void> {
-    console.log('\n⚙️ VALIDATING ADMIN PANEL');
-    console.log('-'.repeat(50));
+    sreLogger.info('⚙️ VALIDATING ADMIN PANEL', { action: 'validate_admin_start' });
     
     try {
       // Test admin functions
@@ -336,7 +330,7 @@ export class RegressionValidationSuite {
       if (adminError) {
         this.errors.push(`Admin check RPC failed: ${adminError.message}`);
       } else {
-        console.log('✅ Admin role check RPC validated');
+        sreLogger.info('✅ Admin role check RPC validated', { action: 'admin_role_validated' });
       }
 
       // Test admin actions log
@@ -348,7 +342,7 @@ export class RegressionValidationSuite {
       if (logError) {
         this.errors.push(`Admin actions log query failed: ${logError.message}`);
       } else {
-        console.log('✅ Admin actions log validated');
+        sreLogger.info('✅ Admin actions log validated', { action: 'admin_log_validated' });
       }
 
       // Test reports system
@@ -360,20 +354,19 @@ export class RegressionValidationSuite {
       if (reportsError) {
         this.errors.push(`Reports system query failed: ${reportsError.message}`);
       } else {
-        console.log('✅ Reports system validated');
+        sreLogger.info('✅ Reports system validated', { action: 'reports_validated' });
       }
 
       this.results.push({ module: 'Admin Panel', status: 'PASSED', details: 'Admin functions, logging, and moderation tools validated' });
       
     } catch (error) {
       this.errors.push(`Admin panel validation error: ${error}`);
-      console.log('❌ Admin panel validation failed:', error);
+      sreLogger.error('❌ Admin panel validation failed', { action: 'admin_validation_failed' }, error as Error);
     }
   }
 
   private async validateNavigationRoutes(): Promise<void> {
-    console.log('\n🧭 VALIDATING NAVIGATION & ROUTES');
-    console.log('-'.repeat(50));
+    sreLogger.info('🧭 VALIDATING NAVIGATION & ROUTES', { action: 'validate_routes_start' });
     
     try {
       // Check critical routes exist (this is a basic check)
@@ -383,7 +376,7 @@ export class RegressionValidationSuite {
         '/regression-validation'
       ];
       
-      console.log('✅ Critical routes structure validated');
+      sreLogger.info('✅ Critical routes structure validated', { action: 'routes_validated' });
       
       // Test auth context integration
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -391,20 +384,19 @@ export class RegressionValidationSuite {
       if (sessionError) {
         this.warnings.push(`Auth session check warning: ${sessionError.message}`);
       } else {
-        console.log('✅ Auth context integration validated');
+        sreLogger.info('✅ Auth context integration validated', { action: 'auth_context_validated' });
       }
 
       this.results.push({ module: 'Navigation & Routes', status: 'PASSED', details: 'Route protection and auth context validated' });
       
     } catch (error) {
       this.errors.push(`Navigation validation error: ${error}`);
-      console.log('❌ Navigation validation failed:', error);
+      sreLogger.error('❌ Navigation validation failed', { action: 'navigation_validation_failed' }, error as Error);
     }
   }
 
   private async validateDatabaseAlignment(): Promise<void> {
-    console.log('\n🗄️ VALIDATING DATABASE SCHEMA ALIGNMENT');
-    console.log('-'.repeat(50));
+    sreLogger.info('🗄️ VALIDATING DATABASE SCHEMA ALIGNMENT', { action: 'validate_db_alignment_start' });
     
     try {
       // Test key table relationships including NEW foreign key
@@ -419,7 +411,7 @@ export class RegressionValidationSuite {
       if (spacesError) {
         this.errors.push(`Spaces-Host relationship validation failed: ${spacesError.message}`);
       } else {
-        console.log('✅ Spaces-Host relationship validated');
+        sreLogger.info('✅ Spaces-Host relationship validated', { action: 'spaces_host_validated' });
       }
 
       // Test bookings-profiles relationship (NEW FK)
@@ -434,7 +426,7 @@ export class RegressionValidationSuite {
       if (bookingsUserError) {
         this.errors.push(`Bookings-Profiles relationship validation failed: ${bookingsUserError.message}`);
       } else {
-        console.log('✅ NEW Bookings-Profiles relationship validated');
+        sreLogger.info('✅ NEW Bookings-Profiles relationship validated', { action: 'bookings_profiles_validated' });
       }
 
       // Test bookings-payments relationship
@@ -449,20 +441,19 @@ export class RegressionValidationSuite {
       if (bookingsPaymentsError) {
         this.errors.push(`Bookings-Payments relationship validation failed: ${bookingsPaymentsError.message}`);
       } else {
-        console.log('✅ Bookings-Payments relationship validated');
+        sreLogger.info('✅ Bookings-Payments relationship validated', { action: 'bookings_payments_validated' });
       }
 
       this.results.push({ module: 'Database Schema', status: 'PASSED', details: 'Key table relationships including NEW foreign key constraints and profile fields validated' });
       
     } catch (error) {
       this.errors.push(`Database alignment validation error: ${error}`);
-      console.log('❌ Database alignment validation failed:', error);
+      sreLogger.error('❌ Database alignment validation failed', { action: 'db_alignment_failed' }, error as Error);
     }
   }
 
   private async validateTypeSafety(): Promise<void> {
-    console.log('\n🔧 VALIDATING TYPE SAFETY & INTEGRATION');
-    console.log('-'.repeat(50));
+    sreLogger.info('🔧 VALIDATING TYPE SAFETY & INTEGRATION', { action: 'validate_types_start' });
     
     try {
       // Test payment types integration
@@ -473,7 +464,7 @@ export class RegressionValidationSuite {
           typeof testBreakdown.platformRevenue !== 'number') {
         this.errors.push('Payment breakdown type safety validation failed');
       } else {
-        console.log('✅ Payment types integration validated');
+        sreLogger.info('✅ Payment types integration validated', { action: 'payment_types_validated' });
       }
 
       // Test notification types
@@ -485,14 +476,14 @@ export class RegressionValidationSuite {
       if (notificationsError) {
         this.warnings.push(`Notifications type validation warning: ${notificationsError.message}`);
       } else {
-        console.log('✅ Notification types validated');
+        sreLogger.info('✅ Notification types validated', { action: 'notification_types_validated' });
       }
 
       this.results.push({ module: 'Type Safety', status: 'PASSED', details: 'TypeScript integration and type safety validated' });
       
     } catch (error) {
       this.errors.push(`Type safety validation error: ${error}`);
-      console.log('❌ Type safety validation failed:', error);
+      sreLogger.error('❌ Type safety validation failed', { action: 'type_safety_failed' }, error as Error);
     }
   }
 
@@ -508,34 +499,36 @@ export class RegressionValidationSuite {
     const warningCount = this.warnings.length;
     const errorCount = this.errors.length;
 
-    console.log('\n📊 SPRINT 1 REGRESSION VALIDATION REPORT');
-    console.log('='.repeat(70));
-    console.log(`\n✅ PASSED MODULES (${passedCount}/${totalModules}):`);
-    passed.forEach(module => console.log(`  ✓ ${module}`));
+    sreLogger.info('📊 SPRINT 1 REGRESSION VALIDATION REPORT', { 
+      action: 'validation_report',
+      passedCount,
+      totalModules,
+      warningCount,
+      errorCount
+    });
+    passed.forEach(module => sreLogger.debug(`✓ ${module}`, { action: 'module_passed', module }));
     
     if (this.warnings.length > 0) {
-      console.log(`\n🚩 WARNINGS (${warningCount}):`);
-      this.warnings.forEach(warning => console.log(`  ⚠️  ${warning}`));
+      sreLogger.warn(`🚩 WARNINGS (${warningCount})`, { action: 'validation_warnings', count: warningCount });
+      this.warnings.forEach(warning => sreLogger.warn(`⚠️  ${warning}`, { action: 'validation_warning' }));
     }
     
     if (this.errors.length > 0) {
-      console.log(`\n🔴 ERRORS (${errorCount}):`);
-      this.errors.forEach(error => console.log(`  ❌ ${error}`));
+      sreLogger.error(`🔴 ERRORS (${errorCount})`, { action: 'validation_errors', count: errorCount });
+      this.errors.forEach(error => sreLogger.error(`❌ ${error}`, { action: 'validation_error' }));
     }
 
     let summary: string;
     if (errorCount === 0 && warningCount === 0) {
       summary = '🎉 ALL SYSTEMS OPERATIONAL - Sprint 1 fully validated with schema fixes!';
-      console.log(`\n${summary}`);
+      sreLogger.info(summary, { action: 'validation_complete', status: 'success' });
     } else if (errorCount === 0) {
       summary = `✅ SYSTEMS OPERATIONAL with ${warningCount} minor warnings`;
-      console.log(`\n${summary}`);
+      sreLogger.info(summary, { action: 'validation_complete', status: 'success_with_warnings', warningCount });
     } else {
       summary = `⚠️ ${errorCount} CRITICAL ISSUES found requiring fixes`;
-      console.log(`\n${summary}`);
+      sreLogger.error(summary, { action: 'validation_complete', status: 'failed', errorCount });
     }
-
-    console.log('='.repeat(70));
 
     return {
       passed,

@@ -2,16 +2,16 @@
 import { runPaymentValidation, formatValidationReport } from './payment-validation';
 import { runStripeValidationSuite } from './stripe-validation';
 import { sprint1Validator } from './validation-suite';
+import { sreLogger } from '@/lib/sre-logger';
 
 // Validation suite execution function - only runs when manually called
 export const executeValidationSuite = () => {
-  console.log('🎯 WORKOVER PAYMENT VALIDATION SUITE');
-  console.log('====================================');
+  sreLogger.info('🎯 WORKOVER PAYMENT VALIDATION SUITE', { action: 'validation_suite_start' });
   
   // Run payment calculation validation
   const results = runPaymentValidation();
   const report = formatValidationReport(results);
-  console.log(report);
+  sreLogger.debug('Validation report generated', { action: 'validation_report', report });
   
   // Run Stripe integration validation
   runStripeValidationSuite();
@@ -20,17 +20,27 @@ export const executeValidationSuite = () => {
   const passedCount = results.filter(r => r.passed).length;
   const totalCount = results.length;
   
-  console.log('🏁 VALIDATION SUMMARY');
-  console.log('====================');
-  console.log(`Payment Calculations: ${passedCount}/${totalCount} passed`);
-  console.log(`Stripe Integration: Validated for all test cases`);
-  console.log(`Currency Rounding: 2 decimal places enforced`);
-  console.log(`RLS & Auth: Unchanged (validated)`);
+  sreLogger.info('🏁 VALIDATION SUMMARY', { 
+    action: 'validation_summary',
+    passedCount,
+    totalCount,
+    stripeValidated: true,
+    currencyRounding: '2 decimal places',
+    rlsAuth: 'unchanged'
+  });
   
   if (passedCount === totalCount) {
-    console.log('✅ ALL VALIDATIONS PASSED - Dual commission model is working correctly!');
+    sreLogger.info('✅ ALL VALIDATIONS PASSED - Dual commission model is working correctly!', { 
+      action: 'validation_complete',
+      status: 'success'
+    });
   } else {
-    console.log('❌ Some validations failed - please review the errors above');
+    sreLogger.error('❌ Some validations failed - please review the errors above', { 
+      action: 'validation_complete',
+      status: 'failed',
+      passedCount,
+      totalCount
+    });
   }
   
   return {
@@ -43,8 +53,7 @@ export const executeValidationSuite = () => {
 
 // Run comprehensive Sprint 1 validation
 export const executeFullValidation = async () => {
-  console.log('🚀 EXECUTING FULL SPRINT 1 VALIDATION');
-  console.log('=====================================');
+  sreLogger.info('🚀 EXECUTING FULL SPRINT 1 VALIDATION', { action: 'full_validation_start' });
   
   // Run payment validation first
   executeValidationSuite();

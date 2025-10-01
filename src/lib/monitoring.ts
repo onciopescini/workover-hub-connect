@@ -19,6 +19,7 @@
  * ```
  */
 import * as Sentry from '@sentry/react';
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface ErrorContext {
   userId?: string;
@@ -84,9 +85,8 @@ export const reportError = (
       }
     }
   } catch (sentryError) {
-    // Fallback to console if Sentry fails
-    console.error('Monitoring error:', sentryError);
-    console.error('Original error:', error);
+    // Fallback to sreLogger if Sentry fails
+    sreLogger.error('Monitoring error', { action: 'sentry_fallback', sentryError, originalError: error });
   }
 };
 
@@ -131,7 +131,7 @@ export const trackPerformance = (
       );
     }
   } catch (error) {
-    console.warn('Performance tracking failed:', error);
+    sreLogger.warn('Performance tracking failed', { action: 'performance_tracking_error', error });
   }
 };
 
