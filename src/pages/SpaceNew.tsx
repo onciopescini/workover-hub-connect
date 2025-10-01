@@ -4,11 +4,12 @@ import SpaceForm from "@/components/spaces/SpaceForm";
 import { SpaceCreationHeader } from "@/components/spaces/SpaceCreationHeader";
 import { SpaceCreationLoading } from "@/components/spaces/SpaceCreationLoading";
 import { useSpaceCreation } from "@/hooks/useSpaceCreation";
+import { sreLogger } from "@/lib/sre-logger";
 
 const SpaceNew = () => {
   const { isLoading, canAccess } = useSpaceCreation();
 
-  console.log('🔍 SpaceNew: Auth state check', { isLoading, canAccess });
+  sreLogger.debug('SpaceNew: Auth state check', { isLoading, canAccess });
 
   if (isLoading) {
     return <SpaceCreationLoading />;

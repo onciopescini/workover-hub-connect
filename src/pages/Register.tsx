@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -50,7 +51,7 @@ const Register = () => {
       toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
       navigate('/login');
     } catch (err: any) {
-      console.error('Registration error:', err);
+      sreLogger.error('Registration failed', { email }, err);
       if (err.message?.includes('already registered')) {
         setError('Questo indirizzo email è già registrato. Prova ad accedere.');
       } else {
@@ -69,7 +70,7 @@ const Register = () => {
       await signInWithGoogle();
       toast.success('Registrazione con Google completata!');
     } catch (err: any) {
-      console.error('Google sign up error:', err);
+      sreLogger.error('Google sign up failed', {}, err);
       setError(err.message || 'Errore durante la registrazione con Google.');
     } finally {
       setIsLoading(false);

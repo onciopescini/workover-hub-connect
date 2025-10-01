@@ -15,6 +15,7 @@ import type { BookingReviewWithDetails } from "@/types/review";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { sreLogger } from "@/lib/sre-logger";
 
 const LoadingScreen = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -48,7 +49,7 @@ export default function Reviews() {
       setReviews(reviewsData);
       setAverageRating(avgRating);
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      sreLogger.error("Failed to fetch reviews", { userId: authState.user.id }, error as Error);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +110,7 @@ export default function Reviews() {
         toast.success('Recensione eliminata');
         onChanged();
       } catch (e) {
-        console.error(e);
+        sreLogger.error('Failed to delete review', { reviewId: review.id }, e as Error);
         toast.error('Errore nell\'eliminazione');
       }
     };
@@ -125,7 +126,7 @@ export default function Reviews() {
         setEditOpen(false);
         onChanged();
       } catch (e) {
-        console.error(e);
+        sreLogger.error('Failed to update review', { reviewId: review.id }, e as Error);
         toast.error('Errore nell\'aggiornamento');
       }
     };
@@ -152,7 +153,7 @@ export default function Reviews() {
         setReportReason('');
         setReportDescription('');
       } catch (e) {
-        console.error(e);
+        sreLogger.error('Failed to report review', { reviewId: review.id }, e as Error);
         toast.error('Errore durante la segnalazione');
       }
     };

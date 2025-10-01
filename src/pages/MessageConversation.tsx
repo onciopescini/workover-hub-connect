@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { MessageList } from "@/components/messaging/MessageList";
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from "@/lib/sre-logger";
 
 const MessageConversation = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -25,7 +26,7 @@ const MessageConversation = () => {
           .single();
 
         if (error) {
-          console.error("Error fetching booking title:", error);
+          sreLogger.error("Failed to fetch booking title", { bookingId }, error);
           setBookingTitle('Errore nel caricamento');
         } else if (data?.spaces?.title) {
           setBookingTitle(data.spaces.title);
@@ -33,7 +34,7 @@ const MessageConversation = () => {
           setBookingTitle('Titolo non trovato');
         }
       } catch (error) {
-        console.error("Error fetching booking title:", error);
+        sreLogger.error("Error fetching booking title", { bookingId }, error as Error);
         setBookingTitle('Errore nel caricamento');
       }
     };

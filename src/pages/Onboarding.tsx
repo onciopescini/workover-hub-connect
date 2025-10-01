@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Users, Briefcase, CheckCircle, Mail } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { NavigationGuard } from '@/components/navigation/NavigationGuard';
+import { sreLogger } from '@/lib/sre-logger';
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 
@@ -123,7 +124,7 @@ const Onboarding = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      console.error("Error completing onboarding:", error);
+      sreLogger.error("Failed to complete onboarding", { userId: authState.user?.id }, error as Error);
       toast.error("Errore durante il completamento dell'onboarding");
     }
   };

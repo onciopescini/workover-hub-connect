@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlayCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { sprint1Validator } from '@/lib/validation-suite';
 import { executeValidationSuite } from '@/lib/validation-runner';
+import { sreLogger } from '@/lib/sre-logger';
 
 const ValidationDashboard = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -16,8 +17,8 @@ const ValidationDashboard = () => {
       await sprint1Validator.runFullValidation();
       setLastRun(new Date());
     } catch (error) {
-      console.error('Validation failed:', error);
-    } finally {
+      sreLogger.error('Validation failed', {}, error as Error);
+    } finally{
       setIsRunning(false);
     }
   };

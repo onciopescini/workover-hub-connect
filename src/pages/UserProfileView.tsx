@@ -14,6 +14,7 @@ import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
 import { isCompleteProfile } from "@/types/strict-type-guards";
 import { getUserPublicReviews, UserPublicReview } from "@/lib/user-review-utils";
+import { sreLogger } from "@/lib/sre-logger";
 
 interface UserProfile {
   id: string;
@@ -101,7 +102,7 @@ const UserProfileView = () => {
           .eq('published', true);
 
         if (spacesError) {
-          console.error('Error fetching spaces:', spacesError);
+          sreLogger.error('Failed to fetch user spaces', { userId }, spacesError);
         } else {
           setSpaces(spacesData || []);
         }
@@ -123,7 +124,7 @@ const UserProfileView = () => {
         }
       }
     } catch (error) {
-      console.error('Error in fetchUserSpacesAndReviews:', error);
+      sreLogger.error('Error in fetchUserSpacesAndReviews', { userId }, error as Error);
     }
   };
 
@@ -139,7 +140,7 @@ const UserProfileView = () => {
         toast.error("Impossibile avviare la chat");
       }
     } catch (error) {
-      console.error('Error starting private chat:', error);
+      sreLogger.error('Failed to start private chat', { userId }, error as Error);
       toast.error("Errore nell'avvio della chat");
     } finally {
       setStartingChat(false);

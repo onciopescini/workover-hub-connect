@@ -8,6 +8,7 @@ import { MessagesUnauthenticated } from "@/components/messaging/MessagesUnauthen
 import { fetchConversations } from "@/lib/conversations";
 import { MessageCircle, Clock } from "lucide-react";
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface Conversation {
   id: string;
@@ -39,7 +40,7 @@ const Messages = () => {
         const data = await fetchConversations(authState.user.id);
         setConversations(data as unknown as Conversation[]);
       } catch (error) {
-        console.error('Error loading conversations:', error);
+        sreLogger.error('Failed to load conversations', { userId: authState.user.id }, error as Error);
         toast.error('Errore nel caricamento delle conversazioni');
       } finally {
         setIsLoading(false);

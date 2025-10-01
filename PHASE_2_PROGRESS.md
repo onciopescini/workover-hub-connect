@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 448/674 (66.5%)
+## 📊 Overall Progress: 467/674 (69.3%)
 
-### ✅ Completed Files (100 files, 448 replacements)
+### ✅ Completed Files (105 files, 467 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -194,6 +194,21 @@
   - `src/pages/AuthCallback.tsx` (9 - console.log/error/warn → sreLogger.debug/error/warn with userId context)
   - `src/pages/ChatThread.tsx` (7 - console.log/error → sreLogger.debug/error with conversationId context)
   - `src/pages/SpaceEdit.tsx` (4 - console.log/error → sreLogger.debug/error with spaceId context)
+
+#### 43-52. Batch 25: Pages - Batch 2 (User Interactions & UI) ✓
+- **Status**: Complete
+- **Replacements**: 19 console statements → sreLogger
+- **Files**:
+  - `src/pages/MessageConversation.tsx` (2 - console.error → sreLogger.error with bookingId context)
+  - `src/pages/Messages.tsx` (1 - console.error → sreLogger.error with userId context)
+  - `src/pages/NotFound.tsx` (1 - console.error → sreLogger.error with pathname context)
+  - `src/pages/Onboarding.tsx` (1 - console.error → sreLogger.error with userId context)
+  - `src/pages/PrivateChats.tsx` (3 - console.error → sreLogger.error with userId, chatId context)
+  - `src/pages/Register.tsx` (2 - console.error → sreLogger.error with email context)
+  - `src/pages/Reviews.tsx` (4 - console.error → sreLogger.error with userId, reviewId context)
+  - `src/pages/SpaceNew.tsx` (1 - console.log → sreLogger.debug)
+  - `src/pages/UserProfileView.tsx` (3 - console.error → sreLogger.error with userId context)
+  - `src/pages/ValidationDashboard.tsx` (1 - console.error → sreLogger.error)
 
 ---
 

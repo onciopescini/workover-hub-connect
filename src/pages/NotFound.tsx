@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Home, ArrowLeft, Search, HelpCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { sreLogger } from '@/lib/sre-logger';
 
 const NotFound = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
+    sreLogger.error("404 Error: User attempted to access non-existent route", { 
+      pathname: location.pathname 
+    });
   }, [location.pathname]);
 
   const handleGoBack = () => {

@@ -12,8 +12,9 @@ import { MessageSquare, Send, Plus, Search, Users, Clock, ArrowLeft } from "luci
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import { sreLogger } from "@/lib/sre-logger";
 import { 
-  getUserPrivateChats, 
+  getUserPrivateChats,
   getPrivateMessages, 
   sendPrivateMessage,
   PrivateChat,
@@ -49,7 +50,7 @@ const PrivateChats = () => {
       const userChats = await getUserPrivateChats();
       setChats(userChats);
     } catch (error) {
-      console.error("Error loading chats:", error);
+      sreLogger.error("Failed to load chats", { userId: authState.user?.id }, error as Error);
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +61,7 @@ const PrivateChats = () => {
       const chatMessages = await getPrivateMessages(chatId);
       setMessages(chatMessages);
     } catch (error) {
-      console.error("Error loading messages:", error);
+      sreLogger.error("Failed to load messages", { chatId }, error as Error);
     }
   };
 
