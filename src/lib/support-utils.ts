@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { SupportTicket } from "@/types/support";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Get support tickets for current user
 export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
@@ -19,7 +20,7 @@ export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
 
     return data || [];
   } catch (error) {
-    console.error("Error fetching support tickets:", error);
+    sreLogger.error('Error fetching support tickets', { error });
     return [];
   }
 };
@@ -48,14 +49,14 @@ export const createSupportTicket = async (ticket: {
 
     if (error) {
       toast.error("Failed to create support ticket");
-      console.error(error);
+      sreLogger.error('Failed to create support ticket', { error, ticket });
       return false;
     }
 
     toast.success("Support ticket created successfully");
     return true;
   } catch (error) {
-    console.error("Error creating support ticket:", error);
+    sreLogger.error('Error creating support ticket', { error, ticket });
     toast.error("Failed to create support ticket");
     return false;
   }
@@ -74,14 +75,14 @@ export const updateSupportTicket = async (
 
     if (error) {
       toast.error("Failed to update support ticket");
-      console.error(error);
+      sreLogger.error('Failed to update support ticket', { error, ticketId, updates });
       return false;
     }
 
     toast.success("Support ticket updated successfully");
     return true;
   } catch (error) {
-    console.error("Error updating support ticket:", error);
+    sreLogger.error('Error updating support ticket', { error, ticketId, updates });
     toast.error("Failed to update support ticket");
     return false;
   }

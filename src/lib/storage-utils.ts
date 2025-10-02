@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 export const initializeAvatarBucket = async () => {
   try {
@@ -12,13 +13,13 @@ export const initializeAvatarBucket = async () => {
     
     if (!avatarBucket) {
       // Create bucket if it doesn't exist (this would need to be done by admin)
-      console.log('Avatar bucket does not exist');
+      sreLogger.warn('Avatar bucket does not exist');
       return false;
     }
     
     return true;
   } catch (error) {
-    console.error('Error checking avatar bucket:', error);
+    sreLogger.error('Error checking avatar bucket', { error });
     return false;
   }
 };

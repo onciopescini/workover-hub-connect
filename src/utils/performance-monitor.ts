@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { sreLogger } from '@/lib/sre-logger';
 
 interface PerformanceMetrics {
   renderCount: number;
@@ -48,11 +49,19 @@ class PerformanceMonitor {
     const RENDER_COUNT_THRESHOLD = 50; // More than 50 renders in a session
     
     if (metrics.avgRenderTime > RENDER_TIME_THRESHOLD) {
-      console.warn(`⚠️ Performance: ${componentName} average render time is ${metrics.avgRenderTime.toFixed(2)}ms`);
+      sreLogger.warn('Performance: Slow average render time', { 
+        componentName, 
+        avgRenderTime: metrics.avgRenderTime.toFixed(2),
+        threshold: RENDER_TIME_THRESHOLD 
+      });
     }
 
     if (metrics.renderCount > RENDER_COUNT_THRESHOLD) {
-      console.warn(`⚠️ Performance: ${componentName} has rendered ${metrics.renderCount} times (possible re-render loop)`);
+      sreLogger.warn('Performance: Excessive render count', { 
+        componentName, 
+        renderCount: metrics.renderCount,
+        threshold: RENDER_COUNT_THRESHOLD 
+      });
     }
   }
 
@@ -71,7 +80,11 @@ class PerformanceMonitor {
       
       // Check for excessive mutations
       if (mutationCount > 100) {
-        console.warn(`⚠️ Performance: Excessive DOM mutations detected (${mutationCount} in ${resetInterval}ms)`);
+        sreLogger.warn('Performance: Excessive DOM mutations', { 
+          mutationCount, 
+          resetInterval,
+          containerId 
+        });
       }
     });
 

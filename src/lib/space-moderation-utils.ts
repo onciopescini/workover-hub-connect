@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Interfacce per le risposte delle funzioni database
 interface SuspendSpaceResponse {
@@ -34,7 +35,7 @@ export const suspendSpaceWithBookings = async (
     });
 
     if (error) {
-      console.error('Error suspending space:', error);
+      sreLogger.error('Error suspending space', { error, spaceId, suspensionReason });
       toast.error("Errore nella sospensione dello spazio");
       return false;
     }
@@ -48,7 +49,7 @@ export const suspendSpaceWithBookings = async (
       return false;
     }
   } catch (error) {
-    console.error('Error in suspendSpaceWithBookings:', error);
+    sreLogger.error('Error in suspendSpaceWithBookings', { error, spaceId, suspensionReason });
     toast.error("Errore nella sospensione dello spazio");
     return false;
   }
@@ -72,7 +73,7 @@ export const requestSpaceRevision = async (
     });
 
     if (error) {
-      console.error('Error requesting revision:', error);
+      sreLogger.error('Error requesting revision', { error, spaceId, revisionNotes });
       toast.error("Errore nella richiesta di revisione");
       return false;
     }
@@ -86,7 +87,7 @@ export const requestSpaceRevision = async (
       return false;
     }
   } catch (error) {
-    console.error('Error in requestSpaceRevision:', error);
+    sreLogger.error('Error in requestSpaceRevision', { error, spaceId, revisionNotes });
     toast.error("Errore nella richiesta di revisione");
     return false;
   }
@@ -117,7 +118,7 @@ export const reviewSpaceRevision = async (
     const { data, error } = await supabase.rpc('review_space_revision', rpcParams);
 
     if (error) {
-      console.error('Error reviewing revision:', error);
+      sreLogger.error('Error reviewing revision', { error, spaceId, approved, adminNotes });
       toast.error("Errore nella revisione");
       return false;
     }
@@ -131,7 +132,7 @@ export const reviewSpaceRevision = async (
       return false;
     }
   } catch (error) {
-    console.error('Error in reviewSpaceRevision:', error);
+    sreLogger.error('Error in reviewSpaceRevision', { error, spaceId, approved, adminNotes });
     toast.error("Errore nella revisione");
     return false;
   }
@@ -155,7 +156,7 @@ export const checkSpaceCreationRestriction = async (): Promise<boolean> => {
 
     return false;
   } catch (error) {
-    console.error('Error checking space creation restriction:', error);
+    sreLogger.error('Error checking space creation restriction', { error });
     return false;
   }
 };

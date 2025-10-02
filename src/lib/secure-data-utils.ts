@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 /**
  * Secure data access utilities that use RLS-protected functions
@@ -87,7 +88,7 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
       .rpc('get_safe_public_profile', { profile_id_param: profileId });
 
     if (error) {
-      console.error('Error fetching public profile:', error);
+      sreLogger.error('Error fetching public profile', { error, profileId });
       return null;
     }
 
@@ -98,7 +99,7 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
 
     return null;
   } catch (error) {
-    console.error('Error in getPublicProfile:', error);
+    sreLogger.error('Error in getPublicProfile', { error, profileId });
     return null;
   }
 };
@@ -112,11 +113,12 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     let { data, error } = await supabase.rpc('get_public_spaces_safe');
 
     if (error) {
-      console.error('[get_public_spaces_safe] error', {
+      sreLogger.error('RPC get_public_spaces_safe failed', { 
+        error, 
         message: error.message,
         details: (error as any)?.details,
         hint: (error as any)?.hint,
-        code: (error as any)?.code,
+        code: (error as any)?.code
       });
 
       // 2) Fallback: RPC storico (se esiste nel tuo DB)
@@ -134,9 +136,10 @@ export const getPublicSpaces = async (): Promise<any[]> => {
         .limit(200);
 
       if (direct.error) {
-        console.error('[spaces fallback] error', {
+        sreLogger.error('Direct spaces query fallback failed', { 
+          error: direct.error,
           message: direct.error.message,
-          details: (direct.error as any)?.details,
+          details: (direct.error as any)?.details
         });
         return [];
       }
@@ -145,8 +148,9 @@ export const getPublicSpaces = async (): Promise<any[]> => {
 
     return Array.isArray(data) ? (data as any[]) : [];
   } catch (err: any) {
-    console.error('Error in getPublicSpaces', {
-      message: err?.message ?? String(err),
+    sreLogger.error('Error in getPublicSpaces', { 
+      error: err,
+      message: err?.message ?? String(err)
     });
     return [];
   }
@@ -202,7 +206,7 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
       return normalizeSpaceData(spaceData);
     }
 
-    console.error('RPC error, trying fallback:', error);
+    sreLogger.warn('RPC error, trying fallback', { error, spaceId });
     
     // Fallback to direct query
     const { data: fallbackData, error: fallbackError } = await supabase
@@ -222,7 +226,7 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
       .single();
 
     if (fallbackError || !fallbackData) {
-      console.error('Fallback error:', fallbackError);
+      sreLogger.error('Fallback query error', { error: fallbackError, spaceId });
       return null;
     }
 
@@ -240,7 +244,7 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
 
     return normalizeSpaceData(normalizedData);
   } catch (error) {
-    console.error('Error in getSpaceWithHostInfo:', error);
+    sreLogger.error('Error in getSpaceWithHostInfo', { error, spaceId });
     return null;
   }
 };

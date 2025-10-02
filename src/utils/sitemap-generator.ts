@@ -1,3 +1,5 @@
+import { sreLogger } from '@/lib/sre-logger';
+
 interface SitemapUrl {
   loc: string;
   lastmod?: string | undefined;
@@ -77,7 +79,7 @@ class SitemapGenerator {
       });
 
     } catch (error) {
-      console.error('Error adding space pages to sitemap:', error);
+      sreLogger.error('Error adding space pages to sitemap', { error });
     }
   }
 
@@ -98,7 +100,7 @@ class SitemapGenerator {
         this.addUrl(url);
       });
     } catch (error) {
-      console.error('Error adding event pages to sitemap:', error);
+      sreLogger.error('Error adding event pages to sitemap', { error });
     }
   }
 
@@ -119,7 +121,7 @@ class SitemapGenerator {
         this.addUrl(url);
       });
     } catch (error) {
-      console.error('Error adding profile pages to sitemap:', error);
+      sreLogger.error('Error adding profile pages to sitemap', { error });
     }
   }
 
@@ -296,10 +298,12 @@ export const sitemapGenerator = new SitemapGenerator();
 export async function generateSitemap(): Promise<void> {
   try {
     const { xml, robotsTxt } = await sitemapGenerator.build();
-    console.log('Generated sitemap.xml');
-    console.log('Generated robots.txt');
+    sreLogger.info('Sitemap generation completed', { 
+      hasXml: !!xml, 
+      hasRobotsTxt: !!robotsTxt 
+    });
   } catch (error) {
-    console.error('Error generating sitemap:', error);
+    sreLogger.error('Error generating sitemap', { error });
   }
 }
 

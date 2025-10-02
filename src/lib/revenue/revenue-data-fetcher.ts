@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { RevenueData } from "../types/host-revenue-types";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostRevenueData = async (
   hostId: string,
@@ -46,7 +47,7 @@ export const getHostRevenueData = async (
     .order('created_at', { ascending: false });
 
   if (paymentsError) {
-    console.error('Error fetching payments:', paymentsError);
+    sreLogger.error('Error fetching payments', { error: paymentsError, hostId, year, month });
     throw paymentsError;
   }
 

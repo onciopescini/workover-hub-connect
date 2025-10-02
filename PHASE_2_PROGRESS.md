@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 529/674 (78.5%)
+## 📊 Overall Progress: 568/674 (84.3%)
 
-### ✅ Completed Files (108 files, 529 replacements)
+### ✅ Completed Files (119 files, 568 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -217,6 +217,23 @@
   - `src/lib/monitoring.ts` (3 - console.error/warn → sreLogger.error/warn with Sentry fallback and performance tracking context)
   - `src/lib/validation-runner.ts` (9 - console.log → sreLogger.info/debug with validation context)
   - `src/lib/regression-validation.ts` (50 - console.log/error → sreLogger.info/warn/error with comprehensive validation context including modules: payments, bookings, GDPR, profiles, messaging, admin, navigation, database, types)
+
+#### 56-66. Batch 27: Utils & Validation ✓
+- **Status**: Complete
+- **Replacements**: 39 console statements → sreLogger
+- **Files**:
+  - `src/lib/revenue/dac7-export.ts` (2 - console.error → sreLogger.error with hostId and year context)
+  - `src/lib/revenue/dac7-utils.ts` (2 - console.error → sreLogger.error with DAC7 context)
+  - `src/lib/revenue/revenue-data-fetcher.ts` (1 - console.error → sreLogger.error with revenue context)
+  - `src/lib/secure-data-utils.ts` (8 - console.error → sreLogger.error/warn with RLS context)
+  - `src/lib/space-moderation-utils.ts` (7 - console.error → sreLogger.error with moderation context)
+  - `src/lib/space-review-utils.ts` (4 - console.error → sreLogger.error with spaceId context)
+  - `src/lib/storage-utils.ts` (2 - console.log/error → sreLogger.warn/error with bucket context)
+  - `src/lib/support-utils.ts` (4 - console.error → sreLogger.error with ticket context)
+  - `src/lib/user-review-utils.ts` (2 - console.error → sreLogger.error with userId context)
+  - `src/utils/performance-monitor.ts` (2 - console.warn → sreLogger.warn with performance metrics)
+  - `src/utils/sitemap-generator.ts` (5 - console.log/error → sreLogger.info/error with sitemap context)
+
 
 ---
 

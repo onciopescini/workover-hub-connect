@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface SpaceReview {
   id: string;
@@ -27,13 +28,13 @@ export const getSpaceReviews = async (spaceId: string): Promise<SpaceReview[]> =
       .rpc('get_space_reviews_with_details', { space_id_param: spaceId });
 
     if (error) {
-      console.error('Error fetching space reviews:', error);
+      sreLogger.error('Error fetching space reviews', { error, spaceId });
       return [];
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error in getSpaceReviews:', error);
+    sreLogger.error('Error in getSpaceReviews', { error, spaceId });
     return [];
   }
 };
@@ -47,13 +48,13 @@ export const getSpaceWeightedRating = async (spaceId: string): Promise<number> =
       .rpc('calculate_weighted_space_rating', { space_id_param: spaceId });
 
     if (error) {
-      console.error('Error fetching weighted rating:', error);
+      sreLogger.error('Error fetching weighted rating', { error, spaceId });
       return 0;
     }
 
     return Number(data) || 0;
   } catch (error) {
-    console.error('Error in getSpaceWeightedRating:', error);
+    sreLogger.error('Error in getSpaceWeightedRating', { error, spaceId });
     return 0;
   }
 };

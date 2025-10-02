@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const exportDAC7Report = async (hostId: string, year: number): Promise<string> => {
   // Get host profile
@@ -10,7 +11,7 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     .single();
 
   if (profileError) {
-    console.error('Error fetching profile:', profileError);
+    sreLogger.error('Error fetching profile', { error: profileError, hostId });
     throw profileError;
   }
 
@@ -38,7 +39,7 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     .order('created_at', { ascending: true });
 
   if (paymentsError) {
-    console.error('Error fetching payments for export:', paymentsError);
+    sreLogger.error('Error fetching payments for export', { error: paymentsError, hostId, year });
     throw paymentsError;
   }
 

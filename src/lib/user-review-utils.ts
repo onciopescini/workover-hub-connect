@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface UserPublicReview {
   id: string;
@@ -21,13 +22,13 @@ export const getUserPublicReviews = async (userId: string): Promise<UserPublicRe
       .rpc('get_user_public_reviews', { target_id_param: userId });
 
     if (error) {
-      console.error('Error fetching user public reviews:', error);
+      sreLogger.error('Error fetching user public reviews', { error, userId });
       return [];
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error in getUserPublicReviews:', error);
+    sreLogger.error('Error in getUserPublicReviews', { error, userId });
     return [];
   }
 };

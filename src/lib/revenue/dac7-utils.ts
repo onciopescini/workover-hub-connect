@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { DAC7Data, Dac7ThresholdResult } from "../types/host-revenue-types";
+import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC7Data> => {
   const { data, error } = await supabase
@@ -11,7 +12,7 @@ export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching DAC7 data:', error);
+    sreLogger.error('Error fetching DAC7 data', { error, hostId, year });
     throw error;
   }
 
@@ -23,7 +24,7 @@ export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC
     });
 
     if (calcError) {
-      console.error('Error calculating DAC7 thresholds:', calcError);
+      sreLogger.error('Error calculating DAC7 thresholds', { error: calcError, hostId, year });
       throw calcError;
     }
 
