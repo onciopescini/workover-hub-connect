@@ -2,14 +2,14 @@
 import { executeValidationSuite } from './validation-runner';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 // Comprehensive validation suite for Sprint 1
 export class Sprint1ValidationSuite {
   private results: Array<{ category: string; status: string; details?: string; error?: unknown }> = [];
   
   async runFullValidation(): Promise<void> {
-    console.log('🚀 STARTING SPRINT 1 FULL VALIDATION SUITE');
-    console.log('='.repeat(60));
+    sreLogger.info('STARTING SPRINT 1 FULL VALIDATION SUITE', { action: 'validation_suite_start' });
     
     try {
       // 1. Host Revenue Dashboard Validation
@@ -28,7 +28,7 @@ export class Sprint1ValidationSuite {
       this.generateFinalReport();
       
     } catch (error) {
-      console.error('❌ VALIDATION SUITE FAILED:', error);
+      sreLogger.error('VALIDATION SUITE FAILED', { error, action: 'validation_suite_error' });
       toast.error('Validation suite encountered an error');
     }
   }
@@ -47,10 +47,9 @@ export class Sprint1ValidationSuite {
         });
       
       if (dac7Error) {
-        console.log('❌ DAC7 RPC function failed:', dac7Error.message);
+        sreLogger.warn('DAC7 RPC function failed', { error: dac7Error, message: dac7Error.message });
       } else {
-        console.log('✓ DAC7 calculation RPC is functional');
-        console.log('✓ DAC7 response structure:', dac7Data);
+        sreLogger.info('DAC7 calculation RPC is functional', { dac7Data });
       }
       
       // Test payments query for revenue calculation
@@ -67,14 +66,14 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (paymentsError) {
-        console.log('❌ Revenue payments query failed:', paymentsError.message);
+        sreLogger.warn('Revenue payments query failed', { error: paymentsError, message: paymentsError.message });
       } else {
-        console.log('✓ Revenue calculation query structure is valid');
+        sreLogger.info('Revenue calculation query structure is valid');
       }
       
       // Run payment validation suite
       const paymentValidation = executeValidationSuite();
-      console.log('✓ Payment calculations validated:', paymentValidation.passed);
+      sreLogger.info('Payment calculations validated', { passed: paymentValidation.passed });
       
       this.results.push({
         category: 'Host Revenue',
@@ -83,7 +82,7 @@ export class Sprint1ValidationSuite {
       });
       
     } catch (error) {
-      console.log('❌ Host Revenue validation failed:', error);
+      sreLogger.error('Host Revenue validation failed', { error });
       this.results.push({
         category: 'Host Revenue',
         status: 'FAILED',
@@ -93,8 +92,7 @@ export class Sprint1ValidationSuite {
   }
   
   private async validateGDPRCenter(): Promise<void> {
-    console.log('\n🔒 VALIDATING GDPR PRIVACY CENTER');
-    console.log('-'.repeat(40));
+    sreLogger.info('VALIDATING GDPR PRIVACY CENTER', { action: 'validate_gdpr' });
     
     try {
       // Test GDPR requests table structure
@@ -104,9 +102,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (gdprError) {
-        console.log('❌ GDPR requests query failed:', gdprError.message);
+        sreLogger.warn('GDPR requests query failed', { error: gdprError, message: gdprError.message });
       } else {
-        console.log('✓ GDPR requests table structure is valid');
+        sreLogger.info('GDPR requests table structure is valid');
       }
       
       // Test cookie consent log structure
@@ -116,9 +114,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (cookieError) {
-        console.log('❌ Cookie consent log query failed:', cookieError.message);
+        sreLogger.warn('Cookie consent log query failed', { error: cookieError, message: cookieError.message });
       } else {
-        console.log('✓ Cookie consent log table structure is valid');
+        sreLogger.info('Cookie consent log table structure is valid');
       }
       
       // Test export_user_data RPC function
@@ -128,9 +126,9 @@ export class Sprint1ValidationSuite {
         });
       
       if (exportError) {
-        console.log('❌ Export user data RPC failed:', exportError.message);
+        sreLogger.warn('Export user data RPC failed', { error: exportError, message: exportError.message });
       } else {
-        console.log('✓ Export user data RPC is functional');
+        sreLogger.info('Export user data RPC is functional');
       }
       
       // Test data deletion RPC function
@@ -141,9 +139,9 @@ export class Sprint1ValidationSuite {
         });
       
       if (deletionError) {
-        console.log('❌ Data deletion RPC failed:', deletionError.message);
+        sreLogger.warn('Data deletion RPC failed', { error: deletionError, message: deletionError.message });
       } else {
-        console.log('✓ Data deletion RPC is functional');
+        sreLogger.info('Data deletion RPC is functional');
       }
       
       this.results.push({
@@ -153,7 +151,7 @@ export class Sprint1ValidationSuite {
       });
       
     } catch (error) {
-      console.log('❌ GDPR Privacy Center validation failed:', error);
+      sreLogger.error('GDPR Privacy Center validation failed', { error });
       this.results.push({
         category: 'GDPR Privacy Center',
         status: 'FAILED',
@@ -163,8 +161,7 @@ export class Sprint1ValidationSuite {
   }
   
   private async validatePaymentsBooking(): Promise<void> {
-    console.log('\n💳 VALIDATING PAYMENTS & BOOKING');
-    console.log('-'.repeat(40));
+    sreLogger.info('VALIDATING PAYMENTS & BOOKING', { action: 'validate_payments' });
     
     try {
       // Test dual commission model calculations
@@ -185,7 +182,12 @@ export class Sprint1ValidationSuite {
           throw new Error(`Platform fee mismatch for €${price}: expected ${expectedPlatformFee}, got ${actualPlatformFee}`);
         }
         
-        console.log(`✓ €${price} calculation: Buyer pays €${buyerTotal}, Host gets €${hostPayout}, Platform gets €${platformRevenue}`);
+        sreLogger.info('Payment calculation validated', { 
+          price, 
+          buyerTotal, 
+          hostPayout, 
+          platformRevenue 
+        });
       }
       
       // Test bookings table structure
@@ -199,9 +201,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (bookingsError) {
-        console.log('❌ Bookings query failed:', bookingsError.message);
+        sreLogger.warn('Bookings query failed', { error: bookingsError, message: bookingsError.message });
       } else {
-        console.log('✓ Bookings query structure is valid');
+        sreLogger.info('Bookings query structure is valid');
       }
       
       // Test payments table structure
@@ -214,9 +216,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (paymentsError) {
-        console.log('❌ Payments query failed:', paymentsError.message);
+        sreLogger.warn('Payments query failed', { error: paymentsError, message: paymentsError.message });
       } else {
-        console.log('✓ Payments query structure is valid');
+        sreLogger.info('Payments query structure is valid');
       }
       
       this.results.push({
@@ -226,7 +228,7 @@ export class Sprint1ValidationSuite {
       });
       
     } catch (error) {
-      console.log('❌ Payments & Booking validation failed:', error);
+      sreLogger.error('Payments & Booking validation failed', { error });
       this.results.push({
         category: 'Payments & Booking',
         status: 'FAILED',
@@ -236,17 +238,16 @@ export class Sprint1ValidationSuite {
   }
   
   private async validatePlatformIntegrity(): Promise<void> {
-    console.log('\n🔧 VALIDATING PLATFORM INTEGRITY');
-    console.log('-'.repeat(40));
+    sreLogger.info('VALIDATING PLATFORM INTEGRITY', { action: 'validate_platform' });
     
     try {
       // Test auth session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.log('❌ Auth session check failed:', sessionError.message);
+        sreLogger.warn('Auth session check failed', { error: sessionError, message: sessionError.message });
       } else {
-        console.log('✓ Auth session mechanism is functional');
+        sreLogger.info('Auth session mechanism is functional');
       }
       
       // Test profiles table structure
@@ -256,9 +257,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (profilesError) {
-        console.log('❌ Profiles query failed:', profilesError.message);
+        sreLogger.warn('Profiles query failed', { error: profilesError, message: profilesError.message });
       } else {
-        console.log('✓ Profiles table structure is valid');
+        sreLogger.info('Profiles table structure is valid');
       }
       
       // Test admin function
@@ -268,9 +269,9 @@ export class Sprint1ValidationSuite {
         });
       
       if (adminError) {
-        console.log('❌ Admin check RPC failed:', adminError.message);
+        sreLogger.warn('Admin check RPC failed', { error: adminError, message: adminError.message });
       } else {
-        console.log('✓ Admin role check RPC is functional');
+        sreLogger.info('Admin role check RPC is functional');
       }
       
       // Test user notifications structure
@@ -280,9 +281,9 @@ export class Sprint1ValidationSuite {
         .limit(1);
       
       if (notificationsError) {
-        console.log('❌ User notifications query failed:', notificationsError.message);
+        sreLogger.warn('User notifications query failed', { error: notificationsError, message: notificationsError.message });
       } else {
-        console.log('✓ User notifications table structure is valid');
+        sreLogger.info('User notifications table structure is valid');
       }
       
       this.results.push({
@@ -292,7 +293,7 @@ export class Sprint1ValidationSuite {
       });
       
     } catch (error) {
-      console.log('❌ Platform Integrity validation failed:', error);
+      sreLogger.error('Platform Integrity validation failed', { error });
       this.results.push({
         category: 'Platform Integrity',
         status: 'FAILED',
@@ -302,37 +303,43 @@ export class Sprint1ValidationSuite {
   }
   
   private generateFinalReport(): void {
-    console.log('\n📊 FINAL VALIDATION REPORT');
-    console.log('='.repeat(60));
-    
     const passed = this.results.filter(r => r.status === 'PASSED').length;
     const failed = this.results.filter(r => r.status === 'FAILED').length;
     const total = this.results.length;
     
-    console.log(`SUMMARY: ${passed}/${total} categories passed`);
-    console.log('');
-    
-    this.results.forEach(result => {
-      const icon = result.status === 'PASSED' ? '✅' : '❌';
-      console.log(`${icon} ${result.category}: ${result.status}`);
-      if (result.details) {
-        console.log(`   ${result.details}`);
-      }
-      if (result.error) {
-        console.log(`   Error: ${result.error}`);
-      }
+    sreLogger.info('FINAL VALIDATION REPORT', { 
+      action: 'validation_report',
+      passed,
+      failed,
+      total,
+      summary: `${passed}/${total} categories passed`
     });
     
-    console.log('');
+    this.results.forEach(result => {
+      const logFn = result.status === 'PASSED' ? sreLogger.info : sreLogger.error;
+      logFn('Validation result', {
+        category: result.category,
+        status: result.status,
+        details: result.details,
+        error: result.error
+      });
+    });
+    
     if (passed === total) {
-      console.log('🎉 ALL VALIDATIONS PASSED! Sprint 1 features are fully functional.');
+      sreLogger.info('ALL VALIDATIONS PASSED - Sprint 1 features are fully functional', { 
+        action: 'validation_complete',
+        status: 'success'
+      });
       toast.success('All Sprint 1 validations passed!');
     } else {
-      console.log(`⚠️  ${failed} validation(s) failed. Please review the errors above.`);
+      sreLogger.error('Some validations failed', { 
+        action: 'validation_complete',
+        status: 'failed',
+        failed,
+        total
+      });
       toast.error(`${failed} validation(s) failed. Check console for details.`);
     }
-    
-    console.log('='.repeat(60));
   }
 }
 
