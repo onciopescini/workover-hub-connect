@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WaitlistInsert, WaitlistWithDetails } from "@/types/waitlist";
 import { toast } from "sonner";
+import { sreLogger } from '@/lib/sre-logger';
 
 // Join space waitlist
 export const joinSpaceWaitlist = async (spaceId: string): Promise<boolean> => {
@@ -36,7 +37,7 @@ export const joinSpaceWaitlist = async (spaceId: string): Promise<boolean> => {
     toast.success("Aggiunto alla lista d'attesa!");
     return true;
   } catch (error) {
-    console.error("Error joining waitlist:", error);
+    sreLogger.error("Error joining waitlist", { action: 'waitlist_join_error', spaceId }, error as Error);
     toast.error("Errore nell'unirsi alla lista d'attesa");
     return false;
   }
@@ -55,7 +56,7 @@ export const leaveWaitlist = async (waitlistId: string): Promise<boolean> => {
     toast.success("Rimosso dalla lista d'attesa");
     return true;
   } catch (error) {
-    console.error("Error leaving waitlist:", error);
+    sreLogger.error("Error leaving waitlist", { action: 'waitlist_leave_error', waitlistId }, error as Error);
     toast.error("Errore nella rimozione dalla lista d'attesa");
     return false;
   }
@@ -85,7 +86,7 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
       host_name: (item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name) || ''
     }));
   } catch (error) {
-    console.error("Error fetching waitlists:", error);
+    sreLogger.error("Error fetching waitlists", { action: 'waitlist_fetch_error' }, error as Error);
     return [];
   }
 };
@@ -111,7 +112,7 @@ export const getSpaceWaitlist = async (spaceId: string): Promise<WaitlistWithDet
       host_name: ''
     }));
   } catch (error) {
-    console.error("Error fetching space waitlist:", error);
+    sreLogger.error("Error fetching space waitlist", { action: 'space_waitlist_fetch_error', spaceId }, error as Error);
     return [];
   }
 };
@@ -131,7 +132,7 @@ export const isInSpaceWaitlist = async (spaceId: string): Promise<string | null>
 
     return data?.id || null;
   } catch (error) {
-    console.error("Error checking space waitlist:", error);
+    sreLogger.error("Error checking space waitlist", { action: 'space_waitlist_check_error', spaceId }, error as Error);
     return null;
   }
 };

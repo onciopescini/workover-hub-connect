@@ -1,6 +1,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { sreLogger } from '@/lib/sre-logger';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ const HostCalendar: React.FC = () => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Errore caricamento spazi", error);
+      sreLogger.error("Errore caricamento spazi", { action: 'host_calendar_load_spaces_error', userId }, error as Error);
       return;
     }
     const list = (data || []) as HostSpace[];
@@ -102,7 +103,7 @@ const HostCalendar: React.FC = () => {
       .maybeSingle();
 
     if (error) {
-      console.error("Errore caricamento disponibilità", error);
+      sreLogger.error("Errore caricamento disponibilità", { action: 'host_calendar_load_availability_error', spaceId: selectedSpaceId }, error as Error);
       return;
     }
     setAvailability(normalizeAvailabilityData(data?.availability || {}));
@@ -115,7 +116,7 @@ const HostCalendar: React.FC = () => {
       const rows = (await fetchSpaceBookings(selectedSpaceId, dateRange.start, dateRange.end, true, true)) as any[];
       setBookings(rows || []);
     } catch (e) {
-      console.error("Errore caricamento prenotazioni", e);
+      sreLogger.error("Errore caricamento prenotazioni", { action: 'host_calendar_load_bookings_error', spaceId: selectedSpaceId }, e as Error);
       setBookings([]);
     } finally {
       setLoading(false);
@@ -159,7 +160,7 @@ const HostCalendar: React.FC = () => {
       .update({ availability: normalized as any })
       .eq("id", selectedSpaceId);
     if (error) {
-      console.error("Errore salvataggio disponibilità", error);
+      sreLogger.error("Errore salvataggio disponibilità", { action: 'host_calendar_save_availability_error', spaceId: selectedSpaceId }, error as Error);
     }
   };
 

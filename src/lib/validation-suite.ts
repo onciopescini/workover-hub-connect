@@ -34,8 +34,8 @@ export class Sprint1ValidationSuite {
   }
   
   private async validateHostRevenue(): Promise<void> {
-    console.log('\n💰 VALIDATING HOST REVENUE DASHBOARD');
-    console.log('-'.repeat(40));
+    sreLogger.info('VALIDATING HOST REVENUE DASHBOARD', { action: 'validation_host_revenue', category: 'Host Revenue' });
+    sreLogger.info('Validation separator', { action: 'validation_separator' });
     
     try {
       // Test DAC7 calculation function

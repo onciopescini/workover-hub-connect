@@ -1,8 +1,8 @@
 # Phase 2 Progress Tracker - Console Cleanup & Config Migration
 
-## 📊 Overall Progress: 607/674 (90.1%)
+## 📊 Overall Progress: 618/674 (91.7%)
 
-### ✅ Completed Files (120 files, 607 replacements)
+### ✅ Completed Files (123 files, 618 replacements)
 
 #### 1. `src/lib/availability-utils.ts` ✓
 - **Status**: Complete
@@ -239,6 +239,14 @@
 - **Replacements**: 39 console statements → sreLogger
 - **Files**:
   - `src/lib/validation-suite.ts` (39 - console.log/error → sreLogger.info/warn/error with comprehensive validation context including Host Revenue, GDPR, Payments, and Platform Integrity validations)
+
+#### 68-70. Batch 29: Validation Suite (remainder), Waitlist & Calendar ✓
+- **Status**: Complete
+- **Replacements**: 11 console statements → sreLogger
+- **Files**:
+  - `src/lib/validation-suite.ts` (2 remainder - console.log → sreLogger.info with validation header context)
+  - `src/lib/waitlist-utils.ts` (5 - console.error → sreLogger.error with waitlist operations context: join, leave, fetch, check)
+  - `src/pages/host/HostCalendar.tsx` (4 - console.error → sreLogger.error with calendar operations context: load spaces, availability, bookings, save)
 
 
 ---
