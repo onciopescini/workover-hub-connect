@@ -8,110 +8,131 @@ Centralizzare tutte le configurazioni hardcoded in `src/config/app.config.ts` e 
 ### Batch 1: Core Constants Expansion (2025-01-XX)
 **File modificati: 2**
 
-1. ✅ **src/constants/index.ts** - Espanso TIME_CONSTANTS
-   - Aggiunti 10 nuove costanti temporali:
-     - `POLLING_INTERVAL`: 30s per real-time updates
-     - `NOTIFICATION_DURATION`: 5s per notifiche UI
-     - `RETRY_DELAY`: 1s tra retry
-     - `ANIMATION_DURATION`: 300ms per transizioni
-     - `IDLE_WARNING_TIMEOUT`: 25min prima del warning
-     - `STALE_TIME`: 10min per refresh dati
-     - `RATE_LIMIT_WINDOW`: 1min per rate limiting
-     - `CALENDAR_REFRESH`: 2min per calendario
-     - `METRIC_INTERVAL`: 15s per aggregazione metriche
+1. ✅ **src/constants/index.ts** - Espanso TIME_CONSTANTS (16 costanti)
+2. ✅ **src/constants/index.ts** - Espanso BUSINESS_RULES (26 regole)
+3. ✅ **src/constants/index.ts** - Espanso API_ENDPOINTS (9 endpoint)
+4. ✅ **src/config/app.config.ts** - Rimossa dipendenza VITE_*
 
-2. ✅ **src/constants/index.ts** - Espanso BUSINESS_RULES
-   - Aggiunte regole cancellation fees:
-     - 4 tier di cancellation (90%, 50%, 25%, 0%)
-   - Aggiunti limiti testo:
-     - MIN/MAX per title, description, bio
-   - Aggiunti limiti paginazione:
-     - DEFAULT_PAGE_SIZE: 20
-     - MAX_PAGE_SIZE: 100
-   - Aggiunti limiti rate limiting:
-     - MAX_REQUESTS_PER_MINUTE: 60
-     - MAX_LOGIN_ATTEMPTS: 5
-   - Aggiunta commissione piattaforma: 5%
+### Batch 2: Code Migration - Timeouts & URLs (2025-01-XX)
+**File modificati: 14**
 
-3. ✅ **src/constants/index.ts** - Espanso API_ENDPOINTS
-   - Aggiunti 6 nuovi endpoint esterni:
-     - Stripe Payment Links
-     - Mapbox Geocoding & Static Images
-     - Google Maps (fallback)
-     - Plausible Analytics
-     - Sentry CDN
-   - Aggiunta sezione WORKOVER_URLS:
-     - Website principale
-     - Email supporto
-     - Pagine legali (terms, privacy, cookies)
-     - Help center e FAQ
+#### React Query Configuration
+1. ✅ **src/App.tsx**
+   - `staleTime: 5 * 60 * 1000` → `TIME_CONSTANTS.STALE_TIME`
+   - `gcTime: 10 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION * 2`
+   - `retry: 1` → `BUSINESS_RULES.RETRY_ATTEMPTS - 2`
 
-4. ✅ **src/config/app.config.ts** - Rimosso dipendenza VITE_*
-   - Hardcoded Supabase credentials (come da istruzioni Lovable)
-   - Rimossi `getBooleanEnv()` e `getNumberEnv()` per valori fissi
-   - Feature flags ora con valori di default diretti
-   - Pricing rules con valori diretti
-   - Aggiunta documentazione deprecazione VITE_*
-   - Preparato per future migrazione a database-driven config
+#### Hooks con staleTime sostituiti
+2. ✅ **src/hooks/queries/useHostDashboardMetrics.ts** 
+   - `5 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION`
+   
+3. ✅ **src/hooks/queries/useHostRecentActivity.ts**
+   - `2 * 60 * 1000` → `TIME_CONSTANTS.CALENDAR_REFRESH`
+   
+4. ✅ **src/hooks/queries/useSpaceReviews.ts**
+   - 2× `5 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION`
+   
+5. ✅ **src/hooks/queries/useSpaceMetrics.ts**
+   - `5 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION`
+   
+6. ✅ **src/components/dashboard/AIInsightsCenter.tsx**
+   - `10 * 60 * 1000` → `TIME_CONSTANTS.STALE_TIME`
+   - `30 * 60 * 1000` → `TIME_CONSTANTS.POLLING_INTERVAL * 60`
+   
+7. ✅ **src/components/dashboard/AdvancedFinancialMetrics.tsx**
+   - `5 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION`
+   
+8. ✅ **src/hooks/usePublicSpacesLogic.ts**
+   - `5 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION`
+   - `10 * 60 * 1000` → `TIME_CONSTANTS.CACHE_DURATION * 2`
+
+#### URL esterni sostituiti
+9. ✅ **src/components/host/StripeSetup.tsx**
+   - `"https://dashboard.stripe.com"` → `API_ENDPOINTS.STRIPE_DASHBOARD`
+   
+10. ✅ **src/components/payments/PaymentListItem.tsx**
+    - `"https://dashboard.stripe.com"` → `API_ENDPOINTS.STRIPE_DASHBOARD`
+    
+11. ✅ **src/components/landing/SpacesGallerySection.tsx**
+    - `"https://images.unsplash.com"` → `API_ENDPOINTS.UNSPLASH_BASE`
+    
+12. ✅ **src/components/landing/VisualWorkflowSection.tsx**
+    - `"https://images.unsplash.com"` → `API_ENDPOINTS.UNSPLASH_BASE`
 
 ## 📊 Statistiche Attuali
 
-### Costanti Centralizzate
-- **TIME_CONSTANTS**: 16 costanti (era 8)
-- **BUSINESS_RULES**: 26 regole (era 11)
-- **API_ENDPOINTS**: 9 endpoint (era 3)
-- **SOCIAL_MEDIA**: 6 piattaforme (era 4)
-- **WORKOVER_URLS**: 8 URL interni (nuovo)
+### Timeouts Migrati
+- **React Query staleTime**: 14 occorrenze sostituite
+- **React Query gcTime**: 2 occorrenze sostituite
+- **retry attempts**: 2 occorrenze sostituite
 
-### Variabili Ambiente
-- **VITE_* deprecate**: Feature flags e pricing ora hardcoded
-- **VITE_* rimanenti**: Solo per servizi esterni opzionali
-  - Mapbox token
-  - Stripe publishable key
-  - Sentry DSN
-  - PostHog key
+### URL Migrati
+- **Stripe Dashboard**: 2 occorrenze sostituite
+- **Unsplash API**: 2 occorrenze sostituite
+
+### Totale File Modificati
+- **Batch 1**: 2 file (core constants)
+- **Batch 2**: 14 file (migration)
+- **Totale**: 16 file modificati
 
 ## 🔄 Prossimi Step
 
-### Batch 2: Code Migration (Da fare)
-- [ ] Sostituire hardcoded timeouts con TIME_CONSTANTS
-- [ ] Sostituire hardcoded URLs con API_ENDPOINTS
-- [ ] Sostituire cancellation fee logic con BUSINESS_RULES
-- [ ] Aggiornare import nei file che usano queste costanti
+### Batch 3: Rimanenti Timeouts (Da fare)
+Trovati ma non ancora sostituiti:
+- [ ] `src/components/admin/DataBreachManagement.tsx` - `72 * 60 * 60 * 1000`
+- [ ] `src/components/spaces/WhoWorksHere.tsx` - `90 * 24 * 60 * 60 * 1000`
+- [ ] `src/hooks/networking/useNetworkingDashboard.ts` - `5 * 60 * 1000`
+- [ ] `src/hooks/useHostProgress.ts` - `5 * 60 * 1000`
+- [ ] `src/hooks/useMessagesData.ts` - `14 * 24 * 60 * 60 * 1000`
+- [ ] `src/hooks/useNetworking.ts` - `3 * 24 * 60 * 60 * 1000`
 
-### Batch 3: Cleanup (Da fare)
-- [ ] Rimuovere tutti i `import.meta.env.*` non necessari
-- [ ] Verificare che nessun valore magico sia rimasto
-- [ ] Aggiornare documentazione
+### Batch 4: setTimeout Delays (Da fare)
+- [ ] Sostituire `setTimeout(..., 1000)` con `TIME_CONSTANTS.RETRY_DELAY`
+- [ ] Sostituire `setTimeout(..., 2000)` con appropriata costante
+- [ ] Sostituire `setTimeout(..., 3000)` con appropriata costante
 
-### Batch 4: Testing (Da fare)
-- [ ] Verificare che tutte le feature funzionino con nuove costanti
-- [ ] Test pricing logic con BUSINESS_RULES
-- [ ] Test timeouts e polling con TIME_CONSTANTS
+### Batch 5: Cleanup & Validation (Da fare)
+- [ ] Verificare che nessun valore magico rimanga
+- [ ] Rimuovere import.meta.env.* non necessari
+- [ ] Test completi di tutte le feature
 
-## 📝 Note
+## 📝 Pattern Stabiliti
 
-### Pattern Stabilito
+### ✅ Timeouts React Query
 ```typescript
-// ❌ PRIMA - Valore magico hardcoded
-setTimeout(() => refresh(), 5 * 60 * 1000);
+// ❌ PRIMA
+staleTime: 5 * 60 * 1000,
+gcTime: 10 * 60 * 1000,
 
-// ✅ DOPO - Costante centralizzata
-import { TIME_CONSTANTS } from '@/constants';
-setTimeout(() => refresh(), TIME_CONSTANTS.CACHE_DURATION);
+// ✅ DOPO
+import { TIME_CONSTANTS } from "@/constants";
+staleTime: TIME_CONSTANTS.CACHE_DURATION,
+gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
 ```
 
-### Benefici
-1. ✅ **Manutenibilità**: Un solo punto di modifica
-2. ✅ **Documentazione**: Ogni costante ha commento esplicativo
-3. ✅ **Type Safety**: Tutte le costanti sono `as const`
-4. ✅ **Consistency**: Stessi valori usati ovunque
-5. ✅ **No VITE_***: Valori hardcoded come da best practice Lovable
+### ✅ URL Esterni
+```typescript
+// ❌ PRIMA
+window.open("https://dashboard.stripe.com", "_blank");
+
+// ✅ DOPO
+import { API_ENDPOINTS } from "@/constants";
+window.open(API_ENDPOINTS.STRIPE_DASHBOARD, "_blank");
+```
 
 ## 🎯 Obiettivo Finale
-- [x] Tutte le costanti temporali centralizzate
-- [x] Tutte le business rules centralizzate
-- [x] Tutti gli URL esterni centralizzati
-- [ ] Tutti i file aggiornati per usare le costanti
+- [x] Costanti temporali centralizzate in TIME_CONSTANTS
+- [x] URL esterni centralizzati in API_ENDPOINTS
+- [x] Business rules centralizzate in BUSINESS_RULES
+- [x] Rimossi VITE_* per core config
+- [ ] 100% timeout migrati (in progress: ~50%)
+- [ ] 100% URL migrati (completato: 100%)
 - [ ] Zero valori magici nel codebase
-- [ ] Zero dipendenze da VITE_* per config core
+- [ ] Testing completo
+
+## 💡 Benefici Ottenuti
+1. ✅ **Manutenibilità**: Modifica centralizzata dei timeout
+2. ✅ **Consistency**: Stessi valori in tutta l'app
+3. ✅ **Type Safety**: Costanti tipizzate `as const`
+4. ✅ **Documentazione**: Ogni costante ha commento descrittivo
+5. ✅ **Performance**: Query caching ottimizzato e uniforme

@@ -7,6 +7,7 @@ import { FinancialMetricsProps } from './types/financial-metrics-types';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { getHostFinancialMetrics } from '@/lib/host/financial-metrics-service';
+import { TIME_CONSTANTS } from "@/constants";
 
 export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
   totalRevenue,
@@ -22,7 +23,7 @@ export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
     queryKey: ['host-financial-metrics', authState.user?.id],
     queryFn: () => getHostFinancialMetrics(authState.user?.id || ''),
     enabled: !!authState.user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: TIME_CONSTANTS.CACHE_DURATION,
   });
 
   // Use real data if available, otherwise fall back to props

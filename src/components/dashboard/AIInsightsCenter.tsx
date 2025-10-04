@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { generateAIInsights, generateMarketAnalysis } from '@/lib/ai/ai-insights-service';
 import { filterInsightsByCategory } from './utils/ai-insights-filters';
 import { InsightCategory } from './types/ai-insights-types';
+import { TIME_CONSTANTS } from "@/constants";
 
 export const AIInsightsCenter: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<InsightCategory>('all');
@@ -19,7 +20,7 @@ export const AIInsightsCenter: React.FC = () => {
     queryKey: ['ai-insights', authState.user?.id],
     queryFn: () => generateAIInsights(authState.user?.id || ''),
     enabled: !!authState.user?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: TIME_CONSTANTS.STALE_TIME,
   });
 
   // Fetch market analysis
@@ -27,7 +28,7 @@ export const AIInsightsCenter: React.FC = () => {
     queryKey: ['market-analysis', authState.user?.id],
     queryFn: () => generateMarketAnalysis(authState.user?.id || ''),
     enabled: !!authState.user?.id,
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: TIME_CONSTANTS.POLLING_INTERVAL * 60, // 30 minutes
   });
 
   const filteredInsights = filterInsightsByCategory(insights, selectedCategory);

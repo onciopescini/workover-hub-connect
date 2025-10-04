@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, ArrowRight } from "lucide-react";
 import { PaymentWithDetails, PAYMENT_STATUS, PAYMENT_STATUS_COLORS } from "@/types/payment";
+import { API_ENDPOINTS } from "@/constants";
 
 interface PaymentListItemProps {
   payment: PaymentWithDetails;
@@ -129,7 +130,7 @@ export function PaymentListItem({
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => window.open(`https://dashboard.stripe.com/transfers/${payment.stripe_transfer_id}`, '_blank')}
+            onClick={() => window.open(`${API_ENDPOINTS.STRIPE_DASHBOARD}/transfers/${payment.stripe_transfer_id}`, '_blank')}
           >
             <ArrowRight className="w-4 h-4 mr-2" />
             Vedi Trasferimento

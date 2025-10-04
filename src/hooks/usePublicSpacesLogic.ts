@@ -12,6 +12,7 @@ import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
 import { useMapboxGeocoding } from '@/hooks/useMapboxGeocoding';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useLogger } from '@/hooks/useLogger';
+import { TIME_CONSTANTS } from "@/constants";
 
 interface SpaceFilters {
   category: string;
@@ -165,8 +166,8 @@ export const usePublicSpacesLogic = () => {
       info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);
       return Array.isArray(filteredSpaces) ? filteredSpaces : [];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: TIME_CONSTANTS.CACHE_DURATION,
+    gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
     refetchOnWindowFocus: false,
   });
 

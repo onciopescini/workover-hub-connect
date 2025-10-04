@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { InteractiveCard } from '@/components/ui/InteractiveCard';
 import { ParallaxSection } from '@/components/ui/ParallaxSection';
 import { MapPin, Wifi, Coffee, Users, Monitor, Car } from 'lucide-react';
+import { API_ENDPOINTS } from "@/constants";
 
 export function SpacesGallerySection() {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -129,7 +130,7 @@ export function SpacesGallerySection() {
                   {/* Image */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
-                      src={`https://images.unsplash.com/${space.image}?auto=format&fit=crop&w=600&q=80`}
+                      src={`${API_ENDPOINTS.UNSPLASH_BASE}/${space.image}?auto=format&fit=crop&w=600&q=80`}
                       alt={space.title}
                       className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                     />

@@ -14,18 +14,19 @@ import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor"
 import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredData";
 
 import "./App.css";
+import { TIME_CONSTANTS, BUSINESS_RULES } from "@/constants";
 
 // Configurazione ottimizzata QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minuti
-      gcTime: 10 * 60 * 1000, // 10 minuti
-      retry: 1,
+      staleTime: TIME_CONSTANTS.STALE_TIME,
+      gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
+      retry: BUSINESS_RULES.RETRY_ATTEMPTS - 2, // 1 retry
       refetchOnWindowFocus: false,
     },
     mutations: {
-      retry: 1,
+      retry: BUSINESS_RULES.RETRY_ATTEMPTS - 2, // 1 retry
     },
   },
 });

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { calculateHostMetrics } from "./utils/hostMetricsCalculator";
+import { TIME_CONSTANTS } from "@/constants";
 
 export const useHostDashboardMetrics = () => {
   const { authState } = useAuth();
@@ -13,7 +14,7 @@ export const useHostDashboardMetrics = () => {
       return calculateHostMetrics(authState.user.id);
     },
     enabled: !!authState.user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: TIME_CONSTANTS.CACHE_DURATION,
     refetchOnWindowFocus: true,
   });
 };

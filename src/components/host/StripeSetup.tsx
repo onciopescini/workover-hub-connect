@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLogger } from "@/hooks/useLogger";
 import { useQueryClient } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants";
 
 interface StripeSetupProps {
   context?: 'onboarding' | 'dashboard';
@@ -160,7 +161,7 @@ export function StripeSetup({ context = 'dashboard', onComplete }: StripeSetupPr
       stripeAccountId
     });
     // Reindirizza al dashboard Stripe
-    window.open("https://dashboard.stripe.com", "_blank");
+    window.open(API_ENDPOINTS.STRIPE_DASHBOARD, "_blank");
   };
 
   const handleRefreshStatus = async () => {

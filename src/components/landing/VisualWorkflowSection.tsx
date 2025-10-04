@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { InteractiveCard } from '@/components/ui/InteractiveCard';
 import { Search, MapPin, Calendar, CreditCard, MessageCircle, Star } from 'lucide-react';
+import { API_ENDPOINTS } from "@/constants";
 
 export function VisualWorkflowSection() {
   const [activeStep, setActiveStep] = useState(0);
@@ -123,7 +124,7 @@ export function VisualWorkflowSection() {
             <InteractiveCard className="overflow-hidden" hoverScale={false} tiltEffect={false}>
               <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
                 <img
-                  src={`https://images.unsplash.com/${steps[activeStep]?.image}?auto=format&fit=crop&w=800&q=80`}
+                  src={`${API_ENDPOINTS.UNSPLASH_BASE}/${steps[activeStep]?.image}?auto=format&fit=crop&w=800&q=80`}
                   alt={steps[activeStep]?.title}
                   className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
                 />

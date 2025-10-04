@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { fetchHostRecentActivity } from "./utils/hostActivityFetcher";
+import { TIME_CONSTANTS } from "@/constants";
 
 export const useHostRecentActivity = () => {
   const { authState } = useAuth();
@@ -13,6 +14,6 @@ export const useHostRecentActivity = () => {
       return fetchHostRecentActivity(authState.user.id);
     },
     enabled: !!authState.user?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: TIME_CONSTANTS.CALENDAR_REFRESH,
   });
 };

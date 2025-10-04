@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
+import { TIME_CONSTANTS } from "@/constants";
 
 export interface ProfessionalBreakdown {
   profession: string;
@@ -76,6 +77,6 @@ export const useSpaceMetrics = (spaceId: string) => {
       return data as unknown as SpaceMetrics;
     },
     enabled: !!spaceId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: TIME_CONSTANTS.CACHE_DURATION,
   });
 };
