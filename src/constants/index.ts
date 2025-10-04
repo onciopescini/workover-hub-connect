@@ -33,6 +33,33 @@ export const TIME_CONSTANTS = {
   
   /** Auto-refresh interval for dashboards in milliseconds (5 minutes) */
   AUTO_REFRESH_INTERVAL: 5 * 60 * 1000,
+  
+  /** Polling interval for real-time updates in milliseconds (30 seconds) */
+  POLLING_INTERVAL: 30 * 1000,
+  
+  /** Notification display duration in milliseconds (5 seconds) */
+  NOTIFICATION_DURATION: 5000,
+  
+  /** Retry delay for failed operations in milliseconds (1 second) */
+  RETRY_DELAY: 1000,
+  
+  /** Animation duration for UI transitions in milliseconds */
+  ANIMATION_DURATION: 300,
+  
+  /** Idle timeout before showing warning in milliseconds (25 minutes) */
+  IDLE_WARNING_TIMEOUT: 25 * 60 * 1000,
+  
+  /** Time before stale data refresh in milliseconds (10 minutes) */
+  STALE_TIME: 10 * 60 * 1000,
+  
+  /** Rate limit window in milliseconds (1 minute) */
+  RATE_LIMIT_WINDOW: 60 * 1000,
+  
+  /** Calendar event refresh interval in milliseconds (2 minutes) */
+  CALENDAR_REFRESH: 2 * 60 * 1000,
+  
+  /** Metric aggregation interval in milliseconds (15 seconds) */
+  METRIC_INTERVAL: 15 * 1000,
 } as const;
 
 // ============================================================================
@@ -75,6 +102,49 @@ export const BUSINESS_RULES = {
     INCOME: 2000, // €2000
     TRANSACTIONS: 25,
   },
+  
+  /** Cancellation fee tiers based on days before booking */
+  CANCELLATION_FEES: {
+    /** 0-24 hours before: 90% fee */
+    TIER_1_DAYS: 1,
+    TIER_1_FEE_PCT: 0.90,
+    
+    /** 1-7 days before: 50% fee */
+    TIER_2_DAYS: 7,
+    TIER_2_FEE_PCT: 0.50,
+    
+    /** 7-14 days before: 25% fee */
+    TIER_3_DAYS: 14,
+    TIER_3_FEE_PCT: 0.25,
+    
+    /** 14+ days before: 0% fee */
+    TIER_4_FEE_PCT: 0.00,
+  },
+  
+  /** Minimum characters for text fields */
+  MIN_DESCRIPTION_LENGTH: 50,
+  MIN_TITLE_LENGTH: 5,
+  
+  /** Maximum characters for text fields */
+  MAX_TITLE_LENGTH: 100,
+  MAX_BIO_LENGTH: 500,
+  
+  /** Pagination defaults */
+  DEFAULT_PAGE_SIZE: 20,
+  MAX_PAGE_SIZE: 100,
+  
+  /** Rate limiting */
+  MAX_REQUESTS_PER_MINUTE: 60,
+  MAX_LOGIN_ATTEMPTS: 5,
+  
+  /** Threshold for triggering reports */
+  REPORT_THRESHOLD: 3,
+  
+  /** Session management */
+  MAX_CONCURRENT_SESSIONS: 5,
+  
+  /** Platform commission after service fee */
+  PLATFORM_COMMISSION_PCT: 0.05,
 } as const;
 
 // ============================================================================
@@ -85,11 +155,29 @@ export const API_ENDPOINTS = {
   /** Stripe dashboard URL */
   STRIPE_DASHBOARD: 'https://dashboard.stripe.com',
   
+  /** Stripe payment links */
+  STRIPE_PAYMENT_LINKS: 'https://buy.stripe.com',
+  
   /** Unsplash image base URL */
   UNSPLASH_BASE: 'https://images.unsplash.com',
   
   /** Mapbox API base URL */
   MAPBOX_API: 'https://api.mapbox.com',
+  
+  /** Mapbox Geocoding API */
+  MAPBOX_GEOCODING: 'https://api.mapbox.com/geocoding/v5',
+  
+  /** Mapbox Static Images API */
+  MAPBOX_STATIC: 'https://api.mapbox.com/styles/v1',
+  
+  /** Google Maps (fallback) */
+  GOOGLE_MAPS: 'https://www.google.com/maps',
+  
+  /** Plausible Analytics */
+  PLAUSIBLE_SCRIPT: 'https://plausible.io/js/script.js',
+  
+  /** Sentry error tracking */
+  SENTRY_CDN: 'https://browser.sentry-cdn.com',
 } as const;
 
 export const SOCIAL_MEDIA = {
@@ -97,6 +185,25 @@ export const SOCIAL_MEDIA = {
   TWITTER: 'https://twitter.com',
   LINKEDIN: 'https://linkedin.com',
   INSTAGRAM: 'https://instagram.com',
+  YOUTUBE: 'https://youtube.com',
+  TIKTOK: 'https://tiktok.com',
+} as const;
+
+export const WORKOVER_URLS = {
+  /** Main website */
+  WEBSITE: 'https://workover.app',
+  
+  /** Support email */
+  SUPPORT_EMAIL: 'support@workover.app',
+  
+  /** Legal pages */
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
+  COOKIES: '/cookies',
+  
+  /** Documentation */
+  HELP_CENTER: '/help',
+  FAQ: '/faq',
 } as const;
 
 // ============================================================================

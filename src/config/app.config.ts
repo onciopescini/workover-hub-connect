@@ -37,6 +37,10 @@ interface AppConfig {
   };
 }
 
+/**
+ * Get environment variable with optional default
+ * NOTE: VITE_* variables are deprecated - use direct values instead
+ */
 const getEnvVar = (key: string, defaultValue?: string): string => {
   const value = import.meta.env[key];
   if (!value && !defaultValue) {
@@ -45,6 +49,10 @@ const getEnvVar = (key: string, defaultValue?: string): string => {
   return value || defaultValue || '';
 };
 
+/**
+ * DEPRECATED: Feature flags should be controlled via database or admin panel
+ * These are temporary defaults only
+ */
 const getBooleanEnv = (key: string, defaultValue = false): boolean => {
   const value = import.meta.env[key];
   return value === 'true' || value === '1' || defaultValue;
@@ -56,22 +64,31 @@ const getNumberEnv = (key: string, defaultValue: number): number => {
   return isNaN(parsed) ? defaultValue : parsed;
 };
 
+/**
+ * Centralized Application Configuration
+ * 
+ * IMPORTANT: Supabase credentials are hardcoded as per Lovable instructions.
+ * Do NOT use VITE_* variables for these values.
+ */
 export const appConfig: AppConfig = {
   api: {
+    // Hardcoded as per Lovable instructions - DO NOT use VITE_* variables
     supabaseUrl: 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
     supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodHF3enZyeHpzZ2Zoc3Nsd3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NDg0ODUsImV4cCI6MjA2MzUyNDQ4NX0.QThCoBfb0JuFZ5dLru-TNSA_B0PZqp8AL0x0yaEWNFk',
   },
   features: {
-    twoStepBooking: getBooleanEnv('VITE_BOOKING_TWO_STEP', true),
-    stripeTax: getBooleanEnv('VITE_ENABLE_STRIPE_TAX', false),
-    networking: getBooleanEnv('VITE_ENABLE_NETWORKING', true),
+    // Default feature flags - should be moved to database in future
+    twoStepBooking: true,
+    stripeTax: false,
+    networking: true,
   },
   pricing: {
-    serviceFeePct: getNumberEnv('VITE_SERVICE_FEE_PCT', 0.12),
-    defaultVatPct: getNumberEnv('VITE_DEFAULT_VAT_PCT', 0.22),
+    // Business rules - imported from constants in future refactor
+    serviceFeePct: 0.12,
+    defaultVatPct: 0.22,
   },
   analytics: {
-    plausibleDomain: getEnvVar('VITE_PLAUSIBLE_DOMAIN', 'workover.app'),
+    plausibleDomain: 'workover.app',
     sentryDsn: getEnvVar('VITE_SENTRY_DSN'),
     posthogKey: getEnvVar('VITE_POSTHOG_KEY'),
   },
@@ -80,9 +97,9 @@ export const appConfig: AppConfig = {
     stripePublishableKey: getEnvVar('VITE_STRIPE_PUBLISHABLE_KEY'),
   },
   performance: {
-    cacheTimeout: getNumberEnv('VITE_CACHE_TIMEOUT', 300000), // 5 minutes
-    retryAttempts: getNumberEnv('VITE_RETRY_ATTEMPTS', 3),
-    logBufferSize: getNumberEnv('VITE_LOG_BUFFER_SIZE', 50),
+    cacheTimeout: 300000, // 5 minutes (use TIME_CONSTANTS.CACHE_DURATION)
+    retryAttempts: 3, // use BUSINESS_RULES.RETRY_ATTEMPTS
+    logBufferSize: 50,
   },
 };
 
