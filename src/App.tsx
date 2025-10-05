@@ -1,7 +1,7 @@
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -15,35 +15,20 @@ import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor"
 import { PerformanceBudget } from "@/components/performance/PerformanceBudget";
 import { RoutePreloader } from "@/components/routing/RoutePreloader";
 import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredData";
+import { optimizedQueryClient } from "@/lib/react-query-config";
 
 import "./App.css";
-import { TIME_CONSTANTS, BUSINESS_RULES } from "@/constants";
 import { initSentry } from "@/lib/sentry-config";
 
 // Inizializza Sentry
 initSentry();
-
-// Configurazione ottimizzata QueryClient
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: TIME_CONSTANTS.STALE_TIME,
-      gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
-      retry: BUSINESS_RULES.RETRY_ATTEMPTS - 2, // 1 retry
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: BUSINESS_RULES.RETRY_ATTEMPTS - 2, // 1 retry
-    },
-  },
-});
 
 function App() {
   return (
     <HelmetProvider>
       <CSPProvider>
         <ProductionMonitoring>
-          <QueryClientProvider client={queryClient}>
+          <QueryClientProvider client={optimizedQueryClient}>
             <TooltipProvider>
               <Toaster 
                 position="top-right"
