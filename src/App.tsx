@@ -8,6 +8,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { CSPProvider } from "@/components/security/CSPProvider";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AppRoutes } from "@/components/routing/AppRoutes";
 import { ProductionMonitoring } from "@/components/shared/ProductionMonitoring";
 import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor";
@@ -17,6 +18,10 @@ import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredDa
 
 import "./App.css";
 import { TIME_CONSTANTS, BUSINESS_RULES } from "@/constants";
+import { initSentry } from "@/lib/sentry-config";
+
+// Inizializza Sentry
+initSentry();
 
 // Configurazione ottimizzata QueryClient
 const queryClient = new QueryClient({
@@ -50,12 +55,14 @@ function App() {
                 <AnalyticsProvider>
                   <AuthProvider>
                     <GDPRProvider>
-                      <PerformanceMonitor />
-                      <PerformanceBudget />
-                      <RoutePreloader />
-                      <OrganizationSchema />
-                      <WebsiteSchema />
-                      <AppRoutes />
+                      <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+                        <PerformanceMonitor />
+                        <PerformanceBudget />
+                        <RoutePreloader />
+                        <OrganizationSchema />
+                        <WebsiteSchema />
+                        <AppRoutes />
+                      </ErrorBoundary>
                     </GDPRProvider>
                   </AuthProvider>
                 </AnalyticsProvider>
