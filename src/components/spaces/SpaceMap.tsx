@@ -388,7 +388,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       />
       
       {/* Debug info per sviluppo */}
-      {process.env['NODE_ENV'] === 'development' && (
+      {import.meta.env.MODE === 'development' && (
         <div className="absolute top-2 right-2 bg-black/70 text-white text-xs p-2 rounded">
           Container: {containerSize.width}x{containerSize.height}
           <br />

@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    target: 'es2015',
+    target: 'es2020',
     minify: 'esbuild',
     esbuild: {
       drop: ['console', 'debugger'],
