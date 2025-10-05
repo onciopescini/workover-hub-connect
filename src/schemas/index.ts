@@ -6,3 +6,6 @@ export * from './reviewSchema';
 export * from './bookingSchema';
 export * from './messageSchema';
 export * from './connectionSchema';
+export * from './paymentSchema';
+export * from './adminSchema';
+export * from './eventSchema';
