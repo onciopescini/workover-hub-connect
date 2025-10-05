@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { TIME_CONSTANTS } from '@/constants';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage, sendMessage, fetchMessages as fetchBookingMessages } from "@/lib/messaging-utils";
@@ -51,7 +52,7 @@ export const useMessagesData = (activeTab: string) => {
               `)
               .eq("space.host_id", authState.user.id)
               .eq("status", "confirmed")
-              .gte("booking_date", new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+              .gte("booking_date", new Date(Date.now() - TIME_CONSTANTS.MESSAGE_RETENTION).toISOString().split('T')[0])
               .order("created_at", { ascending: false });
 
             if (!error && hostBookings) {

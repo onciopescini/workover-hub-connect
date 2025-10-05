@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { TIME_CONSTANTS } from "@/constants";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,7 +182,7 @@ export const DataBreachManagement = () => {
 
   const getNotificationDeadline = (detectedAt: string) => {
     const detected = new Date(detectedAt);
-    const deadline = new Date(detected.getTime() + 72 * 60 * 60 * 1000); // 72 hours
+    const deadline = new Date(detected.getTime() + TIME_CONSTANTS.GDPR_NOTIFICATION_DEADLINE); // 72 hours
     const now = new Date();
     const hoursLeft = Math.max(0, Math.floor((deadline.getTime() - now.getTime()) / (1000 * 60 * 60)));
     

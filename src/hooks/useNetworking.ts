@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { TIME_CONSTANTS } from "@/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Connection, ConnectionSuggestion } from "@/types/networking";
@@ -163,7 +164,7 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
             sender_id: authState.user?.id ?? '',
             receiver_id: receiverId,
             status: 'pending',
-            expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Expires in 3 days
+            expires_at: new Date(Date.now() + TIME_CONSTANTS.CONNECTION_REQUEST_EXPIRY).toISOString(), // Expires in 3 days
           },
         ]);
 

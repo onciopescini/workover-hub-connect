@@ -60,6 +60,18 @@ export const TIME_CONSTANTS = {
   
   /** Metric aggregation interval in milliseconds (15 seconds) */
   METRIC_INTERVAL: 15 * 1000,
+  
+  /** GDPR 72-hour breach notification deadline (72 hours in ms) */
+  GDPR_NOTIFICATION_DEADLINE: 72 * 60 * 60 * 1000,
+  
+  /** Coworker activity window - last 90 days (90 days in ms) */
+  COWORKER_ACTIVITY_WINDOW: 90 * 24 * 60 * 60 * 1000,
+  
+  /** Message retention period - 14 days (14 days in ms) */
+  MESSAGE_RETENTION: 14 * 24 * 60 * 60 * 1000,
+  
+  /** Connection request expiry - 3 days (3 days in ms) */
+  CONNECTION_REQUEST_EXPIRY: 3 * 24 * 60 * 60 * 1000,
 } as const;
 
 // ============================================================================

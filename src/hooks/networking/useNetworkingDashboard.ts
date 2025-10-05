@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { TIME_CONSTANTS } from '@/constants';
 import { EnhancedNetworkingStats, Achievement, NetworkingDashboardState, NetworkingDashboardActions } from '@/types/networking-dashboard';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +24,7 @@ export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): 
     queryKey: ['networking-stats', authState.user?.id],
     queryFn: () => getNetworkingStats(authState.user?.id || ''),
     enabled: !!authState.user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: TIME_CONSTANTS.CACHE_DURATION, // 5 minutes
   });
 
   const processedStats = useMemo((): EnhancedNetworkingStats => {

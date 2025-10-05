@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { TIME_CONSTANTS } from '@/constants';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -82,7 +83,7 @@ export const useHostProgress = (options?: {
       };
     },
     enabled: !!userId && authState.profile?.role === 'host',
-    staleTime: options?.staleTime ?? 5 * 60 * 1000, // 5 minutes by default, configurable
+    staleTime: options?.staleTime ?? TIME_CONSTANTS.CACHE_DURATION, // 5 minutes by default, configurable
     refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
     // Aggiorna più frequentemente quando ci sono operazioni critiche in corso
     refetchInterval: (userId && !authState.profile?.stripe_connected) ? 30 * 1000 : false, // 30 seconds polling se Stripe non è ancora connesso

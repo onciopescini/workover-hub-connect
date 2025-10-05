@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TIME_CONSTANTS } from "@/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -65,7 +66,7 @@ export function WhoWorksHere({ spaceId, className = "" }: WhoWorksHereProps) {
         .eq('space_id', spaceId)
         .eq('status', 'confirmed')
         .neq('user_id', authState.user?.id || '')
-        .gte('booking_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()) // Last 90 days
+        .gte('booking_date', new Date(Date.now() - TIME_CONSTANTS.COWORKER_ACTIVITY_WINDOW).toISOString()) // Last 90 days
         .order('booking_date', { ascending: false });
 
       if (error) throw error;
