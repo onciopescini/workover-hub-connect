@@ -1,0 +1,131 @@
+import { useEffect } from 'react';
+import { sreLogger } from '@/lib/sre-logger';
+
+interface PerformanceBudget {
+  // Core Web Vitals targets
+  lcp: number; // Largest Contentful Paint (ms)
+  fid: number; // First Input Delay (ms)
+  cls: number; // Cumulative Layout Shift (score)
+  fcp: number; // First Contentful Paint (ms)
+  ttfb: number; // Time to First Byte (ms)
+}
+
+const PERFORMANCE_BUDGET: PerformanceBudget = {
+  lcp: 2500,    // Target: < 2.5s
+  fid: 100,     // Target: < 100ms
+  cls: 0.1,     // Target: < 0.1
+  fcp: 1800,    // Target: < 1.8s
+  ttfb: 800,    // Target: < 800ms
+};
+
+/**
+ * Componente per monitorare e loggare violazioni del performance budget
+ */
+export function PerformanceBudget() {
+  useEffect(() => {
+    // Monitora LCP
+    if (!('PerformanceObserver' in window)) {
+      return;
+    }
+    
+    try {
+      const lcpObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1] as any;
+        
+        if (lastEntry.renderTime || lastEntry.loadTime) {
+          const lcp = lastEntry.renderTime || lastEntry.loadTime;
+          
+          if (lcp > PERFORMANCE_BUDGET.lcp) {
+            sreLogger.warn('Performance budget exceeded', {
+              metric: 'LCP',
+              value: lcp,
+              budget: PERFORMANCE_BUDGET.lcp,
+              element: lastEntry.element?.tagName,
+            });
+          }
+        }
+      });
+
+      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+
+      // Monitora FID
+      const fidObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach((entry: any) => {
+          const fid = entry.processingStart - entry.startTime;
+          
+          if (fid > PERFORMANCE_BUDGET.fid) {
+            sreLogger.warn('Performance budget exceeded', {
+              metric: 'FID',
+              value: fid,
+              budget: PERFORMANCE_BUDGET.fid,
+            });
+          }
+        });
+      });
+
+      fidObserver.observe({ entryTypes: ['first-input'] });
+
+      // Monitora CLS
+      const clsObserver = new PerformanceObserver((list) => {
+        let clsValue = 0;
+        
+        list.getEntries().forEach((entry: any) => {
+          if (!entry.hadRecentInput) {
+            clsValue += entry.value;
+          }
+        });
+
+        if (clsValue > PERFORMANCE_BUDGET.cls) {
+          sreLogger.warn('Performance budget exceeded', {
+            metric: 'CLS',
+            value: clsValue,
+            budget: PERFORMANCE_BUDGET.cls,
+          });
+        }
+      });
+
+      clsObserver.observe({ entryTypes: ['layout-shift'] });
+
+      // Monitora Navigation Timing
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+          
+          if (perfData) {
+            const fcp = perfData.responseStart - perfData.requestStart;
+            const ttfb = perfData.responseStart - perfData.fetchStart;
+
+            if (fcp > PERFORMANCE_BUDGET.fcp) {
+              sreLogger.warn('Performance budget exceeded', {
+                metric: 'FCP',
+                value: fcp,
+                budget: PERFORMANCE_BUDGET.fcp,
+              });
+            }
+
+            if (ttfb > PERFORMANCE_BUDGET.ttfb) {
+              sreLogger.warn('Performance budget exceeded', {
+                metric: 'TTFB',
+                value: ttfb,
+                budget: PERFORMANCE_BUDGET.ttfb,
+              });
+            }
+          }
+        }, 0);
+      });
+
+      return () => {
+        lcpObserver.disconnect();
+        fidObserver.disconnect();
+        clsObserver.disconnect();
+      };
+    } catch (error) {
+      sreLogger.error('Failed to initialize Performance Budget monitoring', { error });
+      return undefined;
+    }
+  }, []);
+
+  return null; // Questo componente non renderizza nulla
+}

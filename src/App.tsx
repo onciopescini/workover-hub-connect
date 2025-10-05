@@ -11,6 +11,8 @@ import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { AppRoutes } from "@/components/routing/AppRoutes";
 import { ProductionMonitoring } from "@/components/shared/ProductionMonitoring";
 import { PerformanceMonitor } from "@/components/performance/PerformanceMonitor";
+import { PerformanceBudget } from "@/components/performance/PerformanceBudget";
+import { RoutePreloader } from "@/components/routing/RoutePreloader";
 import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredData";
 
 import "./App.css";
@@ -49,6 +51,8 @@ function App() {
                   <AuthProvider>
                     <GDPRProvider>
                       <PerformanceMonitor />
+                      <PerformanceBudget />
+                      <RoutePreloader />
                       <OrganizationSchema />
                       <WebsiteSchema />
                       <AppRoutes />
