@@ -101,7 +101,11 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
       rating: 0,
       verified: false,
       superhost: false,
-      instantBook: false
+      instantBook: false,
+      startDate: null,
+      endDate: null,
+      startTime: null,
+      endTime: null
     });
   };
 

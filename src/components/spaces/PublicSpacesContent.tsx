@@ -38,8 +38,6 @@ export const PublicSpacesContent = ({
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
 
   const handleLocationChange = (location: string, coordinates?: Coordinates) => {
     onFiltersChange({
@@ -63,7 +61,22 @@ export const PublicSpacesContent = ({
     if (filters.verified) count++;
     if (filters.superhost) count++;
     if (filters.instantBook) count++;
+    if (filters.startDate || filters.endDate) count++;
     return count;
+  };
+
+  const handleStartDateChange = (date: Date | null) => {
+    onFiltersChange({
+      ...filters,
+      startDate: date
+    });
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    onFiltersChange({
+      ...filters,
+      endDate: date
+    });
   };
 
   const handleNearMe = () => {
@@ -96,8 +109,13 @@ export const PublicSpacesContent = ({
 
   const handleAvailableNow = () => {
     const now = new Date();
-    setStartDate(now);
-    setEndDate(new Date(now.getTime() + 2 * 60 * 60 * 1000)); // +2 hours
+    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    
+    onFiltersChange({
+      ...filters,
+      startDate: now,
+      endDate: twoHoursLater
+    });
   };
 
   return (
@@ -105,13 +123,13 @@ export const PublicSpacesContent = ({
       searchBar={
         <CompactSearchBar
           location={filters.location}
-          startDate={startDate}
-          endDate={endDate}
+          startDate={filters.startDate}
+          endDate={filters.endDate}
           activeFiltersCount={getActiveFiltersCount()}
           isFiltersOpen={isFiltersOpen}
           onLocationChange={handleLocationChange}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
+          onStartDateChange={handleStartDateChange}
+          onEndDateChange={handleEndDateChange}
           onToggleFilters={handleToggleFilters}
           onNearMe={handleNearMe}
           onTopRated={handleTopRated}

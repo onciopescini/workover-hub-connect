@@ -3,7 +3,7 @@ import { GeographicSearch } from '@/components/shared/GeographicSearchRefactored
 import { DateRangePicker } from './DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SlidersHorizontal, MapPin, Star, Clock } from 'lucide-react';
+import { SlidersHorizontal, MapPin, Star, Clock, X } from 'lucide-react';
 import { Coordinates } from '@/types/space-filters';
 
 interface CompactSearchBarProps {
@@ -35,6 +35,13 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
   onTopRated,
   onAvailableNow
 }) => {
+  const hasDateFilter = startDate || endDate;
+
+  const handleClearDates = () => {
+    onStartDateChange(null);
+    onEndDateChange(null);
+  };
+
   return (
     <div className="sticky top-0 z-30 bg-background border-b shadow-sm">
       <div className="px-4 py-3">
@@ -76,6 +83,22 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
               </Badge>
             )}
           </Button>
+
+          {/* Date Filter Active Badge */}
+          {hasDateFilter && (
+            <Badge variant="secondary" className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              Date selezionate
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearDates}
+                className="h-4 w-4 p-0 hover:bg-transparent ml-1"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
 
           {/* Quick Actions - Desktop */}
           <div className="hidden lg:flex items-center gap-2 ml-auto">

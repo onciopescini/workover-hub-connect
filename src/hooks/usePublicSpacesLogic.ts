@@ -14,6 +14,65 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useLogger } from '@/hooks/useLogger';
 import { TIME_CONSTANTS } from "@/constants";
 
+/**
+ * Check if a space is available for the given date/time range
+ */
+const checkSpaceAvailability = async (
+  spaceId: string,
+  startDate: Date,
+  endDate: Date,
+  startTime: string | null,
+  endTime: string | null
+): Promise<boolean> => {
+  try {
+    // Query bookings table for conflicts
+    const { data: bookings, error } = await supabase
+      .from('bookings')
+      .select('booking_date, start_time, end_time, status')
+      .eq('space_id', spaceId)
+      .in('status', ['pending', 'confirmed'])
+      .gte('booking_date', startDate.toISOString().split('T')[0])
+      .lte('booking_date', endDate.toISOString().split('T')[0]);
+
+    if (error) {
+      console.error('Error checking availability:', error);
+      return true; // On error, include the space (fail open)
+    }
+
+    if (!bookings || bookings.length === 0) {
+      return true; // No bookings = available
+    }
+
+    // Check for time conflicts
+    for (const booking of bookings) {
+      // If we have specific times, check for overlap
+      if (startTime && endTime && booking.start_time && booking.end_time) {
+        const bookingStart = booking.start_time;
+        const bookingEnd = booking.end_time;
+        
+        // Check if times overlap
+        const hasOverlap = (
+          (startTime >= bookingStart && startTime < bookingEnd) ||
+          (endTime > bookingStart && endTime <= bookingEnd) ||
+          (startTime <= bookingStart && endTime >= bookingEnd)
+        );
+        
+        if (hasOverlap) {
+          return false; // Conflict found
+        }
+      } else {
+        // If no specific times, consider the whole day booked
+        return false;
+      }
+    }
+
+    return true; // No conflicts found
+  } catch (error) {
+    console.error('Error in checkSpaceAvailability:', error);
+    return true; // On error, include the space
+  }
+};
+
 interface SpaceFilters {
   category: string;
   priceRange: [number, number];
@@ -26,6 +85,10 @@ interface SpaceFilters {
   verified: boolean;
   superhost: boolean;
   instantBook: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+  startTime: string | null;
+  endTime: string | null;
 }
 
 const DEFAULT_FILTERS: SpaceFilters = {
@@ -39,7 +102,11 @@ const DEFAULT_FILTERS: SpaceFilters = {
   rating: 0,
   verified: false,
   superhost: false,
-  instantBook: false
+  instantBook: false,
+  startDate: null,
+  endDate: null,
+  startTime: null,
+  endTime: null
 };
 
 export const usePublicSpacesLogic = () => {
@@ -71,7 +138,11 @@ export const usePublicSpacesLogic = () => {
     capacity: filters.capacity,
     verified: filters.verified,
     superhost: filters.superhost,
-    instantBook: filters.instantBook
+    instantBook: filters.instantBook,
+    startDate: filters.startDate?.toISOString(),
+    endDate: filters.endDate?.toISOString(),
+    startTime: filters.startTime,
+    endTime: filters.endTime
   });
 
   // Debounced geocoding for city search
@@ -161,6 +232,23 @@ export const usePublicSpacesLogic = () => {
         filteredSpaces = filteredSpaces.filter((space: any) => 
           space && space.address?.toLowerCase().includes(searchTerm)
         );
+      }
+
+      // Filter by availability (date/time range)
+      if (filters.startDate && filters.endDate) {
+        const availableSpaces = await Promise.all(
+          filteredSpaces.map(async (space: any) => {
+            const isAvailable = await checkSpaceAvailability(
+              space.id,
+              filters.startDate!,
+              filters.endDate!,
+              filters.startTime,
+              filters.endTime
+            );
+            return isAvailable ? space : null;
+          })
+        );
+        filteredSpaces = availableSpaces.filter((space: any) => space !== null);
       }
       
       info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);

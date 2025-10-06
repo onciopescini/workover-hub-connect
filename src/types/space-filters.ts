@@ -11,6 +11,10 @@ export interface SpaceFilters {
   verified: boolean;
   superhost: boolean;
   instantBook: boolean;
+  startDate: Date | null;
+  endDate: Date | null;
+  startTime: string | null;
+  endTime: string | null;
 }
 
 export interface BasicSpaceFilters {
