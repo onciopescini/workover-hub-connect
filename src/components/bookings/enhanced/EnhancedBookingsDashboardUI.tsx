@@ -17,6 +17,8 @@ import { useBulkBookingActions } from '@/hooks/bookings/useBulkBookingActions';
 import { RealtimeBookingsSync } from '@/components/bookings/realtime/RealtimeBookingsSync';
 import { ReportSubscriptionToggle } from '@/components/host/reports/ReportSubscriptionToggle';
 import { BookingsCalendarView } from '../calendar/BookingsCalendarView';
+import { HostBookingsCalendarView } from '../calendar/HostBookingsCalendarView';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 interface EnhancedBookingsDashboardUIProps {
   dashboardState: BookingsDashboardState;
@@ -47,6 +49,8 @@ export function EnhancedBookingsDashboardUI({
 }: EnhancedBookingsDashboardUIProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const { authState } = useAuth();
+  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
 
   const { confirmMultiple, cancelMultiple, groupMessage, loading: bulkLoading } = useBulkBookingActions({
     onAfterAll: refetch,
@@ -140,13 +144,23 @@ export function EnhancedBookingsDashboardUI({
         </TabsContent>
 
         <TabsContent value="calendar" className="mt-6">
-          <BookingsCalendarView
-            bookings={filteredBookings}
-            getUserRole={getUserRole}
-            isChatEnabled={isChatEnabled}
-            onOpenMessageDialog={actions.onOpenMessageDialog}
-            onOpenCancelDialog={actions.onOpenCancelDialog}
-          />
+          {isHost ? (
+            <HostBookingsCalendarView
+              bookings={filteredBookings}
+              getUserRole={getUserRole}
+              isChatEnabled={isChatEnabled}
+              onOpenMessageDialog={actions.onOpenMessageDialog}
+              onOpenCancelDialog={actions.onOpenCancelDialog}
+            />
+          ) : (
+            <BookingsCalendarView
+              bookings={filteredBookings}
+              getUserRole={getUserRole}
+              isChatEnabled={isChatEnabled}
+              onOpenMessageDialog={actions.onOpenMessageDialog}
+              onOpenCancelDialog={actions.onOpenCancelDialog}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
