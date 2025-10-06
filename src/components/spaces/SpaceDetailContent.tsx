@@ -49,8 +49,23 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     navigate('/login');
   };
 
+  const isValidUUID = (uuid: string): boolean => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+  };
+
   const handleMessageHost = async () => {
     if (!space.host || startingChat) return;
+
+    // Validate host UUID
+    if (!space.host.id || !isValidUUID(space.host.id)) {
+      sreLogger.error('Invalid host ID', { 
+        context: 'SpaceDetailContent',
+        hostId: space.host?.id 
+      });
+      toast.error("Impossibile contattare l'host. ID non valido.");
+      return;
+    }
 
     setStartingChat(true);
     try {

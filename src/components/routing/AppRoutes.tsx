@@ -36,6 +36,7 @@ const Bookings = lazy(() => import("@/pages/Bookings"));
 const ModernMessages = lazy(() => import("@/pages/ModernMessages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
+const PrivateChats = lazy(() => import("@/pages/PrivateChats"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
 const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
@@ -183,6 +184,22 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <MessageConversation />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="private-chats" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <PrivateChats />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="private-chats/:chatId" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <PrivateChats />
             </LazyWrapper>
           </AuthProtected>
         } />
