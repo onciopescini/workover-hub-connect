@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    // mode === 'development' && Inspect(), // Disabled to fix Vite crash
-    mode === 'production' && analyzer(),
+    // analyzer disabled in production to avoid interfering with chunk loading
+    // mode === 'production' && analyzer(),
   ].filter(Boolean),
   resolve: {
     alias: {
