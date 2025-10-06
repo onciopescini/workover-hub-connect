@@ -130,9 +130,14 @@ export function SpacesGallerySection() {
                   {/* Image */}
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <img
-                      src={`${API_ENDPOINTS.UNSPLASH_BASE}/${space.image}?auto=format&fit=crop&w=600&q=80`}
+                      src={`${API_ENDPOINTS.UNSPLASH_BASE}/${space.image}?auto=format&fit=crop&w=400&q=75`}
                       alt={space.title}
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                      width="400"
+                      height="300"
+                      loading={index < 3 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-500 will-change-transform hover:scale-110"
+                      style={{ aspectRatio: '4/3' }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     

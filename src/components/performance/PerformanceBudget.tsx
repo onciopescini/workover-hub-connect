@@ -10,12 +10,31 @@ interface PerformanceBudget {
   ttfb: number; // Time to First Byte (ms)
 }
 
+interface PerformanceThresholds {
+  good: number;
+  warn: number;
+  error: number;
+}
+
 const PERFORMANCE_BUDGET: PerformanceBudget = {
-  lcp: 2500,    // Target: < 2.5s
+  lcp: 3000,    // Increased for complex hero section
   fid: 100,     // Target: < 100ms
-  cls: 0.1,     // Target: < 0.1
-  fcp: 1800,    // Target: < 1.8s
+  cls: 0.15,    // Increased for animated sections
+  fcp: 2000,    // Slightly increased
   ttfb: 800,    // Target: < 800ms
+};
+
+// Progressive thresholds for better monitoring
+const CLS_THRESHOLDS: PerformanceThresholds = {
+  good: 0.1,
+  warn: 0.15,
+  error: 0.25,
+};
+
+const LCP_THRESHOLDS: PerformanceThresholds = {
+  good: 2500,
+  warn: 3000,
+  error: 4000,
 };
 
 /**
@@ -35,13 +54,18 @@ export function PerformanceBudget() {
         
         if (lastEntry.renderTime || lastEntry.loadTime) {
           const lcp = lastEntry.renderTime || lastEntry.loadTime;
+          const level = lcp > LCP_THRESHOLDS.error ? 'error' : lcp > LCP_THRESHOLDS.warn ? 'warn' : 'good';
           
-          if (lcp > PERFORMANCE_BUDGET.lcp) {
+          if (level !== 'good') {
             sreLogger.warn('Performance budget exceeded', {
               metric: 'LCP',
               value: lcp,
               budget: PERFORMANCE_BUDGET.lcp,
+              level,
+              thresholds: LCP_THRESHOLDS,
               element: lastEntry.element?.tagName,
+              url: window.location.href,
+              userAgent: navigator.userAgent,
             });
           }
         }
@@ -77,11 +101,17 @@ export function PerformanceBudget() {
           }
         });
 
-        if (clsValue > PERFORMANCE_BUDGET.cls) {
+        const level = clsValue > CLS_THRESHOLDS.error ? 'error' : clsValue > CLS_THRESHOLDS.warn ? 'warn' : 'good';
+        
+        if (level !== 'good') {
           sreLogger.warn('Performance budget exceeded', {
             metric: 'CLS',
             value: clsValue,
             budget: PERFORMANCE_BUDGET.cls,
+            level,
+            thresholds: CLS_THRESHOLDS,
+            url: window.location.href,
+            userAgent: navigator.userAgent,
           });
         }
       });

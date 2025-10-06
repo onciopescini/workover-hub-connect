@@ -34,7 +34,7 @@ export function AnimatedHeroSection() {
           
           {/* Enhanced Search Bar */}
           <div className="max-w-md mx-auto mb-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-lg blur opacity-75 transition duration-1000"></div>
             <div className="relative">
               <GeographicSearch 
                 placeholder="Trova spazi nella tua città..."
@@ -47,7 +47,7 @@ export function AnimatedHeroSection() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl transform hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl hover-scale-gpu transition-all duration-300"
               onClick={() => navigate('/spaces')}
             >
               <span className="relative z-10">Esplora Spazi</span>
@@ -57,7 +57,7 @@ export function AnimatedHeroSection() {
             <Button 
               size="lg" 
               variant="outline"
-              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/80 shadow-xl transform hover:scale-105 transition-all duration-300"
+              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/80 shadow-xl hover-scale-gpu transition-all duration-300"
               onClick={() => navigate('/networking')}
             >
               Vai al Networking
@@ -66,7 +66,7 @@ export function AnimatedHeroSection() {
               <Button
                 size="lg"
                 onClick={() => navigate('/onboarding')}
-                className="bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl transform hover:scale-105 transition-all duration-300"
+                className="bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl hover-scale-gpu transition-all duration-300"
               >
                 Completa Onboarding
               </Button>

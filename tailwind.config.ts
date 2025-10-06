@@ -120,5 +120,18 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addUtilities }: any) {
+			const newUtilities = {
+				'.hover-scale-gpu': {
+					'will-change': 'transform',
+					'&:hover': {
+						transform: 'scale(1.05)',
+					},
+				},
+			};
+			addUtilities(newUtilities);
+		},
+	],
 } satisfies Config;

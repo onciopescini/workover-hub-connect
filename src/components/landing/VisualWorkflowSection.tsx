@@ -124,9 +124,14 @@ export function VisualWorkflowSection() {
             <InteractiveCard className="overflow-hidden" hoverScale={false} tiltEffect={false}>
               <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden">
                 <img
-                  src={`${API_ENDPOINTS.UNSPLASH_BASE}/${steps[activeStep]?.image}?auto=format&fit=crop&w=800&q=80`}
+                  src={`${API_ENDPOINTS.UNSPLASH_BASE}/${steps[activeStep]?.image}?auto=format&fit=crop&w=800&q=75`}
                   alt={steps[activeStep]?.title}
-                  className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+                  width="800"
+                  height="450"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover transition-all duration-500 will-change-transform hover:scale-105"
+                  style={{ aspectRatio: '16/9' }}
                 />
               </div>
             </InteractiveCard>
