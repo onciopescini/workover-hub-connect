@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StripeStatusPill } from "@/components/host/StripeStatusPill";
-import { CreditCard } from "lucide-react";
+import { CreditCard, RefreshCw } from "lucide-react";
 import { sreLogger } from '@/lib/sre-logger';
+import { useStripeStatus } from "@/hooks/useStripeStatus";
 
 type Props = {
   className?: string;
@@ -13,6 +14,7 @@ type Props = {
 
 export default function HostStripeStatus({ className = "" }: Props) {
   const { authState } = useAuth();
+  const { isVerifying, manualRefresh } = useStripeStatus();
   const connected = !!authState.profile?.stripe_connected;
   const acct = authState.profile?.stripe_account_id;
   const status = authState.profile?.stripe_onboarding_status ?? "none";
@@ -50,11 +52,24 @@ export default function HostStripeStatus({ className = "" }: Props) {
       {/* Mostra ID breve se presente */}
       {acct && <span className="text-xs text-gray-500 font-mono">ID: …{acct.slice(-8)}</span>}
 
+      {/* Show manual refresh if connected */}
+      {connected && acct && (
+        <Button
+          onClick={manualRefresh}
+          disabled={isVerifying}
+          size="sm"
+          variant="outline"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${isVerifying ? 'animate-spin' : ''}`} />
+          {isVerifying ? "Verifica..." : "Verifica status"}
+        </Button>
+      )}
+
       {/* CTA solo se non collegato */}
-      {(!acct || !connected) && (
+      {!connected && (
         <Button
           onClick={connect}
-          disabled={loading}
+          disabled={loading || isVerifying}
           size="sm"
           className="bg-[#635bff] hover:bg-[#5b54f0] text-white"
         >

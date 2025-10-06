@@ -134,8 +134,8 @@ serve(async (req) => {
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccountId,
       type: 'account_onboarding',
-      refresh_url: `${siteUrl}/host/stripe/return?state=refresh`,
-      return_url: `${siteUrl}/host/stripe/return?state=success`,
+      refresh_url: `${siteUrl}/host/dashboard?state=refresh`,
+      return_url: `${siteUrl}/host/dashboard?state=success`,
     });
 
     logStep('Account link created', { url: accountLink.url });
