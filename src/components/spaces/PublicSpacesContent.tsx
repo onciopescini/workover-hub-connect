@@ -1,21 +1,21 @@
 /**
- * Public Spaces Content Component
+ * Public Spaces Content Component - Optimized Compact Layout
  * 
- * Extracted from PublicSpaces.tsx - handles main layout with map and cards
+ * Features:
+ * - Collapsible filter sidebar (280px)
+ * - Split-screen: Map (40%) + Cards (60%)
+ * - Compact horizontal cards (110px height)
+ * - Independent scrolling for cards section
  */
 import { SpaceMap } from '@/components/spaces/SpaceMap';
-import { EnhancedSpaceCardsGrid } from '@/components/spaces/EnhancedSpaceCardsGrid';
-import { SplitScreenLayout } from '@/components/shared/SplitScreenLayout';
-import { AdvancedSpaceFilters } from '@/components/spaces/AdvancedSpaceFilters';
-import { PublicSpacesHeader } from './PublicSpacesHeader';
+import { CompactSpaceCardsGrid } from '@/components/spaces/compact/CompactSpaceCardsGrid';
+import { SpacesSplitLayout } from '@/components/spaces/compact/SpacesSplitLayout';
 import { Space, SpaceFilters, FilterChangeHandler, SpaceClickHandler, Coordinates } from '@/types/space-filters';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
 
 interface PublicSpacesContentProps {
   filters: SpaceFilters;
-  spaces: any[]; // Keep as any[] for compatibility with existing components
+  spaces: any[];
   isLoading: boolean;
   mapCenter: Coordinates | null;
   highlightedId: string | null;
@@ -35,32 +35,13 @@ export const PublicSpacesContent = ({
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
   
-  // Enhanced error handling per la mappa
-  const mapError = !mapCenter && "Impossibile determinare la posizione per la mappa";
-  
   return (
-    <SplitScreenLayout
-      filters={
-        <div className="space-y-6">
-          <PublicSpacesHeader spacesCount={spaces?.length} />
-          <AdvancedSpaceFilters 
-            filters={filters} 
-            onFiltersChange={onFiltersChange}
-            totalResults={spaces?.length || 0}
-          />
-          
-          {mapError && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {mapError}
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-      }
+    <SpacesSplitLayout
+      filters={filters}
+      onFiltersChange={onFiltersChange}
+      totalResults={spaces?.length || 0}
       map={
-        <div className="relative h-full">
+        <div className="relative h-full w-full">
           <SpaceMap 
             spaces={spaces || []} 
             userLocation={mapCenter}
@@ -68,7 +49,6 @@ export const PublicSpacesContent = ({
             highlightedSpaceId={highlightedId}
           />
           
-          {/* Overlay di caricamento per la mappa */}
           {isLoading && (
             <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
               <LoadingSpinner />
@@ -77,13 +57,14 @@ export const PublicSpacesContent = ({
         </div>
       }
       cards={
-        <EnhancedSpaceCardsGrid 
+        <CompactSpaceCardsGrid 
           spaces={spaces || []} 
           onSpaceClick={onSpaceClick}
           highlightedId={highlightedId}
           isLoading={isLoading}
         />
       }
+      sidebarDefaultCollapsed={false}
     />
   );
 };
