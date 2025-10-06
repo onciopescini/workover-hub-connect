@@ -117,7 +117,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         container: container,
         style: 'mapbox://styles/mapbox/light-v11',
         center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
-        zoom: stableUserLocation.current ? 12 : 6,
+        zoom: stableUserLocation.current ? 11 : 6,
         attributionControl: false,
         renderWorldCopies: false
       });
@@ -379,17 +379,16 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="relative w-full h-full min-h-[420px] rounded-lg overflow-hidden bg-muted/20">
+    <div className="relative w-full h-full rounded-lg overflow-hidden bg-muted/20">
       <div 
         ref={mapContainer} 
         id="space-map-container" 
         className="absolute inset-0" 
-        style={{ minHeight: '420px' }}
       />
       
       {/* Debug info per sviluppo */}
       {import.meta.env.MODE === 'development' && (
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs p-2 rounded">
+        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs p-2 rounded z-10">
           Container: {containerSize.width}x{containerSize.height}
           <br />
           Ready: {mapReady ? '✅' : '❌'}
@@ -398,15 +397,16 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         </div>
       )}
       
+      {/* Badge spazi disponibili - moved to bottom-left and compacted */}
       {memoizedSpaces.length > 0 && (
-        <div className="absolute top-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border">
-          <span className="text-sm text-foreground font-medium">{memoizedSpaces.length} spazi disponibili</span>
+        <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border z-10">
+          <span className="text-xs text-foreground font-medium">{memoizedSpaces.length} spazi</span>
         </div>
       )}
       
       {/* Enhanced loading state */}
       {!mapReady && !error && (
-        <div className="absolute inset-0 bg-muted/50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-muted/50 flex items-center justify-center z-10">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p className="text-sm text-muted-foreground">Caricamento mappa...</p>

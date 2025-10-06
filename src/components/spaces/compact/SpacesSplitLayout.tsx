@@ -30,19 +30,27 @@ export const SpacesSplitLayout: React.FC<SpacesSplitLayoutProps> = ({
         defaultCollapsed={sidebarDefaultCollapsed}
       />
 
-      {/* Main Content Area - Adjusted for sidebar */}
-      <div className="ml-0 lg:ml-[280px] transition-all duration-300">
-        {/* Split Screen: Map + Cards */}
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-48px)]">
-          {/* Map Section - 40% width on desktop */}
-          <div className="lg:w-[40%] h-[300px] lg:h-full relative flex-shrink-0">
-            <div className="absolute inset-0">
+      {/* Main Content Area - Dynamic sidebar adjustment */}
+      <div className="ml-0 md:ml-0 lg:ml-[260px] transition-all duration-300">
+        {/* Split Screen: Map + Cards with responsive ratios */}
+        <div className="flex flex-col lg:flex-row min-h-[calc(100vh-48px)] max-h-[calc(100vh-48px)]">
+          {/* Map Section - Dynamic width based on screen size */}
+          <div className="
+            w-full lg:w-[40%] xl:w-[45%]
+            h-[400px] md:h-[500px] lg:h-full
+            relative flex-shrink-0
+          ">
+            <div className="absolute inset-0 lg:min-h-[500px] xl:min-h-[600px]">
               {map}
             </div>
           </div>
 
-          {/* Cards Section - 60% width on desktop, independent scroll */}
-          <div className="lg:w-[60%] h-full overflow-y-auto">
+          {/* Cards Section - Dynamic width, independent scroll with smooth behavior */}
+          <div className="
+            w-full lg:w-[60%] xl:w-[55%]
+            h-auto lg:h-full
+            overflow-y-auto scroll-smooth
+          ">
             <div className="p-4 space-y-3">
               {cards}
             </div>
