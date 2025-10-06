@@ -9,10 +9,19 @@ const SENTRY_DSN = import.meta.env['VITE_SENTRY_DSN'];
 const ENVIRONMENT = import.meta.env.MODE;
 const IS_PRODUCTION = ENVIRONMENT === 'production';
 
+// Prevent double initialization
+let sentryInitialized = false;
+
 /**
  * Inizializza Sentry con configurazione ottimizzata
  */
 export function initSentry() {
+  // Prevent double initialization
+  if (sentryInitialized) {
+    sreLogger.warn('Sentry already initialized, skipping');
+    return;
+  }
+
   // Skip in development se non esplicitamente richiesto
   if (!IS_PRODUCTION && !import.meta.env['VITE_ENABLE_SENTRY_DEV']) {
     sreLogger.info('Sentry disabled in development');
@@ -99,6 +108,7 @@ export function initSentry() {
       Sentry.setUser({ id: userId });
     }
 
+    sentryInitialized = true;
     sreLogger.info('Sentry initialized', { environment: ENVIRONMENT });
   } catch (error) {
     sreLogger.error('Failed to initialize Sentry', { error });

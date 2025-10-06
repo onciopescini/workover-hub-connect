@@ -6,21 +6,8 @@ import posthog from 'posthog-js'
 import App from './App.tsx'
 import './index.css'
 
-// Initialize Sentry for error tracking
-const sentryDsn = import.meta.env['VITE_SENTRY_DSN'];
-if (import.meta.env.PROD && sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
-    environment: import.meta.env.MODE,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-    ],
-    tracesSampleRate: 0.1,
-    beforeSend(event) {
-      return event;
-    },
-  })
-}
+// Note: Sentry is initialized in src/lib/sentry-config.ts via App.tsx
+// to prevent double initialization issues
 
 // Initialize PostHog analytics (GDPR compliant)
 const posthogKey = import.meta.env['VITE_POSTHOG_KEY'];
