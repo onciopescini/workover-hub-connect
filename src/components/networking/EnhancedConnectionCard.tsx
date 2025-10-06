@@ -54,6 +54,11 @@ export function EnhancedConnectionCard({ connection }: EnhancedConnectionCardPro
     }
   };
 
+  const handleViewProfile = () => {
+    if (!otherUser) return;
+    navigate(`/users/${otherUser.id}`);
+  };
+
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -188,6 +193,7 @@ export function EnhancedConnectionCard({ connection }: EnhancedConnectionCardPro
                 Messaggio
               </Button>
               <Button
+                onClick={handleViewProfile}
                 variant="outline"
                 size="sm"
                 className="text-gray-600 hover:text-gray-800"
