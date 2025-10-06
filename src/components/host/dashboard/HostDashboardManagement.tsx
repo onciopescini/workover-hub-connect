@@ -34,7 +34,7 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
         <Button 
           variant="outline" 
           className="h-20"
-          onClick={() => navigate('/spaces/new')}
+          onClick={() => navigate('/host/space/new')}
         >
           <div className="text-center">
             <div className="font-semibold">Aggiungi Spazio</div>
@@ -45,7 +45,7 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
         <Button 
           variant="outline" 
           className="h-20"
-          onClick={() => navigate('/spaces')}
+          onClick={() => navigate('/host/spaces')}
         >
           <div className="text-center">
             <div className="font-semibold">I Miei Spazi</div>
@@ -56,7 +56,7 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
         <Button 
           variant="outline" 
           className="h-20"
-          onClick={() => navigate('/host-dashboard?tab=payments')}
+          onClick={() => navigate('/host/dashboard?tab=payments')}
         >
           <div className="text-center">
             <div className="font-semibold">Pagamenti</div>

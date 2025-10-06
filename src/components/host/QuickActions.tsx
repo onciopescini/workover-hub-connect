@@ -15,7 +15,7 @@ export function QuickActions() {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button 
-            onClick={() => navigate("/space/new")}
+            onClick={() => navigate("/host/space/new")}
             className="bg-[#4F46E5] hover:bg-[#4F46E5]/90 h-12"
           >
             <PlusCircle className="w-4 h-4 mr-2" />
