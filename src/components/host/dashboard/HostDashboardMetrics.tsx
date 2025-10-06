@@ -12,13 +12,14 @@ export const HostDashboardMetrics: React.FC<HostDashboardMetricsProps> = ({
   metrics
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <MetricsCard
         title="Fatturato Totale"
         value={metrics.totalRevenue}
-        icon={<Euro className="w-5 h-5" />}
+        icon={<Euro className="w-4 h-4" />}
         variant="revenue"
         description="Guadagni totali confermati"
+        compact
       />
       
       <MetricsCard
@@ -26,24 +27,27 @@ export const HostDashboardMetrics: React.FC<HostDashboardMetricsProps> = ({
         value={metrics.monthlyRevenue}
         change={metrics.revenueGrowth}
         changeLabel="vs mese scorso"
-        icon={<TrendingUp className="w-5 h-5" />}
+        icon={<TrendingUp className="w-4 h-4" />}
         variant="revenue"
+        compact
       />
       
       <MetricsCard
         title="Prenotazioni"
         value={`${metrics.confirmedBookings}/${metrics.totalBookings}`}
-        icon={<Calendar className="w-5 h-5" />}
+        icon={<Calendar className="w-4 h-4" />}
         variant="bookings"
         description={`${metrics.pendingBookings} in attesa`}
+        compact
       />
       
       <MetricsCard
         title="Tasso Occupazione"
         value={`${metrics.occupancyRate.toFixed(1)}%`}
-        icon={<Users className="w-5 h-5" />}
+        icon={<Users className="w-4 h-4" />}
         variant="rate"
         description="Media mensile"
+        compact
       />
     </div>
   );

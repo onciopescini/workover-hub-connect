@@ -1,0 +1,14 @@
+:root {
+  /* Layout dimensions */
+  --header-height: 48px;
+  --sidebar-width-expanded: 240px;
+  --sidebar-width-collapsed: 56px;
+  
+  /* Compact spacing tokens */
+  --container-padding-y: 1.5rem; /* 24px */
+  --container-padding-x: 1rem;   /* 16px */
+  --card-padding: 1rem;           /* 16px */
+  --card-padding-compact: 0.75rem; /* 12px */
+  --section-gap: 1.5rem;          /* 24px */
+  --section-gap-small: 1rem;      /* 16px */
+}

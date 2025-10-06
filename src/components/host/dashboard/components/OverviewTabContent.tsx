@@ -9,7 +9,7 @@ export const OverviewTabContent: React.FC<TabContentProps> = ({
   recentActivity
 }) => {
   return (
-    <TabsContent value="overview" className="space-y-6">
+    <TabsContent value="overview" className="space-y-6 mt-0">
       <HostDashboardOverview 
         metrics={metrics}
         recentActivity={recentActivity}

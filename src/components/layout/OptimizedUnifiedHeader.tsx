@@ -105,37 +105,33 @@ export const OptimizedUnifiedHeader = () => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <button
-              onClick={handleLogoClick}
-              className="text-2xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
-            >
-              Workover
-            </button>
-          </div>
+        <div className="flex items-center justify-between h-12">
+          {/* Logo - only visible on mobile when not authenticated */}
+          {!authState.isAuthenticated && (
+            <div className="flex items-center md:hidden">
+              <button
+                onClick={handleLogoClick}
+                className="text-xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                Workover
+              </button>
+            </div>
+          )}
+          
+          {/* Desktop logo for non-authenticated users */}
+          {!authState.isAuthenticated && (
+            <div className="hidden md:flex items-center">
+              <button
+                onClick={handleLogoClick}
+                className="text-2xl font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                Workover
+              </button>
+            </div>
+          )}
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActivePath(item.href)
-                      ? 'text-indigo-600 bg-indigo-50'
-                      : 'text-gray-700 hover:text-indigo-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Spacer for authenticated users */}
+          {authState.isAuthenticated && <div className="flex-1" />}
 
           {/* Auth Section */}
           <div className="flex items-center space-x-4">

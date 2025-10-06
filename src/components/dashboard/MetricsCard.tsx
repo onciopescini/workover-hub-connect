@@ -12,6 +12,7 @@ interface MetricsCardProps {
   icon?: React.ReactNode;
   description?: string;
   variant?: 'default' | 'revenue' | 'bookings' | 'rate';
+  compact?: boolean;
 }
 
 export const MetricsCard: React.FC<MetricsCardProps> = ({
@@ -21,7 +22,8 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
   changeLabel,
   icon,
   description,
-  variant = 'default'
+  variant = 'default',
+  compact = false
 }) => {
   const getVariantStyles = () => {
     switch (variant) {
@@ -51,15 +53,15 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
   };
 
   return (
-    <Card className={`${getVariantStyles()} hover:shadow-md transition-shadow`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">
+    <Card className={`${getVariantStyles()} hover:shadow-md transition-shadow ${compact ? 'h-[90px]' : ''}`}>
+      <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${compact ? 'pb-1 p-3' : 'pb-2'}`}>
+        <CardTitle className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-700`}>
           {title}
         </CardTitle>
         {icon && <div className="text-gray-600">{icon}</div>}
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold mb-1">
+      <CardContent className={compact ? 'p-3 pt-0' : ''}>
+        <div className={`${compact ? 'text-xl' : 'text-2xl'} font-bold mb-1`}>
           {typeof value === 'number' && title.toLowerCase().includes('revenue') 
             ? `€${value.toFixed(2)}` 
             : value}
