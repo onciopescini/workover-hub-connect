@@ -41,18 +41,14 @@ export function initSentry() {
       // Performance Monitoring
       integrations: [
         Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration({
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
       ],
 
       // Performance
       tracesSampleRate: IS_PRODUCTION ? 0.1 : 1.0,
       
-      // Session Replay
-      replaysSessionSampleRate: IS_PRODUCTION ? 0.01 : 0.1,
-      replaysOnErrorSampleRate: 1.0,
+      // Session Replay (disabled)
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
 
       // Error Filtering
       beforeSend(event, hint) {
