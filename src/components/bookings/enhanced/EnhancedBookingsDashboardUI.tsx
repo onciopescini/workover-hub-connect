@@ -10,11 +10,13 @@ import { BookingsDashboardState, BookingsStats } from '@/types/bookings/bookings
 import { BookingsActions } from '@/types/bookings/bookings-actions.types';
 import { BookingWithDetails } from '@/types/booking';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { exportBookingsToCSV } from '@/utils/csv/exportBookingsCsv';
 import { BulkSelectionDrawer } from '@/components/bookings/bulk/BulkSelectionDrawer';
 import { useBulkBookingActions } from '@/hooks/bookings/useBulkBookingActions';
 import { RealtimeBookingsSync } from '@/components/bookings/realtime/RealtimeBookingsSync';
 import { ReportSubscriptionToggle } from '@/components/host/reports/ReportSubscriptionToggle';
+import { BookingsCalendarView } from '../calendar/BookingsCalendarView';
 
 interface EnhancedBookingsDashboardUIProps {
   dashboardState: BookingsDashboardState;
@@ -44,6 +46,7 @@ export function EnhancedBookingsDashboardUI({
   refetch
 }: EnhancedBookingsDashboardUIProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const { confirmMultiple, cancelMultiple, groupMessage, loading: bulkLoading } = useBulkBookingActions({
     onAfterAll: refetch,
@@ -109,24 +112,43 @@ export function EnhancedBookingsDashboardUI({
         onClearFilters={actions.onClearFilters}
       />
 
-      <BookingsDashboardContent
-        isLoading={isLoading}
-        bookings={filteredBookings}
-        searchTerm={dashboardState.searchTerm}
-        getUserRole={getUserRole}
-        isChatEnabled={isChatEnabled}
-        onOpenMessageDialog={actions.onOpenMessageDialog}
-        onOpenCancelDialog={actions.onOpenCancelDialog}
-        messageDialogOpen={dashboardState.dialogStates.messageDialog}
-        setMessageDialogOpen={setMessageDialogOpen}
-        messageBookingId={dashboardState.dialogStates.messageBookingId}
-        messageSpaceTitle={dashboardState.dialogStates.messageSpaceTitle}
-        cancelDialogOpen={dashboardState.dialogStates.cancelDialog}
-        setCancelDialogOpen={setCancelDialogOpen}
-        selectedBooking={dashboardState.selectedBooking}
-        onCancelBooking={actions.onCancelBooking}
-        cancelBookingLoading={cancelBookingLoading}
-      />
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'calendar')} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="list">Lista</TabsTrigger>
+          <TabsTrigger value="calendar">Calendario</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="mt-6">
+          <BookingsDashboardContent
+            isLoading={isLoading}
+            bookings={filteredBookings}
+            searchTerm={dashboardState.searchTerm}
+            getUserRole={getUserRole}
+            isChatEnabled={isChatEnabled}
+            onOpenMessageDialog={actions.onOpenMessageDialog}
+            onOpenCancelDialog={actions.onOpenCancelDialog}
+            messageDialogOpen={dashboardState.dialogStates.messageDialog}
+            setMessageDialogOpen={setMessageDialogOpen}
+            messageBookingId={dashboardState.dialogStates.messageBookingId}
+            messageSpaceTitle={dashboardState.dialogStates.messageSpaceTitle}
+            cancelDialogOpen={dashboardState.dialogStates.cancelDialog}
+            setCancelDialogOpen={setCancelDialogOpen}
+            selectedBooking={dashboardState.selectedBooking}
+            onCancelBooking={actions.onCancelBooking}
+            cancelBookingLoading={cancelBookingLoading}
+          />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-6">
+          <BookingsCalendarView
+            bookings={filteredBookings}
+            getUserRole={getUserRole}
+            isChatEnabled={isChatEnabled}
+            onOpenMessageDialog={actions.onOpenMessageDialog}
+            onOpenCancelDialog={actions.onOpenCancelDialog}
+          />
+        </TabsContent>
+      </Tabs>
 
       <EnhancedBookingsDashboardDialogs
         messageDialogOpen={dashboardState.dialogStates.messageDialog}
