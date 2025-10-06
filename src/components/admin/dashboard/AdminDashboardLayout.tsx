@@ -1,5 +1,5 @@
 import React from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 interface AdminDashboardLayoutProps {
   children: React.ReactNode;

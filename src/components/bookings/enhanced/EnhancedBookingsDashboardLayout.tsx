@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useRenderTracking } from '@/hooks/useMetricsCollection';
 
