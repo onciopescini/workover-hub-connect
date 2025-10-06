@@ -38,6 +38,7 @@ serve(async (req) => {
 
     if (refreshError) {
       console.error('Error refreshing suggestions:', refreshError);
+      console.error('Full error details:', JSON.stringify(refreshError, null, 2));
       throw refreshError;
     }
 

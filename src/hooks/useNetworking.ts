@@ -144,12 +144,17 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         toast.error("Failed to refresh connection suggestions.");
       } else {
         toast.success("Connection suggestions refreshed successfully!");
-        await fetchSuggestions();
       }
+      
+      // Always fetch suggestions to show any existing ones, even if refresh failed
+      await fetchSuggestions();
     } catch (err: unknown) {
       sreLogger.error('Unexpected error refreshing connection suggestions', {}, err as Error);
       setError(err instanceof Error ? err.message : "An unexpected error occurred.");
       toast.error("An unexpected error occurred while refreshing suggestions.");
+      
+      // Still try to fetch existing suggestions
+      await fetchSuggestions();
     } finally {
       setIsLoading(false);
     }
