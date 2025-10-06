@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, SlidersHorizontal, X, Calendar } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DateRangePicker } from './DateRangePicker';
 
 interface CompactBookingsFiltersProps {
   searchTerm: string;
@@ -100,33 +101,13 @@ export const CompactBookingsFilters: React.FC<CompactBookingsFiltersProps> = ({
               </Button>
             </div>
 
-            {/* Date Range - Simplified */}
+            {/* Date Range Picker */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Periodo:</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // TODO: Implement date picker dialog
-                  console.log('Open date picker');
-                }}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Seleziona periodo
-              </Button>
-              {hasDateRange && (
-                <Badge variant="secondary">
-                  Data selezionata
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDateRangeFilter(null)}
-                    className="h-4 w-4 p-0 ml-1"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              )}
+              <DateRangePicker
+                dateRange={filters.dateRange}
+                onDateRangeChange={onDateRangeFilter}
+              />
             </div>
 
             {/* Clear All */}
