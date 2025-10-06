@@ -204,6 +204,17 @@ export const useMessagesData = (activeTab: string) => {
     fetchConversations();
   }, [activeTab, authState.user?.id]);
 
+  // Immediately update unread count when conversation is selected
+  useEffect(() => {
+    if (selectedConversationId) {
+      setConversations(prev => prev.map(conv => 
+        conv.id === selectedConversationId 
+          ? { ...conv, unreadCount: 0 }
+          : conv
+      ));
+    }
+  }, [selectedConversationId]);
+
   // Fetch messages for selected conversation with real-time updates
   useEffect(() => {
     const fetchMessages = async () => {
