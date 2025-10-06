@@ -2339,6 +2339,16 @@ export type Database = {
         }
         Returns: Json
       }
+      check_payment_integrity: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          booking_date: string
+          booking_id: string
+          issue: string
+          space_title: string
+          status: string
+        }[]
+      }
       check_profile_access: {
         Args: { profile_id: string; viewer_id: string }
         Returns: Json

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ export default function HostStripeStatus({ className = "" }: Props) {
   const [status, setStatus] = useState(authState.profile?.stripe_onboarding_status ?? "none");
 
   // Update local state when authState.profile changes
-  React.useEffect(() => {
+  useEffect(() => {
     setConnected(!!authState.profile?.stripe_connected);
     setAcct(authState.profile?.stripe_account_id);
     setStatus(authState.profile?.stripe_onboarding_status ?? "none");
