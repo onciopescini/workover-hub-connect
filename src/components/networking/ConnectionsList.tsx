@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Check, X, Clock, Users } from "lucide-react";
+import { MessageCircle, Check, X, Clock, Users, Eye } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { acceptConnectionRequest, rejectConnectionRequest, removeConnection } from "@/lib/networking-utils";
 import { createOrGetPrivateChat } from "@/lib/networking-utils";
@@ -54,6 +54,10 @@ export const ConnectionsList = () => {
     } else {
       toast.error("Impossibile aprire la chat");
     }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    navigate(`/users/${userId}`);
   };
 
   const getUserInitials = (firstName?: string, lastName?: string) => {
@@ -149,6 +153,14 @@ export const ConnectionsList = () => {
                           >
                             <MessageCircle className="w-4 h-4 mr-2" />
                             Messaggio
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleViewProfile(otherUser?.id || '')}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            Profilo
                           </Button>
                           <Button 
                             size="sm" 
