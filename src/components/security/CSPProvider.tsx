@@ -94,13 +94,13 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 const element = node as Element;
                 
                 // Check for suspicious script injections
-                if (element.tagName === 'SCRIPT' && !element.hasAttribute('data-approved')) {
+                if (import.meta.env.DEV && element.tagName === 'SCRIPT' && !element.hasAttribute('data-approved')) {
                   sreLogger.warn('Suspicious script injection detected', { tagName: element.tagName });
                   element.remove();
                 }
                 
                 // Check for suspicious iframe injections
-                if (element.tagName === 'IFRAME' && !element.hasAttribute('data-approved')) {
+                if (import.meta.env.DEV && element.tagName === 'IFRAME' && !element.hasAttribute('data-approved')) {
                   sreLogger.warn('Suspicious iframe injection detected', { tagName: element.tagName });
                   element.remove();
                 }

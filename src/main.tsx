@@ -10,8 +10,9 @@ import './index.css'
 // to prevent double initialization issues
 
 // Initialize PostHog analytics (GDPR compliant)
+const isSafeMode = new URLSearchParams(window.location.search).has('safe');
 const posthogKey = import.meta.env['VITE_POSTHOG_KEY'];
-if (import.meta.env.PROD && posthogKey) {
+if (!isSafeMode && import.meta.env.PROD && posthogKey) {
   posthog.init(posthogKey, {
     api_host: 'https://app.posthog.com',
     autocapture: false, // Disable auto-capture for GDPR compliance
@@ -30,8 +31,12 @@ const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <ErrorBoundary showDetails={import.meta.env.DEV}>
-      <App />
-    </ErrorBoundary>
+    {isSafeMode ? (
+      <div id="app-safe-mode">OK</div>
+    ) : (
+      <ErrorBoundary showDetails={import.meta.env.DEV}>
+        <App />
+      </ErrorBoundary>
+    )}
   </React.StrictMode>
 );
