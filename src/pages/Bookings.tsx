@@ -1,9 +1,8 @@
-
 import React from 'react';
-import { LazyEnhancedBookingsDashboard } from '@/components/bookings/lazy/LazyEnhancedBookingsDashboard';
+import { EnhancedBookingsDashboard } from '@/components/bookings/EnhancedBookingsDashboard';
 
 const Bookings = () => {
-  return <LazyEnhancedBookingsDashboard />;
+  return <EnhancedBookingsDashboard />;
 };
 
 export default Bookings;
