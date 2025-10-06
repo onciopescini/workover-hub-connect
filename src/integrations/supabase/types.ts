@@ -2625,6 +2625,10 @@ export type Database = {
         Args: { reactivated_by_admin: string; target_user_id: string }
         Returns: Json
       }
+      refresh_user_suggestions: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       request_data_deletion: {
         Args: { deletion_reason?: string; target_user_id: string }
         Returns: Json
