@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { AnimatedBackground } from '@/components/ui/AnimatedBackground';
+import { LazyAnimatedBackground } from '@/components/ui/LazyAnimatedBackground';
 import { TypewriterText } from '@/components/ui/TypewriterText';
 import { GeographicSearch } from '@/components/shared/GeographicSearch';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ export function AnimatedHeroSection() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <AnimatedBackground className="absolute inset-0" />
+      <LazyAnimatedBackground className="absolute inset-0" />
       
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-4xl mx-auto">
