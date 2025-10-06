@@ -19,7 +19,7 @@ export const HostDashboardContent = ({
       {metrics && <HostDashboardMetrics metrics={metrics} />}
       
       {/* 2-column layout for desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${shouldShowProgressTracker ? 'lg:grid-cols-[1fr_380px]' : ''}`}>
         {/* Left column - Main content */}
         <div className="space-y-6">
           <HostDashboardTabs 
