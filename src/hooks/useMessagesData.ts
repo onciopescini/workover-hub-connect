@@ -228,10 +228,41 @@ export const useMessagesData = (activeTab: string) => {
           sreLogger.debug('Fetching booking messages', { id });
           const bookingMessages = await fetchBookingMessages(id);
           fetchedMessages = bookingMessages.map(msg => ({ ...msg } as Record<string, unknown>));
+          
+          // Mark unread booking messages as read
+          const unreadMessageIds = bookingMessages
+            .filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id)
+            .map(msg => msg.id);
+          
+          if (unreadMessageIds.length > 0) {
+            await supabase
+              .from('messages')
+              .update({ is_read: true })
+              .in('id', unreadMessageIds);
+            
+            // Update local conversation state
+            setConversations(prev => prev.map(conv => 
+              conv.id === selectedConversationId 
+                ? { ...conv, unreadCount: 0 }
+                : conv
+            ));
+          }
         } else if (type === 'private') {
           sreLogger.debug('Fetching private messages', { id });
           const privateMessages = await getPrivateMessages(id);
           fetchedMessages = privateMessages.map(msg => ({ ...msg } as Record<string, unknown>));
+          
+          // Mark unread private messages as read
+          const unreadMessageIds = privateMessages
+            .filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id)
+            .map(msg => msg.id);
+          
+          if (unreadMessageIds.length > 0) {
+            await supabase
+              .from('private_messages')
+              .update({ is_read: true })
+              .in('id', unreadMessageIds);
+          }
         }
 
         setMessages(fetchedMessages.map(msg => {

@@ -50,9 +50,9 @@ export const MessagesChatArea = ({
   }
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
+    <Card className="h-full max-h-full flex flex-col overflow-hidden">
       {/* Chat Header - Fixed height */}
-      <CardHeader className="border-b flex-shrink-0 py-4 bg-card">
+      <CardHeader className="border-b flex-shrink-0 py-3 bg-card">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-4 min-w-0">
             <div className="relative">
@@ -87,9 +87,9 @@ export const MessagesChatArea = ({
       </CardHeader>
 
       {/* Messages - Flexible height with scrolling */}
-      <CardContent className="flex-1 p-0 flex flex-col min-h-0 overflow-hidden">
+      <CardContent className="flex-1 p-0 flex flex-col min-h-0 overflow-hidden max-h-[calc(100vh-280px)]">
         {/* Message Area - Scrollable */}
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea className="flex-1 min-h-0 h-full">
           {messages.length === 0 ? (
             <div className="text-center py-8 sm:py-12 text-muted-foreground p-4">
               <MessageSquare className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground/30" />
@@ -126,7 +126,7 @@ export const MessagesChatArea = ({
         </ScrollArea>
 
         {/* Message Composer - Fixed at bottom */}
-        <div className="flex-shrink-0 border-t">
+        <div className="flex-shrink-0 border-t bg-background">
           <EnhancedMessageComposer
             onSend={onSendMessage}
             placeholder="Scrivi un messaggio..."
