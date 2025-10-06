@@ -7,10 +7,10 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 interface MetricsCardProps {
   title: string;
   value: string | number;
-  change?: number;
-  changeLabel?: string;
+  change?: number | null;
+  changeLabel?: string | null;
   icon?: React.ReactNode;
-  description?: string;
+  description?: string | null;
   variant?: 'default' | 'revenue' | 'bookings' | 'rate';
   compact?: boolean;
 }
@@ -39,17 +39,34 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
   };
 
   const getTrendIcon = () => {
-    if (change === undefined) return null;
+    if (change === undefined || change === null) return null;
     if (change > 0) return <TrendingUp className="w-4 h-4 text-green-600" />;
     if (change < 0) return <TrendingDown className="w-4 h-4 text-red-600" />;
     return <Minus className="w-4 h-4 text-gray-500" />;
   };
 
   const getTrendColor = () => {
-    if (change === undefined) return 'text-gray-600';
+    if (change === undefined || change === null) return 'text-gray-600';
     if (change > 0) return 'text-green-600';
     if (change < 0) return 'text-red-600';
     return 'text-gray-600';
+  };
+
+  // Format monetary values with 2 decimals
+  const formatValue = () => {
+    if (typeof value === 'number') {
+      if (title.toLowerCase().includes('revenue') || title.toLowerCase().includes('fatturato')) {
+        return `€${value.toFixed(2)}`;
+      }
+    }
+    return value;
+  };
+
+  // Format change percentage with 1 decimal
+  const formatChange = () => {
+    if (change === undefined || change === null) return null;
+    const formattedChange = change.toFixed(1);
+    return `${change > 0 ? '+' : ''}${formattedChange}%`;
   };
 
   return (
@@ -62,16 +79,14 @@ export const MetricsCard: React.FC<MetricsCardProps> = ({
       </CardHeader>
       <CardContent className={compact ? 'p-3 pt-0' : ''}>
         <div className={`${compact ? 'text-xl' : 'text-2xl'} font-bold mb-1`}>
-          {typeof value === 'number' && title.toLowerCase().includes('revenue') 
-            ? `€${value.toFixed(2)}` 
-            : value}
+          {formatValue()}
         </div>
         
-        {change !== undefined && (
+        {change !== undefined && change !== null && (
           <div className="flex items-center space-x-1">
             {getTrendIcon()}
             <span className={`text-xs font-medium ${getTrendColor()}`}>
-              {change > 0 ? '+' : ''}{change.toFixed(1)}%
+              {formatChange()}
             </span>
             {changeLabel && (
               <span className="text-xs text-gray-500">

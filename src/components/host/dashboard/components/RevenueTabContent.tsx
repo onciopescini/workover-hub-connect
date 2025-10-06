@@ -7,6 +7,7 @@ import { AdvancedFinancialMetrics } from '@/components/dashboard/AdvancedFinanci
 import { TabContentProps } from '../types/dashboard-tabs-types';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { RevenueChart } from './RevenueChart';
 
 export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'recentActivity'>> = ({
   metrics,
@@ -87,6 +88,9 @@ export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'rece
           </CardContent>
         </Card>
       </div>
+
+      {/* Revenue Trend Chart */}
+      <RevenueChart monthlyRevenue={metrics.monthlyRevenue} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

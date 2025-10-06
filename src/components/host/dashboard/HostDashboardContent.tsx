@@ -40,9 +40,13 @@ export const HostDashboardContent = ({
           />
         </div>
         
-        {/* Right column - Sidebar */}
-        <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-          {shouldShowProgressTracker && <HostProgressTracker />}
+        {/* Right column - Sidebar - Collapsible on mobile */}
+        <div className="space-y-6 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+          {shouldShowProgressTracker && (
+            <div className="hidden md:block">
+              <HostProgressTracker />
+            </div>
+          )}
         </div>
       </div>
     </div>

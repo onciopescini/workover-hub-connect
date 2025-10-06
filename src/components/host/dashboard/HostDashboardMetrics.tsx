@@ -11,6 +11,28 @@ interface HostDashboardMetricsProps {
 export const HostDashboardMetrics: React.FC<HostDashboardMetricsProps> = ({
   metrics
 }) => {
+  // Format revenue growth for display - handle edge cases
+  const getRevenueGrowth = () => {
+    // If no previous month data or first month, don't show change
+    if (metrics.revenueGrowth === -100 && metrics.monthlyRevenue > 0) {
+      return undefined; // Will hide the badge
+    }
+    return metrics.revenueGrowth;
+  };
+
+  // Format bookings description
+  const getBookingsDescription = () => {
+    const cancelled = metrics.totalBookings - metrics.confirmedBookings - metrics.pendingBookings;
+    if (metrics.pendingBookings > 0 && cancelled > 0) {
+      return `${metrics.pendingBookings} in attesa · ${cancelled} cancellate`;
+    } else if (metrics.pendingBookings > 0) {
+      return `${metrics.pendingBookings} in attesa`;
+    } else if (cancelled > 0) {
+      return `${cancelled} cancellate`;
+    }
+    return 'Tutte confermate';
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <MetricsCard
@@ -25,19 +47,20 @@ export const HostDashboardMetrics: React.FC<HostDashboardMetricsProps> = ({
       <MetricsCard
         title="Fatturato Mensile"
         value={metrics.monthlyRevenue}
-        change={metrics.revenueGrowth}
-        changeLabel="vs mese scorso"
+        change={getRevenueGrowth() ?? null}
+        changeLabel={getRevenueGrowth() !== undefined ? "vs mese scorso" : null}
         icon={<TrendingUp className="w-4 h-4" />}
         variant="revenue"
+        description={getRevenueGrowth() === undefined ? "Primo mese di attività" : null}
         compact
       />
       
       <MetricsCard
         title="Prenotazioni"
-        value={`${metrics.confirmedBookings}/${metrics.totalBookings}`}
+        value={metrics.confirmedBookings}
         icon={<Calendar className="w-4 h-4" />}
         variant="bookings"
-        description={`${metrics.pendingBookings} in attesa`}
+        description={getBookingsDescription()}
         compact
       />
       
