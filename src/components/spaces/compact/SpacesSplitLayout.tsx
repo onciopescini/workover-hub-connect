@@ -1,59 +1,48 @@
 import React from 'react';
-import { SpacesFilterSidebar } from './SpacesFilterSidebar';
-import { SpaceFilters, FilterChangeHandler } from '@/types/space-filters';
 import { cn } from '@/lib/utils';
 
 interface SpacesSplitLayoutProps {
-  filters: SpaceFilters;
-  onFiltersChange: FilterChangeHandler;
-  totalResults: number;
+  searchBar: React.ReactNode;
+  filtersPanel: React.ReactNode;
   map: React.ReactNode;
   cards: React.ReactNode;
-  sidebarDefaultCollapsed?: boolean;
 }
 
 export const SpacesSplitLayout: React.FC<SpacesSplitLayoutProps> = ({
-  filters,
-  onFiltersChange,
-  totalResults,
+  searchBar,
+  filtersPanel,
   map,
-  cards,
-  sidebarDefaultCollapsed = false
+  cards
 }) => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Filter Sidebar */}
-      <SpacesFilterSidebar 
-        filters={filters}
-        onFiltersChange={onFiltersChange}
-        totalResults={totalResults}
-        defaultCollapsed={sidebarDefaultCollapsed}
-      />
+      {/* Search Bar - Always visible at top */}
+      <div className="relative">
+        {searchBar}
+        {filtersPanel}
+      </div>
 
-      {/* Main Content Area - Dynamic sidebar adjustment */}
-      <div className="ml-0 md:ml-0 lg:ml-[260px] transition-all duration-300">
-        {/* Split Screen: Map + Cards with responsive ratios */}
-        <div className="flex flex-col lg:flex-row min-h-[calc(100vh-48px)] max-h-[calc(100vh-48px)]">
-          {/* Map Section - Dynamic width based on screen size */}
-          <div className="
-            w-full lg:w-[40%] xl:w-[45%]
-            h-[400px] md:h-[500px] lg:h-full
-            relative flex-shrink-0
-          ">
-            <div className="absolute inset-0 lg:min-h-[500px] xl:min-h-[600px]">
-              {map}
-            </div>
+      {/* Split Screen: Map + Cards FULLSCREEN */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-112px)]">
+        {/* Map Section - Full size, optimized proportions */}
+        <div className={cn(
+          "w-full lg:w-[50%] xl:w-[55%]",
+          "h-[400px] md:h-[500px] lg:h-full",
+          "relative flex-shrink-0"
+        )}>
+          <div className="absolute inset-0">
+            {map}
           </div>
+        </div>
 
-          {/* Cards Section - Dynamic width, independent scroll with smooth behavior */}
-          <div className="
-            w-full lg:w-[60%] xl:w-[55%]
-            h-auto lg:h-full
-            overflow-y-auto scroll-smooth
-          ">
-            <div className="p-4 space-y-3">
-              {cards}
-            </div>
+        {/* Cards Section - Independent scroll with smooth behavior */}
+        <div className={cn(
+          "w-full lg:w-[50%] xl:w-[45%]",
+          "h-auto lg:h-full",
+          "overflow-y-auto scroll-smooth"
+        )}>
+          <div className="p-4 space-y-3">
+            {cards}
           </div>
         </div>
       </div>

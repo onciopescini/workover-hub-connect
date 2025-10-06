@@ -116,9 +116,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       map.current = new mapboxgl.Map({
         container: container,
         style: 'mapbox://styles/mapbox/light-v11',
-        center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
-        zoom: stableUserLocation.current ? 11 : 6,
-        attributionControl: false,
+      center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
+      zoom: stableUserLocation.current ? 10 : 6,
+      attributionControl: false,
         renderWorldCopies: false
       });
 
@@ -379,7 +379,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="relative w-full h-full rounded-lg overflow-hidden bg-muted/20">
+    <div className="absolute inset-0 rounded-lg overflow-hidden bg-muted">
       <div 
         ref={mapContainer} 
         id="space-map-container" 
@@ -397,9 +397,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         </div>
       )}
       
-      {/* Badge spazi disponibili - moved to bottom-left and compacted */}
+      {/* Badge spazi disponibili - compacted, bottom-left */}
       {memoizedSpaces.length > 0 && (
-        <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-lg border z-10">
+        <div className="absolute bottom-2 left-2 bg-background/95 backdrop-blur-sm rounded-full px-2 py-1.5 shadow-md border z-10">
           <span className="text-xs text-foreground font-medium">{memoizedSpaces.length} spazi</span>
         </div>
       )}

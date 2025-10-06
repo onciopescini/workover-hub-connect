@@ -1,15 +1,18 @@
 /**
- * Public Spaces Content Component - Optimized Compact Layout
+ * Public Spaces Content Component - New Horizontal Layout
  * 
  * Features:
- * - Collapsible filter sidebar (280px)
- * - Split-screen: Map (40%) + Cards (60%)
- * - Compact horizontal cards (110px height)
- * - Independent scrolling for cards section
+ * - Horizontal search bar with location, date picker, and filters
+ * - Expandable filters panel from top
+ * - Full-screen split: Map (50-55%) + Cards (45-50%)
+ * - No lateral sidebar
  */
+import React, { useState } from 'react';
 import { SpaceMap } from '@/components/spaces/SpaceMap';
 import { CompactSpaceCardsGrid } from '@/components/spaces/compact/CompactSpaceCardsGrid';
 import { SpacesSplitLayout } from '@/components/spaces/compact/SpacesSplitLayout';
+import { CompactSearchBar } from '@/components/spaces/search/CompactSearchBar';
+import { ExpandableFiltersPanel } from '@/components/spaces/search/ExpandableFiltersPanel';
 import { Space, SpaceFilters, FilterChangeHandler, SpaceClickHandler, Coordinates } from '@/types/space-filters';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
@@ -34,12 +37,95 @@ export const PublicSpacesContent = ({
   onSpaceClick,
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
-  
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+
+  const handleLocationChange = (location: string, coordinates?: Coordinates) => {
+    onFiltersChange({
+      ...filters,
+      location,
+      coordinates: coordinates || null
+    });
+  };
+
+  const handleToggleFilters = () => {
+    setIsFiltersOpen(!isFiltersOpen);
+  };
+
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.category) count++;
+    if (filters.amenities.length > 0) count++;
+    if (filters.workEnvironment) count++;
+    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 200) count++;
+    if (filters.rating > 0) count++;
+    if (filters.verified) count++;
+    if (filters.superhost) count++;
+    if (filters.instantBook) count++;
+    return count;
+  };
+
+  const handleNearMe = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coordinates = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          onFiltersChange({
+            ...filters,
+            location: 'La tua posizione',
+            coordinates
+          });
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        }
+      );
+    }
+  };
+
+  const handleTopRated = () => {
+    onFiltersChange({
+      ...filters,
+      rating: 4.5
+    });
+  };
+
+  const handleAvailableNow = () => {
+    const now = new Date();
+    setStartDate(now);
+    setEndDate(new Date(now.getTime() + 2 * 60 * 60 * 1000)); // +2 hours
+  };
+
   return (
     <SpacesSplitLayout
-      filters={filters}
-      onFiltersChange={onFiltersChange}
-      totalResults={spaces?.length || 0}
+      searchBar={
+        <CompactSearchBar
+          location={filters.location}
+          startDate={startDate}
+          endDate={endDate}
+          activeFiltersCount={getActiveFiltersCount()}
+          isFiltersOpen={isFiltersOpen}
+          onLocationChange={handleLocationChange}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onToggleFilters={handleToggleFilters}
+          onNearMe={handleNearMe}
+          onTopRated={handleTopRated}
+          onAvailableNow={handleAvailableNow}
+        />
+      }
+      filtersPanel={
+        <ExpandableFiltersPanel
+          isOpen={isFiltersOpen}
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          totalResults={spaces?.length || 0}
+        />
+      }
       map={
         <div className="relative h-full w-full">
           <SpaceMap 
@@ -64,7 +150,6 @@ export const PublicSpacesContent = ({
           isLoading={isLoading}
         />
       }
-      sidebarDefaultCollapsed={false}
     />
   );
 };
