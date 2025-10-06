@@ -50,8 +50,9 @@ export const useStripeStatus = () => {
           updated: data?.updated
         });
 
-        // Refresh profile to get updated Stripe status
+        // Force complete profile refresh with cache invalidation
         if (data?.updated || isReturningFromStripe) {
+          // Wait for profile refresh to complete
           await refreshProfile();
           
           if (data?.connected) {

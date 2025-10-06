@@ -2,6 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { HostDashboardMetrics } from '@/hooks/queries/useEnhancedHostDashboard';
 
@@ -13,9 +15,34 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
   metrics
 }) => {
   const navigate = useNavigate();
+  
+  // Check for unpaid confirmed bookings
+  const unpaidConfirmedBookings = metrics.confirmedBookings - metrics.totalBookings;
+  const hasUnpaidBookings = unpaidConfirmedBookings > 0;
 
   return (
     <div className="space-y-6">
+      {/* Alert for data integrity issues */}
+      {hasUnpaidBookings && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <span>
+                <strong>Problema Integrità Dati:</strong> {unpaidConfirmedBookings} prenotazion{unpaidConfirmedBookings > 1 ? 'i' : 'e'} confermat{unpaidConfirmedBookings > 1 ? 'e' : 'a'} senza pagamento associato
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/host/dashboard?tab=payments')}
+                className="ml-4"
+              >
+                Risolvi Ora
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Button 
@@ -78,25 +105,32 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
               €{metrics.averageBookingValue.toFixed(2)}
             </div>
             <p className="text-xs text-gray-600">
-              Per prenotazione confermata
+              Per prenotazione pagata
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={hasUnpaidBookings ? "border-yellow-500" : ""}>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Tasso di Conferma
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              Prenotazioni Pagate
+              {hasUnpaidBookings && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {metrics.totalBookings > 0 
-                ? ((metrics.confirmedBookings / metrics.totalBookings) * 100).toFixed(1)
-                : '0.0'}%
+              {metrics.totalBookings}
             </div>
             <p className="text-xs text-gray-600">
-              {metrics.confirmedBookings} su {metrics.totalBookings} prenotazioni
+              {hasUnpaidBookings ? (
+                <span className="text-yellow-600 font-medium">
+                  {unpaidConfirmedBookings} prenotazion{unpaidConfirmedBookings > 1 ? 'i' : 'e'} da verificare
+                </span>
+              ) : (
+                <span className="text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Tutte pagate
+                </span>
+              )}
             </p>
           </CardContent>
         </Card>

@@ -15,10 +15,19 @@ type Props = {
 export default function HostStripeStatus({ className = "" }: Props) {
   const { authState } = useAuth();
   const { isVerifying, manualRefresh } = useStripeStatus();
-  const connected = !!authState.profile?.stripe_connected;
-  const acct = authState.profile?.stripe_account_id;
-  const status = authState.profile?.stripe_onboarding_status ?? "none";
   const [loading, setLoading] = useState(false);
+  
+  // Sync with authState.profile changes
+  const [connected, setConnected] = useState(!!authState.profile?.stripe_connected);
+  const [acct, setAcct] = useState(authState.profile?.stripe_account_id);
+  const [status, setStatus] = useState(authState.profile?.stripe_onboarding_status ?? "none");
+
+  // Update local state when authState.profile changes
+  React.useEffect(() => {
+    setConnected(!!authState.profile?.stripe_connected);
+    setAcct(authState.profile?.stripe_account_id);
+    setStatus(authState.profile?.stripe_onboarding_status ?? "none");
+  }, [authState.profile?.stripe_connected, authState.profile?.stripe_account_id, authState.profile?.stripe_onboarding_status]);
 
   const connect = async () => {
     try {

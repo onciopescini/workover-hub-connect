@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivityFeed } from '@/components/dashboard/RecentActivityFeed';
@@ -19,8 +20,30 @@ export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Check for bookings without payment (data integrity issue)
+  const unpaidConfirmedBookings = metrics.confirmedBookings - metrics.totalBookings;
+  const hasUnpaidBookings = unpaidConfirmedBookings > 0;
+
   return (
     <div className="space-y-6">
+      {/* Alert for unpaid confirmed bookings */}
+      {hasUnpaidBookings && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Attenzione:</strong> {unpaidConfirmedBookings} prenotazione{unpaidConfirmedBookings > 1 ? 'i' : ''} confermat{unpaidConfirmedBookings > 1 ? 'e' : 'a'} richied{unpaidConfirmedBookings > 1 ? 'ono' : 'e'} verifica - manca il pagamento associato.{' '}
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="p-0 h-auto text-destructive underline"
+              onClick={() => navigate('/host/dashboard?tab=payments')}
+            >
+              Vai ai Pagamenti
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Performance Highlights */}
       {metrics.topPerformingSpace && (
         <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 min-h-[120px]">
