@@ -15,61 +15,44 @@ import { useLogger } from '@/hooks/useLogger';
 import { TIME_CONSTANTS } from "@/constants";
 
 /**
- * Check if a space is available for the given date/time range
+ * Batch check availability for multiple spaces using RPC
  */
-const checkSpaceAvailability = async (
-  spaceId: string,
-  startDate: Date,
-  endDate: Date,
-  startTime: string | null,
-  endTime: string | null
-): Promise<boolean> => {
+const checkSpacesAvailabilityBatch = async (
+  spaceIds: string[],
+  date: Date,
+  startTime: string,
+  endTime: string
+): Promise<Record<string, { isAvailable: boolean; availableSpots: number; maxCapacity: number }>> => {
   try {
-    // Query bookings table for conflicts
-    const { data: bookings, error } = await supabase
-      .from('bookings')
-      .select('booking_date, start_time, end_time, status')
-      .eq('space_id', spaceId)
-      .in('status', ['pending', 'confirmed'])
-      .gte('booking_date', startDate.toISOString().split('T')[0])
-      .lte('booking_date', endDate.toISOString().split('T')[0]);
+    const dateStr = date.toISOString().split('T')[0] || '';
+    
+    const { data, error } = await supabase.rpc('get_spaces_availability_batch', {
+      space_ids: spaceIds,
+      check_date: dateStr,
+      check_start_time: startTime,
+      check_end_time: endTime
+    });
 
     if (error) {
-      console.error('Error checking availability:', error);
-      return true; // On error, include the space (fail open)
+      console.error('Error in batch availability check:', error);
+      return {};
     }
 
-    if (!bookings || bookings.length === 0) {
-      return true; // No bookings = available
-    }
+    // Convert array result to object map
+    const availabilityMap: Record<string, { isAvailable: boolean; availableSpots: number; maxCapacity: number }> = {};
+    
+    data?.forEach((item: any) => {
+      availabilityMap[item.space_id] = {
+        isAvailable: item.available_capacity > 0,
+        availableSpots: item.available_capacity,
+        maxCapacity: item.max_capacity
+      };
+    });
 
-    // Check for time conflicts
-    for (const booking of bookings) {
-      // If we have specific times, check for overlap
-      if (startTime && endTime && booking.start_time && booking.end_time) {
-        const bookingStart = booking.start_time;
-        const bookingEnd = booking.end_time;
-        
-        // Check if times overlap
-        const hasOverlap = (
-          (startTime >= bookingStart && startTime < bookingEnd) ||
-          (endTime > bookingStart && endTime <= bookingEnd) ||
-          (startTime <= bookingStart && endTime >= bookingEnd)
-        );
-        
-        if (hasOverlap) {
-          return false; // Conflict found
-        }
-      } else {
-        // If no specific times, consider the whole day booked
-        return false;
-      }
-    }
-
-    return true; // No conflicts found
+    return availabilityMap;
   } catch (error) {
-    console.error('Error in checkSpaceAvailability:', error);
-    return true; // On error, include the space
+    console.error('Error in checkSpacesAvailabilityBatch:', error);
+    return {};
   }
 };
 
@@ -234,21 +217,23 @@ export const usePublicSpacesLogic = () => {
         );
       }
 
-      // Filter by availability (date/time range)
-      if (filters.startDate && filters.endDate) {
-        const availableSpaces = await Promise.all(
-          filteredSpaces.map(async (space: any) => {
-            const isAvailable = await checkSpaceAvailability(
-              space.id,
-              filters.startDate!,
-              filters.endDate!,
-              filters.startTime,
-              filters.endTime
-            );
-            return isAvailable ? space : null;
-          })
+      // Filter by availability (date/time range) with capacity check
+      if (filters.startDate && filters.startTime && filters.endTime) {
+        const spaceIds = filteredSpaces.map((space: any) => space.id);
+        
+        // Use batch RPC for efficient availability check
+        const availabilityMap = await checkSpacesAvailabilityBatch(
+          spaceIds,
+          filters.startDate,
+          filters.startTime,
+          filters.endTime
         );
-        filteredSpaces = availableSpaces.filter((space: any) => space !== null);
+        
+        // Filter spaces with available capacity
+        filteredSpaces = filteredSpaces.filter((space: any) => {
+          const availability = availabilityMap[space.id];
+          return availability && availability.isAvailable;
+        });
       }
       
       info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);

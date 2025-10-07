@@ -2567,6 +2567,20 @@ export type Database = {
           workspace_features: string[]
         }[]
       }
+      get_spaces_availability_batch: {
+        Args: {
+          check_date: string
+          check_end_time: string
+          check_start_time: string
+          space_ids: string[]
+        }
+        Returns: {
+          available_capacity: number
+          booked_capacity: number
+          max_capacity: number
+          space_id: string
+        }[]
+      }
       get_user_public_reviews: {
         Args: { target_id_param: string }
         Returns: {
