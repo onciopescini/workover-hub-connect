@@ -63,7 +63,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
 
   if (showBookingForm) {
     return (
-      <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl' : ''}`}>
+      <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl max-h-[calc(100vh-2rem)] overflow-hidden' : 'max-h-[calc(100vh-2rem)] overflow-hidden'}`}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
@@ -78,7 +78,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-y-auto">
           <BookingForm
             spaceId={space.id}
             pricePerDay={space.price_per_day}
