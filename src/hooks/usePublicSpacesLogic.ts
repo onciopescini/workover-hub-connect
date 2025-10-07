@@ -112,6 +112,24 @@ export const usePublicSpacesLogic = () => {
   
   const mapInteraction = useMapCardInteraction();
 
+  // Update filters when URL parameters change (from homepage navigation)
+  useEffect(() => {
+    if (initialCity || initialDate || initialStartTime || initialEndTime) {
+      setFilters(prev => ({
+        ...prev,
+        location: initialCity || prev.location,
+        coordinates: initialCoordinates || prev.coordinates,
+        startDate: initialDate || prev.startDate,
+        startTime: initialStartTime || prev.startTime,
+        endTime: initialEndTime || prev.endTime
+      }));
+      
+      if (initialCoordinates) {
+        setUserLocation(initialCoordinates);
+      }
+    }
+  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime]);
+
   // Memoized geocoding function to prevent re-renders
   const stableGeocodeAddress = useCallback(geocodeAddress, [geocodeAddress]);
   
