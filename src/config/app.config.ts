@@ -84,7 +84,7 @@ export const appConfig: AppConfig = {
   },
   pricing: {
     // Business rules - imported from constants in future refactor
-    serviceFeePct: 0.12,
+    serviceFeePct: 0.05,
     defaultVatPct: 0.22,
   },
   analytics: {

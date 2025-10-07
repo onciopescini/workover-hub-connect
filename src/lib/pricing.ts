@@ -24,7 +24,7 @@ export function computePricing(input: PricingInput): PricingOutput {
   const isDayRate = input.durationHours >= 8;
   const base = isDayRate ? input.pricePerDay : input.durationHours * input.pricePerHour;
   const serviceFee = round(base * input.serviceFeePct);
-  const vat = input.stripeTaxEnabled ? 0 : round((base + serviceFee) * input.vatPct);
+  const vat = input.stripeTaxEnabled ? 0 : round(serviceFee * input.vatPct);
   const total = round(base + serviceFee + vat);
   
   return {

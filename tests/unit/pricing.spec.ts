@@ -3,7 +3,7 @@ import { computePricing } from '@/lib/pricing';
 
 describe('computePricing', () => {
   const baseInput = {
-    serviceFeePct: 0.12,
+    serviceFeePct: 0.05,
     vatPct: 0.22,
     stripeTaxEnabled: false,
   };
@@ -19,9 +19,9 @@ describe('computePricing', () => {
 
       expect(result.isDayRate).toBe(false);
       expect(result.base).toBe(52.5); // 3.5 * 15
-      expect(result.serviceFee).toBe(6.3); // 52.5 * 0.12
-      expect(result.vat).toBe(12.93); // (52.5 + 6.3) * 0.22
-      expect(result.total).toBe(71.73); // 52.5 + 6.3 + 12.93
+      expect(result.serviceFee).toBe(2.63); // 52.5 * 0.05
+      expect(result.vat).toBe(0.58); // 2.63 * 0.22
+      expect(result.total).toBe(55.71); // 52.5 + 2.63 + 0.58
       expect(result.breakdownLabel).toBe('3.5h × €15/h');
     });
 
@@ -35,9 +35,9 @@ describe('computePricing', () => {
 
       expect(result.isDayRate).toBe(false);
       expect(result.base).toBe(150); // 7.5 * 20
-      expect(result.serviceFee).toBe(18); // 150 * 0.12
-      expect(result.vat).toBe(36.96); // (150 + 18) * 0.22
-      expect(result.total).toBe(204.96); // 150 + 18 + 36.96
+      expect(result.serviceFee).toBe(7.5); // 150 * 0.05
+      expect(result.vat).toBe(1.65); // 7.5 * 0.22
+      expect(result.total).toBe(159.15); // 150 + 7.5 + 1.65
       expect(result.breakdownLabel).toBe('7.5h × €20/h');
     });
   });
@@ -53,9 +53,9 @@ describe('computePricing', () => {
 
       expect(result.isDayRate).toBe(true);
       expect(result.base).toBe(100); // day rate
-      expect(result.serviceFee).toBe(12); // 100 * 0.12
-      expect(result.vat).toBe(24.64); // (100 + 12) * 0.22
-      expect(result.total).toBe(136.64); // 100 + 12 + 24.64
+      expect(result.serviceFee).toBe(5); // 100 * 0.05
+      expect(result.vat).toBe(1.1); // 5 * 0.22
+      expect(result.total).toBe(106.1); // 100 + 5 + 1.1
       expect(result.breakdownLabel).toBe('Tariffa giornaliera (8h)');
     });
 
@@ -69,9 +69,9 @@ describe('computePricing', () => {
 
       expect(result.isDayRate).toBe(true);
       expect(result.base).toBe(120); // day rate
-      expect(result.serviceFee).toBe(14.4); // 120 * 0.12
-      expect(result.vat).toBe(29.57); // (120 + 14.4) * 0.22
-      expect(result.total).toBe(163.97); // 120 + 14.4 + 29.57
+      expect(result.serviceFee).toBe(6); // 120 * 0.05
+      expect(result.vat).toBe(1.32); // 6 * 0.22
+      expect(result.total).toBe(127.32); // 120 + 6 + 1.32
       expect(result.breakdownLabel).toBe('Tariffa giornaliera (9h)');
     });
   });
@@ -87,9 +87,9 @@ describe('computePricing', () => {
       });
 
       expect(result.base).toBe(100); // 4 * 25
-      expect(result.serviceFee).toBe(12); // 100 * 0.12
+      expect(result.serviceFee).toBe(5); // 100 * 0.05
       expect(result.vat).toBe(0); // Should be 0 when Stripe Tax enabled
-      expect(result.total).toBe(112); // 100 + 12 + 0
+      expect(result.total).toBe(105); // 100 + 5 + 0
     });
   });
 
@@ -103,9 +103,9 @@ describe('computePricing', () => {
       });
 
       expect(result.base).toBe(33.33); // 2.5 * 13.33 = 33.325 -> 33.33
-      expect(result.serviceFee).toBe(4); // 33.33 * 0.12 = 3.9996 -> 4.00
-      expect(result.vat).toBe(8.21); // (33.33 + 4) * 0.22 = 8.2126 -> 8.21
-      expect(result.total).toBe(45.54); // 33.33 + 4 + 8.21
+      expect(result.serviceFee).toBe(1.67); // 33.33 * 0.05 = 1.6665 -> 1.67
+      expect(result.vat).toBe(0.37); // 1.67 * 0.22 = 0.3674 -> 0.37
+      expect(result.total).toBe(35.37); // 33.33 + 1.67 + 0.37
     });
   });
 });
