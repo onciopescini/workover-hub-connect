@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, MapPin, Verified, Award, Share, Heart } from "lucide-react";
+import { Star, MapPin, Verified, Award, Heart } from "lucide-react";
 import { SpacePhotoGallery } from "./SpacePhotoGallery";
 
 interface SpaceHeroSectionProps {
@@ -92,10 +92,6 @@ export const SpaceHeroSection: React.FC<SpaceHeroSectionProps> = ({ space }) => 
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Share className="w-4 h-4 mr-2" />
-            Condividi
-          </Button>
           <Button variant="outline" size="sm">
             <Heart className="w-4 h-4 mr-2" />
             Salva
