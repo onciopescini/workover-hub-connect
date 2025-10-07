@@ -116,7 +116,7 @@ serve(async (req) => {
     const numPricePerDay = Number(pricePerDay);
     
     // Env lato server (NO VITE_* qui)
-    const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.12');
+    const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.05');
     const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
     const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
     
