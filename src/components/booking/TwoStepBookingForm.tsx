@@ -120,17 +120,34 @@ export function TwoStepBookingForm({
   // Get availability for a specific date
   const getAvailabilityForDate = (date: Date): { enabled: boolean; intervals: { start: string; end: string }[] } => {
     if (!availability) {
-      return { enabled: true, intervals: [{ start: "08:00", end: "20:00" }] };
+      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] };
+    }
+
+    // Parse/normalize availability if needed
+    let parsedAvailability = availability;
+    try {
+      if (typeof availability === 'string') {
+        parsedAvailability = JSON.parse(availability);
+      }
+    } catch (e) {
+      console.warn('Failed to parse availability for date:', e);
+      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] }; // Fallback default
+    }
+
+    if (!parsedAvailability || typeof parsedAvailability !== 'object') {
+      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] };
     }
 
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayName = dayNames[date.getDay()];
     
     const dateString = format(date, 'yyyy-MM-dd');
-    const exception = availability.exceptions?.find((ex: any) => ex.date === dateString);
+    const exception = parsedAvailability.exceptions?.find((ex: any) => ex.date === dateString);
     
     if (exception) {
-      if (!exception.enabled) {
+      // Support both 'enabled' and 'available' fields
+      const isEnabled = exception.enabled !== undefined ? exception.enabled : exception.available;
+      if (!isEnabled) {
         return { enabled: false, intervals: [] };
       }
       // If exception has slots, use them as intervals
@@ -139,7 +156,7 @@ export function TwoStepBookingForm({
       }
     }
     
-    const daySchedule = dayName ? availability.recurring?.[dayName] : null;
+    const daySchedule = dayName ? parsedAvailability.recurring?.[dayName] : null;
     if (!daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0) {
       return { enabled: false, intervals: [] };
     }

@@ -304,7 +304,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         ideal_guest_tags: data.ideal_guest_tags,
         event_friendly_tags: data.event_friendly_tags,
         confirmation_type: data.confirmation_type,
-        availability: JSON.stringify(data.availability || defaultAvailability), // Convert to JSON string for database
+        availability: data.availability || defaultAvailability, // Save as JSON object (jsonb column)
         published: data.published,
         host_id: user.id,
       };

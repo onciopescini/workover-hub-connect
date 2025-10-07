@@ -61,6 +61,34 @@ const SpaceDetail = () => {
         availabilityData = spaceAvailability?.availability;
       }
 
+      // Normalize availability: parse if string, ensure structure
+      let normalizedAvailability = null;
+      try {
+        if (typeof availabilityData === 'string') {
+          availabilityData = JSON.parse(availabilityData);
+        }
+        
+        if (availabilityData && typeof availabilityData === 'object') {
+          // Ensure recurring has all days with enabled and slots
+          const defaultDay = { enabled: false, slots: [] };
+          normalizedAvailability = {
+            recurring: {
+              monday: availabilityData.recurring?.monday || defaultDay,
+              tuesday: availabilityData.recurring?.tuesday || defaultDay,
+              wednesday: availabilityData.recurring?.wednesday || defaultDay,
+              thursday: availabilityData.recurring?.thursday || defaultDay,
+              friday: availabilityData.recurring?.friday || defaultDay,
+              saturday: availabilityData.recurring?.saturday || defaultDay,
+              sunday: availabilityData.recurring?.sunday || defaultDay,
+            },
+            exceptions: availabilityData.exceptions || []
+          };
+        }
+      } catch (parseError) {
+        sreLogger.warn('Failed to parse availability', { spaceId: id, error: parseError });
+        normalizedAvailability = null; // Calendar will not disable dates if null
+      }
+
       // Transform the response to match expected interface
       // Add title/name compatibility 
       const title = (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio';
@@ -89,7 +117,7 @@ const SpaceDetail = () => {
         pending_approval: false,
         space_creation_restricted: false,
         published: (spaceData as any).published ?? true,
-        availability: availabilityData, // Pass availability data with fallback
+        availability: normalizedAvailability, // Pass normalized availability
         host: {
           id: 'host-id', // We don't expose the real host_id for security
           first_name: (spaceData as any).host_first_name ?? '',

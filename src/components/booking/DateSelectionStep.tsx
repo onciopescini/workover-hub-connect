@@ -38,19 +38,38 @@ export function DateSelectionStep({
     // Check availability if configured
     if (!availability) return false;
     
+    // Parse/normalize availability if needed
+    let parsedAvailability = availability;
+    try {
+      if (typeof availability === 'string') {
+        parsedAvailability = JSON.parse(availability);
+      }
+    } catch (e) {
+      console.warn('Failed to parse availability in date selection:', e);
+      return false; // Don't disable if parsing fails
+    }
+    
+    if (!parsedAvailability || typeof parsedAvailability !== 'object') {
+      return false; // Don't disable if invalid
+    }
+    
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayName = dayNames[date.getDay()];
     
     // Check exceptions first
     const dateStr = format(date, 'yyyy-MM-dd');
-    const exception = availability.exceptions?.find((ex: any) => ex.date === dateStr);
+    const exception = parsedAvailability.exceptions?.find((ex: any) => ex.date === dateStr);
     if (exception) {
-      return !exception.enabled;
+      // Support both 'enabled' and 'available' fields
+      const isEnabled = exception.enabled !== undefined ? exception.enabled : exception.available;
+      return !isEnabled;
     }
     
     // Check recurring schedule
-    const daySchedule = dayName ? availability.recurring?.[dayName] : null;
-    return !daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0;
+    const daySchedule = dayName ? parsedAvailability.recurring?.[dayName] : null;
+    if (!daySchedule) return true; // Disable if no schedule
+    
+    return !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0;
   };
 
   return (
