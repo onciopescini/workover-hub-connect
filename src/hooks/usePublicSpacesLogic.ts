@@ -93,11 +93,14 @@ const DEFAULT_FILTERS: SpaceFilters = {
 };
 
 export const usePublicSpacesLogic = () => {
-  const { initialCity, initialCoordinates, updateLocationParam } = useLocationParams();
+  const { initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, updateLocationParam } = useLocationParams();
   const [filters, setFilters] = useState<SpaceFilters>(() => ({
     ...DEFAULT_FILTERS,
     location: initialCity || '',
-    coordinates: initialCoordinates
+    coordinates: initialCoordinates,
+    startDate: initialDate,
+    startTime: initialStartTime,
+    endTime: initialEndTime
   }));
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(() => 
     initialCoordinates || { lat: 41.9028, lng: 12.4964 }
