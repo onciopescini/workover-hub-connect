@@ -23,6 +23,8 @@ type PricingInput = {
 type PricingOutput = {
   base: number;
   serviceFee: number;
+  hostFee: number;
+  totalPlatformFee: number;
   vat: number;
   total: number;
   isDayRate: boolean;
@@ -35,10 +37,20 @@ function computePricing(i: PricingInput): PricingOutput {
   const base = isDayRate ? i.pricePerDay : i.durationHours * i.pricePerHour;
   const serviceFee = round(base * i.serviceFeePct);
   const vat = i.stripeTaxEnabled ? 0 : round(serviceFee * i.vatPct);
+  
+  // Calcola commissioni host (5% + IVA)
+  const hostFee = round(base * i.serviceFeePct);
+  const hostVat = i.stripeTaxEnabled ? 0 : round(hostFee * i.vatPct);
+  
+  // Totale piattaforma: buyer (serviceFee + vat) + host (hostFee + hostVat)
+  const totalPlatformFee = round(serviceFee + vat + hostFee + hostVat);
+  
   const total = round(base + serviceFee + vat);
   return {
     base: round(base),
     serviceFee,
+    hostFee,
+    totalPlatformFee,
     vat,
     total,
     isDayRate,
@@ -180,7 +192,7 @@ serve(async (req) => {
       mode: 'payment',
       automatic_tax: { enabled: stripeTaxEnabled },
       payment_intent_data: {
-        application_fee_amount: Math.round(pricing.serviceFee * 100),
+        application_fee_amount: Math.round(pricing.totalPlatformFee * 100),
         transfer_data: { destination: host_stripe_account_id },
         metadata: {
           booking_id: booking_id || '',
@@ -188,8 +200,12 @@ serve(async (req) => {
           user_id: user.id,
           duration_hours: String(durationHours),
           base_amount: String(pricing.base),
-          service_fee: String(pricing.serviceFee),
-          vat_amount: String(pricing.vat),
+          buyer_service_fee: String(pricing.serviceFee),
+          buyer_vat: String(pricing.vat),
+          host_service_fee: String(pricing.hostFee),
+          host_vat: String(pricing.vat),
+          total_platform_fee: String(pricing.totalPlatformFee),
+          host_net_payout: String(pricing.base - pricing.hostFee - pricing.vat),
           total_amount: String(pricing.total),
           pricing_type: pricing.isDayRate ? 'day' : 'hour',
         },
