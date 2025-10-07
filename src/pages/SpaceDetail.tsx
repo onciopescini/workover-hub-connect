@@ -78,6 +78,7 @@ const SpaceDetail = () => {
         pending_approval: false,
         space_creation_restricted: false,
         published: (spaceData as any).published ?? true,
+        availability: (spaceData as any).availability || null, // Pass availability data
         host: {
           id: 'host-id', // We don't expose the real host_id for security
           first_name: (spaceData as any).host_first_name ?? '',

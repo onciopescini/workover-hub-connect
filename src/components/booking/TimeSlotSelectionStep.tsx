@@ -227,7 +227,9 @@ export function TimeSlotSelectionStep({
           <AlertCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
           <h4 className="font-medium mb-2">Nessuno slot disponibile</h4>
           <p className="text-sm text-muted-foreground">
-            Non ci sono orari disponibili per questa data. Prova a selezionare un'altra data.
+            {availableSlots.length === 0 
+              ? "Lo spazio non è disponibile in questa data secondo il calendario dell'host. Seleziona un'altra data."
+              : "Non ci sono orari disponibili per questa data. Prova a selezionare un'altra data."}
           </p>
         </div>
       </div>
@@ -266,7 +268,7 @@ export function TimeSlotSelectionStep({
       {/* Time Slots Grid */}
       <div 
         ref={gridRef}
-        className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2"
+        className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3"
         role="grid"
         aria-label="Griglia slot orari"
       >
@@ -274,7 +276,7 @@ export function TimeSlotSelectionStep({
           <button
             key={slot.time}
             className={cn(
-              "h-10 text-xs font-medium transition-all px-3 py-2 rounded-md border",
+              "h-12 min-w-[60px] text-sm font-medium transition-all px-4 py-2.5 rounded-md border",
               {
                 "bg-green-50 border-green-200 text-green-800 hover:bg-green-100": 
                   slot.available && !isSlotInRange(slot.time) && !isSlotInPreview(slot.time),

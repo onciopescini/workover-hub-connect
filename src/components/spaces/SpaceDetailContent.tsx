@@ -80,7 +80,8 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     title: space.title,
     confirmation_type: space.confirmation_type || 'host_approval',
     host_stripe_account_id: space.host_stripe_account_id ?? '',
-    host_stripe_connected: space.host_stripe_connected ?? false
+    host_stripe_connected: space.host_stripe_connected ?? false,
+    availability: (space as any).availability || null
   };
 
   return (

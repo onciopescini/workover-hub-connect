@@ -23,13 +23,14 @@ interface BookingFormProps {
   onSuccess: () => void;
   onError: (message: string) => void;
   hostStripeAccountId?: string; // Required for Stripe Connect payments
+  availability?: any; // Availability configuration from host
 }
 
 const generateSlotId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId }: BookingFormProps) {
+export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId, availability }: BookingFormProps) {
   // Use the new 2-step booking form with visual calendar as default
   return (
     <TwoStepBookingForm
@@ -44,6 +45,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
       onError={onError}
       bufferMinutes={0} // Default buffer
       slotInterval={30} // Default 30-minute slots
+      availability={availability}
       {...(hostStripeAccountId && { hostStripeAccountId })}
     />
   );

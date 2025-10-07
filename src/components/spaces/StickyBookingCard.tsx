@@ -17,6 +17,7 @@ interface StickyBookingCardProps {
     confirmation_type?: string;
     host_stripe_account_id?: string; // Required for Stripe Connect payments
     host_stripe_connected?: boolean; // Informational only
+    availability?: any; // Availability configuration from host
   };
   isAuthenticated: boolean;
   onLoginRequired: () => void;
@@ -85,6 +86,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             confirmationType={confirmationType}
             maxCapacity={space.max_capacity}
             hostStripeAccountId={space.host_stripe_account_id ?? ''}
+            availability={space.availability}
             onSuccess={() => {
               onBookingSuccess();
               setShowBookingForm(false);

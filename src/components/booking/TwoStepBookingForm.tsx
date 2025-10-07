@@ -35,7 +35,7 @@ function addMinutesHHMM(time: string, minutes: number): string {
   return `${newHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
 }
 
-interface TwoStepBookingFormProps {
+export interface TwoStepBookingFormProps {
   spaceId: string;
   pricePerDay: number;
   pricePerHour: number;
@@ -48,6 +48,7 @@ interface TwoStepBookingFormProps {
   bufferMinutes?: number;
   slotInterval?: number; // 15 or 30 minutes
   hostStripeAccountId?: string; // Optional for Stripe Connect payments
+  availability?: any; // Availability configuration from host
 }
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
@@ -93,7 +94,8 @@ export function TwoStepBookingForm({
   onError,
   bufferMinutes = 0,
   slotInterval = 30,
-  hostStripeAccountId
+  hostStripeAccountId,
+  availability
 }: TwoStepBookingFormProps) {
   const [currentStep, setCurrentStep] = useState<BookingStep>('DATE');
   const [bookingState, setBookingState] = useState<BookingState>({
@@ -115,10 +117,61 @@ export function TwoStepBookingForm({
     'SUMMARY': 100
   }[currentStep];
 
-  const generateTimeSlots = (interval: number = 30): TimeSlot[] => {
+  // Get availability for a specific date
+  const getAvailabilityForDate = (date: Date) => {
+    if (!availability) {
+      return { enabled: true, startHour: 8, endHour: 20 };
+    }
+
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[date.getDay()];
+    
+    const dateString = format(date, 'yyyy-MM-dd');
+    const exception = availability.exceptions?.find((ex: any) => ex.date === dateString);
+    
+    if (exception) {
+      if (!exception.enabled) {
+        return { enabled: false, startHour: 0, endHour: 0 };
+      }
+      if (exception.slots && exception.slots.length > 0) {
+        const firstSlot = exception.slots[0];
+        const lastSlot = exception.slots[exception.slots.length - 1];
+        return {
+          enabled: true,
+          startHour: parseInt(firstSlot.start.split(':')[0]),
+          endHour: parseInt(lastSlot.end.split(':')[0])
+        };
+      }
+    }
+    
+    const daySchedule = dayName ? availability.recurring?.[dayName] : null;
+    if (!daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0) {
+      return { enabled: false, startHour: 0, endHour: 0 };
+    }
+    
+    const firstSlot = daySchedule.slots[0];
+    const lastSlot = daySchedule.slots[daySchedule.slots.length - 1];
+    
+    return {
+      enabled: true,
+      startHour: parseInt(firstSlot.start.split(':')[0]),
+      endHour: parseInt(lastSlot.end.split(':')[0])
+    };
+  };
+
+  const generateTimeSlots = (interval: number = 30, date?: Date): TimeSlot[] => {
     const slots: TimeSlot[] = [];
-    const startHour = 8; // 8:00
-    const endHour = 20; // 20:00
+    let startHour = 8;
+    let endHour = 20;
+    
+    if (date && availability) {
+      const dayAvailability = getAvailabilityForDate(date);
+      if (!dayAvailability.enabled) {
+        return [];
+      }
+      startHour = dayAvailability.startHour;
+      endHour = dayAvailability.endHour;
+    }
     
     for (let hour = startHour; hour < endHour; hour++) {
       for (let minute = 0; minute < 60; minute += interval) {
@@ -142,11 +195,24 @@ export function TwoStepBookingForm({
       debug('Fetching available slots for date', { date: format(date, 'yyyy-MM-dd'), spaceId });
       
       const dateStr = format(date, 'yyyy-MM-dd');
-      let availability: any[] = [];
+      
+      // Check if date is available according to host's availability
+      const dayAvailability = getAvailabilityForDate(date);
+      if (!dayAvailability.enabled) {
+        debug('Date not available per host configuration', { date: dateStr, availability: dayAvailability });
+        setBookingState(prev => ({ 
+          ...prev, 
+          availableSlots: [],
+          isLoadingSlots: false 
+        }));
+        return;
+      }
+
+      let existingBookings: any[] = [];
       
       try {
         // Try to use optimized RPC first
-        availability = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+        existingBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
       } catch (rpcError) {
         // Fallback: Query bookings table directly
         error('RPC failed, using fallback query', rpcError as Error, { spaceId, dateStr });
@@ -163,7 +229,7 @@ export function TwoStepBookingForm({
         }
         
         // Format bookings to match RPC response
-        availability = (bookings || []).map(b => ({
+        existingBookings = (bookings || []).map(b => ({
           booking_id: b.id,
           start_time: b.start_time ? b.start_time.toString().substring(0, 5) : '00:00', // Extract HH:MM
           end_time: b.end_time ? b.end_time.toString().substring(0, 5) : '00:00',
@@ -176,17 +242,17 @@ export function TwoStepBookingForm({
       
       // Create blocked intervals with buffer
       const interval = slotInterval ?? 30;
-      const blocked = availability.map((booking: any) => ({
+      const blocked = existingBookings.map((booking: any) => ({
         start: addMinutesHHMM(booking.start_time, -bufferMinutes),
         end: addMinutesHHMM(booking.end_time, bufferMinutes),
       }));
       
-      // Generate base time slots
-      const baseSlots = generateTimeSlots(interval);
+      // Generate base time slots based on availability
+      const baseSlots = generateTimeSlots(interval, date);
       
       // Mark unavailable slots based on blocked intervals (including buffer)
       const updatedSlots = baseSlots.map(slot => {
-        const isBlocked = blocked.some(({start, end}) => slot.time >= start && slot.time < end);
+        const isBlocked = blocked.some((block: { start: string; end: string }) => slot.time >= block.start && slot.time < block.end);
         
         return {
           ...slot,
@@ -199,7 +265,7 @@ export function TwoStepBookingForm({
         date: dateStr, 
         totalSlots: updatedSlots.length,
         availableSlots: updatedSlots.filter(s => s.available).length,
-        usedFallback: availability.length > 0 && !availability[0]?.start_time?.includes(':')
+        usedFallback: existingBookings.length > 0 && !existingBookings[0]?.start_time?.includes(':')
       });
       
       setBookingState(prev => ({
@@ -534,6 +600,7 @@ export function TwoStepBookingForm({
             selectedDate={bookingState.selectedDate}
             onDateSelect={handleDateSelect}
             spaceId={spaceId}
+            availability={availability}
           />
         )}
         

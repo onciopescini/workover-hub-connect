@@ -11,12 +11,14 @@ interface DateSelectionStepProps {
   selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
   spaceId: string;
+  availability?: any;
 }
 
 export function DateSelectionStep({ 
   selectedDate, 
   onDateSelect,
-  spaceId 
+  spaceId,
+  availability
 }: DateSelectionStepProps) {
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
 
@@ -31,7 +33,24 @@ export function DateSelectionStep({
     // Disable past dates
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date < today;
+    if (date < today) return true;
+    
+    // Check availability if configured
+    if (!availability) return false;
+    
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayNames[date.getDay()];
+    
+    // Check exceptions first
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const exception = availability.exceptions?.find((ex: any) => ex.date === dateStr);
+    if (exception) {
+      return !exception.enabled;
+    }
+    
+    // Check recurring schedule
+    const daySchedule = dayName ? availability.recurring?.[dayName] : null;
+    return !daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0;
   };
 
   return (
