@@ -50,6 +50,17 @@ const SpaceDetail = () => {
         component: 'SpaceDetail'
       });
       
+      // Fallback: se availability non è presente nella RPC, facciamo una query diretta
+      let availabilityData = (spaceData as any).availability;
+      if (!availabilityData) {
+        const { data: spaceAvailability } = await supabase
+          .from('spaces')
+          .select('availability')
+          .eq('id', id)
+          .single();
+        availabilityData = spaceAvailability?.availability;
+      }
+
       // Transform the response to match expected interface
       // Add title/name compatibility 
       const title = (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio';
@@ -78,7 +89,7 @@ const SpaceDetail = () => {
         pending_approval: false,
         space_creation_restricted: false,
         published: (spaceData as any).published ?? true,
-        availability: (spaceData as any).availability || null, // Pass availability data
+        availability: availabilityData, // Pass availability data with fallback
         host: {
           id: 'host-id', // We don't expose the real host_id for security
           first_name: (spaceData as any).host_first_name ?? '',

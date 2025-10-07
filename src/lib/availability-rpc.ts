@@ -36,7 +36,7 @@ export const fetchOptimizedSpaceAvailability = async (
   startDate: string,
   endDate: string
 ) => {
-  const { data, error } = await supabase.rpc('get_space_availability_optimized', {
+  const { data, error } = await supabase.rpc('get_space_availability_v2', {
     space_id_param: spaceId,
     start_date_param: startDate,
     end_date_param: endDate

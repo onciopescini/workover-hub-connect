@@ -227,9 +227,7 @@ export function TimeSlotSelectionStep({
           <AlertCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
           <h4 className="font-medium mb-2">Nessuno slot disponibile</h4>
           <p className="text-sm text-muted-foreground">
-            {availableSlots.length === 0 
-              ? "Lo spazio non è disponibile in questa data secondo il calendario dell'host. Seleziona un'altra data."
-              : "Non ci sono orari disponibili per questa data. Prova a selezionare un'altra data."}
+            Lo spazio non è disponibile in questa data secondo il calendario dell'host. Seleziona un'altra data.
           </p>
         </div>
       </div>
@@ -266,43 +264,49 @@ export function TimeSlotSelectionStep({
       </div>
 
       {/* Time Slots Grid */}
-      <div 
-        ref={gridRef}
-        className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3"
-        role="grid"
-        aria-label="Griglia slot orari"
-      >
-        {availableSlotsList.map((slot, index) => (
-          <button
-            key={slot.time}
-            className={cn(
-              "h-12 min-w-[60px] text-sm font-medium transition-all px-4 py-2.5 rounded-md border",
-              {
-                "bg-green-50 border-green-200 text-green-800 hover:bg-green-100": 
-                  slot.available && !isSlotInRange(slot.time) && !isSlotInPreview(slot.time),
-                "bg-primary text-primary-foreground border-primary hover:bg-primary/90": 
-                  isSlotInRange(slot.time),
-                "bg-primary/20 border-primary text-primary": 
-                  isSlotInPreview(slot.time),
-                "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed": 
-                  !slot.available,
-                "ring-2 ring-primary ring-offset-1": 
-                  index === focusedSlotIndex
-              }
-            )}
-            onClick={() => handleSlotClick(slot.time)}
-            onMouseEnter={() => setHoveredSlot(slot.time)}
-            onMouseLeave={() => setHoveredSlot(null)}
-            onKeyDown={(e) => handleKeyDown(e, slot.time, index)}
-            onFocus={() => setFocusedSlotIndex(index)}
-            disabled={!slot.available}
-            aria-pressed={isSlotInRange(slot.time)}
-            data-testid={`time-slot-${slot.time.replace(':', '_')}`}
-            tabIndex={index === 0 || index === focusedSlotIndex ? 0 : -1}
-          >
-            {slot.time}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Orari configurati dall'host per questa data
+        </p>
+        <div 
+          ref={gridRef}
+          className="grid gap-3"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))' }}
+          role="grid"
+          aria-label="Griglia slot orari"
+        >
+          {availableSlotsList.map((slot, index) => (
+            <button
+              key={slot.time}
+              className={cn(
+                "h-12 min-w-[80px] text-sm font-medium transition-all px-4 py-2.5 rounded-md border text-center whitespace-nowrap",
+                {
+                  "bg-green-50 border-green-200 text-green-800 hover:bg-green-100": 
+                    slot.available && !isSlotInRange(slot.time) && !isSlotInPreview(slot.time),
+                  "bg-primary text-primary-foreground border-primary hover:bg-primary/90": 
+                    isSlotInRange(slot.time),
+                  "bg-primary/20 border-primary text-primary": 
+                    isSlotInPreview(slot.time),
+                  "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed": 
+                    !slot.available,
+                  "ring-2 ring-primary ring-offset-1": 
+                    index === focusedSlotIndex
+                }
+              )}
+              onClick={() => handleSlotClick(slot.time)}
+              onMouseEnter={() => setHoveredSlot(slot.time)}
+              onMouseLeave={() => setHoveredSlot(null)}
+              onKeyDown={(e) => handleKeyDown(e, slot.time, index)}
+              onFocus={() => setFocusedSlotIndex(index)}
+              disabled={!slot.available}
+              aria-pressed={isSlotInRange(slot.time)}
+              data-testid={`time-slot-${slot.time.replace(':', '_')}`}
+              tabIndex={index === 0 || index === focusedSlotIndex ? 0 : -1}
+            >
+              {slot.time}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Instructions */}

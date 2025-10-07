@@ -2533,6 +2533,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_space_availability_v2: {
+        Args: {
+          end_date_param: string
+          space_id_param: string
+          start_date_param: string
+        }
+        Returns: {
+          booking_id: string
+          end_time: string
+          start_time: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_space_reviews_with_details: {
         Args: { space_id_param: string }
         Returns: {

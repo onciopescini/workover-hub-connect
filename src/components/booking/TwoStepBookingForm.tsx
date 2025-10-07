@@ -118,9 +118,9 @@ export function TwoStepBookingForm({
   }[currentStep];
 
   // Get availability for a specific date
-  const getAvailabilityForDate = (date: Date) => {
+  const getAvailabilityForDate = (date: Date): { enabled: boolean; intervals: { start: string; end: string }[] } => {
     if (!availability) {
-      return { enabled: true, startHour: 8, endHour: 20 };
+      return { enabled: true, intervals: [{ start: "08:00", end: "20:00" }] };
     }
 
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -131,57 +131,54 @@ export function TwoStepBookingForm({
     
     if (exception) {
       if (!exception.enabled) {
-        return { enabled: false, startHour: 0, endHour: 0 };
+        return { enabled: false, intervals: [] };
       }
+      // If exception has slots, use them as intervals
       if (exception.slots && exception.slots.length > 0) {
-        const firstSlot = exception.slots[0];
-        const lastSlot = exception.slots[exception.slots.length - 1];
-        return {
-          enabled: true,
-          startHour: parseInt(firstSlot.start.split(':')[0]),
-          endHour: parseInt(lastSlot.end.split(':')[0])
-        };
+        return { enabled: true, intervals: exception.slots.map((s: any) => ({ start: s.start, end: s.end })) };
       }
     }
     
     const daySchedule = dayName ? availability.recurring?.[dayName] : null;
     if (!daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0) {
-      return { enabled: false, startHour: 0, endHour: 0 };
+      return { enabled: false, intervals: [] };
     }
     
-    const firstSlot = daySchedule.slots[0];
-    const lastSlot = daySchedule.slots[daySchedule.slots.length - 1];
-    
-    return {
-      enabled: true,
-      startHour: parseInt(firstSlot.start.split(':')[0]),
-      endHour: parseInt(lastSlot.end.split(':')[0])
-    };
+    // Return all slots as intervals
+    return { enabled: true, intervals: daySchedule.slots.map((s: any) => ({ start: s.start, end: s.end })) };
   };
 
   const generateTimeSlots = (interval: number = 30, date?: Date): TimeSlot[] => {
     const slots: TimeSlot[] = [];
-    let startHour = 8;
-    let endHour = 20;
     
+    // Default intervals se non c'è availability
+    let intervals = [{ start: "08:00", end: "20:00" }];
+    
+    // Se c'è una data e availability, usiamo gli intervalli configurati
     if (date && availability) {
       const dayAvailability = getAvailabilityForDate(date);
-      if (!dayAvailability.enabled) {
+      if (!dayAvailability.enabled || dayAvailability.intervals.length === 0) {
         return [];
       }
-      startHour = dayAvailability.startHour;
-      endHour = dayAvailability.endHour;
+      intervals = dayAvailability.intervals;
     }
     
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += interval) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push({
-          time,
+    // Genera slot per ogni intervallo
+    for (const intervalConfig of intervals) {
+      const [startHour, startMinute] = parseHHMM(intervalConfig.start);
+      const [endHour, endMinute] = parseHHMM(intervalConfig.end);
+      
+      let currentTime = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+      const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+      
+      while (currentTime < endTime) {
+        slots.push({ 
+          time: currentTime, 
           available: true,
           reserved: false,
           selected: false
         });
+        currentTime = addMinutesHHMM(currentTime, interval);
       }
     }
     
