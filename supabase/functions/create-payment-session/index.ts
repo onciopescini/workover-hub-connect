@@ -24,6 +24,7 @@ type PricingOutput = {
   base: number;
   serviceFee: number;
   hostFee: number;
+  hostVat: number;
   totalPlatformFee: number;
   vat: number;
   total: number;
@@ -50,6 +51,7 @@ function computePricing(i: PricingInput): PricingOutput {
     base: round(base),
     serviceFee,
     hostFee,
+    hostVat,
     totalPlatformFee,
     vat,
     total,
@@ -203,9 +205,9 @@ serve(async (req) => {
           buyer_service_fee: String(pricing.serviceFee),
           buyer_vat: String(pricing.vat),
           host_service_fee: String(pricing.hostFee),
-          host_vat: String(pricing.vat),
+          host_vat: String(pricing.hostVat),
           total_platform_fee: String(pricing.totalPlatformFee),
-          host_net_payout: String(pricing.base - pricing.hostFee - pricing.vat),
+          host_net_payout: String(pricing.base - pricing.hostFee - pricing.hostVat),
           total_amount: String(pricing.total),
           pricing_type: pricing.isDayRate ? 'day' : 'hour',
         },
