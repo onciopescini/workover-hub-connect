@@ -142,7 +142,37 @@ export function TwoStepBookingForm({
       debug('Fetching available slots for date', { date: format(date, 'yyyy-MM-dd'), spaceId });
       
       const dateStr = format(date, 'yyyy-MM-dd');
-      const availability = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+      let availability: any[] = [];
+      
+      try {
+        // Try to use optimized RPC first
+        availability = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+      } catch (rpcError) {
+        // Fallback: Query bookings table directly
+        error('RPC failed, using fallback query', rpcError as Error, { spaceId, dateStr });
+        
+        const { data: bookings, error: bookingError } = await supabase
+          .from('bookings')
+          .select('id, start_time, end_time, status, user_id')
+          .eq('space_id', spaceId)
+          .eq('booking_date', dateStr)
+          .in('status', ['pending', 'confirmed']);
+        
+        if (bookingError) {
+          throw bookingError;
+        }
+        
+        // Format bookings to match RPC response
+        availability = (bookings || []).map(b => ({
+          booking_id: b.id,
+          start_time: b.start_time ? b.start_time.toString().substring(0, 5) : '00:00', // Extract HH:MM
+          end_time: b.end_time ? b.end_time.toString().substring(0, 5) : '00:00',
+          status: b.status,
+          user_id: b.user_id
+        }));
+        
+        toast.info('Calendario caricato in modalità ridotta');
+      }
       
       // Create blocked intervals with buffer
       const interval = slotInterval ?? 30;
@@ -168,7 +198,8 @@ export function TwoStepBookingForm({
       info('Available slots fetched', { 
         date: dateStr, 
         totalSlots: updatedSlots.length,
-        availableSlots: updatedSlots.filter(s => s.available).length
+        availableSlots: updatedSlots.filter(s => s.available).length,
+        usedFallback: availability.length > 0 && !availability[0]?.start_time?.includes(':')
       });
       
       setBookingState(prev => ({

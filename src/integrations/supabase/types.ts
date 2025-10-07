@@ -2408,11 +2408,17 @@ export type Database = {
         Returns: Json
       }
       get_alternative_time_slots: {
-        Args: {
-          date_param: string
-          duration_hours_param: number
-          space_id_param: string
-        }
+        Args:
+          | {
+              date_param: string
+              duration_hours_param: number
+              space_id_param: string
+            }
+          | {
+              date_param: string
+              duration_hours_param: number
+              space_id_param: string
+            }
         Returns: string[]
       }
       get_host_metrics: {
@@ -2508,11 +2514,17 @@ export type Database = {
         Returns: Json
       }
       get_space_availability_optimized: {
-        Args: {
-          end_date_param: string
-          space_id_param: string
-          start_date_param: string
-        }
+        Args:
+          | {
+              end_date_param: string
+              space_id_param: string
+              start_date_param: string
+            }
+          | {
+              end_date_param: string
+              space_id_param: string
+              start_date_param: string
+            }
         Returns: {
           booking_date: string
           end_time: string
@@ -2730,13 +2742,21 @@ export type Database = {
         Returns: Json
       }
       validate_booking_slot_with_lock: {
-        Args: {
-          date_param: string
-          end_time_param: string
-          space_id_param: string
-          start_time_param: string
-          user_id_param: string
-        }
+        Args:
+          | {
+              date_param: string
+              end_time_param: string
+              space_id_param: string
+              start_time_param: string
+              user_id_param: string
+            }
+          | {
+              date_param: string
+              end_time_param: string
+              space_id_param: string
+              start_time_param: string
+              user_id_param: string
+            }
         Returns: Json
       }
     }
