@@ -63,8 +63,8 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
 
   if (showBookingForm) {
     return (
-      <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl max-h-[calc(100vh-2rem)] overflow-hidden' : 'max-h-[calc(100vh-2rem)] overflow-hidden'}`}>
-        <CardHeader>
+      <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col' : 'max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col'}`}>
+        <CardHeader className="sticky top-0 z-10 bg-background border-b shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
               {isInstantBooking ? 'Prenota ora' : 'Richiedi prenotazione'}
@@ -78,7 +78,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="overflow-y-auto">
+        <CardContent className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
           <BookingForm
             spaceId={space.id}
             pricePerDay={space.price_per_day}
