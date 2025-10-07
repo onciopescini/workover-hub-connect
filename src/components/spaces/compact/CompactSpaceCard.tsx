@@ -1,26 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, Users, Wifi, Euro } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Star, Users, Wifi, Euro, ChevronDown, ChevronUp } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
 import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { DailyAvailabilityCalendar } from '@/components/spaces/availability/DailyAvailabilityCalendar';
+import { useSpaceHourlyAvailability } from '@/hooks/useSpaceHourlyAvailability';
 
 interface CompactSpaceCardProps {
   space: Space;
   onClick: () => void;
   isHighlighted?: boolean;
   size?: 'compact' | 'standard' | 'comfortable';
+  selectedDate?: Date | null;
 }
 
 export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
   space,
   onClick,
   isHighlighted = false,
-  size = 'standard'
+  size = 'standard',
+  selectedDate = null,
 }) => {
   const { data: reviews = [] } = useSpaceReviews(space.id);
   const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
+  const [showAvailability, setShowAvailability] = useState(false);
+  
+  const dateToCheck = selectedDate || new Date();
+  const { data: availabilityData, isLoading: isLoadingAvailability } = useSpaceHourlyAvailability(
+    space.id,
+    dateToCheck
+  );
 
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
@@ -68,14 +80,23 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
 
   const config = sizeConfig[size];
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger card click if clicking availability toggle
+    if ((e.target as HTMLElement).closest('[data-availability-toggle]')) {
+      return;
+    }
+    onClick();
+  };
+
   return (
-    <Card 
-      className={`cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden ${config.height} ${
-        isHighlighted ? 'ring-2 ring-primary shadow-lg' : ''
-      }`}
-      onClick={onClick}
-    >
-      <CardContent className="p-0 h-full">
+    <div>
+      <Card 
+        className={`cursor-pointer hover:shadow-lg transition-all duration-200 overflow-hidden ${config.height} ${
+          isHighlighted ? 'ring-2 ring-primary shadow-lg' : ''
+        }`}
+        onClick={handleCardClick}
+      >
+        <CardContent className="p-0 h-full">
         <div className="flex h-full">
           {/* Image - Dynamic width based on size */}
           <div className={`relative ${config.imageWidth} flex-shrink-0`}>
@@ -151,5 +172,40 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
         </div>
       </CardContent>
     </Card>
+    
+    {/* Availability Calendar Toggle */}
+    {selectedDate && (
+      <div className="mt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAvailability(!showAvailability);
+          }}
+          data-availability-toggle
+          className="w-full text-xs"
+        >
+          {showAvailability ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+          {showAvailability ? 'Nascondi' : 'Mostra'} disponibilità
+        </Button>
+        
+        {showAvailability && (
+          <div className="mt-2 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <DailyAvailabilityCalendar
+              spaceId={space.id}
+              date={dateToCheck}
+              slots={availabilityData?.slots || []}
+              isLoading={isLoadingAvailability}
+              onSlotClick={(time) => {
+                console.log('Selected time slot:', time);
+                // TODO: Navigate to booking with pre-selected time
+              }}
+            />
+          </div>
+        )}
+      </div>
+    )}
+  </div>
   );
 };

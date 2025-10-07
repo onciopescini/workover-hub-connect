@@ -15,6 +15,7 @@ export interface SpaceFilters {
   endDate: Date | null;
   startTime: string | null;
   endTime: string | null;
+  guestsCount?: number;
 }
 
 export interface BasicSpaceFilters {

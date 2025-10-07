@@ -1,6 +1,7 @@
 import React from 'react';
 import { GeographicSearch } from '@/components/shared/GeographicSearchRefactored';
 import { DateRangePicker } from './DateRangePicker';
+import { TimePicker } from '@/components/ui/time-picker';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SlidersHorizontal, MapPin, Star, Clock, X } from 'lucide-react';
@@ -10,11 +11,15 @@ interface CompactSearchBarProps {
   location: string;
   startDate: Date | null;
   endDate: Date | null;
+  startTime: string | null;
+  endTime: string | null;
   activeFiltersCount: number;
   isFiltersOpen: boolean;
   onLocationChange: (location: string, coordinates?: Coordinates) => void;
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
+  onStartTimeChange: (time: string | null) => void;
+  onEndTimeChange: (time: string | null) => void;
   onToggleFilters: () => void;
   onNearMe: () => void;
   onTopRated: () => void;
@@ -25,21 +30,31 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
   location,
   startDate,
   endDate,
+  startTime,
+  endTime,
   activeFiltersCount,
   isFiltersOpen,
   onLocationChange,
   onStartDateChange,
   onEndDateChange,
+  onStartTimeChange,
+  onEndTimeChange,
   onToggleFilters,
   onNearMe,
   onTopRated,
   onAvailableNow
 }) => {
   const hasDateFilter = startDate || endDate;
+  const hasTimeFilter = startTime || endTime;
 
   const handleClearDates = () => {
     onStartDateChange(null);
     onEndDateChange(null);
+  };
+
+  const handleClearTimes = () => {
+    onStartTimeChange(null);
+    onEndTimeChange(null);
   };
 
   return (
@@ -63,8 +78,25 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
             endDate={endDate}
             onStartDateChange={onStartDateChange}
             onEndDateChange={onEndDateChange}
-            className="hidden md:flex"
+            className="hidden lg:flex"
           />
+
+          {/* Time Pickers */}
+          <div className="hidden md:flex items-center gap-2">
+            <TimePicker
+              value={startTime}
+              onChange={onStartTimeChange}
+              placeholder="Inizio"
+              disabled={!startDate}
+            />
+            <TimePicker
+              value={endTime}
+              onChange={onEndTimeChange}
+              placeholder="Fine"
+              minTime={startTime || undefined}
+              disabled={!startDate || !startTime}
+            />
+          </div>
 
           {/* Advanced Filters Button */}
           <Button
@@ -84,7 +116,7 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
             )}
           </Button>
 
-          {/* Date Filter Active Badge */}
+          {/* Filter Active Badges */}
           {hasDateFilter && (
             <Badge variant="secondary" className="flex items-center gap-2">
               <Clock className="h-3 w-3" />
@@ -93,6 +125,20 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleClearDates}
+                className="h-4 w-4 p-0 hover:bg-transparent ml-1"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          )}
+          {hasTimeFilter && (
+            <Badge variant="secondary" className="flex items-center gap-2">
+              <Clock className="h-3 w-3" />
+              Orari selezionati
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearTimes}
                 className="h-4 w-4 p-0 hover:bg-transparent ml-1"
               >
                 <X className="h-3 w-3" />
@@ -132,8 +178,8 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
           </div>
         </div>
 
-        {/* Mobile Date Picker Row */}
-        <div className="mt-3 md:hidden">
+        {/* Mobile Date & Time Picker Rows */}
+        <div className="mt-3 space-y-2 md:hidden lg:hidden">
           <DateRangePicker
             startDate={startDate}
             endDate={endDate}
@@ -141,6 +187,23 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
             onEndDateChange={onEndDateChange}
             className="w-full justify-center"
           />
+          <div className="flex items-center gap-2">
+            <TimePicker
+              value={startTime}
+              onChange={onStartTimeChange}
+              placeholder="Orario inizio"
+              disabled={!startDate}
+              className="flex-1"
+            />
+            <TimePicker
+              value={endTime}
+              onChange={onEndTimeChange}
+              placeholder="Orario fine"
+              minTime={startTime || undefined}
+              disabled={!startDate || !startTime}
+              className="flex-1"
+            />
+          </div>
         </div>
       </div>
     </div>
