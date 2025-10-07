@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Star, MapPin, Verified, Award, Heart } from "lucide-react";
+import { Star, MapPin, Verified, Award } from "lucide-react";
 import { SpacePhotoGallery } from "./SpacePhotoGallery";
 
 interface SpaceHeroSectionProps {
@@ -57,7 +56,7 @@ export const SpaceHeroSection: React.FC<SpaceHeroSectionProps> = ({ space }) => 
       </nav>
 
       {/* Title and Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
         <div>
           <div className="flex items-center gap-2 mb-2">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{space.title}</h1>
@@ -89,13 +88,6 @@ export const SpaceHeroSection: React.FC<SpaceHeroSectionProps> = ({ space }) => 
             </div>
             <Badge variant="outline">{getCategoryLabel()}</Badge>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Heart className="w-4 h-4 mr-2" />
-            Salva
-          </Button>
         </div>
       </div>
 
