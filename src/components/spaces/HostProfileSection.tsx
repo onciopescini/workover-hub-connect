@@ -27,14 +27,12 @@ interface HostProfileSectionProps {
   };
   averageRating?: number | null;
   totalReviews?: number;
-  onMessageHost: () => void;
 }
 
 export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ 
   host, 
   averageRating, 
-  totalReviews = 0, 
-  onMessageHost 
+  totalReviews = 0
 }) => {
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -139,20 +137,10 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
 
         {/* Bio */}
         {host.bio && (
-          <div className="mb-6">
+          <div>
             <p className="text-gray-700 text-sm leading-relaxed">{host.bio}</p>
           </div>
         )}
-
-        {/* Contact Button */}
-        <Button 
-          onClick={onMessageHost}
-          className="w-full"
-          size="lg"
-        >
-          <MessageSquare className="w-4 h-4 mr-2" />
-          Contatta {host.first_name}
-        </Button>
       </CardContent>
     </Card>
   );

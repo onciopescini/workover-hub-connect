@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from 'react-router-dom';
 import { Space } from "@/types/space";
@@ -9,9 +9,7 @@ import { HostProfileSection } from './HostProfileSection';
 import { StickyBookingCard } from './StickyBookingCard';
 import { SpaceReviews } from './SpaceReviews';
 import { toast } from 'sonner';
-import { createOrGetPrivateChat } from "@/lib/networking-utils";
 import { WhoWorksHere } from './WhoWorksHere';
-import { sreLogger } from '@/lib/sre-logger';
 
 interface ExtendedSpace extends Space {
   host?: {
@@ -35,7 +33,6 @@ interface SpaceDetailContentProps {
 export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) {
   const navigate = useNavigate();
   const { authState } = useAuth();
-  const [startingChat, setStartingChat] = useState(false);
 
   const handleBookingSuccess = () => {
     toast.success("Prenotazione creata con successo!");
@@ -47,43 +44,6 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
 
   const handleLoginRequired = () => {
     navigate('/login');
-  };
-
-  const isValidUUID = (uuid: string): boolean => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
-  };
-
-  const handleMessageHost = async () => {
-    if (!space.host || startingChat) return;
-
-    // Validate host UUID
-    if (!space.host.id || !isValidUUID(space.host.id)) {
-      sreLogger.error('Invalid host ID', { 
-        context: 'SpaceDetailContent',
-        hostId: space.host?.id 
-      });
-      toast.error("Impossibile contattare l'host. ID non valido.");
-      return;
-    }
-
-    setStartingChat(true);
-    try {
-      const chatId = await createOrGetPrivateChat(space.host.id);
-      if (chatId) {
-        window.location.href = `/messages/private/${chatId}`;
-      } else {
-        toast.error("Impossibile avviare la chat");
-      }
-    } catch (error) {
-      sreLogger.error('Error starting private chat', { 
-        context: 'SpaceDetailContent',
-        hostId: space.host?.id 
-      }, error as Error);
-      toast.error("Errore nell'avvio della chat");
-    } finally {
-      setStartingChat(false);
-    }
   };
 
   // Calculate average rating from reviews
@@ -140,7 +100,6 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
               host={space.host} 
               averageRating={averageRating}
               totalReviews={reviews.length}
-              onMessageHost={handleMessageHost}
             />
           )}
           
