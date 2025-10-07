@@ -116,7 +116,7 @@ export const SearchFilters: React.FC = () => {
         onClick={handleSearch}
         disabled={!isSearchEnabled}
         size="lg"
-        className="w-full h-12 text-lg font-semibold"
+        className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white shadow-2xl hover-scale-gpu transition-all duration-300"
       >
         🔍 Cerca Spazi Disponibili
       </Button>

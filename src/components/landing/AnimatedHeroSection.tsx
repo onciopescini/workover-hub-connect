@@ -36,26 +36,8 @@ export function AnimatedHeroSection() {
           {/* Enhanced Search Filters */}
           <SearchFilters />
           
-          {/* Call to Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl hover-scale-gpu transition-all duration-300"
-              onClick={() => navigate('/spaces')}
-            >
-              <span className="relative z-10">Esplora Spazi</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-emerald-700 rounded-md opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-            </Button>
-            
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-8 py-4 text-lg font-semibold backdrop-blur-sm bg-white/80 shadow-xl hover-scale-gpu transition-all duration-300"
-              onClick={() => navigate('/networking')}
-            >
-              Vai al Networking
-            </Button>
-            {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+          {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+            <div className="flex justify-center mt-6">
               <Button
                 size="lg"
                 onClick={() => navigate('/onboarding')}
@@ -63,8 +45,8 @@ export function AnimatedHeroSection() {
               >
                 Completa Onboarding
               </Button>
-            )}
-          </div>
+            </div>
+          )}
           
           {/* Trust Indicators */}
           <div className="mt-16 flex flex-wrap justify-center items-center gap-8 opacity-70">
