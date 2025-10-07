@@ -118,6 +118,20 @@ export const PublicSpacesContent = ({
     });
   };
 
+  const handleStartTimeChange = (time: string | null) => {
+    onFiltersChange({
+      ...filters,
+      startTime: time
+    });
+  };
+
+  const handleEndTimeChange = (time: string | null) => {
+    onFiltersChange({
+      ...filters,
+      endTime: time
+    });
+  };
+
   return (
     <SpacesSplitLayout
       searchBar={
@@ -125,11 +139,15 @@ export const PublicSpacesContent = ({
           location={filters.location}
           startDate={filters.startDate}
           endDate={filters.endDate}
+          startTime={filters.startTime}
+          endTime={filters.endTime}
           activeFiltersCount={getActiveFiltersCount()}
           isFiltersOpen={isFiltersOpen}
           onLocationChange={handleLocationChange}
           onStartDateChange={handleStartDateChange}
           onEndDateChange={handleEndDateChange}
+          onStartTimeChange={handleStartTimeChange}
+          onEndTimeChange={handleEndTimeChange}
           onToggleFilters={handleToggleFilters}
           onNearMe={handleNearMe}
           onTopRated={handleTopRated}

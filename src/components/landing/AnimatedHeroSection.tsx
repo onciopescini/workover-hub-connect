@@ -3,9 +3,10 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LazyAnimatedBackground } from '@/components/ui/LazyAnimatedBackground';
 import { TypewriterText } from '@/components/ui/TypewriterText';
-import { GeographicSearch } from '@/components/shared/GeographicSearch';
+import { SearchFilters } from '@/components/landing/SearchFilters';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
+
 export function AnimatedHeroSection() {
   const navigate = useNavigate();
   const { authState } = useAuth();
@@ -32,16 +33,8 @@ export function AnimatedHeroSection() {
             che trasformeranno la tua esperienza di networking.
           </p>
           
-          {/* Enhanced Search Bar */}
-          <div className="max-w-md mx-auto mb-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-lg blur opacity-75 transition duration-1000"></div>
-            <div className="relative">
-              <GeographicSearch 
-                placeholder="Trova spazi nella tua città..."
-                className="w-full shadow-2xl border-2 border-white/20 backdrop-blur-sm"
-              />
-            </div>
-          </div>
+          {/* Enhanced Search Filters */}
+          <SearchFilters />
           
           {/* Call to Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
