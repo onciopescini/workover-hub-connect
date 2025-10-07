@@ -30,33 +30,23 @@ const generateSlotId = () => {
 };
 
 export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId }: BookingFormProps) {
-  // Check feature flag for 2-step booking
-  const useTwoStepBooking =
-    import.meta.env['VITE_BOOKING_TWO_STEP'] === 'true' ||
-    (typeof window !== 'undefined' && (
-      window.localStorage.getItem('VITE_BOOKING_TWO_STEP') === 'true' ||
-      window.localStorage.getItem('enable-two-step-booking') === 'true'
-    ));
-  
-  // If 2-step booking is enabled, use the new component
-  if (useTwoStepBooking) {
-    return (
-      <TwoStepBookingForm
-        spaceId={spaceId}
-        pricePerDay={pricePerDay}
-        pricePerHour={pricePerHour || pricePerDay / 8} // Default to 8-hour workday
-        confirmationType={confirmationType}
-        maxCapacity={maxCapacity}
-        cancellationPolicy={cancellationPolicy || 'moderate'}
-        rules={rules || ''}
-        onSuccess={onSuccess}
-        onError={onError}
-        bufferMinutes={0} // Default buffer
-        slotInterval={30} // Default 30-minute slots
-        {...(hostStripeAccountId && { hostStripeAccountId })}
-      />
-    );
-  }
+  // Use the new 2-step booking form with visual calendar as default
+  return (
+    <TwoStepBookingForm
+      spaceId={spaceId}
+      pricePerDay={pricePerDay}
+      pricePerHour={pricePerHour || pricePerDay / 8} // Default to 8-hour workday
+      confirmationType={confirmationType}
+      maxCapacity={maxCapacity}
+      cancellationPolicy={cancellationPolicy || 'moderate'}
+      rules={rules || ''}
+      onSuccess={onSuccess}
+      onError={onError}
+      bufferMinutes={0} // Default buffer
+      slotInterval={30} // Default 30-minute slots
+      {...(hostStripeAccountId && { hostStripeAccountId })}
+    />
+  );
   
   // Original multi-day booking form logic continues below...
   const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([
