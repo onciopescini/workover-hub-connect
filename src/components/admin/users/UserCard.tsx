@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Shield, UserCheck, UserX } from "lucide-react";
 import { UserActions } from "./UserActions";
+import { UserDetailModal } from "./UserDetailModal";
 import { AdminUser } from '@/types/admin-user';
 
 interface UserCardProps {
@@ -22,13 +23,24 @@ export const UserCard: React.FC<UserCardProps> = ({
   onPromoteToAdmin,
   onDemoteFromAdmin
 }) => {
+  const [showDetail, setShowDetail] = React.useState(false);
+
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent opening modal when clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    setShowDetail(true);
+  };
+
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-4">
+    <>
+      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
+        <CardContent className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-4">
           <Avatar>
             <AvatarImage src={user.profile_photo_url || undefined} />
@@ -70,5 +82,13 @@ export const UserCard: React.FC<UserCardProps> = ({
         />
       </CardContent>
     </Card>
+
+    <UserDetailModal 
+      user={user}
+      open={showDetail}
+      onOpenChange={setShowDetail}
+      onUserUpdate={() => {}}
+    />
+    </>
   );
 };
