@@ -9,7 +9,7 @@ export const isCurrentUserAdmin = async (): Promise<boolean> => {
     if (!user.user) return false;
 
     const { data: isAdmin, error } = await supabase.rpc('is_admin' as any, { 
-      _user_id: user.user.id 
+      user_id: user.user.id 
     });
 
     if (error) {
@@ -31,7 +31,7 @@ export const isCurrentUserModerator = async (): Promise<boolean> => {
     if (!user.user) return false;
 
     const { data: isModerator, error } = await supabase.rpc('is_moderator' as any, { 
-      _user_id: user.user.id 
+      user_id: user.user.id 
     });
 
     if (error) {
@@ -53,7 +53,7 @@ export const canModerateContent = async (): Promise<boolean> => {
     if (!user.user) return false;
 
     const { data: canModerate, error } = await supabase.rpc('can_moderate_content' as any, { 
-      _user_id: user.user.id 
+      user_id: user.user.id 
     });
 
     if (error) {
