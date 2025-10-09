@@ -28,7 +28,7 @@ export type BookingWithDetails = {
   booking_date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment';
   created_at: string;
   updated_at: string;
   cancelled_at?: string | null;
@@ -39,6 +39,11 @@ export type BookingWithDetails = {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
+  approval_deadline?: string | null;
+  payment_deadline?: string | null;
+  is_urgent?: boolean | null;
+  approval_reminder_sent?: boolean | null;
+  payment_reminder_sent?: boolean | null;
   space: {
     id: string;
     title: string;
@@ -118,12 +123,16 @@ export interface CancelBookingResponse {
 
 export const BOOKING_STATUS_COLORS = {
   pending: "bg-yellow-100 text-yellow-800",
+  pending_approval: "bg-orange-100 text-orange-800",
+  pending_payment: "bg-blue-100 text-blue-800",
   confirmed: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
 };
 
 export const BOOKING_STATUS_LABELS = {
   pending: "In attesa",
+  pending_approval: "In attesa di approvazione",
+  pending_payment: "In attesa di pagamento",
   confirmed: "Confermata", 
   cancelled: "Annullata",
 };

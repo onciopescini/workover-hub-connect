@@ -11,6 +11,8 @@ interface BookingCardHeaderProps {
 }
 
 export const BookingCardHeader = ({ booking, status }: BookingCardHeaderProps) => {
+  const isUrgent = booking.is_urgent && (status === 'pending_approval' || status === 'pending_payment');
+  
   return (
     <CardHeader className="pb-3">
       <div className="flex items-start justify-between">
@@ -23,9 +25,16 @@ export const BookingCardHeader = ({ booking, status }: BookingCardHeaderProps) =
             {booking.space?.address || 'Indirizzo non disponibile'}
           </div>
         </div>
-        <Badge className={BOOKING_STATUS_COLORS[status as keyof typeof BOOKING_STATUS_COLORS]}>
-          {BOOKING_STATUS_LABELS[status as keyof typeof BOOKING_STATUS_LABELS]}
-        </Badge>
+        <div className="flex gap-2 items-center">
+          <Badge className={BOOKING_STATUS_COLORS[status as keyof typeof BOOKING_STATUS_COLORS]}>
+            {BOOKING_STATUS_LABELS[status as keyof typeof BOOKING_STATUS_LABELS]}
+          </Badge>
+          {isUrgent && status === 'pending_payment' && (
+            <Badge className="bg-red-100 text-red-800 animate-pulse">
+              ⏰ Paga entro 2h
+            </Badge>
+          )}
+        </div>
       </div>
     </CardHeader>
   );

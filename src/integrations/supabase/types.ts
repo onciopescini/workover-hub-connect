@@ -296,6 +296,8 @@ export type Database = {
       }
       bookings: {
         Row: {
+          approval_deadline: string | null
+          approval_reminder_sent: boolean | null
           booking_date: string
           cancellation_fee: number | null
           cancellation_reason: string | null
@@ -305,6 +307,9 @@ export type Database = {
           end_time: string | null
           guests_count: number
           id: string
+          is_urgent: boolean | null
+          payment_deadline: string | null
+          payment_reminder_sent: boolean | null
           payment_required: boolean | null
           payment_session_id: string | null
           reservation_token: string | null
@@ -316,6 +321,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approval_deadline?: string | null
+          approval_reminder_sent?: boolean | null
           booking_date: string
           cancellation_fee?: number | null
           cancellation_reason?: string | null
@@ -325,6 +332,9 @@ export type Database = {
           end_time?: string | null
           guests_count?: number
           id?: string
+          is_urgent?: boolean | null
+          payment_deadline?: string | null
+          payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
           payment_session_id?: string | null
           reservation_token?: string | null
@@ -336,6 +346,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approval_deadline?: string | null
+          approval_reminder_sent?: boolean | null
           booking_date?: string
           cancellation_fee?: number | null
           cancellation_reason?: string | null
@@ -345,6 +357,9 @@ export type Database = {
           end_time?: string | null
           guests_count?: number
           id?: string
+          is_urgent?: boolean | null
+          payment_deadline?: string | null
+          payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
           payment_session_id?: string | null
           reservation_token?: string | null
@@ -2775,7 +2790,12 @@ export type Database = {
       }
     }
     Enums: {
-      booking_status: "pending" | "confirmed" | "cancelled"
+      booking_status:
+        | "pending"
+        | "confirmed"
+        | "cancelled"
+        | "pending_approval"
+        | "pending_payment"
       cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
@@ -2910,7 +2930,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      booking_status: ["pending", "confirmed", "cancelled"],
+      booking_status: [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "pending_approval",
+        "pending_payment",
+      ],
       cancellation_policy: ["flexible", "moderate", "strict"],
       confirmation_type: ["instant", "host_approval"],
       message_template_type: [

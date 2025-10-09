@@ -69,6 +69,16 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: 'Booking not found' };
     }
 
+    // CRITICAL: Conferma solo se lo stato attuale permette il pagamento
+    const currentStatus = booking.status;
+    if (currentStatus !== 'pending_payment' && currentStatus !== 'pending') {
+      ErrorHandler.logWarning('Booking status does not allow payment confirmation', {
+        bookingId,
+        currentStatus
+      });
+      return { success: false, error: `Booking status ${currentStatus} does not allow payment confirmation` };
+    }
+
     // Determine new booking status
     const confirmationType = booking.spaces.confirmation_type;
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending';

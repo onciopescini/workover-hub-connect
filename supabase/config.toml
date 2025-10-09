@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.refresh-connection-suggestions]
 verify_jwt = true
+
+[functions.booking-expiry-check]
+verify_jwt = false
+
+[functions.booking-reminders]
+verify_jwt = false

@@ -134,6 +134,57 @@ serve(async (req) => {
       });
     }
 
+    // Validazione booking - blocca pagamento se in pending_approval
+    console.log('[PAYMENT-SESSION] Validating booking status...');
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select(`
+        id,
+        status,
+        spaces (
+          id,
+          title,
+          confirmation_type
+        )
+      `)
+      .eq('id', booking_id)
+      .single();
+
+    if (bookingError || !booking) {
+      console.error('[PAYMENT-SESSION] Booking not found:', bookingError);
+      return new Response(
+        JSON.stringify({ error: 'Prenotazione non trovata' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // CRITICAL: Blocca pagamento se la prenotazione è in attesa di approvazione host
+    if (booking.status === 'pending_approval') {
+      console.log(`[PAYMENT-BLOCKED] Booking ${booking_id} is pending_approval, payment not allowed yet`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Questa prenotazione è in attesa di approvazione dall\'host. Non puoi ancora pagare.',
+          status: booking.status,
+          space_title: booking.spaces?.title
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Permetti pagamento solo per pending o pending_payment
+    if (booking.status !== 'pending' && booking.status !== 'pending_payment') {
+      console.log(`[PAYMENT-BLOCKED] Booking ${booking_id} has status ${booking.status}, payment not allowed`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Questa prenotazione non è in uno stato valido per il pagamento.',
+          status: booking.status
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('[PAYMENT-SESSION] Booking status validated:', booking.status);
+
     // Pricing server-side with validated inputs
     const pricing = computePricing({
       durationHours: numDurationHours,
