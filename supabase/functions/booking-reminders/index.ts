@@ -86,17 +86,18 @@ serve(async (req) => {
           })
           .eq("id", booking.id);
 
-        // Notifica il coworker
-        await supabaseAdmin.from("user_notifications").insert({
+        // Notifica il coworker con link diretto al pagamento
+        await supabaseAdmin.from("notifications").insert({
           user_id: booking.user_id,
           type: "booking",
-          title: "⏰ Completa il pagamento entro 2h",
-          content: `La tua prenotazione per "${booking.spaces.title}" è stata approvata! Completa il pagamento entro 2h o perderai la prenotazione.`,
           metadata: {
             booking_id: booking.id,
             space_title: booking.spaces.title,
+            message: `⚠️ La tua prenotazione per "${booking.spaces.title}" è stata approvata! Completa il pagamento entro 2h o perderai la prenotazione.`,
             deadline: booking.payment_deadline,
             urgent: true,
+            payment_url: `/bookings?pay=${booking.id}`,
+            action_required: "payment",
           },
         });
 

@@ -86,27 +86,25 @@ serve(async (req) => {
           .eq("id", booking.id);
 
         // Notifica il coworker
-        await supabaseAdmin.from("user_notifications").insert({
+        await supabaseAdmin.from("notifications").insert({
           user_id: booking.user_id,
-          type: "booking",
-          title: "Prenotazione cancellata",
-          content: `La tua prenotazione per "${booking.spaces.title}" è stata cancellata perché non hai completato il pagamento in tempo.`,
+          type: "booking_cancelled",
           metadata: {
             booking_id: booking.id,
             space_title: booking.spaces.title,
+            message: `La tua prenotazione per "${booking.spaces.title}" è stata cancellata perché non hai completato il pagamento in tempo.`,
             reason: "payment_expired",
           },
         });
 
         // Notifica l'host
-        await supabaseAdmin.from("user_notifications").insert({
+        await supabaseAdmin.from("notifications").insert({
           user_id: booking.spaces.host_id,
-          type: "booking",
-          title: "Prenotazione cancellata",
-          content: `La prenotazione per "${booking.spaces.title}" è stata cancellata perché il coworker non ha completato il pagamento.`,
+          type: "booking_cancelled",
           metadata: {
             booking_id: booking.id,
             space_title: booking.spaces.title,
+            message: `La prenotazione per "${booking.spaces.title}" è stata cancellata perché il coworker non ha completato il pagamento.`,
             reason: "payment_expired",
           },
         });
@@ -115,11 +113,54 @@ serve(async (req) => {
       }
     }
 
+    // 3. Cancella prenotazioni instant (pending) con slot 15min scaduto
+    const { data: expiredSlots, error: slotError } = await supabaseAdmin
+      .from("bookings")
+      .select("id, space_id, user_id, booking_date, spaces(title, host_id)")
+      .eq("status", "pending")
+      .not("slot_reserved_until", "is", null)
+      .lte("slot_reserved_until", now);
+
+    let expiredSlotsCount = 0;
+    if (slotError) {
+      console.error("[BOOKING-EXPIRY] Error fetching expired slots:", slotError);
+    } else if (expiredSlots && expiredSlots.length > 0) {
+      console.log(`[BOOKING-EXPIRY] Found ${expiredSlots.length} expired 15-min slot reservations`);
+
+      for (const booking of expiredSlots) {
+        // Cancella la prenotazione
+        await supabaseAdmin
+          .from("bookings")
+          .update({
+            status: "cancelled",
+            cancelled_at: now,
+            cancellation_reason: "Pagamento non completato entro 15 minuti dalla prenotazione",
+          })
+          .eq("id", booking.id);
+
+        // Notifica il coworker
+        await supabaseAdmin.from("notifications").insert({
+          user_id: booking.user_id,
+          type: "booking_cancelled",
+          metadata: {
+            booking_id: booking.id,
+            space_title: booking.spaces.title,
+            message: `La tua prenotazione per "${booking.spaces.title}" è stata annullata perché non hai completato il pagamento entro 15 minuti.`,
+            reason: "slot_expired",
+          },
+        });
+
+        console.log(`[BOOKING-EXPIRY] Cancelled expired slot booking ${booking.id}`);
+        expiredSlotsCount++;
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         expired_approvals: expiredApprovals?.length || 0,
         expired_payments: expiredPayments?.length || 0,
+        expired_slots: expiredSlotsCount,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );

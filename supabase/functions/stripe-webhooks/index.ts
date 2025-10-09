@@ -88,6 +88,67 @@ serve(async (req) => {
         break;
       }
 
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as any;
+        const bookingId = paymentIntent.metadata?.booking_id;
+
+        if (bookingId) {
+          // Check for refund_pending payments
+          const { data: payment } = await supabaseAdmin
+            .from('payments')
+            .select('id, amount, booking_id, bookings(cancellation_fee, cancelled_by_host)')
+            .eq('booking_id', bookingId)
+            .eq('payment_status', 'refund_pending')
+            .single();
+
+          if (payment) {
+            ErrorHandler.logInfo('Processing automatic refund for refund_pending payment', { paymentIntentId: paymentIntent.id, bookingId });
+
+            const booking = payment.bookings as any;
+            let refundAmount;
+            
+            if (booking?.cancelled_by_host) {
+              // Host cancels: full refund
+              refundAmount = payment.amount;
+            } else {
+              // Coworker cancels: refund - penalty
+              const fee = booking?.cancellation_fee || 0;
+              refundAmount = payment.amount - fee;
+            }
+
+            // Convert to cents for Stripe
+            const refundAmountCents = Math.round(refundAmount * 100);
+
+            if (refundAmountCents > 0) {
+              try {
+                const refund = await stripe.refunds.create({
+                  payment_intent: paymentIntent.id,
+                  amount: refundAmountCents,
+                  reason: 'requested_by_customer',
+                });
+
+                ErrorHandler.logSuccess('Refund created', { refundId: refund.id, amount: refundAmount });
+
+                await supabaseAdmin
+                  .from('payments')
+                  .update({
+                    payment_status: 'refunded',
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', payment.id);
+
+                ErrorHandler.logSuccess('Payment status updated to refunded', { paymentId: payment.id });
+              } catch (refundError) {
+                ErrorHandler.logError('Refund failed', refundError);
+              }
+            }
+          }
+        }
+
+        result = { success: true };
+        break;
+      }
+
       default:
         ErrorHandler.logInfo('Unhandled webhook event type', { eventType: event.type });
         result = { success: true, message: 'Event type not handled' };

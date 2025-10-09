@@ -2335,7 +2335,12 @@ export type Database = {
         Returns: Json
       }
       calculate_cancellation_fee: {
-        Args: { booking_date_param: string; price_per_day_param: number }
+        Args: {
+          booking_date_param: string
+          booking_status_param?: string
+          confirmation_type_param?: string
+          price_per_day_param: number
+        }
         Returns: number
       }
       calculate_dac7_thresholds: {
