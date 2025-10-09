@@ -2,6 +2,9 @@ import React, { lazy, Suspense } from 'react';
 import { AdminStats } from '@/types/admin';
 import { Loader2 } from 'lucide-react';
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton';
+import { AdminActivityChart } from './AdminActivityChart';
+import { AdminActivityLog } from './AdminActivityLog';
+import { useAdminActivityLog } from '@/hooks/admin/useAdminActivityLog';
 
 // Lazy load heavy widgets
 const LazyAdminStatsCards = lazy(() => 
@@ -23,6 +26,8 @@ interface AdminDashboardWidgetsProps {
 }
 
 export function AdminDashboardWidgets({ stats, isLoading, onRefresh }: AdminDashboardWidgetsProps) {
+  const { logs, isLoading: logsLoading } = useAdminActivityLog(20);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -60,6 +65,12 @@ export function AdminDashboardWidgets({ stats, isLoading, onRefresh }: AdminDash
           <LazyAdminQuickActionsCard stats={stats} />
         </Suspense>
       </div>
+
+      {/* Activity Chart */}
+      <AdminActivityChart />
+
+      {/* Activity Log */}
+      <AdminActivityLog logs={logs} isLoading={logsLoading} />
     </>
   );
 }
