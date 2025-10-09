@@ -476,15 +476,41 @@ export function TwoStepBookingForm({
         return;
       }
 
-      const responseData = data as { success?: boolean; error?: string; booking_id?: string };
+      const responseData = data as { 
+        success?: boolean; 
+        error?: string; 
+        booking_id?: string;
+        confirmation_type?: string;
+        initial_status?: string;
+      };
 
       if (!responseData.success) {
         onError(responseData.error || 'Errore nella prenotazione');
         return;
       }
 
-      info('Slot reserved successfully', { bookingId: responseData.booking_id });
+      info('Slot reserved successfully', { 
+        bookingId: responseData.booking_id,
+        confirmationType: responseData.confirmation_type,
+        initialStatus: responseData.initial_status
+      });
       
+      // Handle host_approval flow (no immediate payment)
+      if (responseData.confirmation_type === 'host_approval') {
+        toast.success('Richiesta di prenotazione inviata!', {
+          description: 'L\'host riceverà la tua richiesta e ti risponderà entro le tempistiche previste.',
+          duration: 5000
+        });
+        
+        // Redirect to bookings page after 2 seconds
+        setTimeout(() => {
+          onSuccess();
+        }, 2000);
+        
+        return; // Do not proceed with payment for host_approval
+      }
+      
+      // For instant bookings, proceed with payment
       // Check if host has Stripe account configured
       if (!hostStripeAccountId) {
         toast.error('Host non collegato a Stripe', {
