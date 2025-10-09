@@ -38,21 +38,38 @@ serve(async (req) => {
       reason: reason || 'none'
     });
 
-    // Verify admin permissions
-    const { data: adminProfile, error: adminError } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', admin_id)
-      .single();
-
-    if (adminError || adminProfile?.role !== 'admin') {
-      ErrorHandler.logError('Unauthorized admin action attempt', adminError, {
+    // Verify admin/moderator permissions
+    const moderationActions = ['moderate_space', 'approve_tag'];
+    const { data: isAdmin } = await supabaseAdmin.rpc('is_admin', { _user_id: admin_id });
+    
+    // For moderation actions, allow moderators too
+    if (!isAdmin && moderationActions.includes(action)) {
+      const { data: canModerate } = await supabaseAdmin.rpc('can_moderate_content', { _user_id: admin_id });
+      
+      if (!canModerate) {
+        ErrorHandler.logError('Unauthorized admin action attempt', null, {
+          attempted_by: admin_id,
+          action,
+          target_id,
+          reason: 'Not admin or moderator'
+        });
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Admin or Moderator role required' }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+    } else if (!isAdmin) {
+      ErrorHandler.logError('Unauthorized admin action attempt', null, {
         attempted_by: admin_id,
         action,
-        target_id
+        target_id,
+        reason: 'Not admin'
       });
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: Admin access required' }),
+        JSON.stringify({ error: 'Unauthorized: Admin role required' }),
         {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders },

@@ -30,6 +30,7 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
   const navItems = [
     { label: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: "Utenti", path: "/admin/users", icon: <Users className="w-4 h-4" /> },
+    { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" /> },
     { label: "Spazi", path: "/admin/spaces", icon: <Building className="w-4 h-4" /> },
     { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" /> },
     { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" /> },

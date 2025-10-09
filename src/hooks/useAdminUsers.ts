@@ -3,34 +3,49 @@ import { useState, useEffect } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AdminUser } from '@/types/admin-user';
+import { AdminUserWithRoles } from '@/types/admin-user';
 import { sreLogger } from '@/lib/sre-logger';
 
 export const useAdminUsers = () => {
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<AdminUserWithRoles[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { authState } = useAuth();
 
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
-      if (error) {
-        sreLogger.error('Error fetching users', {}, error);
+      if (profilesError) {
+        sreLogger.error('Error fetching users', {}, profilesError);
         toast.error('Failed to fetch users');
         return;
       }
 
-      if (data) {
-        const usersWithParsedData = data.map(user => ({
-          ...user,
-          competencies: user.competencies ? (Array.isArray(user.competencies) ? user.competencies : JSON.parse(user.competencies)) : [],
-          industries: user.industries ? (Array.isArray(user.industries) ? user.industries : JSON.parse(user.industries)) : [],
-        })) as AdminUser[];
-        setUsers(usersWithParsedData);
+      // Fetch user_roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles' as any)
+        .select('*');
+
+      if (rolesError) {
+        sreLogger.error('Error fetching user roles', {}, rolesError);
+        // Non blocchiamo l'app se fallisce il fetch dei ruoli
+      }
+
+      if (profilesData) {
+        // Merge profiles con system_roles
+        const usersWithRoles = profilesData.map(profile => ({
+          ...profile,
+          competencies: profile.competencies ? (Array.isArray(profile.competencies) ? profile.competencies : JSON.parse(profile.competencies)) : [],
+          industries: profile.industries ? (Array.isArray(profile.industries) ? profile.industries : JSON.parse(profile.industries)) : [],
+          system_roles: (rolesData as any)?.filter((r: any) => r.user_id === profile.id) || []
+        })) as AdminUserWithRoles[];
+        
+        setUsers(usersWithRoles);
       }
     } catch (error) {
       sreLogger.error('Error fetching users', {}, error as Error);
@@ -44,10 +59,12 @@ export const useAdminUsers = () => {
     fetchUsers();
   }, []);
 
-  const updateUser = (userId: string, updates: Partial<AdminUser>) => {
+  const updateUser = (userId: string, updates: Partial<AdminUserWithRoles>) => {
     setUsers(users.map(user =>
       user.id === userId ? { ...user, ...updates } : user
     ));
+    // Refresh to get updated roles
+    fetchUsers();
   };
 
   return {

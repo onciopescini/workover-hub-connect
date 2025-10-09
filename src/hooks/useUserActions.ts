@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AdminUser } from '@/types/admin-user';
+import { AdminUserWithRoles } from '@/types/admin-user';
 import { sreLogger } from '@/lib/sre-logger';
 
-export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUser>) => void) => {
+export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUserWithRoles>) => void) => {
   const handleActivateUser = async (userId: string) => {
     try {
       const { error } = await supabase
@@ -48,43 +48,119 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
 
   const handlePromoteToAdmin = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'admin' })
-        .eq('id', userId);
-
-      if (error) {
-        sreLogger.error('Error promoting user to admin', { userId }, error as Error);
-        toast.error('Failed to promote user to admin');
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        toast.error('Devi essere autenticato');
         return;
       }
 
-      updateUser(userId, { role: 'admin' });
-      toast.success('User promoted to admin successfully');
+      const { data, error } = await supabase.rpc('assign_admin_role' as any, {
+        target_user_id: userId,
+        assigned_by: user.user.id
+      });
+
+      if (error) {
+        sreLogger.error('Error promoting user to admin', { userId }, error);
+        toast.error('Errore nella promozione ad admin');
+        return;
+      }
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || 'Errore nella promozione ad admin');
+        return;
+      }
+
+      toast.success('Utente promosso ad admin con successo');
+      updateUser(userId, {}); // Trigger refresh
     } catch (error) {
       sreLogger.error('Error promoting user to admin', { userId }, error as Error);
-      toast.error('Failed to promote user to admin');
+      toast.error('Errore nella promozione ad admin');
     }
   };
 
   const handleDemoteFromAdmin = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'coworker' })
-        .eq('id', userId);
+      const { data, error } = await supabase.rpc('remove_admin_role' as any, {
+        target_user_id: userId
+      });
 
       if (error) {
-        sreLogger.error('Error demoting user from admin', { userId }, error as Error);
-        toast.error('Failed to demote user from admin');
+        sreLogger.error('Error demoting user from admin', { userId }, error);
+        toast.error('Errore nella rimozione del ruolo admin');
         return;
       }
 
-      updateUser(userId, { role: 'coworker' });
-      toast.success('User demoted from admin successfully');
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || 'Errore nella rimozione del ruolo admin');
+        return;
+      }
+
+      toast.success('Ruolo admin rimosso con successo');
+      updateUser(userId, {}); // Trigger refresh
     } catch (error) {
       sreLogger.error('Error demoting user from admin', { userId }, error as Error);
-      toast.error('Failed to demote user from admin');
+      toast.error('Errore nella rimozione del ruolo admin');
+    }
+  };
+
+  const handlePromoteToModerator = async (userId: string) => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        toast.error('Devi essere autenticato');
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('assign_moderator_role' as any, {
+        target_user_id: userId,
+        assigned_by: user.user.id
+      });
+
+      if (error) {
+        sreLogger.error('Error promoting user to moderator', { userId }, error);
+        toast.error('Errore nella promozione a moderator');
+        return;
+      }
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || 'Errore nella promozione a moderator');
+        return;
+      }
+
+      toast.success('Utente promosso a moderator con successo');
+      updateUser(userId, {}); // Trigger refresh
+    } catch (error) {
+      sreLogger.error('Error promoting user to moderator', { userId }, error as Error);
+      toast.error('Errore nella promozione a moderator');
+    }
+  };
+
+  const handleDemoteFromModerator = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('remove_moderator_role' as any, {
+        target_user_id: userId
+      });
+
+      if (error) {
+        sreLogger.error('Error removing moderator role', { userId }, error);
+        toast.error('Errore nella rimozione del ruolo moderator');
+        return;
+      }
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        toast.error(result.error || 'Errore nella rimozione del ruolo moderator');
+        return;
+      }
+
+      toast.success('Ruolo moderator rimosso con successo');
+      updateUser(userId, {}); // Trigger refresh
+    } catch (error) {
+      sreLogger.error('Error removing moderator role', { userId }, error as Error);
+      toast.error('Errore nella rimozione del ruolo moderator');
     }
   };
 
@@ -92,6 +168,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
     handleActivateUser,
     handleDeactivateUser,
     handlePromoteToAdmin,
-    handleDemoteFromAdmin
+    handleDemoteFromAdmin,
+    handlePromoteToModerator,
+    handleDemoteFromModerator,
   };
 };
