@@ -1,4 +1,5 @@
 import React from 'react';
+import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Shield, UserCog } from "lucide-react";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
@@ -27,72 +28,77 @@ const SystemRoles = () => {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <div className="text-center">Caricamento ruoli di sistema...</div>
-        </CardContent>
-      </Card>
+      <AdminLayout currentPage="/admin/system-roles">
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center">Caricamento ruoli di sistema...</div>
+          </CardContent>
+        </Card>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Sezione: Utenti con Ruoli di Sistema */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Utenti con Ruoli di Sistema
-          </CardTitle>
-          <CardDescription>
-            Gestisci admin e moderator esistenti
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {usersWithSystemRoles.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nessun utente con ruoli di sistema
-            </div>
-          ) : (
-            <SystemRolesTable
-              users={usersWithSystemRoles}
-              onPromoteToAdmin={handlePromoteToAdmin}
-              onDemoteFromAdmin={handleDemoteFromAdmin}
-              onPromoteToModerator={handlePromoteToModerator}
-              onDemoteFromModerator={handleDemoteFromModerator}
-              showOnlyPromote={false}
-            />
-          )}
-        </CardContent>
-      </Card>
+    <AdminLayout currentPage="/admin/system-roles">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Gestione Ruoli di Sistema</h2>
+      <div className="space-y-6">
+        {/* Sezione: Utenti con Ruoli di Sistema */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Utenti con Ruoli di Sistema
+            </CardTitle>
+            <CardDescription>
+              Gestisci admin e moderator esistenti
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {usersWithSystemRoles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nessun utente con ruoli di sistema
+              </div>
+            ) : (
+              <SystemRolesTable
+                users={usersWithSystemRoles}
+                onPromoteToAdmin={handlePromoteToAdmin}
+                onDemoteFromAdmin={handleDemoteFromAdmin}
+                onPromoteToModerator={handlePromoteToModerator}
+                onDemoteFromModerator={handleDemoteFromModerator}
+                showOnlyPromote={false}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Sezione: Assegna Nuovi Ruoli */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCog className="h-5 w-5" />
-            Assegna Nuovi Ruoli
-          </CardTitle>
-          <CardDescription>
-            Promuovi utenti esistenti ad admin o moderator
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {usersWithoutSystemRoles.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Tutti gli utenti hanno già ruoli di sistema
-            </div>
-          ) : (
-            <SystemRolesTable
-              users={usersWithoutSystemRoles}
-              onPromoteToAdmin={handlePromoteToAdmin}
-              onPromoteToModerator={handlePromoteToModerator}
-              showOnlyPromote={true}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        {/* Sezione: Assegna Nuovi Ruoli */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCog className="h-5 w-5" />
+              Assegna Nuovi Ruoli
+            </CardTitle>
+            <CardDescription>
+              Promuovi utenti esistenti ad admin o moderator
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {usersWithoutSystemRoles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Tutti gli utenti hanno già ruoli di sistema
+              </div>
+            ) : (
+              <SystemRolesTable
+                users={usersWithoutSystemRoles}
+                onPromoteToAdmin={handlePromoteToAdmin}
+                onPromoteToModerator={handlePromoteToModerator}
+                showOnlyPromote={true}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
   );
 };
 

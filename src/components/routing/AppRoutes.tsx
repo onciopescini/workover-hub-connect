@@ -60,6 +60,7 @@ const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminSpacesPage = lazy(() => import("@/pages/admin/AdminSpacesPage"));
+const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -354,6 +355,11 @@ export const AppRoutes = () => {
         <Route path="spaces" element={
           <LazyWrapper>
             <AdminSpacesPage />
+          </LazyWrapper>
+        } />
+        <Route path="system-roles" element={
+          <LazyWrapper>
+            <SystemRoles />
           </LazyWrapper>
         } />
       </Route>
