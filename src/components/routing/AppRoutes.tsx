@@ -12,6 +12,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 // Auth protection
 import AuthProtected from "@/components/auth/AuthProtected";
 import RoleProtected from "@/components/auth/RoleProtected";
+import { ModeratorRoute } from "@/components/admin/ModeratorRoute";
 
 // Public pages (eager loading per performance)
 import Index from "@/pages/Index";
@@ -60,7 +61,15 @@ const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminSpacesPage = lazy(() => import("@/pages/admin/AdminSpacesPage"));
+const AdminTagsPage = lazy(() => import("@/pages/admin/AdminTagsPage"));
+const AdminReportsPage = lazy(() => import("@/pages/admin/AdminReportsPage"));
+const AdminTicketsPage = lazy(() => import("@/pages/admin/AdminTicketsPage"));
+const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
+const AdminLogsPage = lazy(() => import("@/pages/admin/AdminLogsPage"));
+const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
+const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
+const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -332,37 +341,100 @@ export const AppRoutes = () => {
         } />
       </Route>
 
-      {/* Admin routes */}
+      {/* Admin routes - Protected with ModeratorRoute */}
       <Route path="/admin" element={
         <AuthProtected>
-          <RoleProtected allowedRoles={['admin']}>
+          <ModeratorRoute>
             <AdminLayout currentPage="/admin">
               <div />
             </AdminLayout>
-          </RoleProtected>
+          </ModeratorRoute>
         </AuthProtected>
       }>
+        {/* Dashboard - accessible to both admin and moderator */}
         <Route index element={
           <LazyWrapper>
             <AdminPanel />
           </LazyWrapper>
         } />
+        
+        {/* Admin-only routes */}
         <Route path="users" element={
-          <LazyWrapper>
-            <AdminUsersPage />
-          </LazyWrapper>
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <AdminUsersPage />
+            </LazyWrapper>
+          </ModeratorRoute>
         } />
+        
+        <Route path="system-roles" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <SystemRoles />
+            </LazyWrapper>
+          </ModeratorRoute>
+        } />
+        
+        <Route path="settings" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <AdminSettingsPage />
+            </LazyWrapper>
+          </ModeratorRoute>
+        } />
+        
+        <Route path="gdpr" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <AdminGDPRPage />
+            </LazyWrapper>
+          </ModeratorRoute>
+        } />
+        
+        {/* Moderator + Admin routes */}
         <Route path="spaces" element={
           <LazyWrapper>
             <AdminSpacesPage />
           </LazyWrapper>
         } />
-        <Route path="system-roles" element={
+        
+        <Route path="tags" element={
           <LazyWrapper>
-            <SystemRoles />
+            <AdminTagsPage />
+          </LazyWrapper>
+        } />
+        
+        <Route path="reports" element={
+          <LazyWrapper>
+            <AdminReportsPage />
+          </LazyWrapper>
+        } />
+        
+        <Route path="tickets" element={
+          <LazyWrapper>
+            <AdminTicketsPage />
+          </LazyWrapper>
+        } />
+        
+        <Route path="logs" element={
+          <LazyWrapper>
+            <AdminLogsPage />
+          </LazyWrapper>
+        } />
+        
+        <Route path="analytics" element={
+          <LazyWrapper>
+            <AdminAnalyticsPage />
           </LazyWrapper>
         } />
       </Route>
+
+      {/* Unauthorized access page */}
+      <Route path="/unauthorized" element={
+        <LazyWrapper>
+          <UnauthorizedPage />
+        </LazyWrapper>
+      } />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
