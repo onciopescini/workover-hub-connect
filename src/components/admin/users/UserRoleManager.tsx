@@ -26,15 +26,18 @@ export const UserRoleManager: React.FC<UserRoleManagerProps> = ({
   const { data: userRoles, isLoading, refetch } = useQuery({
     queryKey: ['user-roles', userId],
     queryFn: async () => {
-      // Check admin status only (moderator detection will come from profile or another source)
-      const adminCheck = await supabase.rpc('is_admin', { user_id: userId });
+      // Fetch all roles from user_roles table
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
 
-      const roles: Array<{ role: string }> = [];
-      if (adminCheck.data) {
-        roles.push({ role: 'admin' });
+      if (error) {
+        console.error('Error fetching user roles:', error);
+        return [];
       }
       
-      return roles;
+      return data || [];
     }
   });
 

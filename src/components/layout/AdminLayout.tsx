@@ -2,8 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale, Settings } from "lucide-react";
 import { useLogger } from '@/hooks/useLogger';
+import { useModeratorCheck } from '@/hooks/admin/useModeratorCheck';
+import { canManageUsers, canManageSystemRoles, canManageSettings } from '@/lib/admin/moderator-permissions';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -14,6 +17,7 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
   const { error } = useLogger({ context: 'AdminLayout' });
   const navigate = useNavigate();
   const { authState, signOut } = useAuth();
+  const { isAdmin, isModerator, canModerate, roles } = useModeratorCheck();
 
   const handleLogout = async () => {
     try {
@@ -27,17 +31,26 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
     }
   };
 
-  const navItems = [
-    { label: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { label: "Utenti", path: "/admin/users", icon: <Users className="w-4 h-4" /> },
-    { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" /> },
-    { label: "Spazi", path: "/admin/spaces", icon: <Building className="w-4 h-4" /> },
-    { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" /> },
-    { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" /> },
-    { label: "Supporto", path: "/admin/tickets", icon: <Headphones className="w-4 h-4" /> },
-    { label: "GDPR & Compliance", path: "/admin/gdpr", icon: <Scale className="w-4 h-4" /> },
-    { label: "Log", path: "/admin/logs", icon: <FileText className="w-4 h-4" /> },
+  // Define all nav items with role requirements
+  const allNavItems = [
+    { label: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "Utenti", path: "/admin/users", icon: <Users className="w-4 h-4" />, roles: ['admin'] },
+    { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" />, roles: ['admin'] },
+    { label: "Spazi", path: "/admin/spaces", icon: <Building className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "Supporto", path: "/admin/tickets", icon: <Headphones className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "GDPR & Compliance", path: "/admin/gdpr", icon: <Scale className="w-4 h-4" />, roles: ['admin'] },
+    { label: "Impostazioni", path: "/admin/settings", icon: <Settings className="w-4 h-4" />, roles: ['admin'] },
+    { label: "Log", path: "/admin/logs", icon: <FileText className="w-4 h-4" />, roles: ['admin', 'moderator'] },
   ];
+
+  // Filter nav items based on user's roles
+  const navItems = allNavItems.filter(item => {
+    if (isAdmin) return true; // Admins see everything
+    if (isModerator) return item.roles.includes('moderator');
+    return false;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -52,8 +65,20 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-600">
-                Admin: {authState.profile?.first_name} {authState.profile?.last_name}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  {authState.profile?.first_name} {authState.profile?.last_name}
+                </span>
+                {isAdmin && (
+                  <Badge variant="destructive" className="text-xs">
+                    Admin
+                  </Badge>
+                )}
+                {isModerator && !isAdmin && (
+                  <Badge variant="default" className="text-xs bg-yellow-500 hover:bg-yellow-600">
+                    Moderatore
+                  </Badge>
+                )}
               </div>
               
               <Button

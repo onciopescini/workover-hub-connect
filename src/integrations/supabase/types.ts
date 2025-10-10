@@ -2228,6 +2228,38 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_session_state: {
         Row: {
           expires_at: string
@@ -2460,6 +2492,10 @@ export type Database = {
         Args: { approver_id: string; tag_id: string }
         Returns: Json
       }
+      assign_moderator_role: {
+        Args: { assigned_by_admin?: string; target_user_id: string }
+        Returns: Json
+      }
       calculate_cancellation_fee: {
         Args: {
           booking_date_param: string
@@ -2476,6 +2512,10 @@ export type Database = {
       calculate_weighted_space_rating: {
         Args: { space_id_param: string }
         Returns: number
+      }
+      can_moderate_content: {
+        Args: { user_id: string }
+        Returns: boolean
       }
       cancel_booking: {
         Args: {
@@ -2767,7 +2807,18 @@ export type Database = {
           rating: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      is_moderator: {
         Args: { user_id: string }
         Returns: boolean
       }
@@ -2823,6 +2874,10 @@ export type Database = {
       }
       refresh_user_suggestions: {
         Args: { p_user_id: string }
+        Returns: Json
+      }
+      remove_moderator_role: {
+        Args: { removed_by_admin?: string; target_user_id: string }
         Returns: Json
       }
       request_data_deletion: {
@@ -2921,6 +2976,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       booking_status:
         | "pending"
         | "confirmed"
@@ -3068,6 +3124,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       booking_status: [
         "pending",
         "confirmed",
