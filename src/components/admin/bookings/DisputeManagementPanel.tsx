@@ -28,7 +28,7 @@ export function DisputeManagementPanel() {
         .from('bookings')
         .select(`
           *,
-        space:spaces(id, title),
+          space:spaces(id, title),
           coworker:profiles!bookings_user_id_fkey(id, first_name, last_name),
           payments(id, amount, payment_status)
         `)
@@ -37,7 +37,12 @@ export function DisputeManagementPanel() {
         .limit(50);
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform coworker from array to single object
+      return (data || []).map(booking => ({
+        ...booking,
+        coworker: Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker
+      }));
     }
   });
 

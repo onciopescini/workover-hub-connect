@@ -42,7 +42,8 @@ export function BookingsList() {
     return <Badge variant={variants[status] || "default"}>{status}</Badge>;
   };
 
-  const getBookingStatusBadge = (status: string) => {
+  const getBookingStatusBadge = (status: string | null) => {
+    if (!status) return <Badge variant="secondary">N/A</Badge>;
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       pending: "secondary",
       pending_approval: "secondary",
@@ -140,7 +141,7 @@ export function BookingsList() {
                       <TableCell>
                         {booking.coworker?.first_name} {booking.coworker?.last_name}
                       </TableCell>
-                      <TableCell>{booking.space.title}</TableCell>
+                      <TableCell>{booking.space?.title || 'N/A'}</TableCell>
                       <TableCell>{getBookingStatusBadge(booking.status)}</TableCell>
                       <TableCell>
                         {booking.payments?.[0] 

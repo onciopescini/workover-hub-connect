@@ -35,7 +35,11 @@ export function useAdminBookings({ search = "", statusFilter = "", paymentFilter
 
       if (error) throw error;
 
-      let filteredData = data || [];
+      // Transform coworker from array to single object
+      let filteredData = (data || []).map(booking => ({
+        ...booking,
+        coworker: Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker
+      }));
 
       // Apply search filter
       if (search) {

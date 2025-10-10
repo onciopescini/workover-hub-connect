@@ -32,7 +32,12 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Transform coworker from array to single object
+      return {
+        ...data,
+        coworker: Array.isArray(data.coworker) ? data.coworker[0] : data.coworker
+      };
     },
     enabled: open
   });
@@ -94,7 +99,7 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
                 <div>
                   <p className="text-sm text-muted-foreground">Creata il</p>
                   <p className="font-medium">
-                    {format(new Date(booking.created_at), "dd/MM/yyyy HH:mm", { locale: it })}
+                    {booking.created_at ? format(new Date(booking.created_at), "dd/MM/yyyy HH:mm", { locale: it }) : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -112,7 +117,7 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="font-medium">
-                  {booking.coworker.first_name} {booking.coworker.last_name}
+                  {booking.coworker?.first_name} {booking.coworker?.last_name}
                 </p>
               </CardContent>
             </Card>
