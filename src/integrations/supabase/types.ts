@@ -862,6 +862,50 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          subject: string
+          template_key: string
+          updated_at: string | null
+          updated_by: string | null
+          variables: Json | null
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject: string
+          template_key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject?: string
+          template_key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           event_id: string
@@ -1822,6 +1866,44 @@ export type Database = {
           },
         ]
       }
+      settings_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          setting_key: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          setting_key: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          setting_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settings_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_tags: {
         Row: {
           created_at: string | null
@@ -2060,6 +2142,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      system_settings: {
+        Row: {
+          category: Database["public"]["Enums"]["setting_category"]
+          created_at: string | null
+          description: string | null
+          id: string
+          is_sensitive: boolean | null
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["setting_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["setting_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_sensitive?: boolean | null
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_notifications: {
         Row: {
@@ -2804,6 +2930,13 @@ export type Database = {
       cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
+      setting_category:
+        | "general"
+        | "payment"
+        | "booking"
+        | "moderation"
+        | "gdpr"
+        | "integration"
       space_category: "home" | "outdoor" | "professional"
       stripe_onboarding_state: "none" | "pending" | "completed" | "restricted"
       user_role: "host" | "coworker" | "admin"
@@ -2948,6 +3081,14 @@ export const Constants = {
         "confirmation",
         "reminder",
         "cancellation_notice",
+      ],
+      setting_category: [
+        "general",
+        "payment",
+        "booking",
+        "moderation",
+        "gdpr",
+        "integration",
       ],
       space_category: ["home", "outdoor", "professional"],
       stripe_onboarding_state: ["none", "pending", "completed", "restricted"],
