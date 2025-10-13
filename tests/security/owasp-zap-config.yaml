@@ -1,0 +1,94 @@
+# OWASP ZAP Automation Framework Configuration
+# Run: zap.sh -cmd -autorun owasp-zap-config.yaml
+
+env:
+  contexts:
+    - name: "WorkoverHub Production"
+      urls:
+        - "https://c2ec9501-6094-4703-9d15-50c43aa5d48f.lovableproject.com"
+      includePaths:
+        - "https://c2ec9501-6094-4703-9d15-50c43aa5d48f.lovableproject.com/.*"
+      excludePaths:
+        - ".*\\.js$"
+        - ".*\\.css$"
+        - ".*\\.png$"
+        - ".*\\.jpg$"
+        - ".*\\.svg$"
+      authentication:
+        method: "json"
+        parameters:
+          loginUrl: "https://khtqwzvrxzsgfhsslwyz.supabase.co/auth/v1/token?grant_type=password"
+          loginRequestData: '{"email":"test@example.com","password":"Test123!"}'
+      sessionManagement:
+        method: "cookie"
+        parameters:
+          cookieName: "sb-access-token"
+
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: spider
+    parameters:
+      context: "WorkoverHub Production"
+      url: "https://c2ec9501-6094-4703-9d15-50c43aa5d48f.lovableproject.com"
+      maxDuration: 10
+      maxDepth: 5
+
+  - type: passiveScan-config
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope: true
+
+  - type: activeScan
+    parameters:
+      context: "WorkoverHub Production"
+      policy: "API-scan-minimal"
+      maxRuleDurationInMins: 5
+      maxScanDurationInMins: 30
+
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "tests/security/reports"
+      reportFile: "zap-scan-report"
+      reportTitle: "WorkoverHub Security Scan"
+      reportDescription: "OWASP ZAP automated security scan"
+
+# Alert Filters
+alertFilters:
+  - ruleId: 10021  # X-Content-Type-Options header missing
+    newRisk: "Info"
+  - ruleId: 10020  # X-Frame-Options header missing
+    newRisk: "Low"
+  - ruleId: 10096  # Timestamp Disclosure
+    newRisk: "Info"
+
+# Custom scan rules
+scanRules:
+  - id: 40012  # SQL Injection
+    strength: "INSANE"
+    alertThreshold: "LOW"
+  - id: 40014  # Cross-Site Scripting (Reflected)
+    strength: "INSANE"
+    alertThreshold: "LOW"
+  - id: 40016  # Cross-Site Scripting (Persistent)
+    strength: "INSANE"
+    alertThreshold: "LOW"
+  - id: 40018  # SQL Injection (PostgreSQL)
+    strength: "INSANE"
+    alertThreshold: "LOW"
+  - id: 90019  # Server-Side Code Injection
+    strength: "HIGH"
+    alertThreshold: "MEDIUM"
+  - id: 90020  # Remote OS Command Injection
+    strength: "HIGH"
+    alertThreshold: "LOW"
+  - id: 40009  # Parameter Tampering
+    strength: "MEDIUM"
+    alertThreshold: "MEDIUM"
+  - id: 10202  # Absence of Anti-CSRF Tokens
+    strength: "HIGH"
+    alertThreshold: "LOW"
