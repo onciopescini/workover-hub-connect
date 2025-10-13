@@ -66,6 +66,7 @@ const AdminReportsPage = lazy(() => import("@/pages/admin/AdminReportsPage"));
 const AdminTicketsPage = lazy(() => import("@/pages/admin/AdminTicketsPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
 const AdminLogsPage = lazy(() => import("@/pages/admin/AdminLogsPage"));
+const AdminMonitoringPage = lazy(() => import("@/pages/admin/AdminMonitoringPage"));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
 const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
@@ -419,6 +420,12 @@ export const AppRoutes = () => {
         <Route path="logs" element={
           <LazyWrapper>
             <AdminLogsPage />
+          </LazyWrapper>
+        } />
+        
+        <Route path="monitoring" element={
+          <LazyWrapper>
+            <AdminMonitoringPage />
           </LazyWrapper>
         } />
         
