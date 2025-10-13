@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +8,10 @@ import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag
 import { useLogger } from '@/hooks/useLogger';
 import { useModeratorCheck } from '@/hooks/admin/useModeratorCheck';
 import { canManageUsers, canManageSystemRoles, canManageSettings } from '@/lib/admin/moderator-permissions';
+import { queryKeys } from '@/lib/react-query-config';
+import { useAdminPrefetch } from '@/hooks/admin/useAdminPrefetch';
+import { useRealtimeAdminData } from '@/hooks/admin/useRealtimeAdminData';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -16,8 +21,61 @@ interface AdminLayoutProps {
 export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
   const { error } = useLogger({ context: 'AdminLayout' });
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { authState, signOut } = useAuth();
   const { isAdmin, isModerator, canModerate, roles } = useModeratorCheck();
+  const { prefetchUsers, prefetchSpaces, prefetchReports, prefetchSettings } = useAdminPrefetch();
+  const { pendingSpacesCount, openReportsCount } = useRealtimeAdminData();
+  
+  const userId = authState.user?.id;
+
+  // Strategic prefetching on admin panel entry
+  useEffect(() => {
+    if (!userId) return;
+
+    // Prefetch user roles (used in every admin check)
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.admin.userRoles(userId),
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+        if (error) throw error;
+        return data.map(r => r.role);
+      },
+      staleTime: 5 * 60 * 1000, // 5 minuti
+    });
+
+    // Prefetch pending spaces count (for badge)
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.admin.pendingSpacesCount(),
+      queryFn: async () => {
+        const { count, error } = await supabase
+          .from('spaces')
+          .select('*', { count: 'exact', head: true })
+          .eq('pending_approval', true)
+          .eq('published', false);
+        if (error) throw error;
+        return count || 0;
+      },
+      staleTime: 2 * 60 * 1000, // 2 minuti
+    });
+
+    // Prefetch open reports count
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.admin.openReportsCount(),
+      queryFn: async () => {
+        const { count, error } = await supabase
+          .from('reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'open');
+        if (error) throw error;
+        return count || 0;
+      },
+      staleTime: 2 * 60 * 1000,
+    });
+  }, [userId, queryClient]);
 
   const handleLogout = async () => {
     try {
@@ -109,20 +167,43 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
         {/* Navigation */}
         <div className="mb-6 bg-white p-2 rounded-lg border shadow-sm">
           <div className="flex flex-wrap gap-2">
-            {navItems.map((item) => (
-              <Button
-                key={item.path}
-                variant={currentPage === item.path ? "default" : "ghost"}
-                size="sm"
-                className={`flex items-center gap-2 ${
-                  currentPage === item.path ? "bg-indigo-600" : ""
-                }`}
-                onClick={() => navigate(item.path)}
-              >
-                {item.icon}
-                {item.label}
-              </Button>
-            ))}
+            {navItems.map((item) => {
+              // Setup hover prefetch based on route
+              const getPrefetchHandler = () => {
+                if (item.path === '/admin/users') return prefetchUsers;
+                if (item.path === '/admin/spaces') return prefetchSpaces;
+                if (item.path === '/admin/reports') return prefetchReports;
+                if (item.path === '/admin/settings') return prefetchSettings;
+                return undefined;
+              };
+
+              return (
+                <Button
+                  key={item.path}
+                  variant={currentPage === item.path ? "default" : "ghost"}
+                  size="sm"
+                  className={`flex items-center gap-2 ${
+                    currentPage === item.path ? "bg-indigo-600" : ""
+                  }`}
+                  onMouseEnter={getPrefetchHandler()}
+                  onClick={() => navigate(item.path)}
+                >
+                  {item.icon}
+                  {item.label}
+                  {/* Show real-time counts as badges */}
+                  {item.path === '/admin/spaces' && pendingSpacesCount !== undefined && pendingSpacesCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-xs">
+                      {pendingSpacesCount}
+                    </Badge>
+                  )}
+                  {item.path === '/admin/reports' && openReportsCount !== undefined && openReportsCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-xs">
+                      {openReportsCount}
+                    </Badge>
+                  )}
+                </Button>
+              );
+            })}
           </div>
         </div>
 

@@ -163,8 +163,17 @@ export const queryKeys = {
   admin: {
     all: ['admin'] as const,
     stats: () => [...queryKeys.admin.all, 'stats'] as const,
-    users: () => [...queryKeys.admin.all, 'users'] as const,
-    reports: () => [...queryKeys.admin.all, 'reports'] as const,
+    users: (filters?: Record<string, any>) => [...queryKeys.admin.all, 'users', filters] as const,
+    user: (userId: string) => [...queryKeys.admin.all, 'user', userId] as const,
+    userRoles: (userId: string) => [...queryKeys.admin.all, 'user-roles', userId] as const,
+    reports: (filters?: Record<string, any>) => [...queryKeys.admin.all, 'reports', filters] as const,
+    report: (reportId: string) => [...queryKeys.admin.all, 'report', reportId] as const,
+    spaces: (filters?: Record<string, any>) => [...queryKeys.admin.all, 'spaces', filters] as const,
+    space: (spaceId: string) => [...queryKeys.admin.all, 'space', spaceId] as const,
+    pendingSpacesCount: () => [...queryKeys.admin.all, 'pending-spaces-count'] as const,
+    openReportsCount: () => [...queryKeys.admin.all, 'open-reports-count'] as const,
+    activityLog: (limit?: number) => [...queryKeys.admin.all, 'activity-log', limit] as const,
+    settings: (category?: string) => [...queryKeys.admin.all, 'settings', category] as const,
   },
 } as const;
 

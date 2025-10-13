@@ -30,10 +30,39 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2020',
     minify: 'esbuild',
-    esbuild: {}, // drop disabled during investigation
+    esbuild: {},
     rollupOptions: {
       output: {
-        // manualChunks temporarily disabled for stability
+        // Manual chunks for better caching and code splitting
+        manualChunks: {
+          // Core React vendor chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          
+          // React Query (used across all pages)
+          'vendor-query': ['@tanstack/react-query'],
+          
+          // Form libraries (heavy, used in specific pages)
+          'vendor-form': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          
+          // UI library (Radix UI components)
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+          ],
+          
+          // Admin panel bundle (lazy loaded only for admin users)
+          'admin': [
+            './src/pages/AdminPanel',
+            './src/components/admin/AdminDashboard',
+            './src/hooks/admin/useAdminDashboard',
+            './src/hooks/admin/useAdminPrefetch',
+            './src/hooks/admin/useRealtimeAdminData',
+          ],
+        },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
