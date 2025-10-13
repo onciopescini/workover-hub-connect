@@ -15,7 +15,7 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       cspMeta.httpEquiv = 'Content-Security-Policy';
       cspMeta.content = `
         default-src 'self';
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+        script-src 'self' 'unsafe-inline'
           https://cdn.jsdelivr.net 
           https://unpkg.com 
           https://js.stripe.com 
