@@ -1,55 +1,57 @@
-# 🏗️ Architecture Overview
+# 🏗️ Architecture Documentation
 
-Documentazione completa dell'architettura WorkOver platform.
+## System Overview
 
----
+WorkOver is a full-stack web application built with React/Vite frontend and Supabase backend, designed to connect coworkers with workspace hosts.
 
-## 📚 Table of Contents
-
-1. [System Architecture](#system-architecture)
-2. [Frontend Architecture](#frontend-architecture)
-3. [Backend Architecture](#backend-architecture)
-4. [Data Flow](#data-flow)
-5. [Security Architecture](#security-architecture)
-6. [Performance Architecture](#performance-architecture)
-7. [Deployment Architecture](#deployment-architecture)
-
----
-
-## System Architecture
-
-### High-Level Overview
-
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        A[React + Vite]
+        B[React Router]
+        C[TanStack Query]
+        D[Tailwind CSS]
+    end
+    
+    subgraph "State Management"
+        E[React Query Cache]
+        F[Auth Context]
+        G[Local Storage]
+    end
+    
+    subgraph "Backend Layer"
+        H[Supabase PostgreSQL]
+        I[Edge Functions]
+        J[Storage Buckets]
+        K[Real-time Subscriptions]
+    end
+    
+    subgraph "External Services"
+        L[Stripe Payments]
+        M[Sentry Monitoring]
+        N[PostHog Analytics]
+        O[Mapbox Maps]
+    end
+    
+    A --> C
+    C --> E
+    A --> F
+    C --> H
+    A --> I
+    I --> H
+    I --> L
+    A --> M
+    A --> N
+    A --> O
+    
+    style A fill:#4F46E5
+    style H fill:#3ECF8E
+    style L fill:#635BFF
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        CLIENT LAYER                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   React UI   │  │  React Query │  │  Local Cache │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     SUPABASE BACKEND                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  PostgreSQL  │  │ Edge Functions│  │   Storage    │      │
-│  │     RLS      │  │  (Serverless) │  │   (Files)    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   EXTERNAL SERVICES                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │    Stripe    │  │    Sentry    │  │   Mapbox     │      │
-│  │  (Payments)  │  │  (Monitoring)│  │    (Maps)    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
-```
 
-### Technology Stack
+## Technology Stack
 
-#### Frontend
+### Frontend
 - **Framework**: React 18 + TypeScript
 - **Build Tool**: Vite (SWC compiler)
 - **State Management**: React Query (TanStack Query)
@@ -59,595 +61,301 @@ Documentazione completa dell'architettura WorkOver platform.
 - **Forms**: React Hook Form + Zod
 - **Animations**: Framer Motion
 
-#### Backend
+### Backend
 - **Database**: Supabase PostgreSQL
 - **Authentication**: Supabase Auth (JWT-based)
 - **Storage**: Supabase Storage (S3-compatible)
 - **Edge Functions**: Deno-based serverless functions
 - **Real-time**: Supabase Realtime (WebSockets)
 
-#### Infrastructure
+### Infrastructure
 - **Hosting**: Lovable Platform / Vercel
 - **CDN**: Cloudflare / Vercel Edge Network
 - **Monitoring**: Sentry + Custom SRE Dashboard
-- **Analytics**: PostHog + Plausible
+- **Analytics**: PostHog
+- **Payments**: Stripe Connect
+- **Maps**: Mapbox
 
----
-
-## Frontend Architecture
-
-### Component Architecture
+## Component Architecture
 
 ```
 src/
 ├── components/
-│   ├── ui/                    # Base UI components (atomic)
-│   │   ├── button.tsx
-│   │   ├── dialog.tsx
-│   │   └── ...
-│   ├── shared/                # Shared business components
-│   │   ├── ErrorFallback.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   └── ...
-│   ├── spaces/                # Feature: Spaces
-│   │   ├── SpaceCard.tsx
-│   │   ├── SpaceForm.tsx
-│   │   ├── SpaceMap.tsx
-│   │   └── ...
-│   ├── bookings/              # Feature: Bookings
-│   ├── messages/              # Feature: Messaging
-│   ├── admin/                 # Feature: Admin
-│   ├── auth/                  # Feature: Authentication
-│   ├── performance/           # Performance monitoring
-│   ├── error/                 # Error boundaries
-│   └── optimization/          # Lazy loading utilities
+│   ├── ui/                    # Base UI components (shadcn)
+│   ├── spaces/                # Space listing & details
+│   ├── bookings/              # Booking flow
+│   ├── messages/              # Messaging system
+│   ├── admin/                 # Admin dashboard
+│   ├── auth/                  # Authentication
+│   ├── security/              # Security components
+│   └── error/                 # Error boundaries
+├── hooks/
+│   ├── auth/                  # Auth hooks
+│   ├── queries/               # React Query hooks
+│   └── ...                    # Custom hooks
+├── lib/                       # Utilities
+├── pages/                     # Route components
+└── integrations/              # External services
 ```
 
-### State Management Strategy
+## State Management
 
-#### 1. Server State (React Query)
-```typescript
-// Gestione cache, prefetching, invalidation
-const { data, isLoading } = useQuery({
-  queryKey: queryKeys.spaces.detail(id),
-  queryFn: () => fetchSpace(id),
-  staleTime: 5 * 60 * 1000, // 5 minuti
-});
-```
+### Server State (React Query)
+- Handles API data fetching, caching, and synchronization
+- Automatic background refetching
+- Optimistic updates for mutations
+- Query invalidation strategies
 
-#### 2. UI State (React useState/useReducer)
-```typescript
-// Stato locale componente
-const [isOpen, setIsOpen] = useState(false);
-```
+### Client State (React Context)
+- `AuthContext`: User authentication state
+- `GDPRContext`: Cookie consent management
+- `ThemeContext`: Dark/light mode
 
-#### 3. Global State (Context API)
-```typescript
-// AuthContext, ThemeContext, GDPRContext
-const { user, isAuthenticated } = useAuth();
-```
-
-### Routing Architecture
-
-```typescript
-// Route-based code splitting
-<Routes>
-  {/* Eager loading per SEO */}
-  <Route path="/" element={<Index />} />
-  <Route path="/spaces" element={<PublicSpaces />} />
-  
-  {/* Lazy loading per performance */}
-  <Route path="/dashboard" element={<LazyDashboard />} />
-  <Route path="/profile" element={<LazyProfile />} />
-</Routes>
-```
-
-### Data Fetching Patterns
-
-#### Pattern 1: Simple Query
-```typescript
-const { data, error, isLoading } = useQuery({
-  queryKey: ['spaces'],
-  queryFn: fetchSpaces,
-});
-```
-
-#### Pattern 2: Dependent Query
-```typescript
-const { data: space } = useQuery({
-  queryKey: ['space', id],
-  queryFn: () => fetchSpace(id),
-});
-
-const { data: bookings } = useQuery({
-  queryKey: ['bookings', id],
-  queryFn: () => fetchBookings(id),
-  enabled: !!space, // Solo quando space è caricato
-});
-```
-
-#### Pattern 3: Parallel Queries
-```typescript
-const results = useQueries({
-  queries: [
-    { queryKey: ['spaces'], queryFn: fetchSpaces },
-    { queryKey: ['bookings'], queryFn: fetchBookings },
-    { queryKey: ['profile'], queryFn: fetchProfile },
-  ],
-});
-```
-
-#### Pattern 4: Infinite Scroll
-```typescript
-const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
-  queryKey: ['spaces'],
-  queryFn: ({ pageParam = 1 }) => fetchSpaces(pageParam),
-  getNextPageParam: (lastPage) => lastPage.nextPage,
-});
-```
-
----
-
-## Backend Architecture
-
-### Database Schema
-
-#### Core Tables
-1. **profiles** - User profiles (host, coworker, admin)
-2. **spaces** - Workspace listings
-3. **bookings** - Booking records
-4. **messages** - Direct messaging
-5. **payments** - Payment transactions
-6. **reviews** - Booking reviews
-
-#### Security Tables
-7. **admin_actions_log** - Admin activity tracking
-8. **data_access_logs** - GDPR compliance logs
-9. **rate_limits** - API rate limiting
-
-#### Feature Tables
-10. **events** - Networking events
-11. **connections** - User connections
-12. **favorites** - Saved spaces
-13. **notifications** - User notifications
-
-See [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) for complete schema.
-
-### Row Level Security (RLS)
-
-Ogni tabella ha policy RLS per garantire:
-- Utenti vedono solo i loro dati
-- Host vedono bookings dei loro spazi
-- Admin hanno accesso completo
-
-Esempio:
-```sql
--- Bookings: User e Host possono vedere
-CREATE POLICY "Coworkers and hosts can view bookings"
-ON bookings FOR SELECT
-USING (
-  auth.uid() = user_id OR
-  auth.uid() IN (
-    SELECT host_id FROM spaces WHERE id = bookings.space_id
-  )
-);
-```
-
-### Edge Functions
-
-```
-supabase/functions/
-├── stripe-webhook/        # Gestione webhook Stripe
-├── booking-confirm/       # Conferma booking automatica
-├── notification-send/     # Invio notifiche
-├── image-optimize/        # Ottimizzazione immagini
-└── shared/                # Utilities condivise
-    ├── cors.ts
-    └── error-handler.ts
-```
-
-#### Deployment
-```bash
-supabase functions deploy stripe-webhook --no-verify-jwt
-supabase functions deploy booking-confirm
-```
-
----
+### UI State (Local State)
+- Component-level state with `useState`
+- Form state with React Hook Form
 
 ## Data Flow
 
-### Booking Flow
-
+### Booking Flow Example
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant RQ as React Query
+    participant S as Supabase
+    participant ST as Stripe
+    participant EF as Edge Function
+    
+    U->>C: Select space & dates
+    C->>RQ: Check availability
+    RQ->>S: Query availability
+    S-->>RQ: Available slots
+    RQ-->>C: Show available times
+    
+    U->>C: Submit booking
+    C->>RQ: Create booking mutation
+    RQ->>S: Insert booking (pending)
+    S-->>RQ: Booking created
+    
+    C->>ST: Create checkout session
+    ST-->>C: Redirect to Stripe
+    
+    U->>ST: Complete payment
+    ST->>EF: Webhook: payment success
+    EF->>S: Update booking (confirmed)
+    EF-->>ST: Webhook processed
+    
+    EF->>S: Create payment record
+    EF->>S: Send notification
+    
+    RQ->>RQ: Invalidate queries
+    C->>U: Show confirmation
 ```
-1. User selects space and dates
-   └─> Client: SpaceDetail component
-
-2. Check availability
-   └─> React Query: prefetch availability
-   └─> Supabase: Query availability table
-
-3. Create booking (pending)
-   └─> Client: BookingForm mutation
-   └─> Supabase: Insert into bookings table
-   └─> RLS: Verify user is authenticated
-
-4. Process payment
-   └─> Stripe: Create checkout session
-   └─> Redirect to Stripe Checkout
-
-5. Payment webhook
-   └─> Edge Function: stripe-webhook
-   └─> Update booking status: "confirmed"
-   └─> Create payment record
-
-6. Notification
-   └─> Edge Function: notification-send
-   └─> Email to host and coworker
-
-7. Cache invalidation
-   └─> React Query: Invalidate bookings
-   └─> UI: Auto-refresh
-```
-
-### Authentication Flow
-
-```
-1. User submits credentials
-   └─> Supabase Auth: signIn()
-
-2. Supabase validates
-   └─> Return JWT token
-
-3. Client stores session
-   └─> localStorage (by Supabase)
-
-4. AuthProvider updates
-   └─> Context: setUser(userData)
-   └─> React Query: Prefetch user data
-
-5. Protected routes accessible
-   └─> AuthProtected wrapper
-   └─> Redirect if not authenticated
-```
-
----
 
 ## Security Architecture
 
-### Authentication Layers
+### Multi-Layer Security
 
-```
-┌─────────────────────────────────────────┐
-│     1. Supabase Auth (JWT)              │
-│        - Email/Password                  │
-│        - Google OAuth                    │
-│        - Magic Links                     │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│     2. Row Level Security (RLS)         │
-│        - auth.uid() checks              │
-│        - Role-based policies            │
-│        - Data isolation                 │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│     3. Application Logic                │
-│        - Role checks (host/coworker)    │
-│        - Business rules validation      │
-│        - Custom permissions             │
-└─────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[User Request] --> B[Frontend Validation]
+    B --> C[JWT Authentication]
+    C --> D[Row Level Security]
+    D --> E[Business Logic]
+    E --> F[Data Access]
+    
+    style B fill:#FEE
+    style C fill:#EFE
+    style D fill:#EEF
+    style E fill:#FFE
 ```
 
-### Security Measures
+### Security Layers
 
-#### Frontend
-1. **XSS Protection**
-   - DOMPurify per contenuti HTML
-   - Sanitizzazione input utente
+1. **Frontend**
+   - Input sanitization (DOMPurify)
    - CSP headers
+   - XSS protection
 
-2. **CSRF Protection**
-   - SameSite cookies
-   - CSRF tokens su form critici
+2. **Authentication**
+   - JWT tokens (Supabase Auth)
+   - Secure session management
+   - OAuth providers (Google)
 
-3. **Rate Limiting**
-   - Client-side throttling
-   - Debounced search inputs
+3. **Database (RLS)**
+   - User-level data isolation
+   - Role-based policies
+   - Automatic `auth.uid()` filtering
 
-#### Backend
-1. **Row Level Security**
-   - Ogni query filtra per auth.uid()
-   - Nessun accesso diretto senza autenticazione
-
-2. **Edge Function Security**
+4. **Edge Functions**
    - JWT verification
    - CORS configuration
-   - Input validation
+   - Rate limiting
 
-3. **API Rate Limiting**
-   - Rate limits table
-   - Exponential backoff
-   - IP-based throttling
-
-### GDPR Compliance
-
-```
-┌─────────────────────────────────────────┐
-│  Data Access Tracking                   │
-│  - Ogni accesso ai dati loggato         │
-│  - data_access_logs table               │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│  Data Export (Right to Access)          │
-│  - Edge Function: gdpr-export           │
-│  - JSON export di tutti i dati utente   │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│  Data Deletion (Right to be Forgotten)  │
-│  - Edge Function: gdpr-delete           │
-│  - Cancellazione definitiva dati        │
-│  - Anonimizzazione review/bookings      │
-└─────────────────────────────────────────┘
-```
-
----
+5. **Monitoring**
+   - Failed login tracking
+   - Security alerts
+   - Audit logging
 
 ## Performance Architecture
 
-### Optimization Layers
+### Optimization Strategies
 
-#### 1. Bundle Optimization
-```javascript
-// vite.config.ts
-rollupOptions: {
-  output: {
-    manualChunks: {
-      'react-vendor': ['react', 'react-dom'],
-      'router': ['react-router-dom'],
-      'react-query': ['@tanstack/react-query'],
-      'ui': ['@radix-ui/...'],
-    }
-  }
-}
+#### Code Splitting
+```typescript
+// Route-based splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const SpaceDetail = lazy(() => import('./pages/SpaceDetail'));
 ```
 
-#### 2. Code Splitting
-```typescript
-// Lazy loading componenti pesanti
-const SpaceMap = lazy(() => import('./SpaceMap'));
-const Analytics = lazy(() => import('./Analytics'));
-```
+#### Bundle Optimization
+- Vendor chunking (React, Router, Query)
+- Tree shaking
+- Minification
+- Compression (Brotli)
 
-#### 3. React Query Cache
+#### Caching Strategy
 ```typescript
-// Cache configuration
-queryClient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,      // 5 minuti
-      cacheTime: 10 * 60 * 1000,     // 10 minuti
-      refetchOnWindowFocus: false,
-    }
-  }
+      staleTime: 5 * 60 * 1000,  // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+    },
+  },
 });
 ```
 
-#### 4. Image Optimization
-```typescript
-// Lazy loading immagini
-const [imgRef, isVisible] = useIntersectionObserver();
+#### Image Optimization
+- Lazy loading
+- Responsive images
+- WebP format
+- Intersection Observer API
 
-<img
-  ref={imgRef}
-  src={isVisible ? actualSrc : placeholderSrc}
-  loading="lazy"
-/>
-```
+### Performance Metrics
 
-#### 5. Database Optimization
-- Indexes su foreign keys
-- Materialized views per analytics
-- Query caching con availability_cache
+- **LCP** (Largest Contentful Paint): < 2.5s
+- **FID** (First Input Delay): < 100ms
+- **CLS** (Cumulative Layout Shift): < 0.1
+- **TTI** (Time to Interactive): < 3.5s
 
-### Performance Monitoring
+## Database Architecture
 
-```typescript
-// Web Vitals tracking
-import { measureWebVitals } from '@/lib/performance';
+### Core Tables
+- `profiles`: User data
+- `spaces`: Workspace listings
+- `bookings`: Booking records
+- `messages`: Direct messaging
+- `payments`: Payment transactions
+- `reviews`: User reviews
 
-measureWebVitals({
-  onLCP: (metric) => sendToSentry('LCP', metric),
-  onFID: (metric) => sendToSentry('FID', metric),
-  onCLS: (metric) => sendToSentry('CLS', metric),
-});
-```
+### Security & Compliance
+- `admin_actions_log`: Admin activity
+- `data_access_logs`: GDPR compliance
+- `rate_limits`: API throttling
+- `failed_login_attempts`: Security monitoring
 
----
+### Features
+- `events`: Networking events
+- `connections`: User connections
+- `favorites`: Saved spaces
+- `notifications`: User alerts
+
+See [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) for complete details.
 
 ## Deployment Architecture
 
-### Production Environment
-
-```
-┌─────────────────────────────────────────┐
-│           Cloudflare CDN                 │
-│  - Static assets caching                │
-│  - DDoS protection                       │
-│  - Global edge network                   │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│         Vercel Edge Network              │
-│  - SSR (if needed)                       │
-│  - Edge functions                        │
-│  - Automatic HTTPS                       │
-└─────────────────────────────────────────┘
-              ▼
-┌─────────────────────────────────────────┐
-│         Supabase Cloud                   │
-│  - PostgreSQL (multi-region)            │
-│  - Edge Functions (Deno)                │
-│  - Object Storage                        │
-│  - Realtime WebSockets                   │
-└─────────────────────────────────────────┘
+```mermaid
+graph LR
+    A[GitHub] -->|Push| B[CI/CD]
+    B -->|Build| C[Vercel/Lovable]
+    C -->|Deploy| D[CDN Edge]
+    D --> E[Users]
+    
+    B -->|Migrate| F[Supabase]
+    B -->|Deploy| G[Edge Functions]
+    
+    style C fill:#000
+    style F fill:#3ECF8E
 ```
 
 ### CI/CD Pipeline
+1. **Build**: Vite production build
+2. **Test**: Jest + Playwright
+3. **Deploy**: Automatic deployment
+4. **Migrate**: Database migrations
+5. **Monitor**: Sentry error tracking
 
-```
-1. Push to main branch
-   └─> GitHub Actions triggered
+### Production Environment
+- **Frontend**: Vercel Edge Network
+- **Backend**: Supabase Cloud
+- **CDN**: Global edge caching
+- **SSL**: Automatic HTTPS
+- **Monitoring**: Sentry + PostHog
 
-2. Build & Test
-   ├─> npm run build
-   ├─> npm run test
-   └─> npm run type-check
+## Error Handling
 
-3. Deploy to staging
-   └─> Vercel preview deployment
-
-4. Run E2E tests
-   └─> Playwright tests
-
-5. Deploy to production
-   └─> Vercel production
-   └─> Supabase migrations
-```
-
-### Environment Strategy
-
-```
-Development:
-  - Local Supabase instance
-  - Test Stripe keys
-  - Debug mode enabled
-
-Staging:
-  - Supabase staging project
-  - Test Stripe keys
-  - Sentry reporting
-
-Production:
-  - Supabase production project
-  - Live Stripe keys
-  - Full monitoring
-  - Error tracking
-```
-
----
-
-## Scalability Considerations
-
-### Horizontal Scaling
-- Supabase auto-scales database connections
-- Edge Functions scale automatically
-- CDN handles traffic spikes
-
-### Database Scaling
-- Read replicas for analytics queries
-- Connection pooling (PgBouncer)
-- Partitioning for large tables (future)
-
-### Caching Strategy
-1. **Browser Cache** - Static assets (1 year)
-2. **CDN Cache** - HTML/CSS/JS (1 hour)
-3. **React Query Cache** - API responses (5-10 min)
-4. **Database Cache** - Availability queries (1 min)
-
----
-
-## Error Handling Architecture
-
-### Error Boundaries
-
+### Error Boundary System
 ```typescript
-<ErrorBoundary
-  fallback={<ErrorFallback />}
-  onError={(error, errorInfo) => {
-    Sentry.captureException(error, { errorInfo });
-  }}
->
+<ErrorBoundary fallback={<ErrorFallback />}>
   <App />
 </ErrorBoundary>
 ```
 
-### Error Recovery
+### Error Recovery Strategies
+1. **Retry with Exponential Backoff**
+2. **Fallback Values**
+3. **Circuit Breaker Pattern**
+4. **Resilient Cache**
+5. **Feature Toggles**
 
-1. **Network Errors** - Auto-retry con exponential backoff
-2. **Auth Errors** - Redirect a login
-3. **Validation Errors** - Form feedback
-4. **Critical Errors** - ErrorBoundary + Sentry report
+### Monitoring
+- **Sentry**: Error tracking & performance
+- **Session Replay**: Visual debugging
+- **Breadcrumbs**: User action tracking
+- **Custom Alerts**: Slack notifications
 
----
+## API Architecture
 
-## Monitoring Stack
-
+### Edge Functions
 ```
-┌─────────────────────────────────────────┐
-│            Sentry                        │
-│  - Error tracking                        │
-│  - Performance monitoring                │
-│  - User session replay                   │
-└─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────┐
-│         Custom SRE Dashboard             │
-│  - Real-time metrics                     │
-│  - API latency (P50, P95, P99)          │
-│  - Error rates                           │
-│  - Active sessions                       │
-└─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────┐
-│         Supabase Dashboard               │
-│  - Database performance                  │
-│  - Query analytics                       │
-│  - Connection pooling                    │
-└─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────┐
-│         Plausible Analytics              │
-│  - Privacy-first analytics               │
-│  - User behavior tracking                │
-│  - No cookies required                   │
-└─────────────────────────────────────────┘
+supabase/functions/
+├── create-payment-session/    # Stripe checkout
+├── stripe-webhook/             # Payment webhooks
+├── check-rate-limit/           # Rate limiting
+└── _shared/                    # Shared utilities
+    └── security-headers.ts     # Security headers
 ```
 
----
+### RESTful Patterns
+- `GET /spaces`: List spaces
+- `GET /spaces/:id`: Space details
+- `POST /bookings`: Create booking
+- `PUT /bookings/:id`: Update booking
+- `DELETE /bookings/:id`: Cancel booking
 
-## Best Practices
+### Rate Limiting
+- **Client**: 100 requests/minute
+- **Edge Functions**: 1000 requests/hour
+- **Database**: Row-level throttling
 
-### Code Organization
-✅ Feature-based folder structure  
-✅ Colocation (componenti + hooks + utils)  
-✅ Barrel exports (index.ts)  
-✅ TypeScript strict mode
+## Monitoring & Analytics
 
-### Performance
-✅ Code splitting per route  
-✅ Lazy loading componenti pesanti  
-✅ Memoization strategica  
-✅ Debouncing input  
-✅ Virtual scrolling liste lunghe
+### Real-Time Monitoring
+- **Error Rate**: Failed requests %
+- **Response Time**: API latency
+- **Active Users**: Current sessions
+- **Security Events**: Failed logins, rate limits
 
-### Security
-✅ RLS su tutte le tabelle  
-✅ Input validation (Zod)  
-✅ XSS protection (DOMPurify)  
-✅ HTTPS only  
-✅ Secure headers (CSP, HSTS)
-
-### Testing
-✅ Unit tests per utilities  
-✅ Component tests per UI  
-✅ Integration tests per flows  
-✅ E2E tests per critical paths  
-✅ >80% code coverage
+### Business Metrics
+- **Booking Conversion**: Searches → Bookings
+- **Revenue**: Daily/monthly earnings
+- **User Growth**: New registrations
+- **Space Utilization**: Occupancy rates
 
 ---
 
-**Ultimo aggiornamento**: 2025-01-XX  
-**Versione architettura**: 2.0
+**Last Updated**: 2025-01-13  
+**Version**: 2.0  
+**Maintainers**: Development Team
