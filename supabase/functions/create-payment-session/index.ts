@@ -4,12 +4,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-// CORS base
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { combineHeaders } from '../_shared/security-headers.ts';
 
 // Util pricing (duplicata qui per evitare import client-side)
 type PricingInput = {
@@ -65,7 +60,7 @@ function computePricing(i: PricingInput): PricingOutput {
 serve(async (req) => {
   // Preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: combineHeaders() });
   }
 
   try {
@@ -107,7 +102,7 @@ serve(async (req) => {
           pricePerDay: !(Number.isFinite(Number(pricePerDay)) && Number(pricePerDay) >= 0),
           host_stripe_account_id: !host_stripe_account_id,
         }
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 });
+      }), { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 400 });
     }
 
     // Input validation for pricing values
@@ -129,7 +124,7 @@ serve(async (req) => {
       !Number.isFinite(vatPct) || vatPct < 0 || vatPct > 1
     ) {
       return new Response(JSON.stringify({ error: 'Invalid pricing input' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: combineHeaders({ 'Content-Type': 'application/json' }),
         status: 400,
       });
     }
@@ -154,7 +149,7 @@ serve(async (req) => {
       console.error('[PAYMENT-SESSION] Booking not found:', bookingError);
       return new Response(
         JSON.stringify({ error: 'Prenotazione non trovata' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
       );
     }
 
@@ -167,7 +162,7 @@ serve(async (req) => {
           status: booking.status,
           space_title: booking.spaces?.title
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
       );
     }
 
@@ -179,7 +174,7 @@ serve(async (req) => {
           error: 'Questa prenotazione non è in uno stato valido per il pagamento.',
           status: booking.status
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
       );
     }
 
@@ -212,7 +207,7 @@ serve(async (req) => {
     if (!Number.isFinite(unitAmount) || unitAmount <= 0) {
       console.warn('Invalid unit amount calculated:', { baseAmount, clampedAmount, unitAmount, pricing });
       return new Response(JSON.stringify({ error: 'Invalid amount calculated' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: combineHeaders({ 'Content-Type': 'application/json' }),
         status: 400,
       });
     }
@@ -290,12 +285,12 @@ serve(async (req) => {
           unitAmount: unitAmount / 100,
         },
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 200 }
     );
   } catch (err: any) {
     console.error('Payment session creation error:', err);
     return new Response(JSON.stringify({ error: String(err?.message ?? err) }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: combineHeaders({ 'Content-Type': 'application/json' }),
       status: 500,
     });
   }

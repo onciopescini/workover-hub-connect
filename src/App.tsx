@@ -7,6 +7,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from "@/providers/AuthProvider";
 import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { CSPProvider } from "@/components/security/CSPProvider";
+import { SecurityHeadersProvider } from "@/components/security/SecurityHeadersProvider";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AppRoutes } from "@/components/routing/AppRoutes";
@@ -25,8 +26,9 @@ initSentry();
 
 function App() {
   return (
-    <HelmetProvider>
-      <CSPProvider>
+    <SecurityHeadersProvider>
+      <HelmetProvider>
+        <CSPProvider>
         <ProductionMonitoring>
           <QueryClientProvider client={optimizedQueryClient}>
             <TooltipProvider>
@@ -55,8 +57,9 @@ function App() {
             </TooltipProvider>
           </QueryClientProvider>
         </ProductionMonitoring>
-      </CSPProvider>
-    </HelmetProvider>
+        </CSPProvider>
+      </HelmetProvider>
+    </SecurityHeadersProvider>
   );
 }
 
