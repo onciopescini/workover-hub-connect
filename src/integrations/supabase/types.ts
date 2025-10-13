@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      active_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          last_activity: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          last_activity?: string | null
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_access_logs: {
         Row: {
           accessed_at: string | null
@@ -86,30 +119,42 @@ export type Database = {
           admin_id: string
           created_at: string | null
           description: string
+          geo_location: Json | null
           id: string
+          ip_address: unknown | null
           metadata: Json | null
+          session_id: string | null
           target_id: string
           target_type: string
+          user_agent: string | null
         }
         Insert: {
           action_type: string
           admin_id: string
           created_at?: string | null
           description: string
+          geo_location?: Json | null
           id?: string
+          ip_address?: unknown | null
           metadata?: Json | null
+          session_id?: string | null
           target_id: string
           target_type: string
+          user_agent?: string | null
         }
         Update: {
           action_type?: string
           admin_id?: string
           created_at?: string | null
           description?: string
+          geo_location?: Json | null
           id?: string
+          ip_address?: unknown | null
           metadata?: Json | null
+          session_id?: string | null
           target_id?: string
           target_type?: string
+          user_agent?: string | null
         }
         Relationships: []
       }
@@ -1064,6 +1109,36 @@ export type Database = {
           },
         ]
       }
+      failed_login_attempts: {
+        Row: {
+          attempt_time: string | null
+          email: string
+          id: string
+          ip_address: unknown | null
+          reason: string | null
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          attempt_time?: string | null
+          email: string
+          id?: string
+          ip_address?: unknown | null
+          reason?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          attempt_time?: string | null
+          email?: string
+          id?: string
+          ip_address?: unknown | null
+          reason?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -1777,6 +1852,42 @@ export type Database = {
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_log: {
+        Row: {
+          action: string
+          attempt_count: number | null
+          blocked_until: string | null
+          created_at: string | null
+          id: string
+          identifier: string
+          ip_address: unknown | null
+          user_agent: string | null
+          window_start: string | null
+        }
+        Insert: {
+          action: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          action?: string
+          attempt_count?: number | null
+          blocked_until?: string | null
+          created_at?: string | null
+          id?: string
+          identifier?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          window_start?: string | null
         }
         Relationships: []
       }
@@ -2551,6 +2662,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_expired_slots: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -2558,6 +2673,10 @@ export type Database = {
       cleanup_inactive_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      cleanup_old_audit_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_image_processing_job: {
         Args: {
@@ -2712,7 +2831,7 @@ export type Database = {
               start_date_param: string
             }
         Returns: {
-          booking_date: string
+          booking_id: string
           end_time: string
           start_time: string
           status: string
