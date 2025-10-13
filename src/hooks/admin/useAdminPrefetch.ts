@@ -44,8 +44,7 @@ export const useAdminPrefetch = () => {
             profiles:host_id (
               id,
               first_name,
-              last_name,
-              email
+              last_name
             )
           `)
           .eq('pending_approval', true)
