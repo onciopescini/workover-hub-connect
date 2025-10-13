@@ -3,7 +3,7 @@
  * 
  * Extracted from AdminActionsLog.tsx to separate concerns and improve maintainability
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminActionLog } from '@/types/admin';
 import { getAdminActionsLog } from '@/lib/admin-utils';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
@@ -36,7 +36,7 @@ export const useAdminActionsLog = (): UseAdminActionsLogReturn => {
   /**
    * Fetch admin actions logs from the API
    */
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = async () => {
     setIsLoading(true);
     
     const logsData = await handleAsyncError(async () => {
@@ -54,39 +54,37 @@ export const useAdminActionsLog = (): UseAdminActionsLogReturn => {
     }
     
     setIsLoading(false);
-  }, [handleAsyncError, info]);
-
-  /**
-   * Filter logs based on search term and filter criteria
-   */
-  const filterLogs = useCallback(() => {
-    const filtered = logs.filter(log => {
-      const matchesSearch = log.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesActionType = filterActionType === "all" || log.action_type === filterActionType;
-      const matchesTargetType = filterTargetType === "all" || log.target_type === filterTargetType;
-
-      return matchesSearch && matchesActionType && matchesTargetType;
-    });
-
-    setFilteredLogs(filtered);
-  }, [logs, searchTerm, filterActionType, filterTargetType]);
+  };
 
   /**
    * Public refresh function
    */
   const refreshLogs = useCallback(async () => {
     await fetchLogs();
-  }, [fetchLogs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Initial fetch
   useEffect(() => {
     fetchLogs();
-  }, [fetchLogs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Filter when dependencies change
+  // Calculate filtered logs using useMemo instead of useEffect
+  const computedFilteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      const matchesSearch = log.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesActionType = filterActionType === "all" || log.action_type === filterActionType;
+      const matchesTargetType = filterTargetType === "all" || log.target_type === filterTargetType;
+
+      return matchesSearch && matchesActionType && matchesTargetType;
+    });
+  }, [logs, searchTerm, filterActionType, filterTargetType]);
+
+  // Update filteredLogs when computed value changes
   useEffect(() => {
-    filterLogs();
-  }, [filterLogs]);
+    setFilteredLogs(computedFilteredLogs);
+  }, [computedFilteredLogs]);
 
   return {
     logs,

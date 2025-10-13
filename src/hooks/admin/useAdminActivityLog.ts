@@ -48,7 +48,8 @@ export const useAdminActivityLog = (limit: number = 50) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [limit, logError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [limit]);
 
   return { logs, isLoading };
 };
