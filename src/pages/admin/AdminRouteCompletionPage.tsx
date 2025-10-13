@@ -5,7 +5,7 @@ import RouteCompletion from "@/pages/RouteCompletion";
 
 const AdminRouteCompletionPage = () => {
   return (
-    <AdminLayout currentPage="/route-completion">
+    <AdminLayout>
       <RouteCompletion />
     </AdminLayout>
   );

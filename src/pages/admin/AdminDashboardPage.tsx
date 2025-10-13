@@ -5,7 +5,7 @@ import { LazyAdminDashboard } from "@/components/admin/lazy/LazyAdminDashboard";
 
 const AdminDashboardPage = () => {
   return (
-    <AdminLayout currentPage="/admin">
+    <AdminLayout>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
       <LazyAdminDashboard />
     </AdminLayout>

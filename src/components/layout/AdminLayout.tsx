@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,11 @@ import { useRealtimeAdminData } from '@/hooks/admin/useRealtimeAdminData';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
-  currentPage: string;
+  children?: React.ReactNode;
 }
 
-export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
+export const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const { pathname } = useLocation();
   const { error } = useLogger({ context: 'AdminLayout' });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -84,9 +84,17 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
       error('Error signing out admin user', logoutError as Error, { 
         operation: 'admin_logout',
         adminId: authState.profile?.id,
-        currentPage
+        currentPage: pathname
       });
     }
+  };
+
+  // Helper to check if a path is active
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return pathname === '/admin';
+    }
+    return pathname.startsWith(path);
   };
 
   // Define all nav items with role requirements
@@ -177,15 +185,17 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
                 return undefined;
               };
 
+              const prefetch = getPrefetchHandler();
+
               return (
                 <Button
                   key={item.path}
-                  variant={currentPage === item.path ? "default" : "ghost"}
+                  variant={isActive(item.path) ? "default" : "ghost"}
                   size="sm"
                   className={`flex items-center gap-2 ${
-                    currentPage === item.path ? "bg-indigo-600" : ""
+                    isActive(item.path) ? "bg-indigo-600" : ""
                   }`}
-                  onMouseEnter={getPrefetchHandler()}
+                  onMouseEnter={prefetch ? () => prefetch() : undefined}
                   onClick={() => navigate(item.path)}
                 >
                   {item.icon}
@@ -209,7 +219,7 @@ export const AdminLayout = ({ children, currentPage }: AdminLayoutProps) => {
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow p-6">
-          {children}
+          <Outlet />
         </div>
       </div>
     </div>

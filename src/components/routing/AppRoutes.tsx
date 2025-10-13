@@ -346,9 +346,7 @@ export const AppRoutes = () => {
       <Route path="/admin" element={
         <AuthProtected>
           <ModeratorRoute>
-            <AdminLayout currentPage="/admin">
-              <div />
-            </AdminLayout>
+            <AdminLayout />
           </ModeratorRoute>
         </AuthProtected>
       }>
