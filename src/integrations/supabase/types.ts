@@ -343,6 +343,7 @@ export type Database = {
         Row: {
           approval_deadline: string | null
           approval_reminder_sent: boolean | null
+          auto_cancel_scheduled_at: string | null
           booking_date: string
           cancellation_fee: number | null
           cancellation_reason: string | null
@@ -350,14 +351,23 @@ export type Database = {
           cancelled_by_host: boolean | null
           created_at: string | null
           end_time: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
           guests_count: number
+          host_issue_reported: boolean | null
           id: string
           is_urgent: boolean | null
+          issue_report_reason: string | null
           payment_deadline: string | null
           payment_reminder_sent: boolean | null
           payment_required: boolean | null
           payment_session_id: string | null
+          payout_completed_at: string | null
+          payout_scheduled_at: string | null
+          payout_stripe_transfer_id: string | null
           reservation_token: string | null
+          service_completed_at: string | null
+          service_completed_by: string | null
           slot_reserved_until: string | null
           space_id: string
           start_time: string | null
@@ -368,6 +378,7 @@ export type Database = {
         Insert: {
           approval_deadline?: string | null
           approval_reminder_sent?: boolean | null
+          auto_cancel_scheduled_at?: string | null
           booking_date: string
           cancellation_fee?: number | null
           cancellation_reason?: string | null
@@ -375,14 +386,23 @@ export type Database = {
           cancelled_by_host?: boolean | null
           created_at?: string | null
           end_time?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
           guests_count?: number
+          host_issue_reported?: boolean | null
           id?: string
           is_urgent?: boolean | null
+          issue_report_reason?: string | null
           payment_deadline?: string | null
           payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
           payment_session_id?: string | null
+          payout_completed_at?: string | null
+          payout_scheduled_at?: string | null
+          payout_stripe_transfer_id?: string | null
           reservation_token?: string | null
+          service_completed_at?: string | null
+          service_completed_by?: string | null
           slot_reserved_until?: string | null
           space_id: string
           start_time?: string | null
@@ -393,6 +413,7 @@ export type Database = {
         Update: {
           approval_deadline?: string | null
           approval_reminder_sent?: boolean | null
+          auto_cancel_scheduled_at?: string | null
           booking_date?: string
           cancellation_fee?: number | null
           cancellation_reason?: string | null
@@ -400,14 +421,23 @@ export type Database = {
           cancelled_by_host?: boolean | null
           created_at?: string | null
           end_time?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
           guests_count?: number
+          host_issue_reported?: boolean | null
           id?: string
           is_urgent?: boolean | null
+          issue_report_reason?: string | null
           payment_deadline?: string | null
           payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
           payment_session_id?: string | null
+          payout_completed_at?: string | null
+          payout_scheduled_at?: string | null
+          payout_stripe_transfer_id?: string | null
           reservation_token?: string | null
+          service_completed_at?: string | null
+          service_completed_by?: string | null
           slot_reserved_until?: string | null
           space_id?: string
           start_time?: string | null
@@ -3476,6 +3506,10 @@ export type Database = {
         | "cancelled"
         | "pending_approval"
         | "pending_payment"
+        | "served"
+        | "refunded"
+        | "disputed"
+        | "frozen"
       cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
@@ -3624,6 +3658,10 @@ export const Constants = {
         "cancelled",
         "pending_approval",
         "pending_payment",
+        "served",
+        "refunded",
+        "disputed",
+        "frozen",
       ],
       cancellation_policy: ["flexible", "moderate", "strict"],
       confirmation_type: ["instant", "host_approval"],

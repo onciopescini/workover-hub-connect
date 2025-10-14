@@ -28,7 +28,7 @@ export type BookingWithDetails = {
   booking_date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment' | 'served' | 'refunded' | 'disputed' | 'frozen';
   created_at: string;
   updated_at: string;
   cancelled_at?: string | null;
@@ -127,6 +127,10 @@ export const BOOKING_STATUS_COLORS = {
   pending_payment: "bg-blue-100 text-blue-800",
   confirmed: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
+  served: "bg-purple-100 text-purple-800",
+  refunded: "bg-cyan-100 text-cyan-800",
+  disputed: "bg-rose-100 text-rose-800",
+  frozen: "bg-gray-100 text-gray-800",
 };
 
 export const BOOKING_STATUS_LABELS = {
@@ -135,4 +139,8 @@ export const BOOKING_STATUS_LABELS = {
   pending_payment: "In attesa di pagamento",
   confirmed: "Confermata", 
   cancelled: "Annullata",
+  served: "Servizio completato",
+  refunded: "Rimborsata",
+  disputed: "Contestata",
+  frozen: "Sospesa",
 };
