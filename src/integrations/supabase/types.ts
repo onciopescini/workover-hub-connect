@@ -694,41 +694,70 @@ export type Database = {
       dac7_reports: {
         Row: {
           created_at: string | null
+          error_details: Json | null
+          generated_by: string | null
+          host_acknowledged_at: string | null
           host_id: string
           id: string
+          notification_sent_at: string | null
           report_file_url: string | null
           report_generated_at: string | null
+          report_json_data: Json | null
+          report_status: string | null
           reporting_threshold_met: boolean | null
           reporting_year: number
+          submission_reference: string | null
           total_income: number | null
           total_transactions: number | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          error_details?: Json | null
+          generated_by?: string | null
+          host_acknowledged_at?: string | null
           host_id: string
           id?: string
+          notification_sent_at?: string | null
           report_file_url?: string | null
           report_generated_at?: string | null
+          report_json_data?: Json | null
+          report_status?: string | null
           reporting_threshold_met?: boolean | null
           reporting_year: number
+          submission_reference?: string | null
           total_income?: number | null
           total_transactions?: number | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          error_details?: Json | null
+          generated_by?: string | null
+          host_acknowledged_at?: string | null
           host_id?: string
           id?: string
+          notification_sent_at?: string | null
           report_file_url?: string | null
           report_generated_at?: string | null
+          report_json_data?: Json | null
+          report_status?: string | null
           reporting_threshold_met?: boolean | null
           reporting_year?: number
+          submission_reference?: string | null
           total_income?: number | null
           total_transactions?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dac7_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       data_access_logs: {
         Row: {
@@ -2298,6 +2327,87 @@ export type Database = {
           },
         ]
       }
+      tax_details: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          bic_swift: string | null
+          city: string
+          country_code: string
+          created_at: string
+          created_by: string | null
+          entity_type: string
+          iban: string
+          id: string
+          is_primary: boolean
+          postal_code: string
+          profile_id: string
+          province: string | null
+          tax_id: string
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+          vat_number: string | null
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          bic_swift?: string | null
+          city: string
+          country_code: string
+          created_at?: string
+          created_by?: string | null
+          entity_type: string
+          iban: string
+          id?: string
+          is_primary?: boolean
+          postal_code: string
+          profile_id: string
+          province?: string | null
+          tax_id: string
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+          vat_number?: string | null
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          bic_swift?: string | null
+          city?: string
+          country_code?: string
+          created_at?: string
+          created_by?: string | null
+          entity_type?: string
+          iban?: string
+          id?: string
+          is_primary?: boolean
+          postal_code?: string
+          profile_id?: string
+          province?: string | null
+          tax_id?: string
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_details_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           content: string | null
@@ -2729,6 +2839,21 @@ export type Database = {
       get_host_metrics: {
         Args: { host_id_param: string }
         Returns: Json
+      }
+      get_hosts_for_dac7_report: {
+        Args: { host_ids_filter?: string[]; report_year: number }
+        Returns: {
+          email: string
+          first_name: string
+          host_id: string
+          last_name: string
+          monthly_data: Json
+          tax_details: Json
+          total_days: number
+          total_hours: number
+          total_income: number
+          total_transactions: number
+        }[]
       }
       get_or_create_conversation: {
         Args: {
