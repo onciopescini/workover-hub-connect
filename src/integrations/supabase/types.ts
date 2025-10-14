@@ -1404,6 +1404,112 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          base_amount: number
+          booking_id: string
+          conservazione_completed_at: string | null
+          conservazione_sostitutiva_url: string | null
+          created_at: string | null
+          discount_amount: number | null
+          discount_reason: string | null
+          due_date: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          issuer: string | null
+          payment_id: string
+          pdf_file_url: string | null
+          recipient_id: string
+          recipient_type: string
+          total_amount: number
+          updated_at: string | null
+          vat_amount: number
+          vat_rate: number | null
+          xml_delivery_status: string | null
+          xml_file_url: string | null
+          xml_rejection_reason: string | null
+          xml_sdi_id: string | null
+          xml_sent_at: string | null
+        }
+        Insert: {
+          base_amount: number
+          booking_id: string
+          conservazione_completed_at?: string | null
+          conservazione_sostitutiva_url?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          discount_reason?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          issuer?: string | null
+          payment_id: string
+          pdf_file_url?: string | null
+          recipient_id: string
+          recipient_type: string
+          total_amount: number
+          updated_at?: string | null
+          vat_amount: number
+          vat_rate?: number | null
+          xml_delivery_status?: string | null
+          xml_file_url?: string | null
+          xml_rejection_reason?: string | null
+          xml_sdi_id?: string | null
+          xml_sent_at?: string | null
+        }
+        Update: {
+          base_amount?: number
+          booking_id?: string
+          conservazione_completed_at?: string | null
+          conservazione_sostitutiva_url?: string | null
+          created_at?: string | null
+          discount_amount?: number | null
+          discount_reason?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          issuer?: string | null
+          payment_id?: string
+          pdf_file_url?: string | null
+          recipient_id?: string
+          recipient_type?: string
+          total_amount?: number
+          updated_at?: string | null
+          vat_amount?: number
+          vat_rate?: number | null
+          xml_delivery_status?: string | null
+          xml_file_url?: string | null
+          xml_rejection_reason?: string | null
+          xml_sdi_id?: string | null
+          xml_sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           content: string
@@ -1517,6 +1623,86 @@ export type Database = {
           },
         ]
       }
+      non_fiscal_receipts: {
+        Row: {
+          booking_id: string
+          canone_amount: number
+          coworker_id: string
+          created_at: string | null
+          disclaimer: string | null
+          discount_amount: number | null
+          host_id: string
+          id: string
+          includes_coworker_cf: boolean | null
+          payment_id: string
+          pdf_url: string
+          receipt_date: string
+          receipt_number: string
+          total_amount: number
+        }
+        Insert: {
+          booking_id: string
+          canone_amount: number
+          coworker_id: string
+          created_at?: string | null
+          disclaimer?: string | null
+          discount_amount?: number | null
+          host_id: string
+          id?: string
+          includes_coworker_cf?: boolean | null
+          payment_id: string
+          pdf_url: string
+          receipt_date: string
+          receipt_number: string
+          total_amount: number
+        }
+        Update: {
+          booking_id?: string
+          canone_amount?: number
+          coworker_id?: string
+          created_at?: string | null
+          disclaimer?: string | null
+          discount_amount?: number | null
+          host_id?: string
+          id?: string
+          includes_coworker_cf?: boolean | null
+          payment_id?: string
+          pdf_url?: string
+          receipt_date?: string
+          receipt_number?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "non_fiscal_receipts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1549,8 +1735,15 @@ export type Database = {
           amount: number
           booking_id: string
           created_at: string | null
+          credit_note_deadline: string | null
+          credit_note_issued_by_host: boolean | null
+          credit_note_required: boolean | null
+          credit_note_xml_url: string | null
           currency: string
           host_amount: number | null
+          host_invoice_deadline: string | null
+          host_invoice_reminder_sent: boolean | null
+          host_invoice_required: boolean | null
           id: string
           method: string | null
           payment_status: string
@@ -1559,13 +1752,23 @@ export type Database = {
           stripe_session_id: string | null
           stripe_transfer_id: string | null
           user_id: string
+          workover_invoice_id: string | null
+          workover_invoice_pdf_url: string | null
+          workover_invoice_xml_url: string | null
         }
         Insert: {
           amount: number
           booking_id: string
           created_at?: string | null
+          credit_note_deadline?: string | null
+          credit_note_issued_by_host?: boolean | null
+          credit_note_required?: boolean | null
+          credit_note_xml_url?: string | null
           currency?: string
           host_amount?: number | null
+          host_invoice_deadline?: string | null
+          host_invoice_reminder_sent?: boolean | null
+          host_invoice_required?: boolean | null
           id?: string
           method?: string | null
           payment_status?: string
@@ -1574,13 +1777,23 @@ export type Database = {
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id: string
+          workover_invoice_id?: string | null
+          workover_invoice_pdf_url?: string | null
+          workover_invoice_xml_url?: string | null
         }
         Update: {
           amount?: number
           booking_id?: string
           created_at?: string | null
+          credit_note_deadline?: string | null
+          credit_note_issued_by_host?: boolean | null
+          credit_note_required?: boolean | null
+          credit_note_xml_url?: string | null
           currency?: string
           host_amount?: number | null
+          host_invoice_deadline?: string | null
+          host_invoice_reminder_sent?: boolean | null
+          host_invoice_required?: boolean | null
           id?: string
           method?: string | null
           payment_status?: string
@@ -1589,6 +1802,9 @@ export type Database = {
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id?: string
+          workover_invoice_id?: string | null
+          workover_invoice_pdf_url?: string | null
+          workover_invoice_xml_url?: string | null
         }
         Relationships: [
           {
@@ -1730,10 +1946,15 @@ export type Database = {
           collaboration_types: string[] | null
           competencies: string[] | null
           created_at: string
+          dac7_data_collected: boolean | null
+          dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
+          email_verification_blocked_actions: string[] | null
           facebook_url: string | null
           first_name: string
+          fiscal_regime: string | null
           github_url: string | null
+          iban: string | null
           id: string
           industries: string[] | null
           instagram_url: string | null
@@ -1741,13 +1962,18 @@ export type Database = {
           is_suspended: boolean | null
           job_title: string | null
           job_type: string | null
+          kyc_documents_verified: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_verified_at: string | null
           last_login_at: string | null
           last_name: string
+          legal_address: string | null
           linkedin_url: string | null
           location: string | null
           networking_enabled: boolean | null
           nickname: string | null
           onboarding_completed: boolean | null
+          pec_email: string | null
           phone: string | null
           preferred_work_mode: string | null
           profession: string | null
@@ -1755,6 +1981,7 @@ export type Database = {
           restriction_reason: string | null
           return_url: string | null
           role: Database["public"]["Enums"]["user_role"]
+          sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
           stripe_account_id: string | null
@@ -1784,10 +2011,15 @@ export type Database = {
           collaboration_types?: string[] | null
           competencies?: string[] | null
           created_at?: string
+          dac7_data_collected?: boolean | null
+          dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
+          email_verification_blocked_actions?: string[] | null
           facebook_url?: string | null
           first_name: string
+          fiscal_regime?: string | null
           github_url?: string | null
+          iban?: string | null
           id: string
           industries?: string[] | null
           instagram_url?: string | null
@@ -1795,13 +2027,18 @@ export type Database = {
           is_suspended?: boolean | null
           job_title?: string | null
           job_type?: string | null
+          kyc_documents_verified?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_verified_at?: string | null
           last_login_at?: string | null
           last_name: string
+          legal_address?: string | null
           linkedin_url?: string | null
           location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
+          pec_email?: string | null
           phone?: string | null
           preferred_work_mode?: string | null
           profession?: string | null
@@ -1809,6 +2046,7 @@ export type Database = {
           restriction_reason?: string | null
           return_url?: string | null
           role: Database["public"]["Enums"]["user_role"]
+          sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
@@ -1838,10 +2076,15 @@ export type Database = {
           collaboration_types?: string[] | null
           competencies?: string[] | null
           created_at?: string
+          dac7_data_collected?: boolean | null
+          dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
+          email_verification_blocked_actions?: string[] | null
           facebook_url?: string | null
           first_name?: string
+          fiscal_regime?: string | null
           github_url?: string | null
+          iban?: string | null
           id?: string
           industries?: string[] | null
           instagram_url?: string | null
@@ -1849,13 +2092,18 @@ export type Database = {
           is_suspended?: boolean | null
           job_title?: string | null
           job_type?: string | null
+          kyc_documents_verified?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_verified_at?: string | null
           last_login_at?: string | null
           last_name?: string
+          legal_address?: string | null
           linkedin_url?: string | null
           location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
           onboarding_completed?: boolean | null
+          pec_email?: string | null
           phone?: string | null
           preferred_work_mode?: string | null
           profession?: string | null
@@ -1863,6 +2111,7 @@ export type Database = {
           restriction_reason?: string | null
           return_url?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
           stripe_account_id?: string | null
