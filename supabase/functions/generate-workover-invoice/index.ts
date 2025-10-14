@@ -139,7 +139,7 @@ serve(async (req) => {
 
     console.log('[WORKOVER-INVOICE] Amounts:', { baseAmount, vatAmount, totalAmount });
 
-    // 7. Generate XML (MOCK for now)
+    // 7. Generate XML (MOCK for now - replace with real provider API)
     const xmlContent = generateMockXML({
       invoiceNumber,
       invoiceDate: new Date().toISOString().split('T')[0],
@@ -153,7 +153,7 @@ serve(async (req) => {
     // 8. Upload XML to storage
     const xmlFileName = `${booking_id}/${invoiceNumber}.xml`;
     const { error: uploadXmlError } = await supabaseAdmin.storage
-      .from('invoices')
+      .from('invoices-xml')
       .upload(xmlFileName, xmlContent, {
         contentType: 'application/xml',
         upsert: true
@@ -164,10 +164,10 @@ serve(async (req) => {
     }
 
     const { data: { publicUrl: xmlUrl } } = supabaseAdmin.storage
-      .from('invoices')
+      .from('invoices-xml')
       .getPublicUrl(xmlFileName);
 
-    // 9. Generate PDF (simplified mock)
+    // 9. Generate PDF (simplified mock - replace with real provider)
     const pdfContent = generateMockPDF({
       invoiceNumber,
       recipient: host,
@@ -178,7 +178,7 @@ serve(async (req) => {
 
     const pdfFileName = `${booking_id}/${invoiceNumber}.pdf`;
     const { error: uploadPdfError } = await supabaseAdmin.storage
-      .from('invoices')
+      .from('invoices-pdf')
       .upload(pdfFileName, pdfContent, {
         contentType: 'application/pdf',
         upsert: true
@@ -189,7 +189,7 @@ serve(async (req) => {
     }
 
     const { data: { publicUrl: pdfUrl } } = supabaseAdmin.storage
-      .from('invoices')
+      .from('invoices-pdf')
       .getPublicUrl(pdfFileName);
 
     // 10. Insert invoice record

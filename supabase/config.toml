@@ -59,3 +59,12 @@ verify_jwt = false
 
 [functions.booking-reminders]
 verify_jwt = false
+
+[functions.generate-workover-invoice]
+verify_jwt = false
+
+[functions.notify-host-invoice-required]
+verify_jwt = false
+
+[functions.generate-non-fiscal-receipt]
+verify_jwt = false

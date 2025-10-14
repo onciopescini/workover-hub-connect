@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,24 +12,36 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     const { booking_id } = await req.json();
+
     console.log('[NON-FISCAL-RECEIPT] Processing booking:', booking_id);
 
-    // 1. Fetch booking + space + host
-    const { data: booking, error: bookingError } = await supabaseAdmin
+    // Fetch booking with space and host details
+    const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
-        *,
-        spaces(
+        id,
+        booking_date,
+        start_time,
+        end_time,
+        user_id,
+        status,
+        spaces:space_id (
+          id,
           title,
           host_id,
-          profiles!spaces_host_id_fkey(
+          profiles:host_id (
             id,
             first_name,
             last_name,
@@ -45,27 +57,24 @@ serve(async (req) => {
       throw new Error(`Booking not found: ${bookingError?.message}`);
     }
 
-    // Only process served bookings
-    if (booking.status !== 'served') {
-      return new Response(
-        JSON.stringify({ error: 'Booking not served yet' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
+    const host = booking.spaces.profiles;
 
-    const host = (booking as any).spaces.profiles;
-    
-    // Only generate for private hosts (no P.IVA)
-    if (host.fiscal_regime !== 'privato' && host.fiscal_regime !== null) {
+    // Check if host is private (no P.IVA)
+    if (host.fiscal_regime !== 'privato') {
       console.log('[NON-FISCAL-RECEIPT] Host has P.IVA, skipping');
       return new Response(
-        JSON.stringify({ message: 'Host has P.IVA, invoice required instead' }),
+        JSON.stringify({ success: true, message: 'Host has P.IVA - fiscal invoice required instead' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // 2. Fetch payment
-    const { data: payment, error: paymentError } = await supabaseAdmin
+    // Check if booking is served
+    if (booking.status !== 'served') {
+      throw new Error('Booking must be in served status');
+    }
+
+    // Fetch payment details
+    const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('booking_id', booking_id)
@@ -76,127 +85,138 @@ serve(async (req) => {
       throw new Error(`Payment not found: ${paymentError?.message}`);
     }
 
-    // 3. Check if receipt already exists
-    const { data: existingReceipt } = await supabaseAdmin
+    // Check if receipt already exists
+    const { data: existingReceipt } = await supabaseClient
       .from('non_fiscal_receipts')
       .select('id')
       .eq('booking_id', booking_id)
-      .maybeSingle();
+      .single();
 
     if (existingReceipt) {
       console.log('[NON-FISCAL-RECEIPT] Receipt already exists');
       return new Response(
-        JSON.stringify({ message: 'Receipt already exists', receipt_id: existingReceipt.id }),
+        JSON.stringify({ success: true, message: 'Receipt already generated' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // 4. Fetch coworker data
-    const { data: coworker } = await supabaseAdmin
+    // Fetch coworker details
+    const { data: coworker, error: coworkerError } = await supabaseClient
       .from('profiles')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, email')
       .eq('id', booking.user_id)
       .single();
 
-    // 5. Generate receipt number (host-specific sequence)
-    const { count } = await supabaseAdmin
+    if (coworkerError || !coworker) {
+      throw new Error(`Coworker not found: ${coworkerError?.message}`);
+    }
+
+    // Generate unique receipt number (host-based sequence)
+    const { count } = await supabaseClient
       .from('non_fiscal_receipts')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('host_id', host.id);
 
-    const receiptNumber = `${host.id.substring(0, 8).toUpperCase()}-${String((count || 0) + 1).padStart(4, '0')}`;
-    const receiptDate = new Date().toISOString().split('T')[0];
+    const receiptNumber = `RIC-${host.id.substring(0, 8)}-${String((count || 0) + 1).padStart(4, '0')}`;
 
-    // 6. Generate PDF
+    // Generate PDF receipt content
     const pdfContent = generateReceiptPDF({
-      receiptNumber,
-      receiptDate,
-      host,
-      coworker,
       booking,
       payment,
-      space: (booking as any).spaces
+      host,
+      coworker,
+      space: booking.spaces,
+      receiptNumber
     });
 
-    // 7. Upload PDF to storage
-    const pdfFileName = `${booking_id}/${receiptNumber}.pdf`;
-    const { error: uploadError } = await supabaseAdmin.storage
+    // Upload PDF to storage
+    const fileName = `${host.id}/${coworker.id}/${booking_id}_receipt.pdf`;
+    const { error: uploadError } = await supabaseClient.storage
       .from('non-fiscal-receipts')
-      .upload(pdfFileName, pdfContent, {
+      .upload(fileName, new Blob([pdfContent], { type: 'application/pdf' }), {
         contentType: 'application/pdf',
         upsert: true
       });
 
     if (uploadError) {
-      throw new Error(`PDF upload failed: ${uploadError.message}`);
+      throw new Error(`Failed to upload PDF: ${uploadError.message}`);
     }
 
-    const { data: { publicUrl: pdfUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabaseClient.storage
       .from('non-fiscal-receipts')
-      .getPublicUrl(pdfFileName);
+      .getPublicUrl(fileName);
 
-    // 8. Insert receipt record
-    const { data: receipt, error: receiptError } = await supabaseAdmin
+    // Insert receipt record
+    const { data: receipt, error: insertError } = await supabaseClient
       .from('non_fiscal_receipts')
       .insert({
-        booking_id: booking_id,
+        booking_id: booking.id,
         payment_id: payment.id,
         host_id: host.id,
-        coworker_id: booking.user_id,
+        coworker_id: coworker.id,
         receipt_number: receiptNumber,
-        receipt_date: receiptDate,
+        receipt_date: new Date().toISOString().split('T')[0],
         canone_amount: payment.host_amount,
         discount_amount: 0,
         total_amount: payment.host_amount,
-        includes_coworker_cf: false, // Privacy default
-        pdf_url: pdfUrl
+        includes_coworker_cf: false,
+        pdf_url: publicUrl
       })
       .select()
       .single();
 
-    if (receiptError) {
-      throw new Error(`Failed to create receipt: ${receiptError.message}`);
+    if (insertError) {
+      throw new Error(`Failed to insert receipt: ${insertError.message}`);
     }
 
-    // 9. Send notification to host
-    await supabaseAdmin
-      .from('user_notifications')
-      .insert({
+    // Create notifications for both host and coworker
+    const notifications = [
+      {
         user_id: host.id,
-        type: 'receipt',
-        title: 'Ricevuta Non Fiscale Generata',
-        content: `La ricevuta ${receiptNumber} per la prenotazione del ${booking.booking_date} è disponibile.`,
+        type: 'receipt_generated',
+        title: 'Ricevuta generata',
+        content: `Ricevuta non fiscale generata per la prenotazione del ${new Date(booking.booking_date).toLocaleDateString('it-IT')}.`,
         metadata: {
+          booking_id: booking.id,
           receipt_id: receipt.id,
           receipt_number: receiptNumber,
-          booking_id: booking_id,
-          pdf_url: pdfUrl
+          pdf_url: publicUrl
         }
-      });
+      },
+      {
+        user_id: coworker.id,
+        type: 'receipt_available',
+        title: 'Ricevuta disponibile',
+        content: `La ricevuta per la prenotazione del ${new Date(booking.booking_date).toLocaleDateString('it-IT')} è disponibile per il download.`,
+        metadata: {
+          booking_id: booking.id,
+          receipt_id: receipt.id,
+          receipt_number: receiptNumber,
+          pdf_url: publicUrl
+        }
+      }
+    ];
 
-    // 10. Optional: Notify coworker
-    await supabaseAdmin
+    const { error: notifError } = await supabaseClient
       .from('user_notifications')
-      .insert({
-        user_id: booking.user_id,
-        type: 'receipt',
-        title: 'Ricevuta Disponibile',
-        content: `La ricevuta per la tua prenotazione presso "${(booking as any).spaces.title}" è disponibile.`,
-        metadata: {
-          receipt_id: receipt.id,
-          receipt_number: receiptNumber,
-          booking_id: booking_id
-        }
-      });
+      .insert(notifications);
 
-    console.log('[NON-FISCAL-RECEIPT] Receipt created successfully:', receiptNumber);
+    if (notifError) {
+      console.error('[NON-FISCAL-RECEIPT] Notification error:', notifError);
+    }
+
+    console.log('[NON-FISCAL-RECEIPT] Success:', {
+      booking_id,
+      receipt_id: receipt.id,
+      receipt_number: receiptNumber
+    });
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         receipt_id: receipt.id,
         receipt_number: receiptNumber,
-        pdf_url: pdfUrl
+        pdf_url: publicUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
@@ -211,57 +231,48 @@ serve(async (req) => {
 });
 
 function generateReceiptPDF(data: any): string {
-  const { receiptNumber, receiptDate, host, coworker, booking, payment, space } = data;
+  const { booking, payment, host, coworker, space, receiptNumber } = data;
   
   return `
-╔════════════════════════════════════════════════════════╗
-║         RICEVUTA NON FISCALE - WORKOVER               ║
-╚════════════════════════════════════════════════════════╝
+=================================================
+RICEVUTA NON FISCALE
+=================================================
 
-Numero: ${receiptNumber}
-Data: ${new Date(receiptDate).toLocaleDateString('it-IT')}
+Numero Ricevuta: ${receiptNumber}
+Data Emissione: ${new Date().toLocaleDateString('it-IT')}
 
-────────────────────────────────────────────────────────
-
-EMITTENTE
+EMITTENTE:
 ${host.first_name} ${host.last_name}
 Email: ${host.email}
 
-RICEVENTE
-${coworker?.first_name || ''} ${coworker?.last_name || ''}
+DESTINATARIO:
+${coworker.first_name} ${coworker.last_name}
+Email: ${coworker.email}
 
-────────────────────────────────────────────────────────
-
-SERVIZIO PRESTATO
-Utilizzo spazio coworking: "${space.title}"
-
-Data Servizio: ${new Date(booking.booking_date).toLocaleDateString('it-IT')}
+DETTAGLI PRENOTAZIONE:
+Spazio: ${space.title}
+Data: ${new Date(booking.booking_date).toLocaleDateString('it-IT')}
 Orario: ${booking.start_time} - ${booking.end_time}
+Booking ID: ${booking.id}
 
-────────────────────────────────────────────────────────
-
-IMPORTO
-Canone: €${payment.host_amount.toFixed(2)}
-
+IMPORTO:
+Canone locazione: €${payment.host_amount.toFixed(2)}
+Sconto applicato: €0.00
+---------------------------------
 TOTALE: €${payment.host_amount.toFixed(2)}
 
-────────────────────────────────────────────────────────
+MODALITÀ PAGAMENTO: Pagamento anticipato tramite piattaforma WorkOver
 
-Riferimento Prenotazione: ${booking.id}
-Riferimento Piattaforma: WorkOver
+=================================================
+DISCLAIMER LEGALE
+=================================================
+Documento non valido ai fini fiscali, emesso 
+esclusivamente per tracciabilità della transazione.
+Non costituisce fattura né documento fiscalmente 
+rilevante ai sensi del DPR 633/72.
+=================================================
 
-────────────────────────────────────────────────────────
-
-⚠️  DISCLAIMER LEGALE
-Documento non valido ai fini fiscali, emesso esclusivamente 
-per tracciabilità della transazione.
-
-Questa ricevuta non costituisce fattura o documento fiscale 
-ai sensi del DPR 633/72 e successive modificazioni.
-
-────────────────────────────────────────────────────────
-
-Generato automaticamente da WorkOver Platform
-${new Date().toLocaleString('it-IT')}
-`;
+WorkOver Platform - workover.app
+Generato automaticamente il ${new Date().toLocaleDateString('it-IT')} ${new Date().toLocaleTimeString('it-IT')}
+  `.trim();
 }

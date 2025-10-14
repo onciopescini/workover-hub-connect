@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,31 +12,45 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { persistSession: false } }
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     const { booking_id } = await req.json();
-    console.log('[HOST-INVOICE-NOTIFY] Processing booking:', booking_id);
 
-    // 1. Fetch booking + space + host
-    const { data: booking, error: bookingError } = await supabaseAdmin
+    console.log('[NOTIFY-HOST-INVOICE] Processing booking:', booking_id);
+
+    // Fetch booking with space and host details
+    const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
-        *,
-        spaces(
+        id,
+        booking_date,
+        start_time,
+        end_time,
+        user_id,
+        status,
+        spaces:space_id (
+          id,
           title,
           host_id,
-          profiles!spaces_host_id_fkey(
+          profiles:host_id (
             id,
             first_name,
             last_name,
             email,
             fiscal_regime,
             pec_email,
-            sdi_code
+            sdi_code,
+            tax_id,
+            legal_address
           )
         )
       `)
@@ -47,27 +61,24 @@ serve(async (req) => {
       throw new Error(`Booking not found: ${bookingError?.message}`);
     }
 
-    // Only process served bookings
-    if (booking.status !== 'served') {
-      return new Response(
-        JSON.stringify({ error: 'Booking not served yet' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    const host = (booking as any).spaces.profiles;
+    const host = booking.spaces.profiles;
     
-    // Only notify hosts with P.IVA (forfettario or ordinario)
+    // Check if host requires invoice
     if (!host.fiscal_regime || host.fiscal_regime === 'privato') {
-      console.log('[HOST-INVOICE-NOTIFY] Host is not P.IVA, skipping');
+      console.log('[NOTIFY-HOST-INVOICE] Host is privato, skipping');
       return new Response(
-        JSON.stringify({ message: 'Host does not require invoice' }),
+        JSON.stringify({ success: true, message: 'Host privato - no invoice required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // 2. Fetch payment
-    const { data: payment, error: paymentError } = await supabaseAdmin
+    // Check if booking is served
+    if (booking.status !== 'served') {
+      throw new Error('Booking must be in served status');
+    }
+
+    // Fetch payment details
+    const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
       .select('*')
       .eq('booking_id', booking_id)
@@ -80,56 +91,60 @@ serve(async (req) => {
 
     // Check if already notified
     if (payment.host_invoice_required) {
-      console.log('[HOST-INVOICE-NOTIFY] Already notified');
+      console.log('[NOTIFY-HOST-INVOICE] Already notified');
       return new Response(
-        JSON.stringify({ message: 'Host already notified' }),
+        JSON.stringify({ success: true, message: 'Already notified' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    // 3. Fetch coworker data
-    const { data: coworker } = await supabaseAdmin
+    // Fetch coworker details
+    const { data: coworker, error: coworkerError } = await supabaseClient
       .from('profiles')
-      .select('id, first_name, last_name, email, fiscal_regime, pec_email, sdi_code')
+      .select('id, first_name, last_name, email, tax_id, pec_email, sdi_code, legal_address')
       .eq('id', booking.user_id)
       .single();
 
-    // 4. Generate PDF guide with fiscal data
+    if (coworkerError || !coworker) {
+      throw new Error(`Coworker not found: ${coworkerError?.message}`);
+    }
+
+    // Generate PDF guide content
     const pdfContent = generateInvoiceGuidePDF({
       booking,
       payment,
       host,
       coworker,
-      space: (booking as any).spaces
+      space: booking.spaces
     });
 
-    // 5. Upload PDF to storage
-    const pdfFileName = `${host.id}/${booking_id}_invoice_guide.pdf`;
-    const { error: uploadError } = await supabaseAdmin.storage
+    // Upload PDF to storage
+    const fileName = `${host.id}/${booking_id}_invoice_guide.pdf`;
+    const { error: uploadError } = await supabaseClient.storage
       .from('host-invoices-guide')
-      .upload(pdfFileName, pdfContent, {
+      .upload(fileName, new Blob([pdfContent], { type: 'application/pdf' }), {
         contentType: 'application/pdf',
         upsert: true
       });
 
     if (uploadError) {
-      console.error('[HOST-INVOICE-NOTIFY] PDF upload error:', uploadError);
+      console.error('[NOTIFY-HOST-INVOICE] Upload error:', uploadError);
     }
 
-    const { data: { publicUrl: pdfUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabaseClient.storage
       .from('host-invoices-guide')
-      .getPublicUrl(pdfFileName);
+      .getPublicUrl(fileName);
 
-    // 6. Set deadline (T+7 days)
+    // Update payment with invoice requirement
     const deadline = new Date();
-    deadline.setDate(deadline.getDate() + 7);
+    deadline.setDate(deadline.getDate() + 7); // T+7 days
 
-    // 7. Update payment
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabaseClient
       .from('payments')
       .update({
         host_invoice_required: true,
-        host_invoice_deadline: deadline.toISOString()
+        host_invoice_deadline: deadline.toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('id', payment.id);
 
@@ -137,79 +152,87 @@ serve(async (req) => {
       throw new Error(`Failed to update payment: ${updateError.message}`);
     }
 
-    // 8. Send in-app notification
-    await supabaseAdmin
+    // Create in-app notification
+    const { error: notifError } = await supabaseClient
       .from('user_notifications')
       .insert({
         user_id: host.id,
-        type: 'invoice',
-        title: 'Fattura Canone da Emettere',
-        content: `Devi emettere fattura per la prenotazione del ${booking.booking_date}. Scadenza: ${deadline.toLocaleDateString('it-IT')}`,
+        type: 'host_invoice',
+        title: 'Fattura richiesta per prenotazione servita',
+        content: `Devi emettere fattura per la prenotazione del ${new Date(booking.booking_date).toLocaleDateString('it-IT')} entro ${deadline.toLocaleDateString('it-IT')}. Scarica il riepilogo dati per procedere.`,
         metadata: {
-          booking_id: booking_id,
+          booking_id: booking.id,
           payment_id: payment.id,
           deadline: deadline.toISOString(),
-          pdf_url: pdfUrl
+          pdf_url: publicUrl,
+          space_title: booking.spaces.title,
+          canone_amount: payment.host_amount
         }
       });
 
-    // 9. Send email notification (if Resend configured)
-    const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (resendKey) {
+    if (notifError) {
+      console.error('[NOTIFY-HOST-INVOICE] Notification error:', notifError);
+    }
+
+    // Send email if Resend is configured
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (resendApiKey && host.email) {
       try {
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${resendKey}`,
+            'Authorization': `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            from: 'WorkOver <noreply@workover.it>',
+            from: 'WorkOver <noreply@workover.app>',
             to: [host.email],
-            subject: `Fattura Canone da Emettere - Scadenza ${deadline.toLocaleDateString('it-IT')}`,
+            subject: `Fattura richiesta - Prenotazione ${new Date(booking.booking_date).toLocaleDateString('it-IT')}`,
             html: `
-              <h2>Fattura Canone da Emettere</h2>
-              <p>Gentile ${host.first_name},</p>
-              <p>Ti informiamo che devi emettere fattura per il canone della prenotazione:</p>
+              <h1>Ciao ${host.first_name},</h1>
+              <p>La prenotazione del <strong>${new Date(booking.booking_date).toLocaleDateString('it-IT')}</strong> per lo spazio "${booking.spaces.title}" è stata completata.</p>
+              <p><strong>Devi emettere fattura entro ${deadline.toLocaleDateString('it-IT')}</strong>.</p>
+              <p>Importo canone: <strong>€${payment.host_amount.toFixed(2)}</strong></p>
+              <h3>Dati destinatario:</h3>
               <ul>
-                <li><strong>Spazio:</strong> ${(booking as any).spaces.title}</li>
-                <li><strong>Data:</strong> ${booking.booking_date}</li>
-                <li><strong>Importo Canone:</strong> €${payment.host_amount}</li>
-                <li><strong>Scadenza:</strong> ${deadline.toLocaleDateString('it-IT')}</li>
+                <li>Nome: ${coworker.first_name} ${coworker.last_name}</li>
+                <li>Email: ${coworker.email}</li>
+                ${coworker.tax_id ? `<li>CF/P.IVA: ${coworker.tax_id}</li>` : ''}
+                ${coworker.pec_email ? `<li>PEC: ${coworker.pec_email}</li>` : ''}
+                ${coworker.sdi_code ? `<li>Codice SDI: ${coworker.sdi_code}</li>` : ''}
+                ${coworker.legal_address ? `<li>Indirizzo: ${coworker.legal_address}</li>` : ''}
               </ul>
-              <p><a href="${pdfUrl}">Scarica PDF con dati fiscali</a></p>
-              <p><strong>Dati Obbligatori:</strong></p>
-              <ul>
-                <li>Codice Fiscale/P.IVA Coworker: ${coworker?.fiscal_regime === 'privato' ? 'Richiedi in chat' : 'Vedi PDF'}</li>
-                <li>PEC/SDI: ${coworker?.pec_email || coworker?.sdi_code || 'Richiedi in chat'}</li>
-                <li>Riferimento: Prenotazione ${booking_id}</li>
-              </ul>
-              <p>Cordiali saluti,<br>Team WorkOver</p>
+              <p><a href="${publicUrl}">Scarica riepilogo completo (PDF)</a></p>
+              <p>Cordiali saluti,<br>Il team WorkOver</p>
             `
           })
         });
 
         if (!emailResponse.ok) {
-          console.error('[HOST-INVOICE-NOTIFY] Email send error:', await emailResponse.text());
+          console.error('[NOTIFY-HOST-INVOICE] Email send failed:', await emailResponse.text());
         }
       } catch (emailError) {
-        console.error('[HOST-INVOICE-NOTIFY] Email error:', emailError);
+        console.error('[NOTIFY-HOST-INVOICE] Email error:', emailError);
       }
     }
 
-    console.log('[HOST-INVOICE-NOTIFY] Notification sent successfully');
+    console.log('[NOTIFY-HOST-INVOICE] Success:', {
+      booking_id,
+      host_id: host.id,
+      deadline: deadline.toISOString()
+    });
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         deadline: deadline.toISOString(),
-        pdf_url: pdfUrl
+        pdf_url: publicUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
   } catch (error) {
-    console.error('[HOST-INVOICE-NOTIFY] Error:', error);
+    console.error('[NOTIFY-HOST-INVOICE] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
@@ -221,38 +244,39 @@ function generateInvoiceGuidePDF(data: any): string {
   const { booking, payment, host, coworker, space } = data;
   
   return `
-GUIDA EMISSIONE FATTURA CANONE
-================================
+=================================================
+WORKOVER - RIEPILOGO DATI PER EMISSIONE FATTURA
+=================================================
 
-HOST: ${host.first_name} ${host.last_name}
-Regime Fiscale: ${host.fiscal_regime}
+DESTINATARIO FATTURA:
+Nome: ${coworker.first_name} ${coworker.last_name}
+Email: ${coworker.email}
+${coworker.tax_id ? `CF/P.IVA: ${coworker.tax_id}` : ''}
+${coworker.pec_email ? `PEC: ${coworker.pec_email}` : ''}
+${coworker.sdi_code ? `Codice SDI: ${coworker.sdi_code}` : ''}
+${coworker.legal_address ? `Indirizzo: ${coworker.legal_address}` : ''}
 
-DATI PRENOTAZIONE
------------------
+DETTAGLI PRENOTAZIONE:
 Spazio: ${space.title}
-Data: ${booking.booking_date}
+Data: ${new Date(booking.booking_date).toLocaleDateString('it-IT')}
 Orario: ${booking.start_time} - ${booking.end_time}
-ID Prenotazione: ${booking.id}
+Booking ID: ${booking.id}
 
-IMPORTI
--------
-Canone Lordo: €${payment.host_amount}
+IMPORTI:
+Canone lordo: €${payment.host_amount.toFixed(2)}
+Service fee trattenuta: €${payment.platform_fee_amount.toFixed(2)}
+Netto pagato a te: €${payment.host_amount.toFixed(2)}
 
-DESTINATARIO FATTURA
---------------------
-Nome: ${coworker?.first_name || ''} ${coworker?.last_name || ''}
-Email: ${coworker?.email || ''}
-PEC: ${coworker?.pec_email || 'Da richiedere'}
-Codice SDI: ${coworker?.sdi_code || 'Da richiedere'}
-P.IVA/CF: ${coworker?.fiscal_regime !== 'privato' ? 'Vedi profilo coworker' : 'Da richiedere'}
+ISTRUZIONI:
+1. Emetti fattura elettronica tramite il tuo software di fatturazione
+2. Importo fattura: €${payment.host_amount.toFixed(2)}
+3. Causale: "Canone locazione spazio coworking - Prenotazione ${booking.id}"
+4. Data fattura: Data di completamento servizio
+5. Scadenza pagamento: Già pagato (indicare "pagamento anticipato")
 
-ISTRUZIONI
-----------
-1. Emettere fattura entro 7 giorni da oggi
-2. Includere riferimento "Prenotazione ${booking.id}"
-3. Inviare copia PDF a WorkOver tramite dashboard
-4. In caso di mancata emissione, l'account verrà sospeso
+DEADLINE: ${new Date(payment.host_invoice_deadline).toLocaleDateString('it-IT')}
 
-Per domande: support@workover.it
-`;
+Per assistenza: support@workover.app
+=================================================
+  `.trim();
 }
