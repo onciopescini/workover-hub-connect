@@ -8,6 +8,8 @@ import { WebhookValidator } from "./handlers/webhook-validator.ts";
 import { EnhancedCheckoutHandlers } from "./handlers/enhanced-checkout-handlers.ts";
 import { PaymentHandlers } from "./handlers/payment-handlers.ts";
 import { AccountHandlers } from "./handlers/account-handlers.ts";
+import { ChargeHandlers } from "./handlers/charge-handlers.ts";
+import { TransferHandlers } from "./handlers/transfer-handlers.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -85,6 +87,30 @@ serve(async (req) => {
       case 'payment_intent.payment_failed': {
         const paymentIntent = event.data.object as any;
         result = await PaymentHandlers.handlePaymentIntentFailed(paymentIntent, supabaseAdmin);
+        break;
+      }
+
+      case 'charge.succeeded': {
+        const charge = event.data.object as any;
+        result = await ChargeHandlers.handleChargeSucceeded(charge, supabaseAdmin);
+        break;
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as any;
+        result = await ChargeHandlers.handleChargeRefunded(charge, supabaseAdmin);
+        break;
+      }
+
+      case 'transfer.created': {
+        const transfer = event.data.object as any;
+        result = await TransferHandlers.handleTransferCreated(transfer, supabaseAdmin);
+        break;
+      }
+
+      case 'payout.created': {
+        const payout = event.data.object as any;
+        result = await TransferHandlers.handlePayoutCreated(payout, supabaseAdmin);
         break;
       }
 

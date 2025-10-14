@@ -48,6 +48,7 @@ const Reviews = lazy(() => import("@/pages/Reviews"));
 const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
 // Host pages
+const HostPaymentsPage = lazy(() => import("@/pages/host/HostPaymentsPage"));
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
 const StripeReturn = lazy(() => import("@/pages/host/StripeReturn"));
 const HostOnboarding = lazy(() => import("@/pages/HostOnboarding"));

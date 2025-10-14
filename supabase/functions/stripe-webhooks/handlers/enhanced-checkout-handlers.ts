@@ -103,10 +103,47 @@ export class EnhancedCheckoutHandlers {
     // Send notifications
     await this.sendCompletionNotifications(booking, breakdown, supabaseAdmin);
 
+    // Generate fiscal documents asynchronously (MOCK mode)
+    this.generateFiscalDocuments(payment.id, bookingId, booking.spaces.host_id, booking.user_id, supabaseAdmin);
+
     return { 
       success: true, 
       message: `Checkout session processed successfully. Booking ${newStatus}.`
     };
+  }
+
+  private static async generateFiscalDocuments(
+    paymentId: string,
+    bookingId: string,
+    hostId: string,
+    coworkerId: string,
+    supabaseAdmin: any
+  ): Promise<void> {
+    try {
+      // Invoke edge functions to generate documents
+      const [invoiceResult, receiptResult] = await Promise.allSettled([
+        supabaseAdmin.functions.invoke('generate-invoice-pdf', {
+          body: { payment_id: paymentId, booking_id: bookingId, host_id: hostId, coworker_id: coworkerId }
+        }),
+        supabaseAdmin.functions.invoke('generate-non-fiscal-receipt-pdf', {
+          body: { payment_id: paymentId, booking_id: bookingId, host_id: hostId, coworker_id: coworkerId }
+        })
+      ]);
+
+      if (invoiceResult.status === 'fulfilled') {
+        ErrorHandler.logSuccess('Invoice generated', invoiceResult.value.data);
+      } else {
+        ErrorHandler.logWarning('Invoice generation failed', invoiceResult.reason);
+      }
+
+      if (receiptResult.status === 'fulfilled') {
+        ErrorHandler.logSuccess('Receipt generated', receiptResult.value.data);
+      } else {
+        ErrorHandler.logWarning('Receipt generation failed', receiptResult.reason);
+      }
+    } catch (error) {
+      ErrorHandler.logError('Fiscal document generation error', error);
+    }
   }
 
   static async handleCheckoutSessionExpired(
