@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
+import { useRLSErrorHandler } from './useRLSErrorHandler';
 
 interface UseSpaceFormSubmissionProps {
   formData: Omit<Partial<SpaceInsert>, 'availability'>;
@@ -28,6 +29,7 @@ export const useSpaceFormSubmission = ({
 }: UseSpaceFormSubmissionProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { handleRLSError } = useRLSErrorHandler();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +93,12 @@ export const useSpaceFormSubmission = ({
           .eq("id", initialDataId);
           
         if (error) {
-          throw error;
+          // Handle RLS errors with friendly messages
+          const isRLSError = handleRLSError(error, 'space_publish');
+          if (!isRLSError) {
+            throw error;
+          }
+          return;
         }
         
         toast.success("Space updated successfully!");
@@ -103,7 +110,12 @@ export const useSpaceFormSubmission = ({
           .single();
           
         if (error) {
-          throw error;
+          // Handle RLS errors with friendly messages
+          const isRLSError = handleRLSError(error, 'space_create');
+          if (!isRLSError) {
+            throw error;
+          }
+          return;
         }
         
         toast.success("Space created successfully!");
