@@ -331,6 +331,11 @@ export const AppRoutes = () => {
             <HostCalendar />
           </LazyWrapper>
         } />
+        <Route path="payments" element={
+          <LazyWrapper>
+            <HostPaymentsPage />
+          </LazyWrapper>
+        } />
         <Route path="fiscal" element={
           <LazyWrapper>
             <HostFiscalPage />
