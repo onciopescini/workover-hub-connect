@@ -3,6 +3,18 @@ project_id = "khtqwzvrxzsgfhsslwyz"
 [functions.health-check]
 verify_jwt = false
 
+[functions.mark-bookings-served]
+verify_jwt = false
+
+[functions.schedule-payouts]
+verify_jwt = false
+
+[functions.freeze-bookings]
+verify_jwt = false
+
+[functions.send-invoice-reminders]
+verify_jwt = false
+
 [functions.stripe-webhooks]
 verify_jwt = false
 
