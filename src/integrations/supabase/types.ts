@@ -1540,6 +1540,57 @@ export type Database = {
           },
         ]
       }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          expires_at: string | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          metadata: Json | null
+          rejection_reason: string | null
+          updated_at: string
+          user_id: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          expires_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          expires_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       message_templates: {
         Row: {
           content: string
@@ -2526,6 +2577,60 @@ export type Database = {
           title?: string
           updated_at?: string | null
           version?: number | null
+        }
+        Relationships: []
+      }
+      stripe_accounts: {
+        Row: {
+          account_status: string
+          account_type: string | null
+          charges_enabled: boolean
+          country_code: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          metadata: Json | null
+          onboarding_completed: boolean
+          payouts_enabled: boolean
+          requirements_due: Json | null
+          stripe_account_id: string
+          stripe_customer_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: string
+          account_type?: string | null
+          charges_enabled?: boolean
+          country_code?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          onboarding_completed?: boolean
+          payouts_enabled?: boolean
+          requirements_due?: Json | null
+          stripe_account_id: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: string
+          account_type?: string | null
+          charges_enabled?: boolean
+          country_code?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          onboarding_completed?: boolean
+          payouts_enabled?: boolean
+          requirements_due?: Json | null
+          stripe_account_id?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

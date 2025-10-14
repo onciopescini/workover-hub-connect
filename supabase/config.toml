@@ -71,3 +71,12 @@ verify_jwt = false
 
 [functions.generate-dac7-report]
 verify_jwt = false
+
+[functions.upload-kyc-document]
+verify_jwt = true
+
+[functions.create-stripe-connect-account]
+verify_jwt = true
+
+[functions.create-booking-payment]
+verify_jwt = true
