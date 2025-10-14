@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.generate-non-fiscal-receipt]
 verify_jwt = false
+
+[functions.generate-dac7-report]
+verify_jwt = false
