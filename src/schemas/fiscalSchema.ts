@@ -26,6 +26,7 @@ export const taxDetailsSchema = z.object({
     ),
   
   vat_number: z.string()
+    .nullable()
     .optional()
     .refine(
       (val) => !val || PARTITA_IVA_REGEX.test(val),
@@ -42,6 +43,7 @@ export const taxDetailsSchema = z.object({
   
   address_line2: z.string()
     .max(100, 'L\'indirizzo aggiuntivo non può superare 100 caratteri')
+    .nullable()
     .optional(),
   
   city: z.string()
@@ -51,6 +53,7 @@ export const taxDetailsSchema = z.object({
   province: z.string()
     .length(2, 'La provincia deve contenere 2 caratteri (es. MI)')
     .regex(/^[A-Z]{2}$/, 'La provincia deve contenere solo lettere maiuscole')
+    .nullable()
     .optional(),
   
   postal_code: z.string()
@@ -64,6 +67,7 @@ export const taxDetailsSchema = z.object({
     .transform(val => val.replace(/\s/g, '').toUpperCase()),
   
   bic_swift: z.string()
+    .nullable()
     .optional()
     .refine(
       (val) => !val || BIC_SWIFT_REGEX.test(val),

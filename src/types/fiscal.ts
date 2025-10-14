@@ -24,14 +24,14 @@ export interface TaxDetailsInput {
   country_code: string;
   entity_type: 'individual' | 'business';
   tax_id: string;
-  vat_number?: string;
+  vat_number?: string | null;
   address_line1: string;
-  address_line2?: string;
+  address_line2?: string | null;
   city: string;
-  province?: string;
+  province?: string | null;
   postal_code: string;
   iban: string;
-  bic_swift?: string;
+  bic_swift?: string | null;
 }
 
 export interface DAC7Report {

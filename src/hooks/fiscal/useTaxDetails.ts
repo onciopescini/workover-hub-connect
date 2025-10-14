@@ -43,12 +43,22 @@ export const useTaxDetails = (profileId?: string) => {
 
       const { data, error } = await supabase
         .from('tax_details')
-        .insert({
+        .insert([{
           profile_id: user.id,
-          ...input,
+          country_code: input.country_code,
+          entity_type: input.entity_type,
+          tax_id: input.tax_id,
+          vat_number: input.vat_number || null,
+          address_line1: input.address_line1,
+          address_line2: input.address_line2 || null,
+          city: input.city,
+          province: input.province || null,
+          postal_code: input.postal_code,
+          iban: input.iban,
+          bic_swift: input.bic_swift || null,
           is_primary: true,
           valid_from: new Date().toISOString()
-        })
+        }])
         .select()
         .single();
 
