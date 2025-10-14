@@ -56,6 +56,7 @@ const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
 const SpaceRecap = lazy(() => import("@/pages/SpaceRecap"));
 const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
+const HostFiscalPage = lazy(() => import("@/pages/host/HostFiscalPage"));
 
 // Admin pages
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
@@ -69,6 +70,7 @@ const AdminLogsPage = lazy(() => import("@/pages/admin/AdminLogsPage"));
 const AdminMonitoringPage = lazy(() => import("@/pages/admin/AdminMonitoringPage"));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
 const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
+const AdminFiscalPage = lazy(() => import("@/pages/admin/AdminFiscalPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
 const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
@@ -328,6 +330,11 @@ export const AppRoutes = () => {
             <HostCalendar />
           </LazyWrapper>
         } />
+        <Route path="fiscal" element={
+          <LazyWrapper>
+            <HostFiscalPage />
+          </LazyWrapper>
+        } />
         
         {/* Redirect old routes to unified dashboard */}
         <Route path="analytics" element={
@@ -431,6 +438,14 @@ export const AppRoutes = () => {
           <LazyWrapper>
             <AdminAnalyticsPage />
           </LazyWrapper>
+        } />
+        
+        <Route path="fiscal" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <AdminFiscalPage />
+            </LazyWrapper>
+          </ModeratorRoute>
         } />
       </Route>
 

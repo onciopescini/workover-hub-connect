@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, AlertTriangle, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { HostDashboardMetrics } from '@/hooks/queries/useEnhancedHostDashboard';
 
@@ -44,7 +44,7 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
         </Alert>
       )}
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Button 
           variant="default" 
           className="h-20"
@@ -88,6 +88,18 @@ export const HostDashboardManagement: React.FC<HostDashboardManagementProps> = (
           <div className="text-center">
             <div className="font-semibold">Pagamenti</div>
             <div className="text-xs mt-1 opacity-70">Vedi transazioni</div>
+          </div>
+        </Button>
+
+        <Button 
+          variant="outline" 
+          className="h-20 flex items-center justify-center gap-2"
+          onClick={() => navigate('/host/fiscal')}
+        >
+          <Receipt className="w-5 h-5" />
+          <div className="text-center">
+            <div className="font-semibold">Area Fiscale</div>
+            <div className="text-xs mt-1 opacity-70">Fatture e DAC7</div>
           </div>
         </Button>
       </div>
