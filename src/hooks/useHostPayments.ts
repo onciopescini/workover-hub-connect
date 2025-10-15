@@ -77,11 +77,11 @@ export const useHostPayments = () => {
               last_name
             )
           ),
-          invoice:invoices(
+          invoices!fk_invoices_payment_id(
             invoice_number,
             pdf_file_url
           ),
-          non_fiscal_receipt:non_fiscal_receipts(
+          non_fiscal_receipts!non_fiscal_receipts_payment_id_fkey(
             receipt_number,
             pdf_url
           )
@@ -97,7 +97,15 @@ export const useHostPayments = () => {
 
       // Transform data to match HostPayment interface
       return (data || []).map(payment => ({
-        ...payment,
+        id: payment.id,
+        amount: payment.amount,
+        host_amount: payment.host_amount,
+        platform_fee: payment.platform_fee,
+        currency: payment.currency,
+        payment_status: payment.payment_status,
+        created_at: payment.created_at,
+        stripe_transfer_id: payment.stripe_transfer_id,
+        receipt_url: payment.receipt_url,
         booking: payment.bookings ? {
           id: payment.bookings.id,
           booking_date: payment.bookings.booking_date,
@@ -110,7 +118,9 @@ export const useHostPayments = () => {
           coworker: Array.isArray(payment.bookings.profiles)
             ? payment.bookings.profiles[0]
             : payment.bookings.profiles || { first_name: '', last_name: '' }
-        } : null
+        } : null,
+        invoice: payment.invoices || null,
+        non_fiscal_receipt: payment.non_fiscal_receipts || null
       })) as HostPayment[];
     },
     enabled: !!userId

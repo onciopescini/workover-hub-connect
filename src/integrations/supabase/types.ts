@@ -393,6 +393,7 @@ export type Database = {
           payout_completed_at: string | null
           payout_scheduled_at: string | null
           payout_stripe_transfer_id: string | null
+          processing_lock: string | null
           reservation_token: string | null
           service_completed_at: string | null
           service_completed_by: string | null
@@ -428,6 +429,7 @@ export type Database = {
           payout_completed_at?: string | null
           payout_scheduled_at?: string | null
           payout_stripe_transfer_id?: string | null
+          processing_lock?: string | null
           reservation_token?: string | null
           service_completed_at?: string | null
           service_completed_by?: string | null
@@ -463,6 +465,7 @@ export type Database = {
           payout_completed_at?: string | null
           payout_scheduled_at?: string | null
           payout_stripe_transfer_id?: string | null
+          processing_lock?: string | null
           reservation_token?: string | null
           service_completed_at?: string | null
           service_completed_by?: string | null
@@ -1829,6 +1832,13 @@ export type Database = {
           xml_sent_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_invoices_payment_id"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_booking_id_fkey"
             columns: ["booking_id"]
@@ -3898,6 +3908,45 @@ export type Database = {
           },
         ]
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          last_error: string | null
+          payload: Json
+          processed_at: string | null
+          retry_count: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          last_error?: string | null
+          payload: Json
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workspace_features: {
         Row: {
           created_at: string | null
@@ -4644,6 +4693,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_webhook_retry: {
+        Args: { event_uuid: string }
+        Returns: undefined
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -4651,6 +4704,84 @@ export type Database = {
       is_moderator: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      lock_and_select_expired_bookings: {
+        Args: { p_lock_duration_minutes?: number }
+        Returns: {
+          approval_deadline: string | null
+          approval_reminder_sent: boolean | null
+          auto_cancel_scheduled_at: string | null
+          booking_date: string
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_host: boolean | null
+          created_at: string | null
+          end_time: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          guests_count: number
+          host_issue_reported: boolean | null
+          id: string
+          is_urgent: boolean | null
+          issue_report_reason: string | null
+          payment_deadline: string | null
+          payment_reminder_sent: boolean | null
+          payment_required: boolean | null
+          payment_session_id: string | null
+          payout_completed_at: string | null
+          payout_scheduled_at: string | null
+          payout_stripe_transfer_id: string | null
+          processing_lock: string | null
+          reservation_token: string | null
+          service_completed_at: string | null
+          service_completed_by: string | null
+          slot_reserved_until: string | null
+          space_id: string
+          start_time: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
+      lock_and_select_reminder_bookings: {
+        Args: { p_lock_duration_minutes?: number }
+        Returns: {
+          approval_deadline: string | null
+          approval_reminder_sent: boolean | null
+          auto_cancel_scheduled_at: string | null
+          booking_date: string
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_host: boolean | null
+          created_at: string | null
+          end_time: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          guests_count: number
+          host_issue_reported: boolean | null
+          id: string
+          is_urgent: boolean | null
+          issue_report_reason: string | null
+          payment_deadline: string | null
+          payment_reminder_sent: boolean | null
+          payment_required: boolean | null
+          payment_session_id: string | null
+          payout_completed_at: string | null
+          payout_scheduled_at: string | null
+          payout_stripe_transfer_id: string | null
+          processing_lock: string | null
+          reservation_token: string | null
+          service_completed_at: string | null
+          service_completed_by: string | null
+          slot_reserved_until: string | null
+          space_id: string
+          start_time: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+          user_id: string
+        }[]
       }
       log_admin_access: {
         Args: {
@@ -4746,6 +4877,10 @@ export type Database = {
           target_user_id: string
         }
         Returns: Json
+      }
+      unlock_bookings: {
+        Args: { booking_ids: string[] }
+        Returns: undefined
       }
       update_image_processing_job: {
         Args: {

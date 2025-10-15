@@ -55,7 +55,41 @@ serve(async (req) => {
     }
 
     const event = validationResult.event!;
+    
+    // Check if event already processed (idempotency)
+    const { data: existingEvent } = await supabaseAdmin
+      .from('webhook_events')
+      .select('id, status')
+      .eq('event_id', event.id)
+      .single();
+
+    if (existingEvent?.status === 'processed') {
+      ErrorHandler.logInfo('Event already processed', { eventId: event.id });
+      return new Response(JSON.stringify({ received: true, status: 'already_processed' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Save event for idempotency tracking
+    if (!existingEvent) {
+      await supabaseAdmin
+        .from('webhook_events')
+        .insert({
+          event_id: event.id,
+          event_type: event.type,
+          payload: event,
+          status: 'pending'
+        })
+        .catch(err => {
+          if (err.code !== '23505') { // Ignore duplicate key errors
+            ErrorHandler.logError('Failed to save webhook event', err);
+          }
+        });
+    }
+
     ErrorHandler.logInfo('Processing Stripe webhook', { eventType: event.type });
+    const startTime = Date.now();
 
     let result;
 
@@ -182,6 +216,23 @@ serve(async (req) => {
 
     if (!result.success) {
       ErrorHandler.logError('Webhook processing failed', result.error);
+      
+      // Mark event as failed
+      await supabaseAdmin
+        .from('webhook_events')
+        .update({ 
+          status: 'failed',
+          last_error: result.error?.toString() || 'Unknown error',
+          updated_at: new Date().toISOString()
+        })
+        .eq('event_id', event.id);
+
+      if (existingEvent?.id) {
+        await supabaseAdmin.rpc('increment_webhook_retry', { 
+          event_uuid: existingEvent.id 
+        }).catch(() => {});
+      }
+
       return new Response(
         JSON.stringify({ 
           error: 'Webhook processing failed',
@@ -194,7 +245,20 @@ serve(async (req) => {
       );
     }
 
-    ErrorHandler.logSuccess('Webhook processed successfully', { eventType: event.type });
+    // Mark event as processed
+    await supabaseAdmin
+      .from('webhook_events')
+      .update({ 
+        status: 'processed', 
+        processed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('event_id', event.id);
+
+    ErrorHandler.logSuccess('Webhook processed successfully', { 
+      eventType: event.type,
+      duration_ms: Date.now() - startTime
+    });
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -207,6 +271,26 @@ serve(async (req) => {
       stack: error.stack,
       name: error.name
     });
+
+    // Try to mark event as failed if we have the event
+    try {
+      if (existingEvent?.id) {
+        await supabaseAdmin
+          .from('webhook_events')
+          .update({ 
+            status: 'failed',
+            last_error: error.message,
+            updated_at: new Date().toISOString()
+          })
+          .eq('event_id', event.id);
+        
+        await supabaseAdmin.rpc('increment_webhook_retry', { 
+          event_uuid: existingEvent.id 
+        });
+      }
+    } catch (dbError) {
+      ErrorHandler.logError('Failed to update webhook event status', dbError);
+    }
     
     return new Response(
       JSON.stringify({ 
