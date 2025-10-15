@@ -11,6 +11,8 @@ import {
   applySearchFilter, 
   removeDuplicateBookings 
 } from "./useBookingTransforms";
+import { handleRLSError } from '@/lib/rls-error-handler';
+import { toast } from 'sonner';
 
 // Main enhanced bookings query hook
 export const useEnhancedBookings = (filters?: BookingFilter) => {
@@ -110,6 +112,16 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
           userRole,
           filters
         });
+        
+        // Handle RLS errors with user-friendly messages
+        const rlsResult = handleRLSError(fetchError);
+        if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+          toast.error('Accesso negato', {
+            description: rlsResult.userMessage,
+            duration: 5000,
+          });
+        }
+        
         throw fetchError;
       }
     },

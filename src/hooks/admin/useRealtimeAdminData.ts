@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query-config';
 import { supabase } from '@/integrations/supabase/client';
+import { handleRLSError } from '@/lib/rls-error-handler';
+import { toast } from 'sonner';
 
 /**
  * Hook per dati admin in real-time con background refetch
@@ -13,18 +15,26 @@ export const useRealtimeAdminData = () => {
   const { data: pendingSpacesCount } = useQuery({
     queryKey: queryKeys.admin.pendingSpacesCount(),
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('spaces')
-        .select('*', { count: 'exact', head: true })
-        .eq('pending_approval', true)
-        .eq('published', false);
-      
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { count, error } = await supabase
+          .from('spaces')
+          .select('*', { count: 'exact', head: true })
+          .eq('pending_approval', true)
+          .eq('published', false);
+        
+        if (error) throw error;
+        return count || 0;
+      } catch (error) {
+        const rlsResult = handleRLSError(error);
+        if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+          toast.error('Accesso negato', { description: rlsResult.userMessage });
+        }
+        throw error;
+      }
     },
-    staleTime: 30 * 1000, // 30 secondi
-    refetchInterval: 30 * 1000, // Refetch ogni 30 secondi
-    refetchIntervalInBackground: true, // Anche quando tab inattivo
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: true,
   });
 
   /**
@@ -33,13 +43,21 @@ export const useRealtimeAdminData = () => {
   const { data: openReportsCount } = useQuery({
     queryKey: queryKeys.admin.openReportsCount(),
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('reports')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'open');
-      
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { count, error } = await supabase
+          .from('reports')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'open');
+        
+        if (error) throw error;
+        return count || 0;
+      } catch (error) {
+        const rlsResult = handleRLSError(error);
+        if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+          toast.error('Accesso negato', { description: rlsResult.userMessage });
+        }
+        throw error;
+      }
     },
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
@@ -52,13 +70,21 @@ export const useRealtimeAdminData = () => {
   const { data: unresolvedTicketsCount } = useQuery({
     queryKey: [...queryKeys.admin.all, 'unresolved-tickets-count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('support_tickets')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'open');
-      
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { count, error } = await supabase
+          .from('support_tickets')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'open');
+        
+        if (error) throw error;
+        return count || 0;
+      } catch (error) {
+        const rlsResult = handleRLSError(error);
+        if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+          toast.error('Accesso negato', { description: rlsResult.userMessage });
+        }
+        throw error;
+      }
     },
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,
@@ -71,13 +97,21 @@ export const useRealtimeAdminData = () => {
   const { data: pendingGdprCount } = useQuery({
     queryKey: [...queryKeys.admin.all, 'pending-gdpr-count'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('gdpr_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      
-      if (error) throw error;
-      return count || 0;
+      try {
+        const { count, error } = await supabase
+          .from('gdpr_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+        
+        if (error) throw error;
+        return count || 0;
+      } catch (error) {
+        const rlsResult = handleRLSError(error);
+        if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+          toast.error('Accesso negato', { description: rlsResult.userMessage });
+        }
+        throw error;
+      }
     },
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,

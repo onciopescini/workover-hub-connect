@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
+import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 
 export const useCancelBookingMutation = () => {
   const queryClient = useQueryClient();
+  const { handleError } = useRLSErrorHandler();
   
   return useMutation({
     mutationFn: async ({ 
@@ -47,8 +49,13 @@ export const useCancelBookingMutation = () => {
     },
     onError: (error: unknown) => {
       sreLogger.error("Error cancelling booking", {}, error as Error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-      toast.error(`Errore nella cancellazione: ${errorMessage}`);
+      
+      // Try RLS error handler first
+      if (!handleError(error)) {
+        // Fallback to generic error
+        const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+        toast.error(`Errore nella cancellazione: ${errorMessage}`);
+      }
     },
   });
 };

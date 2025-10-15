@@ -2,6 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query-config';
 import { supabase } from '@/integrations/supabase/client';
 import { useCallback } from 'react';
+import { handleRLSError } from '@/lib/rls-error-handler';
+import { toast } from 'sonner';
 
 /**
  * Hook per prefetching intelligente dei dati admin
@@ -17,16 +19,24 @@ export const useAdminPrefetch = () => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.admin.users(),
       queryFn: async () => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50);
-        
-        if (error) throw error;
-        return data;
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+          
+          if (error) throw error;
+          return data;
+        } catch (error) {
+          const rlsResult = handleRLSError(error);
+          if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+            toast.error('Accesso negato', { description: rlsResult.userMessage });
+          }
+          throw error;
+        }
       },
-      staleTime: 5 * 60 * 1000, // 5 minuti
+      staleTime: 5 * 60 * 1000,
     });
   }, [queryClient]);
 
@@ -37,25 +47,33 @@ export const useAdminPrefetch = () => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.admin.spaces({ pending_approval: true }),
       queryFn: async () => {
-        const { data, error } = await supabase
-          .from('spaces')
-          .select(`
-            *,
-            profiles:host_id (
-              id,
-              first_name,
-              last_name
-            )
-          `)
-          .eq('pending_approval', true)
-          .eq('published', false)
-          .order('created_at', { ascending: false })
-          .limit(50);
-        
-        if (error) throw error;
-        return data;
+        try {
+          const { data, error } = await supabase
+            .from('spaces')
+            .select(`
+              *,
+              profiles:host_id (
+                id,
+                first_name,
+                last_name
+              )
+            `)
+            .eq('pending_approval', true)
+            .eq('published', false)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          
+          if (error) throw error;
+          return data;
+        } catch (error) {
+          const rlsResult = handleRLSError(error);
+          if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
+            toast.error('Accesso negato', { description: rlsResult.userMessage });
+          }
+          throw error;
+        }
       },
-      staleTime: 2 * 60 * 1000, // 2 minuti
+      staleTime: 2 * 60 * 1000,
     });
   }, [queryClient]);
 

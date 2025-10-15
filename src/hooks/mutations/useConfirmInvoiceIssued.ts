@@ -2,10 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useFiscalMode } from '@/contexts/FiscalModeContext';
+import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 
 export const useConfirmInvoiceIssued = () => {
   const queryClient = useQueryClient();
   const { isMockMode } = useFiscalMode();
+  const { handleError } = useRLSErrorHandler();
   
   return useMutation({
     mutationFn: async (paymentId: string) => {
@@ -35,11 +37,15 @@ export const useConfirmInvoiceIssued = () => {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Errore',
-        description: error.message || 'Impossibile confermare la fattura',
-        variant: 'destructive'
-      });
+      // Try RLS error handler first
+      if (!handleError(error)) {
+        // Fallback to generic error
+        toast({
+          title: 'Errore',
+          description: error.message || 'Impossibile confermare la fattura',
+          variant: 'destructive'
+        });
+      }
     }
   });
 };
