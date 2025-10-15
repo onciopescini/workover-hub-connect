@@ -14,20 +14,12 @@ export const KycManagementContainer = () => {
   const { data: hosts, isLoading, refetch } = useQuery({
     queryKey: ['admin-kyc-hosts', activeTab],
     queryFn: async () => {
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'host');
-
-      if (activeTab === 'pending') {
-        query = query.is('kyc_verified', null);
-      } else if (activeTab === 'approved') {
-        query = query.eq('kyc_verified', true);
-      } else if (activeTab === 'rejected') {
-        query = query.eq('kyc_verified', false);
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
+      // Use optimized RPC to avoid N+1 queries
+      const params = activeTab === 'all' 
+        ? {} 
+        : { kyc_status_param: activeTab };
+      
+      const { data, error } = await supabase.rpc('get_admin_kyc_hosts', params);
 
       if (error) throw error;
       return data;
@@ -74,8 +66,8 @@ export const KycManagementContainer = () => {
           <div className="space-y-4">
             {hosts.map((host) => (
               <KycHostCard
-                key={host.id}
-                host={host}
+                key={host.host_id}
+                host={{ ...host, id: host.host_id }}
                 onUpdate={handleRefresh}
               />
             ))}

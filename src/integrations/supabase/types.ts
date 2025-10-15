@@ -4444,6 +4444,23 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_admin_kyc_hosts: {
+        Args: { kyc_status_param?: string }
+        Returns: {
+          active_spaces_count: number
+          created_at: string
+          email: string
+          first_name: string
+          host_id: string
+          kyc_documents_count: number
+          kyc_rejection_reason: string
+          kyc_verified: boolean
+          last_name: string
+          stripe_connected: boolean
+          tax_details_count: number
+          total_bookings_count: number
+        }[]
+      }
       get_aggregated_metrics: {
         Args: { metric_type_param: string; time_window_hours?: number }
         Returns: Json

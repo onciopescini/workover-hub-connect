@@ -84,11 +84,11 @@ export function useAdminAnalytics(timeRange: "7d" | "30d" | "90d") {
 
       const { count: totalUsers } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
       const { count: totalHosts } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('role', 'host');
 
       return calculateRevenueTrends(payments || [], totalUsers || 0, totalHosts || 0, days);

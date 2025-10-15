@@ -126,7 +126,7 @@ export const fetchSpaceBookings = async (
     if (!useRPC) {
       const { data, error } = await supabase
         .from('bookings')
-        .select('*')
+        .select('id, booking_date, start_time, end_time, status, user_id')
         .eq('space_id', spaceId)
         .gte('booking_date', startDate)
         .lte('booking_date', endDate)
@@ -356,7 +356,7 @@ export const checkRealTimeConflicts = async (
   try {
     let query = supabase
       .from('bookings')
-      .select('*')
+      .select('id, booking_date, start_time, end_time, status')
       .eq('space_id', spaceId)
       .eq('booking_date', date)
       .in('status', ['pending', 'confirmed'])
@@ -429,7 +429,7 @@ export const fetchMultipleSpacesAvailability = async (
   try {
     const { data, error } = await supabase
       .from('bookings')
-      .select('*')
+      .select('id, space_id, booking_date, start_time, end_time, status')
       .in('space_id', spaceIds)
       .gte('booking_date', startDate)
       .lte('booking_date', endDate)

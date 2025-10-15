@@ -28,7 +28,7 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
     // Get user's connections
     const { data: connections, error: connectionsError } = await supabase
       .from('connections')
-      .select('*')
+      .select('id, sender_id, receiver_id, status, created_at')
       .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
       .eq('status', 'accepted');
 
@@ -37,7 +37,7 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
     // Get pending requests sent by user
     const { data: pendingRequests, error: pendingError } = await supabase
       .from('connections')
-      .select('*')
+      .select('id, sender_id, receiver_id, status')
       .eq('sender_id', userId)
       .eq('status', 'pending');
 
@@ -79,7 +79,7 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
 
     const { data: lastMonthConnections } = await supabase
       .from('connections')
-      .select('*')
+      .select('id, created_at')
       .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
       .eq('status', 'accepted')
       .gte('created_at', lastMonth.toISOString());
@@ -89,7 +89,7 @@ export const getNetworkingStats = async (userId: string): Promise<NetworkingStat
 
     const { data: lastWeekConnections } = await supabase
       .from('connections')
-      .select('*')
+      .select('id, created_at')
       .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
       .eq('status', 'accepted')
       .gte('created_at', lastWeek.toISOString());

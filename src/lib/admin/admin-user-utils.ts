@@ -38,7 +38,7 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, first_name, last_name, role, is_suspended, suspension_reason, created_at, updated_at, last_login_at, stripe_connected, onboarding_completed")
       .order("created_at", { ascending: false });
 
     if (error) {
