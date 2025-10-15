@@ -9,7 +9,7 @@ export const useAdminSettings = (category?: SettingCategory) => {
   const { data: settings, isLoading } = useQuery({
     queryKey: ["admin-settings", category],
     queryFn: async () => {
-      let query = supabase.from("system_settings").select("*");
+      let query = supabase.from("system_settings").select(`*`);
       
       if (category) {
         query = query.eq("category", category);
@@ -20,7 +20,7 @@ export const useAdminSettings = (category?: SettingCategory) => {
       if (error) throw error;
       
       // Convert array to object for easier access
-      return data?.reduce((acc, setting) => {
+      return data?.reduce((acc: Record<string, any>, setting: any) => {
         const jsonValue = setting.value as any;
         // Parse JSON values if they're strings
         acc[setting.key] = typeof jsonValue === "string" ? JSON.parse(jsonValue) : jsonValue;

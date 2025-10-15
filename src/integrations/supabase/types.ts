@@ -4305,6 +4305,35 @@ export type Database = {
             }
         Returns: string[]
       }
+      get_cron_job_runs: {
+        Args: { limit_count?: number }
+        Returns: {
+          command: string
+          database: string
+          end_time: string
+          job_pid: number
+          jobid: number
+          return_message: string
+          runid: number
+          start_time: string
+          status: string
+          username: string
+        }[]
+      }
+      get_cron_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active: boolean
+          command: string
+          database: string
+          jobid: number
+          jobname: string
+          nodename: string
+          nodeport: number
+          schedule: string
+          username: string
+        }[]
+      }
       get_host_metrics: {
         Args: { host_id_param: string }
         Returns: Json

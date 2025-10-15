@@ -95,7 +95,12 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
     // Fallback: use profiles_public_safe view
     const { data: viewData, error: viewError } = await supabase
       .from('profiles_public_safe')
-      .select('*')
+      .select(`
+        id, first_name, last_name, nickname, profile_photo_url,
+        bio, profession, job_title, city, skills, interests,
+        networking_enabled, collaboration_availability,
+        collaboration_description, created_at
+      `)
       .eq('id', profileId)
       .maybeSingle();
 
@@ -117,7 +122,14 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
 export const getPublicSpaces = async (): Promise<any[]> => {
   try {
     // 1) Use secure view that doesn't expose host_id or precise location
-    let { data, error } = await supabase.from('spaces_public_safe').select('*');
+    let { data, error } = await supabase.from('spaces_public_safe').select(`
+      id, title, description, category, subcategory, photos,
+      price_per_day, price_per_hour, address, city_name, country_code,
+      latitude, longitude, max_capacity, workspace_features, amenities,
+      work_environment, seating_type, ideal_guest, confirmation_type,
+      published, created_at, availability, host_first_name, host_last_name,
+      host_profile_photo, host_bio, host_networking_enabled
+    `);
 
     if (!error && Array.isArray(data)) {
       return data as any[];
@@ -131,7 +143,14 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     // 2) Fallback to secure public view (excludes host_id, precise GPS, full address)
     const { data: viewData, error: viewError } = await supabase
       .from('spaces_public_safe')
-      .select('*')
+      .select(`
+        id, title, description, category, subcategory, photos,
+        price_per_day, price_per_hour, address, city_name, country_code,
+        latitude, longitude, max_capacity, workspace_features, amenities,
+        work_environment, seating_type, ideal_guest, confirmation_type,
+        published, created_at, availability, host_first_name, host_last_name,
+        host_profile_photo, host_bio, host_networking_enabled
+      `)
       .order('created_at', { ascending: false })
       .limit(200);
 

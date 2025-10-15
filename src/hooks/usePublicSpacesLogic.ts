@@ -193,7 +193,14 @@ export const usePublicSpacesLogic = () => {
       // Use secure view that doesn't expose host_id or precise location
       const { data: spacesData, error: spacesError } = await supabase
         .from('spaces_public_safe')
-        .select('*');
+        .select(`
+          id, title, description, category, subcategory, photos,
+          price_per_day, price_per_hour, address, city_name, country_code,
+          latitude, longitude, max_capacity, workspace_features, amenities,
+          work_environment, seating_type, ideal_guest, confirmation_type,
+          published, created_at, availability, host_first_name, host_last_name,
+          host_profile_photo, host_bio, host_networking_enabled
+        `);
       
       if (spacesError) {
         info('Failed to fetch spaces', { error: spacesError });
