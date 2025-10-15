@@ -9,7 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FileText, Shield } from "lucide-react";
 
-export const HostFiscalDataForm = () => {
+interface HostFiscalDataFormProps {
+  onSuccess?: () => void;
+  showNavigationButtons?: boolean;
+  onBack?: () => void;
+}
+
+export const HostFiscalDataForm = ({ 
+  onSuccess, 
+  showNavigationButtons = true,
+  onBack 
+}: HostFiscalDataFormProps = {}) => {
   const { authState } = useAuth();
   const profile = authState.profile;
 
@@ -43,16 +53,21 @@ export const HostFiscalDataForm = () => {
 
       toast.success('Dati fiscali aggiornati con successo');
       
-      // Refresh profile
-      const { data: updatedProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authState.user.id)
-        .single();
+      // Callback per wizard
+      onSuccess?.();
+      
+      // Refresh profile only if not in wizard mode
+      if (!onSuccess) {
+        const { data: updatedProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authState.user.id)
+          .single();
 
-      if (updatedProfile) {
-        // Update auth state if needed
-        window.location.reload();
+        if (updatedProfile) {
+          // Update auth state if needed
+          window.location.reload();
+        }
       }
     } catch (error: any) {
       console.error('Error updating tax details:', error);
@@ -194,9 +209,22 @@ export const HostFiscalDataForm = () => {
             </div>
           )}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? 'Salvataggio...' : 'Salva Dati Fiscali'}
-          </Button>
+          {showNavigationButtons ? (
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? 'Salvataggio...' : 'Salva Dati Fiscali'}
+            </Button>
+          ) : (
+            <div className="flex justify-between pt-6">
+              {onBack && (
+                <Button variant="outline" onClick={onBack} type="button">
+                  Indietro
+                </Button>
+              )}
+              <Button type="submit" disabled={isSubmitting} className="ml-auto">
+                {isSubmitting ? 'Salvataggio...' : 'Continua'}
+              </Button>
+            </div>
+          )}
 
           <p className="text-xs text-muted-foreground">
             * Campi obbligatori. I dati saranno verificati da un amministratore prima di poter pubblicare spazi.

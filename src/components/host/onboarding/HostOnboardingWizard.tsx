@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users, Loader2 } from "lucide-react";
+import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users, Loader2, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { StripeSetup } from "@/components/host/StripeSetup";
+import { FiscalRegimeStep } from "./FiscalRegimeStep";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,8 +36,9 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   const steps = [
     { id: 1, title: "Informazioni Business", icon: Building2, completed: false },
     { id: 2, title: "Setup Pagamenti", icon: CreditCard, completed: false },
-    { id: 3, title: "Localizzazione", icon: MapPin, completed: false },
-    { id: 4, title: "Obiettivi Host", icon: Users, completed: false },
+    { id: 3, title: "Dati Fiscali", icon: FileText, completed: false },
+    { id: 4, title: "Localizzazione", icon: MapPin, completed: false },
+    { id: 5, title: "Obiettivi Host", icon: Users, completed: false },
   ];
 
   const progress = (currentStep / steps.length) * 100;
@@ -90,7 +92,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       setTimeout(() => {
         if (authState.profile?.stripe_connected) {
           toast.success("Stripe configurato! Procedendo al prossimo step...");
-          setCurrentStep(3); // Advance to Localizzazione step
+          setCurrentStep(3); // Advance to Fiscal Data step
         } else {
           toast.info("Verifica in corso... Riprova tra un momento.");
         }
@@ -142,8 +144,11 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       case 2:
         return authState.profile?.stripe_connected || isProcessingStripeReturn;
       case 3:
-        return formData.businessAddress;
+        // Fiscal data step - validate fiscal regime and IBAN
+        return authState.profile?.fiscal_regime && authState.profile?.iban;
       case 4:
+        return formData.businessAddress;
+      case 5:
         return formData.experience && formData.goals;
       default:
         return false;
@@ -257,6 +262,13 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
           )}
 
           {currentStep === 3 && (
+            <FiscalRegimeStep 
+              onNext={handleNext}
+              onBack={handleBack}
+            />
+          )}
+
+          {currentStep === 4 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Localizzazione</h3>
               
@@ -280,7 +292,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             </div>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">I tuoi Obiettivi come Host</h3>
               
