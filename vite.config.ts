@@ -30,6 +30,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2020',
     minify: 'esbuild',
+    // Remove console.log in production (Ondata 3 Fix 3.8)
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
     esbuild: {},
     rollupOptions: {
       output: {

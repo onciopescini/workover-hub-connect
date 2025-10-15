@@ -31,13 +31,30 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    // Ondata 3 Fix 3.10: Mobile Testing
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { 
+        ...devices['Pixel 5'],
+        hasTouch: true,
+        isMobile: true,
+      },
     },
     {
       name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      use: { 
+        ...devices['iPhone 12'],
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+    {
+      name: 'iPad',
+      use: {
+        ...devices['iPad Pro'],
+        hasTouch: true,
+        isMobile: false,
+      },
     },
   ],
 
