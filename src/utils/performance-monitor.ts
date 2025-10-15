@@ -1,168 +1,176 @@
-import * as React from 'react';
-import { sreLogger } from '@/lib/sre-logger';
-
-interface PerformanceMetrics {
-  renderCount: number;
-  avgRenderTime: number;
-  maxRenderTime: number;
-  memoryUsage: number;
-  lastRenderTime: number;
-}
-
-class PerformanceMonitor {
-  private metrics: Map<string, PerformanceMetrics> = new Map();
-  private observers: Map<string, MutationObserver> = new Map();
-
-  /**
-   * Track component render performance
-   */
-  trackRender(componentName: string, renderTime: number) {
-    const existing = this.metrics.get(componentName) || {
-      renderCount: 0,
-      avgRenderTime: 0,
-      maxRenderTime: 0,
-      memoryUsage: 0,
-      lastRenderTime: 0
-    };
-
-    existing.renderCount++;
-    existing.avgRenderTime = (existing.avgRenderTime * (existing.renderCount - 1) + renderTime) / existing.renderCount;
-    existing.maxRenderTime = Math.max(existing.maxRenderTime, renderTime);
-    existing.lastRenderTime = renderTime;
-    
-    // Get memory usage if available
-    if ('memory' in performance) {
-      existing.memoryUsage = (performance as any).memory.usedJSHeapSize;
-    }
-
-    this.metrics.set(componentName, existing);
-
-    // Alert on performance issues
-    this.checkPerformanceThresholds(componentName, existing);
-  }
-
-  /**
-   * Detect excessive re-renders
-   */
-  private checkPerformanceThresholds(componentName: string, metrics: PerformanceMetrics) {
-    const RENDER_TIME_THRESHOLD = 16; // 16ms for 60fps
-    const RENDER_COUNT_THRESHOLD = 50; // More than 50 renders in a session
-    
-    if (metrics.avgRenderTime > RENDER_TIME_THRESHOLD) {
-      sreLogger.warn('Performance: Slow average render time', { 
-        componentName, 
-        avgRenderTime: metrics.avgRenderTime.toFixed(2),
-        threshold: RENDER_TIME_THRESHOLD 
-      });
-    }
-
-    if (metrics.renderCount > RENDER_COUNT_THRESHOLD) {
-      sreLogger.warn('Performance: Excessive render count', { 
-        componentName, 
-        renderCount: metrics.renderCount,
-        threshold: RENDER_COUNT_THRESHOLD 
-      });
-    }
-  }
-
-  /**
-   * Monitor DOM mutations for excessive changes
-   */
-  startDOMMonitoring(containerId: string = 'root') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    let mutationCount = 0;
-    const resetInterval = 5000; // Reset every 5 seconds
-
-    const observer = new MutationObserver((mutations) => {
-      mutationCount += mutations.length;
-      
-      // Check for excessive mutations
-      if (mutationCount > 100) {
-        sreLogger.warn('Performance: Excessive DOM mutations', { 
-          mutationCount, 
-          resetInterval,
-          containerId 
-        });
-      }
-    });
-
-    observer.observe(container, {
-      childList: true,
-      subtree: true,
-      attributes: true
-    });
-
-    // Reset counter periodically
-    setInterval(() => {
-      mutationCount = 0;
-    }, resetInterval);
-
-    this.observers.set(containerId, observer);
-  }
-
-  /**
-   * Get performance report
-   */
-  getPerformanceReport(): Record<string, PerformanceMetrics> {
-    const report: Record<string, PerformanceMetrics> = {};
-    
-    this.metrics.forEach((metrics, componentName) => {
-      report[componentName] = { ...metrics };
-    });
-
-    return report;
-  }
-
-  /**
-   * Clear metrics
-   */
-  clearMetrics() {
-    this.metrics.clear();
-  }
-
-  /**
-   * Stop monitoring
-   */
-  stopMonitoring() {
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers.clear();
-  }
-}
-
-export const performanceMonitor = new PerformanceMonitor();
+import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from "@/lib/sre-logger";
 
 /**
- * Hook to track component render performance
+ * Fix 3.9: Frontend Performance Monitoring
+ * Monitora performance di componenti e API calls
  */
-export const useRenderTracking = (componentName: string) => {
-  React.useEffect(() => {
+
+export class PerformanceMonitor {
+  private static SLOW_RENDER_THRESHOLD_MS = 100;
+  private static SLOW_API_THRESHOLD_MS = 1000;
+
+  /**
+   * Misura il tempo di render di un componente React
+   * @param componentName Nome del componente da monitorare
+   * @returns Funzione cleanup da chiamare in useEffect return
+   */
+  static measureComponentRender(componentName: string) {
     const startTime = performance.now();
     
     return () => {
       const endTime = performance.now();
-      const renderTime = endTime - startTime;
-      performanceMonitor.trackRender(componentName, renderTime);
+      const duration = endTime - startTime;
+      
+      // Log se render lento
+      if (duration > this.SLOW_RENDER_THRESHOLD_MS) {
+        sreLogger.warn('Slow component render detected', {
+          component: componentName,
+          duration_ms: Math.round(duration),
+          action: 'performance_monitoring',
+          threshold_ms: this.SLOW_RENDER_THRESHOLD_MS
+        });
+      }
+      
+      // Invia metriche a Supabase (fire and forget)
+      this.sendMetric({
+        metric_type: 'component_render',
+        metric_value: duration,
+        component_name: componentName,
+      }).catch(err => {
+        console.debug('[PERF_MONITOR] Failed to send component metric:', err);
+      });
     };
-  });
-};
+  }
 
-/**
- * HOC to automatically track render performance
- */
-export const withRenderTracking = <T extends Record<string, any>>(
-  Component: React.ComponentType<T>,
-  componentName?: string
-) => {
-  const TrackedComponent = (props: T) => {
-    const name = componentName || Component.displayName || Component.name || 'UnknownComponent';
-    useRenderTracking(name);
+  /**
+   * Misura il tempo di una chiamata API
+   * @param endpoint URL o nome dell'endpoint
+   * @param method HTTP method
+   * @returns Oggetto con metodo end() da chiamare dopo la response
+   */
+  static measureAPICall(endpoint: string, method: string = 'GET') {
+    const startTime = performance.now();
     
-    return React.createElement(Component, props);
-  };
+    return {
+      end: (success: boolean, statusCode?: number) => {
+        const duration = performance.now() - startTime;
+        
+        // Log se API lenta
+        if (duration > this.SLOW_API_THRESHOLD_MS) {
+          sreLogger.warn('Slow API call detected', {
+            endpoint,
+            method,
+            duration_ms: Math.round(duration),
+            success,
+            status_code: statusCode,
+            action: 'performance_monitoring',
+            threshold_ms: this.SLOW_API_THRESHOLD_MS
+          });
+        }
+        
+        // Invia metriche a Supabase
+        this.sendMetric({
+          metric_type: 'api_call',
+          metric_value: duration,
+          endpoint: endpoint,
+          metadata: {
+            method,
+            success,
+            status_code: statusCode
+          }
+        }).catch(err => {
+          console.debug('[PERF_MONITOR] Failed to send API metric:', err);
+        });
+      }
+    };
+  }
 
-  TrackedComponent.displayName = `withRenderTracking(${Component.displayName || Component.name})`;
-  
-  return TrackedComponent;
-};
+  /**
+   * Misura il tempo di caricamento di una pagina
+   * @param pageName Nome della pagina
+   */
+  static measurePageLoad(pageName: string) {
+    // Usa Navigation Timing API se disponibile
+    if (typeof window !== 'undefined' && window.performance?.timing) {
+      const timing = window.performance.timing;
+      const loadTime = timing.loadEventEnd - timing.navigationStart;
+      
+      if (loadTime > 0) {
+        this.sendMetric({
+          metric_type: 'page_load',
+          metric_value: loadTime,
+          page_name: pageName,
+        }).catch(err => {
+          console.debug('[PERF_MONITOR] Failed to send page load metric:', err);
+        });
+      }
+    }
+  }
+
+  /**
+   * Invia metrica al database Supabase
+   */
+  private static async sendMetric(data: {
+    metric_type: string;
+    metric_value: number;
+    component_name?: string;
+    page_name?: string;
+    endpoint?: string;
+    metadata?: Record<string, any>;
+  }) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      await supabase.from('performance_metrics').insert({
+        ...data,
+        user_id: user?.id || null,
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      // Silent fail - non bloccare l'app per metriche
+      console.debug('[PERF_MONITOR] Metric send failed (non-critical):', error);
+    }
+  }
+
+  /**
+   * Monitora le Core Web Vitals (LCP, INP, CLS)
+   */
+  static monitorWebVitals() {
+    if (typeof window === 'undefined') return;
+
+    // Lazy load web-vitals library se disponibile
+    import('web-vitals').then(({ onLCP, onINP, onCLS }) => {
+      onLCP((metric: any) => {
+        this.sendMetric({
+          metric_type: 'web_vital_lcp',
+          metric_value: metric.value,
+          metadata: { rating: metric.rating }
+        });
+      });
+
+      onINP((metric: any) => {
+        this.sendMetric({
+          metric_type: 'web_vital_inp',
+          metric_value: metric.value,
+          metadata: { rating: metric.rating }
+        });
+      });
+
+      onCLS((metric: any) => {
+        this.sendMetric({
+          metric_type: 'web_vital_cls',
+          metric_value: metric.value,
+          metadata: { rating: metric.rating }
+        });
+      });
+    }).catch(err => {
+      console.debug('[PERF_MONITOR] Web vitals monitoring not available:', err);
+    });
+  }
+}
+
+// Auto-start web vitals monitoring
+if (typeof window !== 'undefined') {
+  PerformanceMonitor.monitorWebVitals();
+}

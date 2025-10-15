@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { checkRateLimit, RateLimitPresets } from "../_shared/rate-limiter.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +31,31 @@ serve(async (req) => {
     
     const user = userData.user;
     if (!user?.email) throw new Error('User not authenticated');
+
+    // Fix 3.3: Rate limiting check
+    const rateLimitResult = await checkRateLimit(supabaseClient, {
+      ...RateLimitPresets.PAYMENT_CREATION,
+      identifier: user.id,
+      action: 'create_payment_session'
+    });
+
+    if (!rateLimitResult.allowed) {
+      console.warn(`[RATE_LIMIT] User ${user.id} exceeded payment creation rate limit`);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Troppi tentativi di pagamento. Riprova tra qualche minuto.',
+          retryAfter: Math.ceil(rateLimitResult.resetMs / 1000)
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil(rateLimitResult.resetMs / 1000))
+          }
+        }
+      );
+    }
 
     const { bookingId } = await req.json();
     if (!bookingId) throw new Error('Booking ID required');
@@ -113,7 +139,11 @@ serve(async (req) => {
 
     console.log('[BOOKING-PAYMENT] Host Stripe account:', stripeAccount.stripe_account_id);
 
-    // Create payment intent with application fee
+    // Fix 3.5: Generate idempotency key to prevent duplicate charges
+    const idempotencyKey = `booking_${bookingId}_${Date.now()}`;
+    console.log('[BOOKING-PAYMENT] Using idempotency key:', idempotencyKey);
+
+    // Create payment intent with application fee and idempotency
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'eur',
@@ -127,8 +157,11 @@ serve(async (req) => {
         user_id: user.id,
         host_id: host.id,
         space_id: space.id,
+        idempotency_key: idempotencyKey,
       },
       description: `Booking for ${space.title} - ${booking.booking_date}`,
+    }, {
+      idempotencyKey: idempotencyKey // CRITICAL: prevents duplicate charges on retry
     });
 
     console.log('[BOOKING-PAYMENT] Payment intent created:', paymentIntent.id);
@@ -142,7 +175,7 @@ serve(async (req) => {
       })
       .eq('id', bookingId);
 
-    // Create payment record
+    // Create payment record with idempotency key
     await supabaseClient.from('payments').insert({
       booking_id: bookingId,
       user_id: user.id,
@@ -151,6 +184,7 @@ serve(async (req) => {
       host_amount: hostAmount / 100,
       payment_status: 'pending',
       stripe_payment_intent_id: paymentIntent.id,
+      stripe_idempotency_key: idempotencyKey, // Fix 3.5: Store idempotency key
       payment_method: 'stripe',
       metadata: {
         customer_id: customerId,

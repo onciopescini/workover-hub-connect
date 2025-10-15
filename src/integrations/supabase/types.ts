@@ -1179,6 +1179,42 @@ export type Database = {
         }
         Relationships: []
       }
+      db_connection_stats: {
+        Row: {
+          active_connections: number
+          created_at: string
+          id: string
+          idle_connections: number
+          max_connections: number
+          sampled_at: string
+          total_connections: number
+          usage_percentage: number | null
+          waiting_connections: number
+        }
+        Insert: {
+          active_connections: number
+          created_at?: string
+          id?: string
+          idle_connections: number
+          max_connections: number
+          sampled_at?: string
+          total_connections: number
+          usage_percentage?: number | null
+          waiting_connections: number
+        }
+        Update: {
+          active_connections?: number
+          created_at?: string
+          id?: string
+          idle_connections?: number
+          max_connections?: number
+          sampled_at?: string
+          total_connections?: number
+          usage_percentage?: number | null
+          waiting_connections?: number
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body: string
@@ -2142,6 +2178,7 @@ export type Database = {
           platform_fee: number | null
           receipt_url: string | null
           stripe_event_id: string | null
+          stripe_idempotency_key: string | null
           stripe_session_id: string | null
           stripe_transfer_id: string | null
           user_id: string
@@ -2168,6 +2205,7 @@ export type Database = {
           platform_fee?: number | null
           receipt_url?: string | null
           stripe_event_id?: string | null
+          stripe_idempotency_key?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id: string
@@ -2194,6 +2232,7 @@ export type Database = {
           platform_fee?: number | null
           receipt_url?: string | null
           stripe_event_id?: string | null
+          stripe_idempotency_key?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id?: string
@@ -4279,6 +4318,15 @@ export type Database = {
       }
       check_rate_limit: {
         Args: { p_action: string; p_identifier: string }
+        Returns: Json
+      }
+      check_rate_limit_advanced: {
+        Args: {
+          p_action: string
+          p_identifier: string
+          p_max_requests: number
+          p_window_ms: number
+        }
         Returns: Json
       }
       cleanup_expired_cache: {
