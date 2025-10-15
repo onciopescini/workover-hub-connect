@@ -29,7 +29,7 @@ export const useSpaceFormSubmission = ({
 }: UseSpaceFormSubmissionProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { handleRLSError } = useRLSErrorHandler();
+  const { handleError: handleRLSError } = useRLSErrorHandler();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +94,7 @@ export const useSpaceFormSubmission = ({
           
         if (error) {
           // Handle RLS errors with friendly messages
-          const isRLSError = handleRLSError(error, 'space_publish');
+          const isRLSError = handleRLSError(error);
           if (!isRLSError) {
             throw error;
           }
@@ -111,7 +111,7 @@ export const useSpaceFormSubmission = ({
           
         if (error) {
           // Handle RLS errors with friendly messages
-          const isRLSError = handleRLSError(error, 'space_create');
+          const isRLSError = handleRLSError(error);
           if (!isRLSError) {
             throw error;
           }

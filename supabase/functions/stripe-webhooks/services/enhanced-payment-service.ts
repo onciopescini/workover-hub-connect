@@ -8,16 +8,22 @@ export class EnhancedPaymentService {
     supabaseAdmin: any,
     sessionId: string,
     session: any,
-    breakdown: ReturnType<typeof PaymentCalculator.calculateBreakdown>
+    breakdown: ReturnType<typeof PaymentCalculator.calculateBreakdown>,
+    eventId?: string
   ): Promise<boolean> {
     try {
-      const updateData = {
+      const updateData: any = {
         payment_status: 'completed',
         receipt_url: session.receipt_url,
         host_amount: breakdown.hostNetPayout,
         platform_fee: breakdown.platformRevenue,
         updated_at: new Date().toISOString()
       };
+
+      // Add idempotency key if provided
+      if (eventId) {
+        updateData.stripe_event_id = eventId;
+      }
 
       ErrorHandler.logInfo('Updating payment with breakdown', {
         sessionId,

@@ -31,23 +31,34 @@ SELECT cron.schedule(
 
 -- 2. SCHEDULE HOST PAYOUTS (Every hour)
 -- Schedules payouts for hosts 24 hours after service completion
+-- FIX: Uses FOR UPDATE SKIP LOCKED to prevent race conditions
 -- =====================================================
 SELECT cron.schedule(
   'schedule-host-payouts',
   '0 * * * *', -- Every hour at minute 0
   $$
+  WITH eligible_bookings AS (
+    SELECT b.id
+    FROM public.bookings b
+    JOIN public.spaces s ON s.id = b.space_id
+    JOIN public.profiles prof ON prof.id = s.host_id
+    WHERE b.status = 'served'
+      AND b.service_completed_at <= (NOW() - INTERVAL '24 hours')
+      AND b.payout_scheduled_at IS NULL
+      AND prof.stripe_connected = TRUE
+      AND prof.kyc_documents_verified = TRUE
+      AND NOT EXISTS (
+        SELECT 1 FROM public.payments p
+        WHERE p.booking_id = b.id
+          AND p.payment_status IN ('refund_pending', 'disputed')
+      )
+    FOR UPDATE OF b SKIP LOCKED
+  )
   UPDATE public.bookings
   SET 
     payout_scheduled_at = NOW(),
     updated_at = NOW()
-  WHERE status = 'served'
-    AND service_completed_at <= (NOW() - INTERVAL '24 hours')
-    AND payout_scheduled_at IS NULL
-    AND NOT EXISTS (
-      SELECT 1 FROM public.payments p
-      WHERE p.booking_id = bookings.id
-      AND p.payment_status IN ('refund_pending', 'disputed')
-    );
+  WHERE id IN (SELECT id FROM eligible_bookings);
   $$
 );
 
@@ -83,6 +94,26 @@ SELECT cron.schedule(
     headers := '{"Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodHF3enZyeHpzZ2Zoc3Nsd3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NDg0ODUsImV4cCI6MjA2MzUyNDQ4NX0.QThCoBfb0JuFZ5dLru-TNSA_B0PZqp8AL0x0yaEWNFk"}'::jsonb,
     body := '{}'::jsonb
   ) as request_id;
+  $$
+);
+
+-- 5. AUTO-CANCEL FROZEN BOOKINGS (Every hour)
+-- Auto-cancels frozen bookings after 24h of Stripe disconnection
+-- =====================================================
+SELECT cron.schedule(
+  'auto-cancel-frozen-bookings',
+  '0 */1 * * *', -- Every hour
+  $$
+  UPDATE public.bookings
+  SET 
+    status = 'cancelled',
+    cancelled_by_host = TRUE,
+    cancellation_reason = 'Auto-cancelled: host Stripe disconnected >24h',
+    auto_cancel_scheduled_at = NOW(),
+    updated_at = NOW()
+  WHERE status = 'frozen'
+    AND frozen_at < NOW() - INTERVAL '24 hours'
+    AND auto_cancel_scheduled_at IS NULL;
   $$
 );
 

@@ -12,9 +12,24 @@ import type { EventHandlerResult } from "../types/webhook-types.ts";
 export class CheckoutHandlers {
   static async handleCheckoutSessionCompleted(
     session: Stripe.Checkout.Session,
-    supabaseAdmin: any
+    supabaseAdmin: any,
+    eventId?: string
   ): Promise<EventHandlerResult> {
-    ErrorHandler.logInfo('Checkout session completed', { sessionId: session.id });
+    ErrorHandler.logInfo('Checkout session completed', { sessionId: session.id, eventId });
+
+    // IDEMPOTENCY CHECK: Previene doppi pagamenti
+    if (eventId) {
+      const { data: existingPayment } = await supabaseAdmin
+        .from('payments')
+        .select('id')
+        .eq('stripe_event_id', eventId)
+        .maybeSingle();
+      
+      if (existingPayment) {
+        ErrorHandler.logInfo('Event already processed (idempotency)', { eventId, paymentId: existingPayment.id });
+        return { success: true, message: 'Duplicate event ignored' };
+      }
+    }
     
     if (!Validators.validateBookingMetadata(session.metadata)) {
       return { success: false, error: 'Invalid booking metadata' };

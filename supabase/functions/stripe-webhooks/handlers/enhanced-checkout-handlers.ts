@@ -10,13 +10,29 @@ import type { EventHandlerResult } from "../types/webhook-types.ts";
 export class EnhancedCheckoutHandlers {
   static async handleCheckoutSessionCompleted(
     session: Stripe.Checkout.Session,
-    supabaseAdmin: any
+    supabaseAdmin: any,
+    eventId?: string
   ): Promise<EventHandlerResult> {
     ErrorHandler.logInfo('Processing checkout session completed', { 
       sessionId: session.id,
       paymentStatus: session.payment_status,
-      sessionStatus: session.status
+      sessionStatus: session.status,
+      eventId
     });
+
+    // IDEMPOTENCY CHECK: Previene doppi pagamenti
+    if (eventId) {
+      const { data: existingPayment } = await supabaseAdmin
+        .from('payments')
+        .select('id')
+        .eq('stripe_event_id', eventId)
+        .maybeSingle();
+      
+      if (existingPayment) {
+        ErrorHandler.logInfo('Event already processed (idempotency)', { eventId, paymentId: existingPayment.id });
+        return { success: true, message: 'Duplicate event ignored' };
+      }
+    }
     
     // Validate payment was successful
     if (session.payment_status !== 'paid' || session.status !== 'complete') {
@@ -51,12 +67,13 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: 'Payment not found' };
     }
 
-    // Update payment with breakdown
+    // Update payment with breakdown (with idempotency key)
     const paymentUpdated = await EnhancedPaymentService.updatePaymentWithBreakdown(
       supabaseAdmin,
       session.id,
       session,
-      breakdown
+      breakdown,
+      eventId
     );
 
     if (!paymentUpdated) {

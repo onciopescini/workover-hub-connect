@@ -6,149 +6,194 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface TaxDetailsUpdate {
-  fiscal_regime?: 'privato' | 'forfettario' | 'ordinario';
-  tax_id?: string;
-  vat_number?: string;
-  pec_email?: string;
-  sdi_code?: string;
-  iban?: string;
-  legal_address?: string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-
-    if (!user) {
-      throw new Error('User not authenticated');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    const taxDetails: TaxDetailsUpdate = await req.json();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
-    console.log('[update-tax-details] Updating tax details for user:', user.id);
+    const body = await req.json();
+    const {
+      tax_id,
+      vat_number,
+      entity_type,
+      iban,
+      bic_swift,
+      pec_email,
+      sdi_code,
+      address_line1,
+      address_line2,
+      city,
+      province,
+      postal_code,
+      country_code,
+      fiscal_regime,
+      is_primary
+    } = body;
 
-    // Validation
+    // VALIDAZIONE SERVER-SIDE
     const errors: string[] = [];
 
-    if (taxDetails.fiscal_regime) {
-      if (!['privato', 'forfettario', 'ordinario'].includes(taxDetails.fiscal_regime)) {
-        errors.push('Regime fiscale non valido');
+    // Validazione P.IVA italiana (11 cifre)
+    if (vat_number) {
+      if (!/^\d{11}$/.test(vat_number)) {
+        errors.push('P.IVA deve essere di 11 cifre');
       }
     }
 
-    if (taxDetails.tax_id && !/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/i.test(taxDetails.tax_id)) {
-      errors.push('Codice Fiscale non valido');
+    // Validazione Codice Fiscale italiano (16 caratteri alfanumerici)
+    if (tax_id && entity_type === 'individual') {
+      if (!/^[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/i.test(tax_id)) {
+        errors.push('Codice Fiscale non valido (formato: RSSMRA80A01H501U)');
+      }
     }
 
-    if (taxDetails.vat_number && !/^\d{11}$/.test(taxDetails.vat_number)) {
-      errors.push('Partita IVA non valida (deve essere 11 cifre)');
+    // Validazione IBAN base (formato: IT60X0542811101000000123456)
+    if (iban) {
+      const ibanClean = iban.replace(/\s/g, '').toUpperCase();
+      if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(ibanClean)) {
+        errors.push('IBAN non valido (formato errato)');
+      }
+      // Basic length check for Italian IBAN
+      if (ibanClean.startsWith('IT') && ibanClean.length !== 27) {
+        errors.push('IBAN italiano deve essere di 27 caratteri');
+      }
     }
 
-    if (taxDetails.pec_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(taxDetails.pec_email)) {
-      errors.push('PEC email non valida');
+    // Validazione PEC (deve contenere @pec o @legalmail o @cert)
+    if (pec_email) {
+      const pecDomainRegex = /@(pec\.|legalmail\.|cert\.)/i;
+      if (!pecDomainRegex.test(pec_email)) {
+        errors.push('PEC non valida (deve essere dominio @pec.*, @legalmail.*, @cert.*)');
+      }
+      // Basic email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pec_email)) {
+        errors.push('PEC formato email non valido');
+      }
     }
 
-    if (taxDetails.sdi_code && !/^[A-Z0-9]{7}$/.test(taxDetails.sdi_code)) {
-      errors.push('Codice SDI non valido (deve essere 7 caratteri alfanumerici)');
+    // Validazione SDI (7 caratteri alfanumerici)
+    if (sdi_code) {
+      if (!/^[A-Z0-9]{7}$/i.test(sdi_code)) {
+        errors.push('Codice SDI deve essere di 7 caratteri alfanumerici (es: ABCDE12)');
+      }
     }
 
-    if (taxDetails.iban && !/^IT\d{2}[A-Z]\d{10}[A-Z0-9]{12}$/.test(taxDetails.iban.replace(/\s/g, ''))) {
-      errors.push('IBAN italiano non valido');
+    // Validazione campi obbligatori per DAC7
+    if (is_primary) {
+      if (!address_line1 || !city || !postal_code || !country_code) {
+        errors.push('Indirizzo completo obbligatorio per dati fiscali primari');
+      }
+      if (!iban) {
+        errors.push('IBAN obbligatorio per dati fiscali primari');
+      }
     }
 
     if (errors.length > 0) {
-      console.warn('[update-tax-details] Validation errors:', errors);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          errors: errors,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed', 
+        errors 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Prepare update object
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
+    // UPSERT tax_details
+    const { data: existingTaxDetails } = await supabase
+      .from('tax_details')
+      .select('id')
+      .eq('profile_id', user.id)
+      .eq('is_primary', true)
+      .maybeSingle();
+
+    const taxDetailsData = {
+      profile_id: user.id,
+      tax_id,
+      vat_number,
+      entity_type,
+      iban,
+      bic_swift,
+      pec_email,
+      sdi_code,
+      address_line1,
+      address_line2,
+      city,
+      province,
+      postal_code,
+      country_code,
+      fiscal_regime,
+      is_primary: is_primary ?? true,
+      updated_at: new Date().toISOString()
     };
 
-    if (taxDetails.fiscal_regime !== undefined) updateData.fiscal_regime = taxDetails.fiscal_regime;
-    if (taxDetails.tax_id !== undefined) updateData.tax_id = taxDetails.tax_id;
-    if (taxDetails.vat_number !== undefined) updateData.vat_number = taxDetails.vat_number;
-    if (taxDetails.pec_email !== undefined) updateData.pec_email = taxDetails.pec_email;
-    if (taxDetails.sdi_code !== undefined) updateData.sdi_code = taxDetails.sdi_code;
-    if (taxDetails.iban !== undefined) updateData.iban = taxDetails.iban?.replace(/\s/g, '');
-    if (taxDetails.legal_address !== undefined) updateData.legal_address = taxDetails.legal_address;
-
-    // Reset KYC verification when tax details change (requires re-verification)
-    updateData.kyc_verified = false;
-    updateData.kyc_verified_at = null;
-    updateData.kyc_verified_by = null;
-
-    // Update profile
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update(updateData)
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('[update-tax-details] Error updating profile:', updateError);
-      throw updateError;
+    let result;
+    if (existingTaxDetails) {
+      result = await supabase
+        .from('tax_details')
+        .update(taxDetailsData)
+        .eq('id', existingTaxDetails.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from('tax_details')
+        .insert(taxDetailsData)
+        .select()
+        .single();
     }
 
-    console.log('[update-tax-details] Tax details updated successfully');
-
-    // Create notification
-    await supabaseClient
-      .from('user_notifications')
-      .insert({
-        user_id: user.id,
-        type: 'system',
-        title: 'Dati Fiscali Aggiornati',
-        content: 'I tuoi dati fiscali sono stati aggiornati. Un amministratore li verificherà a breve.',
-        metadata: {
-          fields_updated: Object.keys(taxDetails),
-        },
-      });
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Tax details updated successfully. Awaiting admin verification.',
-        kyc_verification_required: true,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error: any) {
-    console.error('[update-tax-details] Error:', error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (result.error) {
+      console.error('Tax details save error:', result.error);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to save tax details',
+        details: result.error.message 
+      }), {
         status: 500,
-      }
-    );
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('Tax details saved successfully:', { userId: user.id, taxDetailsId: result.data.id });
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      data: result.data
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    console.error('Unexpected error in update-tax-details:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });

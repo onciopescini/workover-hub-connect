@@ -62,7 +62,7 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as any;
-        result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin);
+        result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin, event.id);
         break;
       }
 

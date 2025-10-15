@@ -2141,6 +2141,7 @@ export type Database = {
           payment_status: string
           platform_fee: number | null
           receipt_url: string | null
+          stripe_event_id: string | null
           stripe_session_id: string | null
           stripe_transfer_id: string | null
           user_id: string
@@ -2166,6 +2167,7 @@ export type Database = {
           payment_status?: string
           platform_fee?: number | null
           receipt_url?: string | null
+          stripe_event_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id: string
@@ -2191,6 +2193,7 @@ export type Database = {
           payment_status?: string
           platform_fee?: number | null
           receipt_url?: string | null
+          stripe_event_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id?: string

@@ -3,6 +3,9 @@ project_id = "khtqwzvrxzsgfhsslwyz"
 [functions.health-check]
 verify_jwt = false
 
+[functions.update-tax-details]
+verify_jwt = true
+
 [functions.mark-bookings-served]
 verify_jwt = false
 
@@ -17,6 +20,7 @@ verify_jwt = false
 
 [functions.stripe-webhooks]
 verify_jwt = false
+timeout = 25
 
 [functions.send-email]
 verify_jwt = true
