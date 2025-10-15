@@ -164,4 +164,39 @@ export const handlers = [
       created_at: new Date().toISOString(),
     }, { status: 201 });
   }),
+
+  // Fiscal endpoints (Step 5 E2E Tests)
+  http.get('/rest/v1/invoices', () => {
+    return HttpResponse.json([
+      {
+        id: 'invoice-mock-1',
+        invoice_number: 'FT-2025-001',
+        invoice_date: '2025-01-15',
+        total_amount: 122.00,
+        base_amount: 100.00,
+        vat_amount: 22.00,
+        vat_rate: 22,
+      },
+    ]);
+  }),
+
+  http.get('/rest/v1/non_fiscal_receipts', () => {
+    return HttpResponse.json([
+      {
+        id: 'receipt-mock-1',
+        receipt_number: 'RIC-2025-001',
+        receipt_date: '2025-01-15',
+        total_amount: 100.00,
+        canone_amount: 100.00,
+      },
+    ]);
+  }),
+
+  http.patch('/rest/v1/profiles/:id', async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      ...body,
+      updated_at: new Date().toISOString(),
+    });
+  }),
 ];

@@ -243,3 +243,159 @@ export const createInvalidDate = () => '2025-13-45'; // Invalid date
 export const createInvalidTime = () => '25:99'; // Invalid time
 export const createTooLongString = (maxLength: number) => 'x'.repeat(maxLength + 1);
 export const createEmptyString = () => '';
+
+// ============= Fiscal Data Mock (for Step 5 E2E Tests) =============
+
+/**
+ * Mock host fiscal profile data
+ * @param regime - 'private' | 'forfettario' | 'ordinario'
+ */
+export const createMockHostFiscalProfile = (regime: 'private' | 'forfettario' | 'ordinario', overrides?: Partial<any>) => {
+  const base = {
+    fiscal_regime: regime,
+    vat_number: null,
+    tax_code: null,
+    business_name: null,
+    vat_rate: null,
+    sdi_code: null,
+    pec_email: null,
+    ...overrides,
+  };
+
+  if (regime === 'forfettario') {
+    return {
+      ...base,
+      fiscal_regime: 'forfettario',
+      vat_number: '12345678901',
+      tax_code: 'RSSMRA80A01H501U',
+      business_name: 'Studio Professionale Rossi',
+      sdi_code: '0000000',
+      ...overrides,
+    };
+  }
+
+  if (regime === 'ordinario') {
+    return {
+      ...base,
+      fiscal_regime: 'ordinario',
+      vat_number: '12345678901',
+      tax_code: 'RSSMRA80A01H501U',
+      business_name: 'Coworking Bianchi S.r.l.',
+      vat_rate: 22,
+      sdi_code: '0000000',
+      pec_email: 'fatture@pec.bianchicoworking.it',
+      ...overrides,
+    };
+  }
+
+  // regime === 'private'
+  return base;
+};
+
+/**
+ * Mock coworker fiscal data for checkout
+ * @param isBusiness - true for P.IVA, false for CF
+ */
+export const createMockCoworkerFiscalData = (isBusiness: boolean = false, overrides?: Partial<any>) => ({
+  request_invoice: true,
+  is_business: isBusiness,
+  tax_id: isBusiness ? '12345678901' : 'RSSMRA80A01H501U',
+  pec_email: isBusiness ? 'azienda@pec.it' : null,
+  sdi_code: isBusiness ? '0000000' : null,
+  billing_address: 'Via Roma 123',
+  billing_city: 'Milano',
+  billing_province: 'MI',
+  billing_postal_code: '20100',
+  billing_country: 'IT',
+  ...overrides,
+});
+
+/**
+ * Mock electronic invoice (for P.IVA hosts)
+ */
+export const createMockInvoice = (overrides?: Partial<any>) => ({
+  id: uuidv4(),
+  invoice_number: `FT-${new Date().getFullYear()}-001`,
+  invoice_date: new Date().toISOString().split('T')[0],
+  payment_id: uuidv4(),
+  booking_id: uuidv4(),
+  recipient_id: uuidv4(),
+  issuer: 'WORKOVER_IT',
+  recipient_type: 'coworker',
+  base_amount: 100.00,
+  vat_amount: 22.00,
+  vat_rate: 22,
+  total_amount: 122.00,
+  discount_amount: 0,
+  pdf_file_url: 'fiscal-documents/invoices/mock-invoice.pdf',
+  xml_file_url: 'fiscal-documents/invoices/mock-invoice.xml',
+  xml_sdi_id: 'IT01234567890_001',
+  xml_delivery_status: 'delivered',
+  xml_sent_at: new Date().toISOString(),
+  conservazione_completed_at: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ...overrides,
+});
+
+/**
+ * Mock non-fiscal receipt (for private hosts)
+ */
+export const createMockReceipt = (overrides?: Partial<any>) => ({
+  id: uuidv4(),
+  receipt_number: `RIC-${new Date().getFullYear()}-001`,
+  receipt_date: new Date().toISOString().split('T')[0],
+  booking_id: uuidv4(),
+  payment_id: uuidv4(),
+  host_id: uuidv4(),
+  coworker_id: uuidv4(),
+  total_amount: 100.00,
+  canone_amount: 100.00,
+  discount_amount: 0,
+  discount_reason: null,
+  pdf_url: 'fiscal-documents/receipts/mock-receipt.pdf',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  ...overrides,
+});
+
+/**
+ * Mock payment with fiscal invoice metadata
+ */
+export const createMockPaymentWithInvoice = (overrides?: Partial<any>) => ({
+  id: uuidv4(),
+  booking_id: uuidv4(),
+  user_id: uuidv4(),
+  amount: 122.00,
+  host_amount: 90.00,
+  platform_fee: 32.00,
+  currency: 'EUR',
+  payment_status: 'completed',
+  host_invoice_required: true,
+  host_invoice_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // T+7
+  host_invoice_reminder_sent: false,
+  credit_note_required: false,
+  created_at: new Date().toISOString(),
+  ...overrides,
+});
+
+/**
+ * Mock payment requiring credit note
+ */
+export const createMockPaymentWithCreditNote = (overrides?: Partial<any>) => ({
+  id: uuidv4(),
+  booking_id: uuidv4(),
+  user_id: uuidv4(),
+  amount: 122.00,
+  host_amount: 90.00,
+  platform_fee: 32.00,
+  currency: 'EUR',
+  payment_status: 'refunding',
+  host_invoice_required: true,
+  host_invoice_reminder_sent: true, // Invoice was issued
+  credit_note_required: true,
+  credit_note_deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // T+3
+  credit_note_issued_by_host: false,
+  created_at: new Date().toISOString(),
+  ...overrides,
+});
