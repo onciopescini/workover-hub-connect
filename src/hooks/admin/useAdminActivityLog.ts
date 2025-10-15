@@ -12,9 +12,10 @@ export const useAdminActivityLog = (limit: number = 50) => {
     const fetchLogs = async () => {
       try {
         setIsLoading(true);
+        // Fix B.1: Select only needed columns instead of '*'
         const { data, error } = await supabase
           .from('admin_actions_log')
-          .select('*')
+          .select('id, admin_id, action_type, target_type, target_id, description, created_at, metadata, ip_address, user_agent, geo_location, session_id')
           .order('created_at', { ascending: false })
           .limit(limit);
 

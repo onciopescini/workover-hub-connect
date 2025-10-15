@@ -6,39 +6,39 @@ import { sreLogger } from '@/lib/sre-logger';
 // Get admin dashboard stats
 export const getAdminStats = async (): Promise<AdminStats> => {
   try {
-    // Get user counts
+    // Get user counts - Fix B.1: Use 'id' instead of '*' for count queries
     const { count: totalUsers } = await supabase
       .from("profiles")
-      .select("*", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true });
 
     const { count: totalHosts } = await supabase
       .from("profiles")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("role", "host");
 
     const { count: suspendedUsers } = await supabase
       .from("profiles")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("is_suspended", true);
 
     // Get space counts
     const { count: totalSpaces } = await supabase
       .from("spaces")
-      .select("*", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true });
 
     const { count: pendingSpaces } = await supabase
       .from("spaces")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("pending_approval", true);
 
     // Get booking counts
     const { count: totalBookings } = await supabase
       .from("bookings")
-      .select("*", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true });
 
     const { count: activeBookings } = await supabase
       .from("bookings")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("status", "confirmed");
 
     // Calculate total revenue (simplified)

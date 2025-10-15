@@ -21,9 +21,10 @@ export const useNotifications = () => {
 
     setIsLoading(true);
     try {
+      // Fix B.1: Select only needed columns instead of '*'
       const { data, error } = await supabase
         .from('user_notifications')
-        .select('*')
+        .select('id, user_id, type, title, content, metadata, is_read, created_at')
         .eq('user_id', authState.user.id)
         .order('created_at', { ascending: false });
 

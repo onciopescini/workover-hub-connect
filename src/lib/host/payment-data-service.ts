@@ -101,58 +101,32 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
 
 export const getHostTransactions = async (hostId: string): Promise<Transaction[]> => {
   try {
-    const { data: payments, error } = await supabase
-      .from('payments')
-      .select(`
-        id,
-        amount,
-        created_at,
-        host_amount,
-        payment_status,
-        booking_id,
-        bookings!inner (
-          space_id,
-          spaces!inner (
-            host_id,
-            title
-          ),
-          profiles (
-            first_name,
-            last_name
-          )
-        )
-      `)
-      .eq('bookings.spaces.host_id', hostId)
-      .eq('payment_status', 'completed')
-      .not('created_at', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(20);
+    // Fix B.6: Use optimized RPC instead of nested JOINs (eliminates N+1 queries)
+    const { data, error } = await supabase.rpc('get_host_transactions_optimized', {
+      host_id_param: hostId,
+      limit_param: 20
+    });
 
     if (error) throw error;
 
-    if (!payments) return [];
+    if (!data) return [];
 
-    const transactions: Transaction[] = [];
-    
-    for (const payment of payments) {
-      if (payment.created_at && typeof payment.created_at === 'string') {
-        // Per pagamenti legacy con host_amount null, calcola come amount / 1.05 (rimuove il 5% fee del buyer)
-        const hostAmount = payment.host_amount ?? (payment.amount / 1.05);
-        
-        transactions.push({
-          id: payment.id,
-          type: 'earning' as const,
-          description: `Prenotazione ${payment.bookings?.spaces?.title || 'Spazio'}`,
-          amount: hostAmount,
-          date: payment.created_at.split('T')[0] as string,
-          status: 'completed', // Solo pagamenti completed
-          customer: payment.bookings?.profiles 
-            ? `${payment.bookings.profiles.first_name} ${payment.bookings.profiles.last_name}`
-            : 'Guest sconosciuto',
-          booking_id: payment.booking_id
-        });
-      }
-    }
+    // Transform RPC result to Transaction format
+    const transactions: Transaction[] = data.map((row: any) => {
+      // Per pagamenti legacy con host_amount null, calcola come amount / 1.05 (rimuove il 5% fee del buyer)
+      const hostAmount = row.host_amount ?? (row.amount / 1.05);
+      
+      return {
+        id: row.id,
+        type: 'earning' as const,
+        description: `Prenotazione ${row.space_title || 'Spazio'}`,
+        amount: hostAmount,
+        date: row.created_at.split('T')[0] as string,
+        status: 'completed', // RPC returns only completed payments
+        customer: row.customer_name || 'Guest sconosciuto',
+        booking_id: row.booking_id
+      };
+    });
 
     return transactions;
 

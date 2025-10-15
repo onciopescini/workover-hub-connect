@@ -1,32 +1,20 @@
 import { toast } from "sonner";
+import { handleRLSError } from "@/lib/rls-error-handler";
 
+/**
+ * Hook to handle RLS errors with user-friendly messages
+ * Updated for Fix B.4 - integrates with centralized error handler
+ */
 export const useRLSErrorHandler = () => {
   const handleError = (error: any): boolean => {
-    // Check for RLS-related errors
-    if (
-      error?.code === 'PGRST301' || 
-      error?.code === '42501' ||
-      error?.message?.toLowerCase().includes('row-level security') ||
-      error?.message?.toLowerCase().includes('permission denied') ||
-      error?.message?.toLowerCase().includes('policy')
-    ) {
+    const result = handleRLSError(error);
+    
+    if (result.isRLSError && result.shouldShowToast) {
       toast.error('Accesso negato', {
-        description: 'Non hai i permessi per accedere a questa risorsa. Verifica di essere autenticato con il ruolo corretto.',
+        description: result.userMessage,
         duration: 5000,
       });
-      return true; // Error handled
-    }
-
-    // Check for missing authentication
-    if (
-      error?.message?.toLowerCase().includes('jwt') ||
-      error?.message?.toLowerCase().includes('unauthorized')
-    ) {
-      toast.error('Autenticazione richiesta', {
-        description: 'Devi effettuare il login per accedere a questa funzionalità.',
-        duration: 5000,
-      });
-      return true; // Error handled
+      return true;
     }
 
     return false; // Not an RLS/auth error

@@ -4495,6 +4495,19 @@ export type Database = {
         Args: { host_id_param: string }
         Returns: Json
       }
+      get_host_transactions_optimized: {
+        Args: { host_id_param: string; limit_param?: number }
+        Returns: {
+          amount: number
+          booking_id: string
+          created_at: string
+          customer_name: string
+          host_amount: number
+          id: string
+          payment_status: string
+          space_title: string
+        }[]
+      }
       get_hosts_for_dac7_report: {
         Args: { host_ids_filter?: string[]; report_year: number }
         Returns: {
