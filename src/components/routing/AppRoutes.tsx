@@ -60,6 +60,9 @@ const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 const HostFiscalPage = lazy(() => import("@/pages/host/HostFiscalPage"));
 const HostInvoicesPage = lazy(() => import("@/pages/host/HostInvoicesPage"));
 
+// Coworker pages
+const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
+
 // Admin pages
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
@@ -261,6 +264,15 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <NetworkingSettings />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+
+        {/* Coworker documents */}
+        <Route path="my-documents" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <MyDocumentsPage />
             </LazyWrapper>
           </AuthProtected>
         } />
