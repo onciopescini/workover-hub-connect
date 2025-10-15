@@ -28,7 +28,6 @@ export interface PublicSpace {
   title: string;
   description: string | null;
   category: string;
-  subcategory: string | null;
   photos: string[];
   price_per_day: number;
   address: string;
@@ -54,7 +53,6 @@ export interface SpaceWithHostInfo {
   name?: string;
   description: string | null;
   category: string;
-  subcategory: string | null;
   photos: string[];
   price_per_day: number;
   price_per_hour?: number;
@@ -189,7 +187,6 @@ function normalizeSpaceData(raw: any): SpaceWithHostInfo {
     name: raw.name ?? raw.title ?? 'Spazio',
     description: raw.description ?? null,
     category: raw.category ?? '',
-    subcategory: raw.subcategory ?? null,
     photos: Array.isArray(raw.photos) ? raw.photos : [],
     price_per_day: Number(raw.price_per_day ?? 0),
     price_per_hour: Number(raw.price_per_hour ?? 0),
