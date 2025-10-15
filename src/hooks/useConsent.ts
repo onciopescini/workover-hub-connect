@@ -8,6 +8,9 @@ const consentLogger = createContextualLogger('ConsentManagement');
 const CONSENT_VERSION = '1.0.0';
 const STORAGE_KEY = 'workover_consent';
 
+// Flag per evitare spam di log in console
+let consentLoggedOnce = false;
+
 const DEFAULT_CONSENT: CookieConsent = {
   necessary: true, // Always true, required for app functionality
   analytics: false,
@@ -64,8 +67,14 @@ export const useConsent = () => {
         setSettings(DEFAULT_SETTINGS);
       }
     } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error('Failed to load consent from storage');
-      consentLogger.error('Failed to load consent from storage', normalizedError);
+      // Rimuovi dati corrotti e logga solo una volta
+      localStorage.removeItem(STORAGE_KEY);
+      
+      if (!consentLoggedOnce) {
+        consentLogger.warn('Corrupted consent data removed from storage');
+        consentLoggedOnce = true;
+      }
+      
       setSettings(DEFAULT_SETTINGS);
     } finally {
       setIsLoaded(true);

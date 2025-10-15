@@ -15,6 +15,92 @@ import { useLogger } from '@/hooks/useLogger';
 import { TIME_CONSTANTS } from "@/constants";
 
 /**
+ * Campi realmente esposti dalla view spaces_public_safe
+ */
+const PUBLIC_SPACES_SELECT = [
+  'id',
+  'title', 
+  'description',
+  'category',
+  'work_environment',
+  'max_capacity',
+  'confirmation_type',
+  'workspace_features',
+  'amenities',
+  'seating_types',        // ARRAY
+  'ideal_guest_tags',     // ARRAY
+  'event_friendly_tags',
+  'price_per_hour',
+  'price_per_day',
+  'photos',
+  'rules',
+  'availability',
+  'cancellation_policy',
+  'city_name',
+  'country_code',
+  'approximate_location', // tipo POINT (x=lng, y=lat)
+  'published',
+  'created_at',
+  'updated_at'
+].join(', ');
+
+/**
+ * Parse Postgres POINT type to lat/lng
+ * Supabase returns POINT as string "(x,y)" where x=lng, y=lat
+ * or as object {x: lng, y: lat}
+ */
+function parsePoint(p: unknown): { lat?: number; lng?: number } {
+  if (!p) return {};
+  
+  // String format: "(lng,lat)" o "lng,lat"
+  if (typeof p === 'string') {
+    const match = p.match(/\(?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)?/);
+    if (match && match[1] && match[2]) {
+      return { 
+        lng: parseFloat(match[1]), 
+        lat: parseFloat(match[2]) 
+      };
+    }
+  }
+  
+  // Object format: {x: lng, y: lat}
+  if (typeof p === 'object' && p !== null) {
+    const { x, y } = p as any;
+    if (typeof x === 'number' && typeof y === 'number') {
+      return { lng: x, lat: y };
+    }
+  }
+  
+  return {};
+}
+
+/**
+ * Normalize public space data for UI compatibility
+ * - Derives latitude/longitude from approximate_location
+ * - Constructs address from city_name + country_code
+ * - Converts arrays to singular for backward compatibility
+ */
+function normalizePublicSpace(raw: any): any {
+  const { lat, lng } = parsePoint(raw.approximate_location);
+  
+  return {
+    ...raw,
+    // Derived fields for UI compatibility
+    latitude: lat ?? null,
+    longitude: lng ?? null,
+    address: [raw.city_name, raw.country_code].filter(Boolean).join(', ') || '',
+    
+    // Backward compatibility: singular from array
+    seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
+      ? raw.seating_types[0] 
+      : null,
+    ideal_guest: Array.isArray(raw.ideal_guest_tags) && raw.ideal_guest_tags.length > 0 
+      ? raw.ideal_guest_tags[0] 
+      : null,
+  };
+}
+
+/**
  * Batch check availability for multiple spaces using RPC
  */
 const checkSpacesAvailabilityBatch = async (
@@ -193,22 +279,18 @@ export const usePublicSpacesLogic = () => {
       // Use secure view that doesn't expose host_id or precise location
       const { data: spacesData, error: spacesError } = await supabase
         .from('spaces_public_safe')
-        .select(`
-          id, title, description, category, photos,
-          price_per_day, price_per_hour, city_name, country_code,
-          latitude, longitude, max_capacity, workspace_features, amenities,
-          work_environment, seating_type, ideal_guest, confirmation_type,
-          published, created_at, availability, host_first_name, host_last_name,
-          host_profile_photo, host_bio, host_networking_enabled
-        `);
+        .select(PUBLIC_SPACES_SELECT);
       
       if (spacesError) {
         info('Failed to fetch spaces', { error: spacesError });
         throw spacesError;
       }
 
-      const spaces = Array.isArray(spacesData) ? spacesData as any[] : [];
-      let filteredSpaces = spaces || [];
+      // Normalize data: derive lat/lng, address, and singular fields
+      const normalizedSpaces = Array.isArray(spacesData) 
+        ? spacesData.map(normalizePublicSpace) 
+        : [];
+      let filteredSpaces = normalizedSpaces;
 
       // Apply filters to the fetched data (client-side filtering)
       if (filters.category) {
@@ -240,12 +322,13 @@ export const usePublicSpacesLogic = () => {
         );
       }
       if (filters.location) {
-        // Flexible city search: search in city_name and country_code
+        // Flexible city search: search in city_name, country_code AND derived address
         const searchTerm = filters.location.trim().toLowerCase();
         filteredSpaces = filteredSpaces.filter((space: any) => 
           space && (
             space.city_name?.toLowerCase().includes(searchTerm) ||
-            space.country_code?.toLowerCase().includes(searchTerm)
+            space.country_code?.toLowerCase().includes(searchTerm) ||
+            space.address?.toLowerCase().includes(searchTerm)
           )
         );
       }

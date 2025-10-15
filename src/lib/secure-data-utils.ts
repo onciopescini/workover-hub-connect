@@ -5,6 +5,66 @@ import { sreLogger } from '@/lib/sre-logger';
  * Secure data access utilities that use RLS-protected functions
  */
 
+/**
+ * Campi realmente esposti dalla view spaces_public_safe
+ */
+const PUBLIC_SPACES_SELECT = [
+  'id',
+  'title', 
+  'description',
+  'category',
+  'work_environment',
+  'max_capacity',
+  'confirmation_type',
+  'workspace_features',
+  'amenities',
+  'seating_types',        // ARRAY
+  'ideal_guest_tags',     // ARRAY
+  'event_friendly_tags',
+  'price_per_hour',
+  'price_per_day',
+  'photos',
+  'rules',
+  'availability',
+  'cancellation_policy',
+  'city_name',
+  'country_code',
+  'approximate_location', // tipo POINT (x=lng, y=lat)
+  'published',
+  'created_at',
+  'updated_at'
+].join(', ');
+
+/**
+ * Parse Postgres POINT type to lat/lng
+ * Supabase returns POINT as string "(x,y)" where x=lng, y=lat
+ * or as object {x: lng, y: lat}
+ */
+function parsePoint(p: unknown): { lat?: number; lng?: number } {
+  if (!p) return {};
+  
+  // String format: "(lng,lat)" o "lng,lat"
+  if (typeof p === 'string') {
+    const match = p.match(/\(?\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)?/);
+    if (match && match[1] && match[2]) {
+      return { 
+        lng: parseFloat(match[1]), 
+        lat: parseFloat(match[2]) 
+      };
+    }
+  }
+  
+  // Object format: {x: lng, y: lat}
+  if (typeof p === 'object' && p !== null) {
+    const { x, y } = p as any;
+    if (typeof x === 'number' && typeof y === 'number') {
+      return { lng: x, lat: y };
+    }
+  }
+  
+  return {};
+}
+
 export interface PublicProfile {
   id: string;
   first_name: string;
@@ -120,17 +180,13 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
 export const getPublicSpaces = async (): Promise<any[]> => {
   try {
     // 1) Use secure view that doesn't expose host_id or precise location
-    let { data, error } = await supabase.from('spaces_public_safe').select(`
-      id, title, description, category, photos,
-      price_per_day, price_per_hour, city_name, country_code,
-      latitude, longitude, max_capacity, workspace_features, amenities,
-      work_environment, seating_type, ideal_guest, confirmation_type,
-      published, created_at, availability, host_first_name, host_last_name,
-      host_profile_photo, host_bio, host_networking_enabled
-    `);
+    let { data, error } = await supabase
+      .from('spaces_public_safe')
+      .select(PUBLIC_SPACES_SELECT);
 
     if (!error && Array.isArray(data)) {
-      return data as any[];
+      // Normalize data: derive lat/lng, address, and singular fields
+      return data.map(normalizePublicSpaceData);
     }
 
     sreLogger.debug('RPC get_public_spaces_safe failed, using view', { 
@@ -141,14 +197,7 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     // 2) Fallback to secure public view (excludes host_id, precise GPS, full address)
     const { data: viewData, error: viewError } = await supabase
       .from('spaces_public_safe')
-      .select(`
-        id, title, description, category, photos,
-        price_per_day, price_per_hour, city_name, country_code,
-        latitude, longitude, max_capacity, workspace_features, amenities,
-        work_environment, seating_type, ideal_guest, confirmation_type,
-        published, created_at, availability, host_first_name, host_last_name,
-        host_profile_photo, host_bio, host_networking_enabled
-      `)
+      .select(PUBLIC_SPACES_SELECT)
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -161,13 +210,13 @@ export const getPublicSpaces = async (): Promise<any[]> => {
       // 3) Last resort: try legacy RPC
       const alt = await supabase.rpc('get_public_spaces');
       if (!alt.error && Array.isArray(alt.data)) {
-        return alt.data as any[];
+        return alt.data.map(normalizePublicSpaceData);
       }
       
       return [];
     }
 
-    return viewData ?? [];
+    return viewData ? viewData.map(normalizePublicSpaceData) : [];
   } catch (err: any) {
     sreLogger.error('Error in getPublicSpaces', { 
       error: err,
@@ -178,9 +227,36 @@ export const getPublicSpaces = async (): Promise<any[]> => {
 };
 
 /**
+ * Normalize public space data for UI compatibility
+ * Used for spaces_public_safe view results
+ */
+function normalizePublicSpaceData(raw: any): any {
+  const { lat, lng } = parsePoint(raw.approximate_location);
+  
+  return {
+    ...raw,
+    // Derived fields for UI compatibility
+    latitude: lat ?? null,
+    longitude: lng ?? null,
+    address: [raw.city_name, raw.country_code].filter(Boolean).join(', ') || '',
+    
+    // Backward compatibility: singular from array
+    seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
+      ? raw.seating_types[0] 
+      : null,
+    ideal_guest: Array.isArray(raw.ideal_guest_tags) && raw.ideal_guest_tags.length > 0 
+      ? raw.ideal_guest_tags[0] 
+      : null,
+  };
+}
+
+/**
  * Normalize raw space data to SpaceWithHostInfo format
+ * Used for getSpaceWithHostInfo (authenticated requests with full data)
  */
 function normalizeSpaceData(raw: any): SpaceWithHostInfo {
+  const { lat, lng } = parsePoint(raw.approximate_location);
+  
   return {
     id: raw.id,
     title: raw.title ?? raw.name ?? 'Spazio',
@@ -190,19 +266,24 @@ function normalizeSpaceData(raw: any): SpaceWithHostInfo {
     photos: Array.isArray(raw.photos) ? raw.photos : [],
     price_per_day: Number(raw.price_per_day ?? 0),
     price_per_hour: Number(raw.price_per_hour ?? 0),
-    // Use city-level location (secure)
+    // Use city-level location (secure) or derive from point
     address: raw.city_name && raw.country_code 
       ? `${raw.city_name}, ${raw.country_code}`
       : raw.address ?? '',
-    // Precise coordinates excluded from public view
-    latitude: typeof raw.latitude === 'number' ? raw.latitude : null,
-    longitude: typeof raw.longitude === 'number' ? raw.longitude : null,
+    // Coordinates from approximate_location or fallback
+    latitude: lat ?? (typeof raw.latitude === 'number' ? raw.latitude : null),
+    longitude: lng ?? (typeof raw.longitude === 'number' ? raw.longitude : null),
     max_capacity: raw.max_capacity ?? 1,
     workspace_features: Array.isArray(raw.workspace_features) ? raw.workspace_features : [],
     amenities: Array.isArray(raw.amenities) ? raw.amenities : [],
     work_environment: raw.work_environment ?? '',
-    seating_type: raw.seating_type ?? '',
-    ideal_guest: raw.ideal_guest ?? '',
+    // Backward compatibility: singular from array or fallback
+    seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0
+      ? raw.seating_types[0]
+      : (raw.seating_type ?? ''),
+    ideal_guest: Array.isArray(raw.ideal_guest_tags) && raw.ideal_guest_tags.length > 0
+      ? raw.ideal_guest_tags[0]
+      : (raw.ideal_guest ?? ''),
     confirmation_type: raw.confirmation_type ?? 'request',
     published: raw.published ?? true,
     created_at: raw.created_at ?? new Date().toISOString(),
