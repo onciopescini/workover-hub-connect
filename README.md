@@ -95,6 +95,33 @@ npm run migrate:status   # Check migration status
 6. **Commit changes** following conventional commits
 7. **Push and create PR**
 
+## 🧾 Modulo Fiscale (Compliance Italiana)
+
+WorkOver supporta **compliance fiscale italiana** per host e coworker:
+
+### Features
+- ✅ Ricevute non fiscali per host privati
+- ✅ Fatture elettroniche XML per host P.IVA
+- ✅ Regime forfettario e ordinario
+- ✅ Note di credito automatiche post-cancellazione
+- ✅ Dashboard fatture pending con countdown T+7
+- ✅ Archivio documenti per coworker
+- ✅ Export CSV per commercialisti
+
+### Documentazione
+- [Documentazione Tecnica](./docs/FISCAL_MODULE.md)
+- [Guida Utente](./docs/FISCAL_USER_GUIDE.md)
+- [Guida Admin](./docs/FISCAL_ADMIN_GUIDE.md)
+- [Test E2E](./tests/e2e/fiscal/)
+
+### Quick Start
+```bash
+# Run fiscal E2E tests
+npx playwright test tests/e2e/fiscal
+```
+
+---
+
 ## 🔧 Key Technologies
 
 ### Frontend
