@@ -190,8 +190,10 @@ export const usePublicSpacesLogic = () => {
     queryFn: async () => {
       info('Fetching public spaces with filters', { filters });
       
-      // Use secure function that doesn't expose host_id
-      const { data: spacesData, error: spacesError } = await supabase.rpc('get_public_spaces_safe');
+      // Use secure view that doesn't expose host_id or precise location
+      const { data: spacesData, error: spacesError } = await supabase
+        .from('spaces_public_safe')
+        .select('*');
       
       if (spacesError) {
         info('Failed to fetch spaces', { error: spacesError });

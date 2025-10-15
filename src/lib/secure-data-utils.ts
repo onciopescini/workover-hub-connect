@@ -116,8 +116,8 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
  */
 export const getPublicSpaces = async (): Promise<any[]> => {
   try {
-    // 1) Try RPC first (if exists)
-    let { data, error } = await supabase.rpc('get_public_spaces_safe');
+    // 1) Use secure view that doesn't expose host_id or precise location
+    let { data, error } = await supabase.from('spaces_public_safe').select('*');
 
     if (!error && Array.isArray(data)) {
       return data as any[];

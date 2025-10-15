@@ -4039,6 +4039,40 @@ export type Database = {
             | Database["public"]["Enums"]["work_environment"]
             | null
         }
+        Insert: {
+          address?: string | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          created_at?: string | null
+          host_stripe_account_id?: never
+          id?: string | null
+          max_capacity?: number | null
+          name?: string | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+        }
+        Update: {
+          address?: string | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          created_at?: string | null
+          host_stripe_account_id?: never
+          id?: string | null
+          max_capacity?: number | null
+          name?: string | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+        }
         Relationships: []
       }
       user_conversations_view: {
@@ -4345,26 +4379,6 @@ export type Database = {
           title: string
           work_environment: string
           workspace_features: string[]
-        }[]
-      }
-      get_public_spaces_safe: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          address: string | null
-          category: Database["public"]["Enums"]["space_category"] | null
-          confirmation_type:
-            | Database["public"]["Enums"]["confirmation_type"]
-            | null
-          created_at: string | null
-          host_stripe_account_id: string | null
-          id: string | null
-          max_capacity: number | null
-          name: string | null
-          price_per_day: number | null
-          price_per_hour: number | null
-          work_environment:
-            | Database["public"]["Enums"]["work_environment"]
-            | null
         }[]
       }
       get_safe_public_profile: {
