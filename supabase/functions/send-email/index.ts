@@ -148,6 +148,100 @@ const emailTemplates = {
       <p><a href="${data.adminUrl}" style="background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Gestisci Ticket</a></p>
       <p>Admin Panel Workover</p>
     `
+  }),
+
+  // Fiscal & Invoice Templates
+  host_invoice_reminder: (data: any) => ({
+    subject: `Ricorda: fattura da emettere per prenotazione ${data.bookingId}`,
+    html: `
+      <h2>Promemoria Fatturazione</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>Ti ricordiamo che devi emettere fattura per la prenotazione completata il ${data.serviceDate}.</p>
+      <ul>
+        <li><strong>Importo canone:</strong> €${data.amount}</li>
+        <li><strong>Coworker CF/P.IVA:</strong> ${data.coworkerTaxId}</li>
+        <li><strong>PEC/SDI:</strong> ${data.coworkerInvoiceData}</li>
+        <li><strong>Scadenza:</strong> ${data.deadline}</li>
+      </ul>
+      <p>Puoi scaricare il riepilogo dati dalla tua dashboard host.</p>
+      <p><a href="${data.dashboardUrl}" style="background:#3b82f6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Vai alla Dashboard</a></p>
+      <p>Il Team Workover</p>
+    `
+  }),
+  
+  credit_note_reminder: (data: any) => ({
+    subject: `Nota di credito richiesta per prenotazione ${data.bookingId}`,
+    html: `
+      <h2>Richiesta Nota di Credito</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>È richiesta l'emissione di una nota di credito per la prenotazione cancellata.</p>
+      <ul>
+        <li><strong>Importo rimborso:</strong> €${data.refundAmount}</li>
+        <li><strong>Fattura originale:</strong> ${data.originalInvoiceNumber}</li>
+        <li><strong>Scadenza:</strong> ${data.deadline}</li>
+      </ul>
+      <p><a href="${data.dashboardUrl}" style="background:#3b82f6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Conferma Emissione</a></p>
+      <p>Il Team Workover</p>
+    `
+  }),
+  
+  booking_frozen: (data: any) => ({
+    subject: `⚠️ Prenotazione congelata - Stripe non connesso`,
+    html: `
+      <h2 style="color:#ef4444;">Attenzione: Prenotazione Congelata</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>La tua prenotazione per <strong>${data.spaceTitle}</strong> è stata congelata perché il tuo account Stripe risulta disconnesso.</p>
+      <ul>
+        <li><strong>Data prenotazione:</strong> ${data.bookingDate}</li>
+        <li><strong>Ora:</strong> ${data.startTime} - ${data.endTime}</li>
+        <li><strong>Coworker:</strong> ${data.coworkerName}</li>
+      </ul>
+      <p style="color:#ef4444;"><strong>Azione richiesta:</strong> Riconnetti il tuo account Stripe entro 24 ore per evitare la cancellazione automatica.</p>
+      <p><a href="${data.stripeConnectUrl}" style="background:#ef4444;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">Riconnetti Stripe</a></p>
+      <p>Il Team Workover</p>
+    `
+  }),
+  
+  dac7_threshold_reached: (data: any) => ({
+    subject: '⚠️ Soglia DAC7 Superata - Comunicazione Agenzia Entrate',
+    html: `
+      <h2>Soglia DAC7 Raggiunta</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>Hai superato le soglie previste dalla normativa DAC7 per l'anno ${data.year}:</p>
+      <ul>
+        <li><strong>Reddito totale:</strong> €${data.totalIncome} (soglia: €2.000)</li>
+        <li><strong>Numero transazioni:</strong> ${data.totalTransactions} (soglia: 25)</li>
+      </ul>
+      <p><strong>Cosa significa:</strong> WorkOver comunicherà i tuoi dati all'Agenzia delle Entrate entro il 31 gennaio ${data.year + 1}, come richiesto dalla legge.</p>
+      <p>Non è richiesta alcuna azione da parte tua. Ti invieremo il report completo a gennaio.</p>
+      <p><a href="${data.dac7InfoUrl}" style="color:#3b82f6;text-decoration:underline;">Maggiori informazioni su DAC7</a></p>
+      <p>Il Team Workover</p>
+    `
+  }),
+  
+  kyc_approved: (data: any) => ({
+    subject: '✅ Documenti KYC Approvati',
+    html: `
+      <h2 style="color:#10b981;">Verifica KYC Completata</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>I tuoi documenti KYC sono stati verificati e approvati con successo!</p>
+      <p>Ora puoi ricevere i pagamenti per le tue prenotazioni completate.</p>
+      <p><a href="${data.dashboardUrl}" style="background:#10b981;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Vai alla Dashboard</a></p>
+      <p>Il Team Workover</p>
+    `
+  }),
+  
+  kyc_rejected: (data: any) => ({
+    subject: '❌ Documenti KYC da Rivedere',
+    html: `
+      <h2 style="color:#ef4444;">Verifica KYC Non Approvata</h2>
+      <p>Ciao ${data.hostName},</p>
+      <p>Purtroppo i documenti KYC caricati presentano dei problemi:</p>
+      <p><strong>Motivo:</strong> ${data.rejectionReason}</p>
+      <p>Ti preghiamo di caricare nuovamente i documenti corretti.</p>
+      <p><a href="${data.uploadUrl}" style="background:#3b82f6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Carica Nuovi Documenti</a></p>
+      <p>Il Team Workover</p>
+    `
   })
 };
 
