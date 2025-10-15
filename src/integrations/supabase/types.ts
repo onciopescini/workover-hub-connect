@@ -234,6 +234,13 @@ export type Database = {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -270,6 +277,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_cache_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -324,6 +338,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "booking_reviews_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
@@ -335,6 +356,13 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -457,6 +485,13 @@ export type Database = {
             foreignKeyName: "bookings_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -467,7 +502,122 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      bookings_backup_20250115: {
+        Row: {
+          approval_deadline: string | null
+          approval_reminder_sent: boolean | null
+          auto_cancel_scheduled_at: string | null
+          booking_date: string | null
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by_host: boolean | null
+          created_at: string | null
+          end_time: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          guests_count: number | null
+          host_issue_reported: boolean | null
+          id: string | null
+          is_urgent: boolean | null
+          issue_report_reason: string | null
+          payment_deadline: string | null
+          payment_reminder_sent: boolean | null
+          payment_required: boolean | null
+          payment_session_id: string | null
+          payout_completed_at: string | null
+          payout_scheduled_at: string | null
+          payout_stripe_transfer_id: string | null
+          reservation_token: string | null
+          service_completed_at: string | null
+          service_completed_by: string | null
+          slot_reserved_until: string | null
+          space_id: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approval_deadline?: string | null
+          approval_reminder_sent?: boolean | null
+          auto_cancel_scheduled_at?: string | null
+          booking_date?: string | null
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_host?: boolean | null
+          created_at?: string | null
+          end_time?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          guests_count?: number | null
+          host_issue_reported?: boolean | null
+          id?: string | null
+          is_urgent?: boolean | null
+          issue_report_reason?: string | null
+          payment_deadline?: string | null
+          payment_reminder_sent?: boolean | null
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          payout_completed_at?: string | null
+          payout_scheduled_at?: string | null
+          payout_stripe_transfer_id?: string | null
+          reservation_token?: string | null
+          service_completed_at?: string | null
+          service_completed_by?: string | null
+          slot_reserved_until?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approval_deadline?: string | null
+          approval_reminder_sent?: boolean | null
+          auto_cancel_scheduled_at?: string | null
+          booking_date?: string | null
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by_host?: boolean | null
+          created_at?: string | null
+          end_time?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          guests_count?: number | null
+          host_issue_reported?: boolean | null
+          id?: string | null
+          is_urgent?: boolean | null
+          issue_report_reason?: string | null
+          payment_deadline?: string | null
+          payment_reminder_sent?: boolean | null
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          payout_completed_at?: string | null
+          payout_scheduled_at?: string | null
+          payout_stripe_transfer_id?: string | null
+          reservation_token?: string | null
+          service_completed_at?: string | null
+          service_completed_by?: string | null
+          slot_reserved_until?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       checklists: {
         Row: {
@@ -497,6 +647,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -545,10 +702,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "connection_suggestions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -590,10 +761,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "connections_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "connections_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -648,6 +833,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
@@ -655,10 +847,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -785,6 +991,13 @@ export type Database = {
             columns: ["generated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dac7_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1008,6 +1221,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "email_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_participants: {
@@ -1039,6 +1259,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_participants_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1086,6 +1313,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_reviews_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -1097,6 +1331,13 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1156,6 +1397,13 @@ export type Database = {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -1164,6 +1412,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_events_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1223,6 +1478,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1366,6 +1628,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "host_report_subscriptions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       image_processing_jobs: {
@@ -1423,6 +1692,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_processing_jobs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1538,6 +1814,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       kyc_documents: {
@@ -1633,6 +1916,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "message_templates_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
@@ -1679,6 +1969,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1769,10 +2066,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "non_fiscal_receipts_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1930,6 +2241,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       private_chats: {
@@ -1963,10 +2281,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "private_chats_participant_1_id_fkey"
+            columns: ["participant_1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "private_chats_participant_2_id_fkey"
             columns: ["participant_2_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_2_id_fkey"
+            columns: ["participant_2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2012,6 +2344,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2214,6 +2553,204 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_backup_20250115: {
+        Row: {
+          admin_notes: string | null
+          age_confirmed: boolean | null
+          bio: string | null
+          city: string | null
+          collaboration_availability: string | null
+          collaboration_description: string | null
+          collaboration_types: string[] | null
+          competencies: string[] | null
+          created_at: string | null
+          dac7_data_collected: boolean | null
+          dac7_threshold_notified: boolean | null
+          data_retention_exempt: boolean | null
+          email_verification_blocked_actions: string[] | null
+          facebook_url: string | null
+          first_name: string | null
+          fiscal_regime: string | null
+          github_url: string | null
+          iban: string | null
+          id: string | null
+          industries: string[] | null
+          instagram_url: string | null
+          interests: string | null
+          is_suspended: boolean | null
+          job_title: string | null
+          job_type: string | null
+          kyc_documents_verified: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_verified_at: string | null
+          last_login_at: string | null
+          last_name: string | null
+          legal_address: string | null
+          linkedin_url: string | null
+          location: string | null
+          networking_enabled: boolean | null
+          nickname: string | null
+          onboarding_completed: boolean | null
+          pec_email: string | null
+          phone: string | null
+          preferred_work_mode: string | null
+          profession: string | null
+          profile_photo_url: string | null
+          restriction_reason: string | null
+          return_url: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          sdi_code: string | null
+          skills: string | null
+          space_creation_restricted: boolean | null
+          stripe_account_id: string | null
+          stripe_connected: boolean | null
+          stripe_onboarding_status:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          tax_country: string | null
+          tax_id: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          vat_number: string | null
+          website: string | null
+          work_style: string | null
+          youtube_url: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          age_confirmed?: boolean | null
+          bio?: string | null
+          city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
+          competencies?: string[] | null
+          created_at?: string | null
+          dac7_data_collected?: boolean | null
+          dac7_threshold_notified?: boolean | null
+          data_retention_exempt?: boolean | null
+          email_verification_blocked_actions?: string[] | null
+          facebook_url?: string | null
+          first_name?: string | null
+          fiscal_regime?: string | null
+          github_url?: string | null
+          iban?: string | null
+          id?: string | null
+          industries?: string[] | null
+          instagram_url?: string | null
+          interests?: string | null
+          is_suspended?: boolean | null
+          job_title?: string | null
+          job_type?: string | null
+          kyc_documents_verified?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_verified_at?: string | null
+          last_login_at?: string | null
+          last_name?: string | null
+          legal_address?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          networking_enabled?: boolean | null
+          nickname?: string | null
+          onboarding_completed?: boolean | null
+          pec_email?: string | null
+          phone?: string | null
+          preferred_work_mode?: string | null
+          profession?: string | null
+          profile_photo_url?: string | null
+          restriction_reason?: string | null
+          return_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          sdi_code?: string | null
+          skills?: string | null
+          space_creation_restricted?: boolean | null
+          stripe_account_id?: string | null
+          stripe_connected?: boolean | null
+          stripe_onboarding_status?:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          tax_country?: string | null
+          tax_id?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          vat_number?: string | null
+          website?: string | null
+          work_style?: string | null
+          youtube_url?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          age_confirmed?: boolean | null
+          bio?: string | null
+          city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
+          competencies?: string[] | null
+          created_at?: string | null
+          dac7_data_collected?: boolean | null
+          dac7_threshold_notified?: boolean | null
+          data_retention_exempt?: boolean | null
+          email_verification_blocked_actions?: string[] | null
+          facebook_url?: string | null
+          first_name?: string | null
+          fiscal_regime?: string | null
+          github_url?: string | null
+          iban?: string | null
+          id?: string | null
+          industries?: string[] | null
+          instagram_url?: string | null
+          interests?: string | null
+          is_suspended?: boolean | null
+          job_title?: string | null
+          job_type?: string | null
+          kyc_documents_verified?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_verified_at?: string | null
+          last_login_at?: string | null
+          last_name?: string | null
+          legal_address?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          networking_enabled?: boolean | null
+          nickname?: string | null
+          onboarding_completed?: boolean | null
+          pec_email?: string | null
+          phone?: string | null
+          preferred_work_mode?: string | null
+          profession?: string | null
+          profile_photo_url?: string | null
+          restriction_reason?: string | null
+          return_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          sdi_code?: string | null
+          skills?: string | null
+          space_creation_restricted?: boolean | null
+          stripe_account_id?: string | null
+          stripe_connected?: boolean | null
+          stripe_onboarding_status?:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          tax_country?: string | null
+          tax_id?: string | null
+          twitter_url?: string | null
+          updated_at?: string | null
+          vat_number?: string | null
+          website?: string | null
+          work_style?: string | null
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       rate_limit_log: {
         Row: {
           action: string
@@ -2334,6 +2871,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       settings_audit_log: {
@@ -2372,6 +2916,62 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "settings_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_locations: {
+        Row: {
+          address: string
+          created_at: string | null
+          latitude: number
+          longitude: number
+          space_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          latitude: number
+          longitude: number
+          space_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          latitude?: number
+          longitude?: number
+          space_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_locations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_locations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_locations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       space_tags: {
@@ -2405,6 +3005,13 @@ export type Database = {
             foreignKeyName: "space_tags_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_tags_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -2416,13 +3023,16 @@ export type Database = {
           amenities: string[]
           approved_at: string | null
           approved_by: string | null
+          approximate_location: unknown | null
           availability: Json | null
           cancellation_policy:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
           capacity: number | null
           category: Database["public"]["Enums"]["space_category"]
+          city_name: string | null
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
+          country_code: string | null
           created_at: string
           deleted_at: string | null
           description: string
@@ -2457,13 +3067,16 @@ export type Database = {
           amenities?: string[]
           approved_at?: string | null
           approved_by?: string | null
+          approximate_location?: unknown | null
           availability?: Json | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
           capacity?: number | null
           category: Database["public"]["Enums"]["space_category"]
+          city_name?: string | null
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
+          country_code?: string | null
           created_at?: string
           deleted_at?: string | null
           description: string
@@ -2498,13 +3111,16 @@ export type Database = {
           amenities?: string[]
           approved_at?: string | null
           approved_by?: string | null
+          approximate_location?: unknown | null
           availability?: Json | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["space_category"]
+          city_name?: string | null
           confirmation_type?: Database["public"]["Enums"]["confirmation_type"]
+          country_code?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string
@@ -2542,7 +3158,152 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      spaces_backup_20250115_security: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          approved_at: string | null
+          approved_by: string | null
+          availability: Json | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          capacity: number | null
+          category: Database["public"]["Enums"]["space_category"] | null
+          confirmation_type:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          created_at: string | null
+          deleted_at: string | null
+          description: string | null
+          event_friendly_tags: string[] | null
+          host_id: string | null
+          id: string | null
+          ideal_guest_tags: string[] | null
+          is_suspended: boolean | null
+          latitude: number | null
+          longitude: number | null
+          max_capacity: number | null
+          pending_approval: boolean | null
+          photos: string[] | null
+          price_per_day: number | null
+          price_per_hour: number | null
+          published: boolean | null
+          rejection_reason: string | null
+          revision_notes: string | null
+          revision_requested: boolean | null
+          rules: string | null
+          seating_types: string[] | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          title: string | null
+          updated_at: string | null
+          work_environment:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features: string[] | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          capacity?: number | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          host_id?: string | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity?: number | null
+          pending_approval?: boolean | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rejection_reason?: string | null
+          revision_notes?: string | null
+          revision_requested?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          approved_at?: string | null
+          approved_by?: string | null
+          availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          capacity?: number | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          created_at?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          host_id?: string | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          max_capacity?: number | null
+          pending_approval?: boolean | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rejection_reason?: string | null
+          revision_notes?: string | null
+          revision_requested?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Relationships: []
       }
       static_content: {
         Row: {
@@ -2709,6 +3470,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tax_details: {
@@ -2784,10 +3552,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tax_details_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tax_details_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2831,6 +3613,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -2863,7 +3652,38 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      user_roles_backup_20250115: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          user_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       user_session_state: {
         Row: {
@@ -2896,6 +3716,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2931,6 +3758,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_waitlists_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "waitlists_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -2948,6 +3782,13 @@ export type Database = {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -2956,6 +3797,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2994,6 +3842,13 @@ export type Database = {
             foreignKeyName: "workspace_features_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_features_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -3001,6 +3856,171 @@ export type Database = {
       }
     }
     Views: {
+      profiles_public_safe: {
+        Row: {
+          bio: string | null
+          city: string | null
+          collaboration_availability: string | null
+          collaboration_description: string | null
+          collaboration_types: string[] | null
+          competencies: string[] | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          industries: string[] | null
+          interests: string | null
+          job_title: string | null
+          last_name: string | null
+          networking_enabled: boolean | null
+          nickname: string | null
+          preferred_work_mode: string | null
+          profession: string | null
+          profile_photo_url: string | null
+          skills: string | null
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
+          competencies?: string[] | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          industries?: string[] | null
+          interests?: string | null
+          job_title?: string | null
+          last_name?: string | null
+          networking_enabled?: boolean | null
+          nickname?: string | null
+          preferred_work_mode?: string | null
+          profession?: string | null
+          profile_photo_url?: string | null
+          skills?: string | null
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          collaboration_availability?: string | null
+          collaboration_description?: string | null
+          collaboration_types?: string[] | null
+          competencies?: string[] | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          industries?: string[] | null
+          interests?: string | null
+          job_title?: string | null
+          last_name?: string | null
+          networking_enabled?: boolean | null
+          nickname?: string | null
+          preferred_work_mode?: string | null
+          profession?: string | null
+          profile_photo_url?: string | null
+          skills?: string | null
+        }
+        Relationships: []
+      }
+      spaces_public_safe: {
+        Row: {
+          amenities: string[] | null
+          approximate_location: unknown | null
+          availability: Json | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category: Database["public"]["Enums"]["space_category"] | null
+          city_name: string | null
+          confirmation_type:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          country_code: string | null
+          created_at: string | null
+          description: string | null
+          event_friendly_tags: string[] | null
+          id: string | null
+          ideal_guest_tags: string[] | null
+          max_capacity: number | null
+          photos: string[] | null
+          price_per_day: number | null
+          price_per_hour: number | null
+          published: boolean | null
+          rules: string | null
+          seating_types: string[] | null
+          title: string | null
+          updated_at: string | null
+          work_environment:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features: string[] | null
+        }
+        Insert: {
+          amenities?: string[] | null
+          approximate_location?: unknown | null
+          availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          city_name?: string | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          country_code?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          max_capacity?: number | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Update: {
+          amenities?: string[] | null
+          approximate_location?: unknown | null
+          availability?: Json | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          city_name?: string | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          country_code?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          max_capacity?: number | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Relationships: []
+      }
       spaces_public_view: {
         Row: {
           address: string | null
@@ -3062,6 +4082,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
@@ -3069,10 +4096,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -3087,6 +4128,13 @@ export type Database = {
             columns: ["last_sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["last_sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
         ]
