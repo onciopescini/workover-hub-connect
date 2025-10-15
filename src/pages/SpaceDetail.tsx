@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Space } from '@/types/space';
 import { useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 import { sreLogger } from '@/lib/sre-logger';
+import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -144,6 +145,41 @@ const SpaceDetail = () => {
 
   const { data: reviews = [] } = useSpaceReviews(id || '');
 
+  // Try to fetch precise location (only if user has confirmed booking or is owner/admin)
+  const { data: preciseLocation } = useSpaceLocation(id, !!id);
+  const { data: hasConfirmedBooking } = useHasConfirmedBooking(id);
+
+  // Enhance space data with precise location if available
+  const enhancedSpace = React.useMemo(() => {
+    if (!space) return space;
+    
+    // If user has access to precise location, use it
+    if (preciseLocation) {
+      return {
+        ...space,
+        address: preciseLocation.address,
+        latitude: preciseLocation.latitude,
+        longitude: preciseLocation.longitude,
+        hasPreciseLocation: true,
+        hasConfirmedBooking: !!hasConfirmedBooking,
+      };
+    }
+    
+    // Otherwise, keep city-level location from spaces_public_safe
+    return {
+      ...space,
+      hasPreciseLocation: false,
+      hasConfirmedBooking: !!hasConfirmedBooking,
+    };
+  }, [space, preciseLocation, hasConfirmedBooking]);
+
+  sreLogger.debug('Location access', {
+    spaceId: id,
+    hasConfirmedBooking,
+    hasPreciseLocation: !!preciseLocation,
+    showingCityOnly: !preciseLocation
+  });
+
   // Loading state con debug info
   if (spaceLoading) {
     sreLogger.debug('Loading space', { spaceId: id, component: 'SpaceDetail' });
@@ -190,7 +226,7 @@ const SpaceDetail = () => {
   }
 
   // Space not found
-  if (!space) {
+  if (!enhancedSpace) {
     sreLogger.warn('Space not found', { spaceId: id, component: 'SpaceDetail' });
     return (
       <div className="container mx-auto py-8">
@@ -212,10 +248,15 @@ const SpaceDetail = () => {
   }
 
   // Success - render space details
-  sreLogger.debug('Rendering space details', { spaceId: space.id, component: 'SpaceDetail' });
+  sreLogger.debug('Rendering space details', { 
+    spaceId: enhancedSpace?.id, 
+    hasPreLocation: !!preciseLocation,
+    component: 'SpaceDetail' 
+  });
+  
   return (
     <div className="container mx-auto py-8">
-      <SpaceDetailContent space={space} reviews={reviews} />
+      <SpaceDetailContent space={enhancedSpace!} reviews={reviews} />
     </div>
   );
 };

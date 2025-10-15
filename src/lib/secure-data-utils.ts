@@ -84,20 +84,27 @@ export interface SpaceWithHostInfo {
  */
 export const getPublicProfile = async (profileId: string): Promise<PublicProfile | null> => {
   try {
+    // Try RPC first (if exists)
     const { data, error } = await supabase
       .rpc('get_safe_public_profile', { profile_id_param: profileId });
 
-    if (error) {
-      sreLogger.error('Error fetching public profile', { error, profileId });
-      return null;
-    }
-
-    // Handle the JSON response from the secure function
-    if (data && typeof data === 'object' && !Array.isArray(data) && !(data as any).error) {
+    if (!error && data && typeof data === 'object' && !Array.isArray(data) && !(data as any).error) {
       return data as unknown as PublicProfile;
     }
 
-    return null;
+    // Fallback: use profiles_public_safe view
+    const { data: viewData, error: viewError } = await supabase
+      .from('profiles_public_safe')
+      .select('*')
+      .eq('id', profileId)
+      .maybeSingle();
+
+    if (viewError) {
+      sreLogger.error('Error fetching public profile from view', { error: viewError, profileId });
+      return null;
+    }
+
+    return viewData as PublicProfile | null;
   } catch (error) {
     sreLogger.error('Error in getPublicProfile', { error, profileId });
     return null;
@@ -109,44 +116,41 @@ export const getPublicProfile = async (profileId: string): Promise<PublicProfile
  */
 export const getPublicSpaces = async (): Promise<any[]> => {
   try {
-    // 1) Prova nuovo RPC "safe"
+    // 1) Try RPC first (if exists)
     let { data, error } = await supabase.rpc('get_public_spaces_safe');
 
-    if (error) {
-      sreLogger.error('RPC get_public_spaces_safe failed', { 
-        error, 
-        message: error.message,
-        details: (error as any)?.details,
-        hint: (error as any)?.hint,
-        code: (error as any)?.code
-      });
+    if (!error && Array.isArray(data)) {
+      return data as any[];
+    }
 
-      // 2) Fallback: RPC storico (se esiste nel tuo DB)
+    sreLogger.debug('RPC get_public_spaces_safe failed, using view', { 
+      error, 
+      message: error?.message
+    });
+
+    // 2) Fallback to secure public view (excludes host_id, precise GPS, full address)
+    const { data: viewData, error: viewError } = await supabase
+      .from('spaces_public_safe')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (viewError) {
+      sreLogger.error('spaces_public_safe view query failed', { 
+        error: viewError,
+        message: viewError.message
+      });
+      
+      // 3) Last resort: try legacy RPC
       const alt = await supabase.rpc('get_public_spaces');
       if (!alt.error && Array.isArray(alt.data)) {
         return alt.data as any[];
       }
-
-      // 3) Fallback finale: query diretta tabella/view pubblica
-      const direct = await supabase
-        .from('spaces') // oppure la tua view "spaces_public_view"
-        .select('id,title,price_per_day,category,work_environment,max_capacity,address,created_at,photos,description,subcategory,latitude,longitude,workspace_features,amenities,seating_type,ideal_guest,confirmation_type,published')
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (direct.error) {
-        sreLogger.error('Direct spaces query fallback failed', { 
-          error: direct.error,
-          message: direct.error.message,
-          details: (direct.error as any)?.details
-        });
-        return [];
-      }
-      return direct.data ?? [];
+      
+      return [];
     }
 
-    return Array.isArray(data) ? (data as any[]) : [];
+    return viewData ?? [];
   } catch (err: any) {
     sreLogger.error('Error in getPublicSpaces', { 
       error: err,
@@ -170,7 +174,11 @@ function normalizeSpaceData(raw: any): SpaceWithHostInfo {
     photos: Array.isArray(raw.photos) ? raw.photos : [],
     price_per_day: Number(raw.price_per_day ?? 0),
     price_per_hour: Number(raw.price_per_hour ?? 0),
-    address: raw.address ?? '',
+    // Use city-level location (secure)
+    address: raw.city_name && raw.country_code 
+      ? `${raw.city_name}, ${raw.country_code}`
+      : raw.address ?? '',
+    // Precise coordinates excluded from public view
     latitude: typeof raw.latitude === 'number' ? raw.latitude : null,
     longitude: typeof raw.longitude === 'number' ? raw.longitude : null,
     max_capacity: raw.max_capacity ?? 1,

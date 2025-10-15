@@ -8,6 +8,7 @@ import { SpaceInfoCards } from './SpaceInfoCards';
 import { HostProfileSection } from './HostProfileSection';
 import { StickyBookingCard } from './StickyBookingCard';
 import { SpaceReviews } from './SpaceReviews';
+import { LocationAccessNotice } from './LocationAccessNotice';
 import { toast } from 'sonner';
 import { WhoWorksHere } from './WhoWorksHere';
 
@@ -23,6 +24,9 @@ interface ExtendedSpace extends Space {
   };
   host_stripe_account_id?: string;
   host_stripe_connected?: boolean;
+  // Location access metadata
+  hasPreciseLocation?: boolean;
+  hasConfirmedBooking?: boolean;
 }
 
 interface SpaceDetailContentProps {
@@ -91,6 +95,12 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
         <div className="lg:col-span-2 space-y-8">
           {/* Hero Section */}
           <SpaceHeroSection space={heroSpaceData} />
+          
+          {/* Location Access Notice */}
+          <LocationAccessNotice 
+            hasAccess={!!space.hasPreciseLocation} 
+            hasConfirmedBooking={!!space.hasConfirmedBooking}
+          />
           
           {/* Space Information */}
           <SpaceInfoCards space={infoSpaceData} />
