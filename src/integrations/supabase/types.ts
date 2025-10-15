@@ -3431,6 +3431,54 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alarms: {
+        Row: {
+          alarm_type: string
+          created_at: string | null
+          error_details: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          source: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          alarm_type: string
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          alarm_type?: string
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           category: Database["public"]["Enums"]["setting_category"]
@@ -4262,6 +4310,18 @@ export type Database = {
           original_path_param: string
           original_size_param?: number
           space_id_param: string
+        }
+        Returns: string
+      }
+      create_system_alarm: {
+        Args: {
+          p_alarm_type: string
+          p_error_details?: string
+          p_message: string
+          p_metadata?: Json
+          p_severity?: string
+          p_source?: string
+          p_title: string
         }
         Returns: string
       }

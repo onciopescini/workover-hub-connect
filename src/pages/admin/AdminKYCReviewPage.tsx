@@ -274,7 +274,28 @@ export default function AdminKYCReviewPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
+                        // ONDATA 2: FIX 2.1 - Audit Log for KYC Download
+                        try {
+                          const { error: auditError } = await supabase.rpc('log_admin_access', {
+                            p_table_name: 'kyc_documents',
+                            p_record_id: doc.id,
+                            p_action: 'download',
+                            p_metadata: {
+                              file_name: doc.file_name,
+                              user_id: doc.user_id,
+                              document_type: doc.document_type
+                            }
+                          });
+                          
+                          if (auditError) {
+                            console.error('Failed to log admin access:', auditError);
+                          }
+                        } catch (err) {
+                          console.error('Audit log error:', err);
+                        }
+                        
+                        // Proceed with download
                         const a = document.createElement('a');
                         a.href = doc.file_url;
                         a.download = doc.file_name;

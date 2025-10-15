@@ -131,7 +131,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       userId
     });
 
-    // Fetch bookings with simplified query structure
+    // ONDATA 2: FIX 2.2 - Eliminate N+1 query by joining coworker profiles in single query
     let query = supabase
       .from('bookings')
       .select(`
@@ -144,6 +144,12 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
           host_id,
           price_per_day,
           confirmation_type
+        ),
+        coworker:profiles!bookings_user_id_fkey (
+          id,
+          first_name,
+          last_name,
+          profile_photo_url
         ),
         payments (
           id,
@@ -181,38 +187,17 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       throw new Error(`Failed to fetch host bookings: ${bookingsError.message}`);
     }
 
-    // Fetch coworker profiles separately to avoid foreign key issues
-    const userIds = [...new Set(bookings?.map(b => b.user_id) || [])];
-    const { data: coworkerProfiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, profile_photo_url')
-      .in('id', userIds);
+    // No need for separate profile fetch - already joined via FK!
 
-    if (profilesError) {
-      logger.error('Warning fetching coworker profiles', {
-        component: 'booking-data-fetcher',
-        action: 'fetch_coworker_profiles_warning',
-        userId,
-        count: userIds.length,
-        errorMessage: profilesError.message
-      }, profilesError);
-    }
-
-    // Manually join the coworker data to avoid foreign key issues
-    const enrichedBookings = (bookings || []).map(booking => ({
-      ...booking,
-      coworker: coworkerProfiles?.find(profile => profile.id === booking.user_id) || null
-    }));
-
-    logger.debug('Host bookings fetched and enriched successfully', {
+    logger.debug('Host bookings fetched successfully with coworker profiles joined', {
       component: 'booking-data-fetcher',
       action: 'fetch_host_bookings_success',
-      count: enrichedBookings.length,
+      count: bookings?.length || 0,
       userId,
       role: userRole
     });
     
-    return enrichedBookings;
+    return bookings || [];
 
   } catch (fetchError) {
     logger.error('Exception in fetchHostBookings', {

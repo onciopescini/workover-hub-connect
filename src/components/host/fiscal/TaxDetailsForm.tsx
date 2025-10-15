@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { taxDetailsSchema, type TaxDetailsFormData } from '@/schemas/fiscalSchema';
 import { useTaxDetails } from '@/hooks/fiscal/useTaxDetails';
+import { validateIBAN, formatIBAN } from '@/schemas/validationSchemas'; // ONDATA 2: FIX 2.4
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -185,6 +186,15 @@ export const TaxDetailsForm = () => {
                 id="iban"
                 {...register('iban')}
                 placeholder="IT60 X054 2811 1010 0000 0123 456"
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value && !validateIBAN(value)) {
+                    e.target.setCustomValidity('IBAN non valido o checksum errato');
+                  } else {
+                    e.target.setCustomValidity('');
+                    e.target.value = formatIBAN(value);
+                  }
+                }}
               />
               {errors.iban && (
                 <p className="text-sm text-destructive">{errors.iban.message}</p>

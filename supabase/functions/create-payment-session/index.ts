@@ -64,6 +64,43 @@ serve(async (req) => {
   }
 
   try {
+    // ONDATA 2: FIX 2.9 - Rate Limiting
+    // Check rate limit via RPC (5 payment sessions per minute per user)
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create temporary supabase client for rate limit check
+    const supabaseTempClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    
+    const { data: userData } = await supabaseTempClient.auth.getUser(token);
+    const userId = userData?.user?.id;
+    
+    if (userId) {
+      const { data: rateLimitCheck, error: rateLimitError } = await supabaseTempClient
+        .rpc('check_rate_limit', {
+          p_identifier: userId,
+          p_action: 'create_payment_session'
+        });
+      
+      if (rateLimitError) {
+        console.warn('[RATE-LIMIT] Check failed, proceeding anyway:', rateLimitError.message);
+      } else if (rateLimitCheck && !rateLimitCheck.allowed) {
+        console.warn('[RATE-LIMIT] User rate limited:', userId);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Troppe richieste. Riprova tra qualche istante.',
+            rateLimitExceeded: true
+          }),
+          { 
+            status: 429, 
+            headers: combineHeaders({ 'Content-Type': 'application/json' }) 
+          }
+        );
+      }
+    }
     // Supabase client (user-scoped via token)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

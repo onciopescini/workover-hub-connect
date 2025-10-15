@@ -34,6 +34,11 @@ interface RawBookingData {
     first_name?: string;
     last_name?: string;
     profile_photo_url?: string | null;
+  }[] | {
+    id?: string;
+    first_name?: string;
+    last_name?: string;
+    profile_photo_url?: string | null;
   } | null;
   payments?: unknown[];
 }
@@ -131,12 +136,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
           price_per_day: booking.space?.price_per_day || 0,
           confirmation_type: booking.space?.confirmation_type || 'host_approval'
         },
-        coworker: booking.coworker ? {
-          id: booking.coworker.id || '',
-          first_name: booking.coworker.first_name || '',
-          last_name: booking.coworker.last_name || '',
-          profile_photo_url: booking.coworker.profile_photo_url || null
-        } : null,
+        coworker: booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null,
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
     } catch (transformError) {
