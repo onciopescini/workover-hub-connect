@@ -233,9 +233,15 @@ export const formatIBAN = (iban?: string): string => {
 export const validatePIVA = (piva?: string): boolean => {
   if (!piva || !pIvaRegex.test(piva)) return false;
   
+  const cleanPiva = piva.trim();
+  if (cleanPiva.length !== 11) return false;
+  
   let sum = 0;
   for (let i = 0; i < 11; i++) {
-    let digit = parseInt(piva[i], 10);
+    const char = cleanPiva.charAt(i);
+    let digit = parseInt(char, 10);
+    if (isNaN(digit)) return false;
+    
     if (i % 2 === 1) {
       digit *= 2;
       if (digit > 9) digit -= 9;
@@ -252,21 +258,27 @@ export const validatePIVA = (piva?: string): boolean => {
 export const validateCodiceFiscale = (cf?: string): boolean => {
   if (!cf || !codiceFiscaleRegex.test(cf)) return false;
   
-  const cfUpper = cf.toUpperCase();
+  const cleanCf = cf.trim().toUpperCase();
+  if (cleanCf.length !== 16) return false;
+  
   const evenMap = '0123456789';
   const oddMap = '1AB89CD6EF4GH2IJ0KLMN3OP5QRST7UV9WXYZabcdefghijklmnopqrstuvwxyz';
   const checkMap = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   
   let sum = 0;
   for (let i = 0; i < 15; i++) {
-    const char = cfUpper[i];
+    const char = cleanCf.charAt(i);
     if (i % 2 === 0) {
-      sum += oddMap.indexOf(char);
+      const idx = oddMap.indexOf(char);
+      if (idx === -1) return false;
+      sum += idx;
     } else {
-      sum += evenMap.indexOf(char);
+      const idx = evenMap.indexOf(char);
+      if (idx === -1) return false;
+      sum += idx;
     }
   }
   
-  const expectedCheck = checkMap[sum % 26];
-  return cfUpper[15] === expectedCheck;
+  const expectedCheck = checkMap.charAt(sum % 26);
+  return cleanCf.charAt(15) === expectedCheck;
 };
