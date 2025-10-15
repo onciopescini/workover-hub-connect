@@ -15,7 +15,7 @@ SELECT cron.schedule(
   UPDATE public.bookings
   SET 
     status = 'served',
-    service_completed_at = end_time,
+    service_completed_at = (booking_date + end_time)::timestamptz,
     service_completed_by = 'system',
     updated_at = NOW()
   WHERE status = 'confirmed'
