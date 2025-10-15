@@ -5,6 +5,7 @@ verify_jwt = false
 
 [functions.update-tax-details]
 verify_jwt = true
+timeout = 15
 
 [functions.mark-bookings-served]
 verify_jwt = false
@@ -42,6 +43,7 @@ verify_jwt = true
 
 [functions.create-payment-session]
 verify_jwt = true
+timeout = 30
 
 [functions.validate-payment]
 verify_jwt = true
