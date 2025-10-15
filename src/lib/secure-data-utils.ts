@@ -122,7 +122,7 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     // 1) Use secure view that doesn't expose host_id or precise location
     let { data, error } = await supabase.from('spaces_public_safe').select(`
       id, title, description, category, photos,
-      price_per_day, price_per_hour, address, city_name, country_code,
+      price_per_day, price_per_hour, city_name, country_code,
       latitude, longitude, max_capacity, workspace_features, amenities,
       work_environment, seating_type, ideal_guest, confirmation_type,
       published, created_at, availability, host_first_name, host_last_name,
@@ -143,7 +143,7 @@ export const getPublicSpaces = async (): Promise<any[]> => {
       .from('spaces_public_safe')
       .select(`
         id, title, description, category, photos,
-        price_per_day, price_per_hour, address, city_name, country_code,
+        price_per_day, price_per_hour, city_name, country_code,
         latitude, longitude, max_capacity, workspace_features, amenities,
         work_environment, seating_type, ideal_guest, confirmation_type,
         published, created_at, availability, host_first_name, host_last_name,

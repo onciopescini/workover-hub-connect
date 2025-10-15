@@ -195,7 +195,7 @@ export const usePublicSpacesLogic = () => {
         .from('spaces_public_safe')
         .select(`
           id, title, description, category, photos,
-          price_per_day, price_per_hour, address, city_name, country_code,
+          price_per_day, price_per_hour, city_name, country_code,
           latitude, longitude, max_capacity, workspace_features, amenities,
           work_environment, seating_type, ideal_guest, confirmation_type,
           published, created_at, availability, host_first_name, host_last_name,
@@ -240,10 +240,13 @@ export const usePublicSpacesLogic = () => {
         );
       }
       if (filters.location) {
-        // Flexible city search: search in the address field for city names
+        // Flexible city search: search in city_name and country_code
         const searchTerm = filters.location.trim().toLowerCase();
         filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.address?.toLowerCase().includes(searchTerm)
+          space && (
+            space.city_name?.toLowerCase().includes(searchTerm) ||
+            space.country_code?.toLowerCase().includes(searchTerm)
+          )
         );
       }
 
