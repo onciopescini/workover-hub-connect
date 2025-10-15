@@ -17,6 +17,8 @@ import { PerformanceBudget } from "@/components/performance/PerformanceBudget";
 import { RoutePreloader } from "@/components/routing/RoutePreloader";
 import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredData";
 import { optimizedQueryClient } from "@/lib/react-query-config";
+import { FiscalModeProvider } from "@/contexts/FiscalModeContext";
+import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
 
 import "./App.css";
 import { initSentry } from "@/lib/sentry-config";
@@ -41,16 +43,19 @@ function App() {
               <BrowserRouter>
                 <AnalyticsProvider>
                   <AuthProvider>
-                    <GDPRProvider>
-                      <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
-                        <PerformanceMonitor />
-                        <PerformanceBudget />
-                        <RoutePreloader />
-                        <OrganizationSchema />
-                        <WebsiteSchema />
-                        <AppRoutes />
-                      </ErrorBoundary>
-                    </GDPRProvider>
+                    <FiscalModeProvider>
+                      <GDPRProvider>
+                        <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+                          <PerformanceMonitor />
+                          <PerformanceBudget />
+                          <RoutePreloader />
+                          <OrganizationSchema />
+                          <WebsiteSchema />
+                          <FiscalModeIndicator />
+                          <AppRoutes />
+                        </ErrorBoundary>
+                      </GDPRProvider>
+                    </FiscalModeProvider>
                   </AuthProvider>
                 </AnalyticsProvider>
               </BrowserRouter>

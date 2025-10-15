@@ -76,6 +76,7 @@ const AdminMonitoringPage = lazy(() => import("@/pages/admin/AdminMonitoringPage
 const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
 const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
 const AdminFiscalPage = lazy(() => import("@/pages/admin/AdminFiscalPage"));
+const AdminFiscalSettings = lazy(() => import("@/pages/admin/AdminFiscalSettings"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
 const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
@@ -468,6 +469,14 @@ export const AppRoutes = () => {
           <ModeratorRoute requireAdmin={true}>
             <LazyWrapper>
               <AdminFiscalPage />
+            </LazyWrapper>
+          </ModeratorRoute>
+        } />
+        
+        <Route path="fiscal-settings" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <AdminFiscalSettings />
             </LazyWrapper>
           </ModeratorRoute>
         } />

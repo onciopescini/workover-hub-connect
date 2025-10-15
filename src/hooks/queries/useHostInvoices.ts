@@ -1,10 +1,84 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useFiscalMode } from '@/contexts/FiscalModeContext';
+import { 
+  createMockPaymentWithInvoice, 
+  createMockPaymentWithCreditNote,
+  createMockHostFiscalProfile,
+  createMockCoworkerFiscalData,
+  createMockSpaceForm
+} from '../../../tests/factories/mockData';
+
+// Mock data generators
+const generateMockPendingInvoices = () => {
+  return Array.from({ length: 3 }, (_, i) => {
+    const payment = createMockPaymentWithInvoice({
+      host_invoice_deadline: new Date(Date.now() + (7 - i) * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const coworker = createMockCoworkerFiscalData(false);
+    const space = createMockSpaceForm();
+    
+    return {
+      ...payment,
+      booking: {
+        id: payment.booking_id,
+        booking_date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        start_time: '09:00',
+        end_time: '18:00',
+        coworker: {
+          first_name: 'Mario',
+          last_name: 'Rossi',
+          email: `coworker${i}@test.com`,
+        },
+        space: {
+          id: payment.booking_id,
+          title: `Mock Space ${i + 1}`,
+          host_id: payment.user_id,
+        }
+      }
+    };
+  });
+};
+
+const generateMockCreditNotes = () => {
+  return Array.from({ length: 2 }, (_, i) => {
+    const payment = createMockPaymentWithCreditNote({
+      credit_note_deadline: new Date(Date.now() + (3 - i) * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const space = createMockSpaceForm();
+    
+    return {
+      ...payment,
+      booking: {
+        id: payment.booking_id,
+        booking_date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        cancelled_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        cancellation_reason: 'Mock cancellation reason',
+        space: {
+          id: payment.booking_id,
+          title: `Mock Space CN ${i + 1}`,
+          host_id: payment.user_id,
+        },
+        coworker: {
+          first_name: 'Mario',
+          last_name: 'Rossi',
+        }
+      }
+    };
+  });
+};
 
 export const useHostPendingInvoices = (hostId: string) => {
+  const { isMockMode } = useFiscalMode();
+  
   return useQuery({
-    queryKey: ['host-pending-invoices', hostId],
+    queryKey: ['host-pending-invoices', hostId, isMockMode],
     queryFn: async () => {
+      if (isMockMode) {
+        console.log('[FISCAL MOCK] useHostPendingInvoices returning mock data');
+        return generateMockPendingInvoices();
+      }
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -35,14 +109,21 @@ export const useHostPendingInvoices = (hostId: string) => {
       return data as any[];
     },
     enabled: !!hostId,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: isMockMode ? false : 30000
   });
 };
 
 export const useHostPendingCreditNotes = (hostId: string) => {
+  const { isMockMode } = useFiscalMode();
+  
   return useQuery({
-    queryKey: ['host-pending-credit-notes', hostId],
+    queryKey: ['host-pending-credit-notes', hostId, isMockMode],
     queryFn: async () => {
+      if (isMockMode) {
+        console.log('[FISCAL MOCK] useHostPendingCreditNotes returning mock data');
+        return generateMockCreditNotes();
+      }
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -72,14 +153,30 @@ export const useHostPendingCreditNotes = (hostId: string) => {
       return data as any[];
     },
     enabled: !!hostId,
-    refetchInterval: 30000
+    refetchInterval: isMockMode ? false : 30000
   });
 };
 
 export const useHostInvoiceHistory = (hostId: string, year?: number) => {
+  const { isMockMode } = useFiscalMode();
+  
   return useQuery({
-    queryKey: ['host-invoice-history', hostId, year],
+    queryKey: ['host-invoice-history', hostId, year, isMockMode],
     queryFn: async () => {
+      if (isMockMode) {
+        console.log('[FISCAL MOCK] useHostInvoiceHistory returning mock data');
+        return [
+          ...generateMockPendingInvoices().map(p => ({
+            ...p,
+            host_invoice_reminder_sent: true,
+          })),
+          ...generateMockCreditNotes().map(cn => ({
+            ...cn,
+            credit_note_issued_by_host: true,
+          }))
+        ];
+      }
+      
       let query = supabase
         .from('payments')
         .select(`
