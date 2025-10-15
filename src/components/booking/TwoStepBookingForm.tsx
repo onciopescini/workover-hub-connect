@@ -10,6 +10,8 @@ import { BookingSummaryStep } from "./BookingSummaryStep";
 import { GuestsSelector } from './GuestsSelector';
 import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CheckoutFiscalFields, type CoworkerFiscalData } from './checkout/CheckoutFiscalFields';
+import { coworkerFiscalSchema } from '@/lib/validation/checkoutFiscalSchema';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +20,7 @@ import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
 import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { z } from 'zod';
 
 // Helper functions for time calculations
 function parseHHMM(time: string): [number, number] {
@@ -49,6 +52,7 @@ export interface TwoStepBookingFormProps {
   slotInterval?: number; // 15 or 30 minutes
   hostStripeAccountId?: string; // Optional for Stripe Connect payments
   availability?: any; // Availability configuration from host
+  hostFiscalRegime?: string; // Host's fiscal regime to determine if invoice can be requested
 }
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
@@ -95,7 +99,8 @@ export function TwoStepBookingForm({
   bufferMinutes = 0,
   slotInterval = 30,
   hostStripeAccountId,
-  availability
+  availability,
+  hostFiscalRegime
 }: TwoStepBookingFormProps) {
   const [currentStep, setCurrentStep] = useState<BookingStep>('DATE');
   const [bookingState, setBookingState] = useState<BookingState>({
@@ -108,6 +113,20 @@ export function TwoStepBookingForm({
     isReserving: false
   });
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
+  
+  // Fiscal data state for coworker invoice request
+  const [requestInvoice, setRequestInvoice] = useState(false);
+  const [coworkerFiscalData, setCoworkerFiscalData] = useState<CoworkerFiscalData>({
+    tax_id: '',
+    is_business: false,
+    pec_email: '',
+    sdi_code: '',
+    billing_address: '',
+    billing_city: '',
+    billing_province: '',
+    billing_postal_code: '',
+  });
+  const [fiscalErrors, setFiscalErrors] = useState<Record<string, string>>({});
 
   const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
 
@@ -354,6 +373,35 @@ export function TwoStepBookingForm({
     setCurrentStep('SUMMARY');
   };
 
+  const validateFiscalData = (): boolean => {
+    if (!requestInvoice) {
+      setFiscalErrors({});
+      return true;
+    }
+    
+    try {
+      coworkerFiscalSchema.parse({
+        request_invoice: requestInvoice,
+        fiscal_data: coworkerFiscalData,
+      });
+      setFiscalErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          errors[path] = err.message;
+        });
+        setFiscalErrors(errors);
+        toast.error('Controlla i dati di fatturazione', {
+          description: 'Alcuni campi obbligatori sono mancanti o non validi'
+        });
+      }
+      return false;
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!bookingState.selectedDate || !bookingState.selectedRange) {
       toast.error('Completa tutti i passaggi prima di confermare');
@@ -362,6 +410,11 @@ export function TwoStepBookingForm({
 
     if (!acceptedPolicy && (cancellationPolicy || rules)) {
       toast.error('Devi accettare le policy e regole per continuare');
+      return;
+    }
+
+    // Validate fiscal data if invoice is requested
+    if (!validateFiscalData()) {
       return;
     }
 
@@ -535,6 +588,12 @@ export function TwoStepBookingForm({
         hostStripeAccountId 
       });
 
+      // Prepare fiscal data for payment session
+      const fiscalMetadata = requestInvoice ? {
+        request_invoice: true,
+        ...coworkerFiscalData
+      } : null;
+
       // Create Stripe Checkout session
       const { data: sessionData, error: fnError } = await supabase.functions.invoke(
         'create-payment-session',
@@ -546,6 +605,7 @@ export function TwoStepBookingForm({
             pricePerHour,
             pricePerDay,
             host_stripe_account_id: hostStripeAccountId,
+            fiscal_data: fiscalMetadata,
           }
         }
       );
@@ -679,6 +739,18 @@ export function TwoStepBookingForm({
               confirmationType={confirmationType}
               guestsCount={bookingState.guestsCount}
             />
+            
+            {/* Fiscal Fields for Invoice Request */}
+            {hostFiscalRegime && hostFiscalRegime !== 'privato' && (
+              <CheckoutFiscalFields
+                requestInvoice={requestInvoice}
+                onToggleInvoice={setRequestInvoice}
+                fiscalData={coworkerFiscalData}
+                onFiscalDataChange={setCoworkerFiscalData}
+                hostHasVat={hostFiscalRegime !== 'privato'}
+                errors={fiscalErrors}
+              />
+            )}
             
             {/* Policy and Rules Display */}
             {(cancellationPolicy || rules) && (
