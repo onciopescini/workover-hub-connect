@@ -20,35 +20,67 @@ export default function AdminKYCReviewPage() {
   const { data: pendingDocs, isLoading } = useQuery({
     queryKey: ['kyc-pending-docs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: docs, error } = await supabase
         .from('kyc_documents')
-        .select(`
-          *,
-          profiles(id, first_name, last_name, email, fiscal_regime)
-        `)
+        .select('*')
         .eq('verification_status', 'pending')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      if (!docs || docs.length === 0) return [];
+
+      // Fetch profiles separately
+      const userIds = [...new Set(docs.map(d => d.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, fiscal_regime')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Merge data
+      return docs.map(doc => ({
+        ...doc,
+        profiles: profiles?.find(p => p.id === doc.user_id) || {
+          first_name: 'N/A',
+          last_name: '',
+          fiscal_regime: 'privato'
+        }
+      }));
     }
   });
 
   const { data: verifiedDocs } = useQuery({
     queryKey: ['kyc-verified-docs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: docs, error } = await supabase
         .from('kyc_documents')
-        .select(`
-          *,
-          profiles(id, first_name, last_name, email, fiscal_regime)
-        `)
+        .select('*')
         .eq('verification_status', 'approved')
         .order('verified_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
-      return data;
+      if (!docs || docs.length === 0) return [];
+
+      // Fetch profiles separately
+      const userIds = [...new Set(docs.map(d => d.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, fiscal_regime')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Merge data
+      return docs.map(doc => ({
+        ...doc,
+        profiles: profiles?.find(p => p.id === doc.user_id) || {
+          first_name: 'N/A',
+          last_name: '',
+          fiscal_regime: 'privato'
+        }
+      }));
     }
   });
 
@@ -215,7 +247,7 @@ export default function AdminKYCReviewPage() {
                     <div>
                       <CardTitle>{doc.profiles.first_name} {doc.profiles.last_name}</CardTitle>
                       <CardDescription>
-                        {doc.profiles.email} • {getDocTypeLabel(doc.document_type)}
+                        ID: {doc.user_id.substring(0, 8)}... • {getDocTypeLabel(doc.document_type)}
                       </CardDescription>
                     </div>
                     <Badge variant="outline">
@@ -294,7 +326,7 @@ export default function AdminKYCReviewPage() {
                         {doc.profiles.first_name} {doc.profiles.last_name}
                       </CardTitle>
                       <CardDescription>
-                        {doc.profiles.email} • {getDocTypeLabel(doc.document_type)}
+                        ID: {doc.user_id.substring(0, 8)}... • {getDocTypeLabel(doc.document_type)}
                       </CardDescription>
                     </div>
                   </div>
