@@ -13,6 +13,8 @@ interface HostProgressData {
   stripeConnected: boolean;
   stripeOnboardingStatus: 'none' | 'pending' | 'completed' | 'restricted';
   hasPhotos: boolean;
+  kycVerified: boolean; // ✅ FASE 4: Nuovo campo
+  taxDetailsComplete: boolean; // ✅ FASE 4: Nuovo campo
 }
 
 export const useHostProgress = (options?: { 
@@ -53,6 +55,22 @@ export const useHostProgress = (options?: {
         .eq('payment_status', 'completed')
         .in('booking_id', bookings?.map(b => b.id) || []);
 
+      // ✅ FASE 4: Get KYC status
+      const { data: kycDocs } = await supabase
+        .from('kyc_documents')
+        .select('id, verification_status')
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle();
+
+      // ✅ FASE 4: Get tax_details completeness
+      const { data: taxDetails } = await supabase
+        .from('tax_details')
+        .select('id')
+        .eq('profile_id', userId)
+        .eq('is_primary', true)
+        .maybeSingle();
+
       const spacesCount = spaces?.length || 0;
       const publishedSpacesCount = spaces?.filter(s => s.published).length || 0;
       const totalBookings = bookings?.length || 0;
@@ -69,6 +87,10 @@ export const useHostProgress = (options?: {
       const stripeConnected = !!profile?.stripe_connected;
       const stripeOnboardingStatus = profile?.stripe_onboarding_status || 'none';
       const hasPhotos = spaces?.some(s => s.photos && s.photos.length > 0) || false;
+      
+      // ✅ FASE 4: Nuovi campi di verifica
+      const kycVerified = profile?.kyc_documents_verified === true;
+      const taxDetailsComplete = !!taxDetails;
 
       return {
         spacesCount,
@@ -79,7 +101,9 @@ export const useHostProgress = (options?: {
         profileComplete,
         stripeConnected,
         stripeOnboardingStatus,
-        hasPhotos
+        hasPhotos,
+        kycVerified,
+        taxDetailsComplete
       };
     },
     enabled: !!userId && authState.profile?.role === 'host',

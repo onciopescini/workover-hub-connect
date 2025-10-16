@@ -65,6 +65,34 @@ export const HostProgressTracker: React.FC = () => {
       action: () => navigate('/host/dashboard'),
       actionLabel: 'Configura Stripe'
     },
+    // ✅ FASE 4: Nuovo step KYC
+    {
+      id: 'kyc_verification',
+      title: 'Verifica Identità',
+      description: authState.profile?.kyc_documents_verified === false 
+        ? '❌ Documenti rifiutati - Ricarica' 
+        : authState.profile?.kyc_documents_verified === null
+        ? '⏳ Documenti in verifica admin'
+        : '✅ Documenti verificati',
+      completed: progressData?.kycVerified ?? false,
+      required: true,
+      action: () => navigate('/host/onboarding?step=kyc'),
+      actionLabel: authState.profile?.kyc_documents_verified === false 
+        ? 'Ricarica Documenti' 
+        : authState.profile?.kyc_documents_verified === null
+        ? 'Attendi Verifica'
+        : 'Verificato'
+    },
+    // ✅ FASE 4: Nuovo step tax_details
+    {
+      id: 'tax_details',
+      title: 'Dati Fiscali Completi',
+      description: 'Indirizzo strutturato richiesto per pubblicare spazi',
+      completed: progressData?.taxDetailsComplete ?? false,
+      required: true,
+      action: () => navigate('/host/fiscal'),
+      actionLabel: 'Completa Dati Fiscali'
+    },
     {
       id: 'first_space',
       title: 'Primo Spazio',
