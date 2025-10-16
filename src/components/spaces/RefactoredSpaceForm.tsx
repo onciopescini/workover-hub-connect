@@ -210,11 +210,9 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       
       // Update states and form
       setPhotoFiles(prev => [...prev, ...newFiles]);
-      setPhotoPreviewUrls(prev => {
-        const updatedUrls = [...prev, ...newPreviewUrls];
-        form.setValue('photos', updatedUrls);
-        return updatedUrls;
-      });
+      const allUrls = [...photoPreviewUrls, ...newPreviewUrls];
+      setPhotoPreviewUrls(allUrls);
+      form.setValue('photos', allUrls);
       setProcessingJobs(prev => [...prev, ...newProcessingJobs]);
       
     } catch (uploadingError) {
