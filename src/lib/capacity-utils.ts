@@ -31,17 +31,16 @@ export async function getAvailableCapacity(
     }
 
     // Get total guests booked for overlapping time slots
+    // A booking overlaps if:
+    // 1. It starts before our endTime AND ends after our startTime
     const { data: bookings, error: bookingsError } = await supabase
       .from('bookings')
       .select('guests_count')
       .eq('space_id', spaceId)
       .eq('booking_date', date)
       .in('status', ['pending', 'confirmed'])
-      .or(
-        `and(start_time.lte.${startTime},end_time.gt.${startTime}),` +
-        `and(start_time.lt.${endTime},end_time.gte.${endTime}),` +
-        `and(start_time.gte.${startTime},end_time.lte.${endTime})`
-      );
+      .lt('start_time', endTime)
+      .gt('end_time', startTime);
 
     if (bookingsError) {
       sreLogger.error('Error fetching bookings', { 
