@@ -23,7 +23,7 @@ interface HostOnboardingWizardProps {
 export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onComplete }) => {
   const { authState, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0); // Index starts at 0
   const [isProcessingStripeReturn, setIsProcessingStripeReturn] = useState(false);
   const [isPollingStripe, setIsPollingStripe] = useState(false);
   const [pollingAttempt, setPollingAttempt] = useState(0);
@@ -44,17 +44,19 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
     { id: 3, title: "Dati Fiscali", icon: FileText, completed: false },
     { id: 4, title: "Localizzazione", icon: MapPin, completed: false },
     { id: 5, title: "Obiettivi Host", icon: Users, completed: false },
-  ];
+  ] as const;
 
-  const progress = (currentStep / steps.length) * 100;
+  const currentStep = steps[currentStepIndex]!; // Derived from index, guaranteed to exist
+  const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
   // Handle return from Stripe setup
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('stripe_setup') === 'success') {
       // Assicurati che siamo al step Stripe
-      if (currentStep < 2) {
-        setCurrentStep(2);
+      const stripeStepIndex = steps.findIndex(s => s.id === 2);
+      if (currentStepIndex < stripeStepIndex) {
+        setCurrentStepIndex(stripeStepIndex);
       }
       setIsProcessingStripeReturn(true);
       handleStripeReturn();
@@ -66,7 +68,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   // Salva l'URL di ritorno nel profilo quando siamo allo step 2
   useEffect(() => {
     const saveReturnUrl = async () => {
-      if (currentStep === 2 && authState.user?.id) {
+      if (currentStep.id === 2 && authState.user?.id) {
         try {
           const returnUrl = `${window.location.origin}/host/onboarding?stripe_setup=success&step=3`;
           
@@ -86,7 +88,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
     };
     
     saveReturnUrl();
-  }, [currentStep, authState.user?.id]);
+  }, [currentStep.id, authState.user?.id]);
 
   // FASE 4: Polling automatico Stripe connection (15 retry × 2s)
   const waitForStripeConnection = async (maxRetries = 15, intervalMs = 2000) => {
@@ -102,8 +104,9 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       if (authState.profile?.stripe_connected) {
         setIsPollingStripe(false);
         setPollingAttempt(0);
-        toast.success("Stripe configurato! Procedendo allo step fiscale...");
-        setCurrentStep(3);
+        toast.success("Stripe configurato! Procedendo alla verifica identità...");
+        const kycStepIndex = steps.findIndex(s => s.id === 2.5);
+        setCurrentStepIndex(kycStepIndex);
         return true;
       }
       
@@ -139,16 +142,16 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       return;
     }
     
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+    if (currentStepIndex < steps.length - 1) {
+      setCurrentStepIndex(currentStepIndex + 1);
     } else {
       handleComplete();
     }
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1);
     }
   };
 
@@ -160,15 +163,17 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       
       // 1. Check Stripe connected
       if (!authState.profile?.stripe_connected) {
-        toast.error("Stripe non connesso. Completa lo step 2.");
-        setCurrentStep(2);
+        toast.error("Stripe non connesso. Completa lo step pagamenti.");
+        const stripeStepIndex = steps.findIndex(s => s.id === 2);
+        setCurrentStepIndex(stripeStepIndex);
         return;
       }
       
       // 2. Check Fiscal data in profiles (sufficient for onboarding)
       if (!authState.profile?.fiscal_regime || !authState.profile?.iban) {
-        toast.error("Dati fiscali mancanti. Completa lo step 3.");
-        setCurrentStep(3);
+        toast.error("Dati fiscali mancanti. Completa lo step dati fiscali.");
+        const fiscalStepIndex = steps.findIndex(s => s.id === 3);
+        setCurrentStepIndex(fiscalStepIndex);
         return;
       }
       
@@ -193,7 +198,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
 
   // FASE 2: Step validation with double check for step 3
   const isStepValid = async () => {
-    switch (currentStep) {
+    switch (currentStep.id) {
       case 1:
         return formData.businessName && formData.businessType;
       case 2:
@@ -228,16 +233,16 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
           <div className="mt-6">
             <Progress value={progress} className="w-full mb-4" />
             <div className="flex justify-center space-x-4">
-              {steps.map((step) => (
+              {steps.map((step, index) => (
                 <div key={step.id} className="flex flex-col items-center space-y-2">
                   <div className={`rounded-full p-3 ${
-                    step.id <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                    index <= currentStepIndex ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
                   }`}>
                     <step.icon className="w-5 h-5" />
                   </div>
                   <div className="text-center">
                     <p className="text-sm font-medium">{step.title}</p>
-                    {step.id < currentStep && (
+                    {index < currentStepIndex && (
                       <CheckCircle className="w-4 h-4 text-green-600 mx-auto mt-1" />
                     )}
                   </div>
@@ -248,7 +253,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {currentStep === 1 && (
+          {currentStep.id === 1 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Informazioni del tuo Business</h3>
               
@@ -285,7 +290,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             </div>
           )}
 
-          {currentStep === 2 && (
+          {currentStep.id === 2 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Setup Pagamenti</h3>
               <p className="text-muted-foreground">
@@ -297,7 +302,8 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
                 context="onboarding" 
                 onComplete={() => {
                   toast.success("Setup Stripe completato!");
-                  setTimeout(() => setCurrentStep(3), 1000);
+                  const kycStepIndex = steps.findIndex(s => s.id === 2.5);
+                  setTimeout(() => setCurrentStepIndex(kycStepIndex), 1000);
                 }}
               />
               
@@ -340,21 +346,21 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             </div>
           )}
 
-          {currentStep === 2.5 && (
+          {currentStep.id === 2.5 && (
             <KycDocumentsStep
               onNext={handleNext}
               onBack={handleBack}
             />
           )}
 
-          {currentStep === 3 && (
+          {currentStep.id === 3 && (
             <FiscalRegimeStep 
               onNext={handleNext}
               onBack={handleBack}
             />
           )}
 
-          {currentStep === 4 && (
+          {currentStep.id === 4 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">Localizzazione</h3>
               
@@ -378,7 +384,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
             </div>
           )}
 
-          {currentStep === 5 && (
+          {currentStep.id === 5 && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold">I tuoi Obiettivi come Host</h3>
               
@@ -417,14 +423,14 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
           )}
 
           <div className="flex justify-between pt-6">
-            {currentStep > 1 && (
+            {currentStepIndex > 0 && (
               <Button variant="outline" onClick={handleBack}>
                 Indietro
               </Button>
             )}
             
             <div className="ml-auto">
-              {currentStep < steps.length ? (
+              {currentStepIndex < steps.length - 1 ? (
                 <Button 
                   onClick={handleNext} 
                   disabled={isProcessingStripeReturn || isPollingStripe}
