@@ -49,7 +49,7 @@ serve(async (req) => {
       city,
       province,
       postal_code,
-      country_code: providedCountryCode,
+      country_code,
       fiscal_regime,
       legal_address,
       is_primary
@@ -70,15 +70,6 @@ serve(async (req) => {
           break;
         default:
           entity_type = 'individual';
-      }
-    }
-
-    // Derive country_code from IBAN if not provided
-    let country_code = providedCountryCode;
-    if (!country_code && iban) {
-      const ibanClean = iban.replace(/\s/g, '').toUpperCase();
-      if (ibanClean.startsWith('IT')) {
-        country_code = 'IT';
       }
     }
 

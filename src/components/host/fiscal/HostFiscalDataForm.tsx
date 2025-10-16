@@ -31,9 +31,32 @@ export const HostFiscalDataForm = ({
     sdi_code: profile?.sdi_code || '',
     iban: profile?.iban || '',
     legal_address: profile?.legal_address || '',
+    // Structured address fields
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    province: '',
+    postal_code: '',
+    country_code: 'IT',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-parse legal_address into structured fields on mount
+  React.useEffect(() => {
+    if (profile?.legal_address && !formData.address_line1) {
+      const parts = profile.legal_address.split(',').map(s => s.trim());
+      if (parts.length >= 2) {
+        setFormData(prev => ({
+          ...prev,
+          address_line1: parts[0] || '',
+          city: parts[1]?.match(/\d{5}\s+(.+)\s+\(/)?.[1] || '',
+          postal_code: parts[1]?.match(/(\d{5})/)?.[1] || '',
+          province: parts[1]?.match(/\(([A-Z]{2})\)/)?.[1] || '',
+        }));
+      }
+    }
+  }, [profile?.legal_address]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,13 +68,38 @@ export const HostFiscalDataForm = ({
         return;
       }
 
+      // Validation for structured address fields
+      if (!formData.address_line1 || !formData.city || !formData.postal_code || !formData.province) {
+        toast.error('Compila tutti i campi obbligatori dell\'indirizzo');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate CAP (5 digits)
+      if (!/^\d{5}$/.test(formData.postal_code)) {
+        toast.error('Il CAP deve essere di 5 cifre');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate Province (2 uppercase letters)
+      if (!/^[A-Z]{2}$/.test(formData.province)) {
+        toast.error('La provincia deve essere di 2 lettere maiuscole (es. RM)');
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('update-tax-details', {
         body: formData,
       });
 
       if (error) throw error;
 
-      toast.success('Dati fiscali aggiornati con successo');
+      if (data?.partial) {
+        toast.warning('Dati salvati. Completa l\'indirizzo per pubblicare spazi.');
+      } else {
+        toast.success('Dati fiscali salvati con successo');
+      }
       
       // Callback per wizard
       onSuccess?.();
@@ -200,6 +248,92 @@ export const HostFiscalDataForm = ({
               onChange={(e) => setFormData({ ...formData, legal_address: e.target.value })}
               placeholder="Via Roma 1, 00100 Roma (RM)"
             />
+          </div>
+
+          {/* Structured Address Section */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-sm font-medium mb-3">Indirizzo Dettagliato (richiesto per pubblicare spazi)</h3>
+            
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="address_line1">Via/Piazza e Numero Civico *</Label>
+                <Input
+                  id="address_line1"
+                  value={formData.address_line1}
+                  onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                  placeholder="Via Roma 1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="address_line2">Scala/Interno (opzionale)</Label>
+                <Input
+                  id="address_line2"
+                  value={formData.address_line2}
+                  onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
+                  placeholder="Scala A, Interno 5"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="city">Città *</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Roma"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="province">Provincia *</Label>
+                  <Input
+                    id="province"
+                    value={formData.province}
+                    onChange={(e) => setFormData({ ...formData, province: e.target.value.toUpperCase() })}
+                    placeholder="RM"
+                    maxLength={2}
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="postal_code">CAP *</Label>
+                  <Input
+                    id="postal_code"
+                    value={formData.postal_code}
+                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                    placeholder="00100"
+                    maxLength={5}
+                    pattern="\d{5}"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="country_code">Nazione *</Label>
+                  <Select
+                    value={formData.country_code}
+                    onValueChange={(value) => setFormData({ ...formData, country_code: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IT">Italia</SelectItem>
+                      <SelectItem value="FR">Francia</SelectItem>
+                      <SelectItem value="DE">Germania</SelectItem>
+                      <SelectItem value="ES">Spagna</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           </div>
 
           {profile?.kyc_documents_verified === false && profile?.kyc_rejection_reason && (
