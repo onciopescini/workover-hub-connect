@@ -41,13 +41,45 @@ export const useCancelBookingMutation = () => {
       logger.info('Booking cancelled successfully', { component: 'useCancelBookingMutation', action: 'cancel_success', metadata: { bookingId } });
       return data;
     },
+    onMutate: async ({ bookingId }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['enhanced-bookings'] });
+      await queryClient.cancelQueries({ queryKey: ['host-dashboard-metrics'] });
+      
+      // Snapshot the previous value
+      const previousBookings = queryClient.getQueryData(['enhanced-bookings']);
+      
+      // Optimistically update the booking status to cancelled
+      queryClient.setQueryData(['enhanced-bookings'], (old: any) => {
+        if (!old) return old;
+        
+        // Handle both array and object structures
+        if (Array.isArray(old)) {
+          return old.map((booking: any) => 
+            booking.id === bookingId 
+              ? { ...booking, status: 'cancelled', cancelled_at: new Date().toISOString() }
+              : booking
+          );
+        }
+        
+        return old;
+      });
+      
+      // Return context with snapshot for rollback
+      return { previousBookings };
+    },
     onSuccess: () => {
-      // Invalidate all booking-related queries
+      // Invalidate to ensure server state is correct
       queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['host-dashboard-metrics'] });
       toast.success("Prenotazione cancellata con successo");
     },
-    onError: (error: unknown) => {
+    onError: (error: unknown, variables, context) => {
+      // Rollback to previous state on error
+      if (context?.previousBookings) {
+        queryClient.setQueryData(['enhanced-bookings'], context.previousBookings);
+      }
+      
       sreLogger.error("Error cancelling booking", {}, error as Error);
       
       // Try RLS error handler first
@@ -56,6 +88,10 @@ export const useCancelBookingMutation = () => {
         const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
         toast.error(`Errore nella cancellazione: ${errorMessage}`);
       }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
     },
   });
 };
