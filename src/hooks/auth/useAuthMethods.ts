@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogger } from '@/hooks/useLogger';
 import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut, cleanupAuthState } from '@/lib/auth-utils';
+import { getAuthSyncChannel } from '@/utils/auth/multi-tab-sync';
 import { containsSuspiciousContent } from '@/utils/security';
 import type { Profile } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
@@ -178,9 +179,14 @@ export const useAuthMethods = ({
 
       if (error) throw error;
 
-      // Invalida cache e ricarica
+      // Invalida cache e ricarica nella tab corrente
       invalidateProfile(currentUser.id);
       await refreshProfile();
+      
+      // Broadcast a tutte le altre tab
+      const authSync = getAuthSyncChannel();
+      authSync.broadcastProfileUpdate({ userId: currentUser.id });
+      
       toast.success('Profilo aggiornato con successo');
     } catch (updateError: unknown) {
       error('Update profile error', updateError as Error, {
