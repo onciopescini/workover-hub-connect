@@ -57,10 +57,15 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     : 0;
 
   // Transform space data for hero section
+  // Mask address if user doesn't have precise location access
+  const displayAddress = space.hasPreciseLocation 
+    ? space.address 
+    : `${space.city_name || 'Città'}${space.country_code ? ', ' + space.country_code : ''}`;
+
   const heroSpaceData = {
     id: space.id,
     title: space.title,
-    address: space.address,
+    address: displayAddress,
     photos: space.photos || ['/placeholder.svg'],
     category: space.category,
     rating: averageRating,
