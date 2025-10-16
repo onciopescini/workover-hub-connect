@@ -5,6 +5,7 @@ import { useAuthRedirects } from './useAuthRedirects';
 import { useLogger } from '@/hooks/useLogger';
 import type { AuthState, Profile } from '@/types/auth';
 import { createAuthState, shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
+import { getAuthSyncChannel, AUTH_SYNC_EVENTS } from '@/utils/auth/multi-tab-sync';
 import type { Session } from '@supabase/supabase-js';
 
 export const useAuthLogic = () => {
@@ -134,6 +135,23 @@ export const useAuthLogic = () => {
 
   useEffect(() => {
     let mounted = true;
+    const authSync = getAuthSyncChannel();
+    
+    // Listen for logout events from other tabs
+    const unsubscribeLogout = authSync.on(AUTH_SYNC_EVENTS.LOGOUT, () => {
+      if (mounted) {
+        updateAuthState(null);
+        clearCache();
+        window.location.href = '/login';
+      }
+    });
+
+    // Listen for profile updates from other tabs
+    const unsubscribeProfileUpdate = authSync.on(AUTH_SYNC_EVENTS.PROFILE_UPDATE, () => {
+      if (mounted && authState.user) {
+        refreshProfile();
+      }
+    });
     
     const initializeAuth = async () => {
       try {
@@ -175,7 +193,7 @@ export const useAuthLogic = () => {
 
     // Setup auth state listener con logica ottimizzata
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
 
         debug('Auth state changed', {
@@ -184,8 +202,20 @@ export const useAuthLogic = () => {
           operation: 'auth_state_change'
         });
 
+        // CRITICAL: Evita refetch inutili su TOKEN_REFRESHED
+        // Il token viene refreshato automaticamente ma il profilo non cambia
+        if (event === 'TOKEN_REFRESHED') {
+          debug('Token refreshed, skipping profile refetch');
+          return;
+        }
+
+        // Defer async operations per evitare deadlock
         if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserProfile(session.user.id);
+            }
+          }, 0);
         } else {
           currentUserId.current = null;
           if (mounted) {
@@ -203,8 +233,10 @@ export const useAuthLogic = () => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      unsubscribeLogout();
+      unsubscribeProfileUpdate();
     };
-  }, [updateAuthState, fetchProfile, fetchUserProfile]);
+  }, [updateAuthState, fetchProfile, fetchUserProfile, authState.user, clearCache, refreshProfile]);
 
   return {
     authState,

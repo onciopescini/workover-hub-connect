@@ -45,28 +45,34 @@ export const aggressiveSignOut = async () => {
   try {
     logger.info('Starting aggressive sign out');
     
-    // Clean up auth state first
+    // Import here to avoid circular dependency
+    const { getAuthSyncChannel } = await import('@/utils/auth/multi-tab-sync');
+    const authSync = getAuthSyncChannel();
+    
+    // Broadcast logout to all tabs FIRST
+    authSync.broadcastLogout();
+    
+    // Clean up auth state
     cleanupAuthState();
     
     // Attempt multiple sign out scopes
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (err) {
-      logger.warn('Global sign out failed', {}, err as Error); // TODO: Improve error type handling
+      logger.warn('Global sign out failed', {}, err as Error);
     }
 
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
-      logger.warn('Local sign out failed', {}, err as Error); // TODO: Improve error type handling
+      logger.warn('Local sign out failed', {}, err as Error);
     }
 
     // Additional cleanup - clear any remaining session data
     try {
-      // Force session termination
       await supabase.auth.signOut();
     } catch (err) {
-      logger.warn('Standard sign out failed', {}, err as Error); // TODO: Improve error type handling
+      logger.warn('Standard sign out failed', {}, err as Error);
     }
 
     logger.info('Aggressive sign out completed');
@@ -77,8 +83,7 @@ export const aggressiveSignOut = async () => {
     }, 100);
     
   } catch (error) {
-    logger.error("Error in aggressive sign out", {}, error as Error); // TODO: Improve error type handling
-    // Even if logout fails, force navigation
+    logger.error("Error in aggressive sign out", {}, error as Error);
     cleanupAuthState();
     window.location.href = '/';
   }
