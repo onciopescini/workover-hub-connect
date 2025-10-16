@@ -107,9 +107,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    // Auth
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '');
+    // Auth - reuse existing authHeader and token from rate limiting
     const { data: userData } = await supabase.auth.getUser(token);
     const user = userData?.user;
     if (!user?.email) throw new Error('User not authenticated or email missing');
@@ -123,6 +121,7 @@ serve(async (req) => {
       pricePerDay,
       host_stripe_account_id,
       booking_id,
+      fiscal_data,
     } = body;
 
     // Required fields validation with detailed error response
@@ -140,6 +139,26 @@ serve(async (req) => {
           host_stripe_account_id: !host_stripe_account_id,
         }
       }), { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 400 });
+    }
+
+    // Process fiscal data if provided
+    let fiscalMetadata = {};
+    if (fiscal_data && fiscal_data.request_invoice) {
+      console.log('[FISCAL-DATA] Processing invoice request:', {
+        tax_id: fiscal_data.tax_id ? '***' : 'none',
+        is_business: fiscal_data.is_business,
+      });
+      fiscalMetadata = {
+        invoice_requested: 'true',
+        invoice_tax_id: fiscal_data.tax_id || '',
+        invoice_is_business: String(fiscal_data.is_business || false),
+        invoice_pec_email: fiscal_data.pec_email || '',
+        invoice_sdi_code: fiscal_data.sdi_code || '',
+        invoice_billing_address: fiscal_data.billing_address || '',
+        invoice_billing_city: fiscal_data.billing_city || '',
+        invoice_billing_province: fiscal_data.billing_province || '',
+        invoice_billing_postal_code: fiscal_data.billing_postal_code || '',
+      };
     }
 
     // Input validation for pricing values
@@ -293,6 +312,7 @@ serve(async (req) => {
           host_net_payout: String(pricing.base - pricing.hostFee - pricing.hostVat),
           total_amount: String(pricing.total),
           pricing_type: pricing.isDayRate ? 'day' : 'hour',
+          ...fiscalMetadata,
         },
       },
       metadata: {
@@ -305,6 +325,7 @@ serve(async (req) => {
         vat_amount: String(pricing.vat),
         total_amount: String(pricing.total),
         pricing_type: pricing.isDayRate ? 'day' : 'hour',
+        ...fiscalMetadata,
       },
       success_url: `${origin}/bookings?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/bookings?cancelled=true`,
