@@ -137,8 +137,6 @@ serve(async (req) => {
       entity_type,
       iban,
       bic_swift,
-      pec_email,
-      sdi_code,
       address_line1,
       address_line2,
       city,
