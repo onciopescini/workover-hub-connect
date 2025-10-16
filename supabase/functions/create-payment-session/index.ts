@@ -104,7 +104,14 @@ serve(async (req) => {
     // Supabase client (user-scoped via token)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
     );
 
     // Auth - reuse existing authHeader and token from rate limiting
