@@ -179,6 +179,32 @@ serve(async (req) => {
 
     console.log('Tax details saved successfully:', { userId: user.id, taxDetailsId: result.data.id });
 
+    // FASE 1: Sync profiles table with tax_details for backward compatibility
+    const profileUpdateData: any = {};
+    if (fiscal_regime !== undefined) profileUpdateData.fiscal_regime = fiscal_regime;
+    if (iban !== undefined) profileUpdateData.iban = iban;
+    if (tax_id !== undefined) profileUpdateData.tax_id = tax_id;
+    if (vat_number !== undefined) profileUpdateData.vat_number = vat_number;
+    if (pec_email !== undefined) profileUpdateData.pec_email = pec_email;
+    if (sdi_code !== undefined) profileUpdateData.sdi_code = sdi_code;
+
+    // UPDATE profiles only if there are fields to sync
+    if (Object.keys(profileUpdateData).length > 0) {
+      profileUpdateData.updated_at = new Date().toISOString();
+      
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update(profileUpdateData)
+        .eq('id', user.id);
+      
+      if (profileUpdateError) {
+        console.error('Warning: Failed to sync profiles', profileUpdateError);
+        // Don't block the flow, tax_details is the SSOT
+      } else {
+        console.log('Profiles synced successfully', { userId: user.id });
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       data: result.data

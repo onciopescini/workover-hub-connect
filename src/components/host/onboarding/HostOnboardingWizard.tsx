@@ -24,6 +24,9 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessingStripeReturn, setIsProcessingStripeReturn] = useState(false);
+  const [isPollingStripe, setIsPollingStripe] = useState(false);
+  const [pollingAttempt, setPollingAttempt] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
@@ -83,29 +86,57 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
     saveReturnUrl();
   }, [currentStep, authState.user?.id]);
 
-  const handleStripeReturn = async () => {
-    try {
-      // Force refresh of profile data
+  // FASE 4: Polling automatico Stripe connection (15 retry × 2s)
+  const waitForStripeConnection = async (maxRetries = 15, intervalMs = 2000) => {
+    setIsPollingStripe(true);
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      setPollingAttempt(attempt);
+      
+      // Refresh profile to check stripe_connected
       await refreshProfile?.();
       
-      // Wait a moment for the update to propagate
-      setTimeout(() => {
-        if (authState.profile?.stripe_connected) {
-          toast.success("Stripe configurato! Procedendo al prossimo step...");
-          setCurrentStep(3); // Advance to Fiscal Data step
-        } else {
-          toast.info("Verifica in corso... Riprova tra un momento.");
-        }
-        setIsProcessingStripeReturn(false);
-      }, 1500);
-    } catch (error) {
-      sreLogger.error("Error handling Stripe return", { userId: authState.user?.id }, error as Error);
-      toast.error("Errore nel processare il ritorno da Stripe");
-      setIsProcessingStripeReturn(false);
+      // Check if connected
+      if (authState.profile?.stripe_connected) {
+        setIsPollingStripe(false);
+        setPollingAttempt(0);
+        toast.success("Stripe configurato! Procedendo allo step fiscale...");
+        setCurrentStep(3);
+        return true;
+      }
+      
+      // Wait before next attempt (except on last)
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
     }
+    
+    // Timeout reached
+    setIsPollingStripe(false);
+    setPollingAttempt(0);
+    return false;
   };
 
-  const handleNext = () => {
+  const handleStripeReturn = async () => {
+    setIsProcessingStripeReturn(true);
+    const success = await waitForStripeConnection();
+    
+    if (!success) {
+      toast.warning(
+        "Verifica Stripe in ritardo. Usa il pulsante 'Ricontrolla' o attendi.",
+        { duration: 5000 }
+      );
+    }
+    setIsProcessingStripeReturn(false);
+  };
+
+  const handleNext = async () => {
+    const valid = await isStepValid();
+    if (!valid) {
+      toast.error("Completa tutti i campi richiesti prima di procedere");
+      return;
+    }
+    
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -119,8 +150,41 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
     }
   };
 
+  // FASE 2: Pre-submit validation robusta
   const handleComplete = async () => {
+    setIsLoading(true);
     try {
+      // ===== PRE-SUBMIT VALIDATION =====
+      
+      // 1. Check Stripe connected
+      if (!authState.profile?.stripe_connected) {
+        toast.error("Stripe non connesso. Completa lo step 2.");
+        setCurrentStep(2);
+        return;
+      }
+      
+      // 2. Check Fiscal data in profiles (cache)
+      if (!authState.profile?.fiscal_regime || !authState.profile?.iban) {
+        toast.error("Dati fiscali mancanti. Completa lo step 3.");
+        setCurrentStep(3);
+        return;
+      }
+      
+      // 3. Check tax_details existence in DB (SSOT for address/payment info)
+      const { data: taxDetails, error: taxError } = await supabase
+        .from('tax_details')
+        .select('id, iban, address_line1, city, postal_code')
+        .eq('profile_id', authState.user?.id || '')
+        .eq('is_primary', true)
+        .maybeSingle();
+      
+      if (taxError || !taxDetails || !taxDetails.iban || !taxDetails.address_line1) {
+        toast.error("Dati fiscali non salvati nel database. Ricompila lo step 3.");
+        setCurrentStep(3);
+        return;
+      }
+      
+      // ===== ALL CHECKS OK: PROCEED =====
       await updateProfile({
         profession: formData.businessType,
         bio: formData.experience,
@@ -134,18 +198,40 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
     } catch (error) {
       sreLogger.error("Error completing onboarding", { userId: authState.user?.id }, error as Error);
       toast.error("Errore durante il completamento dell'onboarding");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const isStepValid = () => {
+  // FASE 2: Step validation with double check for step 3
+  const isStepValid = async () => {
     switch (currentStep) {
       case 1:
         return formData.businessName && formData.businessType;
       case 2:
         return authState.profile?.stripe_connected || isProcessingStripeReturn;
       case 3:
-        // Fiscal data step - validate fiscal regime and IBAN
-        return authState.profile?.fiscal_regime && authState.profile?.iban;
+        // FASE 2.1: Double validation - profiles (fiscal_regime + iban) + tax_details (payment/address)
+        const hasFiscalInProfiles = !!(
+          authState.profile?.fiscal_regime && 
+          authState.profile?.iban
+        );
+        
+        // Check tax_details exists in DB with essential payment/address info
+        const { data: taxDetails } = await supabase
+          .from('tax_details')
+          .select('id, iban, address_line1')
+          .eq('profile_id', authState.user?.id || '')
+          .eq('is_primary', true)
+          .maybeSingle();
+        
+        const hasTaxDetailsInDB = !!(
+          taxDetails && 
+          taxDetails.iban && 
+          taxDetails.address_line1
+        );
+        
+        return hasFiscalInProfiles && hasTaxDetailsInDB;
       case 4:
         return formData.businessAddress;
       case 5:
@@ -240,23 +326,41 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
                 }}
               />
               
-              {isProcessingStripeReturn && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <div className="flex items-center">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2 text-blue-600" />
-                    <span className="text-blue-800 font-medium">
-                      Elaborazione completamento Stripe in corso...
-                    </span>
+              {/* FASE 4: UI Feedback polling Stripe */}
+              {isPollingStripe && (
+                <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">
+                      Verificando connessione Stripe...
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Tentativo {pollingAttempt} di 15
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Il webhook Stripe può richiedere fino a 30 secondi
+                    </p>
                   </div>
                 </div>
               )}
-              
-              {!authState.profile?.stripe_connected && !isProcessingStripeReturn && (
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                  <p className="text-amber-800 font-medium">
-                    ⚠️ Devi completare la configurazione Stripe per procedere
-                  </p>
-                </div>
+
+              {!isPollingStripe && !authState.profile?.stripe_connected && (
+                <>
+                  <Button 
+                    onClick={handleStripeReturn} 
+                    variant="outline"
+                    className="w-full"
+                    disabled={isProcessingStripeReturn}
+                  >
+                    🔄 Ricontrolla Connessione Stripe
+                  </Button>
+                  
+                  <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                    <p className="text-amber-800 font-medium">
+                      ⚠️ Devi completare la configurazione Stripe per procedere
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -341,9 +445,9 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
               {currentStep < steps.length ? (
                 <Button 
                   onClick={handleNext} 
-                  disabled={!isStepValid() || isProcessingStripeReturn}
+                  disabled={isProcessingStripeReturn || isPollingStripe}
                 >
-                  {isProcessingStripeReturn ? (
+                  {isProcessingStripeReturn || isPollingStripe ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Elaborazione...
@@ -353,8 +457,15 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
                   )}
                 </Button>
               ) : (
-                <Button onClick={handleComplete} disabled={!isStepValid()}>
-                  Completa Setup
+                <Button onClick={handleComplete} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    "Completa Setup"
+                  )}
                 </Button>
               )}
             </div>
