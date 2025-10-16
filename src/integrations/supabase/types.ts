@@ -4408,6 +4408,16 @@ export type Database = {
         }
         Returns: Json
       }
+      check_slot_conflicts: {
+        Args: {
+          date_param: string
+          end_time_param: string
+          exclude_booking_id?: string
+          space_id_param: string
+          start_time_param: string
+        }
+        Returns: Json
+      }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
