@@ -68,7 +68,7 @@ serve(async (req) => {
     const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
     
     if (isPaymentSuccessful && session.metadata?.booking_id) {
-      // Aggiorna il pagamento nel database - RIMUOVO updated_at che non esiste
+      // STEP 1: Prima aggiorna il payment (così il trigger validate_booking_payment lo trova!)
       const { error: paymentError } = await supabaseAdmin
         .from('payments')
         .update({
@@ -82,11 +82,13 @@ serve(async (req) => {
           operation: 'update_payment',
           session_id
         });
-      } else {
-        ErrorHandler.logSuccess('Payment updated successfully');
+        // Se il payment fallisce, non procedere con la booking
+        throw new Error('Failed to update payment status');
       }
+      
+      ErrorHandler.logSuccess('Payment updated successfully');
 
-      // Aggiorna la prenotazione
+      // STEP 2: Ora conferma la booking (il trigger troverà il payment completed)
       const { error: bookingError } = await supabaseAdmin
         .from('bookings')
         .update({
@@ -100,9 +102,10 @@ serve(async (req) => {
           operation: 'update_booking',
           booking_id: session.metadata.booking_id
         });
-      } else {
-        ErrorHandler.logSuccess('Booking confirmed successfully');
+        throw new Error('Failed to confirm booking');
       }
+      
+      ErrorHandler.logSuccess('Booking confirmed successfully');
     }
 
     return new Response(JSON.stringify({

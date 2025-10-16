@@ -145,7 +145,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
           price_per_day,
           confirmation_type
         ),
-        coworker:profiles!bookings_user_id_fkey (
+        coworker:profiles!user_id (
           id,
           first_name,
           last_name,
