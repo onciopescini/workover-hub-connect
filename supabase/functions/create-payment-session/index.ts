@@ -108,8 +108,8 @@ serve(async (req) => {
     );
 
     // Auth - reuse existing authHeader and token from rate limiting
-    const { data: userData } = await supabase.auth.getUser(token);
-    const user = userData?.user;
+    const { data: authData } = await supabase.auth.getUser(token);
+    const user = authData?.user;
     if (!user?.email) throw new Error('User not authenticated or email missing');
 
     // Body
