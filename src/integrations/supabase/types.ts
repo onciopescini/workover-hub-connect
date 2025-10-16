@@ -4666,6 +4666,7 @@ export type Database = {
           created_at: string
           description: string
           host_bio: string
+          host_created_at: string
           host_first_name: string
           host_last_name: string
           host_networking_enabled: boolean

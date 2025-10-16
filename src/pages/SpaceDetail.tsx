@@ -125,7 +125,7 @@ const SpaceDetail = () => {
           last_name: (spaceData as any).host_last_name ?? '',
           profile_photo_url: (spaceData as any).host_profile_photo ?? null,
           bio: (spaceData as any).host_bio ?? '',
-          created_at: new Date().toISOString()
+          created_at: (spaceData as any).host_created_at ?? new Date().toISOString()
         },
         host_stripe_account_id: (spaceData as any).host_stripe_account_id ?? '',
         host_stripe_connected: (spaceData as any).host_stripe_connected ?? false
