@@ -4974,6 +4974,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_and_reserve_multi_slots: {
+        Args: {
+          client_total_price_param?: number
+          confirmation_type_param: string
+          guests_count_param: number
+          slots_param: Json
+          space_id_param: string
+          user_id_param: string
+        }
+        Returns: Json
+      }
       validate_and_reserve_slot: {
         Args:
           | {

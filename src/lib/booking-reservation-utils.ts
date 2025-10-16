@@ -263,6 +263,121 @@ export const handlePaymentFlow = async (
   }
 };
 
+export const reserveMultipleSlots = async (
+  spaceId: string,
+  slots: Array<{ date: string; startTime: string; endTime: string }>,
+  guestsCount: number = 1,
+  confirmationType: string = 'instant',
+  clientTotalPrice?: number
+): Promise<{ success: boolean; bookingIds?: string[]; error?: string; reservationToken?: string } | null> => {
+  try {
+    sreLogger.info('Starting multi-slot booking reservation', {
+      component: 'booking-reservation-utils',
+      action: 'reserve_multi_slots',
+      spaceId,
+      slotsCount: slots.length,
+      confirmationType
+    });
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user?.user) {
+      sreLogger.warn('User not authenticated for multi-slot booking', {
+        component: 'booking-reservation-utils',
+        action: 'reserve_multi_slots'
+      });
+      toast.error("Devi essere autenticato per prenotare");
+      return null;
+    }
+
+    // Format slots for RPC
+    const slotsParam = slots.map(slot => ({
+      date: slot.date,
+      start_time: slot.startTime,
+      end_time: slot.endTime
+    }));
+
+    sreLogger.info('Calling validate_and_reserve_multi_slots RPC', {
+      component: 'booking-reservation-utils',
+      action: 'rpc_call',
+      spaceId,
+      slotsCount: slots.length
+    });
+
+    const { data, error } = await supabase.rpc('validate_and_reserve_multi_slots', {
+      space_id_param: spaceId,
+      slots_param: slotsParam,
+      user_id_param: user.user.id,
+      guests_count_param: guestsCount,
+      confirmation_type_param: confirmationType,
+      client_total_price_param: clientTotalPrice
+    } as any);
+
+    if (error) {
+      sreLogger.error('RPC error during multi-slot reservation', {
+        component: 'booking-reservation-utils',
+        action: 'rpc_error',
+        spaceId
+      }, error instanceof Error ? error : new Error(String(error)));
+      
+      let errorMessage = "Errore nella prenotazione multi-slot";
+      if (error.message?.includes('not available')) {
+        errorMessage = "Lo spazio non è disponibile o l'host non ha collegato Stripe";
+      } else if (error.message?.includes('conflict')) {
+        errorMessage = "C'è un conflitto con un'altra prenotazione";
+      } else if (error.message?.includes('Capacity exceeded')) {
+        errorMessage = "Capacità superata in uno degli slot selezionati";
+      } else if (error.message?.includes('Price mismatch')) {
+        errorMessage = "Errore di validazione prezzo. Riprova.";
+      }
+      
+      toast.error(errorMessage);
+      return null;
+    }
+
+    if (!data || typeof data !== 'object') {
+      sreLogger.error('Invalid response from multi-slot RPC', {
+        component: 'booking-reservation-utils',
+        action: 'response_validation'
+      }, new Error('Invalid RPC response'));
+      toast.error("Errore nel formato della risposta del server");
+      return null;
+    }
+
+    const result = data as any;
+    
+    if (!result.success) {
+      sreLogger.warn('Multi-slot reservation failed', {
+        component: 'booking-reservation-utils',
+        action: 'reservation_failed',
+        error: result.error
+      });
+      toast.error(result.error || "Errore nella prenotazione multi-slot");
+      return { success: false, error: result.error };
+    }
+
+    sreLogger.info('Multi-slot reservation successful', {
+      component: 'booking-reservation-utils',
+      action: 'reservation_success',
+      bookingIds: result.booking_ids,
+      totalSlots: result.total_slots
+    });
+
+    return {
+      success: true,
+      bookingIds: result.booking_ids,
+      reservationToken: result.reservation_token
+    };
+
+  } catch (error) {
+    sreLogger.error('Unexpected error during multi-slot reservation', {
+      component: 'booking-reservation-utils',
+      action: 'reserve_multi_slots'
+    }, error instanceof Error ? error : new Error(String(error)));
+    toast.error("Errore imprevisto nella prenotazione multi-slot");
+    return null;
+  }
+};
+
 export const getSpacesWithConnectedHosts = async () => {
   try {
     const { data, error } = await supabase
