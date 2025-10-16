@@ -81,15 +81,18 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
         body: formData,
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Errore durante il caricamento del documento');
+      }
 
       if (!data.success) {
-        throw new Error(data.error || 'Upload failed');
+        const errorMessage = data.error || 'Upload fallito';
+        throw new Error(errorMessage);
       }
 
       toast({
-        title: "✅ Documento caricato",
-        description: "Il tuo documento è in verifica. Riceverai una notifica a breve.",
+        title: "✅ Documento caricato con successo",
+        description: "Il tuo documento è stato ricevuto ed è in verifica. Riceverai una notifica entro 24-48 ore.",
       });
 
       // Reset form
@@ -106,9 +109,25 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
 
     } catch (error: any) {
       console.error('KYC upload error:', error);
+      
+      let errorTitle = "Errore durante il caricamento";
+      let errorDescription = error.message || "Si è verificato un errore. Riprova.";
+      
+      // Enhanced error messaging based on error type
+      if (error.message?.includes('file')) {
+        errorTitle = "Errore file";
+        errorDescription = "Controlla che il file sia nel formato corretto (PDF, JPEG, PNG) e non superi i 10MB.";
+      } else if (error.message?.includes('auth')) {
+        errorTitle = "Errore autenticazione";
+        errorDescription = "Effettua nuovamente il login e riprova.";
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorTitle = "Errore di connessione";
+        errorDescription = "Verifica la tua connessione internet e riprova.";
+      }
+      
       toast({
-        title: "❌ Errore upload",
-        description: error.message || "Si è verificato un errore durante il caricamento",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {

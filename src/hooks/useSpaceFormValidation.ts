@@ -28,7 +28,7 @@ export const useSpaceFormValidation = ({ formData, availabilityData }: UseSpaceF
     }
 
     if (data['address']?.trim() && (!data['latitude'] || !data['longitude'])) {
-      newErrors['address'] = "Seleziona un indirizzo dai suggerimenti per ottenere le coordinate GPS";
+      newErrors['address'] = "Seleziona un indirizzo valido dai suggerimenti della mappa per ottenere le coordinate GPS";
     }
 
     if (data['max_capacity'] === undefined || data['max_capacity'] < 1) {
@@ -55,7 +55,7 @@ export const useSpaceFormValidation = ({ formData, availabilityData }: UseSpaceF
       Object.values(availabilityData.recurring).some(day => day.enabled && day.slots.length > 0);
     
     if (!hasAvailability) {
-      newErrors['availability'] = "Devi impostare almeno un giorno e orario di disponibilità";
+      newErrors['availability'] = "Imposta almeno un giorno e una fascia oraria di disponibilità per lo spazio";
     }
 
     setErrors(newErrors);

@@ -1,55 +1,99 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 
-interface ParsedPublishError {
-  type: 'stripe' | 'kyc' | 'fiscal_regime' | 'tax_details' | 'generic';
+export interface ParsedPublishError {
+  type: 'stripe' | 'kyc' | 'fiscal_regime' | 'tax_details' | 'email_verification' | 'generic';
   title: string;
   message: string;
-  action: { label: string; route: string } | null;
+  action?: {
+    label: string;
+    route: string;
+  };
 }
 
 export function parseSpacePublishError(error: PostgrestError): ParsedPublishError {
-  const errorMsg = error.message || '';
+  const message = error.message || '';
   
-  if (errorMsg.includes('Stripe account not connected')) {
+  // Email verification check
+  if (message.includes('email not verified') || message.includes('email_confirmed_at')) {
+    return {
+      type: 'email_verification',
+      title: 'Email Non Verificata',
+      message: 'Prima di pubblicare uno spazio, devi verificare il tuo indirizzo email. Controlla la tua casella di posta per il link di verifica.',
+      action: {
+        label: 'Vai al Profilo',
+        route: '/profile',
+      },
+    };
+  }
+
+  // Stripe connection check
+  if (message.includes('Stripe account not connected') || message.includes('stripe onboarding') || message.toLowerCase().includes('stripe')) {
     return {
       type: 'stripe',
-      title: 'Stripe Non Connesso',
-      message: 'Devi completare la configurazione Stripe per pubblicare spazi e ricevere pagamenti.',
-      action: { label: 'Completa Stripe Onboarding', route: '/host/onboarding' },
+      title: 'Account Stripe Non Connesso',
+      message: 'Per pubblicare uno spazio devi completare l\'onboarding Stripe (step 2). Questo è necessario per ricevere i pagamenti in modo sicuro e conforme alle normative.',
+      action: {
+        label: 'Completa Onboarding Stripe',
+        route: '/host/onboarding',
+      },
     };
   }
   
-  if (errorMsg.includes('Identity verification required') || errorMsg.includes('KYC')) {
+  // KYC verification check
+  if (message.includes('Identity verification') || message.includes('kyc') || message.toLowerCase().includes('identity')) {
     return {
       type: 'kyc',
       title: 'Verifica Identità Richiesta',
-      message: 'Devi caricare i documenti di identità (KYC) e attendere l\'approvazione di un amministratore per pubblicare spazi.',
-      action: { label: 'Carica Documenti KYC', route: '/host/kyc' },
+      message: 'Prima di pubblicare uno spazio, devi completare la verifica KYC caricando un documento di identità valido. La verifica richiede 24-48 ore.',
+      action: {
+        label: 'Carica Documento KYC',
+        route: '/host/kyc-verification',
+      },
     };
   }
   
-  if (errorMsg.includes('Fiscal regime') || errorMsg.includes('Regime Fiscale')) {
+  // Fiscal regime check
+  if (message.includes('Fiscal regime') || message.includes('fiscal_regime') || message.includes('Regime Fiscale')) {
     return {
       type: 'fiscal_regime',
-      title: 'Dati Fiscali Mancanti',
-      message: 'Devi completare i dati fiscali (Regime Fiscale, IBAN, ecc.) per pubblicare spazi.',
-      action: { label: 'Completa Dati Fiscali', route: '/host/fiscal' },
+      title: 'Regime Fiscale Mancante',
+      message: 'Devi selezionare il tuo regime fiscale (Privato, Forfettario o Ordinario) per conformità alle normative fiscali italiane.',
+      action: {
+        label: 'Completa Dati Fiscali',
+        route: '/host/fiscal',
+      },
     };
   }
   
-  if (errorMsg.includes('tax details') || errorMsg.includes('address') || errorMsg.includes('Complete address required')) {
+  // Tax details and IBAN check
+  if (message.includes('tax details') || message.includes('IBAN') || message.includes('Complete address') || message.includes('payment')) {
+    const missingFields: string[] = [];
+    
+    if (message.includes('IBAN')) missingFields.push('IBAN');
+    if (message.includes('address')) missingFields.push('indirizzo completo');
+    if (message.includes('tax')) missingFields.push('dati fiscali');
+    
+    const fieldsList = missingFields.length > 0 ? ` (${missingFields.join(', ')})` : '';
+    
     return {
       type: 'tax_details',
-      title: 'Indirizzo Fiscale Incompleto',
-      message: 'Devi completare l\'indirizzo strutturato (Via, Città, CAP, Provincia) nei dati fiscali per pubblicare spazi.',
-      action: { label: 'Completa Indirizzo', route: '/host/fiscal' },
+      title: 'Dati Fiscali Incompleti',
+      message: `Devi completare tutti i dati fiscali obbligatori${fieldsList} per poter pubblicare spazi e ricevere pagamenti.`,
+      action: {
+        label: 'Completa Dati Fiscali',
+        route: '/host/fiscal',
+      },
     };
   }
   
+  // Generic fallback with actionable guidance
   return {
     type: 'generic',
-    title: 'Errore di Pubblicazione',
-    message: errorMsg || 'Si è verificato un errore durante la pubblicazione dello spazio. Riprova.',
-    action: null,
+    title: 'Requisiti Mancanti per la Pubblicazione',
+    message: error.message || 'Completa tutti i passaggi di onboarding (Stripe, KYC, Dati Fiscali) prima di pubblicare spazi.',
+    action: {
+      label: 'Vai all\'Onboarding',
+      route: '/host/onboarding',
+    },
   };
 }

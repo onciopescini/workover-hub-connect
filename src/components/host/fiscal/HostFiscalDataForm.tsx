@@ -97,13 +97,32 @@ export const HostFiscalDataForm = ({
 
       if (error) throw error;
 
-      // ✅ FASE 2: Blocca avanzamento se dati incompleti
+      // ✅ FASE 2 & 3: Enhanced error messaging for incomplete data
       if (data?.partial || !data?.success) {
-        if (data?.missingFields) {
-          toast.error(`Campi mancanti: ${data.missingFields.join(', ')}`);
-        } else {
-          toast.error('Completa tutti i campi obbligatori prima di procedere');
+        const errorTitle = 'Dati fiscali incompleti';
+        let errorDescription = 'Completa tutti i campi obbligatori per procedere:';
+        
+        if (data?.missingFields && data.missingFields.length > 0) {
+          const fieldTranslations: Record<string, string> = {
+            'fiscal_regime': 'Regime Fiscale',
+            'tax_id': 'Codice Fiscale',
+            'vat_number': 'Partita IVA',
+            'iban': 'IBAN',
+            'address_line1': 'Indirizzo',
+            'city': 'Città',
+            'postal_code': 'CAP',
+            'province': 'Provincia',
+            'country_code': 'Nazione',
+          };
+          
+          const translatedFields = data.missingFields
+            .map((field: string) => fieldTranslations[field] || field)
+            .join(', ');
+          
+          errorDescription = `Campi mancanti: ${translatedFields}`;
         }
+        
+        toast.error(errorTitle, { description: errorDescription });
         setIsSubmitting(false);
         return;
       }
@@ -121,7 +140,23 @@ export const HostFiscalDataForm = ({
       }
     } catch (error: any) {
       console.error('Error updating tax details:', error);
-      toast.error('Errore durante l\'aggiornamento: ' + error.message);
+      
+      let errorTitle = 'Errore salvataggio dati fiscali';
+      let errorDescription = error.message || 'Si è verificato un errore. Riprova.';
+      
+      // Enhanced error messaging
+      if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorTitle = 'Errore di connessione';
+        errorDescription = 'Verifica la tua connessione internet e riprova.';
+      } else if (error.message?.includes('auth')) {
+        errorTitle = 'Errore autenticazione';
+        errorDescription = 'La tua sessione potrebbe essere scaduta. Effettua nuovamente il login.';
+      } else if (error.message?.includes('validation')) {
+        errorTitle = 'Errore validazione';
+        errorDescription = 'Controlla che tutti i campi obbligatori siano compilati correttamente.';
+      }
+      
+      toast.error(errorTitle, { description: errorDescription });
     } finally {
       setIsSubmitting(false);
     }
