@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AvailabilityScheduler } from "./AvailabilityScheduler";
 import { AdvancedCalendarView, ConflictManagementSystem } from "./calendar";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 import { type AvailabilityData, type DaySchedule, type WeeklySchedule, type TimeSlot } from "@/types/availability";
-import { Calendar, Settings } from "lucide-react";
+import { Calendar, Settings, AlertTriangle } from "lucide-react";
 import { sreLogger } from '@/lib/sre-logger';
 
 // Robust normalization function that ensures strict AvailabilityData compliance
@@ -58,6 +59,19 @@ export const RefactoredAvailabilityScheduler = () => {
   const form = useFormContext<SpaceFormData>();
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
 
+  // Check if at least one day is enabled with time slots
+  const hasAtLeastOneDay = useMemo(() => {
+    const availability = form.watch('availability');
+    if (!availability?.recurring) return false;
+    
+    return Object.values(availability.recurring).some(
+      day => day.enabled && day.slots && day.slots.length > 0
+    );
+  }, [form.watch('availability')]);
+
+  // Check if space is published
+  const isPublished = form.watch('published');
+
   return (
     <Card>
       <CardHeader>
@@ -83,7 +97,17 @@ export const RefactoredAvailabilityScheduler = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {!hasAtLeastOneDay && (
+          <Alert variant="destructive" className="border-red-500 bg-red-50">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-red-800">
+              <strong>Attenzione:</strong> Devi abilitare almeno un giorno con una fascia oraria.
+              {isPublished && " Questo è obbligatorio per pubblicare lo spazio."}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <FormField
           control={form.control}
           name="availability"

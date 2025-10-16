@@ -51,11 +51,17 @@ export const useSpaceFormValidation = ({ formData, availabilityData }: UseSpaceF
       newErrors['work_environment'] = "Work environment is required";
     }
 
+    // Enhanced availability validation
     const hasAvailability = availabilityData?.recurring && 
       Object.values(availabilityData.recurring).some(day => day.enabled && day.slots.length > 0);
     
     if (!hasAvailability) {
       newErrors['availability'] = "Imposta almeno un giorno e una fascia oraria di disponibilità per lo spazio";
+    }
+
+    // Extra check for published spaces - must have availability
+    if (data['published'] && !hasAvailability) {
+      newErrors['availability'] = "Devi impostare almeno un giorno e orario di disponibilità per pubblicare lo spazio";
     }
 
     setErrors(newErrors);
