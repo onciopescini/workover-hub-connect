@@ -14,10 +14,16 @@ export const RefactoredLocationPricing = () => {
     if (coordinates) {
       form.setValue("latitude", coordinates.lat);
       form.setValue("longitude", coordinates.lng);
+      // Clear coordinate errors when valid coordinates are set
+      form.clearErrors("latitude");
+      form.clearErrors("longitude");
     }
     // Clear any address validation errors
     form.clearErrors("address");
   };
+
+  // Check if coordinates are present
+  const hasCoordinates = !!(form.watch("latitude") && form.watch("longitude"));
 
   return (
     <Card>
@@ -39,9 +45,16 @@ export const RefactoredLocationPricing = () => {
                   onChange={handleAddressChange}
                   error={form.formState.errors.address?.message ?? ''}
                   disabled={false}
+                  hasCoordinates={hasCoordinates}
                 />
               </FormControl>
               <FormMessage />
+              {form.formState.errors.latitude && (
+                <p className="text-sm text-red-500">{form.formState.errors.latitude.message}</p>
+              )}
+              {form.formState.errors.longitude && (
+                <p className="text-sm text-red-500">{form.formState.errors.longitude.message}</p>
+              )}
             </FormItem>
           )}
         />

@@ -21,6 +21,7 @@ interface AddressAutocompleteProps {
   placeholder?: string;
   error?: string;
   disabled?: boolean;
+  hasCoordinates?: boolean;
 }
 
 export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
@@ -28,7 +29,8 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   onChange,
   placeholder = "Inizia a digitare l'indirizzo...",
   error,
-  disabled = false
+  disabled = false,
+  hasCoordinates = false
 }) => {
   const { error: logError } = useLogger({ context: 'AddressAutocomplete' });
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -184,6 +186,16 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
       {error && (
         <p className="text-sm text-red-500">{error}</p>
+      )}
+      
+      {value && !hasCoordinates && (
+        <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <MapPin className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-yellow-800">
+            <strong>Attenzione:</strong> Seleziona un indirizzo dai suggerimenti per salvare le coordinate GPS. 
+            Le coordinate sono necessarie per pubblicare lo spazio.
+          </p>
+        </div>
       )}
       
       {!mapboxToken && (

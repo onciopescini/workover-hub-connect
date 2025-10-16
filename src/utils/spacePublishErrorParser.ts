@@ -1,7 +1,7 @@
 import type { PostgrestError } from '@supabase/supabase-js';
 
 export interface ParsedPublishError {
-  type: 'stripe' | 'kyc' | 'fiscal_regime' | 'tax_details' | 'email_verification' | 'generic';
+  type: 'email_verification' | 'stripe' | 'kyc' | 'fiscal_regime' | 'tax_details' | 'missing_coordinates' | 'generic';
   title: string;
   message: string;
   action?: {
@@ -62,6 +62,19 @@ export function parseSpacePublishError(error: PostgrestError): ParsedPublishErro
         label: 'Completa Dati Fiscali',
         route: '/host/fiscal',
       },
+    };
+  }
+  
+  // GPS coordinates check (NEW)
+  if (message.includes('GPS coordinates') || message.includes('coordinate') || message.includes('latitude') || message.includes('longitude') || message.includes('autocomplete')) {
+    return {
+      type: 'missing_coordinates',
+      title: 'Coordinate GPS Mancanti',
+      message: 'Per pubblicare lo spazio è necessario selezionare un indirizzo dai suggerimenti della mappa. Questo assicura che le coordinate GPS siano salvate correttamente e lo spazio sia localizzabile.',
+      action: {
+        label: 'Modifica Indirizzo',
+        route: window.location.pathname // Stay on current edit page
+      }
     };
   }
   

@@ -63,10 +63,16 @@ export const SpaceFormSchema = z.object({
   event_friendly_tags: z.array(z.string()).default([]),
   rules: z.string().optional(),
 
-  // Location & Pricing - address is REQUIRED
+  // Location & Pricing - address and coordinates are REQUIRED
   address: z.string().min(1, "L'indirizzo è obbligatorio"),
-  latitude: z.number().optional(),
-  longitude: z.number().optional(),
+  latitude: z.number({
+    required_error: "Le coordinate GPS sono obbligatorie",
+    invalid_type_error: "Coordinate GPS non valide"
+  }),
+  longitude: z.number({
+    required_error: "Le coordinate GPS sono obbligatorie",
+    invalid_type_error: "Coordinate GPS non valide"
+  }),
   price_per_hour: z.number().min(0, "Il prezzo orario deve essere >= 0"),
   price_per_day: z.number().min(0, "Il prezzo giornaliero deve essere >= 0"),
 
