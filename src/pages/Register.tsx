@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
+import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -35,13 +36,13 @@ const Register = () => {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Le password non coincidono');
+      setError(AUTH_ERRORS.PASSWORD_MISMATCH);
       setIsLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri');
+    if (password.length < 8) {
+      setError(AUTH_ERRORS.WEAK_PASSWORD);
       setIsLoading(false);
       return;
     }
@@ -52,11 +53,8 @@ const Register = () => {
       navigate('/login');
     } catch (err: any) {
       sreLogger.error('Registration failed', { email }, err);
-      if (err.message?.includes('already registered')) {
-        setError('Questo indirizzo email è già registrato. Prova ad accedere.');
-      } else {
-        setError(err.message || 'Errore durante la registrazione. Riprova.');
-      }
+      const errorMessage = err.message || AUTH_ERRORS.UNKNOWN_ERROR;
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +69,8 @@ const Register = () => {
       toast.success('Registrazione con Google completata!');
     } catch (err: any) {
       sreLogger.error('Google sign up failed', {}, err);
-      setError(err.message || 'Errore durante la registrazione con Google.');
+      const errorMessage = err.message || AUTH_ERRORS.OAUTH_FAILED;
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

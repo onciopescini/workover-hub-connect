@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -38,7 +39,7 @@ const Login = () => {
 
       await signIn(email, password, redirectTo);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      const errorMessage = error instanceof Error ? error.message : AUTH_ERRORS.UNKNOWN_ERROR;
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -52,7 +53,7 @@ const Login = () => {
     try {
       await signInWithGoogle();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'accesso con Google';
+      const errorMessage = error instanceof Error ? error.message : AUTH_ERRORS.OAUTH_FAILED;
       setError(errorMessage);
     } finally {
       setGoogleLoading(false);

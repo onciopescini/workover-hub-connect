@@ -6,6 +6,7 @@ import { useLogger } from '@/hooks/useLogger';
 import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut, cleanupAuthState } from '@/lib/auth-utils';
 import { getAuthSyncChannel } from '@/utils/auth/multi-tab-sync';
 import { containsSuspiciousContent } from '@/utils/security';
+import { AUTH_ERRORS, mapSupabaseError } from '@/utils/auth/auth-errors';
 import type { Profile } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -48,8 +49,7 @@ export const useAuthMethods = ({
         email: email,
         redirectTo: redirectTo
       });
-      const errorMessage = signInError instanceof Error ? signInError.message : 'Errore durante l\'accesso';
-      throw new Error(errorMessage);
+      throw signInError;
     }
   }, [fetchProfile, updateAuthState, navigate]);
 
@@ -71,15 +71,16 @@ export const useAuthMethods = ({
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(mapSupabaseError(error));
+      }
       toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
     } catch (signUpError: unknown) {
       error('Sign up error', signUpError as Error, {
         operation: 'sign_up',
         email: email
       });
-      const errorMessage = signUpError instanceof Error ? signUpError.message : 'Errore durante la registrazione';
-      throw new Error(errorMessage);
+      throw signUpError;
     }
   }, []);
 
@@ -90,8 +91,7 @@ export const useAuthMethods = ({
       error('Google sign in error', googleError as Error, {
         operation: 'google_sign_in'
       });
-      const errorMessage = googleError instanceof Error ? googleError.message : 'Errore durante l\'accesso con Google';
-      throw new Error(errorMessage);
+      throw googleError;
     }
   }, []);
 
@@ -161,7 +161,7 @@ export const useAuthMethods = ({
   };
 
   const updateProfile = useCallback(async (updates: Partial<Profile>): Promise<void> => {
-    if (!currentUser) throw new Error('User not authenticated');
+    if (!currentUser) throw new Error(AUTH_ERRORS.PERMISSION_DENIED);
 
     try {
       // Security validation before processing
@@ -177,7 +177,9 @@ export const useAuthMethods = ({
         .update(sanitized)
         .eq('id', currentUser.id);
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(mapSupabaseError(error));
+      }
 
       // Invalida cache e ricarica nella tab corrente
       invalidateProfile(currentUser.id);
@@ -194,8 +196,7 @@ export const useAuthMethods = ({
         userId: currentUser?.id,
         updates: Object.keys(updates)
       });
-      const errorMessage = updateError instanceof Error ? updateError.message : 'Errore durante l\'aggiornamento del profilo';
-      throw new Error(errorMessage);
+      throw updateError;
     }
   }, [currentUser, refreshProfile, invalidateProfile]);
 

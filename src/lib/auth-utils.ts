@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { AUTH_ERRORS, mapSupabaseError } from '@/utils/auth/auth-errors';
 
 // Define proper types for rate limit responses
 interface RateLimitResponse {
@@ -159,7 +160,12 @@ export const cleanSignInWithGoogle = async () => {
       }
     });
     
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes('popup')) {
+        throw new Error(AUTH_ERRORS.OAUTH_POPUP_BLOCKED);
+      }
+      throw new Error(mapSupabaseError(error));
+    }
     
     logger.info('Google sign in initiated successfully');
     return data;
@@ -208,9 +214,7 @@ export const cleanSignIn = async (email: string, password: string) => {
     
     if (!rateLimitResult.allowed) {
       const waitTime = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
-      const message = rateLimitResult.message || `Troppi tentativi di login. Riprova tra ${waitTime} secondi.`;
-      toast.error(message);
-      throw new Error(message);
+      throw new Error(AUTH_ERRORS.RATE_LIMIT_EXCEEDED(waitTime));
     }
 
     // Clean up existing state first
@@ -229,7 +233,9 @@ export const cleanSignIn = async (email: string, password: string) => {
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      throw new Error(mapSupabaseError(error));
+    }
     return data;
   } catch (error) {
     logger.error("Error in clean sign in", { email }, error as Error); // TODO: Improve error type handling
@@ -245,9 +251,7 @@ export const requestPasswordReset = async (email: string) => {
     
     if (!rateLimitResult.allowed) {
       const waitTime = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
-      const message = rateLimitResult.message || `Troppi tentativi di reset password. Riprova tra ${waitTime} secondi.`;
-      toast.error(message);
-      throw new Error(message);
+      throw new Error(AUTH_ERRORS.RATE_LIMIT_EXCEEDED(waitTime));
     }
 
     // Proceed with password reset
@@ -255,7 +259,9 @@ export const requestPasswordReset = async (email: string) => {
       redirectTo: `${window.location.origin}/auth/reset-password`
     });
     
-    if (error) throw error;
+    if (error) {
+      throw new Error(mapSupabaseError(error));
+    }
     
     toast.success('Email di reset password inviata. Controlla la tua casella di posta.');
     return { success: true };
