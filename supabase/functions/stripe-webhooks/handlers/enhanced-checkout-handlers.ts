@@ -61,23 +61,68 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: 'Payment amount validation failed' };
     }
 
-    // Get payment details
-    const payment = await EnhancedPaymentService.getPaymentBySessionId(supabaseAdmin, session.id);
-    if (!payment) {
-      return { success: false, error: 'Payment not found' };
+    // FASE 3: Upsert idempotente del payment (crea se non esiste, aggiorna se esiste)
+    const { data: existingPayment } = await supabaseAdmin
+      .from('payments')
+      .select('id, payment_status')
+      .eq('stripe_session_id', session.id)
+      .maybeSingle();
+
+    if (existingPayment) {
+      // Payment esiste → UPDATE solo se non già completed (idempotenza)
+      if (existingPayment.payment_status !== 'completed') {
+        const { error: updateError } = await supabaseAdmin
+          .from('payments')
+          .update({
+            payment_status: 'completed',
+            receipt_url: session.receipt_url || null,
+            stripe_event_id: eventId,
+            host_amount: breakdown.hostNetPayout,
+            platform_fee: breakdown.platformRevenue
+          })
+          .eq('id', existingPayment.id);
+
+        if (updateError) {
+          ErrorHandler.logError('Failed to update existing payment', updateError);
+          return { success: false, error: 'Failed to update payment' };
+        }
+        
+        ErrorHandler.logSuccess('Payment updated to completed', { paymentId: existingPayment.id });
+      } else {
+        ErrorHandler.logInfo('Payment already completed (idempotency)', { paymentId: existingPayment.id });
+      }
+    } else {
+      // Payment NON esiste → INSERT (fallback per vecchi flussi o webhook arrivato prima)
+      ErrorHandler.logWarning('Payment not found, creating via webhook (fallback)', { sessionId: session.id });
+      
+      const { error: insertError } = await supabaseAdmin
+        .from('payments')
+        .insert({
+          booking_id: bookingId,
+          user_id: session.metadata!.user_id,
+          amount: (session.amount_total || 0) / 100,
+          currency: (session.currency || 'eur').toUpperCase(),
+          payment_status: 'completed',
+          stripe_session_id: session.id,
+          receipt_url: session.receipt_url || null,
+          host_amount: breakdown.hostNetPayout,
+          platform_fee: breakdown.platformRevenue,
+          stripe_event_id: eventId,
+          method: 'stripe'
+        });
+
+      if (insertError) {
+        ErrorHandler.logError('Failed to insert payment in webhook', insertError);
+        return { success: false, error: 'Failed to create payment' };
+      }
+      
+      ErrorHandler.logSuccess('Payment created in webhook (fallback)');
     }
 
-    // Update payment with breakdown (with idempotency key)
-    const paymentUpdated = await EnhancedPaymentService.updatePaymentWithBreakdown(
-      supabaseAdmin,
-      session.id,
-      session,
-      breakdown,
-      eventId
-    );
-
-    if (!paymentUpdated) {
-      return { success: false, error: 'Failed to update payment' };
+    // Get payment details (reload per avere dati aggiornati)
+    const payment = await EnhancedPaymentService.getPaymentBySessionId(supabaseAdmin, session.id);
+    if (!payment) {
+      return { success: false, error: 'Payment not found after upsert' };
     }
 
     // Get booking details

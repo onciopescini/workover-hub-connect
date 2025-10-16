@@ -68,25 +68,61 @@ serve(async (req) => {
     const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
     
     if (isPaymentSuccessful && session.metadata?.booking_id) {
-      // STEP 1: Prima aggiorna il payment (così il trigger validate_booking_payment lo trova!)
-      const { error: paymentError } = await supabaseAdmin
+      // FASE 4: Verifica esistenza payment e crea se necessario (fallback critico)
+      const { data: existingPayment } = await supabaseAdmin
         .from('payments')
-        .update({
-          payment_status: 'completed',
-          receipt_url: session.receipt_url
-        })
-        .eq('stripe_session_id', session_id);
+        .select('id, payment_status')
+        .eq('stripe_session_id', session_id)
+        .maybeSingle();
 
-      if (paymentError) {
-        ErrorHandler.logError('Error updating payment', paymentError, {
-          operation: 'update_payment',
-          session_id
-        });
-        // Se il payment fallisce, non procedere con la booking
-        throw new Error('Failed to update payment status');
+      if (!existingPayment) {
+        // Payment record non trovato → CREA (fallback critico)
+        ErrorHandler.logWarning('Payment record not found, creating now (critical fallback)', { session_id });
+        
+        const { error: insertError } = await supabaseAdmin
+          .from('payments')
+          .insert({
+            booking_id: session.metadata.booking_id,
+            user_id: session.metadata.user_id,
+            amount: (session.amount_total || 0) / 100,
+            currency: (session.currency || 'eur').toUpperCase(),
+            payment_status: 'completed',
+            stripe_session_id: session_id,
+            receipt_url: session.receipt_url,
+            host_amount: parseFloat(session.metadata.host_net_payout || '0'),
+            platform_fee: parseFloat(session.metadata.total_platform_fee || '0'),
+            method: 'stripe'
+          });
+
+        if (insertError) {
+          ErrorHandler.logError('CRITICAL: Failed to create payment in validate-payment', insertError, {
+            operation: 'insert_payment',
+            session_id
+          });
+          throw new Error('Failed to create payment record');
+        }
+        
+        ErrorHandler.logSuccess('Payment record created in validate-payment (fallback)');
+      } else {
+        // Payment esiste → UPDATE a completed
+        const { error: updateError } = await supabaseAdmin
+          .from('payments')
+          .update({
+            payment_status: 'completed',
+            receipt_url: session.receipt_url
+          })
+          .eq('id', existingPayment.id);
+
+        if (updateError) {
+          ErrorHandler.logError('Error updating payment', updateError, {
+            operation: 'update_payment',
+            session_id
+          });
+          throw new Error('Failed to update payment status');
+        }
+        
+        ErrorHandler.logSuccess('Payment updated successfully');
       }
-      
-      ErrorHandler.logSuccess('Payment updated successfully');
 
       // STEP 2: Ora conferma la booking (il trigger troverà il payment completed)
       const { error: bookingError } = await supabaseAdmin

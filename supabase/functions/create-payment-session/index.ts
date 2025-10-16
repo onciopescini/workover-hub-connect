@@ -338,6 +338,40 @@ serve(async (req) => {
       cancel_url: `${origin}/bookings?cancelled=true`,
     });
 
+    // FASE 1: Crea payment record iniziale con status 'pending' (CRITICAL per validate_booking_payment trigger)
+    console.log('[PAYMENT-SESSION] Creating initial payment record...');
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { error: paymentInsertError } = await supabaseAdmin
+      .from('payments')
+      .insert({
+        booking_id: booking_id,
+        user_id: user.id,
+        amount: pricing.total,
+        currency: 'EUR',
+        payment_status: 'pending',
+        stripe_session_id: session.id,
+        host_amount: pricing.base - pricing.hostFee - pricing.hostVat,
+        platform_fee: pricing.totalPlatformFee,
+        method: 'stripe'
+      });
+
+    if (paymentInsertError) {
+      console.error('[PAYMENT-SESSION] Failed to create initial payment record:', paymentInsertError);
+      // Cancella la Stripe session creata per evitare inconsistenze
+      try {
+        await stripe.checkout.sessions.expire(session.id);
+      } catch (expireError) {
+        console.error('[PAYMENT-SESSION] Failed to expire Stripe session:', expireError);
+      }
+      throw new Error('Failed to initialize payment record');
+    }
+
+    console.log('[PAYMENT-SESSION] Initial payment record created successfully');
+
     return new Response(
       JSON.stringify({
         url: session.url,
