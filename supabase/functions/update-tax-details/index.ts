@@ -145,7 +145,6 @@ serve(async (req) => {
       province,
       postal_code,
       country_code,
-      fiscal_regime,
       is_primary: is_primary ?? true,
       updated_at: new Date().toISOString()
     };
