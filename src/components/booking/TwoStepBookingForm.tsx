@@ -434,6 +434,23 @@ export function TwoStepBookingForm({
         endTime: bookingState.selectedRange.endTime
       });
 
+      // Calculate client-side base price for server validation
+      const durationHours = bookingState.selectedRange.duration;
+      const validationPricing = computePricing({
+        durationHours,
+        pricePerHour,
+        pricePerDay,
+        serviceFeePct: getServiceFeePct(),
+        vatPct: getDefaultVatPct(),
+        stripeTaxEnabled: isStripeTaxEnabled()
+      });
+
+      debug('Client-side price calculated for validation', {
+        durationHours,
+        basePrice: validationPricing.base,
+        isDayRate: validationPricing.isDayRate
+      });
+
       // Retry logic for critical booking operation
       let data = null;
       let rpcError = null;
@@ -447,7 +464,8 @@ export function TwoStepBookingForm({
           end_time_param: bookingState.selectedRange.endTime,
           user_id_param: user.user.id,
           guests_count_param: bookingState.guestsCount,
-          confirmation_type_param: confirmationType
+          confirmation_type_param: confirmationType,
+          client_base_price_param: validationPricing.base // Pass for server-side validation
         } as any);
 
         data = result.data;

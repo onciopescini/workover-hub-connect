@@ -31,7 +31,8 @@ export const reserveBookingSlot = async (
   confirmationType: string = 'instant',
   bufferMinutes: number = 0,
   slotInterval: number = 30,
-  guestsCount: number = 1
+  guestsCount: number = 1,
+  clientBasePrice?: number // Optional: for server-side price validation
 ): Promise<SlotReservationResult | null> => {
   try {
     sreLogger.info('Starting booking reservation', {
@@ -67,7 +68,8 @@ export const reserveBookingSlot = async (
       end_time_param: endTime,
       user_id_param: user.user.id,
       guests_count_param: guestsCount,
-      confirmation_type_param: confirmationType
+      confirmation_type_param: confirmationType,
+      client_base_price_param: clientBasePrice // Pass client-calculated price for validation
     } as any);
 
     if (error) {
