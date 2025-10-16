@@ -26,7 +26,7 @@ export const RefactoredBasicInformation = () => {
         <FormField
           control={form.control}
           name="title"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
                 Space Title <span className="text-red-500">*</span>
@@ -34,6 +34,7 @@ export const RefactoredBasicInformation = () => {
               <FormControl>
                 <Input
                   placeholder="Enter a descriptive title for your space"
+                  className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                   {...field}
                 />
               </FormControl>
@@ -45,7 +46,7 @@ export const RefactoredBasicInformation = () => {
         <FormField
           control={form.control}
           name="description"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
                 Description <span className="text-red-500">*</span>
@@ -54,6 +55,7 @@ export const RefactoredBasicInformation = () => {
                 <Textarea
                   placeholder="Describe your space, its atmosphere, and what makes it special..."
                   rows={4}
+                  className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                   {...field}
                 />
               </FormControl>
@@ -65,14 +67,14 @@ export const RefactoredBasicInformation = () => {
         <FormField
           control={form.control}
           name="category"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
                 Space Category <span className="text-red-500">*</span>
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldState.error ? "border-red-500 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select space category" />
                   </SelectTrigger>
                 </FormControl>

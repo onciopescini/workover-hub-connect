@@ -39,14 +39,14 @@ export const RefactoredSpaceDetails = () => {
           <FormField
             control={form.control}
             name="work_environment"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>
                   Work Environment <span className="text-red-500">*</span>
                 </FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={fieldState.error ? "border-red-500 focus:ring-red-500" : ""}>
                       <SelectValue placeholder="Select work environment" />
                     </SelectTrigger>
                   </FormControl>
@@ -69,7 +69,7 @@ export const RefactoredSpaceDetails = () => {
           <FormField
             control={form.control}
             name="max_capacity"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>
                   Maximum Capacity <span className="text-red-500">*</span>
@@ -79,6 +79,7 @@ export const RefactoredSpaceDetails = () => {
                     type="number"
                     min="1"
                     max="100"
+                    className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                     {...field}
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                   />
@@ -92,14 +93,14 @@ export const RefactoredSpaceDetails = () => {
         <FormField
           control={form.control}
           name="confirmation_type"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
                 Booking Confirmation <span className="text-red-500">*</span>
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className={fieldState.error ? "border-red-500 focus:ring-red-500" : ""}>
                     <SelectValue placeholder="Select confirmation type" />
                   </SelectTrigger>
                 </FormControl>

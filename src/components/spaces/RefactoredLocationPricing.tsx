@@ -63,7 +63,7 @@ export const RefactoredLocationPricing = () => {
           <FormField
             control={form.control}
             name="price_per_hour"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>
                   Hourly Rate ($) <span className="text-red-500">*</span>
@@ -73,6 +73,7 @@ export const RefactoredLocationPricing = () => {
                     type="number"
                     min="0"
                     step="0.01"
+                    className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                     {...field}
                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
@@ -85,7 +86,7 @@ export const RefactoredLocationPricing = () => {
           <FormField
             control={form.control}
             name="price_per_day"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel>
                   Daily Rate ($) <span className="text-red-500">*</span>
@@ -95,6 +96,7 @@ export const RefactoredLocationPricing = () => {
                     type="number"
                     min="0"
                     step="0.01"
+                    className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                     {...field}
                     onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                   />
