@@ -110,3 +110,6 @@ verify_jwt = true
 
 [functions.create-booking-payment]
 verify_jwt = true
+
+[functions.storage-cleanup]
+verify_jwt = false

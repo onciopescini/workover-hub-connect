@@ -3393,6 +3393,36 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_cleanup_log: {
+        Row: {
+          bucket_name: string
+          cleanup_date: string
+          created_at: string
+          errors: Json | null
+          execution_time_ms: number | null
+          files_deleted: number
+          id: string
+        }
+        Insert: {
+          bucket_name: string
+          cleanup_date?: string
+          created_at?: string
+          errors?: Json | null
+          execution_time_ms?: number | null
+          files_deleted?: number
+          id?: string
+        }
+        Update: {
+          bucket_name?: string
+          cleanup_date?: string
+          created_at?: string
+          errors?: Json | null
+          execution_time_ms?: number | null
+          files_deleted?: number
+          id?: string
+        }
+        Relationships: []
+      }
       stripe_accounts: {
         Row: {
           account_status: string
@@ -4834,6 +4864,15 @@ export type Database = {
           p_table_name: string
         }
         Returns: Json
+      }
+      log_storage_cleanup: {
+        Args: {
+          p_bucket_name: string
+          p_errors?: Json
+          p_execution_time_ms?: number
+          p_files_deleted: number
+        }
+        Returns: string
       }
       mark_all_notifications_as_read: {
         Args: Record<PropertyKey, never>
