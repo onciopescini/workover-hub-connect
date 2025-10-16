@@ -25,6 +25,15 @@ export const FiscalRegimeStep: React.FC<FiscalRegimeStepProps> = ({
         </AlertDescription>
       </Alert>
       
+      <Alert variant="default" className="bg-amber-50 border-amber-200">
+        <Info className="h-4 w-4 text-amber-600" />
+        <AlertTitle className="text-amber-900">Nota importante</AlertTitle>
+        <AlertDescription className="text-amber-800">
+          Per pubblicare spazi, dovrai completare anche l'indirizzo strutturato 
+          (città, CAP, provincia). Puoi farlo successivamente dal tuo profilo.
+        </AlertDescription>
+      </Alert>
+      
       {/* Riusa il form esistente */}
       <HostFiscalDataForm 
         onSuccess={onNext} 

@@ -163,23 +163,9 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
         return;
       }
       
-      // 2. Check Fiscal data in profiles (cache)
+      // 2. Check Fiscal data in profiles (sufficient for onboarding)
       if (!authState.profile?.fiscal_regime || !authState.profile?.iban) {
         toast.error("Dati fiscali mancanti. Completa lo step 3.");
-        setCurrentStep(3);
-        return;
-      }
-      
-      // 3. Check tax_details existence in DB (SSOT for address/payment info)
-      const { data: taxDetails, error: taxError } = await supabase
-        .from('tax_details')
-        .select('id, iban, address_line1, city, postal_code')
-        .eq('profile_id', authState.user?.id || '')
-        .eq('is_primary', true)
-        .maybeSingle();
-      
-      if (taxError || !taxDetails || !taxDetails.iban || !taxDetails.address_line1) {
-        toast.error("Dati fiscali non salvati nel database. Ricompila lo step 3.");
         setCurrentStep(3);
         return;
       }
@@ -211,27 +197,12 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       case 2:
         return authState.profile?.stripe_connected || isProcessingStripeReturn;
       case 3:
-        // FASE 2.1: Double validation - profiles (fiscal_regime + iban) + tax_details (payment/address)
-        const hasFiscalInProfiles = !!(
+        // Valida solo che i dati essenziali siano salvati in profiles
+        // tax_details può essere incompleto in fase di onboarding
+        return !!(
           authState.profile?.fiscal_regime && 
           authState.profile?.iban
         );
-        
-        // Check tax_details exists in DB with essential payment/address info
-        const { data: taxDetails } = await supabase
-          .from('tax_details')
-          .select('id, iban, address_line1')
-          .eq('profile_id', authState.user?.id || '')
-          .eq('is_primary', true)
-          .maybeSingle();
-        
-        const hasTaxDetailsInDB = !!(
-          taxDetails && 
-          taxDetails.iban && 
-          taxDetails.address_line1
-        );
-        
-        return hasFiscalInProfiles && hasTaxDetailsInDB;
       case 4:
         return formData.businessAddress;
       case 5:
