@@ -90,7 +90,7 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
               )}
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                <span>{getJoinedDate()} su SpaceShare</span>
+                <span>{getJoinedDate()} su Workover</span>
               </div>
             </div>
             
