@@ -7,6 +7,8 @@ import type { SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
+import { parseSpacePublishError } from '@/utils/spacePublishErrorParser';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 interface UseSpaceFormSubmissionProps {
   formData: Omit<Partial<SpaceInsert>, 'availability'>;
@@ -96,7 +98,17 @@ export const useSpaceFormSubmission = ({
           // Handle RLS errors with friendly messages
           const isRLSError = handleRLSError(error);
           if (!isRLSError) {
-            throw error;
+            // Parse trigger error
+            const parsedError = parseSpacePublishError(error as PostgrestError);
+            toast.error(parsedError.title, {
+              description: parsedError.message,
+              action: parsedError.action ? {
+                label: parsedError.action.label,
+                onClick: () => navigate(parsedError.action!.route),
+              } : undefined,
+            });
+            setIsSubmitting(false);
+            return;
           }
           return;
         }
@@ -113,7 +125,17 @@ export const useSpaceFormSubmission = ({
           // Handle RLS errors with friendly messages
           const isRLSError = handleRLSError(error);
           if (!isRLSError) {
-            throw error;
+            // Parse trigger error
+            const parsedError = parseSpacePublishError(error as PostgrestError);
+            toast.error(parsedError.title, {
+              description: parsedError.message,
+              action: parsedError.action ? {
+                label: parsedError.action.label,
+                onClick: () => navigate(parsedError.action!.route),
+              } : undefined,
+            });
+            setIsSubmitting(false);
+            return;
           }
           return;
         }

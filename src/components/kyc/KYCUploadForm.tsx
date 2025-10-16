@@ -8,7 +8,12 @@ import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-export const KYCUploadForm = () => {
+interface KYCUploadFormProps {
+  onSuccess?: () => void;
+  showNavigationButtons?: boolean;
+}
+
+export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUploadFormProps = {}) => {
   const { toast } = useToast();
   const [documentType, setDocumentType] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -93,6 +98,11 @@ export const KYCUploadForm = () => {
       setExpiresAt('');
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
+
+      // Callback wizard
+      if (onSuccess) {
+        onSuccess();
+      }
 
     } catch (error: any) {
       console.error('KYC upload error:', error);

@@ -59,6 +59,7 @@ const SpaceRecap = lazy(() => import("@/pages/SpaceRecap"));
 const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 const HostFiscalPage = lazy(() => import("@/pages/host/HostFiscalPage"));
 const HostInvoicesPage = lazy(() => import("@/pages/host/HostInvoicesPage"));
+const KYCVerificationPage = lazy(() => import("@/pages/host/KYCVerificationPage"));
 
 // Coworker pages
 const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
@@ -360,6 +361,11 @@ export const AppRoutes = () => {
         <Route path="invoices" element={
           <LazyWrapper>
             <HostInvoicesPage />
+          </LazyWrapper>
+        } />
+        <Route path="kyc" element={
+          <LazyWrapper>
+            <KYCVerificationPage />
           </LazyWrapper>
         } />
         

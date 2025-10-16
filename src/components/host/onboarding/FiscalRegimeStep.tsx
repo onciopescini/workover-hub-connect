@@ -2,6 +2,7 @@ import React from 'react';
 import { HostFiscalDataForm } from '@/components/host/fiscal/HostFiscalDataForm';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface FiscalRegimeStepProps {
   onNext: () => void;
@@ -12,6 +13,7 @@ export const FiscalRegimeStep: React.FC<FiscalRegimeStepProps> = ({
   onNext,
   onBack,
 }) => {
+  const { refreshProfile } = useAuth();
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold">Dati Fiscali</h3>
@@ -39,6 +41,7 @@ export const FiscalRegimeStep: React.FC<FiscalRegimeStepProps> = ({
         onSuccess={onNext} 
         showNavigationButtons={false}
         onBack={onBack}
+        refreshProfile={refreshProfile}
       />
     </div>
   );

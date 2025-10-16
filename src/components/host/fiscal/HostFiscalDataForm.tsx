@@ -13,12 +13,14 @@ interface HostFiscalDataFormProps {
   onSuccess?: () => void;
   showNavigationButtons?: boolean;
   onBack?: () => void;
+  refreshProfile?: () => Promise<void>;
 }
 
 export const HostFiscalDataForm = ({ 
   onSuccess, 
   showNavigationButtons = true,
-  onBack 
+  onBack,
+  refreshProfile
 }: HostFiscalDataFormProps = {}) => {
   const { authState } = useAuth();
   const profile = authState.profile;
@@ -101,21 +103,14 @@ export const HostFiscalDataForm = ({
         toast.success('Dati fiscali salvati con successo');
       }
       
-      // Callback per wizard
-      onSuccess?.();
-      
-      // Refresh profile only if not in wizard mode
-      if (!onSuccess) {
-        const { data: updatedProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authState.user.id)
-          .single();
-
-        if (updatedProfile) {
-          // Update auth state if needed
-          window.location.reload();
-        }
+      // WIZARD MODE: refresh profile BEFORE advancing
+      if (onSuccess) {
+        await refreshProfile?.();
+        await new Promise(resolve => setTimeout(resolve, 300)); // Delay for state propagation
+        onSuccess();
+      } else {
+        // STANDALONE MODE: reload as before
+        window.location.reload();
       }
     } catch (error: any) {
       console.error('Error updating tax details:', error);

@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users, Loader2, FileText } from "lucide-react";
+import { CheckCircle, Circle, Building2, CreditCard, MapPin, Users, Loader2, FileText, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { StripeSetup } from "@/components/host/StripeSetup";
 import { FiscalRegimeStep } from "./FiscalRegimeStep";
+import { KycDocumentsStep } from "./KycDocumentsStep";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,7 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   const steps = [
     { id: 1, title: "Informazioni Business", icon: Building2, completed: false },
     { id: 2, title: "Setup Pagamenti", icon: CreditCard, completed: false },
+    { id: 2.5, title: "Verifica Identità", icon: Shield, completed: false },
     { id: 3, title: "Dati Fiscali", icon: FileText, completed: false },
     { id: 4, title: "Localizzazione", icon: MapPin, completed: false },
     { id: 5, title: "Obiettivi Host", icon: Users, completed: false },
@@ -196,6 +198,8 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
         return formData.businessName && formData.businessType;
       case 2:
         return authState.profile?.stripe_connected || isProcessingStripeReturn;
+      case 2.5:
+        return true; // Allow to continue even if KYC not yet verified (admin will verify)
       case 3:
         // Valida solo che i dati essenziali siano salvati in profiles
         // tax_details può essere incompleto in fase di onboarding
@@ -334,6 +338,13 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
                 </>
               )}
             </div>
+          )}
+
+          {currentStep === 2.5 && (
+            <KycDocumentsStep
+              onNext={handleNext}
+              onBack={handleBack}
+            />
           )}
 
           {currentStep === 3 && (
