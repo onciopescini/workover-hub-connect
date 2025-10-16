@@ -91,17 +91,19 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
   }, [currentStep.id, authState.user?.id]);
 
   // FASE 4: Polling automatico Stripe connection (15 retry × 2s)
+  // ✅ FIX: Chiamata diretta a check-stripe-status invece di cache refreshProfile
   const waitForStripeConnection = async (maxRetries = 15, intervalMs = 2000) => {
     setIsPollingStripe(true);
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       setPollingAttempt(attempt);
       
-      // Refresh profile to check stripe_connected
-      await refreshProfile?.();
+      // ✅ CHIAMATA DIRETTA A STRIPE API (no cache)
+      const { data, error } = await supabase.functions.invoke('check-stripe-status');
       
-      // Check if connected
-      if (authState.profile?.stripe_connected) {
+      if (!error && data?.connected) {
+        // ✅ Aggiorna profilo locale DOPO conferma Stripe
+        await refreshProfile?.();
         setIsPollingStripe(false);
         setPollingAttempt(0);
         toast.success("Stripe configurato! Procedendo alla verifica identità...");
