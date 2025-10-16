@@ -39,7 +39,7 @@ serve(async (req) => {
     const {
       tax_id,
       vat_number,
-      entity_type,
+      entity_type: providedEntityType,
       iban,
       bic_swift,
       pec_email,
@@ -49,10 +49,38 @@ serve(async (req) => {
       city,
       province,
       postal_code,
-      country_code,
+      country_code: providedCountryCode,
       fiscal_regime,
+      legal_address,
       is_primary
     } = body;
+
+    // Derive entity_type from fiscal_regime if not provided
+    let entity_type = providedEntityType;
+    if (!entity_type && fiscal_regime) {
+      switch (fiscal_regime) {
+        case 'privato':
+          entity_type = 'individual';
+          break;
+        case 'forfettario':
+          entity_type = 'freelance';
+          break;
+        case 'ordinario':
+          entity_type = 'business';
+          break;
+        default:
+          entity_type = 'individual';
+      }
+    }
+
+    // Derive country_code from IBAN if not provided
+    let country_code = providedCountryCode;
+    if (!country_code && iban) {
+      const ibanClean = iban.replace(/\s/g, '').toUpperCase();
+      if (ibanClean.startsWith('IT')) {
+        country_code = 'IT';
+      }
+    }
 
     // VALIDAZIONE SERVER-SIDE
     const errors: string[] = [];
@@ -102,16 +130,6 @@ serve(async (req) => {
       }
     }
 
-    // Validazione campi obbligatori per DAC7
-    if (is_primary) {
-      if (!address_line1 || !city || !postal_code || !country_code) {
-        errors.push('Indirizzo completo obbligatorio per dati fiscali primari');
-      }
-      if (!iban) {
-        errors.push('IBAN obbligatorio per dati fiscali primari');
-      }
-    }
-
     if (errors.length > 0) {
       return new Response(JSON.stringify({ 
         error: 'Validation failed', 
@@ -122,7 +140,7 @@ serve(async (req) => {
       });
     }
 
-    // UPSERT tax_details
+    // Check if tax_details record exists
     const { data: existingTaxDetails } = await supabase
       .from('tax_details')
       .select('id')
@@ -130,53 +148,115 @@ serve(async (req) => {
       .eq('is_primary', true)
       .maybeSingle();
 
-    const taxDetailsData = {
-      profile_id: user.id,
-      tax_id,
-      vat_number,
-      entity_type,
-      iban,
-      bic_swift,
-      address_line1,
-      address_line2,
-      city,
-      province,
-      postal_code,
-      country_code,
-      is_primary: is_primary ?? true,
-      updated_at: new Date().toISOString()
-    };
+    // Determine effective address_line1
+    const effectiveAddressLine1 = address_line1 || legal_address;
 
-    let result;
+    let result: any = null;
+    let taxDetailsSkipped = false;
+
     if (existingTaxDetails) {
+      // UPDATE existing record with available fields
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+      
+      if (entity_type) updateData.entity_type = entity_type;
+      if (iban !== undefined) updateData.iban = iban;
+      if (vat_number !== undefined) updateData.vat_number = vat_number;
+      if (tax_id !== undefined) updateData.tax_id = tax_id;
+      if (bic_swift !== undefined) updateData.bic_swift = bic_swift;
+      if (effectiveAddressLine1 !== undefined) updateData.address_line1 = effectiveAddressLine1;
+      if (address_line2 !== undefined) updateData.address_line2 = address_line2;
+      if (city !== undefined) updateData.city = city;
+      if (province !== undefined) updateData.province = province;
+      if (postal_code !== undefined) updateData.postal_code = postal_code;
+      if (country_code !== undefined) updateData.country_code = country_code;
+
       result = await supabase
         .from('tax_details')
-        .update(taxDetailsData)
+        .update(updateData)
         .eq('id', existingTaxDetails.id)
         .select()
         .single();
+
+      if (result.error) {
+        console.error('Tax details update error:', result.error);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to update tax details',
+          details: result.error.message 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log('Tax details updated successfully:', { userId: user.id, taxDetailsId: result.data.id });
     } else {
-      result = await supabase
-        .from('tax_details')
-        .insert(taxDetailsData)
-        .select()
-        .single();
+      // Check if we have all required fields for INSERT
+      const hasRequiredForInsert = !!(
+        effectiveAddressLine1 &&
+        city &&
+        postal_code &&
+        country_code &&
+        entity_type &&
+        tax_id &&
+        iban
+      );
+
+      if (hasRequiredForInsert) {
+        // INSERT new record
+        const insertData = {
+          profile_id: user.id,
+          tax_id,
+          vat_number,
+          entity_type,
+          iban,
+          bic_swift,
+          address_line1: effectiveAddressLine1,
+          address_line2,
+          city,
+          province,
+          postal_code,
+          country_code,
+          is_primary: is_primary ?? true,
+          updated_at: new Date().toISOString()
+        };
+
+        result = await supabase
+          .from('tax_details')
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (result.error) {
+          console.error('Tax details insert error:', result.error);
+          return new Response(JSON.stringify({ 
+            error: 'Failed to create tax details',
+            details: result.error.message 
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        console.log('Tax details created successfully:', { userId: user.id, taxDetailsId: result.data.id });
+      } else {
+        // Skip tax_details insert - missing required fields
+        const missingFields = [];
+        if (!effectiveAddressLine1) missingFields.push('address_line1');
+        if (!city) missingFields.push('city');
+        if (!postal_code) missingFields.push('postal_code');
+        if (!country_code) missingFields.push('country_code');
+        if (!entity_type) missingFields.push('entity_type');
+        if (!tax_id) missingFields.push('tax_id');
+        if (!iban) missingFields.push('iban');
+
+        console.log('Skipping tax_details insert due to missing required fields:', missingFields);
+        taxDetailsSkipped = true;
+      }
     }
 
-    if (result.error) {
-      console.error('Tax details save error:', result.error);
-      return new Response(JSON.stringify({ 
-        error: 'Failed to save tax details',
-        details: result.error.message 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log('Tax details saved successfully:', { userId: user.id, taxDetailsId: result.data.id });
-
-    // FASE 1: Sync profiles table with tax_details for backward compatibility
+    // ALWAYS sync to profiles table with available fields
     const profileUpdateData: any = {};
     if (fiscal_regime !== undefined) profileUpdateData.fiscal_regime = fiscal_regime;
     if (iban !== undefined) profileUpdateData.iban = iban;
@@ -184,6 +264,7 @@ serve(async (req) => {
     if (vat_number !== undefined) profileUpdateData.vat_number = vat_number;
     if (pec_email !== undefined) profileUpdateData.pec_email = pec_email;
     if (sdi_code !== undefined) profileUpdateData.sdi_code = sdi_code;
+    if (legal_address !== undefined) profileUpdateData.legal_address = legal_address;
 
     // UPDATE profiles only if there are fields to sync
     if (Object.keys(profileUpdateData).length > 0) {
@@ -196,15 +277,26 @@ serve(async (req) => {
       
       if (profileUpdateError) {
         console.error('Warning: Failed to sync profiles', profileUpdateError);
-        // Don't block the flow, tax_details is the SSOT
+        // Don't block the flow, continue anyway
       } else {
         console.log('Profiles synced successfully', { userId: user.id });
       }
     }
 
+    // Return appropriate response
+    if (taxDetailsSkipped) {
+      return new Response(JSON.stringify({ 
+        success: true,
+        partial: true,
+        message: 'Tax details not created yet. Saved to profile only. Complete address and entity information required for full tax details.'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
-      data: result.data
+      data: result?.data || null
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
