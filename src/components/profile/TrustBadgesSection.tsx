@@ -7,20 +7,21 @@ import { Profile } from "@/types/auth";
 
 interface TrustBadgesSectionProps {
   profile: Profile;
+  emailConfirmedAt?: string | null;
 }
 
-export function TrustBadgesSection({ profile }: TrustBadgesSectionProps) {
+export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSectionProps) {
   const verificationItems = [
     {
       key: 'email',
       label: 'Email Verificata',
-      verified: true, // In real app, check from auth state
+      verified: !!emailConfirmedAt,
       icon: Mail,
       color: 'text-green-600'
     },
     {
       key: 'phone',
-      label: 'Telefono Verificato',
+      label: 'Telefono Inserito',
       verified: !!profile.phone,
       icon: Phone,
       color: 'text-blue-600'
