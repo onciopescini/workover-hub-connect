@@ -274,13 +274,24 @@ serve(async (req) => {
       }
     }
 
-    // Return appropriate response
+    // ✅ FASE 2: Return error se tax_details non creato (dati incompleti)
     if (taxDetailsSkipped) {
+      const missingFields = [];
+      if (!effectiveAddressLine1) missingFields.push('address_line1');
+      if (!city) missingFields.push('city');
+      if (!postal_code) missingFields.push('postal_code');
+      if (!country_code) missingFields.push('country_code');
+      if (!entity_type) missingFields.push('entity_type');
+      if (!tax_id) missingFields.push('tax_id');
+      if (!iban) missingFields.push('iban');
+
       return new Response(JSON.stringify({ 
-        success: true,
+        success: false,
         partial: true,
-        message: 'Tax details not created yet. Saved to profile only. Complete address and entity information required for full tax details.'
+        error: 'Dati fiscali incompleti. Campi mancanti: ' + missingFields.join(', '),
+        missingFields
       }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }

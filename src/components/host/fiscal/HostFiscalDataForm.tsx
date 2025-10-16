@@ -97,11 +97,18 @@ export const HostFiscalDataForm = ({
 
       if (error) throw error;
 
-      if (data?.partial) {
-        toast.warning('Dati salvati. Completa l\'indirizzo per pubblicare spazi.');
-      } else {
-        toast.success('Dati fiscali salvati con successo');
+      // ✅ FASE 2: Blocca avanzamento se dati incompleti
+      if (data?.partial || !data?.success) {
+        if (data?.missingFields) {
+          toast.error(`Campi mancanti: ${data.missingFields.join(', ')}`);
+        } else {
+          toast.error('Completa tutti i campi obbligatori prima di procedere');
+        }
+        setIsSubmitting(false);
+        return;
       }
+
+      toast.success('Dati fiscali salvati con successo');
       
       // WIZARD MODE: refresh profile BEFORE advancing
       if (onSuccess) {

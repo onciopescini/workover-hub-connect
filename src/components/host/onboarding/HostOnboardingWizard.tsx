@@ -208,11 +208,20 @@ export const HostOnboardingWizard: React.FC<HostOnboardingWizardProps> = ({ onCo
       case 2.5:
         return true; // Allow to continue even if KYC not yet verified (admin will verify)
       case 3:
-        // Valida solo che i dati essenziali siano salvati in profiles
-        // tax_details può essere incompleto in fase di onboarding
+        // ✅ FASE 2: Verifica che tax_details esista (non solo profiles)
+        if (!authState.user?.id) return false;
+        
+        const { data: taxDetails } = await supabase
+          .from('tax_details')
+          .select('id')
+          .eq('profile_id', authState.user.id)
+          .eq('is_primary', true)
+          .maybeSingle();
+          
         return !!(
           authState.profile?.fiscal_regime && 
-          authState.profile?.iban
+          authState.profile?.iban &&
+          taxDetails // ✅ Richiede record tax_details completo
         );
       case 4:
         return formData.businessAddress;
