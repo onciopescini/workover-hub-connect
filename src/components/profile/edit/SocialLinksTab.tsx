@@ -17,11 +17,13 @@ import { ProfileFormData } from "@/hooks/useProfileForm";
 interface SocialLinksTabProps {
   formData: ProfileFormData;
   handleInputChange: (field: keyof ProfileFormData, value: string | boolean) => void;
+  errors?: Record<string, string>;
 }
 
 export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
   formData,
-  handleInputChange
+  handleInputChange,
+  errors = {}
 }) => {
   return (
     <Card>
@@ -43,7 +45,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
               value={formData.website}
               onChange={(e) => handleInputChange('website', e.target.value)}
               placeholder="https://tuosito.com"
+              className={errors['website'] ? 'border-destructive' : ''}
             />
+            {errors['website'] && (
+              <p className="text-sm text-destructive">{errors['website']}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -56,7 +62,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
               value={formData.linkedin_url}
               onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
               placeholder="https://linkedin.com/in/tuoprofilo"
+              className={errors['linkedin_url'] ? 'border-destructive' : ''}
             />
+            {errors['linkedin_url'] && (
+              <p className="text-sm text-destructive">{errors['linkedin_url']}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -70,7 +80,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
                 value={formData.twitter_url}
                 onChange={(e) => handleInputChange('twitter_url', e.target.value)}
                 placeholder="https://twitter.com/tuousername"
+                className={errors['twitter_url'] ? 'border-destructive' : ''}
               />
+              {errors['twitter_url'] && (
+                <p className="text-sm text-destructive">{errors['twitter_url']}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="instagram_url" className="flex items-center gap-2">
@@ -82,7 +96,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
                 value={formData.instagram_url}
                 onChange={(e) => handleInputChange('instagram_url', e.target.value)}
                 placeholder="https://instagram.com/tuousername"
+                className={errors['instagram_url'] ? 'border-destructive' : ''}
               />
+              {errors['instagram_url'] && (
+                <p className="text-sm text-destructive">{errors['instagram_url']}</p>
+              )}
             </div>
           </div>
 
@@ -97,7 +115,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
                 value={formData.facebook_url}
                 onChange={(e) => handleInputChange('facebook_url', e.target.value)}
                 placeholder="https://facebook.com/tuoprofilo"
+                className={errors['facebook_url'] ? 'border-destructive' : ''}
               />
+              {errors['facebook_url'] && (
+                <p className="text-sm text-destructive">{errors['facebook_url']}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="youtube_url" className="flex items-center gap-2">
@@ -109,7 +131,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
                 value={formData.youtube_url}
                 onChange={(e) => handleInputChange('youtube_url', e.target.value)}
                 placeholder="https://youtube.com/c/tuocanale"
+                className={errors['youtube_url'] ? 'border-destructive' : ''}
               />
+              {errors['youtube_url'] && (
+                <p className="text-sm text-destructive">{errors['youtube_url']}</p>
+              )}
             </div>
           </div>
 
@@ -123,7 +149,11 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
               value={formData.github_url}
               onChange={(e) => handleInputChange('github_url', e.target.value)}
               placeholder="https://github.com/tuousername"
+              className={errors['github_url'] ? 'border-destructive' : ''}
             />
+            {errors['github_url'] && (
+              <p className="text-sm text-destructive">{errors['github_url']}</p>
+            )}
           </div>
         </div>
       </CardContent>

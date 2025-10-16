@@ -1,6 +1,7 @@
 // Central export file for all Zod schemas
 export * from './spaceSchema';
 export * from './profileSchema';
+export { profileEditSchema } from './profileEditSchema';
 export * from './reportSchema';
 export * from './reviewSchema';
 export * from './bookingSchema';

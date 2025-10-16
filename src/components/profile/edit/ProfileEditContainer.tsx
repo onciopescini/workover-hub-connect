@@ -15,6 +15,7 @@ import { SettingsTab } from "./SettingsTab";
 export const ProfileEditContainer = () => {
   const {
     formData,
+    errors,
     isLoading,
     handleInputChange,
     handleSubmit,
@@ -71,6 +72,7 @@ export const ProfileEditContainer = () => {
             <BasicInfoTab 
               formData={formData}
               handleInputChange={handleInputChange}
+              errors={errors}
             />
           </TabsContent>
 
@@ -78,6 +80,7 @@ export const ProfileEditContainer = () => {
             <ProfessionalInfoTab 
               formData={formData}
               handleInputChange={handleInputChange}
+              errors={errors}
             />
           </TabsContent>
 
@@ -85,6 +88,7 @@ export const ProfileEditContainer = () => {
             <SocialLinksTab 
               formData={formData}
               handleInputChange={handleInputChange}
+              errors={errors}
             />
           </TabsContent>
 
@@ -92,6 +96,7 @@ export const ProfileEditContainer = () => {
             <CollaborationTab 
               formData={formData}
               handleInputChange={handleInputChange}
+              errors={errors}
             />
           </TabsContent>
 

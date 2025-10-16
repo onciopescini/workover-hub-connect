@@ -11,11 +11,13 @@ import { ProfileFormData } from "@/hooks/useProfileForm";
 interface ProfessionalInfoTabProps {
   formData: ProfileFormData;
   handleInputChange: (field: keyof ProfileFormData, value: string | boolean) => void;
+  errors?: Record<string, string>;
 }
 
 export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({
   formData,
-  handleInputChange
+  handleInputChange,
+  errors = {}
 }) => {
   return (
     <Card>
@@ -34,7 +36,11 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({
               value={formData.job_title}
               onChange={(e) => handleInputChange('job_title', e.target.value)}
               placeholder="es. Software Developer"
+              className={errors['job_title'] ? 'border-destructive' : ''}
             />
+            {errors['job_title'] && (
+              <p className="text-sm text-destructive">{errors['job_title']}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="profession">Professione</Label>
@@ -43,7 +49,11 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({
               value={formData.profession}
               onChange={(e) => handleInputChange('profession', e.target.value)}
               placeholder="es. Ingegnere"
+              className={errors['profession'] ? 'border-destructive' : ''}
             />
+            {errors['profession'] && (
+              <p className="text-sm text-destructive">{errors['profession']}</p>
+            )}
           </div>
         </div>
 
@@ -89,7 +99,11 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({
             onChange={(e) => handleInputChange('skills', e.target.value)}
             rows={3}
             placeholder="Separa le competenze con virgole: JavaScript, React, Node.js..."
+            className={errors['skills'] ? 'border-destructive' : ''}
           />
+          {errors['skills'] && (
+            <p className="text-sm text-destructive">{errors['skills']}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -100,7 +114,11 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({
             onChange={(e) => handleInputChange('interests', e.target.value)}
             rows={3}
             placeholder="I tuoi interessi e hobby..."
+            className={errors['interests'] ? 'border-destructive' : ''}
           />
+          {errors['interests'] && (
+            <p className="text-sm text-destructive">{errors['interests']}</p>
+          )}
         </div>
       </CardContent>
     </Card>

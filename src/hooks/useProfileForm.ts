@@ -1,8 +1,9 @@
-
 import { useState } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
+import { profileEditSchema } from '@/schemas/profileEditSchema';
+import { z } from 'zod';
 
 export interface ProfileFormData {
   // Basic Info
@@ -44,6 +45,7 @@ export interface ProfileFormData {
 export const useProfileForm = () => {
   const { authState, updateProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<ProfileFormData>({
     // Basic Info
@@ -82,8 +84,34 @@ export const useProfileForm = () => {
     networking_enabled: authState.profile?.networking_enabled ?? true,
   });
 
+  // Validazione real-time per campo singolo
+  const validateField = (field: keyof ProfileFormData, value: any) => {
+    try {
+      const fieldSchema = profileEditSchema.shape[field as keyof typeof profileEditSchema.shape];
+      if (fieldSchema) {
+        fieldSchema.parse(value);
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const firstError = error.errors[0];
+        if (firstError?.message) {
+          setErrors(prev => ({
+            ...prev,
+            [field]: firstError.message
+          }));
+        }
+      }
+    }
+  };
+
   const handleInputChange = (field: keyof ProfileFormData, value: string | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    validateField(field, value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,11 +119,31 @@ export const useProfileForm = () => {
     setIsLoading(true);
 
     try {
-      await updateProfile(formData);
+      // Validazione completa pre-submit
+      const validatedData = profileEditSchema.parse(formData);
+      
+      // Converti undefined in null per compatibilità con il database
+      const dataToSubmit = Object.fromEntries(
+        Object.entries(validatedData).map(([key, value]) => [key, value === undefined ? null : value])
+      ) as any;
+      
+      await updateProfile(dataToSubmit);
       toast.success("Profilo aggiornato con successo");
+      setErrors({});
     } catch (error) {
-      sreLogger.error('Error updating profile', {}, error as Error);
-      toast.error("Errore nell'aggiornamento del profilo");
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.errors.forEach(err => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast.error("Correggi gli errori nel modulo prima di salvare");
+      } else {
+        sreLogger.error('Error updating profile', {}, error as Error);
+        toast.error("Errore nell'aggiornamento del profilo");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,6 +157,7 @@ export const useProfileForm = () => {
 
   return {
     formData,
+    errors,
     isLoading,
     handleInputChange,
     handleSubmit,

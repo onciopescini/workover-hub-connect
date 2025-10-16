@@ -11,6 +11,7 @@ import { Users, Calendar, MapPin, MessageSquare } from "lucide-react";
 interface CollaborationTabProps {
   formData: ProfileFormData;
   handleInputChange: (field: keyof ProfileFormData, value: string | boolean | string[]) => void;
+  errors?: Record<string, string>;
 }
 
 const collaborationTypeOptions = [
@@ -36,7 +37,8 @@ const workModeOptions = [
 
 export const CollaborationTab: React.FC<CollaborationTabProps> = ({
   formData,
-  handleInputChange
+  handleInputChange,
+  errors = {}
 }) => {
   const handleCollaborationTypesChange = (type: string, checked: boolean) => {
     const currentTypes = formData.collaboration_types || [];
@@ -144,10 +146,16 @@ export const CollaborationTab: React.FC<CollaborationTabProps> = ({
             onChange={(e) => handleInputChange('collaboration_description', e.target.value)}
             rows={4}
             maxLength={500}
+            className={errors['collaboration_description'] ? 'border-destructive' : ''}
           />
-          <p className="text-sm text-muted-foreground">
-            {formData.collaboration_description?.length || 0}/500 caratteri
-          </p>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              {formData.collaboration_description?.length || 0}/500 caratteri
+            </p>
+            {errors['collaboration_description'] && (
+              <p className="text-sm text-destructive">{errors['collaboration_description']}</p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
