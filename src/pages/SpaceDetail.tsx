@@ -127,6 +127,7 @@ const SpaceDetail = () => {
           bio: (spaceData as any).host_bio ?? '',
           created_at: (spaceData as any).host_created_at ?? new Date().toISOString()
         },
+        host_total_spaces: Number((spaceData as any).host_total_spaces ?? 0),
         host_stripe_account_id: (spaceData as any).host_stripe_account_id ?? '',
         host_stripe_connected: (spaceData as any).host_stripe_connected ?? false
       } as unknown as Space & {

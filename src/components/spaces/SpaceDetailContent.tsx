@@ -24,6 +24,7 @@ interface ExtendedSpace extends Space {
   };
   host_stripe_account_id?: string;
   host_stripe_connected?: boolean;
+  host_total_spaces?: number;
   // Location access metadata
   hasPreciseLocation?: boolean;
   hasConfirmedBooking?: boolean;
@@ -111,6 +112,7 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
               host={space.host} 
               averageRating={averageRating}
               totalReviews={reviews.length}
+              totalSpaces={space.host_total_spaces ?? 0}
             />
           )}
           

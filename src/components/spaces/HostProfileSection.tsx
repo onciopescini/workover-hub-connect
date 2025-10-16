@@ -27,12 +27,14 @@ interface HostProfileSectionProps {
   };
   averageRating?: number | null;
   totalReviews?: number;
+  totalSpaces?: number;
 }
 
 export const HostProfileSection: React.FC<HostProfileSectionProps> = ({ 
   host, 
   averageRating, 
-  totalReviews = 0
+  totalReviews = 0,
+  totalSpaces = 0
 }) => {
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -114,7 +116,7 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
             <div className="text-sm text-gray-600">Tempo risposta</div>
           </div>
           <div className="text-center">
-            <div className="font-semibold text-lg">15</div>
+            <div className="font-semibold text-lg">{totalSpaces}</div>
             <div className="text-sm text-gray-600">Spazi gestiti</div>
           </div>
         </div>

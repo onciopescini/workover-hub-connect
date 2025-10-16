@@ -4673,6 +4673,7 @@ export type Database = {
           host_profile_photo: string
           host_stripe_account_id: string
           host_stripe_connected: boolean
+          host_total_spaces: number
           id: string
           latitude: number
           longitude: number
