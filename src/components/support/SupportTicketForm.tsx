@@ -2,22 +2,18 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupportTicket } from "@/lib/support-utils";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useLogger } from "@/hooks/useLogger";
+import { supportTicketSchema, type SupportTicketInput } from '@/schemas/supportTicketSchema';
 
-interface SupportTicketFormData {
-  subject: string;
-  message: string;
-  category: string;
-  priority: string;
-}
+type SupportTicketFormData = SupportTicketInput;
 
 interface SupportTicketFormProps {
   onSuccess?: () => void;
@@ -45,10 +41,11 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
   const { info, error } = useLogger({ context: 'SupportTicketForm' });
   
   const form = useForm<SupportTicketFormData>({
+    resolver: zodResolver(supportTicketSchema),
     defaultValues: {
       subject: '',
       message: '',
-      category: '',
+      category: 'technical',
       priority: 'normal'
     }
   });
@@ -57,22 +54,15 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
     setIsSubmitting(true);
     
     try {
-      const success = await createSupportTicket({
-        subject: data.subject,
-        message: data.message,
-        status: 'open',
-        priority: data.priority
-      });
+      const success = await createSupportTicket(data);
 
       if (success) {
         form.reset();
         info('Support ticket created successfully', { subject: data.subject, category: data.category });
-        toast.success("Ticket creato con successo! Ti risponderemo presto.");
         onSuccess?.();
       }
     } catch (ticketError) {
       error("Error creating ticket", ticketError as Error, { subject: data.subject, category: data.category });
-      toast.error("Errore nella creazione del ticket. Riprova.");
     } finally {
       setIsSubmitting(false);
     }

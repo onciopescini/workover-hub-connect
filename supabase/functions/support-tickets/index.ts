@@ -18,6 +18,7 @@ interface TicketRequest {
   subject: string;
   message: string;
   category?: string;
+  priority?: string;
 }
 
 serve(async (req) => {
@@ -26,7 +27,7 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, subject, message, category = 'other' }: TicketRequest = await req.json();
+    const { user_id, subject, message, category = 'other', priority = 'normal' }: TicketRequest = await req.json();
 
     ErrorHandler.logInfo('Creating support ticket', { user_id, subject, category });
 
@@ -60,6 +61,8 @@ serve(async (req) => {
         user_id,
         subject,
         message,
+        category,
+        priority,
         status: 'open'
       })
       .select()
@@ -136,7 +139,34 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ 
+    // Check for high/critical priority - send notification to admins
+    if (priority === 'high' || priority === 'critical') {
+      const { data: admins } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin');
+      
+      if (admins) {
+        for (const admin of admins) {
+          await supabaseAdmin
+            .from('user_notifications')
+            .insert({
+              user_id: admin.id,
+              type: 'support_urgent',
+              priority: priority,
+              title: `🚨 Nuovo ticket ${priority === 'critical' ? 'CRITICO' : 'ALTA PRIORITÀ'}`,
+              content: `${userProfile?.first_name || 'Utente'}: "${subject.substring(0, 50)}..."`,
+              metadata: {
+                ticket_id: ticket.id,
+                ticket_priority: priority,
+                ticket_category: category
+              }
+            });
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({
       success: true, 
       ticket,
       message: 'Ticket di supporto creato con successo'

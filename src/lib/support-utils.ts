@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { SupportTicket } from "@/types/support";
 import { sreLogger } from '@/lib/sre-logger';
+import { supportTicketSchema, type SupportTicketInput } from '@/schemas/supportTicketSchema';
 
 // Get support tickets for current user
 export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
@@ -26,40 +27,54 @@ export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
 };
 
 // Create a new support ticket
-export const createSupportTicket = async (ticket: {
-  subject: string;
-  message: string;
-  status: string;
-  priority?: string;
-}): Promise<boolean> => {
+export const createSupportTicket = async (ticket: SupportTicketInput): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
-      toast.error("You must be logged in to create a support ticket");
+      toast.error("Devi essere autenticato");
       return false;
     }
 
-    const { error } = await supabase
+    // Validate with Zod schema
+    const validated = supportTicketSchema.safeParse(ticket);
+    if (!validated.success) {
+      toast.error('Dati non validi');
+      sreLogger.error('Validation error', { errors: validated.error });
+      return false;
+    }
+
+    // Client-side spam check
+    const { data: recentTickets } = await supabase
       .from('support_tickets')
-      .insert({
-        user_id: user.user.id,
-        subject: ticket.subject,
-        message: ticket.message,
-        status: ticket.status,
-        priority: ticket.priority || 'normal'
-      });
-
-    if (error) {
-      toast.error("Failed to create support ticket");
-      sreLogger.error('Failed to create support ticket', { error, ticket });
+      .select('id, created_at')
+      .eq('user_id', user.user.id)
+      .gte('created_at', new Date(Date.now() - 3600000).toISOString())
+      .limit(5);
+    
+    if (recentTickets && recentTickets.length >= 5) {
+      toast.error("Hai raggiunto il limite di 5 ticket per ora. Riprova più tardi.");
+      sreLogger.warn('Spam attempt blocked', { userId: user.user.id });
       return false;
     }
 
-    toast.success("Support ticket created successfully");
+    // Call Edge Function
+    const { data, error } = await supabase.functions.invoke('support-tickets', {
+      body: {
+        user_id: user.user.id,
+        subject: validated.data.subject,
+        message: validated.data.message,
+        category: validated.data.category,
+        priority: validated.data.priority
+      }
+    });
+
+    if (error) throw error;
+    
+    toast.success("Ticket creato! Riceverai una conferma via email.");
     return true;
   } catch (error) {
-    sreLogger.error('Error creating support ticket', { error, ticket });
-    toast.error("Failed to create support ticket");
+    sreLogger.error('Error creating ticket via Edge Function', { error });
+    toast.error("Errore nella creazione del ticket");
     return false;
   }
 };

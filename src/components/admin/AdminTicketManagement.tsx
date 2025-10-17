@@ -103,7 +103,7 @@ export function AdminTicketManagement() {
     }
 
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("support_tickets")
         .update({ 
           response: response,
@@ -112,7 +112,25 @@ export function AdminTicketManagement() {
         })
         .eq("id", selectedTicket.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Send notification to user
+      const { error: notifError } = await supabase
+        .from("user_notifications")
+        .insert({
+          user_id: selectedTicket.user_id,
+          type: 'support_response',
+          title: '✅ Risposta al tuo ticket',
+          content: `Il tuo ticket "${selectedTicket.subject}" ha ricevuto una risposta dal supporto.`,
+          metadata: {
+            ticket_id: selectedTicket.id,
+            ticket_subject: selectedTicket.subject
+          }
+        });
+
+      if (notifError) {
+        console.warn('Failed to send notification:', notifError);
+      }
       
       await fetchTickets();
       setResponseDialog(false);

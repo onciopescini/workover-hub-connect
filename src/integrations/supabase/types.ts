@@ -3691,6 +3691,8 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          assigned_at: string | null
+          assigned_to: string | null
           created_at: string | null
           first_response_at: string | null
           id: string
@@ -3706,6 +3708,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           created_at?: string | null
           first_response_at?: string | null
           id?: string
@@ -3721,6 +3725,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           created_at?: string | null
           first_response_at?: string | null
           id?: string
@@ -4716,6 +4722,10 @@ export type Database = {
         }
         Returns: Json
       }
+      check_ticket_spam: {
+        Args: { p_message: string; p_user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_cache: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -5050,6 +5060,10 @@ export type Database = {
           space_id: string
         }[]
       }
+      get_support_metrics: {
+        Args: { days_back?: number }
+        Returns: Json
+      }
       get_user_public_reviews: {
         Args: { target_id_param: string }
         Returns: {
@@ -5270,6 +5284,10 @@ export type Database = {
           sender_id: string
           space_title: string
         }[]
+      }
+      send_sla_alerts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       should_send_notification: {
         Args: { p_notification_type: string; p_user_id: string }
