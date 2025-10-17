@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { User, Camera, Phone, MapPin } from "lucide-react";
+import { User, Phone, MapPin } from "lucide-react";
 import { ProfileFormData } from "@/hooks/useProfileForm";
+import { AvatarUploader } from "@/components/profile/AvatarUploader";
 
 interface BasicInfoTabProps {
   formData: ProfileFormData;
@@ -71,23 +71,13 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
           )}
         </div>
 
+        {/* Avatar Uploader with Progress */}
         <div className="space-y-2">
-          <Label htmlFor="profile_photo_url">URL Foto Profilo</Label>
-          <div className="flex gap-2">
-            <Input
-              id="profile_photo_url"
-              value={formData.profile_photo_url}
-              onChange={(e) => handleInputChange('profile_photo_url', e.target.value)}
-              placeholder="https://example.com/photo.jpg"
-              className={errors['profile_photo_url'] ? 'border-destructive' : ''}
-            />
-            <Button type="button" variant="outline" size="icon">
-              <Camera className="h-4 w-4" />
-            </Button>
-          </div>
-          {errors['profile_photo_url'] && (
-            <p className="text-sm text-destructive">{errors['profile_photo_url']}</p>
-          )}
+          <Label>Foto Profilo</Label>
+          <AvatarUploader
+            currentPhotoUrl={formData.profile_photo_url}
+            onUploadComplete={(url) => handleInputChange('profile_photo_url', url)}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
