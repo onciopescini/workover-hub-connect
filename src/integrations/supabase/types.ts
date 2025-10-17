@@ -4988,18 +4988,19 @@ export type Database = {
       validate_and_reserve_slot: {
         Args:
           | {
+              client_base_price_param?: number
               confirmation_type_param: string
               date_param: string
               end_time_param: string
+              guests_count_param: number
               space_id_param: string
               start_time_param: string
               user_id_param: string
             }
           | {
-              confirmation_type_param?: string
+              confirmation_type_param: string
               date_param: string
               end_time_param: string
-              guests_count_param?: number
               space_id_param: string
               start_time_param: string
               user_id_param: string
