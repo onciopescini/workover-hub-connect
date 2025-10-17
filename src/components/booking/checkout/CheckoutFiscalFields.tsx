@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info, CheckCircle2, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Info, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { useFiscalValidation } from '@/hooks/useFiscalValidation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
 
@@ -27,6 +28,7 @@ interface CheckoutFiscalFieldsProps {
   onFiscalDataChange: (data: CoworkerFiscalData) => void;
   hostHasVat: boolean;
   errors?: Record<string, string>;
+  isPreFilled?: boolean; // Indicates if data was pre-filled from profile
 }
 
 export const CheckoutFiscalFields: React.FC<CheckoutFiscalFieldsProps> = ({
@@ -35,7 +37,8 @@ export const CheckoutFiscalFields: React.FC<CheckoutFiscalFieldsProps> = ({
   fiscalData,
   onFiscalDataChange,
   hostHasVat,
-  errors = {}
+  errors = {},
+  isPreFilled = false
 }) => {
   const { validationState, validateField, clearFieldError, resetValidation } = useFiscalValidation(fiscalData.is_business);
   
@@ -122,10 +125,20 @@ export const CheckoutFiscalFields: React.FC<CheckoutFiscalFieldsProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Dati Fatturazione (Opzionale)</CardTitle>
-        <CardDescription>
-          Richiedi fattura elettronica per questa prenotazione
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Dati Fatturazione (Opzionale)</CardTitle>
+            <CardDescription>
+              Richiedi fattura elettronica per questa prenotazione
+            </CardDescription>
+          </div>
+          {isPreFilled && (
+            <Badge variant="secondary" className="gap-1">
+              <Sparkles className="h-3 w-3" />
+              Pre-compilato
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent className="space-y-4">

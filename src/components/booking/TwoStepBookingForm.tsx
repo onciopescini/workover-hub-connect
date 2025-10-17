@@ -12,6 +12,7 @@ import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckoutFiscalFields, type CoworkerFiscalData } from './checkout/CheckoutFiscalFields';
 import { coworkerFiscalSchema } from '@/lib/validation/checkoutFiscalSchema';
+import { useCoworkerFiscalData } from '@/hooks/useCoworkerFiscalData';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,6 +115,11 @@ export function TwoStepBookingForm({
   });
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   
+  const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
+  
+  // Fiscal data hook - auto-loads saved data
+  const { fiscalData: savedFiscalData, isLoading: isLoadingFiscalData } = useCoworkerFiscalData();
+  
   // Fiscal data state for coworker invoice request
   const [requestInvoice, setRequestInvoice] = useState(false);
   const [coworkerFiscalData, setCoworkerFiscalData] = useState<CoworkerFiscalData>({
@@ -127,8 +133,21 @@ export function TwoStepBookingForm({
     billing_postal_code: '',
   });
   const [fiscalErrors, setFiscalErrors] = useState<Record<string, string>>({});
+  const [fiscalDataPreFilled, setFiscalDataPreFilled] = useState(false);
 
-  const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
+  // Pre-fill fiscal data when loaded
+  useEffect(() => {
+    if (savedFiscalData && !fiscalDataPreFilled) {
+      setCoworkerFiscalData(savedFiscalData);
+      setFiscalDataPreFilled(true);
+      
+      info('Fiscal data pre-filled from profile', {
+        action: 'fiscal_data_prefilled',
+        isBusiness: savedFiscalData.is_business,
+        hasAddress: !!savedFiscalData.billing_address
+      });
+    }
+  }, [savedFiscalData, fiscalDataPreFilled, info]);
 
   const progressValue = {
     'DATE': 33,
@@ -767,6 +786,7 @@ export function TwoStepBookingForm({
                 onFiscalDataChange={setCoworkerFiscalData}
                 hostHasVat={hostFiscalRegime !== 'privato'}
                 errors={fiscalErrors}
+                isPreFilled={fiscalDataPreFilled}
               />
             )}
             
