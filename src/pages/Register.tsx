@@ -10,6 +10,7 @@ import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
+import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
 
 const Register = () => {
   const [email, setEmail] = useState('');
@@ -32,23 +33,34 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
 
+    // Validate password match
     if (password !== confirmPassword) {
       setError(AUTH_ERRORS.PASSWORD_MISMATCH);
-      setIsLoading(false);
       return;
     }
 
     if (password.length < 8) {
       setError(AUTH_ERRORS.WEAK_PASSWORD);
-      setIsLoading(false);
       return;
     }
 
+    // Check client-side rate limit BEFORE setting loading state
+    const rateLimitCheck = checkAuthRateLimit(email);
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
       await signUp(email, password);
+      
+      // Reset rate limit on successful signup
+      resetAuthRateLimit(email);
+      
       toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
       navigate('/login');
     } catch (err: any) {

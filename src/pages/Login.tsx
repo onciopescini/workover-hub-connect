@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
+import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -30,6 +31,14 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Check client-side rate limit BEFORE setting loading state
+    const rateLimitCheck = checkAuthRateLimit(email);
+    if (!rateLimitCheck.allowed) {
+      setError(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -38,6 +47,9 @@ const Login = () => {
       const redirectTo = searchParams.get('redirectTo') || '/';
 
       await signIn(email, password, redirectTo);
+      
+      // Reset rate limit on successful login
+      resetAuthRateLimit(email);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : AUTH_ERRORS.UNKNOWN_ERROR;
       setError(errorMessage);
