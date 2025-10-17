@@ -125,8 +125,21 @@ export const getUserReviews = async (userId: string): Promise<{
   }
 };
 
+// Get user average rating (optimized with cached value)
 export const getUserAverageRating = async (userId: string): Promise<number | null> => {
   try {
+    // Try to use cached value first (PERFORMANCE OPTIMIZATION)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('cached_avg_rating')
+      .eq('id', userId)
+      .single();
+
+    if (!profileError && profile?.cached_avg_rating !== null) {
+      return profile.cached_avg_rating;
+    }
+
+    // Fallback to real-time calculation if cache unavailable
     const { data, error } = await supabase
       .from('booking_reviews')
       .select('rating')

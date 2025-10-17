@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Star, Clock, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
@@ -46,20 +47,26 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
   }, [booking.id, targetUserId]);
 
   const checkReviewEligibility = () => {
+    // ✅ FIX: Usa end_time invece di booking_date per calcolo corretto
     const bookingDate = parseISO(booking.booking_date);
-    const hoursPassedSinceBooking = differenceInHours(new Date(), bookingDate);
-    const daysSinceBooking = differenceInDays(new Date(), bookingDate);
+    const bookingEndTime = booking.end_time ? 
+      new Date(`${booking.booking_date}T${booking.end_time}`) : 
+      new Date(`${booking.booking_date}T23:59:59`); // Fallback a fine giornata
 
-    const isConfirmed = booking.status === 'confirmed';
-    const isAfter24h = hoursPassedSinceBooking >= 24;
-    const expired = daysSinceBooking > 14;
-    const canReview = isConfirmed && isAfter24h && !expired;
+    const now = new Date();
+    const hoursPassedSinceEnd = differenceInHours(now, bookingEndTime);
+    const daysSinceEnd = differenceInDays(now, bookingEndTime);
+
+    const isServed = booking.status === 'served'; // ✅ Deve essere 'served', non 'confirmed'
+    const isAfter24h = hoursPassedSinceEnd >= 24;
+    const expired = daysSinceEnd > 14;
+    const canReview = isServed && isAfter24h && !expired;
 
     return {
       canReview,
-      hoursUntilEligible: Math.max(0, 24 - hoursPassedSinceBooking),
+      hoursUntilEligible: Math.max(0, 24 - hoursPassedSinceEnd),
       expired,
-      daysUntilExpiry: Math.max(0, 14 - daysSinceBooking)
+      daysUntilExpiry: Math.max(0, 14 - daysSinceEnd)
     };
   };
 
@@ -91,15 +98,60 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
   };
 
   if (!canReview) {
+    // ✅ Messaggi migliorati con tooltip
+    if (expired) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" disabled className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                Finestra scaduta
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>La finestra per recensire è scaduta (14 giorni dopo il servizio)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    if (booking.status !== 'served') {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" disabled className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                Servizio non completato
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Puoi recensire solo dopo che il servizio è stato completato</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
     return (
-      <Button variant="outline" size="sm" disabled className="flex items-center">
-        {expired ? (
-          <Clock className="w-4 h-4 mr-1" />
-        ) : (
-          <Clock className="w-4 h-4 mr-1" />
-        )}
-        {expired ? 'Finestra recensione scaduta' : `Recensione tra ${Math.ceil(hoursUntilEligible)}h`}
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" disabled className="flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              Tra {Math.ceil(hoursUntilEligible)}h
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Potrai recensire 24 ore dopo la fine del servizio</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Hai {daysUntilExpiry} giorni per lasciare una recensione
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 

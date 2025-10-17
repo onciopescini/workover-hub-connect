@@ -2513,6 +2513,8 @@ export type Database = {
           admin_notes: string | null
           age_confirmed: boolean | null
           bio: string | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
           city: string | null
           collaboration_availability: string | null
           collaboration_description: string | null
@@ -2578,6 +2580,8 @@ export type Database = {
           admin_notes?: string | null
           age_confirmed?: boolean | null
           bio?: string | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
           city?: string | null
           collaboration_availability?: string | null
           collaboration_description?: string | null
@@ -2643,6 +2647,8 @@ export type Database = {
           admin_notes?: string | null
           age_confirmed?: boolean | null
           bio?: string | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
           city?: string | null
           collaboration_availability?: string | null
           collaboration_description?: string | null
@@ -3178,6 +3184,8 @@ export type Database = {
           approved_by: string | null
           approximate_location: unknown | null
           availability: Json | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
           cancellation_policy:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
@@ -3222,6 +3230,8 @@ export type Database = {
           approved_by?: string | null
           approximate_location?: unknown | null
           availability?: Json | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null
@@ -3266,6 +3276,8 @@ export type Database = {
           approved_by?: string | null
           approximate_location?: unknown | null
           availability?: Json | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
             | null

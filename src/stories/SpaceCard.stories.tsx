@@ -44,6 +44,8 @@ const mockSpace = {
   rejection_reason: null,
   suspension_reason: null,
   revision_notes: null,
+  cached_avg_rating: 4.5,
+  cached_review_count: 12,
 };
 
 const meta: Meta<typeof SpaceCard> = {

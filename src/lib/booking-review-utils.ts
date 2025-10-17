@@ -73,13 +73,72 @@ export const getBookingReviews = async (userId: string): Promise<{
   }
 };
 
-// Add a booking review
+// Check rate limit for reviews (anti-spam)
+const checkReviewRateLimit = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc('check_rate_limit_advanced', {
+      p_identifier: userId,
+      p_action: 'create_review',
+      p_max_requests: 5, // Max 5 recensioni
+      p_window_ms: 3600000 // per ora
+    });
+
+    if (error) {
+      sreLogger.error('Rate limit check failed', { userId }, error as Error);
+      return true; // Fail open in caso di errore
+    }
+
+    if (!data || typeof data !== 'object' || !('allowed' in data)) {
+      sreLogger.error('Invalid rate limit response', { userId, data });
+      return true; // Fail open
+    }
+
+    return Boolean((data as { allowed: boolean }).allowed);
+  } catch (error) {
+    sreLogger.error('Rate limit check error', { userId }, error as Error);
+    return true; // Fail open
+  }
+};
+
+// Add a booking review with rate limiting and duplicate check
 export const addBookingReview = async (review: BookingReviewInsert): Promise<boolean> => {
   try {
+    // 1. Check rate limit (anti-spam)
+    const rateLimitAllowed = await checkReviewRateLimit(review.author_id);
+    if (!rateLimitAllowed) {
+      toast.error("Hai raggiunto il limite di recensioni orarie. Riprova più tardi.");
+      sreLogger.warn('Review rate limit exceeded', { authorId: review.author_id });
+      return false;
+    }
+
+    // 2. Pre-check for duplicates (client-side validation)
+    const { data: existingReview, error: checkError } = await supabase
+      .from("booking_reviews")
+      .select("id")
+      .eq("booking_id", review.booking_id)
+      .eq("author_id", review.author_id)
+      .eq("target_id", review.target_id)
+      .maybeSingle();
+
+    if (checkError) {
+      sreLogger.error('Error checking for duplicate review', { review }, checkError as Error);
+    }
+
+    if (existingReview) {
+      toast.error("Hai già recensito questo utente per questa prenotazione");
+      return false;
+    }
+
+    // 3. Insert review
     const { error } = await supabase.from("booking_reviews").insert(review);
 
     if (error) {
-      toast.error("Errore nell'invio della recensione");
+      // Handle duplicate constraint violation
+      if (error.code === '23505') {
+        toast.error("Hai già recensito questo utente per questa prenotazione");
+      } else {
+        toast.error("Errore nell'invio della recensione");
+      }
       sreLogger.error('Error adding booking review', { review }, error as Error);
       return false;
     }
