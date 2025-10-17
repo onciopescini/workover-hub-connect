@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, FileText, DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { Download, FileText, DollarSign, TrendingUp, Clock, CheckCircle, Wallet } from 'lucide-react';
 import { useHostPayments, useHostPaymentStats } from '@/hooks/useHostPayments';
+import { useStripePayouts } from '@/hooks/useStripePayouts';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -12,13 +14,25 @@ export const HostPaymentsDashboard = () => {
   const { data: payments, isLoading } = useHostPayments();
   const stats = useHostPaymentStats(payments);
   const [filter, setFilter] = useState<'all' | 'completed'>('completed');
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
+  }, []);
+  
+  const { data: stripePayouts, isLoading: isLoadingPayouts } = useStripePayouts(userId || '');
 
   const exportToCSV = () => {
     if (!payments || payments.length === 0) return;
 
-    const headers = ['Data', 'Spazio', 'Coworker', 'Importo Lordo', 'Importo Netto', 'Fee Piattaforma', 'Ricevuta'];
+    const headers = [
+      'Data', 'Ora', 'Spazio', 'Coworker', 'Importo Lordo', 'Importo Netto', 
+      'Fee Piattaforma', 'Ricevuta Non Fiscale', 'Transfer Stripe ID', 'Booking ID'
+    ];
+    
     const rows = payments.map(p => [
       format(new Date(p.created_at), 'dd/MM/yyyy', { locale: it }),
+      format(new Date(p.created_at), 'HH:mm', { locale: it }),
       p.booking?.space?.title || 'N/A',
       p.booking?.coworker 
         ? `${p.booking.coworker.first_name} ${p.booking.coworker.last_name}`
@@ -26,18 +40,20 @@ export const HostPaymentsDashboard = () => {
       `€${p.amount.toFixed(2)}`,
       `€${(p.host_amount || 0).toFixed(2)}`,
       `€${(p.platform_fee || 0).toFixed(2)}`,
-      p.non_fiscal_receipt?.[0]?.receipt_number || 'N/A'
+      p.non_fiscal_receipt?.[0]?.receipt_number || 'N/A',
+      p.stripe_transfer_id || 'N/A',
+      p.booking?.id || 'N/A'
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `pagamenti_host_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.download = `pagamenti_host_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
     link.click();
   };
 
@@ -52,7 +68,7 @@ export const HostPaymentsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Incasso Lordo Totale</CardTitle>
@@ -98,6 +114,23 @@ export const HostPaymentsDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.paymentsCount}</div>
             <p className="text-xs text-muted-foreground">Transazioni completate</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Disponibile</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              €{stripePayouts?.available_balance.toFixed(2) || '0.00'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stripePayouts?.last_payout 
+                ? `Ultimo: ${format(new Date(stripePayouts.last_payout.arrival_date), 'dd/MM/yy')}`
+                : 'Nessun payout'}
+            </p>
           </CardContent>
         </Card>
       </div>

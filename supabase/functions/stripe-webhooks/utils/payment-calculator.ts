@@ -2,35 +2,36 @@
 export class PaymentCalculator {
   private static readonly BUYER_FEE_RATE = 0.05; // 5% buyer fee
   private static readonly HOST_FEE_RATE = 0.05; // 5% host fee
+  private static readonly VAT_RATE = 0.22; // 22% VAT (FASE 1.3)
   private static readonly TOTAL_PLATFORM_FEE_RATE = 0.10; // 10% total platform fee
 
   static calculateBreakdown(baseAmount: number) {
-    // Buyer pays base amount + 5% buyer fee
-    const buyerFeeAmount = Math.round(baseAmount * this.BUYER_FEE_RATE * 100) / 100;
-    const buyerTotalAmount = baseAmount + buyerFeeAmount;
+    const round = (n: number) => Math.round(n * 100) / 100;
     
-    // Host receives base amount - 5% host fee
-    const hostFeeAmount = Math.round(baseAmount * this.HOST_FEE_RATE * 100) / 100;
-    const hostNetPayout = baseAmount - hostFeeAmount;
+    // Buyer fees
+    const buyerFeeAmount = round(baseAmount * this.BUYER_FEE_RATE);
+    const buyerVat = round(buyerFeeAmount * this.VAT_RATE);
+    const buyerTotalAmount = baseAmount + buyerFeeAmount + buyerVat;
     
-    // Platform revenue = buyer fee + host fee (total 10% of base amount)
-    const platformRevenue = buyerFeeAmount + hostFeeAmount;
+    // Host fees (FASE 1.3: NOW INCLUDING VAT)
+    const hostFeeAmount = round(baseAmount * this.HOST_FEE_RATE);
+    const hostVat = round(hostFeeAmount * this.VAT_RATE);
+    const hostNetPayout = baseAmount - hostFeeAmount - hostVat;
     
-    // For Stripe Connect: application fee includes both commissions
-    const stripeApplicationFee = Math.round(baseAmount * this.TOTAL_PLATFORM_FEE_RATE * 100) / 100;
+    // Platform revenue = buyer + host commissions + VAT
+    const totalPlatformFee = buyerFeeAmount + buyerVat + hostFeeAmount + hostVat;
     
-    // For Stripe Connect: transfer amount is base amount minus host fee only
-    const stripeTransferAmount = hostNetPayout;
-
     return {
       baseAmount,
       buyerFeeAmount,
+      buyerVat,
       buyerTotalAmount,
       hostFeeAmount,
+      hostVat, // ADDED
       hostNetPayout,
-      platformRevenue,
-      stripeApplicationFee, // This is what goes to Stripe as application_fee
-      stripeTransferAmount // This is what gets transferred to host
+      totalPlatformFee,
+      stripeApplicationFee: round(baseAmount * this.TOTAL_PLATFORM_FEE_RATE),
+      stripeTransferAmount: hostNetPayout
     };
   }
 

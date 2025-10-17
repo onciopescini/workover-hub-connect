@@ -148,13 +148,71 @@ serve(async (req) => {
       }), { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 400 });
     }
 
-    // Process fiscal data if provided
+    // FASE 1.2: Fiscal Data Pre-Payment Validation
     let fiscalMetadata = {};
     if (fiscal_data && fiscal_data.request_invoice) {
       console.log('[FISCAL-DATA] Processing invoice request:', {
         tax_id: fiscal_data.tax_id ? '***' : 'none',
         is_business: fiscal_data.is_business,
       });
+      
+      // Validate required fields
+      const requiredFields = {
+        tax_id: 'Codice Fiscale / Partita IVA',
+        billing_address: 'Indirizzo',
+        billing_city: 'Città',
+        billing_postal_code: 'CAP'
+      };
+      
+      const missing = Object.entries(requiredFields)
+        .filter(([key]) => !fiscal_data[key] || fiscal_data[key].trim().length === 0)
+        .map(([_, label]) => label);
+      
+      if (missing.length > 0) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Dati fiscali incompleti per emissione fattura',
+            missing_fields: missing,
+            help: 'Completa tutti i campi obbligatori nella sezione "Dati per Fatturazione"'
+          }),
+          { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+        );
+      }
+      
+      // Validate CF/PIVA format
+      const taxId = fiscal_data.tax_id.trim().toUpperCase();
+      const isCF = /^[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]$/.test(taxId);
+      const isPIVA = /^[0-9]{11}$/.test(taxId);
+      
+      if (!isCF && !isPIVA) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Codice Fiscale o Partita IVA non valida',
+            provided_format: taxId.length + ' caratteri',
+            expected: 'Codice Fiscale (16 caratteri) o Partita IVA (11 cifre)'
+          }),
+          { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+        );
+      }
+      
+      // Verify host fiscal_regime
+      const { data: spaceData } = await supabase
+        .from('spaces')
+        .select('host_id, profiles!spaces_host_id_fkey(fiscal_regime)')
+        .eq('id', space_id)
+        .single();
+      
+      if (!spaceData?.profiles?.fiscal_regime) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Host non ha configurato il regime fiscale',
+            action: 'contact_support',
+            help: 'L\'host deve completare i dati fiscali'
+          }),
+          { status: 412, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+        );
+      }
+      
       fiscalMetadata = {
         invoice_requested: 'true',
         invoice_tax_id: fiscal_data.tax_id || '',
@@ -338,12 +396,51 @@ serve(async (req) => {
       cancel_url: `${origin}/bookings?cancelled=true`,
     });
 
-    // FASE 1: Crea payment record iniziale con status 'pending' (CRITICAL per validate_booking_payment trigger)
-    console.log('[PAYMENT-SESSION] Creating initial payment record...');
+    // FASE 1.1: Check for existing payments (anti-duplicate)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    
+    const { data: existingPayment } = await supabaseAdmin
+      .from('payments')
+      .select('id, payment_status, created_at')
+      .eq('booking_id', booking_id)
+      .in('payment_status', ['completed', 'pending'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPayment) {
+      if (existingPayment.payment_status === 'completed') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Pagamento già completato per questa prenotazione',
+            payment_id: existingPayment.id
+          }),
+          { status: 409, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+        );
+      }
+      
+      // If pending, check age (max 2h)
+      const paymentAgeMs = Date.now() - new Date(existingPayment.created_at).getTime();
+      if (paymentAgeMs < 2 * 60 * 60 * 1000) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Esiste già un pagamento in elaborazione',
+            payment_id: existingPayment.id,
+            retry_after_seconds: Math.ceil((7200000 - paymentAgeMs) / 1000)
+          }),
+          { status: 429, headers: combineHeaders({ 
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil((7200000 - paymentAgeMs) / 1000))
+          }) }
+        );
+      }
+    }
+
+    // Create initial payment record
+    console.log('[PAYMENT-SESSION] Creating initial payment record...');
 
     const { error: paymentInsertError } = await supabaseAdmin
       .from('payments')
