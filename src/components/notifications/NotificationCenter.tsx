@@ -13,10 +13,12 @@ import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { UserNotification } from "@/types/notification";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export function NotificationCenter() {
   const { notifications, counts, isLoading, markAsRead, markAllAsRead } = useNotifications();
   const [selectedType, setSelectedType] = useState<string>('all');
+  const navigate = useNavigate();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -58,17 +60,19 @@ export function NotificationCenter() {
     
     switch (notification.type) {
       case 'message':
-        return metadata["booking_id"] ? `/messages/${metadata["booking_id"]}` : '/messages';
-      case 'connection':
-        return '/networking';
+        return metadata["booking_id"] ? `/messages?conversation=booking-${metadata["booking_id"]}` : '/messages';
       case 'booking':
-        return '/bookings';
+        return metadata["booking_id"] ? `/bookings?booking_id=${metadata["booking_id"]}` : '/bookings';
+      case 'event':
+        return metadata["event_id"] ? `/events?event_id=${metadata["event_id"]}` : '/events';
       case 'review':
-        return '/reviews';
+        return metadata["space_id"] ? `/host/reviews?space_id=${metadata["space_id"]}` : '/host/reviews';
+      case 'connection':
+        return metadata["connection_id"] ? `/networking?connection_id=${metadata["connection_id"]}` : '/networking';
       case 'ticket':
-        return '/support';
+        return metadata["ticket_id"] ? `/support?ticket_id=${metadata["ticket_id"]}` : '/support';
       default:
-        return null;
+        return '/notifications';
     }
   };
 
@@ -78,9 +82,7 @@ export function NotificationCenter() {
     }
     
     const url = getActionUrl(notification);
-    if (url) {
-      window.location.href = url;
-    }
+    navigate(url); // Use React Router navigation instead of window.location
   };
 
   if (isLoading) {

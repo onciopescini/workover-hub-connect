@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TIME_CONSTANTS } from '@/constants';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +6,7 @@ import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage, sendMessag
 import { ConversationItem } from "@/types/messaging";
 import { isValidMessageWithSender } from "@/types/strict-type-guards";
 import { sreLogger } from '@/lib/sre-logger';
+import { toast } from "sonner";
 
 interface PrivateMessage {
   sender?: { first_name: string; last_name: string; profile_photo_url?: string };
@@ -19,16 +20,19 @@ export const useMessagesData = (activeTab: string) => {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [messages, setMessages] = useState<Array<Record<string, unknown>>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
 
-  // Fetch conversations based on active tab and user role
-  useEffect(() => {
-    const fetchConversations = async () => {
-      if (!authState.user?.id) return;
+  // Fetch conversations with retry logic
+  const fetchConversationsWithRetry = useCallback(async () => {
+    if (!authState.user?.id) return;
 
-      setIsLoading(true);
-      try {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
         if (activeTab === "all" || activeTab === "bookings") {
           let bookings: any[] = [];
 
@@ -196,13 +200,29 @@ export const useMessagesData = (activeTab: string) => {
         }
       } catch (error) {
         sreLogger.error("Error fetching conversations", {}, error as Error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to load conversations";
+        setError(errorMessage);
+        
+        // Retry logic (max 3 retries with exponential backoff)
+        if (retryCount < 3) {
+          const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 8000);
+          sreLogger.info(`Retrying fetch conversations in ${backoffDelay}ms (attempt ${retryCount + 1}/3)`);
+          
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, backoffDelay);
+        } else {
+          toast.error("Failed to load conversations. Please refresh the page.");
+        }
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [activeTab, authState.user?.id, retryCount]);
 
-    fetchConversations();
-  }, [activeTab, authState.user?.id]);
+  // Fetch conversations based on active tab and user role
+  useEffect(() => {
+    fetchConversationsWithRetry();
+  }, [fetchConversationsWithRetry]);
 
   // Immediately update unread count when conversation is selected
   useEffect(() => {
@@ -215,12 +235,14 @@ export const useMessagesData = (activeTab: string) => {
     }
   }, [selectedConversationId]);
 
-  // Fetch messages for selected conversation with real-time updates
+  // Fetch messages for selected conversation with real-time updates and error recovery
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversationId) return;
 
       try {
+        setError(null);
+        
         // Correctly parse type and full UUID (UUIDs contain hyphens!)
         const parts = selectedConversationId.split('-');
         const type = parts[0];
@@ -230,6 +252,7 @@ export const useMessagesData = (activeTab: string) => {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (!uuidRegex.test(id)) {
           sreLogger.error('Invalid UUID format', { id, conversationId: selectedConversationId });
+          toast.error("Invalid conversation ID format");
           return;
         }
         
@@ -240,39 +263,48 @@ export const useMessagesData = (activeTab: string) => {
           const bookingMessages = await fetchBookingMessages(id);
           fetchedMessages = bookingMessages.map(msg => ({ ...msg } as Record<string, unknown>));
           
-          // Mark unread booking messages as read
+          // Mark unread booking messages as read with error handling
           const unreadMessageIds = bookingMessages
             .filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id)
             .map(msg => msg.id);
           
           if (unreadMessageIds.length > 0) {
-            await supabase
+            const { error: markReadError } = await supabase
               .from('messages')
               .update({ is_read: true })
               .in('id', unreadMessageIds);
             
-            // Update local conversation state
-            setConversations(prev => prev.map(conv => 
-              conv.id === selectedConversationId 
-                ? { ...conv, unreadCount: 0 }
-                : conv
-            ));
+            if (markReadError) {
+              sreLogger.warn('Failed to mark messages as read', { unreadMessageIds }, markReadError);
+              // Don't throw - this is non-critical
+            } else {
+              // Update local conversation state only if successful
+              setConversations(prev => prev.map(conv => 
+                conv.id === selectedConversationId 
+                  ? { ...conv, unreadCount: 0 }
+                  : conv
+              ));
+            }
           }
         } else if (type === 'private') {
           sreLogger.debug('Fetching private messages', { id });
           const privateMessages = await getPrivateMessages(id);
           fetchedMessages = privateMessages.map(msg => ({ ...msg } as Record<string, unknown>));
           
-          // Mark unread private messages as read
+          // Mark unread private messages as read with error handling
           const unreadMessageIds = privateMessages
             .filter(msg => !msg.is_read && msg.sender_id !== authState.user?.id)
             .map(msg => msg.id);
           
           if (unreadMessageIds.length > 0) {
-            await supabase
+            const { error: markReadError } = await supabase
               .from('private_messages')
               .update({ is_read: true })
               .in('id', unreadMessageIds);
+            
+            if (markReadError) {
+              sreLogger.warn('Failed to mark private messages as read', { unreadMessageIds }, markReadError);
+            }
           }
         }
 
@@ -290,6 +322,9 @@ export const useMessagesData = (activeTab: string) => {
         }));
       } catch (error) {
         sreLogger.error("Error fetching messages for conversation", { conversationId: selectedConversationId }, error as Error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to load messages";
+        setError(errorMessage);
+        toast.error("Failed to load messages. Please try again.");
         setMessages([]);
       }
     };
@@ -332,6 +367,7 @@ export const useMessagesData = (activeTab: string) => {
   const handleSendMessage = async (content: string, attachments?: File[]) => {
     if (!selectedConversationId) {
       sreLogger.warn('No conversation selected');
+      toast.error("No conversation selected");
       return;
     }
 
@@ -343,10 +379,12 @@ export const useMessagesData = (activeTab: string) => {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
       sreLogger.error('Invalid UUID format when sending message', { id });
+      toast.error('Invalid conversation ID format');
       throw new Error('Invalid conversation ID format');
     }
     
     try {
+      setError(null);
       sreLogger.debug(`Sending ${type} message`, { id });
       
       if (type === 'private') {
@@ -358,6 +396,9 @@ export const useMessagesData = (activeTab: string) => {
       // Refresh messages would trigger the useEffect above
     } catch (error) {
       sreLogger.error(`Error sending ${type} message`, { type }, error as Error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to send message";
+      setError(errorMessage);
+      toast.error("Failed to send message. Please try again.");
       throw error;
     }
   };
@@ -381,7 +422,9 @@ export const useMessagesData = (activeTab: string) => {
     conversations: filteredConversations,
     messages,
     isLoading,
+    error,
     handleSendMessage,
-    getTabCount
+    getTabCount,
+    refetch: fetchConversationsWithRetry
   };
 };

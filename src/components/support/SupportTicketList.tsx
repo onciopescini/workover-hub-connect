@@ -7,7 +7,7 @@ import { SupportTicket } from "@/types/support";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { LifeBuoy, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { LifeBuoy, Clock, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 
 export function SupportTicketList() {
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -51,6 +51,21 @@ export function SupportTicketList() {
         return <CheckCircle className="w-4 h-4 text-gray-500" />;
       default:
         return <LifeBuoy className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case 'critical':
+        return <Badge variant="destructive" className="ml-2"><AlertTriangle className="w-3 h-3 mr-1" />Critica</Badge>;
+      case 'high':
+        return <Badge variant="default" className="ml-2 bg-orange-500">Alta</Badge>;
+      case 'normal':
+        return null; // Don't show badge for normal priority
+      case 'low':
+        return <Badge variant="outline" className="ml-2 text-gray-500">Bassa</Badge>;
+      default:
+        return null;
     }
   };
 
@@ -99,9 +114,12 @@ export function SupportTicketList() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
-                            {ticket.subject}
-                          </h4>
+                          <div className="flex items-center">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {ticket.subject}
+                            </h4>
+                            {getPriorityBadge((ticket as any).priority)}
+                          </div>
                           {getStatusBadge(ticket.status)}
                         </div>
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">

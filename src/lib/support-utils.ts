@@ -30,6 +30,7 @@ export const createSupportTicket = async (ticket: {
   subject: string;
   message: string;
   status: string;
+  priority?: string;
 }): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
@@ -44,7 +45,8 @@ export const createSupportTicket = async (ticket: {
         user_id: user.user.id,
         subject: ticket.subject,
         message: ticket.message,
-        status: ticket.status
+        status: ticket.status,
+        priority: ticket.priority || 'normal'
       });
 
     if (error) {

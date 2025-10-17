@@ -3482,6 +3482,7 @@ export type Database = {
           created_at: string | null
           id: string
           message: string
+          priority: string
           response: string | null
           status: string
           subject: string
@@ -3492,6 +3493,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message: string
+          priority?: string
           response?: string | null
           status?: string
           subject: string
@@ -3502,6 +3504,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message?: string
+          priority?: string
           response?: string | null
           status?: string
           subject?: string
@@ -3711,6 +3714,7 @@ export type Database = {
           id: string
           is_read: boolean | null
           metadata: Json | null
+          priority: string
           title: string
           type: string
           user_id: string
@@ -3721,6 +3725,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           metadata?: Json | null
+          priority?: string
           title: string
           type: string
           user_id: string
@@ -3731,6 +3736,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           metadata?: Json | null
+          priority?: string
           title?: string
           type?: string
           user_id?: string

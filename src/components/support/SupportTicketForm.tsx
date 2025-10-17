@@ -16,6 +16,7 @@ interface SupportTicketFormData {
   subject: string;
   message: string;
   category: string;
+  priority: string;
 }
 
 interface SupportTicketFormProps {
@@ -32,6 +33,13 @@ const TICKET_CATEGORIES = [
   { value: 'other', label: 'Altro' }
 ];
 
+const TICKET_PRIORITIES = [
+  { value: 'low', label: 'Bassa' },
+  { value: 'normal', label: 'Normale' },
+  { value: 'high', label: 'Alta' },
+  { value: 'critical', label: 'Critica' }
+];
+
 export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { info, error } = useLogger({ context: 'SupportTicketForm' });
@@ -40,7 +48,8 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
     defaultValues: {
       subject: '',
       message: '',
-      category: ''
+      category: '',
+      priority: 'normal'
     }
   });
 
@@ -51,7 +60,8 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
       const success = await createSupportTicket({
         subject: data.subject,
         message: data.message,
-        status: 'open'
+        status: 'open',
+        priority: data.priority
       });
 
       if (success) {
@@ -76,31 +86,59 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="category"
-              rules={{ required: "Seleziona una categoria" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona categoria..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {TICKET_CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="category"
+                rules={{ required: "Seleziona una categoria" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona categoria..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TICKET_CATEGORIES.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="priority"
+                rules={{ required: "Seleziona una priorità" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priorità</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona priorità..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TICKET_PRIORITIES.map((priority) => (
+                          <SelectItem key={priority.value} value={priority.value}>
+                            {priority.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

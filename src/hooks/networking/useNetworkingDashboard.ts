@@ -28,27 +28,24 @@ export const useNetworkingDashboard = ({ stats }: UseNetworkingDashboardProps): 
   });
 
   const processedStats = useMemo((): EnhancedNetworkingStats => {
-    // Use real data if available, fallback to provided stats
+    // Use real data if available, return minimal fallback without random data
     if (realStats) {
       return realStats;
     }
 
-    // Fallback calculations using provided stats
-    const weeklyGrowth = Math.floor(Math.random() * 20) + 5;
-    const monthlyGrowth = Math.floor(Math.random() * 50) + 10;
-    
+    // Minimal fallback - use only the provided stats without mock data
     const engagementScore = Math.min(100, Math.floor(
       (stats.messagesThisWeek * 2 + stats.profileViews) / 2
     ));
     
     const networkingScore = Math.min(100, Math.floor(
-      (stats.totalConnections * 2 + stats.connectionRate + weeklyGrowth) / 2
+      (stats.totalConnections * 2 + stats.connectionRate) / 2
     ));
 
     return {
       ...stats,
-      weeklyGrowth,
-      monthlyGrowth,
+      weeklyGrowth: 0, // No growth data available without real stats
+      monthlyGrowth: 0, // No growth data available without real stats
       engagementScore,
       networkingScore,
     };
