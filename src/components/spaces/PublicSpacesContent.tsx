@@ -163,7 +163,7 @@ export const PublicSpacesContent = ({
         />
       }
       map={
-        <div className="relative h-full w-full">
+        <div className="relative h-[500px] lg:h-[calc(100vh-112px)] w-full">
           <SpaceMap 
             spaces={spaces || []} 
             userLocation={mapCenter}

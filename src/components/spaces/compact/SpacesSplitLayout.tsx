@@ -31,9 +31,7 @@ export const SpacesSplitLayout: React.FC<SpacesSplitLayoutProps> = ({
           "min-h-[500px]",
           "relative flex-shrink-0"
         )}>
-          <div className="absolute inset-0">
-            {map}
-          </div>
+          {map}
         </div>
 
         {/* Cards Section - Independent scroll with smooth behavior */}
