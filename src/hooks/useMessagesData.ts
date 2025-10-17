@@ -7,6 +7,7 @@ import { ConversationItem } from "@/types/messaging";
 import { isValidMessageWithSender } from "@/types/strict-type-guards";
 import { sreLogger } from '@/lib/sre-logger';
 import { toast } from "sonner";
+import { offlineMessageQueue } from "@/lib/offline-queue";
 
 interface PrivateMessage {
   sender?: { first_name: string; last_name: string; profile_photo_url?: string };
@@ -398,8 +399,19 @@ export const useMessagesData = (activeTab: string) => {
       sreLogger.error(`Error sending ${type} message`, { type }, error as Error);
       const errorMessage = error instanceof Error ? error.message : "Failed to send message";
       setError(errorMessage);
-      toast.error("Failed to send message. Please try again.");
-      throw error;
+      
+      // Check if offline
+      if (!navigator.onLine || errorMessage.includes('network') || errorMessage.includes('timeout')) {
+        toast.info("Messaggio salvato. Verrà inviato quando tornerai online.");
+        offlineMessageQueue.addMessage(
+          type as 'booking' | 'private',
+          id,
+          content
+        );
+      } else {
+        toast.error("Failed to send message. Please try again.");
+        throw error;
+      }
     }
   };
 

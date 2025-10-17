@@ -2407,6 +2407,62 @@ export type Database = {
           },
         ]
       }
+      profile_views: {
+        Row: {
+          id: string
+          metadata: Json | null
+          profile_id: string
+          source: string | null
+          viewed_at: string
+          viewer_id: string | null
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          profile_id: string
+          source?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          profile_id?: string
+          source?: string | null
+          viewed_at?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           admin_notes: string | null
@@ -3707,6 +3763,60 @@ export type Database = {
           },
         ]
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          category: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          progress: number | null
+          title: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          category: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          progress?: number | null
+          title: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          progress?: number | null
+          title?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           content: string | null
@@ -4594,6 +4704,10 @@ export type Database = {
           p_space_id: string
         }
         Returns: string
+      }
+      get_profile_view_count: {
+        Args: { p_days_back?: number; p_profile_id: string }
+        Returns: number
       }
       get_public_profile: {
         Args: { profile_id_param: string }
