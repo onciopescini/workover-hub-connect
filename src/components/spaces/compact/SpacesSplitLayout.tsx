@@ -28,9 +28,9 @@ export const SpacesSplitLayout: React.FC<SpacesSplitLayoutProps> = ({
         <div className={cn(
           "w-full lg:w-[50%] xl:w-[55%]",
           "h-[500px] lg:h-full",
+          "min-h-[500px]",
           "relative flex-shrink-0"
         )}>
-
           <div className="absolute inset-0">
             {map}
           </div>

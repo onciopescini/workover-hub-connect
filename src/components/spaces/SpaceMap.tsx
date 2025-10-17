@@ -94,66 +94,90 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current || mapInitialized.current) return;
 
-    const container = mapContainer.current;
-    const containerRect = container.getBoundingClientRect();
-    
-    sreLogger.debug('Initializing Mapbox map', { 
-      hasToken: !!mapboxToken,
-      containerSize: { width: containerRect.width, height: containerRect.height }
-    });
-    
-    // Verifica dimensioni container
-    if (containerRect.width === 0 || containerRect.height === 0) {
-      sreLogger.warn('Map container has zero dimensions', { containerRect });
-      setError('Contenitore mappa non visibile');
-      return;
-    }
-    
-    try {
-      mapboxgl.accessToken = mapboxToken;
-      mapInitialized.current = true;
+    const initializeMap = () => {
+      const container = mapContainer.current;
+      if (!container) return false;
       
-      map.current = new mapboxgl.Map({
-        container: container,
-        style: 'mapbox://styles/mapbox/light-v11',
-      center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
-      zoom: stableUserLocation.current ? 10 : 6,
-      attributionControl: false,
-        renderWorldCopies: false
+      const containerRect = container.getBoundingClientRect();
+      
+      sreLogger.debug('Initializing Mapbox map', { 
+        hasToken: !!mapboxToken,
+        containerSize: { width: containerRect.width, height: containerRect.height }
       });
-
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      // Handle map events
-      map.current.on('load', () => {
-        sreLogger.debug('Map loaded successfully');
-        setMapReady(true);
-        setError(null);
+      
+      // Se container ha altezza 0, ritenta dopo un delay
+      if (containerRect.width === 0 || containerRect.height === 0) {
+        sreLogger.warn('Map container has zero dimensions, retrying...', { containerRect });
+        return false;
+      }
+      
+      try {
+        mapboxgl.accessToken = mapboxToken;
+        mapInitialized.current = true;
         
-        // Force resize after load
-        setTimeout(() => {
-          if (map.current && mapContainer.current) {
-            map.current.resize();
-            sreLogger.debug('Map resized after load');
-          }
-        }, 100);
-      });
+        map.current = new mapboxgl.Map({
+          container: container,
+          style: 'mapbox://styles/mapbox/light-v11',
+          center: stableUserLocation.current ? [stableUserLocation.current.lng, stableUserLocation.current.lat] : [12.4964, 41.9028],
+          zoom: stableUserLocation.current ? 10 : 6,
+          attributionControl: false,
+          renderWorldCopies: false
+        });
 
-      map.current.on('error', (e) => {
-        sreLogger.error('Map error', { error: e.error });
-        setError('Errore nel caricamento della mappa');
-      });
+        map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      map.current.on('click', () => {
-        // Close all popups when clicking on map
-        popups.current.forEach(popup => popup.remove());
-        popups.current = [];
-      });
+        // Handle map events
+        map.current.on('load', () => {
+          sreLogger.debug('Map loaded successfully');
+          setMapReady(true);
+          setError(null);
+          
+          // Force resize after load
+          setTimeout(() => {
+            if (map.current && mapContainer.current) {
+              map.current.resize();
+              sreLogger.debug('Map resized after load');
+            }
+          }, 100);
+        });
 
-    } catch (error) {
-      sreLogger.error('Error initializing map', {}, error as Error);
-      setError('Errore nell\'inizializzazione della mappa');
-    }
+        map.current.on('error', (e) => {
+          sreLogger.error('Map error', { error: e.error });
+          setError('Errore nel caricamento della mappa');
+        });
+
+        map.current.on('click', () => {
+          // Close all popups when clicking on map
+          popups.current.forEach(popup => popup.remove());
+          popups.current = [];
+        });
+
+        return true;
+
+      } catch (error) {
+        sreLogger.error('Error initializing map', {}, error as Error);
+        setError('Errore nell\'inizializzazione della mappa');
+        return false;
+      }
+    };
+
+    // Retry logic con max 5 tentativi
+    let retryCount = 0;
+    const maxRetries = 5;
+    
+    const tryInitialize = () => {
+      const success = initializeMap();
+      
+      if (!success && retryCount < maxRetries) {
+        retryCount++;
+        sreLogger.debug(`Map init retry ${retryCount}/${maxRetries}`);
+        setTimeout(tryInitialize, 100 * retryCount); // Backoff progressivo
+      } else if (!success) {
+        setError('Contenitore mappa non disponibile');
+      }
+    };
+
+    tryInitialize();
 
     return () => {
       sreLogger.debug('Cleaning up map');
