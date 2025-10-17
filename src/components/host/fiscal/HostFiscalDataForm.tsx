@@ -91,7 +91,7 @@ export const HostFiscalDataForm = ({
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('update-tax-details', {
+      const { data, error } = await supabase.functions.invoke('save-host-tax-details', {
         body: formData,
       });
 

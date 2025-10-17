@@ -113,3 +113,7 @@ verify_jwt = true
 
 [functions.storage-cleanup]
 verify_jwt = false
+
+[functions.save-host-tax-details]
+verify_jwt = true
+timeout = 15
