@@ -158,6 +158,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_csv_exports: {
+        Row: {
+          admin_id: string
+          export_type: string
+          exported_at: string
+          file_size_bytes: number | null
+          file_url: string | null
+          filters: Json | null
+          id: string
+          ip_address: unknown | null
+          row_count: number
+          user_agent: string | null
+        }
+        Insert: {
+          admin_id: string
+          export_type: string
+          exported_at?: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          row_count?: number
+          user_agent?: string | null
+        }
+        Update: {
+          admin_id?: string
+          export_type?: string
+          exported_at?: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          filters?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          row_count?: number
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_warnings: {
         Row: {
           admin_id: string
@@ -927,6 +966,57 @@ export type Database = {
           user_agent?: string | null
           user_id?: string | null
           withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
+      dac7_generation_queue: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_details: Json | null
+          error_message: string | null
+          host_id: string | null
+          id: string
+          max_retries: number
+          next_retry_at: string | null
+          reporting_year: number
+          retry_count: number
+          scheduled_at: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          host_id?: string | null
+          id?: string
+          max_retries?: number
+          next_retry_at?: string | null
+          reporting_year: number
+          retry_count?: number
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string | null
+          host_id?: string | null
+          id?: string
+          max_retries?: number
+          next_retry_at?: string | null
+          reporting_year?: number
+          retry_count?: number
+          scheduled_at?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1874,11 +1964,14 @@ export type Database = {
           created_at: string
           document_type: string
           expires_at: string | null
+          file_hash: string | null
           file_name: string
           file_size: number | null
+          file_size_bytes: number | null
           file_url: string
           id: string
           metadata: Json | null
+          mime_type: string | null
           rejection_reason: string | null
           updated_at: string
           user_id: string
@@ -1890,11 +1983,14 @@ export type Database = {
           created_at?: string
           document_type: string
           expires_at?: string | null
+          file_hash?: string | null
           file_name: string
           file_size?: number | null
+          file_size_bytes?: number | null
           file_url: string
           id?: string
           metadata?: Json | null
+          mime_type?: string | null
           rejection_reason?: string | null
           updated_at?: string
           user_id: string
@@ -1906,11 +2002,14 @@ export type Database = {
           created_at?: string
           document_type?: string
           expires_at?: string | null
+          file_hash?: string | null
           file_name?: string
           file_size?: number | null
+          file_size_bytes?: number | null
           file_url?: string
           id?: string
           metadata?: Json | null
+          mime_type?: string | null
           rejection_reason?: string | null
           updated_at?: string
           user_id?: string
@@ -4210,6 +4309,20 @@ export type Database = {
       }
     }
     Views: {
+      compliance_monitoring_metrics: {
+        Row: {
+          active_admins_7d: number | null
+          admin_actions_7d: number | null
+          csv_exports_24h: number | null
+          csv_rows_exported_24h: number | null
+          dac7_failed_count: number | null
+          dac7_retry_pending: number | null
+          kyc_pending_count: number | null
+          kyc_pending_overdue: number | null
+          last_refresh: string | null
+        }
+        Relationships: []
+      }
       profiles_public_safe: {
         Row: {
           bio: string | null
@@ -4733,6 +4846,10 @@ export type Database = {
           username: string
         }[]
       }
+      get_fiscal_stats_optimized: {
+        Args: { year_param?: number }
+        Returns: Json
+      }
       get_host_metrics: {
         Args: { host_id_param: string }
         Returns: Json
@@ -5135,6 +5252,10 @@ export type Database = {
       run_data_minimization_audit: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      schedule_dac7_retry: {
+        Args: { queue_id_param: string }
+        Returns: undefined
       }
       search_messages: {
         Args: { p_limit?: number; p_search_query: string; p_user_id: string }

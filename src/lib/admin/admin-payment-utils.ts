@@ -9,7 +9,12 @@ export function calculateHostAmount(amount: number, feePercentage: number = 5): 
   return amount - calculatePlatformFee(amount, feePercentage);
 }
 
+// DEPRECATED: Use exportAdminCSV from admin-csv-export.ts instead
+// This function is kept for backward compatibility but should not be used
+// as it's vulnerable to client-side tampering and lacks audit logging
 export function exportPaymentsToCSV(payments: any[]) {
+  console.warn('[DEPRECATED] exportPaymentsToCSV is deprecated. Use exportAdminCSV instead.');
+  
   const headers = [
     'ID Pagamento',
     'Data',
