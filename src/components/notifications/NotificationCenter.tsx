@@ -1,23 +1,25 @@
 
-import { useState } from "react";
-import { Bell, Check, X, MessageSquare, Calendar, Users, Ticket, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useNotifications } from "@/hooks/useNotifications";
-import { markNotificationAsRead, markAllNotificationsAsRead } from "@/lib/notification-utils";
-import { formatDistanceToNow } from "date-fns";
-import { it } from "date-fns/locale";
-import { UserNotification } from "@/types/notification";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useState } from 'react';
+import { Bell, Check, X, MessageSquare, Calendar, Users, Ticket, Heart, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useNotifications } from '@/hooks/useNotifications';
+import { markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/notification-utils';
+import { formatDistanceToNow } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { UserNotification } from '@/types/notification';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { NotificationPreferencesDialog } from './NotificationPreferencesDialog';
 
 export function NotificationCenter() {
   const { notifications, counts, isLoading, markAsRead, markAllAsRead } = useNotifications();
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const navigate = useNavigate();
 
   const getNotificationIcon = (type: string) => {
@@ -127,6 +129,13 @@ export function NotificationCenter() {
               Segna tutto
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPreferencesOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
         
         {/* Filtri per tipo */}
@@ -244,6 +253,10 @@ export function NotificationCenter() {
           )}
         </ScrollArea>
       </CardContent>
+      <NotificationPreferencesDialog 
+        open={preferencesOpen}
+        onOpenChange={setPreferencesOpen}
+      />
     </Card>
   );
 }

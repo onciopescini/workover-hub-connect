@@ -6,6 +6,7 @@ import { AppSidebar } from './AppSidebar';
 import { Footer } from './Footer';
 import { CookieConsentBanner } from '@/components/gdpr/CookieConsentBanner';
 import OnboardingBanner from '@/components/auth/OnboardingBanner';
+import { CriticalNotificationsBanner } from '@/components/notifications/CriticalNotificationsBanner';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -19,6 +20,7 @@ export function MainLayout() {
         {authState.isAuthenticated && <AppSidebar />}
         
         <div className="flex-1 flex flex-col w-full">
+          {authState.isAuthenticated && <CriticalNotificationsBanner />}
           <OptimizedUnifiedHeader />
           <OnboardingBanner />
           

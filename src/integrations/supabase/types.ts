@@ -2141,6 +2141,51 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          notification_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -3536,10 +3581,14 @@ export type Database = {
       support_tickets: {
         Row: {
           created_at: string | null
+          first_response_at: string | null
           id: string
           message: string
           priority: string
+          resolution_deadline: string | null
           response: string | null
+          response_deadline: string | null
+          sla_status: string | null
           status: string
           subject: string
           updated_at: string | null
@@ -3547,10 +3596,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          first_response_at?: string | null
           id?: string
           message: string
           priority?: string
+          resolution_deadline?: string | null
           response?: string | null
+          response_deadline?: string | null
+          sla_status?: string | null
           status?: string
           subject: string
           updated_at?: string | null
@@ -3558,10 +3611,14 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          first_response_at?: string | null
           id?: string
           message?: string
           priority?: string
+          resolution_deadline?: string | null
           response?: string | null
+          response_deadline?: string | null
+          sla_status?: string | null
           status?: string
           subject?: string
           updated_at?: string | null
@@ -5067,6 +5124,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      search_messages: {
+        Args: { p_limit?: number; p_search_query: string; p_user_id: string }
+        Returns: {
+          content: string
+          conversation_id: string
+          conversation_type: string
+          created_at: string
+          message_id: string
+          other_user_name: string
+          relevance: number
+          sender_id: string
+          space_title: string
+        }[]
+      }
+      should_send_notification: {
+        Args: { p_notification_type: string; p_user_id: string }
+        Returns: boolean
+      }
       suspend_space_with_bookings: {
         Args: { admin_id: string; space_id: string; suspension_reason: string }
         Returns: Json
@@ -5093,6 +5168,10 @@ export type Database = {
           status_param: string
         }
         Returns: boolean
+      }
+      update_ticket_sla_status: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       validate_and_reserve_multi_slots: {
         Args: {

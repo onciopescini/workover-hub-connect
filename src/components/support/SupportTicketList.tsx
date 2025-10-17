@@ -69,6 +69,40 @@ export function SupportTicketList() {
     }
   };
 
+  const getSLABadge = (ticket: any) => {
+    if (!ticket.sla_status || ticket.status === 'resolved' || ticket.status === 'closed') return null;
+    
+    switch (ticket.sla_status) {
+      case 'breached':
+        return <Badge variant="destructive" className="ml-2">SLA Violato</Badge>;
+      case 'at_risk':
+        return <Badge variant="default" className="ml-2 bg-yellow-500">SLA a Rischio</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const getDeadlineInfo = (ticket: any) => {
+    if (ticket.status === 'resolved' || ticket.status === 'closed') return null;
+    
+    const deadline = ticket.first_response_at 
+      ? ticket.resolution_deadline 
+      : ticket.response_deadline;
+    
+    if (!deadline) return null;
+
+    const deadlineDate = new Date(deadline);
+    const isOverdue = deadlineDate < new Date();
+    
+    return (
+      <div className={`text-xs mt-1 ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
+        {isOverdue ? '⚠️ ' : '⏰ '}
+        {ticket.first_response_at ? 'Risoluzione entro: ' : 'Risposta entro: '}
+        {formatDistanceToNow(deadlineDate, { addSuffix: true, locale: it })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -114,14 +148,16 @@ export function SupportTicketList() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center">
+                          <div className="flex items-center flex-wrap gap-1">
                             <h4 className="text-sm font-medium text-gray-900 truncate">
                               {ticket.subject}
                             </h4>
                             {getPriorityBadge((ticket as any).priority)}
+                            {getSLABadge(ticket as any)}
                           </div>
                           {getStatusBadge(ticket.status)}
                         </div>
+                        {getDeadlineInfo(ticket as any)}
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                           {ticket.message}
                         </p>

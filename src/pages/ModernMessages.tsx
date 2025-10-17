@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { MessagesPageHeader } from "@/components/messaging/MessagesPageHeader";
@@ -9,6 +9,8 @@ import { useMessagesData } from "@/hooks/useMessagesData";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { MessagesUnauthenticated } from "@/components/messaging/MessagesUnauthenticated";
 import { ConversationSearchBar } from "@/components/messaging/ConversationSearchBar";
+import { useServerMessageSearch } from "@/hooks/useServerMessageSearch";
+import { useDebouncedValue } from "@/hooks/useDebounce";
 
 export default function ModernMessages() {
   const [activeTab, setActiveTab] = useState<'all' | 'bookings' | 'private'>('all');
@@ -16,6 +18,8 @@ export default function ModernMessages() {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { authState } = useAuth();
+  const { search, results, isSearching } = useServerMessageSearch();
+  const debouncedSearch = useDebouncedValue(searchQuery, 500);
 
   const {
     selectedConversationId,
@@ -27,17 +31,29 @@ export default function ModernMessages() {
     getTabCount
   } = useMessagesData(activeTab);
 
+  // Trigger server-side search when debounced query changes
+  useEffect(() => {
+    if (debouncedSearch.trim().length >= 3) {
+      search(debouncedSearch);
+    }
+  }, [debouncedSearch, search]);
+
   if (!authState.isAuthenticated) {
     return <MessagesUnauthenticated />;
   }
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
-  const filteredConversations = conversations.filter(conv => 
-    conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.subtitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Use server-side search results if available, otherwise client-side filter
+  const filteredConversations = debouncedSearch.trim().length >= 3 && results.length > 0
+    ? conversations.filter(conv => 
+        results.some(r => r.conversation_id === conv.id)
+      )
+    : conversations.filter(conv => 
+        conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.subtitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conv.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   return (
     <SidebarProvider defaultOpen={true}>
