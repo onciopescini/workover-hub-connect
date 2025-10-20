@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFiscalDashboard } from "@/hooks/fiscal/useFiscalDashboard";
 import { useDAC7Reports } from "@/hooks/fiscal/useDAC7Reports";
 import { DAC7ReportsTable } from "./DAC7ReportsTable";
+import { AdminFiscalReconciliation } from "./AdminFiscalReconciliation";
 import { FiscalStatusBadge } from "@/components/fiscal/FiscalStatusBadge";
 import { Euro, FileText, TrendingUp, Users, Download } from "lucide-react";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
@@ -160,12 +161,17 @@ export const FiscalManagementContainer = () => {
       </Card>
 
       {/* Reports Table */}
-      <Tabs defaultValue="all" className="space-y-4">
+      <Tabs defaultValue="reconciliation" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="all">Tutti i Report</TabsTrigger>
+          <TabsTrigger value="reconciliation">Riconciliazione</TabsTrigger>
+          <TabsTrigger value="all">Report DAC7</TabsTrigger>
           <TabsTrigger value="threshold">Sopra Soglia</TabsTrigger>
           <TabsTrigger value="submitted">Inviati</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="reconciliation" className="space-y-4">
+          <AdminFiscalReconciliation />
+        </TabsContent>
 
         <TabsContent value="all" className="space-y-4">
           <DAC7ReportsTable reports={reports || []} isLoading={isLoadingReports} />
