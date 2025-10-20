@@ -109,6 +109,28 @@ const Terms = () => {
                 <li>I pagamenti sono elaborati tramite Stripe</li>
                 <li>I rimborsi sono soggetti alle politiche di cancellazione degli host</li>
               </ul>
+              
+              <h4 className="font-semibold mt-6">5.5 Modalità Test Beta</h4>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4">
+                <p className="text-sm font-semibold text-amber-900 mb-2">
+                  🧪 Servizio in Beta Testing
+                </p>
+                <p className="text-sm text-amber-800 mb-3">
+                  Durante la fase beta, i pagamenti utilizzano <strong>Stripe Test Mode</strong>. 
+                  Questo comporta le seguenti condizioni speciali:
+                </p>
+                <ul className="text-sm text-amber-800 space-y-1">
+                  <li><strong>Nessun addebito reale:</strong> Tutte le transazioni sono simulate e non comportano movimenti di denaro reale</li>
+                  <li><strong>Carte di test:</strong> È necessario utilizzare carte di credito di test fornite da Stripe (es. 4242 4242 4242 4242)</li>
+                  <li><strong>Dati di test:</strong> Le prenotazioni e transazioni create durante la beta possono essere cancellate senza preavviso</li>
+                  <li><strong>Valore non vincolante:</strong> Le transazioni test non hanno valore legale o fiscale</li>
+                  <li><strong>Transizione a Live Mode:</strong> Il passaggio a pagamenti reali sarà comunicato con almeno 7 giorni di preavviso via email</li>
+                </ul>
+                <p className="text-sm text-amber-800 mt-3">
+                  <strong>Nota:</strong> Workover si riserva il diritto di modificare, sospendere o interrompere 
+                  il servizio durante la fase beta senza responsabilità per eventuali disservizi.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -142,6 +164,18 @@ const Terms = () => {
                 <li>Il comportamento degli utenti</li>
                 <li>Danni diretti o indiretti derivanti dall'uso del servizio</li>
                 <li>Interruzioni del servizio o problemi tecnici</li>
+              </ul>
+              
+              <h4 className="font-semibold mt-6">7.5 Disclaimer Fase Beta</h4>
+              <p className="text-sm text-gray-700 mt-2">
+                Durante la fase beta, il servizio è fornito <strong>"as-is"</strong> senza garanzie 
+                di alcun tipo, espresse o implicite. Workover non garantisce:
+              </p>
+              <ul className="text-sm text-gray-700">
+                <li>Continuità del servizio o assenza di interruzioni</li>
+                <li>Accuratezza o affidabilità dei dati test</li>
+                <li>Compatibilità con tutte le versioni dei browser o dispositivi</li>
+                <li>Preservazione dei dati al termine della fase beta</li>
               </ul>
             </CardContent>
           </Card>
