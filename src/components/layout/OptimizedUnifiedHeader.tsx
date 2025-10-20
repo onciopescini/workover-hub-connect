@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube, CheckCircle } from 'lucide-react';
 import { useLogger } from '@/hooks/useLogger';
@@ -17,6 +18,7 @@ import { NotificationIcon } from '@/components/notifications/NotificationIcon';
 export const OptimizedUnifiedHeader = () => {
   const { error } = useLogger({ context: 'OptimizedUnifiedHeader' });
   const { authState, signOut } = useAuth();
+  const { isAdmin, isHost } = useRoleAccess();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,17 +40,15 @@ export const OptimizedUnifiedHeader = () => {
       { name: 'Prenotazioni', href: '/bookings', icon: Calendar },
       { name: 'Messaggi', href: '/messages', icon: MessageSquare },
     ];
-
-    const role = authState.profile?.role;
     
-    if (role === 'host') {
+    if (isHost) {
       return [
         ...baseItems,
         { name: 'Dashboard Host', href: '/host/dashboard', icon: Home },
       ];
     }
     
-    if (role === 'admin') {
+    if (isAdmin) {
       return [
         ...baseItems,
         { name: 'Admin Panel', href: '/admin/users', icon: Settings },
@@ -58,7 +58,7 @@ export const OptimizedUnifiedHeader = () => {
     }
     
     return baseItems;
-  }, [authState.isAuthenticated, authState.profile?.role]);
+  }, [authState.isAuthenticated, isAdmin, isHost]);
 
   // Memoized user initials
   const userInitials = useMemo(() => {
@@ -86,11 +86,10 @@ export const OptimizedUnifiedHeader = () => {
       error('Error during sign out from header', signOutError as Error, { 
         operation: 'header_sign_out',
         userId: authState.profile?.id,
-        userRole: authState.profile?.role,
         currentPath: location.pathname
       });
     }
-  }, [signOut, error, authState.profile, location.pathname]);
+  }, [signOut, error, authState.profile?.id, location.pathname]);
 
   // Ottimizzato mobile menu toggle
   const toggleMobileMenu = useCallback(() => {
@@ -173,7 +172,7 @@ export const OptimizedUnifiedHeader = () => {
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+                    {authState.profile && !authState.profile.onboarding_completed && !isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link to="/onboarding" className="flex items-center">
                           <CheckCircle className="mr-2 h-4 w-4" />
@@ -193,7 +192,7 @@ export const OptimizedUnifiedHeader = () => {
                         <span>Il mio profilo</span>
                       </Link>
                     </DropdownMenuItem>
-                    {authState.profile.role === 'admin' && (
+                    {isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link to="/networking-test-suite" className="flex items-center">
                           <TestTube className="mr-2 h-4 w-4" />

@@ -6,10 +6,12 @@ import { TypewriterText } from '@/components/ui/TypewriterText';
 import { SearchFilters } from '@/components/landing/SearchFilters';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export function AnimatedHeroSection() {
   const navigate = useNavigate();
   const { authState } = useAuth();
+  const { isAdmin } = useRoleAccess();
 
   const dynamicWords = ['flessibile', 'smart', 'collaborativo', 'innovativo'];
 
@@ -36,7 +38,7 @@ export function AnimatedHeroSection() {
           {/* Enhanced Search Filters */}
           <SearchFilters />
           
-          {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && authState.profile.role !== 'admin' && (
+          {authState.isAuthenticated && authState.profile && !authState.profile.onboarding_completed && !isAdmin && (
             <div className="flex justify-center mt-6">
               <Button
                 size="lg"
