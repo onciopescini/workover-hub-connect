@@ -20,7 +20,7 @@ const About = () => {
         case 'host':
           navigate('/host');
           break;
-        case 'coworker':
+        case 'user':
         default:
           navigate('/dashboard');
           break;

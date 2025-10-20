@@ -43,7 +43,7 @@ export const MessagesSettingsDialog = ({ open, onOpenChange }: MessagesSettingsD
 
       if (error) throw error;
       
-      setIsCoworker(data.role === 'coworker');
+      setIsCoworker(data.role === 'user');
       setNetworkingNotifications(data.networking_enabled || false);
     } catch (error) {
       sreLogger.error('Error fetching notification settings', { userId: authState.user?.id }, error as Error);

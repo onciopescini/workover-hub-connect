@@ -40,8 +40,8 @@ export const useAuthLogic = () => {
       }
 
       return data.map(r => r.role as UserRole);
-    } catch (error) {
-      logError('Error fetching user roles', {}, error as Error);
+    } catch (err) {
+      debug('Error fetching user roles', { error: err });
       return [];
     }
   }, [debug, logError]);
@@ -119,7 +119,6 @@ export const useAuthLogic = () => {
                     id: session.user.id,
                     first_name: firstName,
                     last_name: lastName,
-                    role: 'coworker',
                     onboarding_completed: false,
                   })
                   .select()

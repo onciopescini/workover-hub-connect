@@ -178,7 +178,7 @@ export function AppLayout({
                     Supporto
                   </button>
                 </li>
-                {primaryRole === "coworker" && (
+                {primaryRole === "user" && (
                   <li>
                     <button 
                       onClick={() => navigate("/networking")}

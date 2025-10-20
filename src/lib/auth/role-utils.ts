@@ -8,8 +8,7 @@ export const getPrimaryRole = (roles: UserRole[]): UserRole => {
   if (roles.includes('admin')) return 'admin';
   if (roles.includes('host')) return 'host';
   if (roles.includes('moderator')) return 'moderator';
-  if (roles.includes('coworker')) return 'coworker';
-  return 'user';
+  return 'user'; // Default fallback
 };
 
 /**

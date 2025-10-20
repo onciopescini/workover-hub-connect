@@ -82,7 +82,8 @@ const AuthCallback = () => {
               case 'host':
                 navigate('/host/dashboard', { replace: true });
                 break;
-              case 'coworker':
+              case 'user':
+              case 'moderator':
               default:
                 navigate('/spaces', { replace: true });
                 break;

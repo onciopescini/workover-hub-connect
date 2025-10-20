@@ -3,7 +3,8 @@ import type { AuthState, Profile } from '@/types/auth';
 
 export const createAuthState = (
   session: Session | null, 
-  profile: Profile | null = null
+  profile: Profile | null = null,
+  roles: string[] = []
 ): AuthState => {
   const user = session?.user || null;
   const isAuthenticated = !!session;
@@ -12,6 +13,7 @@ export const createAuthState = (
     user,
     session,
     profile,
+    roles: roles as any[],
     isLoading: false,
     isAuthenticated,
   };

@@ -154,7 +154,7 @@ export const useBookingsQuery = () => {
   
   return useQuery({
     queryKey: bookingKeys.list(authState.user?.id || ''),
-    queryFn: () => fetchBookings(authState.user?.id || '', authState.profile?.role),
+    queryFn: () => fetchBookings(authState.user?.id || '', authState.profile?.role || undefined),
     enabled: !!authState.user?.id,
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,

@@ -3,7 +3,7 @@ import React from 'react';
 import SpaceForm from "@/components/spaces/SpaceForm";
 import { SpaceCreationHeader } from "@/components/spaces/SpaceCreationHeader";
 import { SpaceCreationLoading } from "@/components/spaces/SpaceCreationLoading";
-import { useSpaceCreation } from "@/hooks/useSpaceCreation";
+import useSpaceCreation from "@/hooks/useSpaceCreation";
 import { sreLogger } from "@/lib/sre-logger";
 
 const SpaceNew = () => {
