@@ -1,6 +1,7 @@
 
 import React, { lazy, Suspense } from 'react';
 import { AnimatedHeroSection } from '@/components/landing/AnimatedHeroSection';
+import { BetaNotice } from '@/components/beta/BetaNotice';
 
 // Lazy load below-the-fold sections for better LCP
 const InteractiveFeaturesSection = lazy(() => 
@@ -19,6 +20,9 @@ const InnovativeCTASection = lazy(() =>
 const Index = () => {
   return (
     <>
+      <div className="container mx-auto px-4 pt-6">
+        <BetaNotice />
+      </div>
       <AnimatedHeroSection />
       <Suspense fallback={<div className="min-h-screen" />}>
         <InteractiveFeaturesSection />

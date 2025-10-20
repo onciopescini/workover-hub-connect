@@ -33,7 +33,8 @@ export function Footer() {
             <h4 className="text-white font-semibold mb-4">Legale</h4>
             <ul className="space-y-2 text-gray-400">
               <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Termini di servizio</button></li>
-              <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/privacy-policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Centro Privacy</button></li>
               <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Supporto</button></li>
             </ul>
           </div>

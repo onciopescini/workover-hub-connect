@@ -27,6 +27,8 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import NotFound from "@/pages/NotFound";
 
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+
 // Lazy loading per pagine non critiche
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Onboarding = lazy(() => import("@/pages/Onboarding"));
@@ -137,6 +139,11 @@ export const AppRoutes = () => {
         <Route path="contact" element={<Contact />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
+        <Route path="privacy-policy" element={
+          <LazyWrapper>
+            <PrivacyPolicy />
+          </LazyWrapper>
+        } />
         <Route path="privacy/export-request" element={
           <AuthProtected>
             <LazyWrapper>

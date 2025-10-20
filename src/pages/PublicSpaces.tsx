@@ -5,6 +5,7 @@ import { PublicSpacesContent } from '@/components/spaces/PublicSpacesContent';
 import { usePublicSpacesLogic } from '@/hooks/usePublicSpacesLogic';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { SpaceFilters } from '@/types/space-filters';
+import { BetaNotice } from '@/components/beta/BetaNotice';
 
 /**
  * Public Spaces Page - Refactored for better maintainability
@@ -57,6 +58,9 @@ const PublicSpaces = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 pt-6">
+        <BetaNotice />
+      </div>
       <PublicSpacesContent
         filters={filters}
         spaces={spaces || []}
