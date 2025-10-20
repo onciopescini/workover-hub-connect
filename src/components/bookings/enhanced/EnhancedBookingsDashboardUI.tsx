@@ -15,7 +15,7 @@ import { RealtimeBookingsSync } from '@/components/bookings/realtime/RealtimeBoo
 import { ReportSubscriptionToggle } from '@/components/host/reports/ReportSubscriptionToggle';
 import { BookingsCalendarView } from '../calendar/BookingsCalendarView';
 import { HostBookingsCalendarView } from '../calendar/HostBookingsCalendarView';
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { CompactBookingsFilters } from '../compact/CompactBookingsFilters';
 import { BookingsCompactGrid } from '../compact/BookingsCompactGrid';
 import { BookingsTableView } from '../table/BookingsTableView';
@@ -50,8 +50,8 @@ export function EnhancedBookingsDashboardUI({
 }: EnhancedBookingsDashboardUIProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'calendar'>('grid');
-  const { authState } = useAuth();
-  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+  const { hasAnyRole } = useRoleAccess();
+  const isHost = hasAnyRole(['host', 'admin']);
 
   const { confirmMultiple, cancelMultiple, groupMessage, loading: bulkLoading } = useBulkBookingActions({
     onAfterAll: refetch,

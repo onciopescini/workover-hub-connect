@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 interface BookingsDashboardHeaderProps {
   totalBookings: number;
@@ -20,7 +21,8 @@ export const BookingsDashboardHeader = ({
   totalRevenue
 }: BookingsDashboardHeaderProps) => {
   const { authState } = useAuth();
-  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+  const { hasAnyRole } = useRoleAccess();
+  const isHost = hasAnyRole(['host', 'admin']);
   const userName = `${authState.profile?.first_name || ''} ${authState.profile?.last_name || ''}`.trim() || 'Utente';
 
   return (

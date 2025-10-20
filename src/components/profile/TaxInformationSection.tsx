@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Download, Upload, AlertCircle, CheckCircle, Euro } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLogger } from "@/hooks/useLogger";
@@ -75,7 +76,9 @@ export const TaxInformationSection = () => {
     }
   };
 
-  const isHost = authState.profile?.role === 'host';
+  // Only show to hosts - use useRoleAccess hook
+  const { hasRole } = useRoleAccess();
+  const isHost = hasRole('host');
 
   if (!isHost) {
     return null;

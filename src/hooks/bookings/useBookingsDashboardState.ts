@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { useLogger } from "@/hooks/useLogger";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
 import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
@@ -10,7 +10,7 @@ import { BookingsActions } from '@/types/bookings/bookings-actions.types';
 import { UserRole } from '@/types/bookings/bookings-ui.types';
 
 export const useBookingsDashboardState = () => {
-  const { authState } = useAuth();
+  const { hasAnyRole } = useRoleAccess();
   const { debug, error: logError } = useLogger({ context: 'useBookingsDashboardState' });
   const [filters, setFilters] = useState<BookingFilter>({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,8 +21,7 @@ export const useBookingsDashboardState = () => {
   const [messageSpaceTitle, setMessageSpaceTitle] = useState("");
 
   // Determine user role and fetch appropriate bookings
-  const userRole = authState.profile?.role;
-  const isHost = userRole === 'host' || userRole === 'admin';
+  const isHost = hasAnyRole(['host', 'admin']);
 
   // Use role-specific hooks
   const coworkerQuery = useCoworkerBookings(filters);

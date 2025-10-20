@@ -1,13 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { useFiscalMode } from '@/contexts/FiscalModeContext';
-import { useAuth } from '@/hooks/auth/useAuth';
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 export const FiscalModeIndicator = () => {
   const { isMockMode } = useFiscalMode();
-  const { authState } = useAuth();
+  const { isAdmin } = useRoleAccess();
 
   // Only show to admins
-  if (authState.profile?.role !== 'admin') return null;
+  if (!isAdmin) return null;
   
   if (!isMockMode) return null;
 

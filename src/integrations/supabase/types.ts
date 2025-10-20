@@ -2843,7 +2843,6 @@ export type Database = {
           profile_photo_url: string | null
           restriction_reason: string | null
           return_url: string | null
-          role: Database["public"]["Enums"]["app_role"] | null
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
@@ -2910,7 +2909,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role?: Database["public"]["Enums"]["app_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -2977,7 +2975,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role?: Database["public"]["Enums"]["app_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null

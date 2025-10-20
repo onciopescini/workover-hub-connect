@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, CheckCircle, XCircle, Euro } from 'lucide-react';
-import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 interface BookingStats {
   total: number;
@@ -17,8 +17,8 @@ interface BookingsDashboardStatsProps {
 }
 
 export const BookingsDashboardStats = ({ stats }: BookingsDashboardStatsProps) => {
-  const { authState } = useAuth();
-  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+  const { hasAnyRole } = useRoleAccess();
+  const isHost = hasAnyRole(['host', 'admin']);
   
   // Role-specific labels
   const revenueLabel = isHost ? 'Fatturato' : 'Speso';

@@ -26,7 +26,6 @@ const SpacesManage = () => {
     sreLogger.debug("SpacesManage: Current auth state", {
       userId: authState.user?.id,
       userEmail: authState.user?.email,
-      userRole: authState.profile?.role,
       isAuthenticated: authState.isAuthenticated,
       isLoading: authState.isLoading,
       showDeleted,
@@ -279,11 +278,10 @@ const SpacesManage = () => {
                 </p>
 
                 {/* Debug info per sviluppo */}
-                {import.meta.env.DEV && (
+              {import.meta.env.DEV && (
                   <div className="text-sm text-gray-500 mb-6 bg-gray-50 p-4 rounded border">
                     <p className="font-medium mb-2">Debug Info:</p>
                     <p>User ID: {authState.user?.id}</p>
-                    <p>Role: {authState.profile?.role}</p>
                     <p>Email: {authState.user?.email}</p>
                   </div>
                 )}

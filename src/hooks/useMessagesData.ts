@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TIME_CONSTANTS } from '@/constants';
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { supabase } from "@/integrations/supabase/client";
 import { getUserPrivateChats, getPrivateMessages, sendPrivateMessage, sendMessage, fetchMessages as fetchBookingMessages } from "@/lib/messaging-utils";
 import { ConversationItem } from "@/types/messaging";
@@ -17,6 +18,7 @@ interface PrivateMessage {
 
 export const useMessagesData = (activeTab: string) => {
   const { authState } = useAuth();
+  const { hasAnyRole } = useRoleAccess();
   const [selectedConversationId, setSelectedConversationId] = useState<string>("");
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [messages, setMessages] = useState<Array<Record<string, unknown>>>([]);
@@ -24,7 +26,7 @@ export const useMessagesData = (activeTab: string) => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  const isHost = authState.profile?.role === 'host' || authState.profile?.role === 'admin';
+  const isHost = hasAnyRole(['host', 'admin']);
 
   // Fetch conversations with retry logic
   const fetchConversationsWithRetry = useCallback(async () => {
