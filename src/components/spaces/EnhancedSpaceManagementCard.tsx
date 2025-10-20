@@ -1,10 +1,9 @@
-
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Space } from '@/types/space';
-import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw, BarChart3 } from 'lucide-react';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Space } from "@/types/space";
+import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 
 interface EnhancedSpaceManagementCardProps {
@@ -26,7 +25,7 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
   onRestore,
   onRecap,
   bookingsCount,
-  monthlyRevenue
+  monthlyRevenue,
 }) => {
   const { authState } = useAuth();
   const getStatusBadge = () => {
@@ -42,26 +41,20 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
     return <Badge variant="secondary">Bozza</Badge>;
   };
 
-  const isAdmin = authState.profile?.role === 'admin';
+  const { isAdmin } = useModeratorCheck();
   const isDeleted = !!space.deleted_at;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video relative overflow-hidden">
         {space.photos && space.photos.length > 0 ? (
-          <img
-            src={space.photos[0]}
-            alt={space.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={space.photos[0]} alt={space.title} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
             <span className="text-gray-400">Nessuna foto</span>
           </div>
         )}
-        <div className="absolute top-2 right-2">
-          {getStatusBadge()}
-        </div>
+        <div className="absolute top-2 right-2">{getStatusBadge()}</div>
       </div>
 
       <CardContent className="p-4">

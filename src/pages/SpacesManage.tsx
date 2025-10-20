@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import { Space } from "@/types/space";
 import { Plus, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SpaceManagementHeader } from "@/components/spaces/SpaceManagementHeader";
 import { EnhancedSpaceManagementCard } from "@/components/spaces/EnhancedSpaceManagementCard";
-import { sreLogger } from '@/lib/sre-logger';
+import { sreLogger } from "@/lib/sre-logger";
 
 const SpacesManage = () => {
   const { authState } = useAuth();
@@ -19,76 +19,81 @@ const SpacesManage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const isAdmin = authState.profile?.role === 'admin';
+  const { isAdmin } = useModeratorCheck();
 
   const fetchSpaces = async () => {
-    sreLogger.debug('SpacesManage: Current auth state', {
+    sreLogger.debug("SpacesManage: Current auth state", {
       userId: authState.user?.id,
       userEmail: authState.user?.email,
       userRole: authState.profile?.role,
       isAuthenticated: authState.isAuthenticated,
       isLoading: authState.isLoading,
-      showDeleted
+      showDeleted,
     });
 
     if (!authState.user?.id) {
-      sreLogger.debug('No user ID available, waiting', { component: 'SpacesManage' });
+      sreLogger.debug("No user ID available, waiting", { component: "SpacesManage" });
       return;
     }
 
     try {
-      sreLogger.debug('Fetching spaces for user', { userId: authState.user.id, component: 'SpacesManage' });
-      
+      sreLogger.debug("Fetching spaces for user", { userId: authState.user.id, component: "SpacesManage" });
+
       const { supabase } = await import("@/integrations/supabase/client");
-      
-      let query = supabase
-        .from('spaces')
-        .select('*')
-        .eq('host_id', authState.user.id);
-      
+
+      let query = supabase.from("spaces").select("*").eq("host_id", authState.user.id);
+
       // Filter by deletion status based on admin toggle
       if (isAdmin && showDeleted) {
         // Admin viewing deleted spaces only
-        query = query.not('deleted_at', 'is', null);
+        query = query.not("deleted_at", "is", null);
       } else if (isAdmin && !showDeleted) {
-        // Admin viewing non-deleted spaces only  
-        query = query.is('deleted_at', null);
+        // Admin viewing non-deleted spaces only
+        query = query.is("deleted_at", null);
       } else {
         // Regular users - only non-deleted spaces
-        query = query.is('deleted_at', null);
+        query = query.is("deleted_at", null);
       }
-      
-      query = query.order('created_at', { ascending: false });
-      
+
+      query = query.order("created_at", { ascending: false });
+
       const { data: spacesData, error } = await query;
-      
+
       if (error) {
-        sreLogger.error("Error fetching spaces", { userId: authState.user.id, component: 'SpacesManage' }, error as Error);
+        sreLogger.error(
+          "Error fetching spaces",
+          { userId: authState.user.id, component: "SpacesManage" },
+          error as Error,
+        );
         toast.error("Errore nel caricamento degli spazi.");
         return;
       }
-      
-      sreLogger.debug('Spaces fetched successfully', { 
-        count: spacesData?.length || 0, 
+
+      sreLogger.debug("Spaces fetched successfully", {
+        count: spacesData?.length || 0,
         userId: authState.user.id,
-        component: 'SpacesManage'
+        component: "SpacesManage",
       });
-      
-      sreLogger.debug('Spaces details', { 
-        spaces: spacesData?.map(space => ({
+
+      sreLogger.debug("Spaces details", {
+        spaces: spacesData?.map((space) => ({
           id: space.id,
           title: space.title,
           host_id: space.host_id,
           published: space.published,
           is_suspended: space.is_suspended,
-          deleted_at: space.deleted_at
+          deleted_at: space.deleted_at,
         })),
-        component: 'SpacesManage'
+        component: "SpacesManage",
       });
-      
+
       setSpaces(spacesData || []);
     } catch (error) {
-      sreLogger.error("Error fetching spaces", { userId: authState.user.id, component: 'SpacesManage' }, error as Error);
+      sreLogger.error(
+        "Error fetching spaces",
+        { userId: authState.user.id, component: "SpacesManage" },
+        error as Error,
+      );
       toast.error("Errore nel caricamento degli spazi.");
     }
   };
@@ -115,12 +120,12 @@ const SpacesManage = () => {
   };
 
   const handleCreateSpace = () => {
-    sreLogger.debug('Navigating to space creation', { component: 'SpacesManage' });
-    navigate('/host/space/new');
+    sreLogger.debug("Navigating to space creation", { component: "SpacesManage" });
+    navigate("/host/space/new");
   };
 
   const handleEditSpace = (spaceId: string) => {
-    sreLogger.debug('Navigating to edit space', { spaceId, component: 'SpacesManage' });
+    sreLogger.debug("Navigating to edit space", { spaceId, component: "SpacesManage" });
     navigate(`/host/space/edit/${spaceId}`);
   };
 
@@ -130,23 +135,31 @@ const SpacesManage = () => {
 
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      
+
       // Use soft delete instead of hard delete
       const { error } = await supabase
-        .from('spaces')
+        .from("spaces")
         .update({ deleted_at: new Date().toISOString() })
-        .eq('id', spaceId)
-        .eq('host_id', authState.user?.id ?? '');
+        .eq("id", spaceId)
+        .eq("host_id", authState.user?.id ?? "");
 
       if (error) {
-        sreLogger.error("Error soft-deleting space", { spaceId, userId: authState.user?.id, component: 'SpacesManage' }, error as Error);
+        sreLogger.error(
+          "Error soft-deleting space",
+          { spaceId, userId: authState.user?.id, component: "SpacesManage" },
+          error as Error,
+        );
         toast.error("Errore nell'eliminazione dello spazio.");
       } else {
-        setSpaces(spaces.filter(space => space.id !== spaceId));
+        setSpaces(spaces.filter((space) => space.id !== spaceId));
         toast.success("Spazio eliminato con successo.");
       }
     } catch (error) {
-      sreLogger.error("Error soft-deleting space", { spaceId, userId: authState.user?.id, component: 'SpacesManage' }, error as Error);
+      sreLogger.error(
+        "Error soft-deleting space",
+        { spaceId, userId: authState.user?.id, component: "SpacesManage" },
+        error as Error,
+      );
       toast.error("Errore nell'eliminazione dello spazio.");
     }
   };
@@ -157,20 +170,20 @@ const SpacesManage = () => {
 
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      
-      const { data, error } = await supabase.functions.invoke('restore-space', {
-        body: { spaceId }
+
+      const { data, error } = await supabase.functions.invoke("restore-space", {
+        body: { spaceId },
       });
 
       if (error) {
-        sreLogger.error("Error restoring space", { spaceId, component: 'SpacesManage' }, error as Error);
+        sreLogger.error("Error restoring space", { spaceId, component: "SpacesManage" }, error as Error);
         toast.error("Errore nel ripristino dello spazio.");
       } else {
         await fetchSpaces(); // Refresh the spaces list
         toast.success("Spazio ripristinato con successo.");
       }
     } catch (error) {
-      sreLogger.error("Error restoring space", { spaceId, component: 'SpacesManage' }, error as Error);
+      sreLogger.error("Error restoring space", { spaceId, component: "SpacesManage" }, error as Error);
       toast.error("Errore nel ripristino dello spazio.");
     }
   };
@@ -190,9 +203,7 @@ const SpacesManage = () => {
           <Card>
             <CardContent className="p-8 text-center">
               <h2 className="text-xl font-semibold mb-2">Autenticazione Richiesta</h2>
-              <p className="text-gray-600">
-                Effettua il login per accedere alla gestione degli spazi.
-              </p>
+              <p className="text-gray-600">Effettua il login per accedere alla gestione degli spazi.</p>
             </CardContent>
           </Card>
         </div>
@@ -200,7 +211,7 @@ const SpacesManage = () => {
     );
   }
 
-  const publishedCount = spaces.filter(space => space.published).length;
+  const publishedCount = spaces.filter((space) => space.published).length;
   const totalRevenue = 0; // TODO: Calcolare dai bookings
 
   return (
@@ -210,7 +221,7 @@ const SpacesManage = () => {
           spacesCount={spaces.length}
           publishedCount={publishedCount}
           totalRevenue={totalRevenue}
-          userName={`${authState.profile?.first_name} ${authState.profile?.last_name}`.trim() || 'Host'}
+          userName={`${authState.profile?.first_name} ${authState.profile?.last_name}`.trim() || "Host"}
         />
 
         {/* Azioni e filtri */}
@@ -224,11 +235,7 @@ const SpacesManage = () => {
           </div>
           <div className="flex space-x-3">
             {isAdmin && (
-              <Button 
-                variant="outline" 
-                onClick={() => setShowDeleted(!showDeleted)}
-                className="flex items-center"
-              >
+              <Button variant="outline" onClick={() => setShowDeleted(!showDeleted)} className="flex items-center">
                 {showDeleted ? (
                   <>
                     <EyeOff className="w-4 h-4 mr-2" />
@@ -242,19 +249,11 @@ const SpacesManage = () => {
                 )}
               </Button>
             )}
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing} className="flex items-center">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               Aggiorna
             </Button>
-            <Button 
-              onClick={handleCreateSpace}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
+            <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700">
               <Plus className="w-4 h-4 mr-2" />
               Nuovo Spazio
             </Button>
@@ -273,13 +272,11 @@ const SpacesManage = () => {
                 <div className="bg-indigo-100 rounded-full p-4 w-16 h-16 mx-auto mb-4">
                   <Plus className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Nessuno spazio trovato
-                </h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nessuno spazio trovato</h3>
                 <p className="text-gray-600 mb-6">
                   Non hai ancora creato nessuno spazio. Crea il tuo primo spazio per iniziare a guadagnare!
                 </p>
-                
+
                 {/* Debug info per sviluppo */}
                 {import.meta.env.DEV && (
                   <div className="text-sm text-gray-500 mb-6 bg-gray-50 p-4 rounded border">
@@ -289,12 +286,8 @@ const SpacesManage = () => {
                     <p>Email: {authState.user?.email}</p>
                   </div>
                 )}
-                
-                <Button 
-                  onClick={handleCreateSpace} 
-                  className="bg-indigo-600 hover:bg-indigo-700"
-                  size="lg"
-                >
+
+                <Button onClick={handleCreateSpace} className="bg-indigo-600 hover:bg-indigo-700" size="lg">
                   <Plus className="w-4 h-4 mr-2" />
                   Crea il tuo primo spazio
                 </Button>
@@ -304,11 +297,11 @@ const SpacesManage = () => {
         ) : (
           <div className="space-y-6">
             <div className="text-sm text-gray-600">
-              Trovati {spaces.length} spazio/i 
+              Trovati {spaces.length} spazio/i
               {!showDeleted && `(${publishedCount} pubblicati)`}
               {showDeleted && isAdmin && " eliminati"}
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {spaces.map((space) => (
                 <EnhancedSpaceManagementCard
