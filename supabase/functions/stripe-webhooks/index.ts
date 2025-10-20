@@ -56,12 +56,17 @@ serve(async (req) => {
 
     const event = validationResult.event!;
     
+    // Declare at function level to be accessible in all catch blocks
+    let existingEvent: any = null;
+    
     // Check if event already processed (idempotency)
-    const { data: existingEvent } = await supabaseAdmin
+    const { data: eventData } = await supabaseAdmin
       .from('webhook_events')
       .select('id, status')
       .eq('event_id', event.id)
       .single();
+    
+    existingEvent = eventData;
 
     if (existingEvent?.status === 'processed') {
       ErrorHandler.logInfo('Event already processed', { eventId: event.id });
@@ -73,19 +78,19 @@ serve(async (req) => {
 
     // Save event for idempotency tracking
     if (!existingEvent) {
-      await supabaseAdmin
+      const { error: insertError } = await supabaseAdmin
         .from('webhook_events')
         .insert({
           event_id: event.id,
           event_type: event.type,
           payload: event,
           status: 'pending'
-        })
-        .catch(err => {
-          if (err.code !== '23505') { // Ignore duplicate key errors
-            ErrorHandler.logError('Failed to save webhook event', err);
-          }
         });
+      
+      // Ignore duplicate key errors (23505 = unique violation)
+      if (insertError && insertError.code !== '23505') {
+        ErrorHandler.logError('Failed to save webhook event', insertError);
+      }
     }
 
     ErrorHandler.logInfo('Processing Stripe webhook', { eventType: event.type });
@@ -228,9 +233,13 @@ serve(async (req) => {
         .eq('event_id', event.id);
 
       if (existingEvent?.id) {
-        await supabaseAdmin.rpc('increment_webhook_retry', { 
+        const { error: rpcError } = await supabaseAdmin.rpc('increment_webhook_retry', { 
           event_uuid: existingEvent.id 
-        }).catch(() => {});
+        });
+        
+        if (rpcError) {
+          ErrorHandler.logError('Failed to increment retry count', rpcError);
+        }
       }
 
       return new Response(
@@ -275,18 +284,24 @@ serve(async (req) => {
     // Try to mark event as failed if we have the event
     try {
       if (existingEvent?.id) {
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from('webhook_events')
           .update({ 
             status: 'failed',
             last_error: error.message,
             updated_at: new Date().toISOString()
           })
-          .eq('event_id', event.id);
+          .eq('id', existingEvent.id);
         
-        await supabaseAdmin.rpc('increment_webhook_retry', { 
-          event_uuid: existingEvent.id 
-        });
+        if (!updateError) {
+          const { error: rpcError } = await supabaseAdmin.rpc('increment_webhook_retry', { 
+            event_uuid: existingEvent.id 
+          });
+          
+          if (rpcError) {
+            ErrorHandler.logError('Failed to increment retry count', rpcError);
+          }
+        }
       }
     } catch (dbError) {
       ErrorHandler.logError('Failed to update webhook event status', dbError);
