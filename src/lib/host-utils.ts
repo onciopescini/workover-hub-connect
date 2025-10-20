@@ -100,16 +100,16 @@ export const getHostBookings = async (hostId: string) => {
   }
 };
 
-export const getUserRole = (authState: { profile?: { role?: string } } | null): "host" | "coworker" | "admin" | null => {
-  if (!authState?.profile?.role) return null;
-  const role = authState.profile.role;
-  if (role === 'host' || role === 'coworker' || role === 'admin') {
-    return role as "host" | "coworker" | "admin";
-  }
-  return null;
+export const getUserRole = (authState: { roles: string[] } | null): "host" | "user" | "admin" | null => {
+  if (!authState?.roles || authState.roles.length === 0) return null;
+  
+  // Priority: admin > host > moderator > user
+  if (authState.roles.includes('admin')) return 'admin';
+  if (authState.roles.includes('host')) return 'host';
+  return 'user';
 };
 
-export const canAccessHostFeatures = (authState: { profile?: { role?: string } } | null): boolean => {
-  const role = getUserRole(authState);
-  return role === 'host' || role === 'admin';
+export const canAccessHostFeatures = (authState: { roles: string[] } | null): boolean => {
+  if (!authState?.roles) return false;
+  return authState.roles.includes('host') || authState.roles.includes('admin');
 };

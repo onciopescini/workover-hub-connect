@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Mail, Phone, CreditCard, CheckCircle, XCircle } from "lucide-react";
 import { Profile } from "@/types/auth";
+import { useProfileRoleDisplay } from '@/hooks/profile/useProfileRoleDisplay';
 
 interface TrustBadgesSectionProps {
   profile: Profile;
@@ -11,6 +12,8 @@ interface TrustBadgesSectionProps {
 }
 
 export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSectionProps) {
+  const { roleLabel, roleBadgeVariant, isHost } = useProfileRoleDisplay();
+  
   const verificationItems = [
     {
       key: 'email',
@@ -26,7 +29,7 @@ export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSec
       icon: Phone,
       color: 'text-blue-600'
     },
-    ...(profile.role === 'host' ? [{
+    ...(isHost ? [{
       key: 'stripe',
       label: 'Pagamenti Configurati',
       verified: profile.stripe_connected || false,
@@ -82,9 +85,8 @@ export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSec
         <div className="pt-4 border-t">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-600">Ruolo Piattaforma</span>
-            <Badge variant={profile.role === 'admin' ? 'destructive' : 'default'}>
-              {profile.role === 'admin' ? 'Amministratore' : 
-               profile.role === 'host' ? 'Host Verificato' : 'Coworker'}
+            <Badge variant={roleBadgeVariant}>
+              {roleLabel}
             </Badge>
           </div>
         </div>

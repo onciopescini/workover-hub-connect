@@ -166,39 +166,43 @@ const fetchHostMessages = async (hostId: string, bookings: BookingWithDetails[])
 // Query hooks
 export const useHostSpacesQuery = () => {
   const { authState } = useAuth();
+  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.spaces(authState.user?.id || ''),
     queryFn: () => fetchSpacesCount(authState.user?.id || ''),
-    enabled: !!authState.user?.id && authState.profile?.role === 'host',
+    enabled: !!authState.user?.id && isHost,
     staleTime: 60000, // 1 minute
   });
 };
 
 export const useHostBookingsQuery = () => {
   const { authState } = useAuth();
+  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.bookings(authState.user?.id || ''),
     queryFn: () => fetchHostBookings(authState.user?.id || ''),
-    enabled: !!authState.user?.id && authState.profile?.role === 'host',
+    enabled: !!authState.user?.id && isHost,
     staleTime: 30000, // 30 seconds
   });
 };
 
 export const useHostMessagesQuery = (bookings: BookingWithDetails[]) => {
   const { authState } = useAuth();
+  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.messages(authState.user?.id || ''),
     queryFn: () => fetchHostMessages(authState.user?.id || '', bookings),
-    enabled: !!authState.user?.id && authState.profile?.role === 'host' && bookings.length > 0,
+    enabled: !!authState.user?.id && isHost && bookings.length > 0,
     staleTime: 30000, // 30 seconds
   });
 };
 
 export const useHostReviewsQuery = () => {
   const { authState } = useAuth();
+  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.reviews(authState.user?.id || ''),
@@ -213,7 +217,7 @@ export const useHostReviewsQuery = () => {
         averageRating: avgRating
       };
     },
-    enabled: !!authState.user?.id && authState.profile?.role === 'host',
+    enabled: !!authState.user?.id && isHost,
     staleTime: 60000, // 1 minute
   });
 };

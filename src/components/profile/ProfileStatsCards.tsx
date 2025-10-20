@@ -6,6 +6,7 @@ import { Calendar, Star, TrendingUp, Euro } from "lucide-react";
 import { Profile } from "@/types/auth";
 import { getUserPublicReviews } from "@/lib/user-review-utils";
 import { sreLogger } from '@/lib/sre-logger';
+import { useProfileRoleDisplay } from '@/hooks/profile/useProfileRoleDisplay';
 
 interface ProfileStatsCardsProps {
   profile: Profile;
@@ -13,6 +14,7 @@ interface ProfileStatsCardsProps {
 
 export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
   const navigate = useNavigate();
+  const { isHost } = useProfileRoleDisplay();
   const [stats, setStats] = React.useState({
     totalBookings: 0,
     averageRating: 0,
@@ -30,12 +32,11 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
         const { startTimer } = await import('@/lib/sre-logger');
 
         const endTimer = startTimer('profile_stats_fetch', { 
-          userId: profile.id, 
-          role: profile.role 
+          userId: profile.id
         });
 
         // OPTIMIZED: Single query with JOINs instead of sequential queries
-        if (profile.role === 'host') {
+        if (isHost) {
           // Fetch bookings and payments in one query with JOIN
           const { data: hostData, error: hostError } = await supabase
             .from('bookings')
@@ -116,14 +117,13 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
         sreLogger.error('Error fetching profile stats', {
           component: 'ProfileStatsCards',
           action: 'fetch_stats',
-          userId: profile.id,
-          role: profile.role
+          userId: profile.id
         }, error instanceof Error ? error : new Error(String(error)));
       }
     };
 
     fetchStats();
-  }, [profile.id, profile.role]);
+  }, [profile.id, isHost]);
 
   const cards = [
     {
@@ -153,7 +153,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
   ];
 
   // Add earnings card only for hosts
-  if (profile.role === 'host') {
+  if (isHost) {
     cards.push({
       title: 'Guadagni Totali',
       value: `€${stats.totalEarnings}`,

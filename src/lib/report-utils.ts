@@ -108,10 +108,15 @@ export const getAllReports = async (): Promise<Report[]> => {
       userId: currentUser.user.id
     });
 
-    // Verify admin status
+    // Verify admin status using user_roles
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', currentUser.user.id);
+    
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, is_suspended')
+      .select('is_suspended')
       .eq('id', currentUser.user.id)
       .single();
 
@@ -119,15 +124,16 @@ export const getAllReports = async (): Promise<Report[]> => {
       component: 'ReportUtils',
       action: 'getAllReports',
       userId: currentUser.user.id,
-      role: profile?.role
+      roles: rolesData
     });
 
-    if (!profile || profile.role !== 'admin' || profile.is_suspended) {
+    const isAdmin = rolesData?.some(r => r.role === 'admin');
+    if (!isAdmin || profile?.is_suspended) {
       sreLogger.debug("User is not admin or is suspended", {
         component: 'ReportUtils',
         action: 'getAllReports',
         userId: currentUser.user.id,
-        role: profile?.role
+        isAdmin
       });
       return [];
     }

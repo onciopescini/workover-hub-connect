@@ -17,7 +17,7 @@ export const bookingKeys = {
 };
 
 // Fetch function for bookings
-const fetchBookings = async (userId: string, userRole?: string): Promise<BookingWithDetails[]> => {
+const fetchBookings = async (userId: string, userRoles: string[]): Promise<BookingWithDetails[]> => {
   logger.debug('Fetching bookings for user', { component: 'useBookingsQuery', userId });
 
   // Fetch bookings where user is the coworker
@@ -44,7 +44,8 @@ const fetchBookings = async (userId: string, userRole?: string): Promise<Booking
 
   // Get user's spaces for host bookings
   let hostBookings: Array<Record<string, unknown>> = [];
-  if (userRole === "host" || userRole === "admin") {
+  const isHostOrAdmin = userRoles.includes("host") || userRoles.includes("admin");
+  if (isHostOrAdmin) {
     const { data: hostBookingsRaw, error: hostError } = await supabase
       .from("bookings")
       .select(`
@@ -154,7 +155,7 @@ export const useBookingsQuery = () => {
   
   return useQuery({
     queryKey: bookingKeys.list(authState.user?.id || ''),
-    queryFn: () => fetchBookings(authState.user?.id || '', authState.profile?.role || undefined),
+    queryFn: () => fetchBookings(authState.user?.id || '', authState.roles),
     enabled: !!authState.user?.id,
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,

@@ -37,13 +37,19 @@ export const useAdminUsers = () => {
       }
 
       if (profilesData) {
-        // Merge profiles con system_roles
-        const usersWithRoles = profilesData.map(profile => ({
-          ...profile,
-          competencies: profile.competencies ? (Array.isArray(profile.competencies) ? profile.competencies : JSON.parse(profile.competencies)) : [],
-          industries: profile.industries ? (Array.isArray(profile.industries) ? profile.industries : JSON.parse(profile.industries)) : [],
-          system_roles: (rolesData as any)?.filter((r: any) => r.user_id === profile.id) || []
-        })) as AdminUserWithRoles[];
+        // Merge profiles con system_roles and assign role from user_roles
+        const usersWithRoles = profilesData.map(profile => {
+          const userRoles = (rolesData as any)?.filter((r: any) => r.user_id === profile.id) || [];
+          const primaryRole = userRoles[0]?.role || 'user';
+          
+          return {
+            ...profile,
+            role: primaryRole,
+            competencies: profile.competencies ? (Array.isArray(profile.competencies) ? profile.competencies : JSON.parse(profile.competencies)) : [],
+            industries: profile.industries ? (Array.isArray(profile.industries) ? profile.industries : JSON.parse(profile.industries)) : [],
+            system_roles: userRoles
+          };
+        }) as AdminUserWithRoles[];
         
         setUsers(usersWithRoles);
       }

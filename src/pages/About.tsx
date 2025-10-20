@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Building2, Users, Target, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { getDashboardPath } from '@/utils/auth/auth-helpers';
 
 const About = () => {
   const navigate = useNavigate();
@@ -12,19 +13,9 @@ const About = () => {
 
   const handleRegisterClick = () => {
     // Se l'utente è già autenticato, reindirizza alla dashboard appropriata
-    if (authState.isAuthenticated && authState.profile) {
-      switch (authState.profile.role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'host':
-          navigate('/host');
-          break;
-        case 'user':
-        default:
-          navigate('/dashboard');
-          break;
-      }
+    if (authState.isAuthenticated) {
+      const path = getDashboardPath(authState.roles);
+      navigate(path);
     } else {
       // Se non autenticato, vai alla pagina di registrazione
       navigate('/register');

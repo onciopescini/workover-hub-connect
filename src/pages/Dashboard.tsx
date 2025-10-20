@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Users, Building2, MessageSquare, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useRoleAccess } from '@/hooks/useRoleAccess';
 
 const Dashboard = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
+  const { isHost, isAdmin } = useRoleAccess();
 
   if (authState.isLoading) {
     return <LoadingScreen />;
@@ -124,7 +126,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {profile.role === 'host' && (
+      {isHost && (
         <Card>
           <CardHeader>
             <CardTitle>Area Host</CardTitle>
@@ -145,7 +147,7 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {profile.role === 'admin' && (
+      {isAdmin && (
         <Card>
           <CardHeader>
             <CardTitle>Area Admin</CardTitle>

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useProfileRoleDisplay } from '@/hooks/profile/useProfileRoleDisplay';
 import { 
   User, 
   Edit, 
@@ -30,6 +31,7 @@ import HostStripeStatus from "@/components/payments/HostStripeStatus";
 export function ProfileDashboard() {
   const { authState } = useAuth();
   const navigate = useNavigate();
+  const { roleLabel, roleBadgeVariant, isHost } = useProfileRoleDisplay();
 
 
   if (!authState.profile) {
@@ -65,9 +67,8 @@ export function ProfileDashboard() {
                   <h1 className="text-2xl lg:text-3xl font-bold">
                     {profile.first_name} {profile.last_name}
                   </h1>
-                  <Badge variant={profile.role === 'admin' ? 'destructive' : 'secondary'} className="text-xs">
-                    {profile.role === 'admin' ? 'Admin' : 
-                     profile.role === 'host' ? 'Host' : 'Coworker'}
+                  <Badge variant={roleBadgeVariant} className="text-xs">
+                    {roleLabel}
                   </Badge>
                 </div>
                 
@@ -116,7 +117,7 @@ export function ProfileDashboard() {
                 </Button>
               </div>
               
-              {profile.role === 'host' && (
+              {isHost && (
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
@@ -139,7 +140,7 @@ export function ProfileDashboard() {
       </div>
 
       {/* Stripe Status for Hosts */}
-      {profile.role === 'host' && (
+      {isHost && (
         <div className="max-w-7xl mx-auto px-4 pb-4">
           <div className="bg-white p-4 rounded-lg shadow-sm border">
             <HostStripeStatus />

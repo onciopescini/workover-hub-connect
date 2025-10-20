@@ -15,19 +15,25 @@ export const testAdminActionLogging = async (): Promise<boolean> => {
 
     sreLogger.debug('Current user ID', { context: 'testAdminActionLogging', userId: user.user.id });
 
-    // Verifica che l'utente sia admin
+    // Verifica che l'utente sia admin usando user_roles
+    const { data: rolesData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.user.id);
+    
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, is_suspended')
+      .select('is_suspended')
       .eq('id', user.user.id)
       .single();
 
-    sreLogger.debug('User profile', { context: 'testAdminActionLogging', profile });
+    sreLogger.debug('User profile', { context: 'testAdminActionLogging', profile, roles: rolesData });
 
-    if (!profile || profile.role !== 'admin' || profile.is_suspended) {
+    const isAdmin = rolesData?.some(r => r.role === 'admin');
+    if (!isAdmin || profile?.is_suspended) {
       sreLogger.debug('User is not admin or is suspended', { 
         context: 'testAdminActionLogging',
-        role: profile?.role,
+        isAdmin,
         isSuspended: profile?.is_suspended
       });
       return false;
@@ -75,13 +81,13 @@ export const logAdminSectionView = async (section: string): Promise<void> => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return;
 
-    const { data: profile } = await supabase
-      .from('profiles')
+    const { data: rolesData } = await supabase
+      .from('user_roles')
       .select('role')
-      .eq('id', user.user.id)
-      .single();
+      .eq('user_id', user.user.id);
 
-    if (profile?.role !== 'admin') return;
+    const isAdmin = rolesData?.some(r => r.role === 'admin');
+    if (!isAdmin) return;
 
     await supabase
       .from('admin_actions_log')

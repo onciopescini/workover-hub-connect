@@ -10,6 +10,7 @@ import { AuthState } from "@/types/auth";
 import { PasswordChangeForm } from "@/components/settings/PasswordChangeForm";
 import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
 import { GDPRExportButton } from "@/components/settings/GDPRExportButton";
+import { useProfileRoleDisplay } from '@/hooks/profile/useProfileRoleDisplay';
 
 interface SettingsTabProps {
   formData: ProfileFormData;
@@ -22,6 +23,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   handleInputChange,
   authState
 }) => {
+  const { isHost } = useProfileRoleDisplay();
+  
   return (
     <Card>
       <CardHeader>
@@ -66,7 +69,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
         <PasswordChangeForm />
 
-        {authState.profile?.role === 'host' && (
+        {isHost && authState.profile && (
           <div className="p-4 border rounded-lg space-y-3">
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />

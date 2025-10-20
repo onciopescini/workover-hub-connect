@@ -35,16 +35,24 @@ export const MessagesSettingsDialog = ({ open, onOpenChange }: MessagesSettingsD
 
   const fetchNotificationSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role, networking_enabled')
+        .select('networking_enabled')
         .eq('id', authState.user?.id || '')
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
       
-      setIsCoworker(data.role === 'user');
-      setNetworkingNotifications(data.networking_enabled || false);
+      // Check if user has 'user' role (coworker)
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authState.user?.id || '');
+      
+      const isCoworkerRole = !rolesData || rolesData.length === 0 || rolesData.some(r => r.role === 'user');
+      
+      setIsCoworker(isCoworkerRole);
+      setNetworkingNotifications(profileData.networking_enabled || false);
     } catch (error) {
       sreLogger.error('Error fetching notification settings', { userId: authState.user?.id }, error as Error);
     }

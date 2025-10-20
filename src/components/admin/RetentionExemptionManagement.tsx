@@ -37,11 +37,25 @@ export const RetentionExemptionManagement = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role, data_retention_exempt, created_at, last_login_at, is_suspended')
+        .select('id, first_name, last_name, data_retention_exempt, created_at, last_login_at, is_suspended')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProfiles((data || []) as ProfileWithExemption[]);
+      
+      // Fetch roles for each profile
+      const profilesWithRoles = await Promise.all(
+        (data || []).map(async (profile) => {
+          const { data: rolesData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.id);
+          
+          const primaryRole = rolesData?.[0]?.role || 'user';
+          return { ...profile, role: primaryRole };
+        })
+      );
+      
+      setProfiles(profilesWithRoles as ProfileWithExemption[]);
     } catch (error) {
       sreLogger.error('Error fetching profiles', {}, error as Error);
       toast.error("Errore nel caricamento dei profili");
