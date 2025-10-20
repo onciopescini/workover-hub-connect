@@ -26,6 +26,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Declare at handler scope so catch blocks can access it
+  let existingEvent: any = null;
+
   try {
     ErrorHandler.logInfo('Webhook received', {
       method: req.method,
@@ -55,9 +58,6 @@ serve(async (req) => {
     }
 
     const event = validationResult.event!;
-    
-    // Declare at function level to be accessible in all catch blocks
-    let existingEvent: any = null;
     
     // Check if event already processed (idempotency)
     const { data: eventData } = await supabaseAdmin
