@@ -18,8 +18,7 @@ export class ChargeHandlers {
     const { error: updateError } = await supabaseAdmin
       .from('payments')
       .update({
-        method: charge.payment_method_details?.type || 'card',
-        updated_at: new Date().toISOString()
+        method: charge.payment_method_details?.type || 'card'
       })
       .eq('stripe_session_id', charge.payment_intent);
 
@@ -44,8 +43,7 @@ export class ChargeHandlers {
     const { error: logError } = await supabaseAdmin
       .from('payments')
       .update({
-        payment_status: 'refunded',
-        updated_at: new Date().toISOString()
+        payment_status: 'refunded'
       })
       .eq('stripe_session_id', charge.payment_intent);
 

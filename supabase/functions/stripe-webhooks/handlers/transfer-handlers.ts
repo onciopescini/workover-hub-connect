@@ -26,8 +26,7 @@ export class TransferHandlers {
     const { error: updateError } = await supabaseAdmin
       .from('payments')
       .update({
-        stripe_transfer_id: transfer.id,
-        updated_at: new Date().toISOString()
+        stripe_transfer_id: transfer.id
       })
       .eq('booking_id', bookingId);
 

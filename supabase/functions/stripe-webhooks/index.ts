@@ -203,8 +203,7 @@ serve(async (req) => {
                 await supabaseAdmin
                   .from('payments')
                   .update({
-                    payment_status: 'refunded',
-                    updated_at: new Date().toISOString(),
+                    payment_status: 'refunded'
                   })
                   .eq('id', payment.id);
 
