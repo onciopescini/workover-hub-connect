@@ -48,6 +48,7 @@ const NetworkingSettings = lazy(() => import("@/pages/NetworkingSettings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
 const Reviews = lazy(() => import("@/pages/Reviews"));
 const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
+const RegressionValidation = lazy(() => import("@/pages/RegressionValidation"));
 
 // Host pages
 const HostPaymentsPage = lazy(() => import("@/pages/host/HostPaymentsPage"));
@@ -299,6 +300,13 @@ export const AppRoutes = () => {
         <Route path="qa-validation" element={
           <LazyWrapper>
             <QAValidationDashboard />
+          </LazyWrapper>
+        } />
+
+        {/* Regression Validation Dashboard */}
+        <Route path="regression-validation" element={
+          <LazyWrapper>
+            <RegressionValidation />
           </LazyWrapper>
         } />
 
