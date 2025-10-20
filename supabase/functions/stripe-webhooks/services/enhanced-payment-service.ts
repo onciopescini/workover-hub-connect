@@ -16,8 +16,7 @@ export class EnhancedPaymentService {
         payment_status: 'completed',
         receipt_url: session.receipt_url,
         host_amount: breakdown.hostNetPayout,
-        platform_fee: breakdown.platformRevenue,
-        updated_at: new Date().toISOString()
+        platform_fee: breakdown.platformRevenue
       };
 
       // Add idempotency key if provided
