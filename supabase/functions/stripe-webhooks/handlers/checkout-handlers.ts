@@ -4,6 +4,7 @@ import { PaymentService } from "../services/payment-service.ts";
 import { BookingService } from "../services/booking-service.ts";
 import { ProfileService } from "../services/profile-service.ts";
 import { NotificationService } from "../services/notification-service.ts";
+import { InvoiceService } from "../services/invoice-service.ts";
 import { PaymentCalculator } from "../utils/payment-calculator.ts";
 import { ErrorHandler } from "../utils/error-handler.ts";
 import { Validators } from "../utils/validators.ts";
@@ -112,6 +113,28 @@ export class CheckoutHandlers {
 
     // Record transfer details
     await PaymentService.recordTransferDetails(supabaseAdmin, session.id, transferId, breakdown);
+
+    // Get payment ID for invoice generation
+    const { data: payment } = await supabaseAdmin
+      .from('payments')
+      .select('id')
+      .eq('stripe_session_id', session.id)
+      .single();
+
+    // Generate host invoice
+    if (payment?.id) {
+      const invoiceResult = await InvoiceService.generateHostInvoice(
+        supabaseAdmin,
+        payment.id,
+        booking.id,
+        booking.spaces.host_id,
+        breakdown
+      );
+
+      if (!invoiceResult.success) {
+        ErrorHandler.logError('Host invoice generation failed', { error: invoiceResult.error });
+      }
+    }
 
     // Send notifications
     await NotificationService.sendBookingNotifications(supabaseAdmin, booking);

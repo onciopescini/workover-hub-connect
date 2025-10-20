@@ -81,6 +81,10 @@ verify_jwt = false
 [functions.generate-workover-invoice]
 verify_jwt = false
 
+[functions.generate-host-invoice]
+verify_jwt = false
+timeout = 15
+
 [functions.notify-host-invoice-required]
 verify_jwt = false
 
