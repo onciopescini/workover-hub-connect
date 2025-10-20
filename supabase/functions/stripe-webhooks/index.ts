@@ -78,18 +78,24 @@ serve(async (req) => {
 
     // Save event for idempotency tracking
     if (!existingEvent) {
-      const { error: insertError } = await supabaseAdmin
+      const { data: insertedEvent, error: insertError } = await supabaseAdmin
         .from('webhook_events')
         .insert({
           event_id: event.id,
           event_type: event.type,
           payload: event,
           status: 'pending'
-        });
+        })
+        .select('id, status')
+        .single();
       
       // Ignore duplicate key errors (23505 = unique violation)
       if (insertError && insertError.code !== '23505') {
         ErrorHandler.logError('Failed to save webhook event', insertError);
+      }
+      
+      if (insertedEvent) {
+        existingEvent = insertedEvent;
       }
     }
 
@@ -223,14 +229,18 @@ serve(async (req) => {
       ErrorHandler.logError('Webhook processing failed', result.error);
       
       // Mark event as failed
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('webhook_events')
         .update({ 
           status: 'failed',
           last_error: result.error?.toString() || 'Unknown error',
           updated_at: new Date().toISOString()
         })
-        .eq('event_id', event.id);
+        .eq(existingEvent?.id ? 'id' : 'event_id', existingEvent?.id ?? event.id);
+      
+      if (updateError) {
+        ErrorHandler.logError('Failed to mark webhook event as failed', updateError);
+      }
 
       if (existingEvent?.id) {
         const { error: rpcError } = await supabaseAdmin.rpc('increment_webhook_retry', { 
@@ -255,14 +265,18 @@ serve(async (req) => {
     }
 
     // Mark event as processed
-    await supabaseAdmin
+    const { error: processedUpdateError } = await supabaseAdmin
       .from('webhook_events')
       .update({ 
         status: 'processed', 
         processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('event_id', event.id);
+      .eq(existingEvent?.id ? 'id' : 'event_id', existingEvent?.id ?? event.id);
+    
+    if (processedUpdateError) {
+      ErrorHandler.logError('Failed to mark event as processed', processedUpdateError);
+    }
 
     ErrorHandler.logSuccess('Webhook processed successfully', { 
       eventType: event.type,
