@@ -384,6 +384,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "booking_reviews_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
@@ -402,6 +409,13 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -549,6 +563,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -751,6 +772,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "connection_suggestions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -762,6 +790,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -810,6 +845,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "connections_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "connections_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -821,6 +863,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -882,6 +931,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
@@ -893,6 +949,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
           {
@@ -1091,6 +1154,13 @@ export type Database = {
             columns: ["generated_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dac7_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1357,6 +1427,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "email_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       event_participants: {
@@ -1395,6 +1472,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_participants_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1449,6 +1533,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_reviews_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -1467,6 +1558,13 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1548,6 +1646,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_events_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -1764,6 +1869,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "host_report_subscriptions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       image_processing_jobs: {
@@ -1957,6 +2069,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       kyc_documents: {
@@ -2068,6 +2187,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "message_templates_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
@@ -2124,6 +2250,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
@@ -2136,13 +2269,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "conversations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "user_conversations_view"
-            referencedColumns: ["conversation_id"]
           },
         ]
       }
@@ -2218,6 +2344,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "non_fiscal_receipts_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
@@ -2229,6 +2362,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
           {
@@ -2281,6 +2421,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -2444,6 +2591,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       private_chats: {
@@ -2484,6 +2638,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "private_chats_participant_1_id_fkey"
+            columns: ["participant_1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "private_chats_participant_2_id_fkey"
             columns: ["participant_2_id"]
             isOneToOne: false
@@ -2495,6 +2656,13 @@ export type Database = {
             columns: ["participant_2_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_2_id_fkey"
+            columns: ["participant_2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -2549,6 +2717,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_views: {
@@ -2592,6 +2767,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profile_views_viewer_id_fkey"
             columns: ["viewer_id"]
             isOneToOne: false
@@ -2603,6 +2785,13 @@ export type Database = {
             columns: ["viewer_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -2654,7 +2843,6 @@ export type Database = {
           profile_photo_url: string | null
           restriction_reason: string | null
           return_url: string | null
-          role: Database["public"]["Enums"]["user_role"]
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
@@ -2721,7 +2909,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role: Database["public"]["Enums"]["user_role"]
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -2788,7 +2975,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -2856,7 +3042,6 @@ export type Database = {
           profile_photo_url: string | null
           restriction_reason: string | null
           return_url: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
@@ -2921,7 +3106,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -2986,7 +3170,6 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -3136,6 +3319,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       settings_audit_log: {
@@ -3179,6 +3369,13 @@ export type Database = {
             columns: ["admin_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settings_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -3427,6 +3624,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -3840,6 +4044,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tax_details: {
@@ -3922,6 +4133,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tax_details_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tax_details_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
@@ -3933,6 +4151,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -3989,6 +4214,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_notifications: {
@@ -4040,6 +4272,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -4077,6 +4316,13 @@ export type Database = {
             columns: ["assigned_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -4145,6 +4391,13 @@ export type Database = {
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
         ]
       }
       waitlists: {
@@ -4182,6 +4435,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_waitlists_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
           {
@@ -4224,6 +4484,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
         ]
@@ -4395,6 +4662,76 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_with_role: {
+        Row: {
+          admin_notes: string | null
+          age_confirmed: boolean | null
+          bio: string | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
+          city: string | null
+          collaboration_availability: string | null
+          collaboration_description: string | null
+          collaboration_types: string[] | null
+          competencies: string[] | null
+          created_at: string | null
+          dac7_data_collected: boolean | null
+          dac7_threshold_notified: boolean | null
+          data_retention_exempt: boolean | null
+          email_verification_blocked_actions: string[] | null
+          facebook_url: string | null
+          first_name: string | null
+          fiscal_regime: string | null
+          github_url: string | null
+          iban: string | null
+          id: string | null
+          industries: string[] | null
+          instagram_url: string | null
+          interests: string | null
+          is_suspended: boolean | null
+          job_title: string | null
+          job_type: string | null
+          kyc_documents_verified: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_verified_at: string | null
+          last_login_at: string | null
+          last_name: string | null
+          legal_address: string | null
+          linkedin_url: string | null
+          location: string | null
+          networking_enabled: boolean | null
+          nickname: string | null
+          onboarding_completed: boolean | null
+          pec_email: string | null
+          phone: string | null
+          preferred_work_mode: string | null
+          profession: string | null
+          profile_photo_url: string | null
+          restriction_reason: string | null
+          return_url: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          sdi_code: string | null
+          skills: string | null
+          space_creation_restricted: boolean | null
+          stripe_account_id: string | null
+          stripe_connected: boolean | null
+          stripe_onboarding_status:
+            | Database["public"]["Enums"]["stripe_onboarding_state"]
+            | null
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          tax_country: string | null
+          tax_id: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          vat_number: string | null
+          website: string | null
+          work_style: string | null
+          youtube_url: string | null
+        }
+        Relationships: []
+      }
       spaces_public_safe: {
         Row: {
           amenities: string[] | null
@@ -4547,104 +4884,6 @@ export type Database = {
             | null
         }
         Relationships: []
-      }
-      user_conversations_view: {
-        Row: {
-          booking_id: string | null
-          conversation_id: string | null
-          coworker_id: string | null
-          created_at: string | null
-          host_id: string | null
-          last_message: string | null
-          last_message_at: string | null
-          last_sender_first_name: string | null
-          last_sender_id: string | null
-          last_sender_is_me: boolean | null
-          last_sender_last_name: string | null
-          me_id: string | null
-          me_is_host: boolean | null
-          message_count: number | null
-          other_first_name: string | null
-          other_last_name: string | null
-          other_profile_photo_url: string | null
-          other_role: Database["public"]["Enums"]["user_role"] | null
-          other_user_id: string | null
-          space_id: string | null
-          space_title: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_coworker_id_fkey"
-            columns: ["coworker_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_coworker_id_fkey"
-            columns: ["coworker_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversations_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces_public_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_messages_sender_id"
-            columns: ["last_sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_messages_sender_id"
-            columns: ["last_sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public_safe"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
@@ -4892,6 +5131,10 @@ export type Database = {
           total_transactions: number
         }[]
       }
+      get_my_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       get_or_create_conversation: {
         Args: {
           p_booking_id: string
@@ -5063,6 +5306,10 @@ export type Database = {
       get_support_metrics: {
         Args: { days_back?: number }
         Returns: Json
+      }
+      get_user_primary_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_public_reviews: {
         Args: { target_id_param: string }
@@ -5384,7 +5631,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "host"
       booking_status:
         | "pending"
         | "confirmed"
@@ -5407,7 +5654,6 @@ export type Database = {
         | "integration"
       space_category: "home" | "outdoor" | "professional"
       stripe_onboarding_state: "none" | "pending" | "completed" | "restricted"
-      user_role: "host" | "coworker" | "admin"
       work_environment: "silent" | "controlled" | "dynamic"
     }
     CompositeTypes: {
@@ -5536,7 +5782,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "host"],
       booking_status: [
         "pending",
         "confirmed",
@@ -5565,7 +5811,6 @@ export const Constants = {
       ],
       space_category: ["home", "outdoor", "professional"],
       stripe_onboarding_state: ["none", "pending", "completed", "restricted"],
-      user_role: ["host", "coworker", "admin"],
       work_environment: ["silent", "controlled", "dynamic"],
     },
   },
