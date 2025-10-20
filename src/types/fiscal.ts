@@ -73,6 +73,8 @@ export interface HostInvoice {
   payment_id: string;
   booking_id: string;
   recipient_id: string;
+  recipient_type?: string;
+  issuer?: string;
   invoice_number: string;
   invoice_date: string;
   due_date?: string | null;
@@ -80,7 +82,16 @@ export interface HostInvoice {
   vat_rate: number;
   vat_amount: number;
   total_amount: number;
+  discount_amount?: number | null;
+  discount_reason?: string | null;
   pdf_file_url?: string | null;
   xml_file_url?: string | null;
+  xml_sdi_id?: string | null;
+  xml_delivery_status?: string | null;
+  xml_rejection_reason?: string | null;
+  xml_sent_at?: string | null;
+  conservazione_sostitutiva_url?: string | null;
+  conservazione_completed_at?: string | null;
   created_at: string;
+  updated_at?: string;
 }

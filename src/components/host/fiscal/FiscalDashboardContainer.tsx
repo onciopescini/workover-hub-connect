@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaxDetailsDisplay } from '@/components/fiscal/TaxDetailsDisplay';
 import { TaxDetailsForm } from './TaxDetailsForm';
 import { DAC7ReportCard } from './DAC7ReportCard';
+import { HostInvoiceHistory } from './HostInvoiceHistory';
 import { FiscalStatusBadge } from '@/components/fiscal/FiscalStatusBadge';
 import { FileText, AlertTriangle, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -83,11 +84,16 @@ export const FiscalDashboardContainer = () => {
         </Card>
       )}
 
-      <Tabs defaultValue="tax-details" className="space-y-4">
+      <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="invoices">Fatture</TabsTrigger>
           <TabsTrigger value="tax-details">Dati Fiscali</TabsTrigger>
           <TabsTrigger value="dac7-reports">Report DAC7</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="invoices">
+          <HostInvoiceHistory />
+        </TabsContent>
 
         <TabsContent value="tax-details" className="space-y-4">
           {!primaryTaxDetails && !showTaxForm && (
