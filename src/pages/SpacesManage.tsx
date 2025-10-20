@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { SpaceManagementHeader } from "@/components/spaces/SpaceManagementHeader";
 import { EnhancedSpaceManagementCard } from "@/components/spaces/EnhancedSpaceManagementCard";
 import { sreLogger } from "@/lib/sre-logger";
+import { useModeratorCheck } from "@/hooks/admin/useModeratorCheck";
 
 const SpacesManage = () => {
   const { authState } = useAuth();

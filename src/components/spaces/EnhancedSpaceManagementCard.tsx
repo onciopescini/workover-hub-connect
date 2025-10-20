@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Space } from "@/types/space";
 import { Edit, Eye, Trash2, MapPin, Users, Euro, RefreshCw, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useModeratorCheck } from "@/hooks/admin/useModeratorCheck";
 
 interface EnhancedSpaceManagementCardProps {
   space: Space;
