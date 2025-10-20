@@ -3,16 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useLogger } from "@/hooks/useLogger";
 import { SuspensionBanner } from "@/components/ui/SuspensionBanner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Home, Settings, Users, Calendar, MessageSquare, CreditCard, BarChart3, User, LogOut, ChevronDown } from "lucide-react";
+import { ArrowLeft, Home, Settings, Users, Calendar, MessageSquare, CreditCard, BarChart3 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getPrimaryRole } from "@/lib/auth/role-utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -33,17 +26,16 @@ export function AppLayout({
   const { authState, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const primaryRole = getPrimaryRole(authState.roles);
 
   const getDashboardUrl = () => {
-    if (authState.profile?.role === "admin") return "/admin";
-    if (authState.profile?.role === "host") return "/host/dashboard";
+    if (primaryRole === "admin") return "/admin";
+    if (primaryRole === "host") return "/host/dashboard";
     return "/spaces";
   };
 
   const getNavLinks = () => {
-    const role = authState.profile?.role;
-
-    if (role === "host") {
+    if (primaryRole === "host") {
       return [
         { icon: Home, label: "Dashboard", href: "/host/dashboard" },
         { icon: Calendar, label: "Prenotazioni", href: "/bookings" },
@@ -53,7 +45,7 @@ export function AppLayout({
       ];
     }
 
-    if (role === "admin") {
+    if (primaryRole === "admin") {
       return [
         { icon: BarChart3, label: "Admin Panel", href: "/admin" },
         { icon: Users, label: "Utenti", href: "/admin" },
@@ -80,7 +72,7 @@ export function AppLayout({
       error('Error during user logout', logoutError as Error, { 
         operation: 'user_logout',
         userId: authState.profile?.id,
-        userRole: authState.profile?.role,
+        userRole: primaryRole,
         currentPath: location.pathname
       });
     }
@@ -108,7 +100,7 @@ export function AppLayout({
   const isSuspended = authState.profile?.suspended_at;
   
   // Don't show user menu for admin users
-  const showUserMenu = authState.profile?.role !== "admin";
+  const showUserMenu = primaryRole !== "admin";
   const navLinks = getNavLinks();
 
   return (
@@ -186,7 +178,7 @@ export function AppLayout({
                     Supporto
                   </button>
                 </li>
-                {authState.profile?.role === "coworker" && (
+                {primaryRole === "coworker" && (
                   <li>
                     <button 
                       onClick={() => navigate("/networking")}
@@ -209,7 +201,7 @@ export function AppLayout({
                 </li>
                 <li>
                   <Badge variant="outline" className="text-xs">
-                    {authState.profile?.role}
+                    {primaryRole}
                   </Badge>
                 </li>
               </ul>

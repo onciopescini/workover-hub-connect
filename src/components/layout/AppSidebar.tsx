@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { hasAnyRole } from "@/lib/auth/role-utils";
 
 export function AppSidebar() {
   const { authState } = useAuth();
@@ -31,11 +32,11 @@ export function AppSidebar() {
 
   const roleItems = [];
   
-  if (authState.profile?.role === 'host' || authState.profile?.role === 'admin') {
+  if (hasAnyRole(authState.roles, ['host', 'admin'])) {
     roleItems.push({ title: "Dashboard Host", url: "/host/dashboard", icon: LayoutDashboard });
   }
   
-  if (authState.profile?.role === 'admin') {
+  if (authState.roles.includes('admin')) {
     roleItems.push({ title: "Admin Panel", url: "/admin/users", icon: Shield });
   }
 

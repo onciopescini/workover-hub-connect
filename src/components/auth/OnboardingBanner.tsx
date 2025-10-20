@@ -12,7 +12,7 @@ const OnboardingBanner: React.FC = () => {
     authState.isAuthenticated &&
     authState.profile &&
     !authState.profile.onboarding_completed &&
-    authState.profile.role !== 'admin' &&
+    !authState.roles.includes('admin') &&
     location.pathname !== '/onboarding'
   );
 

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfileCache } from './useProfileCache';
 import { useAuthRedirects } from './useAuthRedirects';
 import { useLogger } from '@/hooks/useLogger';
-import type { AuthState, Profile } from '@/types/auth';
+import type { AuthState, Profile, UserRole } from '@/types/auth';
 import { createAuthState, shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
 import { getAuthSyncChannel, AUTH_SYNC_EVENTS } from '@/utils/auth/multi-tab-sync';
 import type { Session } from '@supabase/supabase-js';
@@ -14,6 +14,7 @@ export const useAuthLogic = () => {
     user: null,
     session: null,
     profile: null,
+    roles: [],
     isLoading: true,
     isAuthenticated: false,
   });
@@ -25,25 +26,55 @@ export const useAuthLogic = () => {
   const isInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
 
+  // Fetch user roles
+  const fetchUserRoles = useCallback(async (userId: string): Promise<UserRole[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (error) {
+        debug('Error fetching user roles', { error });
+        return [];
+      }
+
+      return data.map(r => r.role as UserRole);
+    } catch (error) {
+      logError('Error fetching user roles', {}, error as Error);
+      return [];
+    }
+  }, [debug, logError]);
+
   // Funzione ottimizzata per aggiornare lo stato auth
-  const updateAuthState = useCallback((session: Session | null, profile: Profile | null = null) => {
+  const updateAuthState = useCallback(async (session: Session | null, profile: Profile | null = null) => {
     const user = session?.user || null;
     const isAuthenticated = !!session;
+    const roles = session?.user ? await fetchUserRoles(session.user.id) : [];
     
     // Aggiorna solo se necessario per evitare re-render
     setAuthState(prev => {
+      const newState = {
+        user,
+        session,
+        profile,
+        roles,
+        isLoading: false,
+        isAuthenticated
+      };
+      
       if (!shouldUpdateAuthState(prev, user, isAuthenticated, profile)) {
         return prev;
       }
 
-      return createAuthState(session, profile);
+      return newState;
     });
 
     // Gestisci redirect solo se necessario
     if (session && profile) {
-      setTimeout(() => handleRoleBasedRedirect(profile, session), 0);
+      setTimeout(() => handleRoleBasedRedirect(profile, session, roles), 0);
     }
-  }, [handleRoleBasedRedirect]);
+  }, [handleRoleBasedRedirect, fetchUserRoles, debug, logError]);
 
   // Profile fetching con gestione cache
   const fetchUserProfile = useCallback(async (userId: string) => {

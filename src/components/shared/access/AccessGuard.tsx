@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { AccessGuardProps } from '@/types/host/access.types';
 import { AccessDenied } from './AccessDenied';
 import { LoadingSkeleton } from './LoadingSkeleton';
+import { hasAnyRole } from '@/lib/auth/role-utils';
 
 export const AccessGuard = ({ 
   requiredRoles = ['host', 'admin'], 
@@ -27,7 +28,7 @@ export const AccessGuard = ({
   }
 
   // Unauthorized (wrong role)
-  if (!requiredRoles.includes(authState.profile?.role || '')) {
+  if (!hasAnyRole(authState.roles, requiredRoles as any[])) {
     return deniedFallback || (
       <AccessDenied 
         variant="unauthorized" 

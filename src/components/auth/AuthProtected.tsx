@@ -40,7 +40,7 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
     if (
       requireOnboarding &&
       !authState.profile.onboarding_completed &&
-      authState.profile.role !== 'admin' &&
+      !authState.roles.includes('admin') &&
       location.pathname !== '/onboarding'
     ) {
       return { 

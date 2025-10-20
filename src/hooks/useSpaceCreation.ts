@@ -1,53 +1,60 @@
-
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+import { sreLogger } from "@/lib/sre-logger";
 import { toast } from "sonner";
-import { checkSpaceCreationRestriction } from "@/lib/space-moderation-utils";
-import { sreLogger } from '@/lib/sre-logger';
 
-export const useSpaceCreation = () => {
+const useSpaceCreation = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
 
-  sreLogger.debug('useSpaceCreation: Current auth state', {
-    isLoading: authState.isLoading,
-    userId: authState.user?.id,
-    role: authState.profile?.role
+  const restrictionQuery = useQuery({
+    queryKey: ['space-restriction', authState.user?.id],
+    queryFn: async () => {
+      if (!authState.user) return { isRestricted: false };
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('space_creation_restricted')
+        .eq('id', authState.user.id)
+        .single();
+
+      return {
+        isRestricted: profile?.space_creation_restricted === true
+      };
+    },
+    enabled: !!authState.user,
   });
 
-  // Check if the host can create spaces or is limited
+  // Check for space creation restrictions
   useEffect(() => {
     const checkRestriction = async () => {
-      if (authState.user && authState.profile?.role === 'host') {
-        sreLogger.debug('Checking space creation restrictions for host', { userId: authState.user.id });
-        try {
-          const isRestricted = await checkSpaceCreationRestriction();
-          if (isRestricted) {
-            toast.error("Non puoi creare nuovi spazi. Hai uno spazio sospeso che richiede la tua attenzione.");
-            navigate('/host/spaces');
-          }
-        } catch (error) {
-          sreLogger.error('Error checking space creation restriction', { userId: authState.user.id }, error as Error);
-        }
+      if (restrictionQuery.data?.isRestricted) {
+        sreLogger.warn('Space creation restricted', { userId: authState.user?.id });
+        toast.error("La creazione di spazi è stata temporaneamente limitata per il tuo account");
+        navigate("/host/dashboard");
       }
     };
     
     checkRestriction();
-  }, [authState.user, authState.profile, navigate]);
+  }, [authState.user, authState.profile, navigate, restrictionQuery.data]);
 
   // Ensure only hosts can access
   useEffect(() => {
-    if (authState.profile && authState.profile.role !== "host") {
-      sreLogger.warn('Non-host trying to access space creation', { role: authState.profile.role, userId: authState.user?.id });
+    if (authState.profile && !authState.roles.includes('host')) {
+      sreLogger.warn('Non-host trying to access space creation', { roles: authState.roles, userId: authState.user?.id });
       toast.error("Solo gli host possono creare spazi");
       navigate("/dashboard");
     }
-  }, [authState.profile, navigate]);
+  }, [authState.profile, authState.roles, navigate, authState.user?.id]);
 
   return {
     authState,
     isLoading: authState.isLoading,
-    canAccess: authState.user && authState.profile?.role === "host"
+    canAccess: authState.user && authState.roles.includes('host')
   };
 };
+
+export default useSpaceCreation;

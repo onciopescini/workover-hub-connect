@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Navigate } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import { UserRole } from "@/types/auth";
+import { getPrimaryRole, hasAnyRole } from "@/lib/auth/role-utils";
 
 interface RoleProtectedProps {
   children: React.ReactNode;
@@ -19,17 +20,18 @@ const RoleProtected = ({ children, allowedRoles }: RoleProtectedProps) => {
       return { action: 'loading' };
     }
 
-    if (!authState.profile?.role) {
+    if (authState.roles.length === 0) {
       return { 
         action: 'redirect', 
         to: '/onboarding' 
       };
     }
 
-    if (!allowedRoles.includes(authState.profile.role)) {
+    if (!hasAnyRole(authState.roles, allowedRoles)) {
       // Redirect to appropriate dashboard based on role
-      const redirectTo = authState.profile.role === "admin" ? "/admin" :
-                        authState.profile.role === "host" ? "/host/dashboard" : 
+      const primaryRole = getPrimaryRole(authState.roles);
+      const redirectTo = primaryRole === "admin" ? "/admin" :
+                        primaryRole === "host" ? "/host/dashboard" : 
                         "/spaces"; // Unified redirect for coworkers
       return { 
         action: 'redirect', 
@@ -38,7 +40,7 @@ const RoleProtected = ({ children, allowedRoles }: RoleProtectedProps) => {
     }
 
     return { action: 'render' };
-  }, [authState.isLoading, authState.profile?.role, allowedRoles]);
+  }, [authState.isLoading, authState.roles, allowedRoles]);
 
   if (routingDecision.action === 'loading') {
     return <LoadingScreen />;

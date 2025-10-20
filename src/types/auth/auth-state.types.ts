@@ -11,12 +11,13 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   industries?: string[] | null;
 };
 
+export type UserRole = "host" | "coworker" | "admin" | "moderator" | "user";
+
 export type AuthState = {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  roles: UserRole[];
   isLoading: boolean;
   isAuthenticated: boolean;
 };
-
-export type UserRole = "host" | "coworker" | "admin";

@@ -1,24 +1,27 @@
 import { useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { Profile } from '@/types/auth';
+import type { Profile, UserRole } from '@/types/auth';
 import type { Session } from '@supabase/supabase-js';
 import { getSkipRedirectPaths, getDashboardPath } from '@/utils/auth/auth-helpers';
+import { getPrimaryRole } from '@/lib/auth/role-utils';
 
 export const useAuthRedirects = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleRoleBasedRedirect = useCallback((profile: Profile | null, session: Session | null) => {
+  const handleRoleBasedRedirect = useCallback((profile: Profile | null, session: Session | null, roles: UserRole[] = []) => {
     if (!session || !profile) return;
 
     const currentPath = location.pathname;
     const skipRedirectPaths = getSkipRedirectPaths();
 
+    const primaryRole = getPrimaryRole(roles);
+    
     // 1) Forza onboarding su tutte le pagine tranne quelle esplicitamente permesse
     if (
       !skipRedirectPaths.includes(currentPath) &&
       !profile.onboarding_completed &&
-      profile.role !== 'admin' &&
+      primaryRole !== 'admin' &&
       currentPath !== '/onboarding'
     ) {
       navigate('/onboarding', { replace: true });
@@ -27,7 +30,7 @@ export const useAuthRedirects = () => {
 
     // FASE 3: Guard specifica per HOST incompleti
     if (
-      profile.role === 'host' &&
+      primaryRole === 'host' &&
       currentPath !== '/host/onboarding' &&
       !skipRedirectPaths.includes(currentPath)
     ) {
@@ -52,7 +55,7 @@ export const useAuthRedirects = () => {
 
     // 2) Redirect da pagine auth se già autenticato
     if (['/login', '/register'].includes(currentPath)) {
-      const dashboardPath = getDashboardPath(profile.role);
+      const dashboardPath = getDashboardPath(primaryRole);
       navigate(dashboardPath, { replace: true });
       return;
     }

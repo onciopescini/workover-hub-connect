@@ -2843,6 +2843,7 @@ export type Database = {
           profile_photo_url: string | null
           restriction_reason: string | null
           return_url: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
@@ -2909,6 +2910,7 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -2975,6 +2977,7 @@ export type Database = {
           profile_photo_url?: string | null
           restriction_reason?: string | null
           return_url?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
@@ -5324,6 +5327,10 @@ export type Database = {
           is_visible: boolean
           rating: number
         }[]
+      }
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["app_role"]
       }
       has_role: {
         Args: {
