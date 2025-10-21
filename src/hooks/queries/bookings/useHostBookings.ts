@@ -12,15 +12,15 @@ export const useHostBookings = (filters?: BookingFilter) => {
   const { debug, error } = useLogger({ context: 'useHostBookings' });
   
   return useQuery({
-    queryKey: ['host-bookings', authState.user?.id, authState.profile?.role, filters],
+    queryKey: ['host-bookings', authState.user?.id, authState.roles, filters],
     queryFn: async (): Promise<BookingWithDetails[]> => {
       const userId = authState.user?.id;
-      const userRole = authState.profile?.role;
+      const userRoles = authState.roles;
       
       debug('Host bookings query started', {
         operation: 'fetch_host_bookings',
         userId,
-        userRole,
+        userRoles,
         filters
       });
       
@@ -31,10 +31,13 @@ export const useHostBookings = (filters?: BookingFilter) => {
         return [];
       }
 
-      if (userRole !== 'host' && userRole !== 'admin') {
+      const isHost = userRoles.includes('host');
+      const isAdmin = userRoles.includes('admin');
+
+      if (!isHost && !isAdmin) {
         debug('User not authorized for host bookings', {
           operation: 'fetch_host_bookings_authorization',
-          userRole,
+          userRoles,
           userId
         });
         return [];
@@ -42,13 +45,13 @@ export const useHostBookings = (filters?: BookingFilter) => {
 
       try {
         // Fetch only host bookings (bookings received on user's spaces)
-        const hostData = await fetchHostBookings(userId, userRole, filters);
+        const hostData = await fetchHostBookings(userId, userRoles[0] ?? '', filters);
         
         debug('Host bookings fetched successfully', {
           operation: 'fetch_host_bookings_success',
           count: hostData?.length || 0,
           userId,
-          userRole
+          userRoles
         });
 
         // Transform the data with error handling
@@ -75,14 +78,14 @@ export const useHostBookings = (filters?: BookingFilter) => {
         error('Error fetching host bookings', fetchError as Error, {
           operation: 'fetch_host_bookings_error',
           userId,
-          userRole,
+          userRoles,
           filters
         });
         // Return empty array instead of throwing to prevent UI crashes
         return [];
       }
     },
-    enabled: !!authState.user?.id && (authState.profile?.role === 'host' || authState.profile?.role === 'admin'),
+    enabled: !!authState.user?.id && (authState.roles.includes('host') || authState.roles.includes('admin')),
     staleTime: 30000,
     refetchOnWindowFocus: false, // Reduced aggressive refetching
     retry: 1, // Reduced retry attempts
@@ -93,7 +96,7 @@ export const useHostBookings = (filters?: BookingFilter) => {
         error('Host bookings query error', queryError, {
           operation: 'host_bookings_query_error',
           userId: authState.user?.id,
-          userRole: authState.profile?.role
+          userRoles: authState.roles
         });
       }
     }

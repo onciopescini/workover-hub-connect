@@ -17,28 +17,24 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
 
     logger.debug("Current user authenticated", { userId: currentUser.user.id });
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, is_suspended')
-      .eq('id', currentUser.user.id)
-      .single();
+    // Check if user has admin role
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', currentUser.user.id);
 
-    logger.debug("User profile retrieved", { 
-      role: profile?.role || 'unknown',
-      suspended: profile?.is_suspended ?? false
-    });
-
-    if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      logger.warn("User is not admin or is suspended", {
-        role: profile?.role || 'unknown',
-        suspended: profile?.is_suspended ?? false
-      });
+    const roles = userRoles?.map(r => r.role) || [];
+    if (!roles.includes('admin')) {
+      logger.warn("User is not admin");
+      toast.error("Accesso negato. Solo gli amministratori possono visualizzare questa pagina.");
       return [];
     }
 
+    logger.debug("User has admin role");
+
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, first_name, last_name, role, is_suspended, suspension_reason, created_at, updated_at, last_login_at, stripe_connected, onboarding_completed")
+      .select("id, first_name, last_name, is_suspended, suspension_reason, created_at, updated_at, last_login_at, stripe_connected, onboarding_completed")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -46,9 +42,26 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
       throw error;
     }
     
-    logger.info("Successfully fetched user profiles", { count: data?.length || 0 });
+    // Fetch roles for all users
+    const { data: allRoles } = await supabase
+      .from('user_roles')
+      .select('user_id, role');
+
+    logger.debug("Fetched all user roles");
+
+    // Map roles to users
+    const usersWithRoles = data.map(user => {
+      const userRolesList = allRoles?.filter(r => r.user_id === user.id).map(r => r.role) || [];
+      return {
+        ...user,
+        role: userRolesList[0] || 'user', // Primary role for backward compatibility
+        roles: userRolesList
+      };
+    });
     
-    return data as AdminProfile[]; // TODO: Replace with proper type validation
+    logger.info("Successfully fetched user profiles", { count: usersWithRoles.length });
+    
+    return usersWithRoles as AdminProfile[];
   } catch (error) {
     logger.error("Error fetching users", {}, error as Error);
     throw error;

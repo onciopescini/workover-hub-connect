@@ -20,15 +20,15 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
   const { debug, error } = useLogger({ context: 'useEnhancedBookings' });
   
   return useQuery({
-    queryKey: ['enhanced-bookings', authState.user?.id, authState.profile?.role, filters],
+    queryKey: ['enhanced-bookings', authState.user?.id, authState.roles, filters],
     queryFn: async (): Promise<BookingWithDetails[]> => {
       const userId = authState.user?.id;
-      const userRole = authState.profile?.role;
+      const userRoles = authState.roles;
       
       debug('Enhanced bookings query started', {
         operation: 'fetch_enhanced_bookings',
         userId,
-        userRole,
+        userRoles,
         filters
       });
       
@@ -45,12 +45,12 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         debug('Fetching coworker and host bookings in parallel', {
           operation: 'fetch_parallel_bookings',
           userId,
-          userRole
+          userRoles
         });
         
         const [coworkerData, hostData] = await Promise.all([
           fetchCoworkerBookings(userId, filters),
-          fetchHostBookings(userId, userRole ?? '', filters)
+          fetchHostBookings(userId, userRoles[0] ?? '', filters)
         ]);
 
         debug('Raw booking data fetched successfully', {
@@ -109,7 +109,7 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
         error('Error fetching enhanced bookings', fetchError as Error, {
           operation: 'fetch_enhanced_bookings_error',
           userId,
-          userRole,
+          userRoles,
           filters
         });
         

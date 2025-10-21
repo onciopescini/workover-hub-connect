@@ -57,7 +57,7 @@ const Onboarding = () => {
         ...prev,
         firstName: (authState.profile?.first_name as string | undefined) ?? prev.firstName,
         lastName: (authState.profile?.last_name as string | undefined) ?? prev.lastName,
-        role: (authState.profile?.role as UserRole | undefined) ?? prev.role,
+        role: (authState.roles[0] as UserRole | undefined) ?? prev.role,
         profession: (authState.profile?.profession as string | undefined) ?? prev.profession,
         bio: (authState.profile?.bio as string | undefined) ?? prev.bio,
         location: (authState.profile?.location as string | undefined) ?? prev.location,
@@ -93,22 +93,39 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     try {
+      // Update profile (without role field)
       await updateProfile({
         first_name: formData.firstName,
         last_name: formData.lastName,
-        role: formData.role,
         profession: formData.profession,
         bio: formData.bio,
         location: formData.location,
-      interests: formData.interests,
-      skills: formData.skills,
-      networking_enabled: formData.networkingEnabled,
-      collaboration_availability: formData.collaborationAvailability,
-      collaboration_types: formData.collaborationTypes,
-      preferred_work_mode: formData.preferredWorkMode,
-      collaboration_description: formData.collaborationDescription,
+        interests: formData.interests,
+        skills: formData.skills,
+        networking_enabled: formData.networkingEnabled,
+        collaboration_availability: formData.collaborationAvailability,
+        collaboration_types: formData.collaborationTypes,
+        preferred_work_mode: formData.preferredWorkMode,
+        collaboration_description: formData.collaborationDescription,
         onboarding_completed: true,
       });
+
+      // Assign role in user_roles table
+      if (authState.user?.id && formData.role) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .upsert({
+            user_id: authState.user.id,
+            role: formData.role
+          }, {
+            onConflict: 'user_id,role'
+          });
+
+        if (roleError) {
+          sreLogger.error("Failed to assign role", { userId: authState.user.id, role: formData.role }, roleError as Error);
+          throw roleError;
+        }
+      }
 
       toast.success("Onboarding completato con successo!");
       
@@ -169,7 +186,6 @@ const Onboarding = () => {
         await supabase.from('profiles').update({
           first_name: formData.firstName,
           last_name: formData.lastName,
-          role: formData.role,
           profession: formData.profession,
           bio: formData.bio,
           location: formData.location,

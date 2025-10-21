@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { AppLayout } from "@/components/layout/AppLayout";
 import RefactoredSpaceForm from "@/components/spaces/RefactoredSpaceForm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import { sreLogger } from '@/lib/sre-logger';
 const SpaceEdit = () => {
   const { id } = useParams<{ id: string }>();
   const { authState } = useAuth();
+  const { isHost } = useRoleAccess();
   const navigate = useNavigate();
   
   if (!id) {
@@ -90,7 +92,7 @@ const SpaceEdit = () => {
     );
   }
 
-  if (!authState.isAuthenticated || authState.profile?.role !== 'host') {
+  if (!authState.isAuthenticated || !isHost) {
     return (
       <AppLayout title="Accesso Negato" subtitle="Solo gli host possono modificare gli spazi">
         <div className="container mx-auto py-8">

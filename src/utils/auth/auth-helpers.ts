@@ -40,9 +40,10 @@ export const getSkipRedirectPaths = (): string[] => [
   '/onboarding'
 ];
 
-export const getDashboardPath = (roles: string[]): string => {
+export const getDashboardPath = (roles: string[] | string): string => {
+  const roleArray = Array.isArray(roles) ? roles : [roles];
   // Priority: admin > host > default
-  if (roles.includes('admin')) return '/admin/users';
-  if (roles.includes('host')) return '/host/dashboard';
+  if (roleArray.includes('admin')) return '/admin/users';
+  if (roleArray.includes('host')) return '/host/dashboard';
   return '/spaces';
 };

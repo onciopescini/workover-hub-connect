@@ -22,25 +22,25 @@ export const getAdminActionsLog = async (): Promise<AdminActionLog[]> => {
       metadata: { userId: currentUser.user.id }
     });
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, is_suspended')
-      .eq('id', currentUser.user.id)
-      .single();
+    // Check if user has admin role from user_roles table
+    const { data: userRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', currentUser.user.id);
 
-    adminLogger.debug("Admin log fetch - user profile", { 
+    const roles = userRoles?.map(r => r.role) || [];
+    const isAdmin = roles.includes('admin');
+
+    adminLogger.debug("Admin log fetch - user roles", { 
       metadata: { 
-        profileRole: profile?.role || 'unknown', 
-        suspended: profile?.is_suspended ?? false 
+        rolesString: roles.join(','),
+        isAdmin
       }
     });
 
-    if (!profile || profile.role !== 'admin' || profile.is_suspended) {
-      adminLogger.warn("User is not admin or is suspended", { 
-        metadata: { 
-          role: profile?.role || 'unknown', 
-          suspended: profile?.is_suspended ?? false
-        }
+    if (!isAdmin) {
+      adminLogger.warn("User is not admin", { 
+        metadata: { rolesString: roles.join(',') }
       });
       return [];
     }

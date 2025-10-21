@@ -41,8 +41,7 @@ const AuthCallback = () => {
           }
 
           sreLogger.debug('Profile found', { 
-            hasProfile: !!profile, 
-            role: profile?.role, 
+            hasProfile: !!profile,
             onboardingCompleted: profile?.onboarding_completed,
             component: 'AuthCallback'
           });
@@ -74,19 +73,21 @@ const AuthCallback = () => {
           }
 
           if (profile?.onboarding_completed) {
-            // Redirect based on role
-            switch (profile.role) {
-              case 'admin':
-                navigate('/admin/users', { replace: true });
-                break;
-              case 'host':
-                navigate('/host/dashboard', { replace: true });
-                break;
-              case 'user':
-              case 'moderator':
-              default:
-                navigate('/spaces', { replace: true });
-                break;
+            // Fetch user roles from user_roles table
+            const { data: userRoles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id);
+
+            const roles = userRoles?.map(r => r.role) || [];
+            
+            // Redirect based on role priority: admin > host > default
+            if (roles.includes('admin')) {
+              navigate('/admin/users', { replace: true });
+            } else if (roles.includes('host')) {
+              navigate('/host/dashboard', { replace: true });
+            } else {
+              navigate('/spaces', { replace: true });
             }
           } else {
             sreLogger.debug('Redirecting to onboarding', { userId: session.user.id, component: 'AuthCallback' });
