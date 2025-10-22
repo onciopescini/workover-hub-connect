@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => ({
     minify: 'esbuild',
     // Remove console.log in production (Ondata 3 Fix 3.8)
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    // Generate source maps for production debugging and better Lighthouse insights
+    sourcemap: true,
     esbuild: {},
     rollupOptions: {
       output: {
