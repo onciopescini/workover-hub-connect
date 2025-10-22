@@ -260,7 +260,7 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
           disabled={isCurrentlyLoading}
         />
         
-        <Button type="submit" size="icon" disabled={isCurrentlyLoading}>
+        <Button type="submit" size="icon" disabled={isCurrentlyLoading} aria-label="Cerca posizione">
           <Search className="h-4 w-4" />
         </Button>
       </form>

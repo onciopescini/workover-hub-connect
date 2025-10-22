@@ -231,6 +231,7 @@ export const OptimizedUnifiedHeader = () => {
                 variant="ghost"
                 size="sm"
                 onClick={toggleMobileMenu}
+                aria-label={isMobileMenuOpen ? "Chiudi menu" : "Apri menu"}
               >
                 {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>

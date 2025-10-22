@@ -53,7 +53,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
         size="icon"
       />
       
-      <Button type="submit" size="icon" disabled={disabled || isLoading}>
+      <Button type="submit" size="icon" disabled={disabled || isLoading} aria-label="Cerca posizione">
         <Search className="h-4 w-4" />
       </Button>
     </form>
