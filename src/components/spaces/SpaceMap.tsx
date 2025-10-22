@@ -3,10 +3,10 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Space } from '@/types/space';
-import { supabase } from '@/integrations/supabase/client';
 import { SpaceMapPreview } from './SpaceMapPreview';
-import { createRoot } from 'react-dom/client';
+import { createRoot, Root } from 'react-dom/client';
 import { sreLogger } from '@/lib/sre-logger';
+import { useMapboxToken } from '@/contexts/MapboxTokenContext';
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -25,9 +25,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const popups = useRef<mapboxgl.Popup[]>([]);
+  const popupRootsRef = useRef<WeakMap<HTMLElement, Root>>(new WeakMap());
   const resizeObserver = useRef<ResizeObserver | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
-  const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const { token: mapboxToken, isLoading: isLoadingToken, error: tokenError } = useMapboxToken();
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -53,33 +53,12 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     return validSpaces;
   }, [spaces.length, spaces.map(s => `${s.id}-${s.latitude}-${s.longitude}-${s.price_per_hour}`).join(',')]);
 
-  // Fetch Mapbox token
+  // Set error from token context
   useEffect(() => {
-    const fetchMapboxToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        
-        if (error) {
-          sreLogger.error('Error fetching Mapbox token', {}, error);
-          setError('Impossibile caricare la mappa');
-          return;
-        }
-
-        if (data?.token) {
-          setMapboxToken(data.token);
-        } else {
-          setError('Token Mapbox non configurato');
-        }
-      } catch (err) {
-        sreLogger.error('Error fetching Mapbox token', {}, err as Error);
-        setError('Errore nel caricamento della mappa');
-      } finally {
-        setIsLoadingToken(false);
-      }
-    };
-
-    fetchMapboxToken();
-  }, []);
+    if (tokenError) {
+      setError(tokenError);
+    }
+  }, [tokenError]);
 
   // Stabilized user location ref to prevent re-initialization
   const stableUserLocation = useRef(userLocation);
@@ -291,13 +270,37 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           e.stopPropagation();
           onSpaceClick(space.id);
           
-          // Close existing popups
-          popups.current.forEach(popup => popup.remove());
+          // Close existing popups and cleanup roots
+          popups.current.forEach(popup => {
+            const popupElement = popup.getElement();
+            if (popupElement) {
+              const existingRoot = popupRootsRef.current.get(popupElement);
+              if (existingRoot) {
+                try {
+                  existingRoot.unmount();
+                  popupRootsRef.current.delete(popupElement);
+                } catch (error) {
+                  sreLogger.warn('Error unmounting existing popup root', {}, error as Error);
+                }
+              }
+            }
+            popup.remove();
+          });
           popups.current = [];
           
           try {
             const popupContainer = document.createElement('div');
+            
+            // Check if there's already a root for this container and unmount it
+            const existingRoot = popupRootsRef.current.get(popupContainer);
+            if (existingRoot) {
+              existingRoot.unmount();
+            }
+            
+            // Create new root and track it
             const root = createRoot(popupContainer);
+            popupRootsRef.current.set(popupContainer, root);
+            
             root.render(
               <SpaceMapPreview 
                 space={space} 
@@ -320,13 +323,22 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
               popup.on('close', () => {
                 try {
-                  root.unmount();
+                  // Cleanup root when popup closes
+                  const popupElement = popup.getElement();
+                  if (popupElement) {
+                    const rootToCleanup = popupRootsRef.current.get(popupElement);
+                    if (rootToCleanup) {
+                      rootToCleanup.unmount();
+                      popupRootsRef.current.delete(popupElement);
+                    }
+                  }
+                  
                   const index = popups.current.indexOf(popup);
                   if (index > -1) {
                     popups.current.splice(index, 1);
                   }
                 } catch (error) {
-                  // Silently handle popup cleanup errors to avoid noise
+                  sreLogger.warn('Error cleaning up popup on close', {}, error as Error);
                 }
               });
             }

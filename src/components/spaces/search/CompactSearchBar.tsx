@@ -1,5 +1,5 @@
 import React from 'react';
-import { GeographicSearch } from '@/components/shared/GeographicSearchRefactored';
+import { GeographicSearch } from '@/components/shared/GeographicSearch';
 import { DateRangePicker } from './DateRangePicker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Button } from '@/components/ui/button';

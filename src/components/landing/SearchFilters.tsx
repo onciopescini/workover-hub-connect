@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GeographicSearch } from '@/components/shared/GeographicSearchRefactored';
+import { GeographicSearch } from '@/components/shared/GeographicSearch';
 import { Calendar } from '@/components/ui/calendar';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Button } from '@/components/ui/button';

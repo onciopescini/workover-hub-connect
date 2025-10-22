@@ -8,7 +8,7 @@
  * - No lateral sidebar
  */
 import React, { useState } from 'react';
-import { SpaceMap } from '@/components/spaces/SpaceMap';
+import { LazySpaceMap, usePreloadOnHover } from '@/components/optimization/LazyComponents';
 import { CompactSpaceCardsGrid } from '@/components/spaces/compact/CompactSpaceCardsGrid';
 import { SpacesSplitLayout } from '@/components/spaces/compact/SpacesSplitLayout';
 import { CompactSearchBar } from '@/components/spaces/search/CompactSearchBar';
@@ -38,6 +38,9 @@ export const PublicSpacesContent = ({
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  
+  // Preload SpaceMap on hover for better UX
+  const preloadMapProps = usePreloadOnHover(() => import('@/components/spaces/SpaceMap'));
 
   const handleLocationChange = (location: string, coordinates?: Coordinates) => {
     onFiltersChange({
@@ -163,8 +166,8 @@ export const PublicSpacesContent = ({
         />
       }
       map={
-        <div className="relative h-[500px] lg:h-[calc(100vh-112px)] w-full">
-          <SpaceMap 
+        <div className="relative h-[500px] lg:h-[calc(100vh-112px)] w-full" {...preloadMapProps}>
+          <LazySpaceMap 
             spaces={spaces || []} 
             userLocation={mapCenter}
             onSpaceClick={onMapSpaceClick}

@@ -19,6 +19,7 @@ import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredDa
 import { optimizedQueryClient } from "@/lib/react-query-config";
 import { FiscalModeProvider } from "@/contexts/FiscalModeContext";
 import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
+import { MapboxTokenProvider } from "@/contexts/MapboxTokenContext";
 
 import "./App.css";
 import { initSentry } from "@/lib/sentry-config";
@@ -43,19 +44,21 @@ function App() {
               <BrowserRouter>
                 <AnalyticsProvider>
                   <AuthProvider>
-                    <FiscalModeProvider>
-                      <GDPRProvider>
-                        <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
-                          <PerformanceMonitor />
-                          <PerformanceBudget />
-                          <RoutePreloader />
-                          <OrganizationSchema />
-                          <WebsiteSchema />
-                          <FiscalModeIndicator />
-                          <AppRoutes />
-                        </ErrorBoundary>
-                      </GDPRProvider>
-                    </FiscalModeProvider>
+                    <MapboxTokenProvider>
+                      <FiscalModeProvider>
+                        <GDPRProvider>
+                          <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+                            <PerformanceMonitor />
+                            <PerformanceBudget />
+                            <RoutePreloader />
+                            <OrganizationSchema />
+                            <WebsiteSchema />
+                            <FiscalModeIndicator />
+                            <AppRoutes />
+                          </ErrorBoundary>
+                        </GDPRProvider>
+                      </FiscalModeProvider>
+                    </MapboxTokenProvider>
                   </AuthProvider>
                 </AnalyticsProvider>
               </BrowserRouter>
