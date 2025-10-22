@@ -20,7 +20,7 @@ const ANALYTICS_CONFIG = {
   plausible: {
     domain: import.meta.env.PROD ? 'workover.app' : window.location.hostname,
     enabled: true,
-    apiHost: import.meta.env.PROD ? 'https://plausible.io' : null // Use proxy in dev
+    apiHost: null // Using proxy via data-api attribute in index.html
   },
   gtag: {
     measurementId: 'G-XXXXXXXXXX', // Replace with actual GA4 ID

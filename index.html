@@ -50,8 +50,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-512.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Plausible Analytics - GDPR Compliant -->
-    <script defer data-domain="preview--workover-hub-connect.lovable.app" src="https://plausible.io/js/script.js"></script>
+    <!-- Plausible Analytics - GDPR Compliant (via proxy to avoid CORS) -->
+    <script defer data-domain="preview--workover-hub-connect.lovable.app" data-api="https://khtqwzvrxzsgfhsslwyz.supabase.co/functions/v1/analytics-proxy" src="https://plausible.io/js/script.js"></script>
     
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
