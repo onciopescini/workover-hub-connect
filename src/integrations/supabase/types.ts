@@ -49,7 +49,7 @@ export type Database = {
           created_at: string | null
           expires_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           last_activity: string | null
           session_token: string
           user_agent: string | null
@@ -59,7 +59,7 @@ export type Database = {
           created_at?: string | null
           expires_at: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_activity?: string | null
           session_token: string
           user_agent?: string | null
@@ -69,7 +69,7 @@ export type Database = {
           created_at?: string | null
           expires_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           last_activity?: string | null
           session_token?: string
           user_agent?: string | null
@@ -83,7 +83,7 @@ export type Database = {
           action: string
           admin_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           record_id: string
           table_name: string
@@ -94,7 +94,7 @@ export type Database = {
           action: string
           admin_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           record_id: string
           table_name: string
@@ -105,7 +105,7 @@ export type Database = {
           action?: string
           admin_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           record_id?: string
           table_name?: string
@@ -121,7 +121,7 @@ export type Database = {
           description: string
           geo_location: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           session_id: string | null
           target_id: string
@@ -135,7 +135,7 @@ export type Database = {
           description: string
           geo_location?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           session_id?: string | null
           target_id: string
@@ -149,7 +149,7 @@ export type Database = {
           description?: string
           geo_location?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           session_id?: string | null
           target_id?: string
@@ -167,7 +167,7 @@ export type Database = {
           file_url: string | null
           filters: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           row_count: number
           user_agent: string | null
         }
@@ -179,7 +179,7 @@ export type Database = {
           file_url?: string | null
           filters?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           row_count?: number
           user_agent?: string | null
         }
@@ -191,7 +191,7 @@ export type Database = {
           file_url?: string | null
           filters?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           row_count?: number
           user_agent?: string | null
         }
@@ -988,7 +988,7 @@ export type Database = {
           consent_method: string
           consent_version: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean
           marketing_consent: boolean
           necessary_consent: boolean
@@ -1004,7 +1004,7 @@ export type Database = {
           consent_method?: string
           consent_version?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           marketing_consent?: boolean
           necessary_consent?: boolean
@@ -1020,7 +1020,7 @@ export type Database = {
           consent_method?: string
           consent_version?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean
           marketing_consent?: boolean
           necessary_consent?: boolean
@@ -1172,7 +1172,7 @@ export type Database = {
           column_names: string[] | null
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           table_name: string
           user_agent: string | null
           user_id: string
@@ -1183,7 +1183,7 @@ export type Database = {
           column_names?: string[] | null
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name: string
           user_agent?: string | null
           user_id: string
@@ -1194,7 +1194,7 @@ export type Database = {
           column_names?: string[] | null
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           table_name?: string
           user_agent?: string | null
           user_id?: string
@@ -1662,7 +1662,7 @@ export type Database = {
           attempt_time: string | null
           email: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           reason: string | null
           session_id: string | null
           user_agent: string | null
@@ -1671,7 +1671,7 @@ export type Database = {
           attempt_time?: string | null
           email: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           reason?: string | null
           session_id?: string | null
           user_agent?: string | null
@@ -1680,7 +1680,7 @@ export type Database = {
           attempt_time?: string | null
           email?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           reason?: string | null
           session_id?: string | null
           user_agent?: string | null
@@ -3200,7 +3200,7 @@ export type Database = {
           created_at: string | null
           id: string
           identifier: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
           window_start: string | null
         }
@@ -3211,7 +3211,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           identifier: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           window_start?: string | null
         }
@@ -3222,7 +3222,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           identifier?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
           window_start?: string | null
         }
@@ -3478,7 +3478,7 @@ export type Database = {
           amenities: string[]
           approved_at: string | null
           approved_by: string | null
-          approximate_location: unknown | null
+          approximate_location: unknown
           availability: Json | null
           cached_avg_rating: number | null
           cached_review_count: number | null
@@ -3524,7 +3524,7 @@ export type Database = {
           amenities?: string[]
           approved_at?: string | null
           approved_by?: string | null
-          approximate_location?: unknown | null
+          approximate_location?: unknown
           availability?: Json | null
           cached_avg_rating?: number | null
           cached_review_count?: number | null
@@ -3570,7 +3570,7 @@ export type Database = {
           amenities?: string[]
           approved_at?: string | null
           approved_by?: string | null
-          approximate_location?: unknown | null
+          approximate_location?: unknown
           availability?: Json | null
           cached_avg_rating?: number | null
           cached_review_count?: number | null
@@ -4735,7 +4735,7 @@ export type Database = {
       spaces_public_safe: {
         Row: {
           amenities: string[] | null
-          approximate_location: unknown | null
+          approximate_location: unknown
           availability: Json | null
           cancellation_policy:
             | Database["public"]["Enums"]["cancellation_policy"]
@@ -4767,7 +4767,7 @@ export type Database = {
         }
         Insert: {
           amenities?: string[] | null
-          approximate_location?: unknown | null
+          approximate_location?: unknown
           availability?: Json | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
@@ -4799,7 +4799,7 @@ export type Database = {
         }
         Update: {
           amenities?: string[] | null
-          approximate_location?: unknown | null
+          approximate_location?: unknown
           availability?: Json | null
           cancellation_policy?:
             | Database["public"]["Enums"]["cancellation_policy"]
@@ -4912,10 +4912,7 @@ export type Database = {
         Args: { space_id_param: string }
         Returns: number
       }
-      can_moderate_content: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
+      can_moderate_content: { Args: { user_id: string }; Returns: boolean }
       cancel_booking: {
         Args: {
           booking_id: string
@@ -4925,7 +4922,7 @@ export type Database = {
         Returns: Json
       }
       check_payment_integrity: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           booking_date: string
           booking_id: string
@@ -4965,30 +4962,12 @@ export type Database = {
         Args: { p_message: string; p_user_id: string }
         Returns: boolean
       }
-      cleanup_expired_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_gdpr_exports: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_expired_slots: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_inactive_data: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      cleanup_old_audit_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_expired_cache: { Args: never; Returns: undefined }
+      cleanup_expired_gdpr_exports: { Args: never; Returns: undefined }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_slots: { Args: never; Returns: undefined }
+      cleanup_inactive_data: { Args: never; Returns: Json }
+      cleanup_old_audit_logs: { Args: never; Returns: undefined }
       create_image_processing_job: {
         Args: {
           original_path_param: string
@@ -5019,18 +4998,9 @@ export type Database = {
         }
         Returns: Json
       }
-      expire_pending_connections: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      export_user_data: {
-        Args: { target_user_id: string }
-        Returns: Json
-      }
-      generate_connection_suggestions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      expire_pending_connections: { Args: never; Returns: undefined }
+      export_user_data: { Args: { target_user_id: string }; Returns: Json }
+      generate_connection_suggestions: { Args: never; Returns: undefined }
       get_admin_kyc_hosts: {
         Args: { kyc_status_param?: string }
         Returns: {
@@ -5052,20 +5022,23 @@ export type Database = {
         Args: { metric_type_param: string; time_window_hours?: number }
         Returns: Json
       }
-      get_alternative_time_slots: {
-        Args:
-          | {
+      get_alternative_time_slots:
+        | {
+            Args: {
               date_param: string
               duration_hours_param: number
               space_id_param: string
             }
-          | {
+            Returns: string[]
+          }
+        | {
+            Args: {
               date_param: string
               duration_hours_param: number
               space_id_param: string
             }
-        Returns: string[]
-      }
+            Returns: string[]
+          }
       get_cron_job_runs: {
         Args: { limit_count?: number }
         Returns: {
@@ -5082,7 +5055,7 @@ export type Database = {
         }[]
       }
       get_cron_jobs: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active: boolean
           command: string
@@ -5099,10 +5072,7 @@ export type Database = {
         Args: { year_param?: number }
         Returns: Json
       }
-      get_host_metrics: {
-        Args: { host_id_param: string }
-        Returns: Json
-      }
+      get_host_metrics: { Args: { host_id_param: string }; Returns: Json }
       get_host_transactions_optimized: {
         Args: { host_id_param: string; limit_param?: number }
         Returns: {
@@ -5132,7 +5102,7 @@ export type Database = {
         }[]
       }
       get_my_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_or_create_conversation: {
@@ -5173,7 +5143,7 @@ export type Database = {
         Returns: Json
       }
       get_public_spaces: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           address: string
           amenities: string[]
@@ -5207,26 +5177,35 @@ export type Database = {
         Args: { space_id_param: string }
         Returns: Json
       }
-      get_space_availability_optimized: {
-        Args:
-          | {
+      get_space_availability_optimized:
+        | {
+            Args: {
               end_date_param: string
               space_id_param: string
               start_date_param: string
             }
-          | {
+            Returns: {
+              booking_id: string
+              end_time: string
+              start_time: string
+              status: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: {
               end_date_param: string
               space_id_param: string
               start_date_param: string
             }
-        Returns: {
-          booking_id: string
-          end_time: string
-          start_time: string
-          status: string
-          user_id: string
-        }[]
-      }
+            Returns: {
+              booking_date: string
+              end_time: string
+              start_time: string
+              status: string
+              user_id: string
+            }[]
+          }
       get_space_availability_v2: {
         Args: {
           end_date_param: string
@@ -5303,10 +5282,7 @@ export type Database = {
           space_id: string
         }[]
       }
-      get_support_metrics: {
-        Args: { days_back?: number }
-        Returns: Json
-      }
+      get_support_metrics: { Args: { days_back?: number }; Returns: Json }
       get_user_primary_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -5340,14 +5316,8 @@ export type Database = {
         Args: { event_uuid: string }
         Returns: undefined
       }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_moderator: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_moderator: { Args: { user_id: string }; Returns: boolean }
       lock_and_select_expired_bookings: {
         Args: { p_lock_duration_minutes?: number }
         Returns: {
@@ -5386,6 +5356,12 @@ export type Database = {
           updated_at: string | null
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       lock_and_select_reminder_bookings: {
         Args: { p_lock_duration_minutes?: number }
@@ -5425,6 +5401,12 @@ export type Database = {
           updated_at: string | null
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       log_admin_access: {
         Args: {
@@ -5455,10 +5437,7 @@ export type Database = {
         }
         Returns: string
       }
-      mark_all_notifications_as_read: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      mark_all_notifications_as_read: { Args: never; Returns: boolean }
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
@@ -5485,10 +5464,7 @@ export type Database = {
         Args: { reactivated_by_admin: string; target_user_id: string }
         Returns: Json
       }
-      refresh_user_suggestions: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      refresh_user_suggestions: { Args: { p_user_id: string }; Returns: Json }
       remove_moderator_role: {
         Args: { removed_by_admin?: string; target_user_id: string }
         Returns: Json
@@ -5514,10 +5490,7 @@ export type Database = {
         }
         Returns: Json
       }
-      run_data_minimization_audit: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      run_data_minimization_audit: { Args: never; Returns: Json }
       schedule_dac7_retry: {
         Args: { queue_id_param: string }
         Returns: undefined
@@ -5536,10 +5509,7 @@ export type Database = {
           space_title: string
         }[]
       }
-      send_sla_alerts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      send_sla_alerts: { Args: never; Returns: undefined }
       should_send_notification: {
         Args: { p_notification_type: string; p_user_id: string }
         Returns: boolean
@@ -5556,10 +5526,7 @@ export type Database = {
         }
         Returns: Json
       }
-      unlock_bookings: {
-        Args: { booking_ids: string[] }
-        Returns: undefined
-      }
+      unlock_bookings: { Args: { booking_ids: string[] }; Returns: undefined }
       update_image_processing_job: {
         Args: {
           compression_ratio_param?: number
@@ -5571,10 +5538,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      update_ticket_sla_status: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_ticket_sla_status: { Args: never; Returns: undefined }
       validate_and_reserve_multi_slots: {
         Args: {
           client_total_price_param?: number
@@ -5586,9 +5550,9 @@ export type Database = {
         }
         Returns: Json
       }
-      validate_and_reserve_slot: {
-        Args:
-          | {
+      validate_and_reserve_slot:
+        | {
+            Args: {
               client_base_price_param?: number
               confirmation_type_param: string
               date_param: string
@@ -5598,7 +5562,10 @@ export type Database = {
               start_time_param: string
               user_id_param: string
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: {
               confirmation_type_param: string
               date_param: string
               end_time_param: string
@@ -5606,33 +5573,39 @@ export type Database = {
               start_time_param: string
               user_id_param: string
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: {
               date_param: string
               end_time_param: string
               space_id_param: string
               start_time_param: string
               user_id_param: string
             }
-        Returns: Json
-      }
-      validate_booking_slot_with_lock: {
-        Args:
-          | {
+            Returns: Json
+          }
+      validate_booking_slot_with_lock:
+        | {
+            Args: {
               date_param: string
               end_time_param: string
               space_id_param: string
               start_time_param: string
               user_id_param: string
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: {
               date_param: string
               end_time_param: string
               space_id_param: string
               start_time_param: string
               user_id_param: string
             }
-        Returns: Json
-      }
+            Returns: Json
+          }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "host"
