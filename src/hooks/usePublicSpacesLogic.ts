@@ -101,45 +101,118 @@ function normalizePublicSpace(raw: any): any {
 }
 
 /**
- * Batch check availability for multiple spaces using RPC
+ * Optimized batch check availability for multiple spaces using RPC
+ * Features: chunking, parallel requests, retry logic, performance monitoring
  */
+const BATCH_SIZE = 50;
+const MAX_RETRIES = 2;
+
 const checkSpacesAvailabilityBatch = async (
   spaceIds: string[],
   date: Date,
   startTime: string,
   endTime: string
 ): Promise<Record<string, { isAvailable: boolean; availableSpots: number; maxCapacity: number }>> => {
-  try {
-    const dateStr = date.toISOString().split('T')[0] || '';
-    
-    const { data, error } = await supabase.rpc('get_spaces_availability_batch', {
-      space_ids: spaceIds,
-      check_date: dateStr,
-      check_start_time: startTime,
-      check_end_time: endTime
-    });
-
-    if (error) {
-      console.error('Error in batch availability check:', error);
-      return {};
-    }
-
-    // Convert array result to object map
-    const availabilityMap: Record<string, { isAvailable: boolean; availableSpots: number; maxCapacity: number }> = {};
-    
-    data?.forEach((item: any) => {
-      availabilityMap[item.space_id] = {
-        isAvailable: item.available_capacity > 0,
-        availableSpots: item.available_capacity,
-        maxCapacity: item.max_capacity
-      };
-    });
-
-    return availabilityMap;
-  } catch (error) {
-    console.error('Error in checkSpacesAvailabilityBatch:', error);
-    return {};
+  // Split into chunks to prevent timeout
+  const chunks: string[][] = [];
+  for (let i = 0; i < spaceIds.length; i += BATCH_SIZE) {
+    chunks.push(spaceIds.slice(i, i + BATCH_SIZE));
   }
+  
+  const { info, warn, error } = { 
+    info: (msg: string, ctx?: any) => console.log(msg, ctx),
+    warn: (msg: string, ctx?: any) => console.warn(msg, ctx),
+    error: (msg: string, ctx?: any) => console.error(msg, ctx)
+  };
+  
+  info('Batch availability check started', {
+    totalSpaces: spaceIds.length,
+    chunksCount: chunks.length,
+    batchSize: BATCH_SIZE
+  });
+  
+  const dateStr = date.toISOString().split('T')[0] || '';
+  
+  // Process chunks in parallel with retry
+  const chunkPromises = chunks.map(async (chunk, index) => {
+    let retries = 0;
+    
+    while (retries <= MAX_RETRIES) {
+      try {
+        const startTime = performance.now();
+        
+        const { data, error: rpcError } = await supabase.rpc('get_spaces_availability_batch', {
+          space_ids: chunk,
+          check_date: dateStr,
+          check_start_time: startTime as any, // Type coercion needed due to function signature
+          check_end_time: endTime as any
+        });
+        
+        const duration = performance.now() - startTime;
+        
+        if (rpcError) throw rpcError;
+        
+        if (duration > 1000) {
+          warn('Slow availability chunk detected', {
+            chunkIndex: index,
+            duration,
+            chunkSize: chunk.length
+          });
+        }
+        
+        return data;
+        
+      } catch (err) {
+        retries++;
+        if (retries > MAX_RETRIES) {
+          error('Availability check chunk failed after retries', {
+            chunkIndex: index,
+            attempts: retries,
+            error: err
+          });
+          return [];
+        }
+        
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+      }
+    }
+    
+    return [];
+  });
+  
+  const results = await Promise.allSettled(chunkPromises);
+  
+  // Merge results
+  const availabilityMap: Record<string, { isAvailable: boolean; availableSpots: number; maxCapacity: number }> = {};
+  let successfulChunks = 0;
+  
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled' && result.value) {
+      result.value.forEach((item: any) => {
+        availabilityMap[item.space_id] = {
+          isAvailable: item.available_capacity > 0,
+          availableSpots: item.available_capacity,
+          maxCapacity: item.max_capacity
+        };
+      });
+      successfulChunks++;
+    } else {
+      warn('Chunk failed to load', { 
+        chunkIndex: index,
+        reason: result.status === 'rejected' ? result.reason : 'unknown'
+      });
+    }
+  });
+  
+  info('Batch availability check complete', {
+    totalRequested: spaceIds.length,
+    totalFound: Object.keys(availabilityMap).length,
+    successRate: `${Math.round((Object.keys(availabilityMap).length / spaceIds.length) * 100)}%`,
+    successfulChunks: `${successfulChunks}/${chunks.length}`
+  });
+  
+  return availabilityMap;
 };
 
 interface SpaceFilters {

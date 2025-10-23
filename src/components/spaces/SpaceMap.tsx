@@ -69,7 +69,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     stableUserLocation.current = userLocation;
   }, [userLocation]);
 
-  // Initialize map once with stable dependencies
+  // Initialize map once with stable dependencies + performance monitoring
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map.current || mapInitialized.current) return;
 
@@ -78,6 +78,11 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       if (!container) return false;
       
       const containerRect = container.getBoundingClientRect();
+      const startTime = performance.now();
+      const stopTimer = sreLogger.startTimer('map_initialization', {
+        hasToken: !!mapboxToken,
+        initialSpacesCount: spaces.length
+      });
       
       sreLogger.debug('Initializing Mapbox map', { 
         hasToken: !!mapboxToken,
@@ -87,6 +92,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       // Se container ha altezza 0, ritenta dopo un delay
       if (containerRect.width === 0 || containerRect.height === 0) {
         sreLogger.warn('Map container has zero dimensions, retrying...', { containerRect });
+        stopTimer();
         return false;
       }
       
@@ -105,8 +111,22 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
         map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-        // Handle map events
+        // Handle map events with performance tracking
         map.current.on('load', () => {
+          stopTimer();
+          const loadTime = performance.now() - startTime;
+          sreLogger.logMetric('map_load_time', loadTime, 'ms', {
+            zoom: (stableUserLocation.current ? 10 : 6).toString(),
+            hasSpaces: spaces.length > 0 ? 'yes' : 'no'
+          });
+          
+          if (loadTime > 2000) {
+            sreLogger.warn('Slow map initialization detected', {
+              loadTime,
+              spacesCount: spaces.length
+            });
+          }
+          
           sreLogger.debug('Map loaded successfully');
           setMapReady(true);
           setError(null);
@@ -136,6 +156,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       } catch (error) {
         sreLogger.error('Error initializing map', {}, error as Error);
         setError('Errore nell\'inizializzazione della mappa');
+        stopTimer();
         return false;
       }
     };
@@ -167,7 +188,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       }
       mapInitialized.current = false;
     };
-  }, [mapboxToken]);
+  }, [mapboxToken, spaces.length]);
 
   // Debounced container size monitoring to prevent resize loops
   useEffect(() => {
@@ -233,131 +254,195 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     }
   }, [userLocation, mapReady]);
 
-  // Add/update markers
+  // Add/update markers with intelligent diffing - OPTIMIZED
   useEffect(() => {
     if (!map.current || !mapReady || !memoizedSpaces.length) return;
 
-    // Clear existing markers
-    Object.values(markers.current).forEach(marker => marker.remove());
-    markers.current = {};
-    
-    popups.current.forEach(popup => popup.remove());
-    popups.current = [];
+    const startTime = performance.now();
+    const stopTimer = sreLogger.startTimer('marker_update', {
+      spacesCount: memoizedSpaces.length,
+      existingMarkers: Object.keys(markers.current).length
+    });
 
-    // Add new markers
+    // Create set of current space IDs for diffing
+    const currentSpaceIds = new Set(memoizedSpaces.map(s => s.id));
+    const existingSpaceIds = new Set(Object.keys(markers.current));
+    
+    let addedCount = 0;
+    let removedCount = 0;
+    let updatedCount = 0;
+
+    // 1. Remove markers for spaces no longer in list
+    existingSpaceIds.forEach(spaceId => {
+      if (!currentSpaceIds.has(spaceId)) {
+        markers.current[spaceId]?.remove();
+        delete markers.current[spaceId];
+        removedCount++;
+      }
+    });
+
+    // 2. Add or update markers
     memoizedSpaces.forEach((space) => {
       if (!map.current || !mapReady || !space.latitude || !space.longitude) return;
 
       try {
+        const existingMarker = markers.current[space.id];
         const isHighlighted = highlightedSpaceId === space.id;
-        
-        const markerEl = document.createElement('div');
-        markerEl.className = 'space-marker';
-        
-        // Create marker content safely without innerHTML
-        const markerContent = document.createElement('div');
-        markerContent.className = `w-auto min-w-[60px] h-8 bg-white rounded-full border-2 ${
-          isHighlighted ? 'border-indigo-600 bg-indigo-50 scale-110 shadow-lg' : 'border-indigo-600'
-        } shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 ${
-          isHighlighted ? 'animate-pulse' : ''
-        }`;
-        
-        // Safely set text content to prevent XSS
-        markerContent.textContent = `€${space.price_per_hour}`;
-        markerEl.appendChild(markerContent);
-        
-        markerEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onSpaceClick(space.id);
+
+        if (existingMarker) {
+          // Update existing marker
+          const markerEl = existingMarker.getElement();
+          const content = markerEl.querySelector('.space-marker > div');
           
-          // Close existing popups and cleanup roots
-          popups.current.forEach(popup => {
-            const popupElement = popup.getElement();
-            if (popupElement) {
-              const existingRoot = popupRootsRef.current.get(popupElement);
-              if (existingRoot) {
-                try {
-                  existingRoot.unmount();
-                  popupRootsRef.current.delete(popupElement);
-                } catch (error) {
-                  sreLogger.warn('Error unmounting existing popup root', {}, error as Error);
+          if (content) {
+            // Update highlight state
+            if (isHighlighted) {
+              content.classList.add('border-indigo-600', 'bg-indigo-50', 'scale-110', 'shadow-lg', 'animate-pulse');
+              content.classList.remove('border-gray-300');
+            } else {
+              content.classList.remove('border-indigo-600', 'bg-indigo-50', 'scale-110', 'shadow-lg', 'animate-pulse');
+              content.classList.add('border-gray-300');
+            }
+            
+            // Update price if changed
+            const newPrice = `€${space.price_per_hour}`;
+            if (content.textContent !== newPrice) {
+              content.textContent = newPrice;
+            }
+          }
+          
+          // Update position if coordinates changed
+          const currentLngLat = existingMarker.getLngLat();
+          if (Math.abs(currentLngLat.lng - space.longitude) > 0.0001 || 
+              Math.abs(currentLngLat.lat - space.latitude) > 0.0001) {
+            existingMarker.setLngLat([space.longitude, space.latitude]);
+          }
+          
+          updatedCount++;
+        } else {
+          // Create new marker
+          const markerEl = document.createElement('div');
+          markerEl.className = 'space-marker';
+          
+          const markerContent = document.createElement('div');
+          markerContent.className = `w-auto min-w-[60px] h-8 bg-white rounded-full border-2 ${
+            isHighlighted ? 'border-indigo-600 bg-indigo-50 scale-110 shadow-lg' : 'border-indigo-600'
+          } shadow-lg cursor-pointer flex items-center justify-center px-2 text-indigo-600 text-sm font-bold hover:bg-indigo-600 hover:text-white transition-all duration-200 ${
+            isHighlighted ? 'animate-pulse' : ''
+          }`;
+          
+          markerContent.textContent = `€${space.price_per_hour}`;
+          markerEl.appendChild(markerContent);
+          
+          markerEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            const popupStartTime = performance.now();
+            
+            // Close existing popups and cleanup roots
+            popups.current.forEach(popup => {
+              const popupElement = popup.getElement();
+              if (popupElement) {
+                const existingRoot = popupRootsRef.current.get(popupElement);
+                if (existingRoot) {
+                  try {
+                    existingRoot.unmount();
+                    popupRootsRef.current.delete(popupElement);
+                  } catch (error) {
+                    sreLogger.error('Error unmounting popup root', { spaceId: space.id }, error as Error);
+                  }
                 }
               }
-            }
-            popup.remove();
-          });
-          popups.current = [];
-          
-          try {
-            const popupContainer = document.createElement('div');
+              popup.remove();
+            });
+            popups.current = [];
             
-            // Check if there's already a root for this container and unmount it
-            const existingRoot = popupRootsRef.current.get(popupContainer);
-            if (existingRoot) {
-              existingRoot.unmount();
-            }
-            
-            // Create new root and track it
-            const root = createRoot(popupContainer);
-            popupRootsRef.current.set(popupContainer, root);
-            
-            root.render(
-              <SpaceMapPreview 
-                space={space} 
-                onViewDetails={onSpaceClick}
-              />
-            );
+            try {
+              const popupContainer = document.createElement('div');
+              
+              // Create new root and track it
+              const root = createRoot(popupContainer);
+              popupRootsRef.current.set(popupContainer, root);
+              
+              root.render(
+                <SpaceMapPreview 
+                  space={space} 
+                  onViewDetails={onSpaceClick}
+                />
+              );
 
-            const popup = new mapboxgl.Popup({
-              offset: 25,
-              closeButton: true,
-              closeOnClick: false,
-              maxWidth: 'none'
-            })
-              .setDOMContent(popupContainer)
-              .setLngLat([space.longitude!, space.latitude!]);
+              const popup = new mapboxgl.Popup({
+                offset: 25,
+                closeButton: true,
+                closeOnClick: false,
+                maxWidth: 'none'
+              })
+                .setDOMContent(popupContainer)
+                .setLngLat([space.longitude!, space.latitude!]);
 
-            if (map.current && mapReady && mapContainer.current?.isConnected) {
-              popup.addTo(map.current);
-              popups.current.push(popup);
+              if (map.current && mapReady && mapContainer.current?.isConnected) {
+                popup.addTo(map.current);
+                popups.current.push(popup);
 
-              popup.on('close', () => {
-                try {
-                  // Cleanup root when popup closes
-                  const popupElement = popup.getElement();
-                  if (popupElement) {
-                    const rootToCleanup = popupRootsRef.current.get(popupElement);
+                const popupTime = performance.now() - popupStartTime;
+                sreLogger.logMetric('popup_creation_time', popupTime, 'ms', {
+                  spaceId: space.id
+                });
+
+                popup.on('close', () => {
+                  try {
+                    const rootToCleanup = popupRootsRef.current.get(popupContainer);
                     if (rootToCleanup) {
                       rootToCleanup.unmount();
-                      popupRootsRef.current.delete(popupElement);
+                      popupRootsRef.current.delete(popupContainer);
                     }
+                    
+                    const index = popups.current.indexOf(popup);
+                    if (index > -1) {
+                      popups.current.splice(index, 1);
+                    }
+                  } catch (error) {
+                    sreLogger.error('Error cleaning up popup on close', { spaceId: space.id }, error as Error);
                   }
-                  
-                  const index = popups.current.indexOf(popup);
-                  if (index > -1) {
-                    popups.current.splice(index, 1);
-                  }
-                } catch (error) {
-                  sreLogger.warn('Error cleaning up popup on close', {}, error as Error);
-                }
-              });
+                });
+              }
+            } catch (error) {
+              sreLogger.error('Error creating popup', { spaceId: space.id }, error as Error);
             }
-          } catch (error) {
-            sreLogger.error('Error creating popup', { spaceId: space.id }, error as Error);
+          });
+
+          const marker = new mapboxgl.Marker(markerEl)
+            .setLngLat([space.longitude!, space.latitude!]);
+
+          if (map.current && mapReady && mapContainer.current?.isConnected) {
+            marker.addTo(map.current);
+            markers.current[space.id] = marker;
+            addedCount++;
           }
-        });
-
-        const marker = new mapboxgl.Marker(markerEl)
-          .setLngLat([space.longitude!, space.latitude!]);
-
-        if (map.current && mapReady && mapContainer.current?.isConnected) {
-          marker.addTo(map.current);
-          markers.current[space.id] = marker;
         }
       } catch (error) {
-        sreLogger.error('Failed to add marker for space', { spaceId: space.id }, error as Error);
+        sreLogger.error('Failed to add/update marker for space', { spaceId: space.id }, error as Error);
       }
     });
+
+    stopTimer();
+    const updateTime = performance.now() - startTime;
+    
+    sreLogger.debug('Marker update complete', {
+      total: memoizedSpaces.length,
+      added: addedCount,
+      removed: removedCount,
+      updated: updatedCount,
+      updateTime
+    });
+    
+    if (updateTime > 500) {
+      sreLogger.warn('Slow marker update detected', {
+        updateTime,
+        totalSpaces: memoizedSpaces.length,
+        operation: 'marker_update'
+      });
+    }
   }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId]);
 
   // Add user location marker
@@ -367,7 +452,6 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     try {
       const userMarkerEl = document.createElement('div');
       
-      // Create user location marker safely without innerHTML
       const userMarkerContent = document.createElement('div');
       userMarkerContent.className = 'w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg animate-pulse';
       userMarkerEl.appendChild(userMarkerContent);

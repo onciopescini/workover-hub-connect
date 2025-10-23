@@ -50,7 +50,14 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     }
   }, [value]);
 
-  // Gestisce la ricerca con debounce
+  // Smart debounce: longer for short queries to prevent excessive API calls
+  const getDebounceDelay = useCallback((query: string) => {
+    if (query.length < 3) return 0; // No search
+    if (query.length < 5) return 600; // Longer for short queries
+    return 400; // Shorter for longer, more specific queries
+  }, []);
+
+  // Gestisce la ricerca con debounce intelligente
   const handleSearchInput = useCallback(async (inputValue: string) => {
     // Aggiorna lo stato appropriato
     if (value === undefined) {
@@ -62,11 +69,12 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
       onChange(inputValue);
     }
     
+    // Cancel previous request
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    if (inputValue.trim().length < 2) {
+    if (inputValue.trim().length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
       setIsSearching(false);
@@ -74,6 +82,8 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     }
 
     setIsSearching(true);
+    
+    const debounceDelay = getDebounceDelay(inputValue);
     
     searchTimeoutRef.current = setTimeout(async () => {
       try {
@@ -91,8 +101,8 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
       } finally {
         setIsSearching(false);
       }
-    }, 300);
-  }, [geocodeAddress, onChange, value]);
+    }, debounceDelay);
+  }, [geocodeAddress, onChange, value, getDebounceDelay, error]);
 
   // Gestisce la selezione di un suggerimento
   const handleSuggestionSelect = useCallback((suggestion: GeocodeResult) => {

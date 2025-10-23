@@ -18,6 +18,12 @@ export const useMapboxGeocodingCached = () => {
     
     setError(null);
     
+    const startTime = performance.now();
+    sreLogger.info('Geocoding request started', { 
+      query,
+      queryLength: query.length 
+    });
+    
     try {
       if (!mapboxToken) {
         throw new Error('Token Mapbox non disponibile');
@@ -28,16 +34,35 @@ export const useMapboxGeocodingCached = () => {
       );
       
       if (!response.ok) {
+        sreLogger.error('Geocoding request failed', { 
+          query,
+          status: response.status 
+        });
         throw new Error('Errore nella ricerca della località');
       }
       
       const data = await response.json();
-      
-      return data.features.map((feature: { place_name: string; center: [number, number]; bbox?: [number, number, number, number] }) => ({
+      const results = data.features.map((feature: { place_name: string; center: [number, number]; bbox?: [number, number, number, number] }) => ({
         place_name: feature.place_name,
         center: feature.center,
         bbox: feature.bbox
       }));
+
+      const duration = performance.now() - startTime;
+      sreLogger.logMetric('geocoding_api_duration', duration, 'ms', {
+        query_length: query.length.toString(),
+        results_count: results.length.toString()
+      });
+
+      if (duration > 1000) {
+        sreLogger.warn('Slow geocoding detected', {
+          query,
+          duration,
+          resultsCount: results.length
+        });
+      }
+
+      return results;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore nella geocodifica';
       setError(errorMessage);
@@ -49,6 +74,9 @@ export const useMapboxGeocodingCached = () => {
   const reverseGeocode = async (lng: number, lat: number): Promise<string> => {
     setError(null);
     
+    const startTime = performance.now();
+    sreLogger.info('Reverse geocoding request started', { lng, lat });
+    
     try {
       if (!mapboxToken) {
         throw new Error('Token Mapbox non disponibile');
@@ -59,11 +87,23 @@ export const useMapboxGeocodingCached = () => {
       );
       
       if (!response.ok) {
+        sreLogger.error('Reverse geocoding request failed', { 
+          lng,
+          lat,
+          status: response.status 
+        });
         throw new Error('Errore nella ricerca della posizione');
       }
       
       const data = await response.json();
-      return data.features[0]?.place_name || 'Posizione sconosciuta';
+      const placeName = data.features[0]?.place_name || 'Posizione sconosciuta';
+
+      const duration = performance.now() - startTime;
+      sreLogger.logMetric('reverse_geocoding_duration', duration, 'ms', {
+        has_result: (placeName !== 'Posizione sconosciuta').toString()
+      });
+
+      return placeName;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore nel reverse geocoding';
       setError(errorMessage);
@@ -75,12 +115,12 @@ export const useMapboxGeocodingCached = () => {
   return {
     geocodeAddress,
     reverseGeocode,
-    isLoading: false, // We handle loading in the query
+    isLoading: false,
     error
   };
 };
 
-// Hook with React Query caching
+// Hook with React Query caching + performance monitoring
 export const useGeocodingQuery = (query: string) => {
   const { token: mapboxToken } = useMapboxToken();
 
@@ -88,6 +128,13 @@ export const useGeocodingQuery = (query: string) => {
     queryKey: ['geocode', query],
     queryFn: async () => {
       if (!query.trim() || query.length < 3) return [];
+      
+      const startTime = performance.now();
+      sreLogger.info('Geocoding query started', { 
+        query,
+        queryLength: query.length,
+        source: 'useGeocodingQuery'
+      });
       
       if (!mapboxToken) {
         throw new Error('Token Mapbox non disponibile');
@@ -98,20 +145,32 @@ export const useGeocodingQuery = (query: string) => {
       );
       
       if (!response.ok) {
+        sreLogger.error('Geocoding query failed', { 
+          query,
+          status: response.status 
+        });
         throw new Error('Errore nella ricerca della località');
       }
       
       const data = await response.json();
-      
-      return data.features.map((feature: { place_name: string; center: [number, number]; bbox?: [number, number, number, number] }) => ({
+      const results = data.features.map((feature: { place_name: string; center: [number, number]; bbox?: [number, number, number, number] }) => ({
         place_name: feature.place_name,
         center: feature.center,
         bbox: feature.bbox
       }));
+
+      const duration = performance.now() - startTime;
+      sreLogger.logMetric('geocoding_query_duration', duration, 'ms', {
+        query_length: query.length.toString(),
+        results_count: results.length.toString(),
+        cached: 'no'
+      });
+
+      return results;
     },
     enabled: query.length >= 3 && !!mapboxToken,
-    staleTime: 5 * 60 * 1000, // 5 minuti - i risultati rimangono freschi
-    gcTime: 30 * 60 * 1000, // 30 minuti - cache time (era cacheTime in v4)
+    staleTime: 5 * 60 * 1000, // 5 minuti - cached queries will not refetch
+    gcTime: 30 * 60 * 1000,    // 30 minuti - data stays in memory
     retry: 2,
     retryDelay: 1000,
   });
