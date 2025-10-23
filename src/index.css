@@ -99,3 +99,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Virtual scrolling custom scrollbars */
+.virtual-grid-scrollbar::-webkit-scrollbar,
+.virtual-list-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.virtual-grid-scrollbar::-webkit-scrollbar-track,
+.virtual-list-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.virtual-grid-scrollbar::-webkit-scrollbar-thumb,
+.virtual-list-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+.virtual-grid-scrollbar::-webkit-scrollbar-thumb:hover,
+.virtual-list-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Smooth scroll behavior */
+.virtual-grid-scrollbar,
+.virtual-list-scrollbar {
+  scroll-behavior: smooth;
+}
+
+/* PWA install prompt animation */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

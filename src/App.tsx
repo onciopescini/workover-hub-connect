@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -20,6 +19,7 @@ import { optimizedQueryClient } from "@/lib/react-query-config";
 import { FiscalModeProvider } from "@/contexts/FiscalModeContext";
 import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
 import { MapboxTokenProvider } from "@/contexts/MapboxTokenContext";
+import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 
 import "./App.css";
 import { initSentry } from "@/lib/sentry-config";
@@ -51,10 +51,11 @@ function App() {
                             <PerformanceMonitor />
                             <PerformanceBudget />
                             <RoutePreloader />
-                            <OrganizationSchema />
-                            <WebsiteSchema />
-                            <FiscalModeIndicator />
-                            <AppRoutes />
+            <OrganizationSchema />
+            <WebsiteSchema />
+            <FiscalModeIndicator />
+            <ServiceWorkerRegistration />
+            <AppRoutes />
                           </ErrorBoundary>
                         </GDPRProvider>
                       </FiscalModeProvider>
