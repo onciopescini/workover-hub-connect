@@ -50,10 +50,18 @@ serve(async (req) => {
   try {
     const { user_id, subject, message, category = 'other', priority = 'normal' }: TicketRequest = await req.json();
 
+    // Defensive normalization: ensure category and priority are valid
+    const validCategories = ['technical', 'booking', 'payment', 'account', 'space', 'feedback', 'other'];
+    const validPriorities = ['low', 'normal', 'high', 'critical'];
+    
+    const normalizedCategory = validCategories.includes(category) ? category : 'other';
+    const normalizedPriority = validPriorities.includes(priority) ? priority : 'normal';
+
     ErrorHandler.logInfo('Creating support ticket', { 
       user_id: user_id || 'anonymous', 
       subject, 
-      category,
+      category: normalizedCategory,
+      priority: normalizedPriority,
       isAnonymous: !user_id 
     });
 
@@ -102,8 +110,8 @@ serve(async (req) => {
     ErrorHandler.logInfo('[SUPPORT-TICKETS] Attempting to insert ticket into DB', {
       user_id: user_id || 'anonymous',
       subject: subject.substring(0, 50),
-      category: category || 'other',
-      priority: priority || 'normal',
+      category: normalizedCategory,
+      priority: normalizedPriority,
       anonymousEmail
     });
 
@@ -113,11 +121,11 @@ serve(async (req) => {
         user_id: user_id || null, // Allow null for anonymous tickets
         subject,
         message,
-        category,
-        priority,
+        category: normalizedCategory,
+        priority: normalizedPriority,
         status: 'open',
         sla_status: 'on_track',
-        response_deadline: getResponseDeadline(priority)
+        response_deadline: getResponseDeadline(normalizedPriority)
       })
       .select()
       .single();
@@ -245,7 +253,7 @@ serve(async (req) => {
     }
 
     // Check for high/critical priority - send notification to admins (only for authenticated users)
-    if ((priority === 'high' || priority === 'critical') && user_id) {
+    if ((normalizedPriority === 'high' || normalizedPriority === 'critical') && user_id) {
       const { data: admins } = await supabaseAdmin
         .from('profiles')
         .select('id')
@@ -259,12 +267,12 @@ serve(async (req) => {
               user_id: admin.id,
               type: 'support_urgent',
               priority: priority,
-              title: `🚨 Nuovo ticket ${priority === 'critical' ? 'CRITICO' : 'ALTA PRIORITÀ'}`,
+              title: `🚨 Nuovo ticket ${normalizedPriority === 'critical' ? 'CRITICO' : 'ALTA PRIORITÀ'}`,
               content: `${userProfile?.first_name || 'Utente'}: "${subject.substring(0, 50)}..."`,
               metadata: {
                 ticket_id: ticket.id,
-                ticket_priority: priority,
-                ticket_category: category
+                ticket_priority: normalizedPriority,
+                ticket_category: normalizedCategory
               }
             });
         }

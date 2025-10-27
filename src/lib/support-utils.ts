@@ -80,7 +80,19 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
         errorMessage: error.message,
         errorContext: error.context 
       });
-      toast.error(`Errore chiamata edge function: ${error.message}`);
+      
+      // Try to extract detailed error message from response
+      let detailedError = error.message;
+      try {
+        // FunctionsHttpError may have the response body in context
+        if (data && typeof data === 'object' && 'error' in data) {
+          detailedError = data.error;
+        }
+      } catch (e) {
+        // Fallback to generic message
+      }
+      
+      toast.error(`Errore: ${detailedError}`);
       return false;
     }
 
@@ -89,7 +101,7 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
         backendError: data.error,
         ticketData: data 
       });
-      toast.error(`Errore backend: ${data.error}`);
+      toast.error(`Errore: ${data.error}`);
       return false;
     }
 
