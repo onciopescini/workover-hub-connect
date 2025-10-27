@@ -203,7 +203,7 @@ export const networkingDigestTemplate = (data: {
     </ul>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/networking" class="button">🤝 Esplora Connessioni</a>
+      <a href="https://workover.it.com/networking" class="button">🤝 Esplora Connessioni</a>
     </div>
 
     <p>Continua a costruire la tua rete!<br><strong>Il Team Workover</strong></p>

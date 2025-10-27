@@ -60,8 +60,8 @@ export const newBookingRequestTemplate = (data: {
     </div>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/host/bookings/${data.bookingId}/approve" class="button success" style="margin-right: 12px;">✅ Approva</a>
-      <a href="https://workover.app/host/bookings/${data.bookingId}/decline" class="button danger">❌ Rifiuta</a>
+      <a href="https://workover.it.com/host/bookings/${data.bookingId}/approve" class="button success" style="margin-right: 12px;">✅ Approva</a>
+      <a href="https://workover.it.com/host/bookings/${data.bookingId}/decline" class="button danger">❌ Rifiuta</a>
     </div>
 
     <h3>💡 Suggerimenti per Host</h3>
@@ -126,7 +126,7 @@ export const hostPayoutProcessedTemplate = (data: {
     </ul>
 
     <p style="text-align: center;">
-      <a href="https://workover.app/host/earnings" class="button">Visualizza Guadagni</a>
+      <a href="https://workover.it.com/host/earnings" class="button">Visualizza Guadagni</a>
     </p>
 
     <p>Continua così!<br><strong>Il Team Workover</strong></p>
@@ -180,8 +180,8 @@ export const spaceApprovedTemplate = (data: {
     </ul>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/spaces/${data.spaceId}" class="button" style="margin-right: 12px;">Visualizza Spazio</a>
-      <a href="https://workover.app/host/spaces" class="button success">Gestisci Spazi</a>
+      <a href="https://workover.it.com/spaces/${data.spaceId}" class="button" style="margin-right: 12px;">Visualizza Spazio</a>
+      <a href="https://workover.it.com/host/spaces" class="button success">Gestisci Spazi</a>
     </div>
 
     <p>Buona fortuna con il tuo business!<br><strong>Il Team Workover</strong></p>
@@ -227,7 +227,7 @@ export const spaceRejectedTemplate = (data: {
       </ul>
 
       <p style="text-align: center;">
-        <a href="https://workover.app/host/spaces/${data.spaceId}/edit" class="button">Modifica Spazio</a>
+        <a href="https://workover.it.com/host/spaces/${data.spaceId}/edit" class="button">Modifica Spazio</a>
       </p>
     ` : `
       <div class="info-box warning">
@@ -236,15 +236,15 @@ export const spaceRejectedTemplate = (data: {
       </div>
 
       <p style="text-align: center;">
-        <a href="https://workover.app/support" class="button">Contatta Supporto</a>
+        <a href="https://workover.it.com/support" class="button">Contatta Supporto</a>
       </p>
     `}
 
     <h3>📖 Risorse Utili</h3>
     <ul>
-      <li><a href="https://workover.app/help/host-guidelines">Linee Guida per Host</a></li>
-      <li><a href="https://workover.app/help/space-quality">Standard di Qualità degli Spazi</a></li>
-      <li><a href="https://workover.app/help/photo-tips">Consigli per Foto Professionali</a></li>
+      <li><a href="https://workover.it.com/help/host-guidelines">Linee Guida per Host</a></li>
+      <li><a href="https://workover.it.com/help/space-quality">Standard di Qualità degli Spazi</a></li>
+      <li><a href="https://workover.it.com/help/photo-tips">Consigli per Foto Professionali</a></li>
     </ul>
 
     <p>Siamo qui per aiutarti ad avere successo!<br><strong>Il Team Workover</strong></p>

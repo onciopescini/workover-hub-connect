@@ -212,9 +212,9 @@ export const createBaseTemplate = (content: string, title: string = "Workover") 
       <p><strong>Workover</strong> - La piattaforma per il coworking professionale</p>
       <p>Questo è un messaggio automatico, non rispondere a questa email.</p>
       <div class="social-links">
-        <a href="https://workover.app">Sito Web</a> |
-        <a href="https://workover.app/support">Supporto</a> |
-        <a href="https://workover.app/privacy">Privacy</a>
+        <a href="https://workover.it.com">Sito Web</a> |
+        <a href="https://workover.it.com/support">Supporto</a> |
+        <a href="https://workover.it.com/privacy">Privacy</a>
       </div>
     </div>
   </div>

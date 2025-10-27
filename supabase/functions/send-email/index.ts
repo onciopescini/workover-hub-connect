@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { ErrorHandler } from "../shared/error-handler.ts";
 
 // Import all template functions
@@ -39,8 +40,8 @@ const corsHeaders = {
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const supabase = createClient(
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_ANON_KEY')!,
+  Deno.env.get('SUPABASE_URL') || 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
+  Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodHF3enZyeHpzZ2Zoc3Nsd3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NDg0ODUsImV4cCI6MjA2MzUyNDQ4NX0.QThCoBfb0JuFZ5dLru-TNSA_B0PZqp8AL0x0yaEWNFk',
   {
     auth: {
       persistSession: false,
@@ -48,6 +49,13 @@ const supabase = createClient(
     }
   }
 );
+
+// Input validation schema
+const emailRequestSchema = z.object({
+  type: z.string().trim().min(1).max(100),
+  to: z.string().trim().email().max(255),
+  data: z.any().optional()
+});
 
 interface EmailRequest {
   type: string;
@@ -147,6 +155,19 @@ const emailTemplates = {
       </blockquote>
       <p><a href="${data.adminUrl}" style="background: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Gestisci Ticket</a></p>
       <p>Admin Panel Workover</p>
+    `
+  }),
+
+  support_ticket_confirmation: (data: any) => ({
+    subject: `Ticket #${data.ticketId} Ricevuto - Workover Support`,
+    html: `
+      <h1>Abbiamo Ricevuto la Tua Richiesta!</h1>
+      <p>Ciao ${data.firstName},</p>
+      <p>Il tuo ticket di supporto è stato creato con successo:</p>
+      <p><strong>Ticket ID:</strong> #${data.ticketId}</p>
+      <p><strong>Oggetto:</strong> ${data.subject}</p>
+      <p>Il nostro team risponderà entro 24-48 ore. Ti aggiorneremo via email.</p>
+      <p>Grazie per la pazienza!<br><strong>Il Team Workover</strong></p>
     `
   }),
 
@@ -251,7 +272,15 @@ serve(async (req) => {
   }
 
   try {
-    const { type, to, data }: EmailRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validationResult = emailRequestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      throw new Error(`Invalid request: ${validationResult.error.message}`);
+    }
+    
+    const { type, to, data }: EmailRequest = validationResult.data;
 
     ErrorHandler.logInfo('Sending email', { type, to, hasData: !!data });
 
@@ -262,7 +291,7 @@ serve(async (req) => {
     const template = emailTemplates[type as keyof typeof emailTemplates](data);
 
     const emailResponse = await resend.emails.send({
-      from: "Workover <noreply@workover.app>",
+      from: "Workover <noreply@workover.it.com>",
       to: [to],
       subject: template.subject,
       html: template.html,

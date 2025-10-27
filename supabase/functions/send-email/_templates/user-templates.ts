@@ -29,8 +29,8 @@ export const welcomeTemplate = (data: {
       </ul>
 
       <div style="text-align: center; margin: 24px 0;">
-        <a href="https://workover.app/spaces" class="button" style="margin-right: 12px;">Esplora Spazi</a>
-        <a href="https://workover.app/profile/complete" class="button success">Completa Profilo</a>
+        <a href="https://workover.it.com/spaces" class="button" style="margin-right: 12px;">Esplora Spazi</a>
+        <a href="https://workover.it.com/profile/complete" class="button success">Completa Profilo</a>
       </div>
     ` : `
       <h3>🏢 Come Host, Puoi:</h3>
@@ -48,8 +48,8 @@ export const welcomeTemplate = (data: {
       </div>
 
       <div style="text-align: center; margin: 24px 0;">
-        <a href="https://workover.app/host/setup" class="button" style="margin-right: 12px;">Setup Pagamenti</a>
-        <a href="https://workover.app/host/spaces/new" class="button success">Aggiungi Spazio</a>
+        <a href="https://workover.it.com/host/setup" class="button" style="margin-right: 12px;">Setup Pagamenti</a>
+        <a href="https://workover.it.com/host/spaces/new" class="button success">Aggiungi Spazio</a>
       </div>
     `}
 
@@ -65,9 +65,9 @@ export const welcomeTemplate = (data: {
       <h3 style="margin-bottom: 12px; color: #1f2937;">📞 Hai Bisogno di Aiuto?</h3>
       <p>Il nostro team di supporto è sempre disponibile per aiutarti:</p>
       <ul style="margin: 8px 0 0 0;">
-        <li>📧 Email: <a href="mailto:support@workover.app">support@workover.app</a></li>
+        <li>📧 Email: <a href="mailto:support@workover.it.com">support@workover.it.com</a></li>
         <li>💬 Chat dal vivo disponibile dall'app</li>
-        <li>📖 <a href="https://workover.app/help">Centro Assistenza</a> con guide dettagliate</li>
+        <li>📖 <a href="https://workover.it.com/help">Centro Assistenza</a> con guide dettagliate</li>
       </ul>
     </div>
 
@@ -215,7 +215,7 @@ export const accountSuspendedTemplate = (data: {
     `}
 
     <h3>📖 Termini di Servizio</h3>
-    <p>Ti ricordiamo che utilizzando Workover accetti di rispettare i nostri <a href="https://workover.app/terms">Termini di Servizio</a> e le <a href="https://workover.app/community-guidelines">Linee Guida della Community</a>.</p>
+    <p>Ti ricordiamo che utilizzando Workover accetti di rispettare i nostri <a href="https://workover.it.com/terms">Termini di Servizio</a> e le <a href="https://workover.it.com/community-guidelines">Linee Guida della Community</a>.</p>
 
     <p>Ci dispiace per l'inconveniente.<br><strong>Il Team Workover</strong></p>
   `);

@@ -67,7 +67,7 @@ export const bookingConfirmationTemplate = (data: {
     ` : ''}
 
     <p style="text-align: center;">
-      <a href="https://workover.app/bookings" class="button">Visualizza Prenotazione</a>
+      <a href="https://workover.it.com/bookings" class="button">Visualizza Prenotazione</a>
     </p>
 
     <p>Buon lavoro!<br><strong>Il Team Workover</strong></p>
@@ -122,7 +122,7 @@ export const bookingPendingTemplate = (data: {
     </ul>
 
     <p style="text-align: center;">
-      <a href="https://workover.app/bookings" class="button">Visualizza Richiesta</a>
+      <a href="https://workover.it.com/bookings" class="button">Visualizza Richiesta</a>
     </p>
 
     <p>Grazie per la pazienza!<br><strong>Il Team Workover</strong></p>
@@ -185,7 +185,7 @@ export const bookingCancelledTemplate = (data: {
       <h3>🎁 Come Scusa</h3>
       <p>Comprendiamo la tua delusione. Esplora altri spazi simili nella tua zona:</p>
       <p style="text-align: center;">
-        <a href="https://workover.app/spaces" class="button">Trova Altri Spazi</a>
+        <a href="https://workover.it.com/spaces" class="button">Trova Altri Spazi</a>
       </p>
     ` : ''}
 
@@ -249,7 +249,7 @@ export const bookingReminderTemplate = (data: {
     </ul>
 
     <p style="text-align: center;">
-      <a href="https://workover.app/bookings/${data.bookingId}" class="button">Visualizza Prenotazione</a>
+      <a href="https://workover.it.com/bookings/${data.bookingId}" class="button">Visualizza Prenotazione</a>
     </p>
 
     <p>Buona giornata di lavoro!<br><strong>Il Team Workover</strong></p>

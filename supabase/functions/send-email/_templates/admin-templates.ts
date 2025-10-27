@@ -31,7 +31,7 @@ export const newUserRegistrationTemplate = (data: {
     </div>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/admin/users/${data.userId}" class="button">Visualizza Profilo</a>
+      <a href="https://workover.it.com/admin/users/${data.userId}" class="button">Visualizza Profilo</a>
     </div>
 
     <p><strong>Admin Panel Workover</strong></p>
@@ -98,7 +98,7 @@ export const reportSubmittedTemplate = (data: {
     </div>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/admin/reports/${data.reportId}" class="button ${data.priority === 'urgent' ? 'danger' : data.priority === 'high' ? 'warning' : ''}">
+      <a href="https://workover.it.com/admin/reports/${data.reportId}" class="button ${data.priority === 'urgent' ? 'danger' : data.priority === 'high' ? 'warning' : ''}">
         Gestisci Segnalazione
       </a>
     </div>
@@ -159,7 +159,7 @@ ${data.stackTrace}
     ` : ''}
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/admin/errors/${data.errorId}" class="button danger">Visualizza Errore</a>
+      <a href="https://workover.it.com/admin/errors/${data.errorId}" class="button danger">Visualizza Errore</a>
     </div>
 
     <p><strong>Sistema di Monitoraggio Workover</strong></p>
@@ -207,7 +207,7 @@ export const highTrafficAlertTemplate = (data: {
     </ul>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/admin/monitoring" class="button warning">Dashboard Monitoraggio</a>
+      <a href="https://workover.it.com/admin/monitoring" class="button warning">Dashboard Monitoraggio</a>
     </div>
 
     <p><strong>Sistema di Monitoraggio Workover</strong></p>
@@ -267,7 +267,7 @@ export const backupCompletedTemplate = (data: {
     `}
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="https://workover.app/admin/backups" class="button ${data.status === 'error' ? 'danger' : data.status === 'warning' ? 'warning' : 'success'}">
+      <a href="https://workover.it.com/admin/backups" class="button ${data.status === 'error' ? 'danger' : data.status === 'warning' ? 'warning' : 'success'}">
         Visualizza Backup
       </a>
     </div>
