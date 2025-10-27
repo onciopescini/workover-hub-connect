@@ -130,6 +130,55 @@ const About = () => {
         </div>
       </section>
 
+      {/* Company Data Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+              Dati Aziendali
+            </h2>
+            <Card>
+              <CardContent className="p-8">
+                <div className="grid md:grid-cols-2 gap-6 text-gray-700">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Ragione Sociale</h3>
+                    <p>Workover S.r.l.</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Partita IVA</h3>
+                    <p>12345678901</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Sede Legale</h3>
+                    <p>Via Roma 123<br />20121 Milano, Italia</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Capitale Sociale</h3>
+                    <p>€ 10.000,00 i.v.</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Registro Imprese</h3>
+                    <p>REA MI-1234567<br />Numero iscrizione: 12345678901</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Contatti</h3>
+                    <p>
+                      Email: <a href="mailto:info@workover.it" className="text-indigo-600 hover:underline">info@workover.it</a><br />
+                      PEC: <a href="mailto:workover@pec.workover.it" className="text-indigo-600 hover:underline">workover@pec.workover.it</a>
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 text-center">
+                    Tutti i dati aziendali sono puramente fittizi e utilizzati esclusivamente a scopo dimostrativo.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-indigo-600">
         <div className="container mx-auto px-4 text-center">

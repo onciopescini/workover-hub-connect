@@ -39,8 +39,64 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 Workover. Tutti i diritti riservati.</p>
+        <div className="border-t border-gray-800 mt-12 pt-8">
+          {/* Company Data Section */}
+          <div className="text-center mb-6">
+            <h4 className="text-white font-semibold mb-3">Workover S.r.l.</h4>
+            <div className="text-gray-400 text-sm space-y-1">
+              <p>P.IVA: 12345678901 | REA MI-1234567</p>
+              <p>Sede Legale: Via Roma 123, 20121 Milano, Italia</p>
+              <p>Capitale Sociale: € 10.000,00 i.v.</p>
+              <div className="mt-2">
+                <a href="mailto:info@workover.it" className="hover:text-white transition-colors">
+                  info@workover.it
+                </a>
+                {' | '}
+                <a href="mailto:workover@pec.workover.it" className="hover:text-white transition-colors">
+                  PEC
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Legal Links */}
+          <div className="flex flex-wrap justify-center gap-4 mb-6 text-sm">
+            <button 
+              onClick={() => navigate('/privacy-policy')} 
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </button>
+            <span className="text-gray-600">|</span>
+            <button 
+              onClick={() => navigate('/terms')} 
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Termini di Servizio
+            </button>
+            <span className="text-gray-600">|</span>
+            <button 
+              onClick={() => navigate('/privacy')} 
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Centro Privacy
+            </button>
+            <span className="text-gray-600">|</span>
+            <button 
+              onClick={() => navigate('/support')} 
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Supporto
+            </button>
+          </div>
+
+          {/* Copyright */}
+          <div className="text-center text-gray-400 text-sm">
+            <p>&copy; 2025 Workover S.r.l. - Tutti i diritti riservati.</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Dati aziendali fittizi utilizzati a scopo dimostrativo
+            </p>
+          </div>
         </div>
       </div>
     </footer>
