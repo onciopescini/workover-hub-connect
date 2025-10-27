@@ -23,7 +23,9 @@ export function lazyWithSuspense<T extends ComponentType<any>>(
 
   return (props: React.ComponentProps<T>) => (
     <Suspense fallback={fallback}>
-      <LazyComponent {...props} />
+      <div className="relative w-full h-full">
+        <LazyComponent {...props} />
+      </div>
     </Suspense>
   );
 }
