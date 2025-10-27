@@ -20,6 +20,11 @@ interface SupportTicket {
   message: string;
   response?: string | null;
   status: string;
+  category?: string | null;
+  priority?: string | null;
+  sla_status?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -31,6 +36,9 @@ export function AdminTicketManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [filterSLA, setFilterSLA] = useState<string>("all");
   
   // Response dialog state
   const [responseDialog, setResponseDialog] = useState(false);
@@ -39,11 +47,28 @@ export function AdminTicketManagement() {
 
   useEffect(() => {
     fetchTickets();
+
+    // Realtime subscription for ticket changes
+    const channel = supabase
+      .channel('admin-support-tickets')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'support_tickets' },
+        (payload) => {
+          console.log('🔔 Realtime ticket update:', payload);
+          fetchTickets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
     filterTickets();
-  }, [tickets, searchTerm, filterStatus]);
+  }, [tickets, searchTerm, filterStatus, filterCategory, filterPriority, filterSLA]);
 
   const fetchTickets = async () => {
     try {
@@ -69,8 +94,11 @@ export function AdminTicketManagement() {
         ticket.message.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = filterStatus === "all" || ticket.status === filterStatus;
+      const matchesCategory = filterCategory === "all" || ticket.category === filterCategory;
+      const matchesPriority = filterPriority === "all" || ticket.priority === filterPriority;
+      const matchesSLA = filterSLA === "all" || ticket.sla_status === filterSLA;
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesCategory && matchesPriority && matchesSLA;
     });
 
     setFilteredTickets(filtered);
@@ -78,12 +106,22 @@ export function AdminTicketManagement() {
 
   const handleUpdateTicketStatus = async (ticketId: string, newStatus: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const updates: any = { 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      // If taking charge (in_progress), set assigned_to
+      if (newStatus === 'in_progress' && user) {
+        updates.assigned_to = user.id;
+        updates.assigned_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("support_tickets")
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updates)
         .eq("id", ticketId);
 
       if (error) throw error;
@@ -180,30 +218,75 @@ export function AdminTicketManagement() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Cerca per oggetto o messaggio..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Cerca per oggetto o messaggio..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Stato" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti gli stati</SelectItem>
+                  <SelectItem value="open">Aperti</SelectItem>
+                  <SelectItem value="in_progress">In lavorazione</SelectItem>
+                  <SelectItem value="resolved">Risolti</SelectItem>
+                  <SelectItem value="closed">Chiusi</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Stato" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti gli stati</SelectItem>
-                <SelectItem value="open">Aperti</SelectItem>
-                <SelectItem value="in_progress">In lavorazione</SelectItem>
-                <SelectItem value="resolved">Risolti</SelectItem>
-                <SelectItem value="closed">Chiusi</SelectItem>
-              </SelectContent>
-            </Select>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le categorie</SelectItem>
+                  <SelectItem value="technical">Tecnico</SelectItem>
+                  <SelectItem value="booking">Prenotazione</SelectItem>
+                  <SelectItem value="payment">Pagamento</SelectItem>
+                  <SelectItem value="account">Account</SelectItem>
+                  <SelectItem value="space">Spazio</SelectItem>
+                  <SelectItem value="feedback">Feedback</SelectItem>
+                  <SelectItem value="other">Altro</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="Priorità" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le priorità</SelectItem>
+                  <SelectItem value="low">Bassa</SelectItem>
+                  <SelectItem value="normal">Normale</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="critical">Critica</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterSLA} onValueChange={setFilterSLA}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue placeholder="SLA" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti gli SLA</SelectItem>
+                  <SelectItem value="ok">OK</SelectItem>
+                  <SelectItem value="at_risk">A Rischio</SelectItem>
+                  <SelectItem value="breached">Scaduto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -220,10 +303,28 @@ export function AdminTicketManagement() {
                     <Badge className={getStatusColor(ticket.status)}>
                       {getStatusLabel(ticket.status)}
                     </Badge>
+                    {ticket.priority && (
+                      <Badge variant={ticket.priority === 'critical' || ticket.priority === 'high' ? 'destructive' : 'secondary'}>
+                        {ticket.priority === 'critical' ? '🔴 Critica' : 
+                         ticket.priority === 'high' ? '🟠 Alta' :
+                         ticket.priority === 'normal' ? '🟡 Normale' : '🟢 Bassa'}
+                      </Badge>
+                    )}
+                    {ticket.sla_status && ticket.sla_status !== 'ok' && (
+                      <Badge variant={ticket.sla_status === 'breached' ? 'destructive' : 'outline'}>
+                        {ticket.sla_status === 'breached' ? '⚠️ SLA Scaduto' : '⏰ SLA A Rischio'}
+                      </Badge>
+                    )}
                   </div>
                   
                   <div className="text-sm text-gray-600 space-y-2">
                     <p><strong>Messaggio:</strong> {ticket.message}</p>
+                    {ticket.category && (
+                      <p><strong>Categoria:</strong> {ticket.category}</p>
+                    )}
+                    {ticket.assigned_to && (
+                      <p><strong>Preso in carico:</strong> {new Date(ticket.assigned_at ?? '').toLocaleDateString('it-IT')}</p>
+                    )}
                     {ticket.response && (
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p><strong>Risposta:</strong> {ticket.response}</p>

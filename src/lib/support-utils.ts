@@ -58,6 +58,12 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
     }
 
     // Call Edge Function
+    sreLogger.info('Invoking support-tickets edge function', {
+      userId: user.user.id,
+      subject: validated.data.subject.substring(0, 50),
+      category: validated.data.category
+    });
+
     const { data, error } = await supabase.functions.invoke('support-tickets', {
       body: {
         user_id: user.user.id,
@@ -68,7 +74,29 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      sreLogger.error('Edge function invocation failed', { 
+        error,
+        errorMessage: error.message,
+        errorContext: error.context 
+      });
+      toast.error(`Errore chiamata edge function: ${error.message}`);
+      return false;
+    }
+
+    if (data?.error) {
+      sreLogger.error('Edge function returned error', { 
+        backendError: data.error,
+        ticketData: data 
+      });
+      toast.error(`Errore backend: ${data.error}`);
+      return false;
+    }
+
+    sreLogger.info('Ticket created successfully', { 
+      ticketId: data?.ticket?.id,
+      status: data?.ticket?.status 
+    });
     
     toast.success("Ticket creato! Riceverai una conferma via email.");
     return true;

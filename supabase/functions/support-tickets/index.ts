@@ -21,6 +21,27 @@ interface TicketRequest {
   priority?: string;
 }
 
+// Calculate response deadline based on priority
+function getResponseDeadline(priority: string): string {
+  const now = new Date();
+  let hoursToAdd = 24; // default for normal
+  
+  switch (priority) {
+    case 'critical':
+      hoursToAdd = 2;
+      break;
+    case 'high':
+      hoursToAdd = 8;
+      break;
+    case 'low':
+      hoursToAdd = 48;
+      break;
+  }
+  
+  now.setHours(now.getHours() + hoursToAdd);
+  return now.toISOString();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -55,6 +76,13 @@ serve(async (req) => {
     }
 
     // Create support ticket
+    ErrorHandler.logInfo('[SUPPORT-TICKETS] Attempting to insert ticket into DB', {
+      user_id,
+      subject: subject.substring(0, 50),
+      category: category || 'other',
+      priority: priority || 'normal'
+    });
+
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from('support_tickets')
       .insert({
@@ -63,16 +91,29 @@ serve(async (req) => {
         message,
         category,
         priority,
-        status: 'open'
+        status: 'open',
+        sla_status: 'ok',
+        response_deadline: getResponseDeadline(priority)
       })
       .select()
       .single();
 
     if (ticketError) {
+      ErrorHandler.logError('[SUPPORT-TICKETS] ❌ DB insert failed', ticketError, {
+        error: ticketError,
+        code: ticketError.code,
+        message: ticketError.message,
+        user_id
+      });
       throw ticketError;
     }
 
-    ErrorHandler.logSuccess('Support ticket created', { ticketId: ticket.id, user_id });
+    ErrorHandler.logSuccess('[SUPPORT-TICKETS] ✅ Ticket created successfully', { 
+      ticketId: ticket.id, 
+      user_id,
+      status: ticket.status,
+      priority: ticket.priority 
+    });
 
     // Create user notification
     try {

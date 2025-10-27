@@ -25,7 +25,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { authState, signOut } = useAuth();
   const { isAdmin, isModerator, canModerate, roles } = useModeratorCheck();
   const { prefetchUsers, prefetchSpaces, prefetchReports, prefetchSettings } = useAdminPrefetch();
-  const { pendingSpacesCount, openReportsCount } = useRealtimeAdminData();
+  const { pendingSpacesCount, openReportsCount, unresolvedTicketsCount } = useRealtimeAdminData();
   
   const userId = authState.user?.id;
 
@@ -210,6 +210,11 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                   {item.path === '/admin/reports' && openReportsCount !== undefined && openReportsCount > 0 && (
                     <Badge variant="destructive" className="ml-1 text-xs">
                       {openReportsCount}
+                    </Badge>
+                  )}
+                  {item.path === '/admin/tickets' && unresolvedTicketsCount !== undefined && unresolvedTicketsCount > 0 && (
+                    <Badge variant="destructive" className="ml-1 text-xs">
+                      {unresolvedTicketsCount}
                     </Badge>
                   )}
                 </Button>
