@@ -113,12 +113,6 @@ const Contact = () => {
           type: ''
         });
 
-        // Redirect to support page if authenticated
-        if (isAuthenticated) {
-          setTimeout(() => {
-            navigate('/support');
-          }, 2000);
-        }
       }
     } catch (error) {
       console.error('Contact form error:', error);
@@ -240,21 +234,11 @@ const Contact = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">Email</h3>
-                    <p className="text-gray-600">info@workover.it</p>
+                    <p className="text-gray-600">info@workover.it.com</p>
                     <p className="text-sm text-gray-500">Rispondiamo entro 24 ore</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Telefono</h3>
-                    <p className="text-gray-600">+39 02 1234 5678</p>
-                    <p className="text-sm text-gray-500">Lun-Ven, 9:00-18:00</p>
-                  </div>
-                </div>
 
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -307,12 +291,12 @@ const Contact = () => {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">FAQ</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Guide e Tutorial</h4>
                   <p className="text-gray-600 text-sm mb-2">
-                    Consulta le nostre domande frequenti per risposte immediate.
+                    Consulta le nostre guide per imparare a usare la piattaforma.
                   </p>
-                  <Button variant="outline" size="sm">
-                    Visualizza FAQ
+                  <Button variant="outline" size="sm" onClick={() => navigate('/guides')}>
+                    Visualizza Guide
                   </Button>
                 </div>
 

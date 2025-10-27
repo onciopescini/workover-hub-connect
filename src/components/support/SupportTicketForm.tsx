@@ -1,17 +1,19 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupportTicket } from "@/lib/support-utils";
+import { createSupportTicket, checkClientRateLimit } from "@/lib/support-utils";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useLogger } from "@/hooks/useLogger";
 import { supportTicketSchema, type SupportTicketInput } from '@/schemas/supportTicketSchema';
+import { Loader2, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type SupportTicketFormData = SupportTicketInput;
 
@@ -38,6 +40,8 @@ const TICKET_PRIORITIES = [
 
 export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const { info, error } = useLogger({ context: 'SupportTicketForm' });
   
   const form = useForm<SupportTicketFormData>({
@@ -50,7 +54,30 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
     }
   });
 
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const onSubmit = async (data: SupportTicketFormData) => {
+    // Check rate limit before submitting
+    const rateLimitCheck = checkClientRateLimit();
+    if (!rateLimitCheck.allowed && rateLimitCheck.waitTime) {
+      const minutes = Math.ceil(rateLimitCheck.waitTime / 60);
+      setRateLimitError(`Hai inviato troppi ticket. Riprova tra ${minutes} minuti.`);
+      return;
+    }
+    
+    setRateLimitError(null);
     setIsSubmitting(true);
     
     try {
@@ -74,6 +101,22 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
         <CardTitle>Nuovo Ticket di Supporto</CardTitle>
       </CardHeader>
       <CardContent>
+        {!isOnline && (
+          <Alert className="mb-4 border-red-500">
+            <WifiOff className="h-4 w-4" />
+            <AlertDescription>
+              Nessuna connessione internet. Verifica la tua connessione prima di inviare il ticket.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {rateLimitError && (
+          <Alert className="mb-4 border-amber-500">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{rateLimitError}</AlertDescription>
+          </Alert>
+        )}
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -83,8 +126,12 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
                 rules={{ required: "Seleziona una categoria" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Categoria *</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={isSubmitting}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleziona categoria..." />
@@ -109,8 +156,12 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
                 rules={{ required: "Seleziona una priorità" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Priorità</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Priorità *</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={isSubmitting}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Seleziona priorità..." />
@@ -135,17 +186,20 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
               name="subject"
               rules={{ 
                 required: "L'oggetto è obbligatorio",
-                minLength: { value: 5, message: "L'oggetto deve essere di almeno 5 caratteri" }
+                minLength: { value: 5, message: "L'oggetto deve essere di almeno 5 caratteri" },
+                maxLength: { value: 200, message: "L'oggetto non può superare i 200 caratteri" }
               }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Oggetto</FormLabel>
+                  <FormLabel>Oggetto *</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Descrivi brevemente il problema..."
+                      disabled={isSubmitting}
                       {...field}
                     />
                   </FormControl>
+                  <p className="text-xs text-gray-500">{field.value.length}/200 caratteri</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -156,18 +210,21 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
               name="message"
               rules={{ 
                 required: "Il messaggio è obbligatorio",
-                minLength: { value: 20, message: "Il messaggio deve essere di almeno 20 caratteri" }
+                minLength: { value: 20, message: "Il messaggio deve essere di almeno 20 caratteri" },
+                maxLength: { value: 5000, message: "Il messaggio non può superare i 5000 caratteri" }
               }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Messaggio</FormLabel>
+                  <FormLabel>Messaggio *</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Descrivi dettagliatamente il problema..."
                       rows={5}
+                      disabled={isSubmitting}
                       {...field}
                     />
                   </FormControl>
+                  <p className="text-xs text-gray-500">{field.value.length}/5000 caratteri</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -176,10 +233,23 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !isOnline || !!rateLimitError}
             >
-              {isSubmitting ? "Invio in corso..." : "Invia Ticket"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Invio in corso...
+                </>
+              ) : (
+                "Invia Ticket"
+              )}
             </Button>
+            
+            {isSubmitting && (
+              <p className="text-xs text-center text-gray-500">
+                Non chiudere questa finestra durante l'invio...
+              </p>
+            )}
           </form>
         </Form>
       </CardContent>

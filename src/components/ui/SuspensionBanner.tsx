@@ -15,7 +15,7 @@ export const SuspensionBanner: React.FC<SuspensionBannerProps> = ({
   className = ""
 }) => {
   const handleContactSupport = () => {
-    window.location.href = 'mailto:support@workover.it?subject=Account sospeso - Richiesta di revisione';
+    window.location.href = 'mailto:support@workover.it.com?subject=Account sospeso - Richiesta di revisione';
   };
 
   const suspensionDate = new Date(suspendedAt).toLocaleDateString('it-IT', {

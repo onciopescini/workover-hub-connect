@@ -35,7 +35,7 @@ export function Footer() {
               <li><button onClick={() => navigate('/terms')} className="hover:text-white transition-colors">Termini di servizio</button></li>
               <li><button onClick={() => navigate('/privacy-policy')} className="hover:text-white transition-colors">Privacy Policy</button></li>
               <li><button onClick={() => navigate('/privacy')} className="hover:text-white transition-colors">Centro Privacy</button></li>
-              <li><button onClick={() => navigate('/contact')} className="hover:text-white transition-colors">Supporto</button></li>
+              <li><button onClick={() => navigate('/support')} className="hover:text-white transition-colors">Supporto</button></li>
             </ul>
           </div>
         </div>

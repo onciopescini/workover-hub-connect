@@ -235,8 +235,8 @@ const Privacy = () => {
               <p className="text-sm text-gray-600">
                 Per ulteriori informazioni sui tuoi diritti privacy o per contattare il nostro Data Protection Officer, 
                 scrivi a{" "}
-                <a href="mailto:privacy@workover.it" className="text-indigo-600 hover:underline">
-                  privacy@workover.it
+                <a href="mailto:privacy@workover.it.com" className="text-indigo-600 hover:underline">
+                  privacy@workover.it.com
                 </a>
               </p>
             </div>

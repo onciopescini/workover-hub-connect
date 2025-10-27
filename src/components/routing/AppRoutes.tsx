@@ -28,6 +28,9 @@ import Privacy from "@/pages/Privacy";
 import NotFound from "@/pages/NotFound";
 
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
+const PrivacyDeletionRequest = lazy(() => import("@/pages/PrivacyDeletionRequest"));
+const Guides = lazy(() => import("@/pages/Guides"));
 
 // Lazy loading per pagine non critiche
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -87,7 +90,6 @@ const AdminKYCReviewPage = lazy(() => import("@/pages/admin/AdminKYCReviewPage")
 const SystemAlarmsPage = lazy(() => import("@/pages/admin/SystemAlarmsPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
 const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
-const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
 
@@ -283,9 +285,26 @@ export const AppRoutes = () => {
         } />
 
         <Route path="support" element={
+          <LazyWrapper>
+            <Support />
+          </LazyWrapper>
+        } />
+        
+        {/* Help redirect to support */}
+        <Route path="help" element={<Navigate to="/support" replace />} />
+        
+        {/* Guides page */}
+        <Route path="guides" element={
+          <LazyWrapper>
+            <Guides />
+          </LazyWrapper>
+        } />
+        
+        {/* Privacy deletion request */}
+        <Route path="privacy/deletion-request" element={
           <AuthProtected>
             <LazyWrapper>
-              <Support />
+              <PrivacyDeletionRequest />
             </LazyWrapper>
           </AuthProtected>
         } />

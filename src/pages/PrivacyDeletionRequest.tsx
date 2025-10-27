@@ -176,8 +176,8 @@ const PrivacyDeletionRequest = () => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Hai ripensamenti o domande? Contatta il nostro Data Protection Officer a{" "}
-            <a href="mailto:privacy@workover.it" className="text-indigo-600 hover:underline">
-              privacy@workover.it
+            <a href="mailto:privacy@workover.it.com" className="text-indigo-600 hover:underline">
+              privacy@workover.it.com
             </a>
           </p>
         </div>

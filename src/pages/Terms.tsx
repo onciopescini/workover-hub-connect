@@ -227,13 +227,13 @@ const Terms = () => {
             </CardHeader>
             <CardContent className="prose prose-gray max-w-none">
               <p>
-                Per domande sui termini di servizio, contattaci:
+                Per domande sui termini di servizio, contattaci all'indirizzo:
               </p>
-              <ul>
-                <li>Email: legal@workover.it</li>
-                <li>Indirizzo: [Indirizzo della società]</li>
-                <li>Telefono: [Numero di telefono]</li>
-              </ul>
+              <p className="mt-2">
+                <a href="mailto:legal@workover.it.com" className="text-indigo-600 hover:underline">
+                  legal@workover.it.com
+                </a>
+              </p>
             </CardContent>
           </Card>
         </div>

@@ -5,6 +5,49 @@ import type { SupportTicket } from "@/types/support";
 import { sreLogger } from '@/lib/sre-logger';
 import { supportTicketSchema, type SupportTicketInput } from '@/schemas/supportTicketSchema';
 
+// Rate limiting using localStorage
+const RATE_LIMIT_KEY = 'support_ticket_timestamps';
+const RATE_LIMIT_MAX = 3; // Max tickets
+const RATE_LIMIT_WINDOW = 10 * 60 * 1000; // 10 minutes
+
+export const checkClientRateLimit = (): { allowed: boolean; waitTime?: number } => {
+  try {
+    const stored = localStorage.getItem(RATE_LIMIT_KEY);
+    const timestamps: number[] = stored ? JSON.parse(stored) : [];
+    const now = Date.now();
+    
+    // Filter out old timestamps (outside the window)
+    const recentTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW);
+    
+    if (recentTimestamps.length >= RATE_LIMIT_MAX) {
+      const oldestTimestamp = Math.min(...recentTimestamps);
+      const waitTime = Math.ceil((RATE_LIMIT_WINDOW - (now - oldestTimestamp)) / 1000);
+      return { allowed: false, waitTime };
+    }
+    
+    return { allowed: true };
+  } catch (error) {
+    sreLogger.error('Error checking rate limit', { error });
+    return { allowed: true }; // Allow on error
+  }
+};
+
+const recordTicketAttempt = () => {
+  try {
+    const stored = localStorage.getItem(RATE_LIMIT_KEY);
+    const timestamps: number[] = stored ? JSON.parse(stored) : [];
+    const now = Date.now();
+    
+    // Keep only recent timestamps
+    const recentTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW);
+    recentTimestamps.push(now);
+    
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recentTimestamps));
+  } catch (error) {
+    sreLogger.error('Error recording ticket attempt', { error });
+  }
+};
+
 // Get support tickets for current user
 export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
   try {
@@ -26,24 +69,74 @@ export const getUserSupportTickets = async (): Promise<SupportTicket[]> => {
   }
 };
 
+// Retry logic for network errors
+const invokeWithRetry = async (
+  functionName: string,
+  body: any,
+  maxRetries: number = 2
+): Promise<{ data: any; error: any }> => {
+  let lastError;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await supabase.functions.invoke(functionName, { body });
+      
+      // If we get a 5xx error, retry
+      if (result.error && result.error.message?.includes('5')) {
+        lastError = result.error;
+        if (attempt < maxRetries) {
+          sreLogger.warn(`Retry attempt ${attempt + 1} after 5xx error`, { error: result.error });
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+          continue;
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxRetries) {
+        sreLogger.warn(`Retry attempt ${attempt + 1} after error`, { error });
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  
+  return { data: null, error: lastError };
+};
+
 // Create a new support ticket
 export const createSupportTicket = async (ticket: SupportTicketInput): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
-      toast.error("Devi essere autenticato");
+      toast.error("Devi essere autenticato per creare un ticket");
       return false;
     }
 
     // Validate with Zod schema
     const validated = supportTicketSchema.safeParse(ticket);
     if (!validated.success) {
-      toast.error('Dati non validi');
+      const firstError = validated.error.errors[0];
+      toast.error(firstError?.message || 'Dati non validi');
       sreLogger.error('Validation error', { errors: validated.error });
       return false;
     }
 
-    // Client-side spam check
+    // Check client-side rate limit
+    const rateLimitCheck = checkClientRateLimit();
+    if (!rateLimitCheck.allowed) {
+      toast.error(`Hai inviato troppi ticket. Riprova tra ${rateLimitCheck.waitTime} secondi.`);
+      sreLogger.warn('Rate limit exceeded', { userId: user.user.id, waitTime: rateLimitCheck.waitTime });
+      return false;
+    }
+
+    // Check online status
+    if (!navigator.onLine) {
+      toast.error("Nessuna connessione internet. Verifica la tua connessione e riprova.");
+      return false;
+    }
+
+    // Server-side spam check (legacy, will be replaced by edge function check)
     const { data: recentTickets } = await supabase
       .from('support_tickets')
       .select('id, created_at')
@@ -57,21 +150,19 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       return false;
     }
 
-    // Call Edge Function
+    // Call Edge Function with retry
     sreLogger.info('Invoking support-tickets edge function', {
       userId: user.user.id,
       subject: validated.data.subject.substring(0, 50),
       category: validated.data.category
     });
 
-    const { data, error } = await supabase.functions.invoke('support-tickets', {
-      body: {
-        user_id: user.user.id,
-        subject: validated.data.subject,
-        message: validated.data.message,
-        category: validated.data.category,
-        priority: validated.data.priority
-      }
+    const { data, error } = await invokeWithRetry('support-tickets', {
+      user_id: user.user.id,
+      subject: validated.data.subject,
+      message: validated.data.message,
+      category: validated.data.category,
+      priority: validated.data.priority
     });
 
     if (error) {
@@ -81,18 +172,20 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
         errorContext: error.context 
       });
       
-      // Try to extract detailed error message from response
-      let detailedError = error.message;
-      try {
-        // FunctionsHttpError may have the response body in context
-        if (data && typeof data === 'object' && 'error' in data) {
-          detailedError = data.error;
-        }
-      } catch (e) {
-        // Fallback to generic message
+      // Enhanced error messages
+      let errorMessage = "Errore nella creazione del ticket. Riprova più tardi.";
+      
+      if (error.message?.includes('timeout') || error.message?.includes('Timeout')) {
+        errorMessage = "Timeout del server. Verifica la connessione e riprova.";
+      } else if (error.message?.includes('Network') || error.message?.includes('Failed to fetch')) {
+        errorMessage = "Errore di rete. Verifica la connessione internet.";
+      } else if (error.message?.includes('5')) {
+        errorMessage = "Errore del server. Il nostro team è stato notificato. Riprova tra qualche minuto.";
+      } else if (data && typeof data === 'object' && 'error' in data) {
+        errorMessage = data.error;
       }
       
-      toast.error(`Errore: ${detailedError}`);
+      toast.error(errorMessage);
       return false;
     }
 
@@ -105,16 +198,30 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       return false;
     }
 
+    // Record successful attempt for rate limiting
+    recordTicketAttempt();
+
     sreLogger.info('Ticket created successfully', { 
       ticketId: data?.ticket?.id,
       status: data?.ticket?.status 
     });
     
-    toast.success("Ticket creato! Riceverai una conferma via email.");
+    toast.success("Ticket creato con successo! Riceverai una conferma via email e ti risponderemo entro 24 ore.");
     return true;
   } catch (error) {
     sreLogger.error('Error creating ticket via Edge Function', { error });
-    toast.error("Errore nella creazione del ticket");
+    
+    // Enhanced error handling for caught exceptions
+    if (error instanceof Error) {
+      if (error.message.includes('network') || error.message.includes('fetch')) {
+        toast.error("Errore di connessione. Verifica la tua rete e riprova.");
+      } else {
+        toast.error("Errore imprevisto. Contattaci via email a info@workover.it.com");
+      }
+    } else {
+      toast.error("Errore nella creazione del ticket");
+    }
+    
     return false;
   }
 };
@@ -131,16 +238,16 @@ export const updateSupportTicket = async (
       .eq('id', ticketId);
 
     if (error) {
-      toast.error("Failed to update support ticket");
+      toast.error("Errore nell'aggiornamento del ticket");
       sreLogger.error('Failed to update support ticket', { error, ticketId, updates });
       return false;
     }
 
-    toast.success("Support ticket updated successfully");
+    toast.success("Ticket aggiornato con successo");
     return true;
   } catch (error) {
     sreLogger.error('Error updating support ticket', { error, ticketId, updates });
-    toast.error("Failed to update support ticket");
+    toast.error("Errore nell'aggiornamento del ticket");
     return false;
   }
 };

@@ -311,7 +311,11 @@ export default function PrivacyExportRequest() {
         {/* Contact Info */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>Hai domande? Contatta il nostro Data Protection Officer:</p>
-          <p className="font-medium">privacy@coworkingconnect.it</p>
+          <p className="font-medium">
+            <a href="mailto:privacy@workover.it.com" className="text-indigo-600 hover:underline">
+              privacy@workover.it.com
+            </a>
+          </p>
         </div>
       </div>
     </div>
