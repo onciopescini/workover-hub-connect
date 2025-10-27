@@ -13,18 +13,30 @@ interface AdminActionsFiltersProps {
   searchTerm: string;
   filterActionType: string;
   filterTargetType: string;
+  dateRange: '7d' | '30d' | 'all';
+  filterAdminId: string;
+  filterIpAddress: string;
   onSearchChange: (term: string) => void;
   onActionTypeChange: (type: string) => void;
   onTargetTypeChange: (type: string) => void;
+  onDateRangeChange: (range: '7d' | '30d' | 'all') => void;
+  onAdminIdChange: (id: string) => void;
+  onIpAddressChange: (ip: string) => void;
 }
 
 export function AdminActionsFilters({
   searchTerm,
   filterActionType,
   filterTargetType,
+  dateRange,
+  filterAdminId,
+  filterIpAddress,
   onSearchChange,
   onActionTypeChange,
-  onTargetTypeChange
+  onTargetTypeChange,
+  onDateRangeChange,
+  onAdminIdChange,
+  onIpAddressChange
 }: AdminActionsFiltersProps) {
   return (
     <Card>
@@ -62,12 +74,33 @@ export function AdminActionsFilters({
               <SelectItem value="all">Tutti</SelectItem>
               <SelectItem value="user">Utente</SelectItem>
               <SelectItem value="space">Spazio</SelectItem>
-              
               <SelectItem value="tag">Tag</SelectItem>
               <SelectItem value="ticket">Ticket</SelectItem>
               <SelectItem value="report">Report</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Advanced filters row */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Select value={dateRange} onValueChange={(val) => onDateRangeChange(val as '7d' | '30d' | 'all')}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Periodo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutto il periodo</SelectItem>
+              <SelectItem value="7d">Ultimi 7 giorni</SelectItem>
+              <SelectItem value="30d">Ultimi 30 giorni</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex-1">
+            <Input
+              placeholder="Filtra per IP address..."
+              value={filterIpAddress}
+              onChange={(e) => onIpAddressChange(e.target.value)}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -18,6 +19,8 @@ interface ComplianceMetrics {
 }
 
 export function ComplianceMonitoring() {
+  const navigate = useNavigate();
+  
   const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['compliance-monitoring'],
     queryFn: async () => {
@@ -109,9 +112,12 @@ export function ComplianceMonitoring() {
         </Alert>
       )}
 
-      {/* Metrics Grid */}
+      {/* Metrics Grid - Now clickable */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/admin/users?filter=kyc_pending')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">KYC Pendenti</CardTitle>
           </CardHeader>
@@ -120,10 +126,14 @@ export function ComplianceMonitoring() {
             <p className="text-xs text-muted-foreground mt-1">
               di cui {metrics?.kyc_pending_overdue || 0} in ritardo
             </p>
+            <p className="text-xs text-primary mt-2">Clicca per visualizzare →</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/admin/fiscal?tab=failed')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Report DAC7</CardTitle>
           </CardHeader>
@@ -132,10 +142,14 @@ export function ComplianceMonitoring() {
             <p className="text-xs text-muted-foreground mt-1">
               falliti ({metrics?.dac7_retry_pending || 0} retry)
             </p>
+            <p className="text-xs text-primary mt-2">Clicca per visualizzare →</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/admin/logs?filter=csv_export')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Export CSV (24h)</CardTitle>
           </CardHeader>
@@ -144,10 +158,14 @@ export function ComplianceMonitoring() {
             <p className="text-xs text-muted-foreground mt-1">
               {(metrics?.csv_rows_exported_24h || 0).toLocaleString('it-IT')} righe
             </p>
+            <p className="text-xs text-primary mt-2">Clicca per log →</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate('/admin/logs')}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Attività Admin (7gg)</CardTitle>
           </CardHeader>
@@ -156,6 +174,7 @@ export function ComplianceMonitoring() {
             <p className="text-xs text-muted-foreground mt-1">
               da {metrics?.active_admins_7d || 0} admin attivi
             </p>
+            <p className="text-xs text-primary mt-2">Clicca per log →</p>
           </CardContent>
         </Card>
       </div>

@@ -19,9 +19,15 @@ export function AdminActionsLog() {
     searchTerm,
     filterActionType,
     filterTargetType,
+    dateRange,
+    filterAdminId,
+    filterIpAddress,
     setSearchTerm,
     setFilterActionType,
-    setFilterTargetType
+    setFilterTargetType,
+    setDateRange,
+    setFilterAdminId,
+    setFilterIpAddress
   } = useAdminActionsLog();
 
   if (isLoading) {
@@ -54,9 +60,15 @@ export function AdminActionsLog() {
         searchTerm={searchTerm}
         filterActionType={filterActionType}
         filterTargetType={filterTargetType}
+        dateRange={dateRange}
+        filterAdminId={filterAdminId}
+        filterIpAddress={filterIpAddress}
         onSearchChange={setSearchTerm}
         onActionTypeChange={setFilterActionType}
         onTargetTypeChange={setFilterTargetType}
+        onDateRangeChange={setDateRange}
+        onAdminIdChange={setFilterAdminId}
+        onIpAddressChange={setFilterIpAddress}
       />
 
       {/* Logs List */}

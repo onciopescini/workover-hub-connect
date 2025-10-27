@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
+import { validateSettingValue } from "@/lib/admin/admin-settings-utils";
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 const GeneralSettings = () => {
@@ -18,9 +20,33 @@ const GeneralSettings = () => {
   const [enablePrivateMessaging, setEnablePrivateMessaging] = useState(settings?.["enable_private_messaging"] || true);
   const [enableEvents, setEnableEvents] = useState(settings?.["enable_events"] || true);
   const [enableNetworking, setEnableNetworking] = useState(settings?.["enable_networking"] || true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setPlatformName(settings["platform_name"] || "CoWork Space");
+      setCurrency(settings["platform_currency"] || "EUR");
+      setTimezone(settings["platform_timezone"] || "Europe/Rome");
+      setMaintenanceMode(settings["maintenance_mode"] || false);
+      setEnablePrivateMessaging(settings["enable_private_messaging"] || true);
+      setEnableEvents(settings["enable_events"] || true);
+      setEnableNetworking(settings["enable_networking"] || true);
+      setHasUnsavedChanges(false);
+    }
+  }, [settings]);
 
   const handleSave = async () => {
     try {
+      // Validate all fields
+      if (!platformName.trim()) {
+        toast({
+          title: "Errore di validazione",
+          description: "Il nome della piattaforma non può essere vuoto",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await updateSetting("platform_name", platformName);
       await updateSetting("platform_currency", currency);
       await updateSetting("platform_timezone", timezone);
@@ -29,6 +55,7 @@ const GeneralSettings = () => {
       await updateSetting("enable_events", enableEvents);
       await updateSetting("enable_networking", enableNetworking);
 
+      setHasUnsavedChanges(false);
       toast({
         title: "Impostazioni salvate",
         description: "Le impostazioni generali sono state aggiornate con successo",
@@ -60,7 +87,10 @@ const GeneralSettings = () => {
             <Input
               id="platform_name"
               value={platformName}
-              onChange={(e) => setPlatformName(e.target.value)}
+              onChange={(e) => {
+                setPlatformName(e.target.value);
+                setHasUnsavedChanges(true);
+              }}
             />
           </div>
 
@@ -149,7 +179,12 @@ const GeneralSettings = () => {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-3">
+        {hasUnsavedChanges && (
+          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+            Modifiche non salvate
+          </Badge>
+        )}
         <Button onClick={handleSave}>
           Salva Impostazioni
         </Button>

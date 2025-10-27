@@ -8,11 +8,12 @@ import { useDAC7Reports } from "@/hooks/fiscal/useDAC7Reports";
 import { DAC7ReportsTable } from "./DAC7ReportsTable";
 import { AdminFiscalReconciliation } from "./AdminFiscalReconciliation";
 import { FiscalStatusBadge } from "@/components/fiscal/FiscalStatusBadge";
-import { Euro, FileText, TrendingUp, Users, Download } from "lucide-react";
+import { Euro, FileText, TrendingUp, Users, Download, FileSpreadsheet } from "lucide-react";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast as sonnerToast } from "sonner";
 
 export const FiscalManagementContainer = () => {
   const [activeYear, setActiveYear] = useState(new Date().getFullYear());
@@ -55,6 +56,56 @@ export const FiscalManagementContainer = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      if (!reports || reports.length === 0) {
+        sonnerToast.error('Nessun report da esportare');
+        return;
+      }
+
+      // Prepare CSV data - handle undefined values
+      const csvData = reports.map(r => ({
+        'Host ID': r.host_id || '',
+        'Anno': r.reporting_year || '',
+        'Reddito Totale (€)': r.total_income || 0,
+        'Transazioni': r.total_transactions || 0,
+        'Soglia Superata': r.reporting_threshold_met ? 'Sì' : 'No',
+        'Stato Report': r.report_status || '',
+        'Reference': r.submission_reference || '-'
+      }));
+
+      // Convert to CSV
+      const headers = Object.keys(csvData[0] || {});
+      const csvRows = [
+        headers.join(','),
+        ...csvData.filter(Boolean).map(row =>
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            // Escape commas and quotes
+            const escaped = String(value).replace(/"/g, '""');
+            return `"${escaped}"`;
+          }).join(',')
+        )
+      ];
+      
+      const csv = csvRows.join('\n');
+      
+      // Create blob and download
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `dac7_reports_${activeYear}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      sonnerToast.success('Export CSV completato');
+    } catch (error) {
+      console.error('Export CSV error:', error);
+      sonnerToast.error('Errore durante l\'export CSV');
     }
   };
 
@@ -159,6 +210,18 @@ export const FiscalManagementContainer = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Export CSV Button */}
+      <div className="flex justify-end">
+        <Button 
+          variant="outline"
+          onClick={handleExportCSV}
+          disabled={!reports || reports.length === 0}
+        >
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Esporta CSV
+        </Button>
+      </div>
 
       {/* Reports Table */}
       <Tabs defaultValue="reconciliation" className="space-y-4">

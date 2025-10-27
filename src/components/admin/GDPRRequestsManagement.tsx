@@ -33,9 +33,31 @@ export const GDPRRequestsManagement = () => {
   const [requests, setRequests] = useState<GDPRRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedRequestType, setSelectedRequestType] = useState<string>("all");
 
   useEffect(() => {
     fetchGDPRRequests();
+
+    // Realtime subscription for GDPR request updates
+    const channel = supabase
+      .channel('admin-gdpr-requests')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'gdpr_requests'
+        },
+        (payload) => {
+          console.log('🔔 Realtime GDPR request update:', payload);
+          fetchGDPRRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchGDPRRequests = async () => {
@@ -106,9 +128,11 @@ export const GDPRRequestsManagement = () => {
     return labels[type];
   };
 
-  const filteredRequests = selectedStatus === "all" 
-    ? requests 
-    : requests.filter(req => req.status === selectedStatus);
+  const filteredRequests = requests.filter(req => {
+    const matchesStatus = selectedStatus === "all" || req.status === selectedStatus;
+    const matchesRequestType = selectedRequestType === "all" || req.request_type === selectedRequestType;
+    return matchesStatus && matchesRequestType;
+  });
 
   if (isLoading) {
     return <div className="text-center py-8">Caricamento richieste GDPR...</div>;
@@ -133,6 +157,18 @@ export const GDPRRequestsManagement = () => {
               <SelectItem value="processing">In Elaborazione</SelectItem>
               <SelectItem value="completed">Completate</SelectItem>
               <SelectItem value="failed">Fallite</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedRequestType} onValueChange={setSelectedRequestType}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filtra per tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti i tipi</SelectItem>
+              <SelectItem value="data_export">Esportazione Dati</SelectItem>
+              <SelectItem value="data_deletion">Cancellazione Dati</SelectItem>
+              <SelectItem value="data_rectification">Rettifica Dati</SelectItem>
             </SelectContent>
           </Select>
         </div>
