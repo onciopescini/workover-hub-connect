@@ -20,8 +20,9 @@ export const SecurityHeadersProvider = ({ children }: { children: React.ReactNod
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       img-src 'self' data: https: blob:;
       font-src 'self' data: https://fonts.gstatic.com;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://checkout.stripe.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://api.mapbox.com;
       frame-src https://js.stripe.com https://checkout.stripe.com;
+      manifest-src 'self' data:;
       object-src 'none';
       base-uri 'self';
       form-action 'self';

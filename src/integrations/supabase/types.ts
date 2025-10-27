@@ -3921,6 +3921,7 @@ export type Database = {
         Row: {
           assigned_at: string | null
           assigned_to: string | null
+          category: string
           created_at: string | null
           first_response_at: string | null
           id: string
@@ -3938,6 +3939,7 @@ export type Database = {
         Insert: {
           assigned_at?: string | null
           assigned_to?: string | null
+          category?: string
           created_at?: string | null
           first_response_at?: string | null
           id?: string
@@ -3955,6 +3957,7 @@ export type Database = {
         Update: {
           assigned_at?: string | null
           assigned_to?: string | null
+          category?: string
           created_at?: string | null
           first_response_at?: string | null
           id?: string
