@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useLogger } from '@/hooks/useLogger';
+import { useQuery } from '@tanstack/react-query';
 import { getAdminStats } from '@/lib/admin-utils';
 import { AdminStats } from '@/types/admin';
+import { sreLogger } from '@/lib/sre-logger';
 
 export interface AdminDashboardState {
   stats: AdminStats | null;
@@ -14,39 +14,27 @@ export interface AdminDashboardActions {
 }
 
 export const useAdminDashboard = () => {
-  const { error: logError } = useLogger({ context: 'useAdminDashboard' });
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const adminStats = await getAdminStats();
-      setStats(adminStats);
-    } catch (err) {
-      logError('Error fetching admin stats', err as Error, {
-        operation: 'fetch_admin_stats'
-      });
-      setError(err instanceof Error ? err : new Error('Failed to fetch admin stats'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const refetch = useCallback(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  const { data: stats, isLoading, error, refetch } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      try {
+        sreLogger.info('Fetching admin stats');
+        const data = await getAdminStats();
+        return data;
+      } catch (err) {
+        sreLogger.error('Error fetching admin stats', {}, err as Error);
+        throw err;
+      }
+    },
+    refetchInterval: 60000, // Auto-refresh every 60s
+    staleTime: 30000, // Cache for 30s
+    retry: 2,
+  });
 
   const state: AdminDashboardState = {
-    stats,
+    stats: stats || null,
     isLoading,
-    error
+    error: error as Error | null
   };
 
   const actions: AdminDashboardActions = {

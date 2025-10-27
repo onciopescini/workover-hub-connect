@@ -118,3 +118,51 @@ export const reactivateUser = async (userId: string): Promise<void> => {
     throw error;
   }
 };
+
+export const assignModeratorRole = async (userId: string): Promise<void> => {
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser.user) throw new Error("Not authenticated");
+
+    const { error } = await supabase.rpc("assign_moderator_role", {
+      target_user_id: userId,
+      assigned_by_admin: currentUser.user.id
+    });
+
+    if (error) {
+      logger.error("Failed to assign moderator role", { userId }, error);
+      throw new Error("Errore nell'assegnazione del ruolo moderatore");
+    }
+
+    logger.info("Moderator role assigned", { userId });
+    toast.success("Ruolo moderatore assegnato con successo");
+  } catch (error) {
+    logger.error("Error assigning moderator role", { userId }, error as Error);
+    toast.error("Errore nell'assegnazione del ruolo moderatore");
+    throw error;
+  }
+};
+
+export const removeModeratorRole = async (userId: string): Promise<void> => {
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser.user) throw new Error("Not authenticated");
+
+    const { error } = await supabase.rpc("remove_moderator_role", {
+      target_user_id: userId,
+      removed_by_admin: currentUser.user.id
+    });
+
+    if (error) {
+      logger.error("Failed to remove moderator role", { userId }, error);
+      throw new Error("Errore nella rimozione del ruolo moderatore");
+    }
+
+    logger.info("Moderator role removed", { userId });
+    toast.success("Ruolo moderatore rimosso con successo");
+  } catch (error) {
+    logger.error("Error removing moderator role", { userId }, error as Error);
+    toast.error("Errore nella rimozione del ruolo moderatore");
+    throw error;
+  }
+};

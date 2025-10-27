@@ -11,6 +11,7 @@ import { it } from "date-fns/locale";
 import { Eye } from "lucide-react";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useLogger } from "@/hooks/useLogger";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminReportManagement = () => {
   const [reports, setReports] = useState<Report[]>([]);
@@ -22,6 +23,30 @@ const AdminReportManagement = () => {
 
   useEffect(() => {
     fetchReports();
+  }, []);
+
+  // Realtime subscription for report updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-reports-realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'reports',
+          filter: 'status=eq.open'
+        },
+        (payload) => {
+          console.log('Realtime report update:', payload);
+          fetchReports();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchReports = async () => {

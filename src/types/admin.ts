@@ -72,6 +72,11 @@ export type AdminStats = {
   totalBookings: number;
   activeBookings: number;
   totalRevenue: number;
+  openReports: number;
+  unresolvedTickets: number;
+  pendingGdprRequests: number;
+  activeUsers: number;
+  userGrowthTrend?: number;
 };
 
 export const WARNING_TYPES = {

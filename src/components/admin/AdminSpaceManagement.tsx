@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getAllSpaces, moderateSpace } from "@/lib/admin-utils";
 import { AdminSpace } from "@/types/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,30 @@ export function AdminSpaceManagement() {
   useEffect(() => {
     filterSpaces();
   }, [spaces, searchTerm, filterStatus, filterCategory]);
+
+  // Realtime subscription for space updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-spaces-realtime')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'spaces',
+          filter: 'pending_approval=eq.true'
+        },
+        (payload) => {
+          console.log('Realtime space update:', payload);
+          fetchSpaces();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchSpaces = async () => {
     try {

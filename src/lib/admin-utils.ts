@@ -5,7 +5,9 @@ export { getAdminStats } from "./admin/admin-stats-utils";
 export { 
   getAllUsers, 
   suspendUser, 
-  reactivateUser 
+  reactivateUser,
+  assignModeratorRole,
+  removeModeratorRole
 } from "./admin/admin-user-utils";
 export { 
   getAllSpaces, 
