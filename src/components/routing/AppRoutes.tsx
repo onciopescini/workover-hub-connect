@@ -78,6 +78,7 @@ const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage")
 const AdminLogsPage = lazy(() => import("@/pages/admin/AdminLogsPage"));
 const AdminMonitoringPage = lazy(() => import("@/pages/admin/AdminMonitoringPage"));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
+const TestSuiteIndex = lazy(() => import("@/pages/admin/TestSuiteIndex"));
 const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
 const AdminFiscalPage = lazy(() => import("@/pages/admin/AdminFiscalPage"));
 const AdminFiscalSettings = lazy(() => import("@/pages/admin/AdminFiscalSettings"));
@@ -516,6 +517,14 @@ export const AppRoutes = () => {
           <ModeratorRoute requireAdmin={true}>
             <LazyWrapper>
               <SystemAlarmsPage />
+            </LazyWrapper>
+          </ModeratorRoute>
+        } />
+        
+        <Route path="test-suite" element={
+          <ModeratorRoute requireAdmin={true}>
+            <LazyWrapper>
+              <TestSuiteIndex />
             </LazyWrapper>
           </ModeratorRoute>
         } />

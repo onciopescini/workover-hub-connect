@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale, Settings, Receipt } from "lucide-react";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale, Settings, Receipt, TestTube, CheckCircle, AlertTriangle, Code } from "lucide-react";
 import { useLogger } from '@/hooks/useLogger';
 import { useModeratorCheck } from '@/hooks/admin/useModeratorCheck';
 import { canManageUsers, canManageSystemRoles, canManageSettings } from '@/lib/admin/moderator-permissions';
@@ -97,6 +97,9 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     return pathname.startsWith(path);
   };
 
+  // Feature flag for developer tools (only in dev environment)
+  const isDevelopment = import.meta.env.DEV || import.meta.env['VITE_SHOW_DEV_TOOLS'] === 'true';
+
   // Define all nav items with role requirements
   const allNavItems = [
     { label: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" />, roles: ['admin', 'moderator'] },
@@ -112,8 +115,13 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     { label: "Log", path: "/admin/logs", icon: <FileText className="w-4 h-4" />, roles: ['admin', 'moderator'] },
   ];
 
+  // Developer tools - only visible in development
+  const devToolsItems = isDevelopment ? [
+    { label: "Test Suite Index", path: "/admin/test-suite", icon: <TestTube className="w-4 h-4" />, roles: ['admin'] },
+  ] : [];
+
   // Filter nav items based on user's roles
-  const navItems = allNavItems.filter(item => {
+  const navItems = [...allNavItems, ...devToolsItems].filter(item => {
     if (isAdmin) return true; // Admins see everything
     if (isModerator) return item.roles.includes('moderator');
     return false;

@@ -52,8 +52,6 @@ export const OptimizedUnifiedHeader = () => {
       return [
         ...baseItems,
         { name: 'Admin Panel', href: '/admin/users', icon: Settings },
-        { name: 'Test Suite', href: '/networking-test-suite', icon: TestTube },
-        { name: 'Gestione Utenti', href: '/admin/users', icon: Users },
       ];
     }
     
@@ -192,14 +190,6 @@ export const OptimizedUnifiedHeader = () => {
                         <span>Il mio profilo</span>
                       </Link>
                     </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/networking-test-suite" className="flex items-center">
-                          <TestTube className="mr-2 h-4 w-4" />
-                          <span>Test Suite</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="flex items-center">
                         <Settings className="mr-2 h-4 w-4" />
