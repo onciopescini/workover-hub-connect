@@ -267,6 +267,9 @@ const emailTemplates = {
 };
 
 serve(async (req) => {
+  // Log function boot - Deploy version: 2025-01-24-v1
+  console.log('🚀 [SEND-EMAIL] Function ready - Resend integration active');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
