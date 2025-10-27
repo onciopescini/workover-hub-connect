@@ -47,6 +47,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const NetworkingSettings = lazy(() => import("@/pages/NetworkingSettings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
 const Reviews = lazy(() => import("@/pages/Reviews"));
+const Support = lazy(() => import("@/pages/Support"));
 const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 const RegressionValidation = lazy(() => import("@/pages/RegressionValidation"));
 
@@ -277,6 +278,14 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <NetworkingSettings />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+
+        <Route path="support" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <Support />
             </LazyWrapper>
           </AuthProtected>
         } />
