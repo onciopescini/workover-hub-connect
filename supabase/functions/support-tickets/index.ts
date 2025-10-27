@@ -9,8 +9,8 @@ const corsHeaders = {
 };
 
 const supabaseAdmin = createClient(
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-  Deno.env.get('SERVICE_ROLE_KEY')!
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
 interface TicketRequest {
@@ -95,9 +95,9 @@ serve(async (req) => {
 
     // Send email notification to admin
     try {
-      const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@workover.app';
+      const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@workover.it.com';
       
-      await supabaseAdmin.functions.invoke('send-email', {
+      const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
         body: {
           type: 'support_ticket',
           to: adminEmail,
@@ -107,12 +107,21 @@ serve(async (req) => {
             message,
             userName: userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : 'Unknown User',
             userEmail: authUser?.user?.email || 'Unknown Email',
-            adminUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.app'}/admin`
+            adminUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.it.com'}/admin`
           }
         }
       });
+      
+      if (emailError) {
+        ErrorHandler.logWarning('Failed to send admin email notification', emailError, {
+          ticketId: ticket.id,
+          emailResponse: emailData
+        });
+      } else {
+        ErrorHandler.logSuccess('Admin email sent', { ticketId: ticket.id, to: adminEmail });
+      }
     } catch (emailError) {
-      ErrorHandler.logWarning('Failed to send admin email notification', emailError, {
+      ErrorHandler.logWarning('Exception sending admin email notification', emailError, {
         ticketId: ticket.id
       });
     }
@@ -120,7 +129,7 @@ serve(async (req) => {
     // Send confirmation email to user
     if (authUser?.user?.email) {
       try {
-        await supabaseAdmin.functions.invoke('send-email', {
+        const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
           body: {
             type: 'support_ticket_confirmation',
             to: authUser.user.email,
@@ -131,8 +140,18 @@ serve(async (req) => {
             }
           }
         });
+        
+        if (emailError) {
+          ErrorHandler.logWarning('Failed to send user confirmation email', emailError, {
+            ticketId: ticket.id,
+            userEmail: authUser.user.email,
+            emailResponse: emailData
+          });
+        } else {
+          ErrorHandler.logSuccess('User confirmation email sent', { ticketId: ticket.id, to: authUser.user.email });
+        }
       } catch (emailError) {
-        ErrorHandler.logWarning('Failed to send user confirmation email', emailError, {
+        ErrorHandler.logWarning('Exception sending user confirmation email', emailError, {
           ticketId: ticket.id,
           userEmail: authUser.user.email
         });

@@ -24,7 +24,7 @@ verify_jwt = false
 timeout = 25
 
 [functions.send-email]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-profile]
 verify_jwt = true
