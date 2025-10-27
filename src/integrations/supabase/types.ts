@@ -4734,6 +4734,7 @@ export type Database = {
       }
       spaces_public_safe: {
         Row: {
+          address: string | null
           amenities: string[] | null
           approximate_location: unknown
           availability: Json | null
@@ -4766,6 +4767,7 @@ export type Database = {
           workspace_features: string[] | null
         }
         Insert: {
+          address?: string | null
           amenities?: string[] | null
           approximate_location?: unknown
           availability?: Json | null
@@ -4798,6 +4800,7 @@ export type Database = {
           workspace_features?: string[] | null
         }
         Update: {
+          address?: string | null
           amenities?: string[] | null
           approximate_location?: unknown
           availability?: Json | null
@@ -5507,6 +5510,71 @@ export type Database = {
           relevance: number
           sender_id: string
           space_title: string
+        }[]
+      }
+      search_spaces_by_location_text: {
+        Args: {
+          p_amenities?: string[]
+          p_category?: string
+          p_limit?: number
+          p_max_price?: number
+          p_min_capacity?: number
+          p_min_price?: number
+          p_search_text: string
+          p_work_environment?: string
+        }
+        Returns: {
+          address: string
+          amenities: string[]
+          approximate_location: unknown
+          category: string
+          city_name: string
+          country_code: string
+          created_at: string
+          description: string
+          id: string
+          max_capacity: number
+          photos: string[]
+          price_per_day: number
+          price_per_hour: number
+          seating_types: string[]
+          title: string
+          work_environment: string
+          workspace_features: string[]
+        }[]
+      }
+      search_spaces_by_radius: {
+        Args: {
+          p_amenities?: string[]
+          p_category?: string
+          p_lat: number
+          p_limit?: number
+          p_lng: number
+          p_max_price?: number
+          p_min_capacity?: number
+          p_min_price?: number
+          p_radius_km?: number
+          p_work_environment?: string
+        }
+        Returns: {
+          address: string
+          amenities: string[]
+          approximate_location: unknown
+          category: string
+          city_name: string
+          country_code: string
+          created_at: string
+          description: string
+          distance_km: number
+          id: string
+          max_capacity: number
+          photos: string[]
+          price_per_day: number
+          price_per_hour: number
+          seating_types: string[]
+          title: string
+          work_environment: string
+          workspace_features: string[]
         }[]
       }
       send_sla_alerts: { Args: never; Returns: undefined }

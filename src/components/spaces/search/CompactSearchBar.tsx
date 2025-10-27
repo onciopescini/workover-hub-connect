@@ -4,11 +4,14 @@ import { DateRangePicker } from './DateRangePicker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { SlidersHorizontal, MapPin, Star, Clock, X } from 'lucide-react';
 import { Coordinates } from '@/types/space-filters';
 
 interface CompactSearchBarProps {
   location: string;
+  coordinates?: Coordinates | null; // NEW
+  radiusKm?: number; // NEW
   startDate: Date | null;
   endDate: Date | null;
   startTime: string | null;
@@ -16,6 +19,7 @@ interface CompactSearchBarProps {
   activeFiltersCount: number;
   isFiltersOpen: boolean;
   onLocationChange: (location: string, coordinates?: Coordinates) => void;
+  onRadiusChange?: (radius: number) => void; // NEW
   onStartDateChange: (date: Date | null) => void;
   onEndDateChange: (date: Date | null) => void;
   onStartTimeChange: (time: string | null) => void;
@@ -28,6 +32,8 @@ interface CompactSearchBarProps {
 
 export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
   location,
+  coordinates, // NEW
+  radiusKm = 10, // NEW
   startDate,
   endDate,
   startTime,
@@ -35,6 +41,7 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
   activeFiltersCount,
   isFiltersOpen,
   onLocationChange,
+  onRadiusChange, // NEW
   onStartDateChange,
   onEndDateChange,
   onStartTimeChange,
@@ -67,10 +74,27 @@ export const CompactSearchBar: React.FC<CompactSearchBarProps> = ({
             <GeographicSearch
               value={location}
               onChange={onLocationChange}
-              placeholder="📍 Cerca per luogo..."
+              placeholder="📍 Cerca città o indirizzo..."
               className="w-full"
+              searchMode="full"
             />
           </div>
+
+          {/* NEW: Radius Slider (visible only if coordinates present) */}
+          {coordinates && onRadiusChange && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md min-w-[180px]">
+              <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm whitespace-nowrap">Raggio: {radiusKm}km</span>
+              <Slider
+                value={[radiusKm]}
+                onValueChange={(value) => onRadiusChange(value[0] || 10)}
+                min={1}
+                max={50}
+                step={1}
+                className="w-20"
+              />
+            </div>
+          )}
 
           {/* Date Range Picker */}
           <DateRangePicker

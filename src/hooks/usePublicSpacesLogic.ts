@@ -252,7 +252,7 @@ const DEFAULT_FILTERS: SpaceFilters = {
 };
 
 export const usePublicSpacesLogic = () => {
-  const { initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, updateLocationParam } = useLocationParams();
+  const { initialCity, initialCoordinates, initialRadius, initialDate, initialStartTime, initialEndTime, updateLocationParam } = useLocationParams();
   const [filters, setFilters] = useState<SpaceFilters>(() => ({
     ...DEFAULT_FILTERS,
     location: initialCity || '',
@@ -261,6 +261,10 @@ export const usePublicSpacesLogic = () => {
     startTime: initialStartTime,
     endTime: initialEndTime
   }));
+  const [radiusKm, setRadiusKm] = useState(initialRadius); // NEW: Raggio di ricerca
+  const [searchMode, setSearchMode] = useState<'text' | 'radius'>(
+    initialCoordinates ? 'radius' : 'text'
+  ); // NEW: Modalità di ricerca
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(() => 
     initialCoordinates || { lat: 41.9028, lng: 12.4964 }
   );
@@ -345,11 +349,76 @@ export const usePublicSpacesLogic = () => {
 
   // Spaces data fetching with React Query - optimized
   const spacesQuery = useQuery({
-    queryKey: ['public-spaces', filterKey],
+    queryKey: ['public-spaces', filterKey, searchMode, radiusKm],
     queryFn: async () => {
-      info('Fetching public spaces with filters', { filters });
+      info('Fetching public spaces with filters', { filters, searchMode, radiusKm });
       
-      // Use secure view that doesn't expose host_id or precise location
+      // NEW: Use geographic search RPC if coordinates available and in radius mode
+      if (filters.coordinates && searchMode === 'radius') {
+        info('Using geographic search by radius', { 
+          coordinates: filters.coordinates, 
+          radius: radiusKm 
+        });
+        
+        const params: any = {
+          p_lat: filters.coordinates.lat,
+          p_lng: filters.coordinates.lng,
+          p_radius_km: radiusKm,
+          p_limit: 100
+        };
+        
+        // Add optional parameters only if they have values
+        if (filters.category) params.p_category = filters.category;
+        if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
+        if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
+        if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
+        if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
+        if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
+        
+        const { data, error } = await supabase.rpc('search_spaces_by_radius', params);
+        
+        if (error) throw error;
+        
+        info('Geographic search completed', {
+          resultsCount: data?.length || 0,
+          radius: radiusKm
+        });
+        
+        return Array.isArray(data) ? data : [];
+      }
+      
+      // NEW: Use text search RPC if location provided
+      if (filters.location) {
+        info('Using text search by location', { location: filters.location });
+        
+        const params: any = {
+          p_search_text: filters.location,
+          p_limit: 100
+        };
+        
+        // Add optional parameters only if they have values
+        if (filters.category) params.p_category = filters.category;
+        if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
+        if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
+        if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
+        if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
+        if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
+        
+        const { data, error } = await supabase.rpc('search_spaces_by_location_text', params);
+        
+        if (error) throw error;
+        
+        info('Text search completed', {
+          resultsCount: data?.length || 0,
+          searchText: filters.location
+        });
+        
+        return Array.isArray(data) ? data : [];
+      }
+      
+      // Fallback: Use standard query (fetch all + client-side filtering)
+      info('Using standard query with client-side filtering');
+      
       const { data: spacesData, error: spacesError } = await supabase
         .from('spaces_public_safe')
         .select(PUBLIC_SPACES_SELECT);
@@ -476,6 +545,17 @@ export const usePublicSpacesLogic = () => {
     }
   };
 
+  // Handle radius change
+  const handleRadiusChange = (newRadius: number) => {
+    info('Radius changed', { oldRadius: radiusKm, newRadius });
+    setRadiusKm(newRadius);
+    
+    // Update URL parameter
+    if (filters.coordinates) {
+      updateLocationParam(filters.location, filters.coordinates, newRadius);
+    }
+  };
+
   // Use coordinates for map center if available
   const mapCenter = filters.coordinates || userLocation;
 
@@ -484,6 +564,8 @@ export const usePublicSpacesLogic = () => {
     filters,
     userLocation,
     mapCenter,
+    radiusKm, // NEW
+    searchMode, // NEW
     
     // Data
     spaces: spacesQuery.data,
@@ -492,6 +574,8 @@ export const usePublicSpacesLogic = () => {
     
     // Actions
     handleFiltersChange,
+    handleRadiusChange, // NEW
+    setSearchMode, // NEW
     getUserLocation,
     
     // Map interaction

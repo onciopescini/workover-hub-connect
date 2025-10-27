@@ -23,10 +23,12 @@ const PublicSpaces = () => {
     isLoading,
     error,
     mapCenter,
+    radiusKm,
     highlightedId,
     handleCardClick,
     handleMarkerClick,
-    handleFiltersChange
+    handleFiltersChange,
+    handleRadiusChange
   } = usePublicSpacesLogic();
 
   const handleSpaceClick = (spaceId: string) => {
@@ -66,8 +68,10 @@ const PublicSpaces = () => {
         spaces={spaces || []}
         isLoading={isLoading}
         mapCenter={mapCenter}
+        radiusKm={radiusKm}
         highlightedId={highlightedId}
         onFiltersChange={(filters) => handleFiltersChange(filters as SpaceFilters)}
+        onRadiusChange={handleRadiusChange}
         onSpaceClick={handleSpaceClick}
         onMapSpaceClick={handleMapSpaceClick}
       />

@@ -12,6 +12,7 @@ import { useLogger } from '@/hooks/useLogger';
 interface GeocodeResult {
   place_name: string;
   center: [number, number];
+  place_type?: string[]; // NEW: Type of place (city, address, etc.)
 }
 
 interface GeographicSearchProps {
@@ -20,6 +21,7 @@ interface GeographicSearchProps {
   onLocationSelect?: (location: string, coordinates?: { lat: number; lng: number }) => void;
   placeholder?: string;
   className?: string;
+  searchMode?: 'city' | 'full'; // NEW: Modalità ricerca (solo città o indirizzo completo)
 }
 
 export const GeographicSearch: React.FC<GeographicSearchProps> = ({
@@ -27,7 +29,8 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
   onChange,
   onLocationSelect,
   placeholder = "Cerca per città o indirizzo...",
-  className = ""
+  className = "",
+  searchMode = 'full' // NEW: Default a 'full' per retrocompatibilità
 }) => {
   const { error } = useLogger({ context: 'GeographicSearch' });
   // Usa value prop se fornito (controlled), altrimenti stato interno (uncontrolled)
@@ -88,8 +91,14 @@ export const GeographicSearch: React.FC<GeographicSearchProps> = ({
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const results = await geocodeAddress(inputValue);
-        setSuggestions(results);
-        setShowSuggestions(results.length > 0);
+        
+        // NEW: Filtra risultati in base a searchMode
+        const filteredResults = searchMode === 'city' 
+          ? results.filter((r: any) => r.place_type?.includes('place') || r.place_type?.includes('locality'))
+          : results;
+        
+        setSuggestions(filteredResults);
+        setShowSuggestions(filteredResults.length > 0);
       } catch (searchError) {
         error('Error during geographic search', searchError as Error, { 
           operation: 'search_address',

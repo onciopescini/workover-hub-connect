@@ -35,6 +35,7 @@ export const SearchFilters: React.FC = () => {
     if (coordinates) {
       params.append('lat', coordinates.lat.toString());
       params.append('lng', coordinates.lng.toString());
+      params.append('radius', '10'); // Default 10km per ricerca geografica
     }
     if (date) {
       params.append('date', format(date, 'yyyy-MM-dd'));
@@ -60,6 +61,7 @@ export const SearchFilters: React.FC = () => {
           onChange={handleLocationChange}
           placeholder="🌍 Dove vuoi lavorare oggi?"
           className="w-full h-14 text-lg"
+          searchMode="city"
         />
       </div>
 

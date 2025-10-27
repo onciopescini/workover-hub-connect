@@ -84,6 +84,12 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
           <div className="flex items-center gap-1 text-gray-600 mb-2">
             <MapPin className="h-4 w-4" />
             <span className="text-sm line-clamp-1">{space.address}</span>
+            {/* NEW: Show distance if available */}
+            {(space as any).distance_km && (
+              <Badge variant="secondary" className="ml-auto text-xs">
+                {(space as any).distance_km} km
+              </Badge>
+            )}
           </div>
 
           {space.description && (
