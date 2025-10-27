@@ -191,12 +191,13 @@ export const PublicSpacesContent = ({
         </div>
       }
       cards={
-        <CompactSpaceCardsGrid 
-          spaces={spaces || []} 
-          onSpaceClick={onSpaceClick}
-          highlightedId={highlightedId}
-          isLoading={isLoading}
-        />
+          <CompactSpaceCardsGrid 
+            spaces={spaces || []} 
+            onSpaceClick={onSpaceClick}
+            highlightedId={highlightedId}
+            isLoading={isLoading}
+            selectedDate={filters.startDate}
+          />
       }
     />
   );

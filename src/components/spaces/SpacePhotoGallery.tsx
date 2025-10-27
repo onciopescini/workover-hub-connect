@@ -47,13 +47,31 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
   return (
     <>
       <div className={cn("relative group cursor-pointer", className)}>
-        <div className="grid grid-cols-4 gap-2 h-96 overflow-hidden rounded-2xl">
-          {/* Main large image - takes 2 columns */}
-          <div className="col-span-2 relative">
+        <div className={cn(
+          "grid gap-2 overflow-hidden rounded-2xl",
+          // Desktop: 4 columns (2+2 layout)
+          "lg:grid-cols-4 lg:h-96",
+          // Tablet: 2 columns
+          "md:grid-cols-2 md:h-80",
+          // Mobile: 1 column
+          "sm:grid-cols-1 sm:h-auto sm:max-h-[600px]"
+        )}>
+          {/* Main large image - responsive span */}
+          <div className={cn(
+            "relative",
+            "lg:col-span-2",
+            "md:col-span-1",
+            "sm:col-span-1"
+          )}>
             <OptimizedImage
               src={displayPhotos[0]}
               alt={`${spaceTitle} - Foto principale`}
-              className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
+              className={cn(
+                "w-full object-cover transition-opacity hover:opacity-90 cursor-pointer",
+                "lg:h-full",
+                "md:h-80",
+                "sm:h-64"
+              )}
               width={800}
               height={600}
               decoding="async"
@@ -63,18 +81,28 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
             />
           </div>
 
-          {/* Right side - 2x2 grid of smaller images */}
-          <div className="col-span-2 grid grid-rows-2 gap-2">
+          {/* Right side - responsive grid */}
+          <div className={cn(
+            "grid gap-2",
+            "lg:col-span-2 lg:grid-rows-2",
+            "md:col-span-1 md:grid-cols-2 md:grid-rows-2",
+            "sm:col-span-1 sm:grid-cols-2 sm:auto-rows-fr"
+          )}>
             {displayPhotos.slice(1, 5).map((photo, index) => {
               const photoIndex = index + 1;
-              const isLast = index === 3; // Last position in the 2x2 grid
+              const isLast = index === 3;
               
               return (
                 <div key={photoIndex} className="relative">
                   <OptimizedImage
                     src={photo}
                     alt={`${spaceTitle} - Foto ${photoIndex + 1}`}
-                    className="w-full h-full object-cover transition-opacity hover:opacity-90 cursor-pointer"
+                    className={cn(
+                      "w-full object-cover transition-opacity hover:opacity-90 cursor-pointer",
+                      "lg:h-full",
+                      "md:h-40",
+                      "sm:h-32"
+                    )}
                     width={400}
                     height={300}
                     decoding="async"
@@ -86,7 +114,12 @@ export const SpacePhotoGallery: React.FC<SpacePhotoGalleryProps> = ({
                   {/* Show remaining count overlay on last image */}
                   {isLast && remainingPhotosCount > 0 && (
                     <div 
-                      className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-lg hover:bg-black/70 transition-colors"
+                      className={cn(
+                        "absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold hover:bg-black/70 transition-colors",
+                        "lg:text-lg",
+                        "md:text-base",
+                        "sm:text-sm"
+                      )}
                       onClick={() => openLightbox(4)}
                     >
                       +{remainingPhotosCount}

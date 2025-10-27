@@ -144,8 +144,26 @@ export const AdvancedSpaceFilters: React.FC<AdvancedSpaceFiltersProps> = ({
   };
 
   const filterAvailableNow = () => {
-    // Implementare logica per filtrare spazi disponibili ora
-    // Filter available now - using proper state management
+    const now = new Date();
+    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    
+    // Get current time in HH:MM format
+    const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const endTime = `${String(twoHoursLater.getHours()).padStart(2, '0')}:${String(twoHoursLater.getMinutes()).padStart(2, '0')}`;
+    
+    onFiltersChange({
+      ...filters,
+      startDate: now,
+      endDate: now, // Same day
+      startTime,
+      endTime
+    });
+    
+    sreLogger.info('Quick filter: Available Now applied', {
+      component: 'AdvancedSpaceFilters',
+      startTime,
+      endTime
+    });
   };
 
   const saveCurrentSearch = () => {

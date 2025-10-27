@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Euro, Shield, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { BookingForm } from './BookingForm';
 import { useLogger } from "@/hooks/useLogger";
+import { cn } from "@/lib/utils";
 
 interface StickyBookingCardProps {
   space: {
@@ -63,7 +64,18 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
 
   if (showBookingForm) {
     return (
-      <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col' : 'max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col'}`}>
+      <Card className={cn(
+        'max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col transition-all duration-300',
+        isSticky && [
+          'fixed z-50 shadow-2xl',
+          // Desktop: fixed width right-aligned
+          'lg:top-4 lg:right-4 lg:w-96',
+          // Tablet: slightly narrower, still right-aligned
+          'md:top-4 md:right-4 md:w-80',
+          // Mobile: full-width bottom sheet
+          'sm:bottom-0 sm:top-auto sm:left-0 sm:right-0 sm:w-full sm:rounded-t-2xl sm:rounded-b-none'
+        ]
+      )}>
         <CardHeader className="sticky top-0 z-10 bg-background border-b shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
@@ -99,7 +111,18 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   }
 
   return (
-    <Card className={`${isSticky ? 'fixed top-4 right-4 w-96 z-50 shadow-2xl' : ''}`}>
+    <Card className={cn(
+      'transition-all duration-300',
+      isSticky && [
+        'fixed z-50 shadow-2xl',
+        // Desktop: fixed width right-aligned
+        'lg:top-4 lg:right-4 lg:w-96',
+        // Tablet: slightly narrower, still right-aligned
+        'md:top-4 md:right-4 md:w-80',
+        // Mobile: full-width bottom sheet
+        'sm:bottom-0 sm:top-auto sm:left-0 sm:right-0 sm:w-full sm:rounded-t-2xl sm:rounded-b-none sm:max-h-[60vh]'
+      ]
+    )}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

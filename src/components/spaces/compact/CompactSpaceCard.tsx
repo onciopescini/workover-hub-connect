@@ -8,6 +8,7 @@ import { Space } from '@/types/space';
 import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
 import { DailyAvailabilityCalendar } from '@/components/spaces/availability/DailyAvailabilityCalendar';
 import { useSpaceHourlyAvailability } from '@/hooks/useSpaceHourlyAvailability';
+import { useNavigate } from 'react-router-dom';
 
 interface CompactSpaceCardProps {
   space: Space;
@@ -27,12 +28,33 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
   const { data: reviews = [] } = useSpaceReviews(space.id);
   const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
   const [showAvailability, setShowAvailability] = useState(false);
+  const navigate = useNavigate();
   
   const dateToCheck = selectedDate || new Date();
   const { data: availabilityData, isLoading: isLoadingAvailability } = useSpaceHourlyAvailability(
     space.id,
     dateToCheck
   );
+
+  const handleSlotClick = (time: string) => {
+    // Parse time slot (format: "09:00-12:00")
+    const [startTime, endTime] = time.split('-');
+    
+    if (!startTime || !endTime) return;
+    
+    // Build query string with pre-selected slot
+    const dateString = dateToCheck.toISOString().split('T')[0] || '';
+    if (!dateString) return;
+    
+    const params = new URLSearchParams({
+      date: dateString,
+      startTime: startTime.trim(),
+      endTime: endTime.trim()
+    });
+    
+    // Navigate to space detail page with booking params
+    navigate(`/spaces/${space.id}?${params.toString()}`);
+  };
 
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
@@ -173,39 +195,35 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
       </CardContent>
     </Card>
     
-    {/* Availability Calendar Toggle */}
-    {selectedDate && (
-      <div className="mt-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowAvailability(!showAvailability);
-          }}
-          data-availability-toggle
-          className="w-full text-xs"
-        >
-          {showAvailability ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-          {showAvailability ? 'Nascondi' : 'Mostra'} disponibilità
-        </Button>
-        
-        {showAvailability && (
-          <div className="mt-2 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <DailyAvailabilityCalendar
-              spaceId={space.id}
-              date={dateToCheck}
-              slots={availabilityData?.slots || []}
-              isLoading={isLoadingAvailability}
-              onSlotClick={(time) => {
-                console.log('Selected time slot:', time);
-                // TODO: Navigate to booking with pre-selected time
-              }}
-            />
-          </div>
-        )}
-      </div>
-    )}
+    {/* Availability Calendar Toggle - Always visible */}
+    <div className="mt-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowAvailability(!showAvailability);
+        }}
+        data-availability-toggle
+        className="w-full text-xs"
+      >
+        {showAvailability ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
+        {showAvailability ? 'Nascondi' : 'Mostra'} disponibilità
+        {!selectedDate && <span className="ml-1 text-muted-foreground">(oggi)</span>}
+      </Button>
+      
+      {showAvailability && (
+        <div className="mt-2 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+          <DailyAvailabilityCalendar
+            spaceId={space.id}
+            date={dateToCheck}
+            slots={availabilityData?.slots || []}
+            isLoading={isLoadingAvailability}
+            onSlotClick={handleSlotClick}
+          />
+        </div>
+      )}
+    </div>
   </div>
   );
 };

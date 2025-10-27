@@ -355,36 +355,59 @@ export const usePublicSpacesLogic = () => {
       
       // NEW: Use geographic search RPC if coordinates available and in radius mode
       if (filters.coordinates && searchMode === 'radius') {
-        info('Using geographic search by radius', { 
-          coordinates: filters.coordinates, 
-          radius: radiusKm 
-        });
-        
-        const params: any = {
-          p_lat: filters.coordinates.lat,
-          p_lng: filters.coordinates.lng,
-          p_radius_km: radiusKm,
-          p_limit: 100
-        };
-        
-        // Add optional parameters only if they have values
-        if (filters.category) params.p_category = filters.category;
-        if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
-        if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
-        if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
-        if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
-        if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
-        
-        const { data, error } = await supabase.rpc('search_spaces_by_radius', params);
-        
-        if (error) throw error;
-        
-        info('Geographic search completed', {
-          resultsCount: data?.length || 0,
-          radius: radiusKm
-        });
-        
-        return Array.isArray(data) ? data : [];
+        try {
+          info('Using geographic search by radius', { 
+            coordinates: filters.coordinates, 
+            radius: radiusKm 
+          });
+          
+          const params: any = {
+            p_lat: filters.coordinates.lat,
+            p_lng: filters.coordinates.lng,
+            p_radius_km: radiusKm,
+            p_limit: 100
+          };
+          
+          // Add optional parameters only if they have values
+          if (filters.category) params.p_category = filters.category;
+          if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
+          if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
+          if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
+          if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
+          if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
+          
+          const { data, error } = await supabase.rpc('search_spaces_by_radius', params);
+          
+          if (error) {
+            // Log specific error and fall back to text search
+            warn('Radius search failed, falling back to text search', {
+              error: error.message,
+              code: error.code,
+              hint: error.hint
+            });
+            
+            // FALLBACK: Switch to text search automatically
+            setSearchMode('text');
+            
+            // If we have a location, the query will automatically retry with text search
+            // because the query key changed when we updated searchMode
+            throw error; // Let React Query handle the retry with new searchMode
+          }
+          
+          info('Geographic search completed', {
+            resultsCount: data?.length || 0,
+            radius: radiusKm
+          });
+          
+          return Array.isArray(data) ? data : [];
+        } catch (err) {
+          // If radius search fails completely, switch to text search mode
+          warn('Geographic search failed, switching to text search mode', {
+            error: err
+          });
+          setSearchMode('text');
+          throw err; // Let React Query handle the error
+        }
       }
       
       // NEW: Use text search RPC if location provided

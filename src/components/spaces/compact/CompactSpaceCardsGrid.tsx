@@ -11,6 +11,7 @@ interface CompactSpaceCardsGridProps {
   highlightedId?: string | null;
   isLoading?: boolean;
   onScrollToCard?: (spaceId: string) => void;
+  selectedDate?: Date | null;
 }
 
 export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
@@ -18,7 +19,8 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
   onSpaceClick,
   highlightedId,
   isLoading = false,
-  onScrollToCard
+  onScrollToCard,
+  selectedDate = null
 }) => {
   const cardRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
   
@@ -76,12 +78,13 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
           key={space.id}
           ref={(el) => { cardRefs.current[space.id] = el; }}
         >
-          <CompactSpaceCard
-            space={space}
-            onClick={() => onSpaceClick(space.id)}
-            isHighlighted={highlightedId === space.id}
-            size={cardSize}
-          />
+            <CompactSpaceCard
+              space={space}
+              onClick={() => onSpaceClick(space.id)}
+              isHighlighted={highlightedId === space.id}
+              size={cardSize}
+              selectedDate={selectedDate}
+            />
         </div>
       ))}
     </div>
