@@ -21,8 +21,10 @@ interface PublicSpacesContentProps {
   spaces: any[];
   isLoading: boolean;
   mapCenter: Coordinates | null;
+  radiusKm: number;
   highlightedId: string | null;
   onFiltersChange: FilterChangeHandler;
+  onRadiusChange: (newRadius: number) => void;
   onSpaceClick: SpaceClickHandler;
   onMapSpaceClick: SpaceClickHandler;
 }
@@ -32,8 +34,10 @@ export const PublicSpacesContent = ({
   spaces,
   isLoading,
   mapCenter,
+  radiusKm,
   highlightedId,
   onFiltersChange,
+  onRadiusChange,
   onSpaceClick,
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
@@ -140,6 +144,8 @@ export const PublicSpacesContent = ({
       searchBar={
         <CompactSearchBar
           location={filters.location}
+          coordinates={filters.coordinates}
+          radiusKm={radiusKm}
           startDate={filters.startDate}
           endDate={filters.endDate}
           startTime={filters.startTime}
@@ -147,6 +153,7 @@ export const PublicSpacesContent = ({
           activeFiltersCount={getActiveFiltersCount()}
           isFiltersOpen={isFiltersOpen}
           onLocationChange={handleLocationChange}
+          onRadiusChange={onRadiusChange}
           onStartDateChange={handleStartDateChange}
           onEndDateChange={handleEndDateChange}
           onStartTimeChange={handleStartTimeChange}
@@ -170,6 +177,8 @@ export const PublicSpacesContent = ({
           <LazySpaceMap 
             spaces={spaces || []} 
             userLocation={mapCenter}
+            searchCenter={filters.coordinates}
+            searchRadiusKm={radiusKm}
             onSpaceClick={onMapSpaceClick}
             highlightedSpaceId={highlightedId}
           />

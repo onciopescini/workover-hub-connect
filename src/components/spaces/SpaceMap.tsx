@@ -11,13 +11,17 @@ import { useMapboxToken } from '@/contexts/MapboxTokenContext';
 interface SpaceMapProps {
   spaces: Space[];
   userLocation: {lat: number, lng: number} | null;
+  searchCenter?: { lat: number; lng: number } | null;
+  searchRadiusKm?: number;
   onSpaceClick: (spaceId: string) => void;
   highlightedSpaceId?: string | null;
 }
 
 export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({ 
   spaces, 
-  userLocation, 
+  userLocation,
+  searchCenter,
+  searchRadiusKm = 10,
   onSpaceClick,
   highlightedSpaceId 
 }) => {
@@ -253,6 +257,143 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       sreLogger.debug('Map center updated to user location');
     }
   }, [userLocation, mapReady]);
+
+  // Add search radius circle and center marker when searchCenter is provided
+  useEffect(() => {
+    if (!map.current || !mapReady || !searchCenter) {
+      // Remove search visualization if no searchCenter
+      if (map.current && mapReady) {
+        if (map.current.getLayer('search-radius-circle')) {
+          map.current.removeLayer('search-radius-circle');
+        }
+        if (map.current.getLayer('search-radius-border')) {
+          map.current.removeLayer('search-radius-border');
+        }
+        if (map.current.getSource('search-radius')) {
+          map.current.removeSource('search-radius');
+        }
+      }
+      return;
+    }
+
+    try {
+      // Create GeoJSON circle approximation
+      const createGeoJSONCircle = (center: [number, number], radiusInKm: number, points = 64) => {
+        const coords = {
+          latitude: center[1],
+          longitude: center[0]
+        };
+
+        const km = radiusInKm;
+        const ret: [number, number][] = [];
+        const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+        const distanceY = km / 110.574;
+
+        for (let i = 0; i < points; i++) {
+          const theta = (i / points) * (2 * Math.PI);
+          const x = distanceX * Math.cos(theta);
+          const y = distanceY * Math.sin(theta);
+          ret.push([coords.longitude + x, coords.latitude + y]);
+        }
+        // Close the polygon by adding the first point again
+        if (ret[0]) {
+          ret.push([ret[0][0], ret[0][1]]);
+        }
+
+        return {
+          type: 'FeatureCollection' as const,
+          features: [
+            {
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Polygon' as const,
+                coordinates: [ret]
+              },
+              properties: {}
+            }
+          ]
+        };
+      };
+
+      const circleData = createGeoJSONCircle([searchCenter.lng, searchCenter.lat], searchRadiusKm);
+
+      // Remove existing layers if present
+      if (map.current.getLayer('search-radius-circle')) {
+        map.current.removeLayer('search-radius-circle');
+      }
+      if (map.current.getLayer('search-radius-border')) {
+        map.current.removeLayer('search-radius-border');
+      }
+      if (map.current.getSource('search-radius')) {
+        map.current.removeSource('search-radius');
+      }
+
+      // Add source
+      map.current.addSource('search-radius', {
+        type: 'geojson',
+        data: circleData as any
+      });
+
+      // Add fill layer
+      map.current.addLayer({
+        id: 'search-radius-circle',
+        type: 'fill',
+        source: 'search-radius',
+        paint: {
+          'fill-color': '#4F46E5',
+          'fill-opacity': 0.1
+        }
+      });
+
+      // Add border layer
+      map.current.addLayer({
+        id: 'search-radius-border',
+        type: 'line',
+        source: 'search-radius',
+        paint: {
+          'line-color': '#4F46E5',
+          'line-width': 2,
+          'line-opacity': 0.6
+        }
+      });
+
+      // Fit map to show the circle
+      const bounds = new mapboxgl.LngLatBounds();
+      const coordinates = circleData.features[0]?.geometry?.coordinates[0];
+      if (coordinates) {
+        coordinates.forEach((coord) => {
+          bounds.extend(coord as [number, number]);
+        });
+      }
+      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+
+      sreLogger.debug('Search radius visualization added', {
+        center: searchCenter,
+        radiusKm: searchRadiusKm
+      });
+
+    } catch (error) {
+      sreLogger.error('Error adding search radius visualization', {}, error as Error);
+    }
+
+    return () => {
+      if (map.current && mapReady) {
+        try {
+          if (map.current.getLayer('search-radius-circle')) {
+            map.current.removeLayer('search-radius-circle');
+          }
+          if (map.current.getLayer('search-radius-border')) {
+            map.current.removeLayer('search-radius-border');
+          }
+          if (map.current.getSource('search-radius')) {
+            map.current.removeSource('search-radius');
+          }
+        } catch (error) {
+          sreLogger.warn('Error cleaning up search radius', {}, error as Error);
+        }
+      }
+    };
+  }, [searchCenter, searchRadiusKm, mapReady]);
 
   // Add/update markers with intelligent diffing - OPTIMIZED
   useEffect(() => {
