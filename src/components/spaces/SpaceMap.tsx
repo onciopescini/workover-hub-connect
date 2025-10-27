@@ -93,7 +93,12 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         containerSize: { width: containerRect.width, height: containerRect.height }
       });
       
-      // Se container ha altezza 0, ritenta dopo un delay
+      // Se container ha altezza 0, applica min-height di guardia e ritenta
+      if (containerRect.height === 0) {
+        container.style.minHeight = '420px';
+        sreLogger.warn('Container height was 0, applied min-height fallback');
+      }
+      
       if (containerRect.width === 0 || containerRect.height === 0) {
         sreLogger.warn('Map container has zero dimensions, retrying...', { containerRect });
         stopTimer();
@@ -640,11 +645,11 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   }
 
   return (
-    <div className="absolute inset-0 rounded-lg overflow-hidden bg-muted">
+    <div className="relative w-full h-full min-h-[420px] rounded-lg overflow-hidden bg-muted">
       <div 
         ref={mapContainer} 
         id="space-map-container" 
-        className="absolute inset-0" 
+        className="w-full h-full" 
       />
       
       {/* Debug info per sviluppo */}
