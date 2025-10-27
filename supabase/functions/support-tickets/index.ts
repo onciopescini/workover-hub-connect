@@ -50,43 +50,67 @@ serve(async (req) => {
   try {
     const { user_id, subject, message, category = 'other', priority = 'normal' }: TicketRequest = await req.json();
 
-    ErrorHandler.logInfo('Creating support ticket', { user_id, subject, category });
+    ErrorHandler.logInfo('Creating support ticket', { 
+      user_id: user_id || 'anonymous', 
+      subject, 
+      category,
+      isAnonymous: !user_id 
+    });
 
-    // Validate required fields
-    if (!user_id || !subject || !message) {
-      throw new Error('Missing required fields: user_id, subject, message');
+    // Validate required fields (user_id is optional for contact form)
+    if (!subject || !message) {
+      throw new Error('Missing required fields: subject, message');
     }
 
-    // Get user profile for email notifications
-    const { data: userProfile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('first_name, last_name')
-      .eq('id', user_id)
-      .single();
-
-    if (profileError) {
-      ErrorHandler.logWarning('Error fetching user profile', profileError, { user_id });
+    // For anonymous tickets, extract email from message
+    let anonymousEmail = null;
+    if (!user_id && message.includes('Email di contatto:')) {
+      const emailMatch = message.match(/Email di contatto:\s*(\S+@\S+)/);
+      if (emailMatch) {
+        anonymousEmail = emailMatch[1];
+      }
     }
 
-    // Get user email from auth
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+    // Get user profile for email notifications (only if user_id provided)
+    let userProfile = null;
+    let authUser = null;
     
-    if (authError) {
-      ErrorHandler.logWarning('Error fetching user auth data', authError, { user_id });
+    if (user_id) {
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user_id)
+        .single();
+
+      if (profileError) {
+        ErrorHandler.logWarning('Error fetching user profile', profileError, { user_id });
+      } else {
+        userProfile = profile;
+      }
+
+      // Get user email from auth
+      const { data: auth, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      
+      if (authError) {
+        ErrorHandler.logWarning('Error fetching user auth data', authError, { user_id });
+      } else {
+        authUser = auth;
+      }
     }
 
     // Create support ticket
     ErrorHandler.logInfo('[SUPPORT-TICKETS] Attempting to insert ticket into DB', {
-      user_id,
+      user_id: user_id || 'anonymous',
       subject: subject.substring(0, 50),
       category: category || 'other',
-      priority: priority || 'normal'
+      priority: priority || 'normal',
+      anonymousEmail
     });
 
     const { data: ticket, error: ticketError } = await supabaseAdmin
       .from('support_tickets')
       .insert({
-        user_id,
+        user_id: user_id || null, // Allow null for anonymous tickets
         subject,
         message,
         category,
@@ -115,28 +139,39 @@ serve(async (req) => {
       priority: ticket.priority 
     });
 
-    // Create user notification
-    try {
-      await supabaseAdmin
-        .from('user_notifications')
-        .insert({
-          user_id,
-          type: 'ticket',
-          title: 'Ticket di supporto creato',
-          content: `Il tuo ticket "${subject}" è stato creato. Ti risponderemo presto.`,
-          metadata: {
-            ticket_id: ticket.id
-          }
+    // Create user notification (only for authenticated users)
+    if (user_id) {
+      try {
+        await supabaseAdmin
+          .from('user_notifications')
+          .insert({
+            user_id,
+            type: 'ticket',
+            title: 'Ticket di supporto creato',
+            content: `Il tuo ticket "${subject}" è stato creato. Ti risponderemo presto.`,
+            metadata: {
+              ticket_id: ticket.id
+            }
+          });
+      } catch (notificationError) {
+        ErrorHandler.logWarning('Failed to create user notification', notificationError, {
+          ticketId: ticket.id
         });
-    } catch (notificationError) {
-      ErrorHandler.logWarning('Failed to create user notification', notificationError, {
-        ticketId: ticket.id
-      });
+      }
+    } else {
+      ErrorHandler.logInfo('Skipping user notification for anonymous ticket', { ticketId: ticket.id });
     }
 
     // Send email notification to admin
     try {
       const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@workover.it.com';
+      
+      // Determine user info (authenticated or anonymous)
+      const userName = userProfile 
+        ? `${userProfile.first_name} ${userProfile.last_name}` 
+        : (anonymousEmail ? 'Utente Anonimo' : 'Unknown User');
+      
+      const userEmail = authUser?.user?.email || anonymousEmail || 'Unknown Email';
       
       const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
         body: {
@@ -146,9 +181,10 @@ serve(async (req) => {
             ticketId: ticket.id,
             subject,
             message,
-            userName: userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : 'Unknown User',
-            userEmail: authUser?.user?.email || 'Unknown Email',
-            adminUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.it.com'}/admin`
+            userName,
+            userEmail,
+            isAnonymous: !user_id,
+            adminUrl: `${Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'https://workover.it.com'}/admin/tickets`
           }
         }
       });
@@ -167,17 +203,20 @@ serve(async (req) => {
       });
     }
 
-    // Send confirmation email to user
-    if (authUser?.user?.email) {
+    // Send confirmation email to user (authenticated or anonymous)
+    const userConfirmationEmail = authUser?.user?.email || anonymousEmail;
+    
+    if (userConfirmationEmail) {
       try {
         const { data: emailData, error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
           body: {
             type: 'support_ticket_confirmation',
-            to: authUser.user.email,
+            to: userConfirmationEmail,
             data: {
               ticketId: ticket.id,
               subject,
-              firstName: userProfile?.first_name || 'Utente'
+              firstName: userProfile?.first_name || 'Utente',
+              isAnonymous: !user_id
             }
           }
         });
@@ -185,22 +224,28 @@ serve(async (req) => {
         if (emailError) {
           ErrorHandler.logWarning('Failed to send user confirmation email', emailError, {
             ticketId: ticket.id,
-            userEmail: authUser.user.email,
+            userEmail: userConfirmationEmail,
             emailResponse: emailData
           });
         } else {
-          ErrorHandler.logSuccess('User confirmation email sent', { ticketId: ticket.id, to: authUser.user.email });
+          ErrorHandler.logSuccess('User confirmation email sent', { 
+            ticketId: ticket.id, 
+            to: userConfirmationEmail,
+            isAnonymous: !user_id 
+          });
         }
       } catch (emailError) {
         ErrorHandler.logWarning('Exception sending user confirmation email', emailError, {
           ticketId: ticket.id,
-          userEmail: authUser.user.email
+          userEmail: userConfirmationEmail
         });
       }
+    } else {
+      ErrorHandler.logWarning('No email available for user confirmation', { ticketId: ticket.id });
     }
 
-    // Check for high/critical priority - send notification to admins
-    if (priority === 'high' || priority === 'critical') {
+    // Check for high/critical priority - send notification to admins (only for authenticated users)
+    if ((priority === 'high' || priority === 'critical') && user_id) {
       const { data: admins } = await supabaseAdmin
         .from('profiles')
         .select('id')

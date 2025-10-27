@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { createSupportTicket } from '@/lib/support-utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Contact = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +22,32 @@ const Contact = () => {
     type: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Pre-fill form for authenticated users
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsAuthenticated(true);
+        
+        // Get user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
+
+        setFormData(prev => ({
+          ...prev,
+          email: user.email || '',
+          name: profile ? `${profile.first_name} ${profile.last_name}` : ''
+        }));
+      }
+    };
+
+    loadUserData();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -31,21 +61,67 @@ const Contact = () => {
       return;
     }
 
+    // Generate subject if not provided
+    const subject = formData.subject || `Richiesta di contatto da ${formData.name}`;
+    
+    // Validate subject (min 5 chars)
+    if (subject.length < 5) {
+      toast.error('L\'oggetto deve contenere almeno 5 caratteri');
+      return;
+    }
+
+    // Validate message (min 20 chars)
+    if (formData.message.length < 20) {
+      toast.error('Il messaggio deve contenere almeno 20 caratteri');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Map form type to support ticket category
+      const categoryMap: Record<string, 'technical' | 'booking' | 'payment' | 'account' | 'space' | 'feedback' | 'other'> = {
+        'general': 'other',
+        'support': 'technical',
+        'billing': 'payment',
+        'partnership': 'other',
+        'press': 'other',
+        'other': 'other'
+      };
       
-      toast.success('Messaggio inviato con successo! Ti risponderemo entro 24 ore.');
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        type: ''
+      const category = categoryMap[formData.type] || 'other';
+      
+      // Append contact info to message for anonymous users
+      const messageWithContact = `${formData.message}\n\n---\nEmail di contatto: ${formData.email}\nNome: ${formData.name}`;
+      
+      const success = await createSupportTicket({
+        subject,
+        message: messageWithContact,
+        category,
+        priority: 'normal'
       });
+      
+      if (success) {
+        toast.success('Messaggio inviato con successo! Ti risponderemo entro 24 ore.');
+        
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: '',
+          type: ''
+        });
+
+        // Redirect to support page if authenticated
+        if (isAuthenticated) {
+          setTimeout(() => {
+            navigate('/support');
+          }, 2000);
+        }
+      }
     } catch (error) {
+      console.error('Contact form error:', error);
       toast.error('Errore nell\'invio del messaggio. Riprova più tardi.');
     } finally {
       setIsSubmitting(false);
@@ -219,9 +295,15 @@ const Contact = () => {
                   <p className="text-gray-600 text-sm mb-2">
                     Per problemi tecnici urgenti, usa il sistema di supporto integrato nella piattaforma.
                   </p>
-                  <Button variant="outline" size="sm">
-                    Vai al Supporto
-                  </Button>
+                  {isAuthenticated ? (
+                    <Button variant="outline" size="sm" onClick={() => navigate('/support')}>
+                      Vai al Supporto
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => navigate('/login')}>
+                      Accedi per il Supporto
+                    </Button>
+                  )}
                 </div>
 
                 <div>
