@@ -44,6 +44,45 @@ export type Database = {
         }
         Relationships: []
       }
+      account_deletion_requests: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          reason: string | null
+          requested_at: string
+          status: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       active_sessions: {
         Row: {
           created_at: string | null
@@ -2135,6 +2174,33 @@ export type Database = {
           verification_status?: string
           verified_at?: string | null
           verified_by?: string | null
+        }
+        Relationships: []
+      }
+      legal_documents_versions: {
+        Row: {
+          content: string
+          created_at: string
+          document_type: string
+          effective_date: string
+          id: string
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          document_type: string
+          effective_date: string
+          id?: string
+          version: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_type?: string
+          effective_date?: string
+          id?: string
+          version?: string
         }
         Relationships: []
       }
@@ -4249,6 +4315,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_legal_acceptances: {
+        Row: {
+          accepted_at: string
+          document_type: string
+          id: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          document_type: string
+          id?: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          document_type?: string
+          id?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
       }
       user_notifications: {
         Row: {

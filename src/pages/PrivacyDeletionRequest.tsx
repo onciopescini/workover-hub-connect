@@ -5,26 +5,47 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useGDPRRequests } from "@/hooks/useGDPRRequests";
+import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { toast } from 'sonner';
 
 const PrivacyDeletionRequest = () => {
   const navigate = useNavigate();
-  const { submitDeletionRequest, isLoading } = useGDPRRequests();
   const [reason, setReason] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!confirmed) return;
+    if (!confirmed || !reason.trim()) {
+      toast.error('Completa tutti i campi richiesti');
+      return;
+    }
     
     setIsSubmitting(true);
-    const success = await submitDeletionRequest(reason);
-    if (success) {
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('confirm-account-deletion', {
+        body: { reason },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success('Richiesta inviata! Controlla la tua email per confermare.');
       navigate('/privacy');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Errore durante l\'invio della richiesta');
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleCheckedChange = (checked: boolean | "indeterminate") => {
@@ -162,7 +183,7 @@ const PrivacyDeletionRequest = () => {
                 </Button>
                 <Button 
                   onClick={handleSubmit}
-                  disabled={!confirmed || !reason.trim() || isSubmitting || isLoading}
+                  disabled={!confirmed || !reason.trim() || isSubmitting}
                   variant="destructive"
                   className="flex-1"
                 >

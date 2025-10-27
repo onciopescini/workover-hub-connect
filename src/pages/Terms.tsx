@@ -2,8 +2,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const Terms = () => {
+  const navigate = useNavigate();
+  
   return (
     <div className="min-h-screen bg-white py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,6 +19,19 @@ const Terms = () => {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Termini di Servizio
           </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <p className="text-sm text-gray-600">
+              Versione 1.0 - Efficace dal 1 Gennaio 2025
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/legal/history/tos')}
+              className="text-indigo-600 hover:text-indigo-700"
+            >
+              Versioni precedenti →
+            </Button>
+          </div>
           <p className="text-lg text-gray-600">
             Ultimo aggiornamento: {new Date().toLocaleDateString('it-IT')}
           </p>

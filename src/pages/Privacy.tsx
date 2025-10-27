@@ -2,13 +2,14 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, Download, Trash2, Cookie, FileText, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useGDPRRequests } from "@/hooks/useGDPRRequests";
 import { useConsent } from "@/hooks/useConsent";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 const Privacy = () => {
+  const navigate = useNavigate();
   const { requests, isLoading } = useGDPRRequests();
   const { consent, handleConsent, resetConsent } = useConsent();
 
@@ -37,6 +38,19 @@ const Privacy = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Centro Privacy e Dati
           </h1>
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <p className="text-sm text-gray-600">
+              Versione 1.0 - Efficace dal 1 Gennaio 2025
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/legal/history/privacy_policy')}
+              className="text-indigo-600 hover:text-indigo-700"
+            >
+              Versioni precedenti →
+            </Button>
+          </div>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Gestisci i tuoi dati personali e le tue preferenze sulla privacy secondo i tuoi diritti GDPR
           </p>

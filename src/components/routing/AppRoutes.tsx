@@ -30,6 +30,8 @@ import NotFound from "@/pages/NotFound";
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const PrivacyExportRequest = lazy(() => import("@/pages/PrivacyExportRequest"));
 const PrivacyDeletionRequest = lazy(() => import("@/pages/PrivacyDeletionRequest"));
+const PrivacyConfirmDeletion = lazy(() => import("@/pages/PrivacyConfirmDeletion"));
+const LegalHistory = lazy(() => import("@/pages/LegalHistory"));
 const Guides = lazy(() => import("@/pages/Guides"));
 
 // Lazy loading per pagine non critiche
@@ -155,6 +157,26 @@ export const AppRoutes = () => {
               <PrivacyExportRequest />
             </LazyWrapper>
           </AuthProtected>
+        } />
+        
+        <Route path="privacy/deletion-request" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <PrivacyDeletionRequest />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="privacy/confirm-deletion/:token" element={
+          <LazyWrapper>
+            <PrivacyConfirmDeletion />
+          </LazyWrapper>
+        } />
+        
+        <Route path="legal/history/:document_type" element={
+          <LazyWrapper>
+            <LegalHistory />
+          </LazyWrapper>
         } />
 
         {/* Protected routes */}

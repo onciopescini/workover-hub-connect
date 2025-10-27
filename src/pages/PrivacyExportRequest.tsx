@@ -4,8 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { useGDPRRequests } from "@/hooks/useGDPRRequests";
+import { supabase } from "@/integrations/supabase/client";
 import { Download, AlertCircle, User, Activity, Star, CreditCard, CheckCircle, Loader2, Archive } from "lucide-react";
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 const PHASES = [
   { id: 1, name: "Dati Profilo", icon: User },
@@ -18,12 +21,12 @@ const PHASES = [
 
 export default function PrivacyExportRequest() {
   const navigate = useNavigate();
-  const { startInstantExport } = useGDPRRequests();
   const [currentPhase, setCurrentPhase] = useState(0);
   const [phaseMessage, setPhaseMessage] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,33 +44,58 @@ export default function PrivacyExportRequest() {
     setCurrentPhase(0);
     setIsCompleted(false);
 
-    await startInstantExport(
-      // onProgress
-      (phase: number, message: string) => {
-        setCurrentPhase(phase);
-        setPhaseMessage(message);
-      },
-      // onComplete
-      (url: string, size: number) => {
-        setDownloadUrl(url);
-        setFileSize(size);
+    try {
+      // Simulate phases for UI feedback
+      const phases = PHASES;
+      for (let i = 0; i < phases.length; i++) {
+        const phase = phases[i];
+        if (!phase) continue;
+        setCurrentPhase(i + 1);
+        setPhaseMessage(phase.name);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate work
+      }
+
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke('generate-data-export', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.error) {
+        setError(data.error);
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.download_url) {
+        setDownloadUrl(data.download_url);
+        setExpiresAt(data.expires_at);
+        setFileSize(data.file_size || 0);
         setIsCompleted(true);
-        setIsExporting(false);
         
         // Auto-download
         const link = document.createElement('a');
-        link.href = url;
-        link.download = 'gdpr_export.zip';
+        link.href = data.download_url;
+        link.download = 'gdpr_export.json';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      },
-      // onError
-      (errorMessage: string) => {
-        setError(errorMessage);
-        setIsExporting(false);
+        
+        toast.success('Export completato! Download avviato.');
       }
-    );
+    } catch (err) {
+      console.error('Export error:', err);
+      const errorMessage = 'Errore durante l\'export dei dati';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -114,11 +142,16 @@ export default function PrivacyExportRequest() {
                 <div className="text-center space-y-4">
                   <div className="p-4 bg-green-50 rounded-lg">
                     <p className="text-green-800 font-medium">
-                      Download completato! Il file ZIP è stato scaricato automaticamente.
+                      Download completato! Il file JSON è stato scaricato automaticamente.
                     </p>
                     <p className="text-sm text-green-600 mt-1">
                       Dimensione file: {formatFileSize(fileSize)}
                     </p>
+                    {expiresAt && (
+                      <p className="text-sm text-green-600">
+                        Link valido fino al: {format(new Date(expiresAt), 'dd/MM/yyyy HH:mm', { locale: it })}
+                      </p>
+                    )}
                   </div>
                   
                   {downloadUrl && (
@@ -283,7 +316,7 @@ export default function PrivacyExportRequest() {
         <Alert className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            L'esportazione è istantanea e il file ZIP sarà disponibile per 24 ore. 
+            L'esportazione è istantanea e il file JSON sarà disponibile per 7 giorni. 
             Puoi richiedere una nuova esportazione in qualsiasi momento.
           </AlertDescription>
         </Alert>
