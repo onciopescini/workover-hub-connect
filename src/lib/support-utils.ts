@@ -105,13 +105,28 @@ const invokeWithRetry = async (
 };
 
 // Create a new support ticket
-export const createSupportTicket = async (ticket: SupportTicketInput): Promise<boolean> => {
+export const createSupportTicket = async (ticket: SupportTicketInput): Promise<{
+  success: boolean;
+  ticket_id?: string;
+  user_email?: string;
+  user_name?: string;
+}> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) {
       toast.error("Devi essere autenticato per creare un ticket");
-      return false;
+      return { success: false };
     }
+
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.user.id)
+      .single();
+
+    const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utente';
+    const userEmail = user.user.email;
 
     // Validate with Zod schema
     const validated = supportTicketSchema.safeParse(ticket);
@@ -119,7 +134,7 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       const firstError = validated.error.errors[0];
       toast.error(firstError?.message || 'Dati non validi');
       sreLogger.error('Validation error', { errors: validated.error });
-      return false;
+      return { success: false };
     }
 
     // Check client-side rate limit
@@ -127,13 +142,13 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
     if (!rateLimitCheck.allowed) {
       toast.error(`Hai inviato troppi ticket. Riprova tra ${rateLimitCheck.waitTime} secondi.`);
       sreLogger.warn('Rate limit exceeded', { userId: user.user.id, waitTime: rateLimitCheck.waitTime });
-      return false;
+      return { success: false };
     }
 
     // Check online status
     if (!navigator.onLine) {
       toast.error("Nessuna connessione internet. Verifica la tua connessione e riprova.");
-      return false;
+      return { success: false };
     }
 
     // Server-side spam check (legacy, will be replaced by edge function check)
@@ -147,7 +162,7 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
     if (recentTickets && recentTickets.length >= 5) {
       toast.error("Hai raggiunto il limite di 5 ticket per ora. Riprova più tardi.");
       sreLogger.warn('Spam attempt blocked', { userId: user.user.id });
-      return false;
+      return { success: false };
     }
 
     // Call Edge Function with retry
@@ -186,7 +201,7 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       }
       
       toast.error(errorMessage);
-      return false;
+      return { success: false };
     }
 
     if (data?.error) {
@@ -195,19 +210,66 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
         ticketData: data 
       });
       toast.error(`Errore: ${data.error}`);
-      return false;
+      return { success: false };
     }
 
+    const ticketId = data?.ticket?.id;
+    
     // Record successful attempt for rate limiting
     recordTicketAttempt();
 
     sreLogger.info('Ticket created successfully', { 
-      ticketId: data?.ticket?.id,
+      ticketId,
       status: data?.ticket?.status 
     });
+
+    // Send email notification (non-blocking)
+    if (ticketId && userEmail) {
+      sreLogger.info('Sending support notification email', { ticketId });
+      
+      // Call email notification edge function (don't await to avoid blocking)
+      supabase.functions.invoke('send-support-notification', {
+        body: {
+          ticket_id: ticketId,
+          user_email: userEmail,
+          user_name: userName,
+          category: validated.data.category,
+          priority: validated.data.priority,
+          subject: validated.data.subject,
+          message: validated.data.message
+        }
+      }).then(({ error: emailError }) => {
+        if (emailError) {
+          sreLogger.warn('Failed to send email notification', { 
+            error: emailError, 
+            ticketId 
+          });
+        } else {
+          sreLogger.info('Email notification sent successfully', { ticketId });
+        }
+      }).catch(error => {
+        sreLogger.warn('Error sending email notification', { error, ticketId });
+      });
+    }
     
-    toast.success("Ticket creato con successo! Riceverai una conferma via email e ti risponderemo entro 24 ore.");
-    return true;
+    toast.success("Ticket creato con successo! Riceverai una conferma via email.");
+    
+    const result: {
+      success: boolean;
+      ticket_id?: string;
+      user_email?: string;
+      user_name?: string;
+    } = { 
+      success: true, 
+      ticket_id: ticketId,
+      user_name: userName
+    };
+    
+    if (userEmail) {
+      result.user_email = userEmail;
+    }
+    
+    return result;
   } catch (error) {
     sreLogger.error('Error creating ticket via Edge Function', { error });
     
@@ -222,7 +284,7 @@ export const createSupportTicket = async (ticket: SupportTicketInput): Promise<b
       toast.error("Errore nella creazione del ticket");
     }
     
-    return false;
+    return { success: false };
   }
 };
 

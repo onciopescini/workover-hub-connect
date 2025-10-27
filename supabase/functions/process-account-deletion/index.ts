@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { sendEmailWithRetry, isEmailConfigured } from '../_shared/email-sender.ts';
+import { createAccountDeletionCompleteEmail } from '../send-email/_templates/account-deletion-complete.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -63,6 +65,16 @@ Deno.serve(async (req) => {
       })
       .eq('id', deletionRequest.id);
 
+    // Get user data before deletion for email
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', deletionRequest.user_id)
+      .single();
+
+    const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utente';
+    const userEmail = profile?.email;
+
     // GDPR-compliant account deletion
     // 1. Anonymize personal data in profiles
     const { error: profileError } = await supabase
@@ -107,7 +119,30 @@ Deno.serve(async (req) => {
 
     console.log(`Account ${deletionRequest.user_id} deleted successfully`);
 
-    // TODO: Send confirmation email via Resend (Phase 4)
+    // Send confirmation email
+    if (isEmailConfigured() && userEmail) {
+      const emailTemplate = createAccountDeletionCompleteEmail({
+        user_name: userName,
+        deletion_date: new Date().toISOString()
+      });
+
+      const emailResult = await sendEmailWithRetry({
+        to: userEmail,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      });
+
+      if (!emailResult.success) {
+        console.error('[PROCESS-DELETION] Failed to send confirmation email', { 
+          error: emailResult.error 
+        });
+        // Don't fail the request - deletion was successful
+      } else {
+        console.log('[PROCESS-DELETION] Confirmation email sent successfully');
+      }
+    } else {
+      console.warn('[PROCESS-DELETION] Email not configured or no user email, skipping confirmation email');
+    }
 
     return new Response(
       JSON.stringify({

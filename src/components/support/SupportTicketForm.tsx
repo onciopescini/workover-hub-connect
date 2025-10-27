@@ -81,11 +81,15 @@ export function SupportTicketForm({ onSuccess }: SupportTicketFormProps) {
     setIsSubmitting(true);
     
     try {
-      const success = await createSupportTicket(data);
+      const ticketResult = await createSupportTicket(data);
 
-      if (success) {
+      if (ticketResult.success) {
         form.reset();
-        info('Support ticket created successfully', { subject: data.subject, category: data.category });
+        info('Support ticket created successfully', { 
+          subject: data.subject, 
+          category: data.category,
+          ticket_id: ticketResult.ticket_id
+        });
         onSuccess?.();
       }
     } catch (ticketError) {

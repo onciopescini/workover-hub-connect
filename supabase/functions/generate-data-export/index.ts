@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { sendEmailWithRetry, isEmailConfigured } from '../_shared/email-sender.ts';
+import { createDataExportReadyEmail } from '../send-email/_templates/data-export-ready.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,14 +96,53 @@ Deno.serve(async (req) => {
 
     console.log(`Data export generated successfully: ${fileName}`);
 
-    // TODO: Send email with download link via Resend (Phase 4)
+    // Get user profile for name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utente';
+    const expirationDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    // Send email with download link
+    if (isEmailConfigured() && urlData?.signedUrl) {
+      const fileSizeMB = (jsonBlob.length / (1024 * 1024)).toFixed(2);
+      
+      const emailTemplate = createDataExportReadyEmail({
+        user_name: userName,
+        download_link: urlData.signedUrl,
+        file_name: fileName,
+        file_size_mb: parseFloat(fileSizeMB),
+        expiration_days: 7,
+        expiration_date: expirationDate.toISOString()
+      });
+
+      const emailResult = await sendEmailWithRetry({
+        to: user.email!,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      });
+
+      if (!emailResult.success) {
+        console.error('[DATA-EXPORT] Failed to send email notification', { 
+          error: emailResult.error 
+        });
+        // Continue anyway - user can still use the download URL from response
+      } else {
+        console.log('[DATA-EXPORT] Notification email sent successfully');
+      }
+    } else {
+      console.warn('[DATA-EXPORT] Email not configured or no signed URL, skipping email notification');
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Export dati generato con successo',
+        message: 'Export dati generato con successo. Controlla la tua email per il link di download.',
         download_url: urlData?.signedUrl,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: expirationDate.toISOString(),
         file_size: jsonBlob.length,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
