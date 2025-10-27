@@ -116,7 +116,7 @@ serve(async (req) => {
         category,
         priority,
         status: 'open',
-        sla_status: 'ok',
+        sla_status: 'on_track',
         response_deadline: getResponseDeadline(priority)
       })
       .select()
