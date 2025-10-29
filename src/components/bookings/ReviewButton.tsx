@@ -9,7 +9,7 @@ import { SpaceReviewForm } from "@/components/reviews/SpaceReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
 import { getSpaceReviewStatus } from "@/lib/space-review-service";
-import { differenceInHours, differenceInDays, parseISO } from "date-fns";
+import { differenceInHours, differenceInDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -52,7 +52,7 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
       return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
     }
 
-    const completedAt = parseISO(booking.service_completed_at);
+    const completedAt = new Date(booking.service_completed_at);
     const now = new Date();
     const hoursPassedSinceEnd = differenceInHours(now, completedAt);
     const daysSinceEnd = differenceInDays(now, completedAt);

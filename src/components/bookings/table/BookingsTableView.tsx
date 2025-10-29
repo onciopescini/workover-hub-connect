@@ -16,6 +16,7 @@ import { it } from 'date-fns/locale';
 import { MessageSquare, XCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { EmptyBookingsState } from '../EmptyBookingsState';
+import { ReviewButton } from '../ReviewButton';
 
 interface BookingsTableViewProps {
   bookings: BookingWithDetails[];
@@ -106,6 +107,29 @@ export const BookingsTableView: React.FC<BookingsTableViewProps> = ({
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     )}
+                    
+                    {booking.status === 'served' && (
+                      userRole === 'host' ? (
+                        booking.user_id && (
+                          <ReviewButton
+                            booking={booking}
+                            reviewType="coworker"
+                            targetId={booking.user_id}
+                            targetName={`${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim()}
+                          />
+                        )
+                      ) : (
+                        booking.space_id && (
+                          <ReviewButton
+                            booking={booking}
+                            reviewType="space"
+                            targetId={booking.space_id}
+                            targetName={booking.space?.title || "Spazio"}
+                          />
+                        )
+                      )
+                    )}
+                    
                     {canCancel && (
                       <Button
                         variant="ghost"

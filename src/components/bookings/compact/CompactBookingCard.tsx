@@ -8,6 +8,7 @@ import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from '@/types/booking';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ReviewButton } from '../ReviewButton';
 
 interface CompactBookingCardProps {
   booking: BookingWithDetails;
@@ -95,6 +96,29 @@ export const CompactBookingCard: React.FC<CompactBookingCardProps> = ({
               <MessageSquare className="h-4 w-4" />
             </Button>
           )}
+          
+          {booking.status === 'served' && (
+            userRole === 'host' ? (
+              booking.user_id && (
+                <ReviewButton
+                  booking={booking}
+                  reviewType="coworker"
+                  targetId={booking.user_id}
+                  targetName={otherUser.name}
+                />
+              )
+            ) : (
+              booking.space_id && (
+                <ReviewButton
+                  booking={booking}
+                  reviewType="space"
+                  targetId={booking.space_id}
+                  targetName={booking.space?.title || "Spazio"}
+                />
+              )
+            )
+          )}
+          
           {canCancel && !isPast && (
             <Button
               variant="ghost"
