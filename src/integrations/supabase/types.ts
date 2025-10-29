@@ -5602,6 +5602,16 @@ export type Database = {
         Args: { profile_id_param: string }
         Returns: Json
       }
+      get_security_definer_audit: {
+        Args: never
+        Returns: {
+          arguments: string
+          function_name: string
+          has_auth_check: boolean
+          schema: string
+          security_mode: string
+        }[]
+      }
       get_single_space_metrics: {
         Args: { space_id_param: string }
         Returns: Json
@@ -6347,8 +6357,8 @@ export type Database = {
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
-        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
         | { Args: { geog: unknown; maxchars?: number }; Returns: string }
+        | { Args: { geom: unknown; maxchars?: number }; Returns: string }
       st_geomcollfromtext: { Args: { "": string }; Returns: unknown }
       st_geometricmedian: {
         Args: {
@@ -6570,8 +6580,8 @@ export type Database = {
         Returns: Record<string, unknown>[]
       }
       st_srid:
-        | { Args: { geom: unknown }; Returns: number }
         | { Args: { geog: unknown }; Returns: number }
+        | { Args: { geom: unknown }; Returns: number }
       st_subdivide: {
         Args: { geom: unknown; gridsize?: number; maxvertices?: number }
         Returns: unknown[]

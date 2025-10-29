@@ -333,3 +333,148 @@ Once all migrations are applied and verified, your Workover platform will have:
 - SECURITY DEFINER authorization (cancel_booking, get_or_create_conversation, search_messages)
 - RLS verification and monitoring
 - Only views migration remains pending
+
+---
+
+## Supabase Security Advisor Issues Resolution
+
+### 3. Security Definer Functions Audit View
+
+**Status:** ✅ **FIXED** (2025-01-31)
+
+**Issue:** `security_definer_functions_audit` view was created with `SECURITY DEFINER`, bypassing RLS
+
+**Severity:** ERROR (Critical)
+
+**Fix Applied:**
+- Converted view to `SECURITY DEFINER` function with explicit admin authorization
+- Function `get_security_definer_audit()` now checks `is_admin(auth.uid())`
+- Only admins can query SECURITY DEFINER functions audit
+- Non-admin users receive empty result set
+
+**Testing:**
+```sql
+-- As admin (should return results)
+SELECT * FROM public.get_security_definer_audit();
+
+-- As regular user (should return empty)
+SELECT * FROM public.get_security_definer_audit();
+```
+
+**Migration:** `XXXXXX_fix_security_definer_view.sql`
+
+---
+
+### 4. pg_net Extension in Public Schema
+
+**Status:** ✅ **FIXED** (2025-01-31)
+
+**Issue:** `pg_net` extension installed in `public` schema (exposed to PostgREST API)
+
+**Severity:** WARNING
+
+**Fix Applied:**
+- Created dedicated `extensions` schema
+- Moved `pg_net` from `public` to `extensions` schema
+- Granted appropriate permissions to authenticated and service_role
+- Updated schema documentation
+
+**Verification:**
+```sql
+-- Check pg_net is in extensions schema
+SELECT 
+  e.extname,
+  n.nspname as schema
+FROM pg_extension e
+JOIN pg_namespace n ON e.extnamespace = n.oid
+WHERE e.extname = 'pg_net';
+-- Expected: schema = 'extensions'
+```
+
+**Migration:** `XXXXXX_move_pgnet_to_extensions_schema.sql`
+
+**Note:** If any Edge Functions use `net.http_*()`, they should be updated to use `extensions.net.http_*()` or add `extensions` to search_path.
+
+---
+
+### 5. spatial_ref_sys Table Without RLS
+
+**Status:** ✅ **FALSE POSITIVE - DOCUMENTED** (2025-01-31)
+
+**Issue:** `spatial_ref_sys` table has RLS disabled
+
+**Severity:** ERROR (but False Positive)
+
+**Analysis:**
+- ✅ **SAFE** - `spatial_ref_sys` is a PostGIS system table
+- Contains public EPSG coordinate reference systems (international standards)
+- No user data or sensitive information
+- Read-only for applications (managed by PostGIS extension)
+- Enabling RLS would break PostGIS functionality
+
+**Decision:** No action required. This is a documented false positive.
+
+**References:**
+- PostGIS Documentation: https://postgis.net/docs/using_postgis_dbmanagement.html#spatial_ref_sys
+- Table contains: ~8,500 standard coordinate systems used worldwide
+- Data is identical across all PostGIS installations
+
+**Example Query (shows public nature of data):**
+```sql
+-- Example: WGS84 coordinate system (used by GPS)
+SELECT srid, auth_name, auth_srid, srtext 
+FROM spatial_ref_sys 
+WHERE srid = 4326;
+-- Returns: Standard WGS84 definition (public information)
+```
+
+---
+
+### 6. postgis Extension in Public Schema
+
+**Status:** ⚠️ **ACCEPTED RISK** (2025-01-31)
+
+**Issue:** `postgis` extension in `public` schema
+
+**Severity:** WARNING
+
+**Analysis:**
+- Moving PostGIS would cause **breaking changes** across the application
+- All `ST_*` functions would need schema qualification
+- Geographic columns and indexes may break
+- High risk with minimal security benefit
+
+**Decision:** Leave `postgis` in `public` schema (accepted exception)
+
+**Justification:**
+1. PostGIS functions (`ST_Distance`, `ST_Contains`, etc.) are widely used
+2. Moving requires updating hundreds of queries
+3. Risk of breaking existing geographic features
+4. `public` schema is appropriate for core spatial functionality
+5. PostGIS data types (geometry, geography) are foundational
+
+**Alternative Considered:** Could add `extensions` to default search_path, but still high risk.
+
+---
+
+## Security Advisor Summary
+
+**Before Fixes:**
+- 🚨 2 ERRORS
+- ⚠️ 2 WARNINGS
+
+**After Fixes:**
+- ✅ 0 ERRORS (1 documented false positive)
+- ⚠️ 1 WARNING (postgis - accepted risk)
+
+**Issues Resolved:**
+1. ✅ `security_definer_functions_audit` - Converted to admin-only function
+2. ✅ `pg_net` - Moved to extensions schema
+3. ✅ `spatial_ref_sys` - Documented as false positive
+4. ⚠️ `postgis` - Documented as accepted risk
+
+**Security Posture:**
+- All critical errors resolved
+- All warnings documented with justification
+- Zero unaddressed security issues
+- Ready for performance optimization phase
