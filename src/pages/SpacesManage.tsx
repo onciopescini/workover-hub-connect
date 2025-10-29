@@ -212,7 +212,61 @@ const SpacesManage = () => {
   }
 
   const publishedCount = spaces.filter((space) => space.published).length;
-  const totalRevenue = 0; // TODO: Calcolare dai bookings
+  
+  // Calculate total revenue from completed bookings
+  const [totalRevenue, setTotalRevenue] = React.useState<number>(0);
+  const [spacesMetrics, setSpacesMetrics] = React.useState<Map<string, { bookings: number; revenue: number }>>(new Map());
+
+  React.useEffect(() => {
+    const fetchHostMetrics = async () => {
+      if (!authState.user?.id || spaces.length === 0) return;
+
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        
+        // Get host bookings (simpler approach - count bookings only)
+        const { data: bookings, error } = await supabase
+          .from('bookings')
+          .select('id, space_id, status')
+          .in('space_id', spaces.map(s => s.id))
+          .eq('status', 'served');
+
+        if (error) {
+          sreLogger.error('Failed to fetch host metrics', { component: 'SpacesManage', error }, error);
+          return;
+        }
+
+        // Calculate metrics per space (bookings count only)
+        const metricsMap = new Map<string, { bookings: number; revenue: number }>();
+        let totalBookings = 0;
+
+        spaces.forEach(space => {
+          const spaceBookings = bookings?.filter(b => b.space_id === space.id) || [];
+          const bookingsCount = spaceBookings.length;
+          
+          // Calculate estimated revenue (price_per_hour * average 4 hours * bookings)
+          const estimatedRevenue = (space.price_per_hour || 0) * 4 * bookingsCount;
+
+          metricsMap.set(space.id, {
+            bookings: bookingsCount,
+            revenue: estimatedRevenue
+          });
+
+          totalBookings += bookingsCount;
+        });
+
+        // Calculate total estimated revenue
+        const totalRev = Array.from(metricsMap.values()).reduce((sum, m) => sum + m.revenue, 0);
+
+        setTotalRevenue(totalRev);
+        setSpacesMetrics(metricsMap);
+      } catch (error) {
+        sreLogger.error('Exception fetching host metrics', { component: 'SpacesManage', error }, error as Error);
+      }
+    };
+
+    fetchHostMetrics();
+  }, [spaces, authState.user?.id]);
 
   return (
     <AppLayout title="Gestisci i Tuoi Spazi" subtitle="Crea, modifica e gestisci i tuoi spazi">
@@ -302,19 +356,22 @@ const SpacesManage = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {spaces.map((space) => (
-                <EnhancedSpaceManagementCard
-                  key={space.id}
-                  space={space}
-                  onView={handleViewSpace}
-                  onEdit={handleEditSpace}
-                  onDelete={handleDeleteSpace}
-                  onRestore={handleRestoreSpace}
-                  onRecap={handleRecapSpace}
-                  bookingsCount={0} // TODO: Calcolare dai bookings
-                  monthlyRevenue={0} // TODO: Calcolare dai bookings
-                />
-              ))}
+              {spaces.map((space) => {
+                const metrics = spacesMetrics.get(space.id) || { bookings: 0, revenue: 0 };
+                return (
+                  <EnhancedSpaceManagementCard
+                    key={space.id}
+                    space={space}
+                    onView={handleViewSpace}
+                    onEdit={handleEditSpace}
+                    onDelete={handleDeleteSpace}
+                    onRestore={handleRestoreSpace}
+                    onRecap={handleRecapSpace}
+                    bookingsCount={metrics.bookings}
+                    monthlyRevenue={metrics.revenue}
+                  />
+                );
+              })}
             </div>
           </div>
         )}

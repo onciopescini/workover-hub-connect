@@ -275,6 +275,73 @@ export type Database = {
         }
         Relationships: []
       }
+      application_logs: {
+        Row: {
+          component: string
+          context: Json | null
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          log_level: string
+          message: string
+          metrics: Json | null
+          session_id: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component: string
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          log_level: string
+          message: string
+          metrics?: Json | null
+          session_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component?: string
+          context?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          log_level?: string
+          message?: string
+          metrics?: Json | null
+          session_id?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability: {
         Row: {
           created_at: string | null
@@ -1408,92 +1475,6 @@ export type Database = {
           {
             foreignKeyName: "fk_event_participants_user_id"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_with_role"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_reviews: {
-        Row: {
-          author_id: string
-          content: string | null
-          created_at: string | null
-          event_id: string
-          id: string
-          is_visible: boolean | null
-          rating: number
-          target_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          author_id: string
-          content?: string | null
-          created_at?: string | null
-          event_id: string
-          id?: string
-          is_visible?: boolean | null
-          rating: number
-          target_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          author_id?: string
-          content?: string | null
-          created_at?: string | null
-          event_id?: string
-          id?: string
-          is_visible?: boolean | null
-          rating?: number
-          target_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_reviews_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_with_role"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_target_id_fkey"
-            columns: ["target_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_target_id_fkey"
-            columns: ["target_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reviews_target_id_fkey"
-            columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
@@ -3192,6 +3173,42 @@ export type Database = {
           },
         ]
       }
+      space_reviews: {
+        Row: {
+          author_id: string
+          booking_id: string
+          content: string | null
+          created_at: string
+          id: string
+          is_visible: boolean
+          rating: number
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          booking_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          rating: number
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          booking_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          rating?: number
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       space_tags: {
         Row: {
           created_at: string | null
@@ -4741,6 +4758,10 @@ export type Database = {
         Args: { host_id_param: string; year_param: number }
         Returns: Json
       }
+      calculate_space_weighted_rating: {
+        Args: { space_id_param: string }
+        Returns: number
+      }
       calculate_weighted_space_rating: {
         Args: { space_id_param: string }
         Returns: number
@@ -4800,6 +4821,7 @@ export type Database = {
       cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_expired_slots: { Args: never; Returns: undefined }
       cleanup_inactive_data: { Args: never; Returns: Json }
+      cleanup_old_application_logs: { Args: never; Returns: undefined }
       cleanup_old_audit_logs: { Args: never; Returns: undefined }
       create_image_processing_job: {
         Args: {
@@ -5192,6 +5214,28 @@ export type Database = {
           start_time: string
           status: string
           user_id: string
+        }[]
+      }
+      get_space_review_status: {
+        Args: { booking_id_param: string; user_id_param: string }
+        Returns: Json
+      }
+      get_space_reviews: {
+        Args: { space_id_param: string }
+        Returns: {
+          author_first_name: string
+          author_id: string
+          author_last_name: string
+          author_profile_photo_url: string
+          booking_date: string
+          booking_id: string
+          content: string
+          created_at: string
+          id: string
+          is_visible: boolean
+          rating: number
+          space_id: string
+          updated_at: string
         }[]
       }
       get_space_reviews_with_details: {

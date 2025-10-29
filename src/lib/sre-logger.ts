@@ -17,6 +17,7 @@ export interface SRELogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
+  component: string;
   context?: {
     userId?: string;
     sessionId?: string;
@@ -60,6 +61,7 @@ class SRELogger {
       timestamp: new Date().toISOString(),
       level,
       message,
+      component: context?.component || 'unknown',
       context: {
         ...context,
         url: typeof window !== 'undefined' ? window.location.href : undefined,
@@ -175,14 +177,38 @@ class SRELogger {
     this.metricsBuffer = [];
 
     try {
-      // In production, send to monitoring service
-      if (!import.meta.env.DEV) {
-        // TODO: Send to your monitoring backend
-        // await fetch('/api/logs', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ logs, metrics })
-        // });
+      // In production, send to Supabase application_logs table
+      if (!import.meta.env.DEV && logs.length > 0) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        // Transform logs to database format (serialize metrics as JSON)
+        const logRecords = logs.map(log => ({
+          log_level: log.level,
+          component: log.component,
+          message: log.message,
+          context: log.context || {},
+          metrics: JSON.parse(JSON.stringify({ buffer: metrics })), // Serialize to plain JSON
+          url: window.location.href,
+          user_agent: navigator.userAgent,
+          created_at: new Date(log.timestamp).toISOString()
+        }));
+
+        // Batch insert logs (max 1000 per request)
+        const BATCH_SIZE = 1000;
+        for (let i = 0; i < logRecords.length; i += BATCH_SIZE) {
+          const batch = logRecords.slice(i, i + BATCH_SIZE);
+          
+          const { error } = await supabase
+            .from('application_logs')
+            .insert(batch);
+
+          if (error) {
+            console.error('[SRE] Failed to insert logs batch:', error);
+            // Re-add failed logs to buffer
+            const failedLogs = logs.slice(i, i + batch.length);
+            this.buffer.unshift(...failedLogs);
+          }
+        }
       }
     } catch (error) {
       console.error('[SRE] Failed to flush logs:', error);
