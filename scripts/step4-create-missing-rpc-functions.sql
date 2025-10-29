@@ -6,6 +6,9 @@
 -- =====================================================
 -- 1. RPC per ottenere tutte le recensioni di uno spazio
 -- =====================================================
+-- Drop existing function if signature changed
+DROP FUNCTION IF EXISTS public.get_space_reviews(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_space_reviews(space_id_param uuid)
 RETURNS TABLE(
   id uuid,
