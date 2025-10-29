@@ -8,10 +8,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseAdmin = createClient(
-  Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
-  Deno.env.get('SERVICE_ROLE_KEY')!
-);
+// Validate environment variables
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error('Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

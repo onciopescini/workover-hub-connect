@@ -24,11 +24,11 @@ serve(async (req) => {
   }
 
   // Initialize Supabase admin client after CORS check
-  const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
-  const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   
   if (!supabaseUrl || !serviceRoleKey) {
-    ErrorHandler.logError('Missing environment variables', new Error('NEXT_PUBLIC_SUPABASE_URL or SERVICE_ROLE_KEY not set'));
+    ErrorHandler.logError('Missing environment variables', new Error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set'));
     return new Response(
       JSON.stringify({ error: 'Server configuration error' }),
       {
