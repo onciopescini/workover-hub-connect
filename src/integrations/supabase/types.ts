@@ -4891,6 +4891,15 @@ export type Database = {
         }
         Relationships: []
       }
+      rls_status_check: {
+        Row: {
+          policy_count: number | null
+          rls_status: string | null
+          schemaname: unknown
+          tablename: unknown
+        }
+        Relationships: []
+      }
       spaces_public_safe: {
         Row: {
           address: string | null

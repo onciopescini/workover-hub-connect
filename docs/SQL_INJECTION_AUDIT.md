@@ -125,6 +125,18 @@ const { data } = await supabase
 4. **Developer Training**: Educate team on SQL injection prevention
 5. **Automated Scanning**: Run weekly scans for dangerous SQL patterns
 
+## PostGIS System Tables (Excluded from RLS)
+
+The following tables are managed by the PostGIS extension and do not require RLS:
+
+- **spatial_ref_sys**: EPSG coordinate reference systems (public standard data)
+- **geography_columns**: PostGIS metadata for geography columns
+- **geometry_columns**: PostGIS metadata for geometry columns
+- **raster_columns**: PostGIS metadata for raster columns
+- **raster_overviews**: PostGIS metadata for raster overviews
+
+These tables contain no user data and are read-only system catalogs. They are intentionally excluded from RLS monitoring as they provide standard geographic reference data required by the PostGIS extension.
+
 ## Compliance
 - ✅ OWASP A03:2021 - Injection
 - ✅ CWE-89 - SQL Injection
