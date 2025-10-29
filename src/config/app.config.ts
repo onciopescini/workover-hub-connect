@@ -6,6 +6,7 @@
  */
 
 import { sreLogger } from '@/lib/sre-logger';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppConfig {
   api: {
@@ -67,14 +68,14 @@ const getNumberEnv = (key: string, defaultValue: number): number => {
 /**
  * Centralized Application Configuration
  * 
- * IMPORTANT: Supabase credentials are hardcoded as per Lovable instructions.
- * Do NOT use VITE_* variables for these values.
+ * IMPORTANT: Supabase credentials are imported from auto-generated client file.
+ * This prevents duplication and follows Lovable's single source of truth pattern.
  */
 export const appConfig: AppConfig = {
   api: {
-    // Hardcoded as per Lovable instructions - DO NOT use VITE_* variables
-    supabaseUrl: 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
-    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodHF3enZyeHpzZ2Zoc3Nsd3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NDg0ODUsImV4cCI6MjA2MzUyNDQ4NX0.QThCoBfb0JuFZ5dLru-TNSA_B0PZqp8AL0x0yaEWNFk',
+    // Import from auto-generated Supabase client (single source of truth)
+    supabaseUrl: (supabase as any).supabaseUrl,
+    supabaseAnonKey: (supabase as any).supabaseKey,
   },
   features: {
     // Default feature flags - should be moved to database in future
