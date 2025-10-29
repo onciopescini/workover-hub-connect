@@ -90,13 +90,28 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
           Messaggi
         </Button>
         
-        {showReviewButton && otherParty.id && (
-          <ReviewButton
-            booking={booking}
-            reviewType={userRole === 'host' ? 'coworker' : 'space'}
-            targetId={otherParty.id}
-            targetName={otherParty.name}
-          />
+        {showReviewButton && (
+          userRole === 'host' ? (
+            // Host reviews coworker
+            otherParty.id && (
+              <ReviewButton
+                booking={booking}
+                reviewType="coworker"
+                targetId={otherParty.id}
+                targetName={otherParty.name}
+              />
+            )
+          ) : (
+            // Coworker reviews space
+            booking.space_id && (
+              <ReviewButton
+                booking={booking}
+                reviewType="space"
+                targetId={booking.space_id}
+                targetName={booking.space?.title || "Spazio"}
+              />
+            )
+          )
         )}
         
         {canCancel && (

@@ -238,13 +238,28 @@ export const EnhancedBookingCard = ({
           />
           
           {/* Review button - only show for completed bookings */}
-          {booking.status === 'served' && otherParty.id && (
-            <ReviewButton
-              booking={booking}
-              reviewType={userRole === 'host' ? 'coworker' : 'space'}
-              targetId={otherParty.id}
-              targetName={otherParty.name}
-            />
+          {booking.status === 'served' && (
+            userRole === 'host' ? (
+              // Host reviews coworker
+              otherParty.id && (
+                <ReviewButton
+                  booking={booking}
+                  reviewType="coworker"
+                  targetId={otherParty.id}
+                  targetName={otherParty.name}
+                />
+              )
+            ) : (
+              // Coworker reviews space
+              booking.space_id && (
+                <ReviewButton
+                  booking={booking}
+                  reviewType="space"
+                  targetId={booking.space_id}
+                  targetName={booking.space?.title || "Spazio"}
+                />
+              )
+            )
           )}
           
           {canCancelBooking() && (

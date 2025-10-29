@@ -20,7 +20,7 @@ RETURNS TABLE(
   author_first_name text,
   author_last_name text,
   author_profile_photo_url text,
-  booking_date timestamptz
+  booking_date date
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -40,9 +40,9 @@ BEGIN
     p.first_name as author_first_name,
     p.last_name as author_last_name,
     p.profile_photo_url as author_profile_photo_url,
-    b.start_date as booking_date
+    b.booking_date as booking_date
   FROM public.space_reviews sr
-  INNER JOIN public.profiles p ON sr.author_id = p.user_id
+  INNER JOIN public.profiles p ON sr.author_id = p.id
   INNER JOIN public.bookings b ON sr.booking_id = b.id
   WHERE sr.space_id = space_id_param
     AND sr.is_visible = true
