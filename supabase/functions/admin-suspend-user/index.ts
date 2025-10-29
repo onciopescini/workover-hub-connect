@@ -1,13 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { 
+  suspendUserRequestSchema, 
+  userIdParamSchema,
+  type SuspendUserRequest 
+} from './schemas.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface SuspendUserRequest {
-  suspended_at?: string | null;
-  reason?: string;
 }
 
 Deno.serve(async (req) => {
@@ -85,7 +85,26 @@ Deno.serve(async (req) => {
     
     if (!targetUserId || targetUserId === 'suspend') {
       return new Response(
-        JSON.stringify({ error: 'User ID is required' }),
+        JSON.stringify({ 
+          error: 'User ID is required',
+          code: 'MISSING_USER_ID' 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Validate user ID format
+    const userIdValidation = userIdParamSchema.safeParse(targetUserId)
+    if (!userIdValidation.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid user ID format',
+          details: userIdValidation.error.issues[0].message,
+          code: 'INVALID_USER_ID'
+        }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -104,8 +123,39 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Parse request body
-    const { suspended_at, reason }: SuspendUserRequest = await req.json()
+    // Parse and validate request body
+    const requestBody = await req.json()
+    const bodyValidation = suspendUserRequestSchema.safeParse(requestBody)
+    
+    if (!bodyValidation.success) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request data',
+          details: bodyValidation.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', '),
+          code: 'VALIDATION_ERROR'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    const { suspended_at, reason }: SuspendUserRequest = bodyValidation.data
+
+    // Additional business logic validation
+    if (suspended_at && !reason) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Suspension reason is required when suspending a user',
+          code: 'MISSING_REASON'
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
     
     // Admin updating user suspension
 
@@ -130,7 +180,11 @@ Deno.serve(async (req) => {
     if (updateError) {
       console.error('❌ Error updating user suspension:', updateError)
       return new Response(
-        JSON.stringify({ error: 'Failed to update user suspension', details: updateError.message }),
+        JSON.stringify({ 
+          error: 'Failed to update user suspension', 
+          details: updateError.message,
+          code: 'DATABASE_ERROR'
+        }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -140,7 +194,10 @@ Deno.serve(async (req) => {
 
     if (!updatedProfile) {
       return new Response(
-        JSON.stringify({ error: 'User not found' }),
+        JSON.stringify({ 
+          error: 'User not found',
+          code: 'USER_NOT_FOUND'
+        }),
         { 
           status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
