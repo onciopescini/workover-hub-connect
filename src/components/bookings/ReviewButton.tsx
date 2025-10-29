@@ -92,7 +92,7 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
 
   const handleReviewSuccess = () => {
     setDialogOpen(false);
-    setReviewStatus(prev => prev ? { ...prev, hasWrittenReview: true } : null);
+    setReviewStatus((prev: any) => prev ? { ...prev, hasWrittenReview: true } : null);
     onReviewSubmitted?.();
   };
 

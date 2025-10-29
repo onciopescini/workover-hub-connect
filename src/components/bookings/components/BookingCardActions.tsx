@@ -14,9 +14,10 @@ interface BookingCardActionsProps {
   booking: BookingWithDetails;
   displayData: BookingCardDisplayData;
   actions: ActionsType;
+  userRole?: 'host' | 'coworker';
 }
 
-export const BookingCardActions = ({ booking, displayData, actions }: BookingCardActionsProps) => {
+export const BookingCardActions = ({ booking, displayData, actions, userRole = 'coworker' }: BookingCardActionsProps) => {
   const { canCancel, showReviewButton, otherParty } = displayData;
 
   // Show Pay button for pending_payment or pending with slot reservation
@@ -92,8 +93,9 @@ export const BookingCardActions = ({ booking, displayData, actions }: BookingCar
         {showReviewButton && otherParty.id && (
           <ReviewButton
             booking={booking}
-            targetUserId={otherParty.id}
-            targetUserName={otherParty.name}
+            reviewType={userRole === 'host' ? 'coworker' : 'space'}
+            targetId={otherParty.id}
+            targetName={otherParty.name}
           />
         )}
         

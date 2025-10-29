@@ -238,11 +238,12 @@ export const EnhancedBookingCard = ({
           />
           
           {/* Review button - only show for completed bookings */}
-          {booking.status === 'confirmed' && otherParty.id && isChatEnabled && (
+          {booking.status === 'served' && otherParty.id && (
             <ReviewButton
               booking={booking}
-              targetUserId={otherParty.id}
-              targetUserName={otherParty.name}
+              reviewType={userRole === 'host' ? 'coworker' : 'space'}
+              targetId={otherParty.id}
+              targetName={otherParty.name}
             />
           )}
           

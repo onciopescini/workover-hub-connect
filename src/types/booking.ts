@@ -44,6 +44,7 @@ export type BookingWithDetails = {
   is_urgent?: boolean | null;
   approval_reminder_sent?: boolean | null;
   payment_reminder_sent?: boolean | null;
+  service_completed_at?: string | null;
   space: {
     id: string;
     title: string;
