@@ -1,9 +1,10 @@
 -- ================================================================
--- MIGRATION 2: CONSOLIDAMENTO POLICIES DUPLICATE
+-- MIGRATION 2 v2: CONSOLIDAMENTO POLICIES DUPLICATE
 -- ================================================================
 -- Obiettivo: Ridurre il numero di policies consolidando quelle duplicate
 -- Mantenendo la stessa sicurezza ma migliorando le performance
 -- 
+-- Versione: 2.0 - Rimossa sezione PAYMENT_INTENTS (tabella non esistente)
 -- IMPORTANTE: Eseguire questo script nel SQL Editor di Supabase
 -- Progetto: https://supabase.com/dashboard/project/khtqwzvrxzsgfhsslwyz/sql/new
 -- ================================================================
@@ -155,16 +156,10 @@ WITH CHECK ((( SELECT auth.uid() AS uid) IN ( SELECT conversations.host_id FROM 
   SELECT conversations.coworker_id FROM conversations WHERE (conversations.id = messages.conversation_id))));
 
 -- ================================================================
--- 12. PAYMENT_INTENTS - Consolida user policies
+-- SEZIONE PAYMENT_INTENTS RIMOSSA
 -- ================================================================
-DROP POLICY IF EXISTS "payment_intents_select_own" ON public.payment_intents;
-DROP POLICY IF EXISTS "payment_intents_update_own" ON public.payment_intents;
-
-CREATE POLICY "payment_intents_manage_own"
-ON public.payment_intents
-FOR ALL
-USING ((( SELECT auth.uid() AS uid) = user_id))
-WITH CHECK ((( SELECT auth.uid() AS uid) = user_id));
+-- La tabella public.payment_intents non esiste nel database
+-- La tabella corretta è public.payments che ha già policies ottimali
 
 -- ================================================================
 -- VERIFICA FINALE
@@ -185,7 +180,7 @@ END $$;
 COMMIT;
 
 -- ================================================================
--- FINE MIGRATION 2
+-- FINE MIGRATION 2 v2
 -- ================================================================
 -- Eseguire questa query per verificare il risultato:
 /*
