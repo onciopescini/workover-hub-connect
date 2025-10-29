@@ -118,8 +118,21 @@ export const EnhancedBookingCard = ({
       };
     }
     
+    // Check if payment has been completed
+    const hasCompletedPayment = booking.payments?.some(
+      payment => payment.payment_status === 'completed' || payment.payment_status === 'paid'
+    );
+    
     if (booking.status === 'pending') {
       if (booking.space?.confirmation_type === 'instant') {
+        // Enable chat for instant bookings if payment is completed
+        if (hasCompletedPayment) {
+          return {
+            enabled: true,
+            text: "Messaggi",
+            tooltip: null
+          };
+        }
         return {
           enabled: false,
           text: "Chat (dopo pagamento)",
