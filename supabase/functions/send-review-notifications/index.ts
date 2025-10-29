@@ -22,24 +22,26 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Trova prenotazioni confermate che sono passate da almeno 24 ore
-    // e per cui non è ancora stata inviata una notifica di recensione
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: eligibleBookings, error: bookingsError } = await supabaseAdmin
       .from('bookings')
       .select(`
         id,
         user_id,
-        booking_date,
+        space_id,
+        service_completed_at,
         spaces:space_id (
-          title,
-          host_id
+          host_id,
+          title
         )
       `)
-      .eq('status', 'confirmed')
-      .lte('booking_date', twentyFourHoursAgo.toISOString().split('T')[0]);
+      .eq('status', 'served')
+      .not('service_completed_at', 'is', null)
+      .lte('service_completed_at', twentyFourHoursAgo)
+      .gte('service_completed_at', fourteenDaysAgo);
 
     if (bookingsError) {
       ErrorHandler.logError('Error fetching eligible bookings', bookingsError);
@@ -50,73 +52,61 @@ serve(async (req) => {
       count: eligibleBookings?.length || 0
     });
 
+    let processedCount = 0;
+
     for (const booking of eligibleBookings || []) {
-      // Controlla se esiste già una notifica per questa prenotazione
-      const { data: existingNotification } = await supabaseAdmin
+      const { data: existingSpaceNotif } = await supabaseAdmin
         .from('user_notifications')
         .select('id')
         .eq('user_id', booking.user_id)
         .eq('type', 'review')
-        .contains('metadata', { booking_id: booking.id })
-        .single();
+        .eq('metadata->>booking_id', booking.id)
+        .eq('metadata->>review_type', 'space')
+        .maybeSingle();
 
-      if (existingNotification) {
-        ErrorHandler.logInfo('Notification already sent for booking', { bookingId: booking.id });
-        continue;
-      }
-
-      // Invia notifica al coworker per recensire l'host
-      const { error: notificationError } = await supabaseAdmin
+      const { data: existingCoworkerNotif } = await supabaseAdmin
         .from('user_notifications')
-        .insert({
+        .select('id')
+        .eq('user_id', (booking.spaces as any).host_id)
+        .eq('type', 'review')
+        .eq('metadata->>booking_id', booking.id)
+        .eq('metadata->>review_type', 'coworker')
+        .maybeSingle();
+
+      if (!existingSpaceNotif) {
+        await supabaseAdmin.from('user_notifications').insert({
           user_id: booking.user_id,
           type: 'review',
-          title: 'Lascia una recensione',
-          content: `La tua prenotazione presso "${(booking.spaces as any).title}" è terminata. Lascia una recensione per condividere la tua esperienza!`,
+          title: '⭐ Lascia una recensione',
+          content: `Hai utilizzato lo spazio "${(booking.spaces as any).title}". Condividi la tua esperienza!`,
           metadata: {
             booking_id: booking.id,
-            space_title: (booking.spaces as any).title,
-            target_user_id: (booking.spaces as any).host_id,
-            review_type: 'booking'
+            space_id: booking.space_id,
+            review_type: 'space'
           }
         });
-
-      if (notificationError) {
-        ErrorHandler.logError('Error sending coworker review notification', notificationError, {
-          bookingId: booking.id
-        });
-      } else {
-        ErrorHandler.logSuccess('Review notification sent to coworker', { bookingId: booking.id });
       }
 
-      // Invia anche notifica all'host per recensire il coworker
-      const { error: hostNotificationError } = await supabaseAdmin
-        .from('user_notifications')
-        .insert({
+      if (!existingCoworkerNotif) {
+        await supabaseAdmin.from('user_notifications').insert({
           user_id: (booking.spaces as any).host_id,
           type: 'review',
-          title: 'Lascia una recensione',
-          content: `La prenotazione presso "${(booking.spaces as any).title}" è terminata. Lascia una recensione per il coworker!`,
+          title: '⭐ Lascia una recensione',
+          content: `Un coworker ha completato la prenotazione presso "${(booking.spaces as any).title}". Lascia un feedback!`,
           metadata: {
             booking_id: booking.id,
-            space_title: (booking.spaces as any).title,
-            target_user_id: booking.user_id,
-            review_type: 'booking'
+            coworker_id: booking.user_id,
+            review_type: 'coworker'
           }
         });
-
-      if (hostNotificationError) {
-        ErrorHandler.logError('Error sending host review notification', hostNotificationError, {
-          bookingId: booking.id
-        });
-      } else {
-        ErrorHandler.logSuccess('Review notification sent to host', { bookingId: booking.id });
       }
+
+      processedCount++;
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      processed: eligibleBookings?.length || 0 
+      processed: processedCount
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

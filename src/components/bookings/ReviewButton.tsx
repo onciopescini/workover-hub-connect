@@ -5,26 +5,25 @@ import { Star, Clock, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReviewForm } from "@/components/reviews/ReviewForm";
+import { SpaceReviewForm } from "@/components/reviews/SpaceReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
+import { getSpaceReviewStatus } from "@/lib/space-review-service";
 import { differenceInHours, differenceInDays, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 
 interface ReviewButtonProps {
   booking: BookingWithDetails;
-  targetUserId: string;
-  targetUserName: string;
+  reviewType: 'space' | 'coworker';
+  targetId: string;
+  targetName: string;
   onReviewSubmitted?: () => void;
 }
 
-export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSubmitted }: ReviewButtonProps) => {
+export const ReviewButton = ({ booking, reviewType, targetId, targetName, onReviewSubmitted }: ReviewButtonProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [reviewStatus, setReviewStatus] = useState<{
-    canWriteReview: boolean;
-    hasWrittenReview: boolean;
-    isVisible: boolean;
-  } | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,33 +33,33 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const status = await getBookingReviewStatus(booking.id, user.id, targetUserId);
+        const status = reviewType === 'coworker' 
+          ? await getBookingReviewStatus(booking.id, user.id, targetId)
+          : await getSpaceReviewStatus(booking.id, user.id);
         setReviewStatus(status);
       } catch (error) {
-        sreLogger.error('Error checking review status', { bookingId: booking.id, targetUserId }, error as Error);
+        sreLogger.error('Error checking review status', { bookingId: booking.id, targetId }, error as Error);
       } finally {
         setLoading(false);
       }
     };
 
     checkReviewStatus();
-  }, [booking.id, targetUserId]);
+  }, [booking.id, targetId, reviewType]);
 
   const checkReviewEligibility = () => {
-    // ✅ FIX: Usa end_time invece di booking_date per calcolo corretto
-    const bookingDate = parseISO(booking.booking_date);
-    const bookingEndTime = booking.end_time ? 
-      new Date(`${booking.booking_date}T${booking.end_time}`) : 
-      new Date(`${booking.booking_date}T23:59:59`); // Fallback a fine giornata
+    if (booking.status !== 'served' || !booking.service_completed_at) {
+      return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
+    }
 
+    const completedAt = parseISO(booking.service_completed_at);
     const now = new Date();
-    const hoursPassedSinceEnd = differenceInHours(now, bookingEndTime);
-    const daysSinceEnd = differenceInDays(now, bookingEndTime);
+    const hoursPassedSinceEnd = differenceInHours(now, completedAt);
+    const daysSinceEnd = differenceInDays(now, completedAt);
 
-    const isServed = booking.status === 'served'; // ✅ Deve essere 'served', non 'confirmed'
     const isAfter24h = hoursPassedSinceEnd >= 24;
     const expired = daysSinceEnd > 14;
-    const canReview = isServed && isAfter24h && !expired;
+    const canReview = isAfter24h && !expired;
 
     return {
       canReview,
@@ -165,18 +164,27 @@ export const ReviewButton = ({ booking, targetUserId, targetUserName, onReviewSu
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Recensione per {targetUserName}</DialogTitle>
+          <DialogTitle>{reviewType === 'space' ? 'Recensisci lo Spazio' : `Recensione per ${targetName}`}</DialogTitle>
           <DialogDescription>
-            Condividi la tua esperienza con questo utente
+            {reviewType === 'space' ? 'Condividi la tua esperienza' : 'Lascia un feedback per questo utente'}
           </DialogDescription>
         </DialogHeader>
-        <ReviewForm
-          type="booking"
-          bookingId={booking.id}
-          targetId={targetUserId}
-          targetName={targetUserName}
-          onSuccess={handleReviewSuccess}
-        />
+        {reviewType === 'space' ? (
+          <SpaceReviewForm
+            bookingId={booking.id}
+            spaceId={targetId}
+            spaceName={targetName}
+            onSuccess={handleReviewSuccess}
+          />
+        ) : (
+          <ReviewForm
+            type="booking"
+            bookingId={booking.id}
+            targetId={targetId}
+            targetName={targetName}
+            onSuccess={handleReviewSuccess}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

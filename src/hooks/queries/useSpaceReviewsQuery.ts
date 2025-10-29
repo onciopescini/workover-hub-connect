@@ -1,14 +1,8 @@
-// DEPRECATED: Use useSpaceReviewsQuery instead
-// This file is kept for backward compatibility but uses the new space review system
-
 import { useQuery } from '@tanstack/react-query';
 import { getSpaceReviews, getSpaceWeightedRating } from '@/lib/space-review-service';
 import { TIME_CONSTANTS } from "@/constants";
 
-/**
- * @deprecated Use useSpaceReviewsQuery from '@/hooks/queries/useSpaceReviewsQuery' instead
- */
-export const useSpaceReviews = (spaceId: string) => {
+export const useSpaceReviewsQuery = (spaceId: string) => {
   return useQuery({
     queryKey: ['space-reviews', spaceId],
     queryFn: () => getSpaceReviews(spaceId),
@@ -17,10 +11,7 @@ export const useSpaceReviews = (spaceId: string) => {
   });
 };
 
-/**
- * @deprecated Use useSpaceWeightedRatingQuery from '@/hooks/queries/useSpaceReviewsQuery' instead
- */
-export const useSpaceWeightedRating = (spaceId: string) => {
+export const useSpaceWeightedRatingQuery = (spaceId: string) => {
   return useQuery({
     queryKey: ['space-weighted-rating', spaceId],
     queryFn: () => getSpaceWeightedRating(spaceId),
@@ -29,12 +20,9 @@ export const useSpaceWeightedRating = (spaceId: string) => {
   });
 };
 
-/**
- * @deprecated Use useSpaceReviewsWithRating from '@/hooks/queries/useSpaceReviewsQuery' instead
- */
 export const useSpaceReviewsWithRating = (spaceId: string) => {
-  const reviewsQuery = useSpaceReviews(spaceId);
-  const ratingQuery = useSpaceWeightedRating(spaceId);
+  const reviewsQuery = useSpaceReviewsQuery(spaceId);
+  const ratingQuery = useSpaceWeightedRatingQuery(spaceId);
 
   return {
     reviews: reviewsQuery.data || [],

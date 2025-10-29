@@ -1,6 +1,12 @@
+// DEPRECATED: Use space-review-service.ts instead
+// This file is kept for backward compatibility
+
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 
+/**
+ * @deprecated Use SpaceReviewWithDetails from '@/types/space-review' instead
+ */
 export interface SpaceReview {
   id: string;
   rating: number;
@@ -13,6 +19,9 @@ export interface SpaceReview {
   is_visible: boolean;
 }
 
+/**
+ * @deprecated Use SpaceReviewsStats from '@/types/space-review' instead
+ */
 export interface SpaceReviewsStats {
   averageRating: number;
   totalReviews: number;
@@ -20,19 +29,19 @@ export interface SpaceReviewsStats {
 }
 
 /**
- * Fetches reviews for a specific space using the new database function
+ * @deprecated Use getSpaceReviews from '@/lib/space-review-service' instead
  */
 export const getSpaceReviews = async (spaceId: string): Promise<SpaceReview[]> => {
   try {
     const { data, error } = await supabase
-      .rpc('get_space_reviews_with_details', { space_id_param: spaceId });
+      .rpc('get_space_reviews' as any, { space_id_param: spaceId });
 
     if (error) {
       sreLogger.error('Error fetching space reviews', { error, spaceId });
       return [];
     }
 
-    return data || [];
+    return (data || []) as SpaceReview[];
   } catch (error) {
     sreLogger.error('Error in getSpaceReviews', { error, spaceId });
     return [];
@@ -40,12 +49,12 @@ export const getSpaceReviews = async (spaceId: string): Promise<SpaceReview[]> =
 };
 
 /**
- * Calculates weighted average rating for a space using the new database function
+ * @deprecated Use getSpaceWeightedRating from '@/lib/space-review-service' instead
  */
 export const getSpaceWeightedRating = async (spaceId: string): Promise<number> => {
   try {
     const { data, error } = await supabase
-      .rpc('calculate_weighted_space_rating', { space_id_param: spaceId });
+      .rpc('calculate_space_weighted_rating' as any, { space_id_param: spaceId });
 
     if (error) {
       sreLogger.error('Error fetching weighted rating', { error, spaceId });
@@ -60,7 +69,7 @@ export const getSpaceWeightedRating = async (spaceId: string): Promise<number> =
 };
 
 /**
- * Calculates review statistics including distribution
+ * @deprecated Use calculateSpaceReviewStats from '@/lib/space-review-service' instead
  */
 export const calculateReviewStats = (reviews: SpaceReview[]): SpaceReviewsStats => {
   if (!reviews.length) {
@@ -76,7 +85,6 @@ export const calculateReviewStats = (reviews: SpaceReview[]): SpaceReviewsStats 
     return acc;
   }, {} as Record<number, number>);
 
-  // Fill missing ratings with 0
   for (let i = 1; i <= 5; i++) {
     if (!distribution[i]) distribution[i] = 0;
   }
@@ -91,14 +99,14 @@ export const calculateReviewStats = (reviews: SpaceReview[]): SpaceReviewsStats 
 };
 
 /**
- * Formats review author name
+ * @deprecated Use formatSpaceReviewAuthor from '@/lib/space-review-service' instead
  */
 export const formatReviewAuthor = (review: SpaceReview): string => {
   return `${review.author_first_name} ${review.author_last_name}`;
 };
 
 /**
- * Gets time since review was created
+ * @deprecated Use getTimeSinceSpaceReview from '@/lib/space-review-service' instead
  */
 export const getTimeSinceReview = (createdAt: string): string => {
   const now = new Date();
