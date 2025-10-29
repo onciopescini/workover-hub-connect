@@ -33,9 +33,10 @@ interface ExtendedSpace extends Space {
 interface SpaceDetailContentProps {
   space: ExtendedSpace;
   reviews: SpaceReview[];
+  weightedRating?: number;
 }
 
-export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) {
+export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: SpaceDetailContentProps) {
   const navigate = useNavigate();
   const { authState } = useAuth();
 
@@ -51,10 +52,8 @@ export function SpaceDetailContent({ space, reviews }: SpaceDetailContentProps) 
     navigate('/login');
   };
 
-  // Calculate average rating from reviews
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
-    : 0;
+  // Use weighted rating from database (calculated via RPC)
+  const averageRating = weightedRating;
 
   // Transform space data for hero section
   // Mask address if user doesn't have precise location access

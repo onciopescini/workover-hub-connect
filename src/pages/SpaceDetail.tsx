@@ -4,7 +4,7 @@ import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Space } from '@/types/space';
-import { useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
@@ -144,7 +144,8 @@ const SpaceDetail = () => {
     enabled: !!id
   });
 
-  const { data: reviews = [] } = useSpaceReviews(id || '');
+  // Load reviews and weighted rating from database
+  const { reviews, weightedRating, isLoading: reviewsLoading } = useSpaceReviewsWithRating(id || '');
 
   // Try to fetch precise location (only if user has confirmed booking or is owner/admin)
   const { data: preciseLocation } = useSpaceLocation(id, !!id);
@@ -257,7 +258,11 @@ const SpaceDetail = () => {
   
   return (
     <div className="container mx-auto py-8">
-      <SpaceDetailContent space={enhancedSpace!} reviews={reviews} />
+      <SpaceDetailContent 
+        space={enhancedSpace!} 
+        reviews={reviews}
+        weightedRating={weightedRating}
+      />
     </div>
   );
 };
