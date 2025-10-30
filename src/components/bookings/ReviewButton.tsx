@@ -48,11 +48,27 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
   }, [booking.id, targetId, reviewType]);
 
   const checkReviewEligibility = () => {
-    if (booking.status !== 'served' || !booking.service_completed_at) {
+    if (booking.status !== 'served') {
       return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
     }
 
-    const completedAt = new Date(booking.service_completed_at);
+    let completedAt: Date;
+    
+    if (booking.service_completed_at) {
+      completedAt = new Date(booking.service_completed_at);
+    } else if (booking.end_time) {
+      // Fallback: usa booking_date + end_time
+      completedAt = new Date(`${booking.booking_date}T${booking.end_time}`);
+      sreLogger.warn('ReviewButton using fallback for service_completed_at', {
+        bookingId: booking.id,
+        booking_date: booking.booking_date,
+        end_time: booking.end_time
+      });
+    } else {
+      // Nessun dato disponibile
+      return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
+    }
+
     const now = new Date();
     const hoursPassedSinceEnd = differenceInHours(now, completedAt);
     const daysSinceEnd = differenceInDays(now, completedAt);

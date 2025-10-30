@@ -20,6 +20,7 @@ interface RawBookingData {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
+  service_completed_at?: string | null;
   space?: {
     id?: string;
     title?: string;
@@ -73,6 +74,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payment_required: booking.payment_required || null,
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
+        service_completed_at: booking.service_completed_at || null,
         space: {
           id: booking.space?.id || '',
           title: booking.space?.title || 'Spazio senza titolo',
@@ -127,6 +129,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payment_required: booking.payment_required || null,
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
+        service_completed_at: booking.service_completed_at || null,
         space: {
           id: booking.space?.id || '',
           title: booking.space?.title || 'Spazio senza titolo',

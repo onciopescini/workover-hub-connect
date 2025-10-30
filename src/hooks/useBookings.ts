@@ -56,6 +56,7 @@ export const useBookings = () => {
             status,
             created_at,
             updated_at,
+            service_completed_at,
             space:spaces (
               id,
               title,
@@ -79,6 +80,7 @@ export const useBookings = () => {
             status: booking.status ?? 'pending',
             created_at: booking.created_at ?? '',
             updated_at: booking.updated_at ?? '',
+            service_completed_at: booking.service_completed_at ?? null,
             space: booking.space as Space,
           })) : [];
           setBookings(formattedBookings);
