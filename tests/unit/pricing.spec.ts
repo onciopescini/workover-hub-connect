@@ -5,6 +5,7 @@ describe('computePricing', () => {
   const baseInput = {
     serviceFeePct: 0.05,
     vatPct: 0.22,
+    guestsCount: 1,
     stripeTaxEnabled: false,
   };
 
@@ -22,7 +23,7 @@ describe('computePricing', () => {
       expect(result.serviceFee).toBe(2.63); // 52.5 * 0.05
       expect(result.vat).toBe(0.58); // 2.63 * 0.22
       expect(result.total).toBe(55.71); // 52.5 + 2.63 + 0.58
-      expect(result.breakdownLabel).toBe('3.5h × €15/h');
+      expect(result.breakdownLabel).toBe('3.5h × €15/h × 1 persona');
     });
 
     it('should calculate pricing for 7.5 hours correctly', () => {
@@ -38,7 +39,7 @@ describe('computePricing', () => {
       expect(result.serviceFee).toBe(7.5); // 150 * 0.05
       expect(result.vat).toBe(1.65); // 7.5 * 0.22
       expect(result.total).toBe(159.15); // 150 + 7.5 + 1.65
-      expect(result.breakdownLabel).toBe('7.5h × €20/h');
+      expect(result.breakdownLabel).toBe('7.5h × €20/h × 1 persona');
     });
   });
 
@@ -56,7 +57,7 @@ describe('computePricing', () => {
       expect(result.serviceFee).toBe(5); // 100 * 0.05
       expect(result.vat).toBe(1.1); // 5 * 0.22
       expect(result.total).toBe(106.1); // 100 + 5 + 1.1
-      expect(result.breakdownLabel).toBe('Tariffa giornaliera (8h)');
+      expect(result.breakdownLabel).toBe('Tariffa giornaliera (8h) × 1 persona');
     });
 
     it('should calculate pricing for 9 hours correctly', () => {
@@ -72,7 +73,7 @@ describe('computePricing', () => {
       expect(result.serviceFee).toBe(6); // 120 * 0.05
       expect(result.vat).toBe(1.32); // 6 * 0.22
       expect(result.total).toBe(127.32); // 120 + 6 + 1.32
-      expect(result.breakdownLabel).toBe('Tariffa giornaliera (9h)');
+      expect(result.breakdownLabel).toBe('Tariffa giornaliera (9h) × 1 persona');
     });
   });
 

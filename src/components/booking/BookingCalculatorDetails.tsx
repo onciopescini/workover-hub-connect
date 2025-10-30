@@ -8,6 +8,7 @@ interface BookingCalculatorDetailsProps {
   durationHours: number;
   pricePerHour: number;
   pricePerDay: number;
+  guestsCount: number;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function BookingCalculatorDetails({
   durationHours,
   pricePerHour,
   pricePerDay,
+  guestsCount,
   className = ""
 }: BookingCalculatorDetailsProps) {
   const stripeTaxEnabled = isStripeTaxEnabled();
@@ -23,6 +25,7 @@ export function BookingCalculatorDetails({
     durationHours,
     pricePerHour,
     pricePerDay,
+    guestsCount,
     serviceFeePct: getServiceFeePct(),
     vatPct: getDefaultVatPct(),
     stripeTaxEnabled

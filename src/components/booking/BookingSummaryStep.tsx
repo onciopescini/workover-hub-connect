@@ -31,6 +31,7 @@ export function BookingSummaryStep({
     durationHours: selectedRange.duration,
     pricePerHour,
     pricePerDay,
+    guestsCount,
     serviceFeePct: getServiceFeePct(),
     vatPct: getDefaultVatPct(),
     stripeTaxEnabled

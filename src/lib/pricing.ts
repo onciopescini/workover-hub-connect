@@ -4,6 +4,7 @@ export interface PricingInput {
   durationHours: number;
   pricePerHour: number;
   pricePerDay: number;
+  guestsCount: number;
   serviceFeePct: number; // es. 0.12
   vatPct: number;        // es. 0.22 (placeholder se Stripe Tax off)
   stripeTaxEnabled?: boolean; // da env
@@ -22,10 +23,13 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 export function computePricing(input: PricingInput): PricingOutput {
   const isDayRate = input.durationHours >= 8;
-  const base = isDayRate ? input.pricePerDay : input.durationHours * input.pricePerHour;
+  const basePerPerson = isDayRate ? input.pricePerDay : input.durationHours * input.pricePerHour;
+  const base = basePerPerson * input.guestsCount;
   const serviceFee = round(base * input.serviceFeePct);
   const vat = input.stripeTaxEnabled ? 0 : round(serviceFee * input.vatPct);
   const total = round(base + serviceFee + vat);
+  
+  const guestLabel = input.guestsCount === 1 ? 'persona' : 'persone';
   
   return {
     base: round(base),
@@ -34,8 +38,8 @@ export function computePricing(input: PricingInput): PricingOutput {
     total,
     isDayRate,
     breakdownLabel: isDayRate
-      ? `Tariffa giornaliera (${input.durationHours}h)`
-      : `${input.durationHours}h × €${input.pricePerHour}/h`,
+      ? `Tariffa giornaliera (${input.durationHours}h) × ${input.guestsCount} ${guestLabel}`
+      : `${input.durationHours}h × €${input.pricePerHour}/h × ${input.guestsCount} ${guestLabel}`,
   };
 }
 

@@ -11,6 +11,7 @@ type PricingInput = {
   durationHours: number;
   pricePerHour: number;
   pricePerDay: number;
+  guestsCount: number;
   serviceFeePct: number; // es. 0.12
   vatPct: number;        // es. 0.22
   stripeTaxEnabled?: boolean;
@@ -30,7 +31,8 @@ const round = (n: number) => Math.round(n * 100) / 100;
 
 function computePricing(i: PricingInput): PricingOutput {
   const isDayRate = i.durationHours >= 8;
-  const base = isDayRate ? i.pricePerDay : i.durationHours * i.pricePerHour;
+  const basePerPerson = isDayRate ? i.pricePerDay : i.durationHours * i.pricePerHour;
+  const base = basePerPerson * i.guestsCount;
   const serviceFee = round(base * i.serviceFeePct);
   const vat = i.stripeTaxEnabled ? 0 : round(serviceFee * i.vatPct);
   
@@ -42,6 +44,8 @@ function computePricing(i: PricingInput): PricingOutput {
   const totalPlatformFee = round(serviceFee + vat + hostFee + hostVat);
   
   const total = round(base + serviceFee + vat);
+  const guestLabel = i.guestsCount === 1 ? 'persona' : 'persone';
+  
   return {
     base: round(base),
     serviceFee,
@@ -52,8 +56,8 @@ function computePricing(i: PricingInput): PricingOutput {
     total,
     isDayRate,
     breakdownLabel: isDayRate
-      ? `Tariffa giornaliera (${i.durationHours}h)`
-      : `${i.durationHours}h × €${i.pricePerHour}/h`,
+      ? `Tariffa giornaliera (${i.durationHours}h) × ${i.guestsCount} ${guestLabel}`
+      : `${i.durationHours}h × €${i.pricePerHour}/h × ${i.guestsCount} ${guestLabel}`,
   };
 }
 
@@ -126,6 +130,7 @@ serve(async (req) => {
       durationHours,
       pricePerHour,
       pricePerDay,
+      guestsCount,
       host_stripe_account_id,
       booking_id,
       fiscal_data,
@@ -134,6 +139,7 @@ serve(async (req) => {
     // Required fields validation with detailed error response
     if (!space_id || !booking_id || !Number.isFinite(Number(durationHours)) ||
         !Number.isFinite(Number(pricePerHour)) || !Number.isFinite(Number(pricePerDay)) ||
+        !Number.isFinite(Number(guestsCount)) || Number(guestsCount) < 1 ||
         !host_stripe_account_id) {
       return new Response(JSON.stringify({
         error: 'Invalid or missing fields',
@@ -143,6 +149,7 @@ serve(async (req) => {
           durationHours: !(Number.isFinite(Number(durationHours)) && Number(durationHours) > 0),
           pricePerHour: !(Number.isFinite(Number(pricePerHour)) && Number(pricePerHour) >= 0),
           pricePerDay: !(Number.isFinite(Number(pricePerDay)) && Number(pricePerDay) >= 0),
+          guestsCount: !(Number.isFinite(Number(guestsCount)) && Number(guestsCount) >= 1),
           host_stripe_account_id: !host_stripe_account_id,
         }
       }), { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 400 });
@@ -306,6 +313,7 @@ serve(async (req) => {
       durationHours: numDurationHours,
       pricePerHour: numPricePerHour,
       pricePerDay: numPricePerDay,
+      guestsCount: Number(guestsCount),
       serviceFeePct,
       vatPct,
       stripeTaxEnabled,

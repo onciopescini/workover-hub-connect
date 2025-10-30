@@ -459,6 +459,7 @@ export function TwoStepBookingForm({
         durationHours,
         pricePerHour,
         pricePerDay,
+        guestsCount: bookingState.guestsCount,
         serviceFeePct: getServiceFeePct(),
         vatPct: getDefaultVatPct(),
         stripeTaxEnabled: isStripeTaxEnabled()
@@ -614,6 +615,7 @@ export function TwoStepBookingForm({
         durationHours: bookingState.selectedRange.duration,
         pricePerHour,
         pricePerDay,
+        guestsCount: bookingState.guestsCount,
         serviceFeePct: getServiceFeePct(),
         vatPct: getDefaultVatPct(),
         stripeTaxEnabled: isStripeTaxEnabled()
@@ -641,6 +643,7 @@ export function TwoStepBookingForm({
             durationHours: bookingState.selectedRange.duration,
             pricePerHour,
             pricePerDay,
+            guestsCount: bookingState.guestsCount,
             host_stripe_account_id: hostStripeAccountId,
             fiscal_data: fiscalMetadata,
           }
