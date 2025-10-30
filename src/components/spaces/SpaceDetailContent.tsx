@@ -6,7 +6,7 @@ import { SpaceReview } from "@/lib/space-review-utils";
 import { SpaceHeroSection } from './SpaceHeroSection';
 import { SpaceInfoCards } from './SpaceInfoCards';
 import { HostProfileSection } from './HostProfileSection';
-import { StickyBookingCard } from './StickyBookingCard';
+import { BookingCard } from './BookingCard';
 import { SpaceReviews } from './SpaceReviews';
 import { LocationAccessNotice } from './LocationAccessNotice';
 import { toast } from 'sonner';
@@ -94,49 +94,44 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Hero Section */}
-          <SpaceHeroSection space={heroSpaceData} />
-          
-          {/* Location Access Notice */}
-          <LocationAccessNotice 
-            hasAccess={!!space.hasPreciseLocation} 
-            hasConfirmedBooking={!!space.hasConfirmedBooking}
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <SpaceHeroSection space={heroSpaceData} />
+        
+        {/* Location Access Notice */}
+        <LocationAccessNotice 
+          hasAccess={!!space.hasPreciseLocation} 
+          hasConfirmedBooking={!!space.hasConfirmedBooking}
+        />
+        
+        {/* Booking Card - Integrated in main flow */}
+        <BookingCard
+          space={bookingSpaceData}
+          isAuthenticated={authState.isAuthenticated}
+          onLoginRequired={handleLoginRequired}
+          onBookingSuccess={handleBookingSuccess}
+          onBookingError={handleBookingError}
+        />
+        
+        {/* Space Information */}
+        <SpaceInfoCards space={infoSpaceData} />
+        
+        {/* Host Profile */}
+        {space.host && (
+          <HostProfileSection 
+            host={space.host} 
+            averageRating={averageRating}
+            totalReviews={reviews.length}
+            totalSpaces={space.host_total_spaces ?? 0}
           />
-          
-          {/* Space Information */}
-          <SpaceInfoCards space={infoSpaceData} />
-          
-          {/* Host Profile */}
-          {space.host && (
-            <HostProfileSection 
-              host={space.host} 
-              averageRating={averageRating}
-              totalReviews={reviews.length}
-              totalSpaces={space.host_total_spaces ?? 0}
-            />
-          )}
-          
-          {/* Who Works Here Widget */}
-          <WhoWorksHere spaceId={space.id} />
+        )}
+        
+        {/* Who Works Here Widget */}
+        <WhoWorksHere spaceId={space.id} />
 
-          {/* Reviews Section */}
-          <SpaceReviews spaceId={space.id} reviews={reviews} />
-        </div>
-
-        {/* Sticky Booking Sidebar */}
-        <div className="lg:col-span-1">
-          <StickyBookingCard
-            space={bookingSpaceData}
-            isAuthenticated={authState.isAuthenticated}
-            onLoginRequired={handleLoginRequired}
-            onBookingSuccess={handleBookingSuccess}
-            onBookingError={handleBookingError}
-          />
-        </div>
+        {/* Reviews Section */}
+        <SpaceReviews spaceId={space.id} reviews={reviews} />
       </div>
     </div>
   );
