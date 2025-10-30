@@ -99,7 +99,7 @@ export const useBookingCardState = ({
     }
     
     const canCancel = canCancelByStatus && canCancelByTime;
-    const showReviewButton = booking.status === 'confirmed';
+    const showReviewButton = booking.status === 'served';
     const otherParty = getOtherParty();
     const formattedDate = format(new Date(booking.booking_date), "EEEE d MMMM yyyy", { locale: it });
 
