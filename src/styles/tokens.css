@@ -8,15 +8,16 @@
 
 :root {
   /* ========== COLORS ========== */
-  /* Base palette (dark mode inspired) */
-  --color-bg: #0a0e17;           /* TODO: extract from code.html */
-  --color-surface: #121827;      /* TODO: extract from code.html */
-  --color-text: #e8edf5;         /* TODO: extract from code.html */
-  --color-muted: #9ca3af;        /* TODO: extract from code.html */
-  --color-brand: #5b9cff;        /* TODO: extract from code.html (primary CTA) */
-  --color-accent: #fbbf24;       /* TODO: extract from code.html (highlights) */
-  --color-success: #10b981;      /* TODO: extract from code.html */
-  --color-error: #ef4444;        /* TODO: extract from code.html */
+  /* Base palette (dark mode inspired) - Placeholder values */
+  --color-bg: #0a0e17;           /* Deep dark blue-black background */
+  --color-surface: #121827;      /* Elevated surface (cards, panels) */
+  --color-text: #e8edf5;         /* Primary text color (light gray-blue) */
+  --color-muted: #9ca3af;        /* Secondary text / labels */
+  --color-brand: #5b9cff;        /* Primary brand blue (CTA, links) */
+  --color-accent: #fbbf24;       /* Accent yellow/gold (highlights, badges) */
+  --color-success: #10b981;      /* Success green */
+  --color-error: #ef4444;        /* Error red */
+  --color-warning: #f59e0b;      /* Warning orange */
 
   /* Specific contexts */
   --color-bg-hero: var(--color-bg);
@@ -25,29 +26,31 @@
   --color-filter-active: var(--color-brand);
 
   /* ========== TYPOGRAPHY ========== */
-  --font-display: 'Inter', -apple-system, sans-serif; /* TODO: check Stitch font */
-  --font-body: 'Inter', -apple-system, sans-serif;
-  --font-size-hero: 3.5rem;      /* 56px */
-  --font-size-h1: 2.5rem;        /* 40px */
-  --font-size-h2: 2rem;          /* 32px */
-  --font-size-h3: 1.5rem;        /* 24px */
-  --font-size-body: 1rem;        /* 16px */
-  --font-size-small: 0.875rem;   /* 14px */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-hero: 3.5rem;      /* 56px - Large hero headlines */
+  --font-size-h1: 2.5rem;        /* 40px - Page titles */
+  --font-size-h2: 2rem;          /* 32px - Section headers */
+  --font-size-h3: 1.5rem;        /* 24px - Subsection headers */
+  --font-size-body: 1rem;        /* 16px - Body text */
+  --font-size-small: 0.875rem;   /* 14px - Small text, captions */
 
   /* ========== SPACING ========== */
-  --space-section: 5rem;         /* 80px */
-  --space-card: 1.5rem;          /* 24px */
-  --space-element: 1rem;         /* 16px */
+  --space-section: 5rem;         /* 80px - Section vertical padding */
+  --space-card: 1.5rem;          /* 24px - Card internal padding */
+  --space-element: 1rem;         /* 16px - Element gaps */
+  --space-compact: 0.75rem;      /* 12px - Tight spacing */
 
   /* ========== RADIUS ========== */
-  --radius-xl: 1.5rem;           /* 24px - TODO: verify */
-  --radius-lg: 1rem;             /* 16px */
-  --radius-md: 0.75rem;          /* 12px */
+  --radius-xl: 1.5rem;           /* 24px - Cards, modals, large components */
+  --radius-lg: 1rem;             /* 16px - Buttons, inputs */
+  --radius-md: 0.75rem;          /* 12px - Small elements, badges */
 
   /* ========== SHADOWS ========== */
-  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.2);
-  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.3);
-  --shadow-glow: 0 0 30px rgba(91, 156, 255, 0.3);
+  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.2);          /* Standard card elevation */
+  --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.3);      /* Higher elevation (modals, popovers) */
+  --shadow-glow: 0 0 30px rgba(91, 156, 255, 0.3);        /* Brand glow effect */
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);          /* Subtle shadow */
 
   /* ========== Z-INDEX ========== */
   --z-map: 1;

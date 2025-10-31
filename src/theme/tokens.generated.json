@@ -1,0 +1,157 @@
+[
+  {
+    "value": "#0a0e17",
+    "token": "--color-bg",
+    "category": "color",
+    "frequency": 0,
+    "context": "background",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#121827",
+    "token": "--color-surface",
+    "category": "color",
+    "frequency": 0,
+    "context": "background",
+    "sources": ["workover_spaces_catalog.html (placeholder)"]
+  },
+  {
+    "value": "#e8edf5",
+    "token": "--color-text",
+    "category": "color",
+    "frequency": 0,
+    "context": "text",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#9ca3af",
+    "token": "--color-muted",
+    "category": "color",
+    "frequency": 0,
+    "context": "text",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#5b9cff",
+    "token": "--color-brand",
+    "category": "color",
+    "frequency": 0,
+    "context": "brand",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#fbbf24",
+    "token": "--color-accent",
+    "category": "color",
+    "frequency": 0,
+    "context": "accent",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#10b981",
+    "token": "--color-success",
+    "category": "color",
+    "frequency": 0,
+    "context": "success",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "#ef4444",
+    "token": "--color-error",
+    "category": "color",
+    "frequency": 0,
+    "context": "error",
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "Inter",
+    "token": "--font-display",
+    "category": "font-family",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "3.5rem",
+    "token": "--font-size-hero",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "2.5rem",
+    "token": "--font-size-h1",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "2rem",
+    "token": "--font-size-h2",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["why_workover_section.html (placeholder)"]
+  },
+  {
+    "value": "1.5rem",
+    "token": "--font-size-h3",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["why_workover_section.html (placeholder)"]
+  },
+  {
+    "value": "1rem",
+    "token": "--font-size-body",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "0.875rem",
+    "token": "--font-size-small",
+    "category": "font-size",
+    "frequency": 0,
+    "sources": ["workover_spaces_catalog.html (placeholder)"]
+  },
+  {
+    "value": "24px",
+    "token": "--radius-xl",
+    "category": "radius",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "16px",
+    "token": "--radius-lg",
+    "category": "radius",
+    "frequency": 0,
+    "sources": ["workover_spaces_catalog.html (placeholder)"]
+  },
+  {
+    "value": "12px",
+    "token": "--radius-md",
+    "category": "radius",
+    "frequency": 0,
+    "sources": ["workover_spaces_catalog.html (placeholder)"]
+  },
+  {
+    "value": "0 10px 40px rgba(0, 0, 0, 0.2)",
+    "token": "--shadow-card",
+    "category": "shadow",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  },
+  {
+    "value": "0 20px 60px rgba(0, 0, 0, 0.3)",
+    "token": "--shadow-elevated",
+    "category": "shadow",
+    "frequency": 0,
+    "sources": ["space_detail_and_booking_flow.html (placeholder)"]
+  },
+  {
+    "value": "0 0 30px rgba(91, 156, 255, 0.3)",
+    "token": "--shadow-glow",
+    "category": "shadow",
+    "frequency": 0,
+    "sources": ["workover_landing_page.html (placeholder)"]
+  }
+]
