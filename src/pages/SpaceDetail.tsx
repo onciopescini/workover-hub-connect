@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { useQuery } from '@tanstack/react-query';
@@ -8,8 +8,11 @@ import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery'
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
+const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
+
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const isStitch = import.meta.env['VITE_UI_THEME'] === 'stitch';
   
   sreLogger.debug('SpaceDetail - ID from URL', { spaceId: id, component: 'SpaceDetail' });
   
@@ -257,12 +260,24 @@ const SpaceDetail = () => {
   });
   
   return (
-    <div className="container mx-auto py-8">
-      <SpaceDetailContent 
-        space={enhancedSpace!} 
-        reviews={reviews}
-        weightedRating={weightedRating}
-      />
+    <div className={`container mx-auto py-8 ${isStitch ? 'bg-stitch-bg' : ''}`}>
+      {isStitch ? (
+        <Suspense fallback={<div className="min-h-screen" />}>
+          <SpaceHeroStitch>
+            <SpaceDetailContent 
+              space={enhancedSpace!} 
+              reviews={reviews}
+              weightedRating={weightedRating}
+            />
+          </SpaceHeroStitch>
+        </Suspense>
+      ) : (
+        <SpaceDetailContent 
+          space={enhancedSpace!} 
+          reviews={reviews}
+          weightedRating={weightedRating}
+        />
+      )}
     </div>
   );
 };

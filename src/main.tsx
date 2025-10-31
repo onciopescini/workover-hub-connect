@@ -6,6 +6,7 @@ import posthog from 'posthog-js'
 import App from './App.tsx'
 import './index.css'
 import './styles/dashboard-compact.css'
+import './styles/tokens.css'
 
 // Note: Sentry is initialized in src/lib/sentry-config.ts via App.tsx
 // to prevent double initialization issues

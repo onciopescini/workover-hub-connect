@@ -20,6 +20,7 @@ import { FiscalModeProvider } from "@/contexts/FiscalModeContext";
 import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
 import { MapboxTokenProvider } from "@/contexts/MapboxTokenContext";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
+import UIThemeProvider from "@/providers/UIThemeProvider";
 
 import "./App.css";
 import { initSentry } from "@/lib/sentry-config";
@@ -29,12 +30,13 @@ initSentry();
 
 function App() {
   return (
-    <SecurityHeadersProvider>
-      <HelmetProvider>
-        <CSPProvider>
-        <ProductionMonitoring>
-          <QueryClientProvider client={optimizedQueryClient}>
-            <TooltipProvider>
+    <UIThemeProvider>
+      <SecurityHeadersProvider>
+        <HelmetProvider>
+          <CSPProvider>
+          <ProductionMonitoring>
+            <QueryClientProvider client={optimizedQueryClient}>
+              <TooltipProvider>
               <Toaster 
                 position="top-right"
                 toastOptions={{
@@ -64,11 +66,12 @@ function App() {
                 </AnalyticsProvider>
               </BrowserRouter>
             </TooltipProvider>
-          </QueryClientProvider>
-        </ProductionMonitoring>
-        </CSPProvider>
-      </HelmetProvider>
-    </SecurityHeadersProvider>
+            </QueryClientProvider>
+          </ProductionMonitoring>
+          </CSPProvider>
+        </HelmetProvider>
+      </SecurityHeadersProvider>
+    </UIThemeProvider>
   );
 }
 

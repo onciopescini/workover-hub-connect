@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicSpacesContent } from '@/components/spaces/PublicSpacesContent';
 import { usePublicSpacesLogic } from '@/hooks/usePublicSpacesLogic';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { SpaceFilters } from '@/types/space-filters';
 import { BetaNotice } from '@/components/beta/BetaNotice';
+
+const CatalogHeaderStitch = lazy(() => import('@/feature/spaces/CatalogHeaderStitch'));
 
 /**
  * Public Spaces Page - Refactored for better maintainability
@@ -41,6 +43,8 @@ const PublicSpaces = () => {
     handleMarkerClick(spaceId);
   };
 
+  const isStitch = import.meta.env['VITE_UI_THEME'] === 'stitch';
+
   // Handle errors with proper user feedback
   if (error) {
     handleError(error, { 
@@ -59,10 +63,17 @@ const PublicSpaces = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen ${isStitch ? 'bg-stitch-bg' : 'bg-background'}`}>
       <div className="container mx-auto px-4 pt-6">
         <BetaNotice />
       </div>
+
+      {isStitch && (
+        <Suspense fallback={null}>
+          <CatalogHeaderStitch />
+        </Suspense>
+      )}
+
       <PublicSpacesContent
         filters={filters}
         spaces={spaces || []}

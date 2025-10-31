@@ -8,6 +8,7 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
+		"./src/feature/**/*.{ts,tsx,js,jsx}",
 	],
 	prefix: "",
 	theme: {
@@ -62,12 +63,50 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				'stitch-bg': 'var(--color-bg)',
+				'stitch-surface': 'var(--color-surface)',
+				'stitch-text': 'var(--color-text)',
+				'stitch-muted': 'var(--color-muted)',
+				'stitch-brand': 'var(--color-brand)',
+				'stitch-accent': 'var(--color-accent)',
+				'stitch-success': 'var(--color-success)',
+				'stitch-error': 'var(--color-error)',
+				'stitch-border': 'var(--color-border)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				'stitch-xl': 'var(--radius-xl)',
+				'stitch-lg': 'var(--radius-lg)',
+				'stitch-md': 'var(--radius-md)'
+			},
+			boxShadow: {
+				'stitch-card': 'var(--shadow-card)',
+				'stitch-elevated': 'var(--shadow-elevated)',
+				'stitch-glow': 'var(--shadow-glow)'
+			},
+			fontFamily: {
+				'stitch-display': 'var(--font-display)',
+				'stitch-body': 'var(--font-body)'
+			},
+			fontSize: {
+				'stitch-hero': 'var(--font-size-hero)',
+				'stitch-h1': 'var(--font-size-h1)',
+				'stitch-h2': 'var(--font-size-h2)',
+				'stitch-h3': 'var(--font-size-h3)'
+			},
+			spacing: {
+				'stitch-section': 'var(--space-section)',
+				'stitch-card': 'var(--space-card)',
+				'stitch-element': 'var(--space-element)'
+			},
+			zIndex: {
+				'map': 'var(--z-map)',
+				'filters': 'var(--z-filters)',
+				'portal': 'var(--z-portal)',
+				'toast': 'var(--z-toast)'
 			},
 			keyframes: {
 				'accordion-down': {
