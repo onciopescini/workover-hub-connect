@@ -9,11 +9,10 @@ import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
 const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
-const BookingStepsStitch = lazy(() => import('@/feature/spaces/BookingStepsStitch'));
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const isStitch = import.meta.env['VITE_UI_THEME'] === 'stitch';
+  const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
   
   sreLogger.debug('SpaceDetail - ID from URL', { spaceId: id, component: 'SpaceDetail' });
   

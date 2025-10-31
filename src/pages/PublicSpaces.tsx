@@ -43,7 +43,7 @@ const PublicSpaces = () => {
     handleMarkerClick(spaceId);
   };
 
-  const isStitch = import.meta.env['VITE_UI_THEME'] === 'stitch';
+  const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
 
   // Handle errors with proper user feedback
   if (error) {

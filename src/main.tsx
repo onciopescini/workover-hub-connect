@@ -13,7 +13,7 @@ import './styles/tokens.css'
 
 // Initialize PostHog analytics (GDPR compliant)
 const isSafeMode = new URLSearchParams(window.location.search).has('safe');
-const posthogKey = import.meta.env['VITE_POSTHOG_KEY'];
+const posthogKey = import.meta.env.VITE_POSTHOG_KEY;
 if (!isSafeMode && import.meta.env.PROD && posthogKey) {
   posthog.init(posthogKey, {
     api_host: 'https://app.posthog.com',

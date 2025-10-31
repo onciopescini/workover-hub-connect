@@ -25,7 +25,7 @@ const VisualWorkflowStitch = lazy(() => import('@/feature/landing/VisualWorkflow
 const InnovativeCTAStitch = lazy(() => import('@/feature/landing/InnovativeCTAStitch'));
 
 const Index = () => {
-  const isStitch = import.meta.env['VITE_UI_THEME'] === 'stitch';
+  const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
 
   return (
     <>
