@@ -1,14 +1,15 @@
 import React, { lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
-import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { Space } from '@/types/space';
 import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
 const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
+const BookingStepsStitch = lazy(() => import('@/feature/spaces/BookingStepsStitch'));
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -262,7 +263,7 @@ const SpaceDetail = () => {
   return (
     <div className={`container mx-auto py-8 ${isStitch ? 'bg-stitch-bg' : ''}`}>
       {isStitch ? (
-        <Suspense fallback={<div className="min-h-screen" />}>
+        <Suspense fallback={<div className="min-h-[400px] bg-stitch-bg" />}>
           <SpaceHeroStitch>
             <SpaceDetailContent 
               space={enhancedSpace!} 

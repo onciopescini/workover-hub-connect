@@ -69,7 +69,7 @@ const PublicSpaces = () => {
       </div>
 
       {isStitch && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="h-24 bg-stitch-surface border-b border-stitch-border" />}>
           <CatalogHeaderStitch />
         </Suspense>
       )}

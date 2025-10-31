@@ -60,6 +60,8 @@ export default function MyStitch({ children }: PropsWithChildren) {
 
 ## Testing
 
+Il tema Stitch può essere testato tramite query parameter `?theme=stitch`.
+
 ```bash
 # Visual regression
 pnpm test:e2e -- ui-stitch.spec.ts
@@ -67,6 +69,8 @@ pnpm test:e2e -- ui-stitch.spec.ts
 # Update snapshots
 pnpm test:e2e -- ui-stitch.spec.ts --update-snapshots
 ```
+
+**Note**: I test E2E usano il query parameter per attivare il tema, non è necessario configurare localStorage.
 
 ## Performance Checklist
 
