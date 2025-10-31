@@ -1,24 +1,161 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Observability & SRE - Placeholder</title>
-  <style>
-    body { background: #121827; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .showcase { padding: 40px 0; }
-    .metric-card { background: #0a0e17; border: 1px solid rgba(91, 156, 255, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
-  </style>
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Stato del Sistema</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2513ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#121022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
 </head>
-<body>
-  <div class="showcase">
-    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 32px;">Observability & SRE</h1>
-    
-    <div class="metric-card">
-      <h3 style="font-size: 1.25rem; color: #5b9cff; margin-bottom: 12px;">System Health</h3>
-      <p style="color: #10b981; font-size: 2rem; font-weight: 700;">99.9%</p>
-      <p style="color: #9ca3af; font-size: 0.875rem;">Uptime ultimi 30 giorni</p>
-    </div>
-  </div>
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark">
+<div class="relative flex h-auto min-h-screen w-full flex-col font-display text-white group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 px-6 sm:px-10 lg:px-20 py-3">
+<div class="flex items-center gap-4">
+<div class="text-primary size-6">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">WorkOver</h2>
+</div>
+<div class="hidden md:flex items-center gap-9">
+<a class="text-white/80 hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-white/80 hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Spazi</a>
+<a class="text-white/80 hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Utenti</a>
+<a class="text-white text-sm font-medium leading-normal" href="#">System Status</a>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-white/5 hover:bg-white/10 text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<span class="material-symbols-outlined text-white" style="font-size: 20px;">notifications</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-white/5 hover:bg-white/10 text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<span class="material-symbols-outlined text-white" style="font-size: 20px;">settings</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBkikngD3GZ0kU27m_k8zp02Tv4zBGRNXT9tDGayNNdrqEf2obN7Yt5TDhgXfIZF4woLBy-5rVYNeA2EizMXU19vaeKUUuIQeT8V47tbtMA5F3DzVqv6_4hXlK_45k_cuJ1P4vD9leJggcKTL9i32Zk_Gk0hBY97nHGulAvjvJfVkv7DUxkwhD1hp2aR3rIPPVqJe8wmLIRqMVBdPHv8qHyRsZV-m7Q2tYEnoH5XIYWJHxmNsqQGwx3pesN1A9xKIgLfSWISf8HD4K-");'></div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-5 sm:py-10 px-4 sm:px-6 lg:px-8">
+<div class="layout-content-container flex flex-col w-full max-w-7xl flex-1 gap-6">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-col gap-2">
+<p class="text-white text-4xl font-black leading-tight tracking-[-0.033em]">Stato del Sistema</p>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#0bda68]"></div>
+<p class="text-[#0bda68] text-base font-medium leading-normal">Healthy</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<p class="text-white/60 text-sm font-normal leading-normal">Ultimo aggiornamento: pochi secondi fa</p>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white/10 hover:bg-white/20 text-white gap-2 pl-3 text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="material-symbols-outlined text-white" style="font-size: 20px;">refresh</span>
+<span class="truncate">Refresh</span>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-4 p-4 rounded-lg bg-red-900/40 border border-red-500/50">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-red-400">error</span>
+<h3 class="text-red-300 font-bold text-lg">Alert Critico Attivo</h3>
+</div>
+<p class="text-red-200">Latenza elevata sull'API di ricerca. Il team sta investigando. Le performance potrebbero essere degradate.</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 border border-white/10 bg-white/5">
+<p class="text-white/80 text-base font-medium leading-normal">Latenza P95</p>
+<p class="text-white tracking-light text-3xl font-bold leading-tight">250ms</p>
+<p class="text-[#0bda68] text-base font-medium leading-normal">+2.1%</p>
+</div>
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 border border-white/10 bg-white/5">
+<p class="text-white/80 text-base font-medium leading-normal">Tasso di Errore</p>
+<p class="text-white tracking-light text-3xl font-bold leading-tight">0.1%</p>
+<p class="text-[#fa6938] text-base font-medium leading-normal">-0.5%</p>
+</div>
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 border border-white/10 bg-white/5">
+<p class="text-white/80 text-base font-medium leading-normal">Successo Prenotazioni</p>
+<p class="text-white tracking-light text-3xl font-bold leading-tight">99.8%</p>
+<p class="text-[#0bda68] text-base font-medium leading-normal">+0.2%</p>
+</div>
+<div class="flex min-w-[158px] flex-1 flex-col gap-2 rounded-lg p-6 border border-white/10 bg-white/5">
+<p class="text-white/80 text-base font-medium leading-normal">Sessioni Attive</p>
+<p class="text-white tracking-light text-3xl font-bold leading-tight">1,230</p>
+<p class="text-[#0bda68] text-base font-medium leading-normal">+5%</p>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<div class="xl:col-span-2 flex flex-col gap-6">
+<div class="flex flex-col gap-4 rounded-lg p-6 border border-white/10 bg-white/5">
+<h3 class="text-white font-bold text-lg">Performance API</h3>
+<div class="aspect-[2/1] w-full bg-white/5 rounded-md flex items-center justify-center">
+<img class="w-full h-full object-cover rounded-md" data-alt="Abstract line chart representing API performance with indigo and green gradients on a dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZHOVvcMA62Kms5n1ErYpEvlLrkbxFeLLRr9RsYx6X0FJ96eAf90OypJHVx5jG5lR8Niz5nw8CHFPcNgLqofdRNu_nFtnN9CcfxJGiohCUMbIMC6eG6UoHJS4ZLasL73h4-ynQJBU6qbyLaFOWhw2TH4ZIp-K8GudU_CUkBctM6hBHvKfEknODTzmzj5ey1bmYs4MMv0DLd6eMhYSTBmdMzBlq9RydBXKkiLP0ElC_BZLQgJU0drDep_c55xMEsFlr_L6Rsg49ZqXV"/>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-lg p-6 border border-white/10 bg-white/5">
+<h3 class="text-white font-bold text-lg">Attività Utente (Ultime 24 Ore)</h3>
+<div class="aspect-[2/1] w-full bg-white/5 rounded-md flex items-center justify-center">
+<img class="w-full h-full object-cover rounded-md" data-alt="Abstract area chart showing user activity with purple and indigo gradients on a dark theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEc6i5Ha--f2pGKIPDyNQ0cX7KFBtU_epH6F0Ab3m0xeXZ-UxWuzZhOB8RkPuk6gRVlJ_6O9KBPr6HusN1g-dzsIELqxB1POznWqP9Gh7HB8gJvJIOkD0MPQ8j8tBcgmtYepv7pLmue0I0ANSWmrTZ2FERqx3SCRmPNObQHbbko-r8mACM1DoAGYIOx4GHHdwP8gbVwxjGdWelwG-FnUC7qoXZqrkite1FSaskx5c-i64-Fmr3fnWrMC6_wT4DnRyb_ZQvWJ578gi-"/>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4 rounded-lg p-6 border border-white/10 bg-white/5 h-fit">
+<h3 class="text-white font-bold text-lg">Performance Targets (SLO)</h3>
+<div class="flex flex-col gap-4 divide-y divide-white/10">
+<div class="flex justify-between items-center pt-4 first:pt-0">
+<p class="text-white/80">Latenza P95</p>
+<p class="text-white font-medium">&lt; 300ms</p>
+</div>
+<div class="flex justify-between items-center pt-4">
+<p class="text-white/80">Tasso di Errore</p>
+<p class="text-white font-medium">&lt; 0.5%</p>
+</div>
+<div class="flex justify-between items-center pt-4">
+<p class="text-white/80">Successo Prenotazioni</p>
+<p class="text-white font-medium">&gt; 99.5%</p>
+</div>
+<div class="flex justify-between items-center pt-4">
+<p class="text-white/80">Uptime API</p>
+<p class="text-white font-medium">99.9%</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

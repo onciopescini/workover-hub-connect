@@ -1,33 +1,245 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Centro Messaggi - Placeholder</title>
-  <style>
-    body { background: #0a0e17; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .messages-layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 24px 0; }
-    .sidebar { background: #121827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 16px; }
-    .chat-area { background: #121827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px; }
-  </style>
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2513ec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#121022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
 </head>
-<body>
-  <div class="messages-layout">
-    <aside class="sidebar">
-      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 16px;">Conversazioni</h2>
-      <div style="background: #0a0e17; padding: 12px; border-radius: 12px; margin-bottom: 8px;">
-        <p style="font-weight: 600;">Mario Rossi</p>
-        <p style="font-size: 0.875rem; color: #9ca3af;">Ultimo messaggio...</p>
-      </div>
-    </aside>
-    
-    <div class="chat-area">
-      <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 24px;">Mario Rossi</h3>
-      <div style="background: #0a0e17; padding: 12px; border-radius: 12px; margin-bottom: 12px;">
-        <p>Ciao, ho una domanda sullo spazio...</p>
-        <span style="font-size: 0.75rem; color: #9ca3af;">10:30</span>
-      </div>
-    </div>
-  </div>
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-800 dark:text-gray-200 antialiased">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="flex h-full w-[320px] shrink-0 flex-col border-r border-white/10 bg-background-light dark:bg-[#191729] p-4">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="WorkOver company logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBCCp58u0ACjuA4U9DmZOWOMzUIxCxY5bFiY3kZ7WyVNGZMvjxocyRgpXJYBrT1opybJEsK_BSkHYHz3A8Ib-gWlhFv4zbTWdMJK_XmwNgrKRVllyE1Cx9F-xXfpIHscp1834AVd7EqoONglEqoIFBMbruBQrzh-bMVuU0y0QQPKa6Wu4uL2nkK9CpQir52e-Z5J9dPxzaZLv285mVc7QcZtS0Gf-XkFGGVpuED5umBNZP0fpRK9UhI6MLaC6LaXQMyrDsEktyZ78Ov");'></div>
+<div class="flex flex-col">
+<h1 class="text-black dark:text-white text-base font-medium leading-normal">WorkOver</h1>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal">Conversazioni</p>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+<input class="w-full rounded-lg border-transparent bg-background-dark/30 dark:bg-[#262348] py-2 pl-10 pr-4 text-sm text-white focus:border-primary focus:ring-primary" placeholder="Cerca conversazioni..." type="text"/>
+</div>
+</div>
+<!-- Conversation List -->
+<div class="flex flex-1 flex-col gap-1 overflow-y-auto mt-4 pr-1">
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/20 dark:bg-[#262348]">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar for Mario Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDnN_Wl2wVmJ3Y8CDfASO-O6bd3vK0ZCOqd12kr8PPSkGlsrJz4fZ1mH4LcWciP_7kIOWWsvttZjJT9EVLAEKRBzeeiIcfrUTCsLdMHCL_191pGH9G872OezaDU83JoY5n885Q6YVEYQ-sFs3cgcqhZk2HOt_XSP6rAFAmUmsGQB9xI-QPuj-OTJc_o6E2iPK-jAfnhkxfPu9UrfbIYGQFnUyINanJO5A1rzYdEd9G7d1Ru7jDu_v3oJsyXjiCuCd-UZkxFS5gJcCK6");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#262348] bg-green-500"></div>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<p class="text-black dark:text-white text-sm font-medium leading-normal truncate">Mario Rossi</p>
+<span class="text-xs text-gray-500 dark:text-gray-400">10:42</span>
+</div>
+<div class="flex justify-between items-start">
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal truncate">Ciao! Volevo confermare la mia...</p>
+<span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">1</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/5 cursor-pointer">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar for Luigi Verdi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBinm-xzszkbFXHUbtmYEt47J1ETqTdTSPVVyah65RfkbQqKcZW5R7k4ydOCuyGRKlXWtHrn-ndtPacTyFy7D56pHP929qhfY6eswxFh2Ss2f2dhbDb4Gyp14E5vUU6pl1JoZbmXt_8hq11hr4lm5aIRVhHYq-HDsquR8-6PAa5fiJuc0crTnOkQT6tioUa6P4IOBN1VE5d3lpZWDKDhjJfBmTmnif4cZLxSG7qevgNA02TURbFVSLdfc4PI1rWkJobAB7GVen33J0Z");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background-light dark:border-[#191729] bg-gray-500"></div>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<p class="text-black dark:text-white text-sm font-medium leading-normal truncate">Luigi Verdi</p>
+<span class="text-xs text-gray-500 dark:text-gray-400">Ieri</span>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal truncate">Perfetto, grazie mille!</p>
+</div>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/5 cursor-pointer">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar for Spazio Coworking Centrale" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC6iDC-1yBmD_rpTA22uQEBFfoYmlPdV8bnCk9MOaQt-Sj_NtJhA8T0AQwkeNm_0cqp2ucagdA16_zSBdLUZXzVyK5FDMbum5WtWtsv1v1-i-5gC_FqKpseYPjM0FzmZYQ8xFQq1j5dK1FHEViwbr2ThQIoP1Y7Kdbp8p03QiCqFBZRaQBXfEXH02EOIxVmMEFEpt7KTfddPMpAli_Ru8s35Zxe9CDR03PFC_nV9VUID9gHZptU5VSZHlcmi4GmToFKJw9E1LQ0Xgvo");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background-light dark:border-[#191729] bg-green-500"></div>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<p class="text-black dark:text-white text-sm font-medium leading-normal truncate">Spazio Coworking Centrale</p>
+<span class="text-xs text-gray-500 dark:text-gray-400">2gg fa</span>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal truncate">La fattura è stata emessa.</p>
+</div>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/5 cursor-pointer">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar for Anna Bianchi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCdoJi-UQJvXBF8d8tm7XE8N9zGSsDtcDJYsed2NJuhap9MFW10e5mmb5lsvFHABl-ouOTehWmDn0eDukXub6mETPalON-Pi8TOpvW-bn1lVw_zyAMwv-871ruYlOqZKFSxQ-X1YtIvGjXe0nUEcMnxXmKAtxUKRHqNs76O3erqrGlXABixPXhW2jIM_rLlKoSoxyFiFEcb3mdO8msaeHVyQPExdby-qfKCoz65pJefB4vX_zDQ3xHhApJ3OT9HT6oAyZEHrvhDEsSn");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background-light dark:border-[#191729] bg-gray-500"></div>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<p class="text-black dark:text-white text-sm font-medium leading-normal truncate">Anna Bianchi</p>
+<span class="text-xs text-gray-500 dark:text-gray-400">14/03</span>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal truncate">Ci vediamo la prossima settimana.</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 pt-4 border-t border-white/10">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] mb-2 hover:opacity-90 transition-opacity">
+<span class="truncate">Nuovo Messaggio</span>
+</button>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-black dark:text-white">settings</span>
+<p class="text-black dark:text-white text-sm font-medium leading-normal">Impostazioni</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/5" href="#">
+<span class="material-symbols-outlined text-black dark:text-white">account_circle</span>
+<p class="text-black dark:text-white text-sm font-medium leading-normal">Profilo</p>
+</a>
+</div>
+</aside>
+<!-- Main Chat Panel -->
+<main class="flex flex-1 flex-col bg-background-light dark:bg-background-dark">
+<!-- Set to true to see chat, false to see empty state -->
+<div x-data="{ chatSelected: true }">
+<!-- Empty State -->
+<div class="flex h-full items-center justify-center p-6" x-show="!chatSelected">
+<div class="flex flex-col items-center gap-6">
+<img alt="Abstract gradient illustration representing conversations" class="rounded-lg w-full max-w-[360px] aspect-video object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP4pR5x3PMY8pmJi3tUGADM18UXHg068WVZyKiEx_V63H0JkYy6gD13OMfV9wLSTMKDP9e84N1fGOHrsfR6jBTDI7BAaZ7NvJem4j6QGYow4weYaPmUDw9NAEkrln8AzXNP2ycRdFeyBUZF4cNkZJpSgnn0yFbEQbM8RK4_TrL--JBHBYAsB62snRos1chPknwDEtyNEIKYQ90dKGIUpdzjigdIjnW5_-7hJz2WdGV_qlpLqdl5hi1O9WjCdbvBzn98ZXlz5GQUFYp"/>
+<div class="flex max-w-[480px] flex-col items-center gap-2">
+<p class="text-black dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] text-center">Le tue conversazioni sono qui</p>
+<p class="text-gray-600 dark:text-white/70 text-sm font-normal leading-normal text-center">Seleziona una chat dalla lista a sinistra per visualizzare i messaggi.</p>
+</div>
+<button @click="chatSelected = true" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-200 dark:bg-[#262348] text-black dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">
+<span class="truncate">Inizia a chattare</span>
+</button>
+</div>
+</div>
+<!-- Active Chat View -->
+<div class="flex flex-col h-full" x-show="chatSelected">
+<!-- Chat Header -->
+<header class="flex shrink-0 items-center justify-between gap-2 px-6 py-3 border-b border-white/10 bg-background-light dark:bg-[#191729]">
+<div class="flex items-center gap-4">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar of Mario Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCQMB5GMCgo6slCyuFeK36T3YZRHVKQE3HbKKuWBHmiuT5l6kgA_069by09zb7YrVMHYrKVfQxH-nzrbRecGFk3yWLNp6XP-Wyu3tdjkfs57F-wLXfoe23p7QRSsmcXzvbui6E4knAgNQO5TSsgSZeKVASAti7hYUoqUgRTLU_gjOGZb7UJJaiAfF-wNrHNseQ0-hOxo18r9KHMWGO7G-HGdl3th1KQI2fqlUJYR9J-a2_ztxWOmlx-Hf2H46GQt_D45AAMKxG7AIZp");'></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background-light dark:border-[#191729] bg-green-500"></div>
+</div>
+<div class="flex flex-col">
+<p class="text-black dark:text-white text-base font-bold leading-tight">Mario Rossi</p>
+<div class="flex items-center gap-2">
+<p class="text-green-500 text-sm font-normal leading-normal">Online</p>
+<span class="text-gray-500">•</span>
+<span class="inline-flex items-center rounded-md bg-indigo-50 dark:bg-primary/20 px-2 py-1 text-xs font-medium text-primary dark:text-indigo-200 ring-1 ring-inset ring-indigo-700/10 dark:ring-primary/30">Booking #12345</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-gray-500 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 text-gray-500 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="p-2 text-gray-500 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Message Area -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Received Message -->
+<div class="flex items-end gap-3 max-w-xl">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-8 h-8 shrink-0 self-start" data-alt="Avatar for Mario Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBhmkWPvDJuTSLdnJup2DkCHXFNwHAJ4R2Om2U5W9GsEpY56A8_HmUdTPmpKsAl3qQ33ya-okaa7Is8qW1SPNhkoR7eC0I-bB8aPDNI4YKtEddIOOg6_ZHnBSG4edRt1msJoxd2KxXJq84dSUqp5VlnxqGmJbxOAmmqEgtF8nA8LSDLUoK6UCLILo9I0k21wSNs48Di5JjgcKPdJvD_4MxXYDuoNohgPdqnn6TSfRM-v0U5kHPD8pTCPCpTupqlqSnWNHdJ8al4hcwd");'></div>
+<div class="flex flex-1 flex-col gap-1 items-start">
+<p class="text-sm font-normal leading-normal rounded-xl rounded-bl-sm px-4 py-3 bg-gray-200 dark:bg-[#262348] text-black dark:text-white">
+                                    Ciao! Volevo confermare la mia prenotazione per domani. È tutto a posto?
+                                </p>
+<span class="text-xs text-gray-500 dark:text-gray-400 pl-1">10:42 AM</span>
+</div>
+</div>
+<!-- Sent Message -->
+<div class="flex flex-row-reverse items-end gap-3 self-end ml-auto max-w-xl">
+<div class="flex flex-1 flex-col gap-1 items-end">
+<p class="text-base font-normal leading-normal rounded-xl rounded-br-sm px-4 py-3 bg-primary text-white">
+                                    Ciao Mario, certo! Confermo la tua prenotazione per la postazione #7 per domani dalle 9:00 alle 18:00.
+                                </p>
+<span class="text-xs text-gray-500 dark:text-gray-400 pr-1">10:43 AM</span>
+</div>
+</div>
+<!-- System Message -->
+<div class="flex justify-center">
+<span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-white/10 px-3 py-1 rounded-full">Oggi</span>
+</div>
+<!-- Received Message -->
+<div class="flex items-end gap-3 max-w-xl">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-8 h-8 shrink-0 self-start" data-alt="Avatar for Mario Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBH97HF7f-SugLF7FXwYgn69Q-Yi1-d6B-mVZGEj4E3u1O2kxNDWDy1aFfJGUh6MsSCIJsBQgfbkUYbLLbzlztjs6EbJvF4FGnH2-WxzkEQYFM6-gvZh_7yJM-hCevy_n3uEpHGoVbBpN8QIP3M_VNyI2zB3T5DkQWantZoWrx_uKmCGYOaS8LvkRq7Ii5IclJHiTSdc693nRZnbAijpYUMDC-dc_AvPZU1ZAUo_z76kHR5PaXRONvz6WkYPBtT4wgks6pKu4Mw8X5a");'></div>
+<div class="flex flex-1 flex-col gap-1 items-start">
+<p class="text-sm font-normal leading-normal rounded-xl rounded-bl-sm px-4 py-3 bg-gray-200 dark:bg-[#262348] text-black dark:text-white">
+                                    Fantastico, grazie mille!
+                                </p>
+<span class="text-xs text-gray-500 dark:text-gray-400 pl-1">10:45 AM</span>
+</div>
+</div>
+</div>
+<!-- Message Composer -->
+<footer class="p-4 border-t border-white/10">
+<div class="flex items-center gap-2 bg-gray-200 dark:bg-[#262348] rounded-xl p-2">
+<button class="p-2 text-gray-500 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-gray-300 dark:hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-0" placeholder="Scrivi un messaggio..." type="text"/>
+<button class="p-2 text-gray-500 dark:text-white/70 hover:text-black dark:hover:text-white rounded-full hover:bg-gray-300 dark:hover:bg-white/20 transition-colors">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-lg bg-primary text-white hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<div class="flex items-center justify-center mt-2">
+<span class="material-symbols-outlined text-xs text-gray-500 dark:text-gray-400">lock</span>
+<p class="text-xs text-gray-500 dark:text-gray-400 ml-1">I messaggi sono crittografati end-to-end.</p>
+</div>
+</footer>
+</div>
+</div>
+</main>
+</div>
+<script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body></html>

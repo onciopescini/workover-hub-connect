@@ -1,18 +1,200 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Coworker Experience - Placeholder</title>
-  <style>
-    body { background: #121827; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .section { padding: 80px 0; }
-  </style>
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - La tua Community di Lavoro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#2513ec",
+              "background-light": "#f6f6f8",
+              "background-dark": "#121022",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+    </style>
 </head>
-<body>
-  <section class="section">
-    <h2 style="font-size: 2rem; text-align: center; margin-bottom: 48px;">Esperienza Coworker</h2>
-    <p style="text-align: center; color: #9ca3af;">Placeholder per sezione esperienza utente</p>
-  </section>
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#1F2937] dark:text-gray-300">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-b-[#262348] px-4 sm:px-10 py-3 sticky top-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm z-10">
+<div class="flex items-center gap-4 text-gray-800 dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">WorkOver</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 sm:gap-8 items-center">
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary dark:hover:text-white transition-colors" href="#">Spaces</a>
+<a class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary dark:hover:text-white transition-colors" href="#">Community</a>
+<a class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal hover:text-primary dark:hover:text-white transition-colors" href="#">About Us</a>
+</nav>
+<div class="hidden sm:flex gap-2">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">
+<span class="truncate">Log In</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-gray-200 dark:bg-[#262348] text-gray-800 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-300 dark:hover:bg-opacity-80 transition-colors">
+<span class="truncate">Sign Up</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="User avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCLMoEUc2zNAOhuTudkq2hbtdvNamKVriLmF016KgQw_YYovdWGBzSM9AdE6x4GZBsgfO7ipNL2O23lB5vHEGjaHjkuZsrKWPW3_STNK8HRQt5itXFPJADJ3aQK7PrA-RdTo1nBzTJ_T87aUXQJ-ayCPvYMmWcHqBbVbLQu3R4WyaNYdQ2p7ztrMFmHjoRjvNkvuSod50PxEdYD_icB8Gf6p_XqKHiwlEHOcL8YP76YX3q_7_XcKvmJu0ma3ia7VsWKwmiHA6KBei44");'></div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-5 sm:py-10">
+<div class="layout-content-container flex flex-col max-w-5xl flex-1 px-4 gap-12 sm:gap-16">
+<section>
+<h2 class="text-gray-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] px-4 pb-5 pt-5 text-center">Valutato eccellente dai professionisti come te</h2>
+<div class="flex overflow-x-auto [-ms-scrollbar-style:none] [scrollbar-width:none] [&amp;::-webkit-scrollbar]:hidden py-4 -mx-4">
+<div class="flex items-stretch p-4 gap-6 flex-shrink-0">
+<div class="flex h-full w-72 sm:w-80 flex-1 flex-col gap-4 rounded-xl bg-white dark:bg-[#1b1933] shadow-sm hover:shadow-lg transition-shadow duration-300">
+<div class="w-full bg-center bg-no-repeat aspect-[4/3] bg-cover rounded-t-xl" data-alt="Photo of a modern coworking space" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBIUgt94Zia3srj1qLVXEv9Q9iSlr8mBGXW8nXsADkzS6_m9uJt2n5C4XXcD4tZZ2YgkXYd_4wWpQW59zD2yo22saYLNN3r7LOf-ZwxSmw7cPbRyYvzBmUrY2_mE2Xg_ne3wyLTQUDluu8l1Rzo-uIz5Z2h01khxZOjrpQa4EG_dxVHwMLP40qLiVuyHQUtwnUFP9fgNLQM8zNi3nlbZC9gwBfALPylh3JkYRvmFwai6qd2zKQj-zgDmulJDfp_h-lTQq48f8s5BwiK");'></div>
+<div class="flex flex-col flex-1 justify-between p-4 pt-0 gap-4">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar of Maria Rossi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA7yiYA0T-rpHK-cjulnU341CBC6Kqc7C2_PU1tupgrn41sJ7lEbUW2kA_ckGD3_jpqQFkMPfOU3FdCw0FjzQj3BpdwjQRKABPfruDBdCFei2-HtCvZK_JV2JX625mobl7QSgv2Fu1iT3BXxjzB5bp-FDLKYTFwI6_Y3hZcpAE1VtHOf2aTKzoObQGvhg5OpB-813p-AI2f-fOYLYOgm7Omj4TeE4i-CVMhP2Tay_0JGEB7qjLASLsbUO2KnWW7SEXKiI_xpLSr315a");'></div>
+<div>
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">Maria Rossi</p>
+<div class="flex items-center text-yellow-400">
+<span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span>
+</div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal">"Spazio fantastico e produttivo. La community è meravigliosa e l'atmosfera super stimolante!"</p>
+</div>
+</div>
+</div>
+<div class="flex h-full w-72 sm:w-80 flex-1 flex-col gap-4 rounded-xl bg-white dark:bg-[#1b1933] shadow-sm hover:shadow-lg transition-shadow duration-300">
+<div class="w-full bg-center bg-no-repeat aspect-[4/3] bg-cover rounded-t-xl" data-alt="Photo of a bright office" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD4i7PzlPsyFSQ3qYJ4WpipEs1YmfU0Seswpk4SE677epouc3_wmADp5atlx94SxOVU08i6PtHleRbMnm7d-H85DjFesXJnfsEjmReo6Uel6ErQWKvD4FWUZdZ9IYefl_qwVFky7OUVc_59LrecWoP39f4auLZhCdktjdl5K9Q6M3OF51lCQeKNWVbIplDBEXnmXXp5RkenLD0IX4K4MLXMfMh2KLIMMELMLS8dH35pXuVusxLmdyMeDHM815oRYonUkU1DsopSKoh2");'></div>
+<div class="flex flex-col flex-1 justify-between p-4 pt-0 gap-4">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar of Luca Bianchi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA9CdVQ3v9F0pOabSjA1yN-CON6XsiCbPEG49OXGrluGrZx4sDt7JPQEq70kEPqOmm7LLl2gzTnbL87OURrqJ4x9cwzau5mOxqIOkrQ1ILmr7k6f-xoxI07WIYhXJP2f2tcQFamsBpKJTh3xWfyvwygvjw4zAKs7tRArA0mu_1E4Gma8l9THk8BOf7_Wo7f-4_LvUEn-mnWWgi5tZxFH5d8kXd1WwF-I7_HoqNn9NuV285QDaFMAia-WJh6VFw3OXsZlXIbiflVv7dR");'></div>
+<div>
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">Luca Bianchi</p>
+<div class="flex items-center text-yellow-400">
+<span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star_half</span>
+</div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal">"Finalmente una piattaforma professionale e affidabile. Consigliatissima per chi cerca serietà e networking."</p>
+</div>
+</div>
+</div>
+<div class="flex h-full w-72 sm:w-80 flex-1 flex-col gap-4 rounded-xl bg-white dark:bg-[#1b1933] shadow-sm hover:shadow-lg transition-shadow duration-300">
+<div class="w-full bg-center bg-no-repeat aspect-[4/3] bg-cover rounded-t-xl" data-alt="Photo of a collaborative meeting" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBfU4BDJpy2ccAuIE2dUdPbTxw15gsED3wf45XqZLw94wb9a7dVD5s1F_mmT21cnmFvvs99GJ7KEvsErOgHz29lgPS562f4aA8raQs3nrONONLsZOvFz_NIfHr0SpecS6wN9iytGtH9QyuP5V-XnUQ3Tc_4bHzOfcriBhcxQdUMZni5JVwDBchcpWFjP3gRswrPesnt8udAHUL8fmrF16zVStlYywIzuEg3YW_heAAZ0FX1o3uysPWtuDkHiFDzW8QaKolOxorY0XXu");'></div>
+<div class="flex flex-col flex-1 justify-between p-4 pt-0 gap-4">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar of Giulia Verdi" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCbkQRXSXrC8iaNNfAPBfJcx118YFvw8JiZu59xwhaeoqlsFdxi5kdNjGlk5Fv9kGfIXmLcKj1PPt9Tnm1HCk4cNYzfhQm1FMiNhdf-Lh7oOm-1ZbYkopOiC3fQLYsIuWt8YOtenx9tgzBkXs8wb08arqmNPGL5F_xtuiBlOoZCKlENltleGEKVYHPpkLRtmfC2XDlVcmkFmxkHrUbnwWLXblRsf6J3b6mBztn2Z6zn_yR8_1t21mjH_-tn1WpRzu7QjEpE0yIUqRWl");'></div>
+<div>
+<p class="text-gray-900 dark:text-white text-base font-medium leading-normal">Giulia Verdi</p>
+<div class="flex items-center text-yellow-400">
+<span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span><span class="material-symbols-outlined !text-[16px]">star</span>
+</div>
+</div>
+</div>
+<p class="text-gray-600 dark:text-[#9692c9] text-sm font-normal leading-normal">"Host gentilissimo, wifi veloce, e una location perfetta. Tornerò sicuramente!"</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h2 class="text-gray-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] px-4 pb-5 pt-5 text-center">Domande? Parla direttamente con l'Host</h2>
+<div class="flex items-center justify-center p-4">
+<div class="w-full max-w-lg rounded-xl bg-white dark:bg-[#1b1933] p-6 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shrink-0" data-alt="Avatar of the Host, a smiling man" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBhd6hx7qWkE1U2YAnnAPzXR6WwqXGrcY-9t1DocsoEtW1S1QBYF8K7Zh7lGfF_mX9apG5WuTg1CR2Db4KNkO1QiO6ZNkq3ganod0ISXMWcerXue8O6B6ZxgTiGYFMH7TI-ovAj_I-uwRfdyQVQJJLtzDDLN5sMyvtOYLvpIIKJ7ZZ8WsLAj7Qa5pKpcDQ0jRitiBqrBWdptAPbZcs_qKyalbSTldkJpUIPJ0S_zpc66jXbI5eCK2UVPzUwhN2kREThgN05v-C26Jxi");'></div>
+<label class="flex flex-col min-w-40 h-12 flex-1">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-gray-800 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary dark:focus:ring-offset-background-dark focus:ring-offset-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-[#262348] h-full placeholder:text-gray-500 dark:placeholder:text-[#9692c9] px-4 text-base font-normal leading-normal" placeholder="Scrivi un messaggio all'host..." value=""/>
+</div>
+</label>
+<button class="flex min-w-[100px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">
+<span class="truncate">Invia</span>
+</button>
+</div>
+<p class="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">Chiarisci ogni dubbio prima di prenotare. I nostri host rispondono in media entro un'ora.</p>
+</div>
+</div>
+</section>
+<section class="grid md:grid-cols-2 gap-8 items-center bg-gray-100 dark:bg-[#1b1933] p-8 rounded-xl">
+<div class="flex flex-col gap-4">
+<h2 class="text-gray-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em]">Prenota in totale sicurezza</h2>
+<p class="text-gray-600 dark:text-gray-300">Usiamo Stripe per processare i tuoi pagamenti. I tuoi dati finanziari sono criptati e non vengono mai memorizzati sui nostri server. La tua sicurezza è la nostra priorità.</p>
+<div class="flex items-center gap-6 mt-4">
+<div class="flex items-center gap-2 text-emerald-500 dark:text-emerald-400">
+<span class="material-symbols-outlined">lock</span>
+<span class="text-sm font-medium">Crittografia SSL</span>
+</div>
+<div class="flex items-center gap-2 text-emerald-500 dark:text-emerald-400">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="text-sm font-medium">Pagamenti Protetti</span>
+</div>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Transazioni conformi alle normative fiscali e di pagamento italiane.</p>
+</div>
+<div class="flex justify-center items-center p-6 bg-white dark:bg-background-dark rounded-lg">
+<img alt="Stripe logo" class="max-w-[200px] h-auto" data-alt="Logo of Stripe, our payment partner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ0v97wVt1am-Dpk7UvyFl1Vz8WuiOCir2-pgfWnTJvRJ2veXqIIMTN7ElvHv8Y3n12H-6I9mLLV-r1a4fjgftnyAFpAb8mf7o80EvvBnUeQN9_mxWoJc6dzVQF7gz-sNj0_EPl8FW20JX9TAe7Rj2PR-DMqyny_U7cZr0fZ8qQKKUPdTQkeiYFZEnc1AOb8QzDPHkZbxaFfSv5DFdXOVO2jnYKbux2qKa5ZL-IlfMbH8Y2IApO6rc-6iXO5OC38vKo9WJlnLNEk6A"/>
+</div>
+</section>
+<section class="text-center">
+<h2 class="text-gray-900 dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">Espandi il tuo network</h2>
+<p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">WorkOver non è solo uno spazio di lavoro. È una community di professionisti, innovatori e creativi. Partecipa ai nostri eventi per crescere e connetterti.</p>
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+<div class="bg-white dark:bg-[#1b1933] rounded-xl shadow-sm p-6 text-left flex flex-col items-start gap-3 hover:shadow-lg transition-shadow duration-300">
+<div class="p-3 bg-primary/20 rounded-lg text-primary">
+<span class="material-symbols-outlined !text-3xl">event</span>
+</div>
+<h3 class="font-bold text-lg text-gray-900 dark:text-white">Workshop Esclusivi</h3>
+<p class="text-sm text-gray-600 dark:text-gray-300">Accedi a workshop su marketing, design e tech tenuti da esperti del settore.</p>
+<a class="mt-auto text-sm font-bold text-primary hover:underline" href="#">Scopri di più</a>
+</div>
+<div class="bg-white dark:bg-[#1b1933] rounded-xl shadow-sm p-6 text-left flex flex-col items-start gap-3 hover:shadow-lg transition-shadow duration-300">
+<div class="p-3 bg-primary/20 rounded-lg text-primary">
+<span class="material-symbols-outlined !text-3xl">groups</span>
+</div>
+<h3 class="font-bold text-lg text-gray-900 dark:text-white">Eventi di Networking</h3>
+<p class="text-sm text-gray-600 dark:text-gray-300">Incontra altri professionisti durante i nostri aperitivi e meet-up mensili.</p>
+<a class="mt-auto text-sm font-bold text-primary hover:underline" href="#">Vedi gli eventi</a>
+</div>
+<div class="bg-white dark:bg-[#1b1933] rounded-xl shadow-sm p-6 text-left flex flex-col items-start gap-3 hover:shadow-lg transition-shadow duration-300 sm:col-span-2 lg:col-span-1">
+<div class="p-3 bg-primary/20 rounded-lg text-primary">
+<span class="material-symbols-outlined !text-3xl">forum</span>
+</div>
+<h3 class="font-bold text-lg text-gray-900 dark:text-white">Community Online</h3>
+<p class="text-sm text-gray-600 dark:text-gray-300">Unisciti ai nostri gruppi di discussione per scambiare idee e collaborare a nuovi progetti.</p>
+<a class="mt-auto text-sm font-bold text-primary hover:underline" href="#">Entra nella community</a>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+</body></html>

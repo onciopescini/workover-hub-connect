@@ -1,40 +1,218 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Space Detail & Booking - Placeholder</title>
-  <style>
-    body { background: #0a0e17; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .hero { padding: 48px 0; }
-    .grid { display: grid; grid-template-columns: 7fr 5fr; gap: 32px; }
-    .booking-card { background: #121827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 24px; position: sticky; top: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
-    .price { font-size: 2rem; font-weight: 700; color: #5b9cff; }
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Prenota il tuo spazio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#6366F1",
+            "primary-gradient-to": "#8B5CF6",
+            "secondary": "#10B981",
+            "background-light": "#F8F9FA",
+            "background-dark": "#121022",
+            "surface-dark": "#1a172d",
+            "border-dark": "#2a274b",
+            "text-light": "#1F2937",
+            "text-dark": "#E5E7EB",
+            "text-muted-light": "#6B7280",
+            "text-muted-dark": "#9CA3AF"
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "0.75rem",
+            "xl": "1rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    .gradient-text {
+      background: linear-gradient(to right, #6366F1, #8B5CF6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(to right, #6366F1, #8B5CF6);
+    }
   </style>
 </head>
-<body>
-  <section class="hero">
-    <nav style="font-size: 0.875rem; color: #9ca3af; margin-bottom: 16px;">
-      <span>Home</span> / <span>Spazi</span> / <span style="color: #e8edf5;">Dettaglio</span>
-    </nav>
-    
-    <div class="grid">
-      <div>
-        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 16px;">Coworking Milano Centro</h1>
-        <div style="display: flex; gap: 16px; margin-bottom: 24px;">
-          <span style="color: #fbbf24;">★★★★★ 4.8</span>
-          <span style="color: #9ca3af;">10 recensioni</span>
-          <span style="background: #10b981; color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 0.875rem;">Verificato</span>
-        </div>
-        <p style="color: #9ca3af; line-height: 1.6;">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Spazio moderno nel cuore di Milano.</p>
-      </div>
-      
-      <aside class="booking-card">
-        <div class="price" style="margin-bottom: 24px;">€25 <span style="font-size: 1rem; font-weight: 400; color: #9ca3af;">/ora</span></div>
-        <button style="width: 100%; background: #5b9cff; color: #ffffff; padding: 16px; border-radius: 16px; border: none; font-size: 1.125rem; font-weight: 600;">Prenota ora</button>
-      </aside>
-    </div>
-  </section>
-  
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased">
+<div class="relative flex min-h-screen w-full flex-col">
+<header class="sticky top-0 z-20 flex items-center justify-center border-b border-gray-200/80 bg-background-light/80 dark:border-border-dark dark:bg-background-dark/80 backdrop-blur-sm">
+<div class="container mx-auto flex items-center justify-between whitespace-nowrap px-4 py-3">
+<div class="flex items-center gap-3">
+<svg class="h-8 w-8 text-primary" fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill-rule="evenodd"></path>
+</svg>
+<h1 class="text-xl font-bold text-text-light dark:text-white">WorkOver</h1>
+</div>
+<button class="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-gray-100 dark:bg-surface-dark">
+<span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark">close</span>
+</button>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-8 sm:py-12 md:py-16">
+<div class="container mx-auto flex max-w-6xl flex-col gap-8 px-4">
+<div class="flex flex-col gap-3">
+<p class="text-sm font-medium text-text-muted-light dark:text-text-muted-dark">Step 1 di 3</p>
+<div class="h-2 w-full rounded-full bg-gray-200 dark:bg-surface-dark">
+<div class="gradient-bg h-2 rounded-full" style="width: 33%;"></div>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-4">
+<h2 class="text-4xl font-black tracking-tighter sm:text-5xl text-text-light dark:text-white">Scegli <span class="gradient-text">quando</span></h2>
+</div>
+<div class="grid grid-cols-1 gap-12 lg:grid-cols-3 lg:gap-8">
+<div class="flex flex-col gap-8 lg:col-span-2">
+<div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-border-dark dark:bg-surface-dark sm:p-6">
+<div class="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-6">
+<div class="flex min-w-72 flex-1 flex-col">
+<div class="flex items-center justify-between p-1">
+<button class="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10">
+<span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark">chevron_left</span>
+</button>
+<p class="flex-1 text-center text-base font-bold text-text-light dark:text-white">Ottobre 2024</p>
+<button class="flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10">
+<span class="material-symbols-outlined text-text-muted-light dark:text-text-muted-dark">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-7">
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">L</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">M</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">M</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">G</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">V</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">S</p>
+<p class="flex h-12 w-full items-center justify-center pb-0.5 text-[13px] font-bold text-text-muted-light dark:text-text-muted-dark">D</p>
+<button class="h-12 w-full text-sm font-medium text-text-muted-light dark:text-text-muted-dark col-start-2 opacity-50" disabled=""><div class="flex size-full items-center justify-center rounded-full">1</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-muted-light dark:text-text-muted-dark opacity-50" disabled=""><div class="flex size-full items-center justify-center rounded-full">2</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">3</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">4</div></button>
+<button class="h-12 w-full text-sm font-medium text-white"><div class="gradient-bg flex size-full items-center justify-center rounded-full shadow-lg shadow-primary/30">5</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">6</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">7</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">8</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">9</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">10</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">11</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">12</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">13</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">14</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">15</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">16</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">17</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">18</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">19</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">20</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">21</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">22</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">23</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">24</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">25</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">26</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">27</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">28</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">29</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">30</div></button>
+<button class="h-12 w-full text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-100 dark:hover:bg-white/10"><div class="flex size-full items-center justify-center rounded-full">31</div></button>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<h3 class="text-lg font-bold text-text-light dark:text-white">Seleziona l'orario</h3>
+<div class="grid max-h-80 grid-cols-2 gap-3 overflow-y-auto pr-2">
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">09:00</button>
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">09:30</button>
+<button class="gradient-bg w-full rounded-lg py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30">10:00</button>
+<button class="gradient-bg w-full rounded-lg py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30">10:30</button>
+<button class="gradient-bg w-full rounded-lg py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30">11:00</button>
+<button class="gradient-bg w-full rounded-lg py-3 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30">11:30</button>
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">12:00</button>
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">12:30</button>
+<button class="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-3 text-center text-sm font-semibold text-text-muted-light opacity-50 dark:border-border-dark dark:bg-surface-dark/50 dark:text-text-muted-dark">13:00</button>
+<button class="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 py-3 text-center text-sm font-semibold text-text-muted-light opacity-50 dark:border-border-dark dark:bg-surface-dark/50 dark:text-text-muted-dark">13:30</button>
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">14:00</button>
+<button class="w-full rounded-lg border border-gray-300 py-3 text-center text-sm font-semibold text-text-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-dark dark:hover:border-primary-gradient-to">14:30</button>
+</div>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-border-dark dark:bg-surface-dark">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<div class="flex flex-col">
+<h3 class="text-lg font-bold text-text-light dark:text-white">Numero di ospiti</h3>
+<p class="text-sm text-text-muted-light dark:text-text-muted-dark">Seleziona il numero di persone.</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-text-muted-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-muted-dark dark:hover:border-primary-gradient-to">
+<span class="material-symbols-outlined text-xl">remove</span>
+</button>
+<span class="w-4 text-center text-lg font-bold text-text-light dark:text-white">1</span>
+<button class="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-text-muted-light hover:border-primary hover:text-primary dark:border-border-dark dark:text-text-muted-dark dark:hover:border-primary-gradient-to">
+<span class="material-symbols-outlined text-xl">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-1">
+<div class="sticky top-28 flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+<h3 class="text-xl font-bold text-text-light dark:text-white">Riepilogo Prenotazione</h3>
+<div class="flex flex-col gap-4 border-b border-gray-200 pb-4 dark:border-border-dark">
+<div class="flex justify-between">
+<span class="text-text-muted-light dark:text-text-muted-dark">Data</span>
+<span class="font-semibold text-text-light dark:text-white">Sab, 5 Ottobre 2024</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted-light dark:text-text-muted-dark">Orario</span>
+<span class="font-semibold text-text-light dark:text-white">10:00 - 12:00</span>
+</div>
+<div class="flex justify-between">
+<span class="text-text-muted-light dark:text-text-muted-dark">Ospiti</span>
+<span class="font-semibold text-text-light dark:text-white">1 persona</span>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between text-sm">
+<span class="text-text-muted-light dark:text-text-muted-dark">Subtotale (2 ore)</span>
+<span class="text-text-light dark:text-text-dark">€30,00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-muted-light dark:text-text-muted-dark">Commissioni</span>
+<span class="text-text-light dark:text-text-dark">€3,00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-muted-light dark:text-text-muted-dark">IVA (22%)</span>
+<span class="text-text-light dark:text-text-dark">€7,26</span>
+</div>
+</div>
+<div class="flex items-baseline justify-between border-t border-gray-200 pt-4 dark:border-border-dark">
+<span class="text-lg font-bold text-text-light dark:text-white">Totale</span>
+<span class="text-2xl font-black gradient-text">€40,26</span>
+</div>
+<button class="gradient-bg w-full rounded-lg py-3.5 text-base font-bold text-white shadow-lg shadow-primary/40 transition-transform hover:scale-[1.02]">
+                Avanti
+              </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

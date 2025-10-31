@@ -1,31 +1,229 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Spaces Catalog - Placeholder</title>
-  <style>
-    body { background: #0a0e17; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .header { background: #121827; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 32px 0; }
-    .filters { position: sticky; top: 0; background: rgba(18, 24, 39, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 16px 0; }
-    .space-card { background: #121827; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); }
-  </style>
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Spazi di Lavoro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#2513ec",
+              "background-light": "#f6f6f8",
+              "background-dark": "#121122",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 20
+        }
+        .gradient-bg {
+            background-image: linear-gradient(to right, #4f46e5, #8b5cf6, #14b8a6);
+        }
+    </style>
 </head>
-<body>
-  <header class="header">
-    <nav style="font-size: 0.875rem; color: #9ca3af; margin-bottom: 8px;">
-      <span>Home</span> / <span style="color: #e8edf5;">Spazi</span>
-    </nav>
-    <h1 style="font-size: 2.5rem; font-weight: 700;">Trova il tuo spazio</h1>
-    <p style="color: #9ca3af; margin-top: 8px;">150+ spazi disponibili</p>
-  </header>
-  
-  <div class="filters">
-    <div style="display: flex; gap: 12px;">
-      <input type="text" placeholder="Cerca indirizzo..." style="flex: 1; padding: 12px; border-radius: 12px; background: #0a0e17; border: 1px solid rgba(255, 255, 255, 0.1); color: #e8edf5;">
-      <button style="background: #5b9cff; color: #ffffff; padding: 12px 24px; border-radius: 12px; border: none;">Filtri</button>
-    </div>
-  </div>
-  
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 dark:border-b-[#262348] px-4 sm:px-10 md:px-20 lg:px-40 py-3 bg-background-light dark:bg-background-dark/80 backdrop-blur-sm sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">WorkOver</h2>
+</div>
+</div>
+<div class="hidden md:flex flex-1 justify-center gap-8">
+<div class="flex items-center gap-9">
+<a class="text-slate-600 dark:text-gray-300 hover:text-primary dark:hover:text-white text-sm font-medium leading-normal" href="#">Spazi di lavoro</a>
+<a class="text-slate-600 dark:text-gray-300 hover:text-primary dark:hover:text-white text-sm font-medium leading-normal" href="#">Per Host</a>
+<a class="text-slate-600 dark:text-gray-300 hover:text-primary dark:hover:text-white text-sm font-medium leading-normal" href="#">Blog</a>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">
+<span class="truncate">Accedi</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Avatar utente" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB5ghqd8s1uATXY74mzPyZvhsoDb2Ldsxbt9jfjKiegB6XreupiCtXyYGLLa4r5ctlHY0lXIiva6RKVHTW5TzX7pqBoUgaQ0e7I_NhslHcMsgtHFVPMcDSAwV8slcbegMHeG0oOomVu72YmRnOm3VXzo_E5TpTIfJ39uK6GTi9tWkWBxiP6qCw9Qeb58_fOt_R73HF7LviutXo1cY7SNNaGSUjk5frgZpq69kUyYE6b5a5JKSFUh7fjJVSS6mdlVRS6UaybhU_yP-sJ");'></div>
+</div>
+</header>
+<main class="px-4 sm:px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col w-full max-w-7xl flex-1">
+<div class="flex flex-wrap justify-between gap-3 p-4">
+<div class="flex min-w-72 flex-col gap-3">
+<p class="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Spazi di lavoro disponibili a Milano</p>
+<p class="text-slate-500 dark:text-[#9692c9] text-base font-normal leading-normal">Scopri e prenota la tua postazione ideale</p>
+</div>
+</div>
+<div class="flex gap-3 p-3 overflow-x-auto">
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-200 dark:bg-[#262348] px-4">
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">calendar_today</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Data</p>
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">expand_more</span>
+</button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-200 dark:bg-[#262348] px-4">
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">domain</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Tipo di spazio</p>
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">expand_more</span>
+</button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-200 dark:bg-[#262348] px-4">
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">payments</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Prezzo</p>
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">expand_more</span>
+</button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-200 dark:bg-[#262348] px-4">
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">tune</span>
+<p class="text-slate-700 dark:text-white text-sm font-medium leading-normal">Servizi</p>
+<span class="material-symbols-outlined text-slate-700 dark:text-white text-base">expand_more</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+<!-- Card 1 -->
+<div class="flex flex-col bg-white dark:bg-[#1a182e] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]">
+<div class="relative w-full aspect-video">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Luminoso ufficio privato con ampie finestre" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZIS5XjlGb5IGfS0KDJ0oA99eAf8VOe1pzOCvU2oGfYWXtSb4hL_IFVeu1ThXNQ8TaU_1quwmQNhwo58-zJFKmPbywDuJfFeYXdSW67IwJWmsV0tL7aTvd9Ner4TynD5Cfs659UySb96SJLCaATQPYm5FszA5toQ68q9SSf3FHdk3wi45Vna2aKdByH3WJsE3NhbuKlMkZq2JjKEvFHV6mn3aQLuZ6dbxK2ggvb2OT1Ftz3FuEI_sNDcVGUkmGNVvOldI7n9_FFLn1");'></div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="text-xs font-bold text-white bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full">Ufficio Privato</span>
+<span class="text-xs font-bold text-white gradient-bg py-1 px-3 rounded-full">€80/giorno</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Luminoso Ufficio Privato - Centro</h3>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base !text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold text-slate-600 dark:text-gray-300">4.8</span>
+<span>(120 recensioni)</span>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Via Rossi 10, Milano</span>
+<span class="ml-auto bg-primary/20 text-primary text-xs font-semibold px-2 py-1 rounded-full">a 500m</span>
+</div>
+<div class="border-t border-slate-200 dark:border-white/10 my-1"></div>
+<div class="flex items-center justify-between text-slate-500 dark:text-[#9692c9] text-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" title="WiFi">wifi</span>
+<span class="material-symbols-outlined" title="Caffè">coffee</span>
+<span class="material-symbols-outlined" title="Parcheggio">local_parking</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined">group</span>
+<span>Fino a 4</span>
+</div>
+</div>
+<button class="mt-2 w-full flex items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">Visualizza Dettagli</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="flex flex-col bg-white dark:bg-[#1a182e] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]">
+<div class="relative w-full aspect-video">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Postazione singola in un moderno open space" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA0bbno4wFUu7Rdz6Q-S9gDf72HZqxEnMUGSoNruB0nAc9X99ugiqdB_d__s0yBGi3sWZJfB67172u2gwIOiUHXSev5MQOi5gSyNSAWkyXT_raLCSWpMg8Bw-IBSTmkT2s7pVfMl35Q1myVWQIZQd84a78gZbsf6OpP-d8T14aFfj1ifFW5Hc2OC9iFgspsefbdDpdJY50kGjaaJbV6GnCcuCYaZMB8H4FVJCBC2ctcwL39uQAXP0OTjTa5wdrEvUvO-0RooKvz2pNn");'></div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="text-xs font-bold text-white bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full">Scrivania</span>
+<span class="text-xs font-bold text-white gradient-bg py-1 px-3 rounded-full">€25/giorno</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Postazione Singola in Open Space</h3>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base !text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold text-slate-600 dark:text-gray-300">4.9</span>
+<span>(215 recensioni)</span>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Viale Verdi 5, Milano</span>
+<span class="ml-auto bg-primary/20 text-primary text-xs font-semibold px-2 py-1 rounded-full">a 1.2km</span>
+</div>
+<div class="border-t border-slate-200 dark:border-white/10 my-1"></div>
+<div class="flex items-center justify-between text-slate-500 dark:text-[#9692c9] text-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" title="WiFi">wifi</span>
+<span class="material-symbols-outlined" title="Cucina">kitchen</span>
+<span class="material-symbols-outlined" title="Accesso 24/7">24mp</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined">person</span>
+<span>Fino a 1</span>
+</div>
+</div>
+<button class="mt-2 w-full flex items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">Visualizza Dettagli</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="flex flex-col bg-white dark:bg-[#1a182e] rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]">
+<div class="relative w-full aspect-video">
+<div class="w-full h-full bg-center bg-no-repeat bg-cover" data-alt="Sala riunioni attrezzata con schermo e lavagna" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDm2Tn6ZNy5E_qTFttKsAL2sqqHE79vgMxNcGf6uwzBbzf7VkTBpAzNv83uAdqvQR31TAj0UwPpmuCyMQuF4GimUpch_sb-t-fsDuaj9pp7eesznJLYldp5IZqw0rCVkYstzkfgwU1XWZLtByJ1Bmob8j_BJ1zaSl9ywFgVcxWMDPDY4x1YvuD3EJS2N3mGcrWTzHiiRRo1yPktuhzFFSLhuhPZMCrsygSDp-91hLQw0pLHUrEbe4G9VIwsWzXTJzhJvKSwJ4X_XPp_");'></div>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="text-xs font-bold text-white bg-black/50 backdrop-blur-sm py-1 px-3 rounded-full">Sala Riunioni</span>
+<span class="text-xs font-bold text-white gradient-bg py-1 px-3 rounded-full">€40/ora</span>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-3">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Sala Riunioni High-Tech</h3>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base !text-yellow-400" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-bold text-slate-600 dark:text-gray-300">5.0</span>
+<span>(88 recensioni)</span>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#9692c9] text-sm">
+<span class="material-symbols-outlined text-base">location_on</span>
+<span>Piazza Dante 1, Milano</span>
+<span class="ml-auto bg-primary/20 text-primary text-xs font-semibold px-2 py-1 rounded-full">a 800m</span>
+</div>
+<div class="border-t border-slate-200 dark:border-white/10 my-1"></div>
+<div class="flex items-center justify-between text-slate-500 dark:text-[#9692c9] text-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined" title="Videoproiettore">videocam</span>
+<span class="material-symbols-outlined" title="Lavagna">draw</span>
+<span class="material-symbols-outlined" title="Caffè">coffee</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined">group</span>
+<span>Fino a 12</span>
+</div>
+</div>
+<button class="mt-2 w-full flex items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity">Visualizza Dettagli</button>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-center p-4">
+<a class="flex size-10 items-center justify-center text-slate-700 dark:text-white" href="#">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</a>
+<a class="text-sm font-bold leading-normal tracking-[0.015em] flex size-10 items-center justify-center text-white rounded-full bg-primary" href="#">1</a>
+<a class="text-sm font-normal leading-normal flex size-10 items-center justify-center text-slate-700 dark:text-white rounded-full" href="#">2</a>
+<a class="text-sm font-normal leading-normal flex size-10 items-center justify-center text-slate-700 dark:text-white rounded-full" href="#">3</a>
+<span class="text-sm font-normal leading-normal flex size-10 items-center justify-center text-slate-700 dark:text-white rounded-full">...</span>
+<a class="text-sm font-normal leading-normal flex size-10 items-center justify-center text-slate-700 dark:text-white rounded-full" href="#">10</a>
+<a class="flex size-10 items-center justify-center text-slate-700 dark:text-white" href="#">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</a>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

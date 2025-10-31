@@ -1,34 +1,223 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Area Admin & Compliance - Placeholder</title>
-  <style>
-    body { background: #0a0e17; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .admin { padding: 40px 0; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-    .admin-card { background: #121827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px; }
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Administrator Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#2513ec",
+            "background-light": "#f6f6f8",
+            "background-dark": "#121022",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
   </style>
 </head>
-<body>
-  <div class="admin">
-    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 32px;">Area Admin & Compliance</h1>
-    
-    <div class="grid">
-      <div class="admin-card">
-        <h3 style="font-size: 1.25rem; color: #5b9cff; margin-bottom: 12px;">DAC7 Compliance</h3>
-        <p style="color: #9ca3af;">5 report pending</p>
-      </div>
-      <div class="admin-card">
-        <h3 style="font-size: 1.25rem; color: #fbbf24; margin-bottom: 12px;">Moderazione</h3>
-        <p style="color: #9ca3af;">3 segnalazioni</p>
-      </div>
-      <div class="admin-card">
-        <h3 style="font-size: 1.25rem; color: #10b981; margin-bottom: 12px;">Verifiche</h3>
-        <p style="color: #9ca3af;">12 in attesa</p>
-      </div>
-    </div>
-  </div>
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col">
+<div class="layout-container flex h-full grow flex-col">
+<div class="flex flex-1 justify-center">
+<div class="layout-content-container flex w-full flex-col items-center">
+<header class="flex w-full max-w-7xl items-center justify-between whitespace-nowrap border-b border-solid border-gray-200/10 px-4 py-3 dark:border-white/10 lg:px-8">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-black dark:text-white">
+<div class="size-6">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-white">WorkOver</h2>
+</div>
+<label class="hidden flex-col !h-10 w-full max-w-xs lg:flex">
+<div class="flex w-full flex-1 items-stretch rounded-lg">
+<div class="text-gray-400 dark:text-gray-500 flex border-none bg-white dark:bg-white/5 items-center justify-center pl-3 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border-none bg-white dark:bg-white/5 text-sm font-normal leading-normal text-gray-900 placeholder:text-gray-400 focus:outline-0 focus:ring-2 focus:ring-inset focus:ring-primary dark:text-white dark:placeholder:text-gray-500 h-full rounded-l-none border-l-0 pl-2" placeholder="Search" value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 items-center justify-end gap-2 sm:gap-4">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 w-10 text-gray-600 hover:bg-black/5 dark:text-gray-300 dark:hover:bg-white/5">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Administrator user profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCbdmXEg0StdPNdEM0kJPJ2GKsWO1-1VgZiJ7oe0wIidBxg-RP7zeRb_dXk_deu_F6l0HuTvTk6fkZx36I55Cp1dVAVczcrQkIpvShv3ZWS6H7R9SoxPzWY4dR0bW2bf5Jg9-IZ0-IuSZYEvO_9vTRSsTLCRHGp7jcaznB19SUfR0dBQgraiJEzk0TwLKDfCIK592YNZCkNzuXgSVB7un7GCqSuBfo0RW1xEVoedQMBkltB7eBFlqI2GmFavvxlDw8Y7nId-vGcETGE");'></div>
+</div>
+</header>
+<main class="w-full max-w-7xl flex-1 px-4 py-8 lg:px-8">
+<div class="flex flex-wrap items-center justify-between gap-4">
+<p class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">Administrator Dashboard</p>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="truncate">Create New</span>
+</button>
+</div>
+<div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<div class="flex flex-1 flex-col gap-2 rounded-xl p-6 border bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+<p class="text-base font-medium leading-normal text-gray-600 dark:text-gray-300">Platform Revenue</p>
+<p class="tracking-light text-3xl font-bold leading-tight text-gray-900 dark:text-white">€12,450</p>
+<p class="text-base font-medium leading-normal text-green-500">+5.2%</p>
+</div>
+<div class="flex flex-1 flex-col gap-2 rounded-xl p-6 border bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+<p class="text-base font-medium leading-normal text-gray-600 dark:text-gray-300">New User Sign-ups</p>
+<p class="tracking-light text-3xl font-bold leading-tight text-gray-900 dark:text-white">82</p>
+<p class="text-base font-medium leading-normal text-green-500">+12.0%</p>
+</div>
+<div class="flex flex-1 flex-col gap-2 rounded-xl p-6 border bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+<p class="text-base font-medium leading-normal text-gray-600 dark:text-gray-300">Active Bookings</p>
+<p class="tracking-light text-3xl font-bold leading-tight text-gray-900 dark:text-white">156</p>
+<p class="text-base font-medium leading-normal text-red-500">-1.5%</p>
+</div>
+<div class="flex flex-1 flex-col gap-2 rounded-xl p-6 border bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+<p class="text-base font-medium leading-normal text-gray-600 dark:text-gray-300">Pending Approvals</p>
+<p class="tracking-light text-3xl font-bold leading-tight text-gray-900 dark:text-white">12</p>
+<p class="text-base font-medium leading-normal text-green-500">+3.0%</p>
+</div>
+</div>
+<div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+<div class="lg:col-span-2">
+<div class="flex flex-col rounded-xl border bg-white dark:bg-white/5 border-gray-200 dark:border-white/10">
+<div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-gray-200 dark:border-white/10">
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-white">Platform Revenue Trend</h2>
+<div class="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-black/20 p-1 text-sm">
+<button class="rounded-md px-3 py-1 text-xs font-semibold text-gray-600 dark:text-gray-400">Daily</button>
+<button class="rounded-md px-3 py-1 text-xs font-semibold text-gray-600 dark:text-gray-400">Weekly</button>
+<button class="rounded-md px-3 py-1 text-xs font-semibold text-gray-900 bg-white dark:bg-white/10 dark:text-white">Monthly</button>
+<button class="rounded-md px-3 py-1 text-xs font-semibold text-gray-600 dark:text-gray-400">Yearly</button>
+</div>
+</div>
+<div class="p-4">
+<img class="h-auto w-full dark:invert" data-alt="An area chart showing a positive revenue trend over the last month, with a gradient fill." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjuBHpyFkSEot0-Dooc6pjjEzzCdX1ytDbyFA0q_qncbup2loCppQZAeke04MC5qbPYRu8DMU0xwVJvOjUHMo5ovNb-c7T9Y3Fh6eLaxP0lJJlWwadKG4DIw2iYqdz5BMbBJ8hjSK3ypUAcdh-L3Me2vEU8amvyb9nX3IQr6O7favKX2XhtfQEtDyDS_tKAIxLLc65WeeJdj7sxzE8UWK8bRr9HUzzfl3frv_4cwDRlH_KC0Z70A3aqajFOgKitoLVWJThjN1nnoiM"/>
+</div>
+</div>
+<div class="mt-8">
+<h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-white">Management &amp; Compliance</h2>
+<div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+<button class="flex items-center gap-3 rounded-xl p-4 text-left border bg-white hover:border-primary/50 dark:bg-white/5 dark:border-white/10 dark:hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-primary text-2xl">shield</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">Moderation</span>
+</button>
+<button class="flex items-center gap-3 rounded-xl p-4 text-left border bg-white hover:border-primary/50 dark:bg-white/5 dark:border-white/10 dark:hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-primary text-2xl">group</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">Users</span>
+</button>
+<button class="flex items-center gap-3 rounded-xl p-4 text-left border bg-white hover:border-primary/50 dark:bg-white/5 dark:border-white/10 dark:hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-primary text-2xl">gpp_good</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">GDPR</span>
+</button>
+<button class="flex items-center gap-3 rounded-xl p-4 text-left border bg-white hover:border-primary/50 dark:bg-white/5 dark:border-white/10 dark:hover:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-primary text-2xl">receipt_long</span>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">Fiscal</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-8">
+<div>
+<h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-white">Quick Actions</h2>
+<div class="mt-4 flex flex-col gap-3">
+<button class="flex w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white text-gray-900 dark:bg-white/10 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] border border-gray-200 dark:border-white/10">
+<span class="truncate">Approve New Spaces</span>
+</button>
+<button class="flex w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white text-gray-900 dark:bg-white/10 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] border border-gray-200 dark:border-white/10">
+<span class="truncate">Review Reports</span>
+</button>
+<button class="flex w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-white text-gray-900 dark:bg-white/10 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] border border-gray-200 dark:border-white/10">
+<span class="truncate">Suspend User</span>
+</button>
+</div>
+</div>
+<div>
+<h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-gray-900 dark:text-white">Recent Activity</h2>
+<div class="mt-4 flow-root">
+<ul class="space-y-4" role="list">
+<li class="flex items-start gap-4">
+<div class="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gray-200 dark:bg-white/10">
+<img class="h-8 w-8 rounded-full object-cover" data-alt="User avatar for Andrea Rossi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAP5Dh9RrsIKs2vWtjKxnGrNebLJfdk3cijD6Py9RvlEmC97X5K0NQ0F1zitlQE099c59UYZHGIwPXDog8pp9jqhA0b6GJncr3hjiboay-wIuwLpOIcLRCo1N6Y1pM9YX3U-i4zObSgbzz52AecgFk1P1R5EtLnn6TVEQlxOAQi6YnZUQs72dFxMgF9SA7Fk3GBZWy6wJRkZhghHATClWQesok0CoXrYMSJLzQ7t4YGcvu-X04lbQoiae46MSn7OIj9mVm1egExJYp9"/>
+</div>
+<div class="flex-auto">
+<p class="text-sm leading-6 text-gray-900 dark:text-white">
+<span class="font-semibold">Andrea Rossi</span>
+                            completed a booking.
+                          </p>
+<p class="mt-0.5 text-xs leading-5 text-gray-500 dark:text-gray-400">2 min ago</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gray-200 dark:bg-white/10">
+<img class="h-8 w-8 rounded-full object-cover" data-alt="Host avatar for Marco Bianchi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqVdLJeOk-6tuKvgnRCr7pTKrCxNvBxxwE-gJmELOPCgq-IRb64WsineT3uJA-_Bd0ALWFi-gEyUKmWlcgsybpWn2-ZWfW36e0RrWJs9NON1sRp_Sdr3d829prFlEgtV6Gw5to2mG840E5nTxxv5EBun8bx-YNVCrOrJgbjO14tC_tftG8uTwnf2NLZsKSfeYTAcivv0vazUCNdAs7i1YWnABHxim9-x4bs-SO8orbE3JlfSHNms_wafBtoHG8ek9gZOxNMPqpTDbW"/>
+</div>
+<div class="flex-auto">
+<p class="text-sm leading-6 text-gray-900 dark:text-white">
+                            Host
+                            <span class="font-semibold">Marco Bianchi</span>
+                            added a new space.
+                          </p>
+<p class="mt-0.5 text-xs leading-5 text-gray-500 dark:text-gray-400">1 hour ago</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gray-200 dark:bg-white/10">
+<span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-300">shield_person</span>
+</div>
+<div class="flex-auto">
+<p class="text-sm leading-6 text-gray-900 dark:text-white">
+                            A new space is
+                            <span class="font-semibold">pending approval</span>.
+                          </p>
+<p class="mt-0.5 text-xs leading-5 text-gray-500 dark:text-gray-400">4 hours ago</p>
+</div>
+</li>
+<li class="flex items-start gap-4">
+<div class="relative mt-1 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gray-200 dark:bg-white/10">
+<img class="h-8 w-8 rounded-full object-cover" data-alt="User avatar for Giulia Ferrari" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcblatooCRtNDua-DQe-oUAm8Oge-LQIesUd6c2CNZE0yk8msNMSwA10z0XK_ivPONo31OW2OZ7K8wwxqTjQAktJlDLhgxykzZraSjruC3WSAwShNk3DnAQFBo5vIPh-Umbrtkb2t9OtJ2MqAIlqbEORG1zPXeh5yGY1JOlUvJXLnj2uf0PD5a_CscI0q4wJlum0yS5lbz5Z7feD8UrkZKKXBDOx5nCdLgcMdTYkztxk9cp-j6GcTezjKCanA_M7DxXZXrJOlqsPIv"/>
+</div>
+<div class="flex-auto">
+<p class="text-sm leading-6 text-gray-900 dark:text-white">
+<span class="font-semibold">Giulia Ferrari</span>
+                            signed up.
+                          </p>
+<p class="mt-0.5 text-xs leading-5 text-gray-500 dark:text-gray-400">1 day ago</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</div>
+</div>
+</body></html>

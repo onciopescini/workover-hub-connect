@@ -1,27 +1,207 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>Why WorkOver Section - Placeholder</title>
-  <style>
-    body { background: #121827; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .section { padding: 80px 0; }
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-    .card { background: #0a0e17; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 24px; }
-    .icon { font-size: 48px; margin-bottom: 16px; }
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Vantaggi della Piattaforma</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4F46E5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#121022",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    .feature-card {
+      transform-style: preserve-3d;
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      transform: perspective(1000px) rotateX(var(--rotateX)) rotateY(var(--rotateY)) scale3d(1.05, 1.05, 1.05);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(400px at var(--x) var(--y),
+          rgba(79, 70, 229, 0.2),
+          rgba(16, 185, 129, 0.2),
+          rgba(139, 92, 246, 0.2),
+          transparent 80%);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 0;
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-content {
+      transform: translateZ(20px);
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 300,
+        'GRAD' 0,
+        'opsz' 48
+    }
   </style>
 </head>
-<body>
-  <section class="section">
-    <h2 style="font-size: 2.5rem; text-align: center; margin-bottom: 48px;">Perché scegliere WorkOver?</h2>
-    <div class="grid">
-      <div class="card">
-        <div class="icon">🔒</div>
-        <h3 style="font-size: 1.25rem; color: #5b9cff;">Sicurezza</h3>
-        <p style="color: #9ca3af;">Verifica in 3 step</p>
-      </div>
-    </div>
-  </section>
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-light dark:bg-background-dark font-display text-white antialiased">
+<div class="relative flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 lg:p-8" style='font-family: Inter, "Noto Sans", sans-serif;'>
+<div class="absolute inset-0 -z-10 h-full w-full bg-background-dark bg-[radial-gradient(#2513ec33_1px,transparent_1px)] [background-size:32px_32px]"></div>
+<div class="w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+<div class="flex flex-col gap-4 text-center">
+<h1 class="text-white tracking-tight text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
+          La tua piattaforma di lavoro, ripensata per te
+        </h1>
+<p class="text-slate-400 text-base font-normal leading-normal max-w-3xl mx-auto sm:text-lg">
+          Scopri i vantaggi che rendono WorkOver il posto migliore per la tua produttività, con la fiducia e la sicurezza che meriti.
+        </p>
+</div>
+<div class="grid grid-cols-1 gap-6 pt-12 md:grid-cols-2 lg:grid-cols-3" id="card-grid">
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">verified_user</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Spazi verificati</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                Ogni spazio è accuratamente controllato dal nostro team per garantire standard elevati di qualità, comfort e sicurezza.
+              </p>
+</div>
+</div>
+</div>
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">groups</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Networking professionale</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                Entra in contatto con una community di professionisti. Espandi la tua rete e crea nuove opportunità di business.
+              </p>
+</div>
+</div>
+</div>
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">lock</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Sicurezza garantita</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                La tua privacy e sicurezza sono la nostra priorità. Operiamo in piena conformità con le normative italiane e il GDPR.
+              </p>
+</div>
+</div>
+</div>
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">credit_card</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Pagamenti sicuri</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                Transazioni protette con crittografia avanzata. Prenota e paga in totale tranquillità attraverso i nostri partner certificati.
+              </p>
+</div>
+</div>
+</div>
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">event_repeat</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Flessibilità totale</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                Dalla singola ora all'abbonamento mensile, offriamo soluzioni di prenotazione adatte a ogni tua esigenza lavorativa.
+              </p>
+</div>
+</div>
+</div>
+<div class="feature-card rounded-xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur-sm">
+<div class="card-content flex flex-col gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-3xl">support_agent</span>
+</div>
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold leading-tight">Supporto dedicato</h2>
+<p class="text-slate-400 text-sm font-normal leading-normal">
+                 Il nostro team è sempre a tua disposizione per assisterti in ogni fase, dalla prenotazione all'utilizzo dello spazio.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const cards = document.querySelectorAll('.feature-card');
+      const grid = document.getElementById('card-grid');
+
+      grid.addEventListener('mousemove', e => {
+        cards.forEach(card => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          const rotateX = ((y - centerY) / centerY) * -8;
+          const rotateY = ((x - centerX) / centerX) * 8;
+
+          card.style.setProperty('--x', `${x}px`);
+          card.style.setProperty('--y', `${y}px`);
+          card.style.setProperty('--rotateX', `${rotateX}deg`);
+          card.style.setProperty('--rotateY', `${rotateY}deg`);
+        });
+      });
+
+      grid.addEventListener('mouseleave', () => {
+        cards.forEach(card => {
+          card.style.setProperty('--rotateX', '0deg');
+          card.style.setProperty('--rotateY', '0deg');
+        });
+      });
+    });
+  </script>
+</body></html>

@@ -1,30 +1,136 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>WorkOver Landing - Placeholder</title>
-  <style>
-    /* Placeholder styles - waiting for real Stitch HTML */
-    body { background: #0a0e17; color: #e8edf5; font-family: 'Inter', sans-serif; }
-    .hero { background: linear-gradient(135deg, #0a0e17, #1a1f2e); padding: 80px 0; }
-    .cta-button { background: #5b9cff; color: #ffffff; border-radius: 24px; padding: 16px 32px; font-size: 18px; }
-    .feature-card { background: #121827; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 24px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); }
-  </style>
+
+<html class="dark" lang="it"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkOver - Il tuo spazio di lavoro flessibile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#50C878", // Verde Smeraldo for CTA
+              "primary-dark": "#4B0082", // Indaco for accents
+              "background-light": "#f6f6f8",
+              "background-dark": "#121022",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {
+                "DEFAULT": "0.25rem", 
+                "lg": "0.5rem", 
+                "xl": "0.75rem", 
+                "full": "9999px"
+            },
+            animation: {
+              'gradient-bg': 'gradient-bg 15s ease infinite',
+              'typewriter': 'typewriter 2s steps(44) 1s 1 normal both, blinkTextCursor 500ms steps(44) infinite normal',
+            },
+            keyframes: {
+              'gradient-bg': {
+                '0%, 100%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+              },
+               typewriter: {
+                from: { width: '0' },
+                to: { width: '100%' }
+              },
+              blinkTextCursor: {
+                from: { 'border-right-color': 'rgba(255,255,255,.75)' },
+                to: { 'border-right-color': 'transparent' }
+              }
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .typewriter-text {
+        display: inline-block;
+        overflow: hidden;
+        white-space: nowrap;
+        border-right: 3px solid rgba(255,255,255,.75);
+      }
+    </style>
 </head>
-<body>
-  <section class="hero">
-    <h1 style="font-size: 3.5rem; font-weight: 700; margin-bottom: 24px;">Trova il tuo spazio di lavoro ideale</h1>
-    <p style="font-size: 1.25rem; color: #9ca3af; margin-bottom: 32px;">Prenota spazi verificati in tutta Italia</p>
-    <button class="cta-button">Inizia la ricerca</button>
-  </section>
-  
-  <section style="padding: 80px 0; background: #121827;">
-    <div class="feature-card" style="margin-bottom: 24px;">
-      <h3 style="font-size: 1.5rem; color: #5b9cff; margin-bottom: 12px;">Spazi Verificati</h3>
-      <p style="color: #9ca3af;">Tutti gli spazi sono controllati dal nostro team</p>
-    </div>
-  </section>
-  
-  <!-- Placeholder: paste real Stitch code.html here -->
-</body>
-</html>
+<body class="bg-background-dark font-display text-white">
+<div class="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
+<!-- Animated Gradient Background -->
+<div class="absolute inset-0 -z-10 bg-gradient-to-r from-[#4B0082] via-[#8A2BE2] to-[#50C878] bg-[length:200%_200%] animate-gradient-bg" data-alt="Abstract animated gradient moving slowly from indigo to violet to emerald green."></div>
+<div class="absolute inset-0 -z-10 bg-black/30"></div>
+<div class="layout-container flex h-full grow flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
+<div class="layout-content-container flex flex-col items-center max-w-4xl w-full gap-10">
+<!-- Conditional Onboarding CTA -->
+<div class="w-full max-w-3xl @container">
+<div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-5 @[480px]:flex-row @[480px]:items-center">
+<div class="flex flex-col gap-1">
+<p class="text-white text-base font-bold leading-tight">Manca poco! Completa il tuo profilo per iniziare.</p>
+<p class="text-white/70 text-sm font-normal leading-normal">Attiva il tuo account per accedere a tutte le funzionalità di WorkOver.</p>
+</div>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-5 bg-primary text-background-dark text-sm font-bold leading-normal tracking-wide hover:opacity-90 transition-opacity">
+<span class="truncate">Completa onboarding</span>
+</button>
+</div>
+</div>
+<!-- Main Hero Content -->
+<div class="flex flex-col gap-4 text-center">
+<h1 class="text-white text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tighter">
+                      Trova il tuo spazio di lavoro 
+                      <!-- This would be dynamically updated by JS, here is a static example -->
+<span class="typewriter-text text-primary">flessibile.</span>
+</h1>
+<h2 class="text-white/80 text-base sm:text-lg font-normal leading-normal max-w-2xl mx-auto">
+                      La piattaforma per professionisti e aziende che cercano flessibilità e connessioni in Italia.
+                    </h2>
+</div>
+<!-- Advanced Search Bar -->
+<div class="w-full max-w-3xl rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-2">
+<div class="flex flex-col sm:flex-row items-stretch gap-2">
+<!-- Location Input -->
+<div class="flex-grow flex items-center bg-white/5 rounded-lg px-3">
+<span class="material-symbols-outlined text-white/50">search</span>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-white focus:outline-0 focus:ring-0 border-0 h-14 placeholder:text-white/50 pl-2 text-base font-normal leading-normal" placeholder="Città o indirizzo" value=""/>
+</div>
+<!-- Date Picker -->
+<div class="flex-shrink-0 flex items-center bg-white/5 rounded-lg px-3 cursor-pointer">
+<span class="material-symbols-outlined text-white/50">calendar_today</span>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-white focus:outline-0 focus:ring-0 border-0 h-14 placeholder:text-white/50 pl-2 text-base font-normal leading-normal" onblur="(this.type='text')" onfocus="(this.type='date')" placeholder="Scegli le date" type="text"/>
+</div>
+<!-- Services Filter -->
+<div class="flex-shrink-0 flex items-center bg-white/5 rounded-lg px-3 cursor-pointer">
+<span class="material-symbols-outlined text-white/50">tune</span>
+<span class="text-white/50 pl-2 text-base font-normal leading-normal whitespace-nowrap hidden sm:inline">Filtra per servizi</span>
+<span class="text-white/50 pl-2 text-base font-normal leading-normal whitespace-nowrap sm:hidden">Servizi</span>
+</div>
+<!-- Search Button -->
+<button class="flex-shrink-0 flex min-w-[100px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-6 bg-primary text-background-dark text-base font-bold leading-normal tracking-wide hover:opacity-90 transition-opacity">
+<span class="truncate">Cerca</span>
+</button>
+</div>
+</div>
+<!-- Trust Badges -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl pt-6">
+<div class="flex flex-1 gap-3 rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-4 items-center">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+<h2 class="text-white text-sm font-bold leading-tight">Piattaforma Beta attiva</h2>
+</div>
+<div class="flex flex-1 gap-3 rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-4 items-center">
+<span class="material-symbols-outlined text-primary">shield</span>
+<h2 class="text-white text-sm font-bold leading-tight">Pagamenti Sicuri</h2>
+</div>
+<div class="flex flex-1 gap-3 rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm p-4 items-center">
+<span class="material-symbols-outlined text-primary">lock</span>
+<h2 class="text-white text-sm font-bold leading-tight">GDPR Compliant</h2>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>
