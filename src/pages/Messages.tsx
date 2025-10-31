@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { fetchConversations } from "@/lib/conversations";
 import { MessageCircle, Clock } from "lucide-react";
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
+
+const ThreadsLayoutStitch = lazy(() => import('@/feature/messaging/ThreadsLayoutStitch'));
 
 interface Conversation {
   id: string;
@@ -110,7 +112,9 @@ const Messages = () => {
     }
   };
 
-  return (
+  const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
+
+  const messagesContent = (
     <div className="container max-w-4xl mx-auto p-4 space-y-4">
       <Card>
         <CardHeader>
@@ -174,6 +178,16 @@ const Messages = () => {
         </div>
       )}
     </div>
+  );
+
+  return isStitch ? (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--color-bg)]" />}>
+      <ThreadsLayoutStitch>
+        {messagesContent}
+      </ThreadsLayoutStitch>
+    </Suspense>
+  ) : (
+    messagesContent
   );
 };
 

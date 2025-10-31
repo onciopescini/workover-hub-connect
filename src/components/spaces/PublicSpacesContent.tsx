@@ -7,7 +7,7 @@
  * - Full-screen split: Map (50-55%) + Cards (45-50%)
  * - No lateral sidebar
  */
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { LazySpaceMap, usePreloadOnHover } from '@/components/optimization/LazyComponents';
 import { CompactSpaceCardsGrid } from '@/components/spaces/compact/CompactSpaceCardsGrid';
 import { SpacesSplitLayout } from '@/components/spaces/compact/SpacesSplitLayout';
@@ -15,6 +15,8 @@ import { CompactSearchBar } from '@/components/spaces/search/CompactSearchBar';
 import { ExpandableFiltersPanel } from '@/components/spaces/search/ExpandableFiltersPanel';
 import { Space, SpaceFilters, FilterChangeHandler, SpaceClickHandler, Coordinates } from '@/types/space-filters';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+const CatalogFiltersStitch = lazy(() => import('@/feature/spaces/CatalogFiltersStitch'));
 
 interface PublicSpacesContentProps {
   filters: SpaceFilters;
@@ -42,6 +44,7 @@ export const PublicSpacesContent = ({
   onMapSpaceClick
 }: PublicSpacesContentProps) => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
   
   // Preload SpaceMap on hover for better UX
   const preloadMapProps = usePreloadOnHover(() => import('@/components/spaces/SpaceMap'));
@@ -139,30 +142,42 @@ export const PublicSpacesContent = ({
     });
   };
 
+  const searchBar = (
+    <CompactSearchBar
+      location={filters.location}
+      coordinates={filters.coordinates}
+      radiusKm={radiusKm}
+      startDate={filters.startDate}
+      endDate={filters.endDate}
+      startTime={filters.startTime}
+      endTime={filters.endTime}
+      activeFiltersCount={getActiveFiltersCount()}
+      isFiltersOpen={isFiltersOpen}
+      onLocationChange={handleLocationChange}
+      onRadiusChange={onRadiusChange}
+      onStartDateChange={handleStartDateChange}
+      onEndDateChange={handleEndDateChange}
+      onStartTimeChange={handleStartTimeChange}
+      onEndTimeChange={handleEndTimeChange}
+      onToggleFilters={handleToggleFilters}
+      onNearMe={handleNearMe}
+      onTopRated={handleTopRated}
+      onAvailableNow={handleAvailableNow}
+    />
+  );
+
   return (
     <SpacesSplitLayout
       searchBar={
-        <CompactSearchBar
-          location={filters.location}
-          coordinates={filters.coordinates}
-          radiusKm={radiusKm}
-          startDate={filters.startDate}
-          endDate={filters.endDate}
-          startTime={filters.startTime}
-          endTime={filters.endTime}
-          activeFiltersCount={getActiveFiltersCount()}
-          isFiltersOpen={isFiltersOpen}
-          onLocationChange={handleLocationChange}
-          onRadiusChange={onRadiusChange}
-          onStartDateChange={handleStartDateChange}
-          onEndDateChange={handleEndDateChange}
-          onStartTimeChange={handleStartTimeChange}
-          onEndTimeChange={handleEndTimeChange}
-          onToggleFilters={handleToggleFilters}
-          onNearMe={handleNearMe}
-          onTopRated={handleTopRated}
-          onAvailableNow={handleAvailableNow}
-        />
+        isStitch ? (
+          <Suspense fallback={<div className="h-16 bg-[var(--color-surface)] border-b border-[var(--color-border)]" />}>
+            <CatalogFiltersStitch>
+              {searchBar}
+            </CatalogFiltersStitch>
+          </Suspense>
+        ) : (
+          searchBar
+        )
       }
       filtersPanel={
         <ExpandableFiltersPanel
