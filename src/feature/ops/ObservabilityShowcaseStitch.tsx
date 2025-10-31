@@ -8,8 +8,7 @@ import { PropsWithChildren } from "react";
  */
 export default function ObservabilityShowcaseStitch({ children }: PropsWithChildren) {
   return (
-    <section className="container mx-auto px-4 py-10 space-y-8 bg-stitch-surface">
-      {/* TODO: blocchi SRE/observability */}
+    <section className="container mx-auto px-4 py-10 space-y-8 bg-[var(--color-surface)]">
       {children}
     </section>
   );

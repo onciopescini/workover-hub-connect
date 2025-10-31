@@ -8,8 +8,7 @@ import { PropsWithChildren } from "react";
  */
 export default function AdminOverviewStitch({ children }: PropsWithChildren) {
   return (
-    <section className="container mx-auto px-4 py-10 space-y-8 bg-stitch-bg">
-      {/* TODO: grid carte DAC7/compliance/moderation */}
+    <section className="container mx-auto px-4 py-10 space-y-8 bg-[var(--color-bg)]">
       {children}
     </section>
   );

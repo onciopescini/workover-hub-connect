@@ -233,6 +233,84 @@ node scripts/extractStitchTokens.js
 
 ---
 
+---
+
+## 🔄 How to Rerun Extraction
+
+Dopo aver aggiornato i file HTML in `stitch_html/`, riesegui l'estrazione:
+
+### Solo Token (rapido)
+```bash
+pnpm extract:stitch
+```
+
+**Cosa aggiorna**:
+- ✅ `src/styles/tokens.css`
+- ✅ `docs/ui-stitch-tokens.md`
+- ✅ `src/theme/tokens.generated.json`
+
+### Token + Asset (completo)
+```bash
+pnpm extract:stitch:assets
+```
+
+**Cosa aggiorna**:
+- ✅ Tutto quanto sopra
+- ✅ `public/assets/stitch/*` (download + placeholder)
+
+### Verifica Risultati
+```bash
+# Check diff
+git diff src/styles/tokens.css docs/ui-stitch-tokens.md
+
+# Test visivi
+pnpm dev
+# Apri http://localhost:5173/?theme=stitch
+
+# Test E2E
+pnpm test:e2e:stitch -- --update-snapshots
+pnpm test:e2e:stitch
+```
+
+---
+
+## ✅ Definition of Done
+
+### Funzionale
+- [ ] `pnpm extract:stitch` eseguito con successo
+- [ ] `src/styles/tokens.css` senza TODO non risolti
+- [ ] Tutti i wrapper Stitch usano `var(--token-name)` (no hex inline)
+- [ ] `public/assets/stitch/` contiene asset o placeholder documentati
+- [ ] `docs/ui-stitch-tokens.md` con tabella mapping completa
+
+### Test
+- [ ] `pnpm typecheck` → 0 errori
+- [ ] `pnpm lint` → 0 warning critici
+- [ ] `pnpm build` → success
+- [ ] `pnpm test:e2e:stitch` → 5+ test verdi con snapshot
+
+### Visual
+- [ ] `VITE_UI_THEME=stitch` attiva tema su tutte le pagine
+- [ ] `?theme=stitch` override funzionante
+- [ ] Pagine testate: `/`, `/spaces`, `/spaces/:id`, `/messages`, `/host/dashboard`
+- [ ] Classic theme invariato (regression test verde)
+
+### Performance
+- [ ] Bundle size delta < 50KB rispetto a classic
+- [ ] Lazy loading wrapper non impatta TTI
+- [ ] Nessun layout shift visibile (CLS < 0.1)
+
+### Documentazione
+- [ ] `docs/ui-stitch-tokens.md` con:
+  - Tabella colori (valore → token → frequenza → file origine)
+  - Tabella font (family, size)
+  - Tabella radius/shadows
+  - Lista asset (src → path locale → status)
+- [ ] `docs/stitch-html-setup.md` con istruzioni complete
+- [ ] `README.md` aggiornato con feature flag `VITE_UI_THEME`
+
+---
+
 ## 📚 File di Riferimento
 
 - **Script estrazione**: `scripts/extractStitchTokens.ts`

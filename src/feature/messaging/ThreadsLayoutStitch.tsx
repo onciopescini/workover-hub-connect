@@ -8,7 +8,7 @@ import { PropsWithChildren } from "react";
  */
 export default function ThreadsLayoutStitch({ children }: PropsWithChildren) {
   return (
-    <div className="container mx-auto px-4 py-6 grid gap-4 md:grid-cols-[320px_1fr] bg-stitch-bg">
+    <div className="container mx-auto px-4 py-6 grid gap-4 md:grid-cols-[320px_1fr] bg-[var(--color-bg)]">
       {children}
     </div>
   );

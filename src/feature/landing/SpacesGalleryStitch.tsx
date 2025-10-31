@@ -7,8 +7,8 @@ import { PropsWithChildren } from "react";
  */
 export default function SpacesGalleryStitch({ children }: PropsWithChildren) {
   return (
-    <section className="border-t border-stitch-border bg-stitch-bg">
-      <div className="container mx-auto px-4 py-stitch-section">
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-bg)]">
+      <div className="container mx-auto px-4 py-[var(--space-section)]">
         {children}
       </div>
     </section>

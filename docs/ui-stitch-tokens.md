@@ -104,6 +104,44 @@
 
 ---
 
+## 🔄 How to Rerun Extraction
+
+### Quick Rerun (Token Only)
+```bash
+pnpm extract:stitch
+```
+Updates: `tokens.css`, this doc, and `tokens.generated.json`
+
+### Full Rerun (Token + Assets)
+```bash
+pnpm extract:stitch:assets
+```
+Updates: All of the above + downloads/generates assets in `public/assets/stitch/`
+
+---
+
+## ✅ Definition of Done
+
+**Funzionale**
+- [x] Script estrazione completo e funzionante
+- [x] 13 wrapper Stitch con CSS variables
+- [x] Nessun hex inline nei wrapper
+- [x] 8 asset SVG placeholder generati
+- [x] Documentazione completa con rerun instructions
+
+**Test**
+- [ ] `pnpm typecheck` verde
+- [ ] `pnpm build` successo
+- [ ] `pnpm test:e2e:stitch` con 5+ snapshot verdi
+- [ ] Classic theme regression test verde
+
+**Visual**
+- [ ] Tema attivo con `?theme=stitch`
+- [ ] Pagine testate: landing, spaces, space detail, messages, host dashboard
+- [ ] Bundle delta < 50KB
+
+---
+
 ### Next Steps
 
 1. **Provide Real HTML Files**

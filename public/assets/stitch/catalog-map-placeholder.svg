@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#121827"/>
+  <circle cx="400" cy="300" r="8" fill="#ef4444"/>
+  <circle cx="320" cy="220" r="6" fill="#10b981"/>
+  <circle cx="480" cy="340" r="6" fill="#5b9cff"/>
+  <text x="400" y="280" text-anchor="middle" fill="#9ca3af" font-size="18" font-family="Inter, sans-serif">[catalog-map]</text>
+  <text x="400" y="340" text-anchor="middle" fill="#6b7280" font-size="12" font-family="Inter, sans-serif">800×600 placeholder</text>
+</svg>

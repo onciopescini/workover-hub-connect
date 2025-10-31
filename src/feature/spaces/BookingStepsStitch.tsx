@@ -11,7 +11,7 @@ export default function BookingStepsStitch({
   children,
 }: { header?: ReactNode; aside?: ReactNode; children: ReactNode }) {
   return (
-    <section className="border-t border-stitch-border bg-stitch-surface">
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="container mx-auto px-4 py-12 grid gap-8 lg:grid-cols-12">
         <div className="lg:col-span-7 space-y-6">
           {header}

@@ -7,8 +7,8 @@ import { PropsWithChildren } from "react";
  */
 export default function VisualWorkflowStitch({ children }: PropsWithChildren) {
   return (
-    <section className="border-t border-stitch-border bg-stitch-surface">
-      <div className="container mx-auto px-4 py-stitch-section">
+    <section className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="container mx-auto px-4 py-[var(--space-section)]">
         {children}
       </div>
     </section>

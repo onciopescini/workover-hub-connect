@@ -8,8 +8,7 @@ import { PropsWithChildren } from "react";
  */
 export default function HostDashboardLayoutStitch({ children }: PropsWithChildren) {
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6 bg-stitch-bg">
-      {/* TODO: header dashboard + KPI cards (stile Stitch) */}
+    <div className="container mx-auto px-4 py-8 space-y-6 bg-[var(--color-bg)]">
       {children}
     </div>
   );

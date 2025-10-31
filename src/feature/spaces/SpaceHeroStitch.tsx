@@ -7,13 +7,12 @@ import { PropsWithChildren } from "react";
  */
 export default function SpaceHeroStitch({ children }: PropsWithChildren) {
   return (
-    <section className="bg-stitch-bg text-stitch-text">
+    <section className="bg-[var(--color-bg)] text-[var(--color-text)]">
       <div className="container mx-auto px-4 py-12">
         <div className="grid gap-8 lg:grid-cols-12">
           {/* Col 1: Meta info */}
           <div className="lg:col-span-7 space-y-4">
-            {/* TODO: breadcrumb, titolo, rating, pills */}
-            <div className="text-sm text-stitch-muted">Dettaglio Spazio</div>
+            <div className="text-sm text-[var(--color-muted)]">Dettaglio Spazio</div>
             {children}
           </div>
 
