@@ -4,11 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { SpaceInsert } from "@/types/space";
+import type { WorkspaceInsert } from "@/types/workspace";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
-import { parseSpacePublishError } from '@/utils/spacePublishErrorParser';
-import type { PostgrestError } from '@supabase/supabase-js';
 
 interface UseSpaceFormSubmissionProps {
   formData: Omit<Partial<SpaceInsert>, 'availability'>;
@@ -63,80 +62,66 @@ export const useSpaceFormSubmission = ({
 
       const photoUrls = photoPreviewUrls;
       
-      const spaceData = {
-        ...formData,
-        title: formData.title!,
-        description: formData.description!,
-        category: formData.category!,
-        max_capacity: formData.max_capacity!,
-        workspace_features: formData.workspace_features || [],
-        work_environment: formData.work_environment!,
-        amenities: formData.amenities || [],
-        seating_types: formData.seating_types || [],
-        price_per_hour: formData.price_per_hour!,
+      // Refactor: Map fields to new workspace schema
+      const workspaceData: WorkspaceInsert = {
+        name: formData.title!, // formData.title -> maps to DB column name
+        address: formData.address!, // formData.address -> maps to DB column address
+        features: formData.workspace_features || [], // formData.workspace_features -> maps to DB column features (array)
         price_per_day: formData.price_per_day!,
-        address: formData.address!,
+        price_per_hour: formData.price_per_hour!,
+        max_capacity: formData.max_capacity!,
+        category: formData.category!,
+        rules: formData.rules || null,
+        cancellation_policy: formData.cancellation_policy || null,
+        availability: availabilityData, // availabilityData should be saved as json in the availability column
+        host_id: user.id,
+        // Additional fields that are likely needed
+        description: formData.description || "",
+        photos: photoUrls,
         latitude: formData.latitude || 0,
         longitude: formData.longitude || 0,
-        photos: photoUrls,
-        rules: formData.rules || "",
+        published: formData.published ?? false,
+        amenities: formData.amenities || [],
+        seating_types: formData.seating_types || [],
+        work_environment: formData.work_environment!,
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
-        confirmation_type: formData.confirmation_type!,
-        availability: JSON.parse(JSON.stringify(availabilityData)),
-        published: formData.published ?? false,
-        host_id: user.id,
+        confirmation_type: formData.confirmation_type!
       };
       
       if (isEdit && initialDataId) {
-        const { error } = await supabase
-          .from("spaces")
-          .update(spaceData)
+        // Refactor: Insert/update into 'workspaces' table
+        const { error } = await (supabase
+          .from("workspaces" as any) as any)
+          .update(workspaceData)
           .eq("id", initialDataId);
           
         if (error) {
-          // Handle RLS errors with friendly messages
+          // Remove legacy error handling: parseSpacePublishError
           const isRLSError = handleRLSError(error);
           if (!isRLSError) {
-            // Parse trigger error
-            const parsedError = parseSpacePublishError(error as PostgrestError);
-            toast.error(parsedError.title, {
-              description: parsedError.message,
-              action: parsedError.action ? {
-                label: parsedError.action.label,
-                onClick: () => navigate(parsedError.action!.route),
-              } : undefined,
-            });
-            setIsSubmitting(false);
-            return;
+            toast.error("Failed to update space: " + error.message);
           }
+          setIsSubmitting(false);
           return;
         }
         
         toast.success("Space updated successfully!");
       } else {
-        const { data, error } = await supabase
-          .from("spaces")
-          .insert(spaceData)
+        // Refactor: Insert/update into 'workspaces' table
+        const { error } = await (supabase
+          .from("workspaces" as any) as any)
+          .insert(workspaceData)
           .select("id")
           .single();
           
         if (error) {
-          // Handle RLS errors with friendly messages
+           // Remove legacy error handling: parseSpacePublishError
           const isRLSError = handleRLSError(error);
           if (!isRLSError) {
-            // Parse trigger error
-            const parsedError = parseSpacePublishError(error as PostgrestError);
-            toast.error(parsedError.title, {
-              description: parsedError.message,
-              action: parsedError.action ? {
-                label: parsedError.action.label,
-                onClick: () => navigate(parsedError.action!.route),
-              } : undefined,
-            });
-            setIsSubmitting(false);
-            return;
+            toast.error("Failed to create space: " + error.message);
           }
+          setIsSubmitting(false);
           return;
         }
         
