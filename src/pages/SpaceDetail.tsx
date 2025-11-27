@@ -26,44 +26,43 @@ const SpaceDetail = () => {
       
       sreLogger.debug('Fetching space with ID', { spaceId: id, component: 'SpaceDetail' });
       
-      const { data, error } = await supabase.rpc('get_space_with_host_info', {
-        space_id_param: id
-      });
+      // Refactor: Query 'workspaces' table instead of RPC/spaces
+      const { data: workspaceData, error: workspaceError } = await (supabase
+        .from('workspaces' as any) as any)
+        .select('*')
+        .eq('id', id)
+        .single();
 
-      if (error) {
-        sreLogger.error('Database error', { spaceId: id, component: 'SpaceDetail' }, error as Error);
-        throw error;
+      if (workspaceError) {
+        sreLogger.error('Database error', { spaceId: id, component: 'SpaceDetail' }, workspaceError as Error);
+        throw workspaceError;
       }
       
-      if (!data || data.length === 0) {
+      if (!workspaceData) {
         sreLogger.error('No space found for ID', { spaceId: id, component: 'SpaceDetail' }, new Error('Space not found'));
         throw new Error('Space not found');
       }
-      
-      const spaceData = Array.isArray(data) ? data[0] : data;
-      
-      if (!spaceData) {
-        throw new Error('Space not found');
+
+      // Fetch host info
+      const { data: hostData, error: hostError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, profile_photo_url, bio, created_at')
+        .eq('id', workspaceData.host_id)
+        .single();
+
+      if (hostError) {
+        sreLogger.warn('Error fetching host info', { hostId: workspaceData.host_id }, hostError);
+        // Continue without host details if fail
       }
       
       sreLogger.debug('Space fetched successfully', {
-        spaceId: spaceData.id,
-        title: (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio',
-        confirmation_type: spaceData.confirmation_type,
-        published: (spaceData as any).published ?? true,
+        spaceId: workspaceData.id,
+        title: workspaceData.name,
+        published: workspaceData.published,
         component: 'SpaceDetail'
       });
       
-      // Fallback: se availability non è presente nella RPC, facciamo una query diretta
-      let availabilityData = (spaceData as any).availability;
-      if (!availabilityData) {
-        const { data: spaceAvailability } = await supabase
-          .from('spaces')
-          .select('availability')
-          .eq('id', id)
-          .single();
-        availabilityData = spaceAvailability?.availability;
-      }
+      let availabilityData = workspaceData.availability;
 
       // Normalize availability: parse if string, ensure structure
       let normalizedAvailability = null;
@@ -93,46 +92,67 @@ const SpaceDetail = () => {
         normalizedAvailability = null; // Calendar will not disable dates if null
       }
 
-      // Transform the response to match expected interface
-      // Add title/name compatibility 
-      const title = (spaceData as any).title ?? (spaceData as any).name ?? 'Spazio';
-      
+      // Transform the response to match expected Space interface
       return {
-        ...spaceData,
-        title, // Ensure title is always defined
-        // Add missing fields to match Space type
-        capacity: spaceData.max_capacity,
+        id: workspaceData.id,
+        title: workspaceData.name, // Map name to title
+        description: workspaceData.description || "",
+        photos: workspaceData.photos || [],
+        address: workspaceData.address,
+        latitude: workspaceData.latitude || 0,
+        longitude: workspaceData.longitude || 0,
+        price_per_day: workspaceData.price_per_day,
+        price_per_hour: workspaceData.price_per_hour,
+        max_capacity: workspaceData.max_capacity,
+        capacity: workspaceData.max_capacity,
+        category: workspaceData.category,
+        workspace_features: workspaceData.features || [], // Map features to workspace_features
+        amenities: workspaceData.amenities || [],
+        seating_types: workspaceData.seating_types || [],
+        work_environment: workspaceData.work_environment || "controlled",
+        rules: workspaceData.rules,
+        host_id: workspaceData.host_id, // Keep hidden-for-security logic if needed, but here we use actual ID or masked one
+        published: workspaceData.published || false,
+        created_at: workspaceData.created_at || new Date().toISOString(),
+        updated_at: workspaceData.updated_at || new Date().toISOString(),
+        deleted_at: workspaceData.deleted_at || null,
+        is_suspended: workspaceData.is_suspended || false,
+        suspension_reason: workspaceData.suspension_reason || null,
+        suspended_at: workspaceData.suspended_at || null,
+        suspended_by: workspaceData.suspended_by || null,
+        availability: normalizedAvailability,
+        cancellation_policy: workspaceData.cancellation_policy,
+        confirmation_type: workspaceData.confirmation_type || "instant",
         approved_at: null,
         approved_by: null,
-        deleted_at: null,
-        host_id: 'hidden-for-security',
-        is_suspended: false,
+        approximate_location: null,
+        cached_avg_rating: null,
+        cached_review_count: null,
+        city_name: null,
+        country_code: null,
+        event_friendly_tags: workspaceData.event_friendly_tags || [],
+        ideal_guest_tags: workspaceData.ideal_guest_tags || [],
+        pending_approval: false,
         rejection_reason: null,
         revision_notes: null,
         revision_requested: false,
-        suspended_at: null,
-        suspended_by: null,
-        updated_at: spaceData.created_at,
-        tags: [],
-        space_type: null,
-        city: null,
-        country: null,
-        images: spaceData.photos || [],
-        pending_approval: false,
-        space_creation_restricted: false,
-        published: (spaceData as any).published ?? true,
-        availability: normalizedAvailability, // Pass normalized availability
-        host: {
-          id: 'host-id', // We don't expose the real host_id for security
-          first_name: (spaceData as any).host_first_name ?? '',
-          last_name: (spaceData as any).host_last_name ?? '',
-          profile_photo_url: (spaceData as any).host_profile_photo ?? null,
-          bio: (spaceData as any).host_bio ?? '',
-          created_at: (spaceData as any).host_created_at ?? new Date().toISOString()
+        host: hostData ? {
+          id: hostData.id,
+          first_name: hostData.first_name,
+          last_name: hostData.last_name,
+          profile_photo_url: hostData.profile_photo_url,
+          bio: hostData.bio,
+          created_at: hostData.created_at
+        } : {
+          id: 'unknown',
+          first_name: 'Host',
+          last_name: '',
+          profile_photo_url: null,
+          created_at: new Date().toISOString()
         },
-        host_total_spaces: Number((spaceData as any).host_total_spaces ?? 0),
-        host_stripe_account_id: (spaceData as any).host_stripe_account_id ?? '',
-        host_stripe_connected: (spaceData as any).host_stripe_connected ?? false
+        host_total_spaces: 0, // Placeholder as we don't count here
+        host_stripe_account_id: '', // Not fetching for public view usually
+        host_stripe_connected: false
       } as unknown as Space & {
         host?: {
           id: string;
