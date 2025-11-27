@@ -30,7 +30,7 @@ export const HostDashboardHeader: React.FC<HostDashboardHeaderProps> = ({
             <BarChart3 className="w-4 h-4 mr-2" />
             Prenotazioni
           </Button>
-          <Button onClick={() => navigate('/space/new')}>
+          <Button onClick={() => navigate('/host/space/new')}>
             <Building className="w-4 h-4 mr-2" />
             Nuovo Spazio
           </Button>

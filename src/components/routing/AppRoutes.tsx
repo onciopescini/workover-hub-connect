@@ -132,6 +132,9 @@ export const AppRoutes = () => {
         } />
         {/* Legacy redirect from removed Events section */}
         <Route path="events" element={<Navigate to="/networking" replace />} />
+
+        {/* Redirect /space/new to /host/space/new */}
+        <Route path="space/new" element={<Navigate to="/host/space/new" replace />} />
         
         {/* Public user profiles */}
         <Route path="users/:userId" element={
