@@ -47,7 +47,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
       title: 'Aggiungi Spazio',
       description: 'Pubblica nuovo spazio',
       icon: <Plus className="w-4 h-4" />,
-      onClick: () => navigate('/space/new'),
+      onClick: () => navigate('/host/space/new'),
       highlight: true
     },
     {
