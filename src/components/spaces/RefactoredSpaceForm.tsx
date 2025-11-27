@@ -20,6 +20,7 @@ import { startImageOptimization } from "@/lib/image-optimization";
 import { useLogger } from "@/hooks/useLogger";
 import { sreLogger } from '@/lib/sre-logger';
 import type { Space } from "@/types/space";
+import type { WorkspaceInsert } from "@/types/workspace";
 
 interface RefactoredSpaceFormProps {
   initialData?: Space;
@@ -282,25 +283,25 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         throw new Error("You must be logged in to create a space");
       }
 
-      // Prepare data for database insertion - ensure proper typing and structure
-      const spaceData = {
-        title: data.title,
-        description: data.description,
+      // Refactor: Prepare data for database insertion targeting 'workspaces' table
+      const spaceData: WorkspaceInsert = {
+        name: data.title, // Map title -> name
+        description: data.description || "",
         category: data.category,
         max_capacity: data.max_capacity,
-        workspace_features: data.workspace_features,
+        features: data.workspace_features || [], // Map workspace_features -> features
         work_environment: data.work_environment,
-        amenities: data.amenities,
-        seating_types: data.seating_types,
+        amenities: data.amenities || [],
+        seating_types: data.seating_types || [],
         price_per_hour: data.price_per_hour,
         price_per_day: data.price_per_day,
         address: data.address,
-        latitude: data.latitude ?? null,
-        longitude: data.longitude ?? null,
+        latitude: data.latitude ?? 0,
+        longitude: data.longitude ?? 0,
         photos: photoPreviewUrls,
         rules: data.rules ?? null,
-        ideal_guest_tags: data.ideal_guest_tags,
-        event_friendly_tags: data.event_friendly_tags,
+        ideal_guest_tags: data.ideal_guest_tags || [],
+        event_friendly_tags: data.event_friendly_tags || [],
         confirmation_type: data.confirmation_type,
         availability: data.availability || defaultAvailability, // Save as JSON object (jsonb column)
         published: data.published,
@@ -308,14 +309,14 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       };
       
       if (isEdit && initialData) {
-        // Update existing space
+        // Update existing space in workspaces table
         sreLogger.info('Updating existing space', {
           component: 'RefactoredSpaceForm',
           action: 'update_space',
           spaceId: initialData.id
         });
-        const { error } = await supabase
-          .from("spaces")
+        const { error } = await (supabase
+          .from("workspaces" as any) as any)
           .update(spaceData)
           .eq("id", initialData.id);
           
@@ -335,9 +336,9 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         });
         toast.success("Space updated successfully!");
       } else {
-        // Create new space
-        const { data: newSpace, error } = await supabase
-          .from("spaces")
+        // Create new space in workspaces table
+        const { data: newSpace, error } = await (supabase
+          .from("workspaces" as any) as any)
           .insert(spaceData)
           .select("id")
           .single();

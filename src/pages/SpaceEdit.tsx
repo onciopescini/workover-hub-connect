@@ -39,8 +39,9 @@ const SpaceEdit = () => {
         setIsLoading(true);
         sreLogger.debug('Fetching space for edit', { spaceId: id, component: 'SpaceEdit' });
         
-        const { data, error } = await supabase
-          .from('spaces')
+        // Refactor: Fetch from 'workspaces' table
+        const { data, error } = await (supabase
+          .from('workspaces' as any) as any)
           .select('*')
           .eq('id', id)
           .eq('host_id', authState.user?.id ?? '') // Security check
@@ -59,8 +60,54 @@ const SpaceEdit = () => {
           return;
         }
 
-        sreLogger.debug('Space loaded for edit', { spaceId: id, title: data.title, component: 'SpaceEdit' });
-        setSpace(data);
+        // Map workspace data to Space type for the form
+        const mappedSpace: Space = {
+          id: data.id,
+          title: data.name, // Map name -> title
+          description: data.description || "",
+          photos: data.photos || [],
+          address: data.address,
+          latitude: data.latitude || 0,
+          longitude: data.longitude || 0,
+          price_per_day: data.price_per_day,
+          price_per_hour: data.price_per_hour,
+          max_capacity: data.max_capacity,
+          capacity: data.max_capacity,
+          category: data.category,
+          workspace_features: data.features || [], // Map features -> workspace_features
+          amenities: data.amenities || [],
+          seating_types: data.seating_types || [],
+          work_environment: data.work_environment || "controlled",
+          rules: data.rules,
+          host_id: data.host_id,
+          published: data.published || false,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          deleted_at: data.deleted_at || null,
+          is_suspended: data.is_suspended || false,
+          suspension_reason: data.suspension_reason || null,
+          suspended_at: data.suspended_at || null,
+          suspended_by: data.suspended_by || null,
+          availability: data.availability,
+          cancellation_policy: data.cancellation_policy,
+          confirmation_type: data.confirmation_type || "instant",
+          approved_at: null,
+          approved_by: null,
+          approximate_location: null,
+          cached_avg_rating: null,
+          cached_review_count: null,
+          city_name: null,
+          country_code: null,
+          event_friendly_tags: data.event_friendly_tags || [],
+          ideal_guest_tags: data.ideal_guest_tags || [],
+          pending_approval: false,
+          rejection_reason: null,
+          revision_notes: null,
+          revision_requested: false
+        };
+
+        sreLogger.debug('Space loaded for edit', { spaceId: id, title: mappedSpace.title, component: 'SpaceEdit' });
+        setSpace(mappedSpace);
       } catch (error) {
         sreLogger.error('Exception fetching space', { spaceId: id, component: 'SpaceEdit' }, error as Error);
         toast.error("Errore nel caricamento dello spazio");
