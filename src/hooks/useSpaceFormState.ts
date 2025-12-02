@@ -13,7 +13,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [processingJobs, setProcessingJobs] = useState<string[]>([]);
   
-  const [formData, setFormData] = useState<Partial<SpaceInsert>>({
+  // Usiamo 'any' qui per evitare blocchi se il tipo SpaceInsert non è aggiornato
+  const [formData, setFormData] = useState<any>({
     title: '',
     description: '',
     category: '',
@@ -26,58 +27,60 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     amenities: [],
     seating_types: [],
     rules: '',
-    confirmation_type: 'instant', // Default
-    published: false, // Default
+    confirmation_type: 'instant',
+    published: false,
   });
 
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData>(defaultAvailability);
 
-  // Initialization Logic - REWRITTEN
+  // Initialization Logic
   useEffect(() => {
     if (initialData) {
-      console.log('Initializing form with data:', initialData);
+      // TRUCCO: Convertiamo in 'any' per leggere tutti i campi dal DB
+      // anche se TypeScript non li conosce ancora.
+      const dbData = initialData as any;
+      
+      console.log('Initializing form with DB data:', dbData);
 
-      // 1. Map DB fields to Form State correctly
       setFormData({
-        title: initialData.title || initialData.name || '', // Handle name/title mapping
-        description: initialData.description || '',
-        category: initialData.category || '',
-        work_environment: initialData.work_environment || '',
-        address: initialData.address || '',
-        max_capacity: initialData.max_capacity || 1,
-        price_per_hour: initialData.price_per_hour || 0,
-        price_per_day: initialData.price_per_day || 0,
-        workspace_features: initialData.workspace_features || initialData.features || [],
-        amenities: initialData.amenities || [],
-        seating_types: initialData.seating_types || [],
-        rules: initialData.rules || '',
-        confirmation_type: initialData.confirmation_type || 'instant',
-        published: Boolean(initialData.published), // Ensure boolean
-        latitude: initialData.latitude,
-        longitude: initialData.longitude,
+        title: dbData.title || dbData.name || '', 
+        description: dbData.description || '',
+        category: dbData.category || '',
+        work_environment: dbData.work_environment || '',
+        address: dbData.address || '',
+        max_capacity: dbData.max_capacity || 1,
+        price_per_hour: dbData.price_per_hour || 0,
+        price_per_day: dbData.price_per_day || 0,
+        workspace_features: dbData.workspace_features || dbData.features || [],
+        amenities: dbData.amenities || [],
+        seating_types: dbData.seating_types || [],
+        rules: dbData.rules || '',
+        confirmation_type: dbData.confirmation_type || 'instant',
+        published: Boolean(dbData.published), // Forza booleano
+        latitude: dbData.latitude,
+        longitude: dbData.longitude,
       });
 
-      // 2. Handle Availability
-      if (initialData.availability) {
-        // Ensure availability is treated as the correct type
-        setAvailabilityData(initialData.availability as unknown as AvailabilityData);
+      if (dbData.availability) {
+        setAvailabilityData(dbData.availability as unknown as AvailabilityData);
       }
 
-      // 3. Handle Photos - CRITICAL FIX
-      // Load existing URL strings directly into previews without creating blobs
-      if (initialData.photos && Array.isArray(initialData.photos) && initialData.photos.length > 0) {
-        console.log('Loading existing photos:', initialData.photos);
-        setPhotoPreviewUrls(initialData.photos);
+      // Gestione Foto Corretta (Niente BLOB per URL esistenti)
+      // Controlliamo sia 'photos' (nuovo) che 'images' (vecchio)
+      const existingPhotos = dbData.photos || dbData.images;
+      if (existingPhotos && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
+        console.log('Loading existing photos:', existingPhotos);
+        setPhotoPreviewUrls(existingPhotos);
       }
     }
   }, [initialData]);
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
   const handleAddressChange = (address: string, coordinates?: { lat: number; lng: number }) => {
-    setFormData((prev) => ({
+    setFormData((prev: any) => ({
       ...prev,
       address,
       latitude: coordinates?.lat,
@@ -90,8 +93,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
   };
 
   const handleCheckboxArrayChange = (field: string, item: string, checked: boolean) => {
-    setFormData((prev) => {
-      const currentArray = (prev[field as keyof typeof prev] as string[]) || [];
+    setFormData((prev: any) => {
+      const currentArray = (prev[field] as string[]) || [];
       const newArray = checked
         ? [...currentArray, item]
         : currentArray.filter((i) => i !== item);
