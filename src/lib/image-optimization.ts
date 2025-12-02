@@ -64,7 +64,20 @@ export const startImageOptimization = async (
       throw new Error(`Optimization request failed: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    // Handle case where response might not be JSON (e.g. HTML 404/500)
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      const text = await response.text().catch(() => 'No body');
+      imageLogger.error('Failed to parse optimization response', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        bodyPreview: text.substring(0, 200)
+      });
+      throw new Error(`Invalid response from optimization service: ${response.statusText}`);
+    }
     
     if (!result.success) {
       throw new Error(result.error || 'Unknown optimization error');

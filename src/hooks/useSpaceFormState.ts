@@ -15,6 +15,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
   const [processingJobs, setProcessingJobs] = useState<string[]>([]);
   
   // Use 'any' to avoid type blocking if types are not fully aligned with DB
+  // This state is mapped from DB 'workspaces' table which may have different field names
+  // e.g. 'name' vs 'title', 'features' vs 'workspace_features'
   const [formData, setFormData] = useState<any>({
     title: '',
     description: '',
