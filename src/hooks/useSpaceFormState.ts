@@ -70,8 +70,10 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
       // Check both 'photos' (new schema) and 'images' (legacy schema)
       const existingPhotos = dbData.photos || dbData.images;
       if (existingPhotos && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
-        console.log('Loading existing photos:', existingPhotos);
-        setPhotoPreviewUrls(existingPhotos);
+        // Filter out non-string values to prevent errors
+        const validPhotoUrls = existingPhotos.filter((photo: any) => typeof photo === 'string');
+
+        setPhotoPreviewUrls(validPhotoUrls);
       }
     }
   }, [initialData]);
