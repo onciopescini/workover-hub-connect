@@ -84,16 +84,26 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   }, [photoFiles, photoPreviewUrls, setPhotoFiles, setPhotoPreviewUrls]);
 
   const removePhoto = useCallback((index: number) => {
-    // Revoke the object URL to prevent memory leaks
-    if (photoPreviewUrls[index]) {
-      URL.revokeObjectURL(photoPreviewUrls[index]);
+    // Calculate offset to correctly identify if we are removing an existing photo or a new file
+    const existingCount = photoPreviewUrls.length - photoFiles.length;
+
+    // If we are removing a new file (appended at the end)
+    if (index >= existingCount) {
+      const fileIndex = index - existingCount;
+
+      // Revoke the object URL to prevent memory leaks
+      if (photoPreviewUrls[index]) {
+        URL.revokeObjectURL(photoPreviewUrls[index]);
+      }
+
+      const newFiles = photoFiles.filter((_, i) => i !== fileIndex);
+      setPhotoFiles(newFiles);
     }
     
-    const newFiles = photoFiles.filter((_, i) => i !== index);
+    // Always remove from preview URLs
     const newUrls = photoPreviewUrls.filter((_, i) => i !== index);
-    
-    setPhotoFiles(newFiles);
     setPhotoPreviewUrls(newUrls);
+
     toast.success('Foto rimossa');
   }, [photoFiles, photoPreviewUrls, setPhotoFiles, setPhotoPreviewUrls]);
 
