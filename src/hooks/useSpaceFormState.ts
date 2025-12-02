@@ -28,7 +28,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
     category: "home",
     max_capacity: 1,
     workspace_features: [],
-    work_environment: "controlled",
+    work_environment: "silent",
     amenities: [],
     seating_types: [],
     price_per_hour: 0,

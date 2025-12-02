@@ -11,20 +11,10 @@ import {
   AMENITIES_OPTIONS, 
   SEATING_TYPES_OPTIONS,
   IDEAL_GUEST_OPTIONS,
-  EVENT_FRIENDLY_OPTIONS
+  EVENT_FRIENDLY_OPTIONS,
+  WORK_ENVIRONMENT_OPTIONS,
+  CONFIRMATION_TYPE_OPTIONS
 } from "@/types/space";
-
-// Use the EXACT database enum values from Supabase types
-const WORK_ENVIRONMENT_OPTIONS = [
-  { value: "silent", label: "Silent", description: "Quiet environment for focused work" },
-  { value: "controlled", label: "Controlled", description: "Moderate noise level with some conversations" },
-  { value: "dynamic", label: "Dynamic", description: "Active environment with collaboration and discussions" }
-];
-
-const CONFIRMATION_TYPE_OPTIONS = [
-  { value: "instant", label: "Instant", description: "Bookings are automatically confirmed" },
-  { value: "host_approval", label: "Host Approval", description: "You'll need to approve each booking" }
-];
 
 export const RefactoredSpaceDetails = () => {
   const form = useFormContext<SpaceFormData>();
