@@ -242,7 +242,9 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     sreLogger.info('Space form submission started', { 
       component: 'RefactoredSpaceForm',
       action: 'form_submit',
-      isEdit 
+      isEdit,
+      published: data.published,
+      title: data.title
     });
     
     // Add detailed form validation logging
@@ -304,7 +306,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         event_friendly_tags: data.event_friendly_tags || [],
         confirmation_type: data.confirmation_type,
         availability: data.availability || defaultAvailability, // Save as JSON object (jsonb column)
-        published: data.published,
+        published: Boolean(data.published), // Ensure strict boolean
         host_id: user.id,
       };
       
