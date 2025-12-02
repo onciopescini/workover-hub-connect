@@ -67,12 +67,38 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
         }
       }
 
-      const { availability, ...restData } = initialData;
-      setFormData(restData);
+      // Handle mapping from workspaces table schema (new) to form state (old Space schema)
+      const data = initialData as any;
+
+      const mappedData: Partial<SpaceInsert> = {
+        title: data.name || data.title || "",
+        description: data.description || "",
+        category: data.category || "home",
+        work_environment: data.work_environment || "silent",
+        workspace_features: data.features || data.workspace_features || [],
+        amenities: data.amenities || [],
+        seating_types: data.seating_types || [],
+        price_per_hour: data.price_per_hour || 0,
+        price_per_day: data.price_per_day || 0,
+        address: data.address || "",
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+        photos: data.photos || [],
+        rules: data.rules || "",
+        ideal_guest_tags: data.ideal_guest_tags || [],
+        event_friendly_tags: data.event_friendly_tags || [],
+        confirmation_type: data.confirmation_type || "host_approval",
+        published: data.published ?? false,
+        max_capacity: data.max_capacity || 1,
+      };
+
+      setFormData(prev => ({ ...prev, ...mappedData }));
       setAvailabilityData(parsedAvailability);
       
-      if (initialData.photos && initialData.photos.length > 0) {
-        setPhotoPreviewUrls(initialData.photos as string[]);
+      if (mappedData.photos && mappedData.photos.length > 0) {
+        setPhotoPreviewUrls(mappedData.photos as string[]);
+        // Ensure photoFiles is empty so we don't try to upload existing photos again
+        setPhotoFiles([]);
       }
     }
   }, [initialData]);
