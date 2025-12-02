@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { Space, SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
+import { WorkspaceInsert } from "@/types/workspace";
 
 interface UseSpaceFormStateProps {
   initialData?: Space | undefined;
@@ -52,6 +53,9 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
 
   useEffect(() => {
     if (initialData) {
+      // Cast initialData to any to handle both Space and Workspace types safely
+      const data = initialData as any;
+
       let parsedAvailability = defaultAvailability;
       if (initialData.availability) {
         try {
@@ -67,13 +71,54 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
         }
       }
 
-      const { availability, ...restData } = initialData;
-      setFormData(restData);
+      // Explicitly map fields from Workspace schema (or Space schema) to Form State
+      const mappedFormData: Partial<SpaceInsert> = {
+        // Text fields
+        title: data.name || data.title || "",
+        description: data.description || "",
+        address: data.address || "",
+        rules: data.rules || "",
+
+        // Numerical fields
+        max_capacity: data.max_capacity || 1,
+        price_per_hour: data.price_per_hour || 0,
+        price_per_day: data.price_per_day || 0,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
+
+        // Arrays
+        // Handle 'features' (Workspace) vs 'workspace_features' (Space)
+        workspace_features: data.features || data.workspace_features || [],
+        amenities: data.amenities || [],
+        seating_types: data.seating_types || [],
+        ideal_guest_tags: data.ideal_guest_tags || [],
+        event_friendly_tags: data.event_friendly_tags || [],
+        photos: [], // We handle photos separately below to avoid mixing blobs and strings
+
+        // Enums and Booleans - Explicit Mapping
+        category: data.category || "home",
+        work_environment: data.work_environment || "silent",
+        confirmation_type: data.confirmation_type || "host_approval",
+        published: Boolean(data.published),
+      };
+
+      setFormData(prev => ({ ...prev, ...mappedFormData }));
       setAvailabilityData(parsedAvailability);
       
-      if (initialData.photos && initialData.photos.length > 0) {
-        setPhotoPreviewUrls(initialData.photos as string[]);
+      // Image Handling Logic:
+      // 1. If we have photos strings, use them for previews directly.
+      // 2. Do NOT create ObjectURLs for these strings.
+      // 3. Clear photoFiles so the uploader doesn't try to process them as Files.
+      if (data.photos && Array.isArray(data.photos) && data.photos.length > 0) {
+        const existingUrls = data.photos.filter((p: any) => typeof p === 'string');
+        setPhotoPreviewUrls(existingUrls);
+        setPhotoFiles([]); // Ensure empty to prevent blob errors
+      } else {
+        setPhotoPreviewUrls([]);
+        setPhotoFiles([]);
       }
+
+      console.log("Form State Initialized:", { ...mappedFormData, photos: data.photos });
     }
   }, [initialData]);
 
