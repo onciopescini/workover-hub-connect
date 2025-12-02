@@ -125,7 +125,9 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
       
       // Set up preview URLs for existing photos
       if (initialData.photos && initialData.photos.length > 0) {
-        setPhotoPreviewUrls(initialData.photos as string[]);
+        // Filter out blob URLs that might have been accidentally saved
+        const validPhotos = (initialData.photos as string[]).filter(url => !url.startsWith('blob:'));
+        setPhotoPreviewUrls(validPhotos);
       }
     }
   }, [initialData, form]);
@@ -227,12 +229,24 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
   };
 
   const removePhoto = (index: number) => {
-    // If it's a preview URL from a file we're about to upload
-    if (index < photoFiles.length && photoPreviewUrls[index]) {
-      URL.revokeObjectURL(photoPreviewUrls[index]);
-      setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+    // Calculate how many photos are existing (from DB) vs new (files)
+    // Assumption: photoPreviewUrls = [...existingPhotos, ...newFilesPreviews]
+    const existingCount = photoPreviewUrls.length - photoFiles.length;
+
+    // If the index corresponds to a new file (appended at the end)
+    if (index >= existingCount) {
+      const fileIndex = index - existingCount;
+
+      // Revoke the object URL
+      if (photoPreviewUrls[index]) {
+        URL.revokeObjectURL(photoPreviewUrls[index]);
+      }
+
+      // Remove from photoFiles
+      setPhotoFiles(prev => prev.filter((_, i) => i !== fileIndex));
     }
     
+    // Always remove from preview URLs
     const updatedUrls = photoPreviewUrls.filter((_, i) => i !== index);
     setPhotoPreviewUrls(updatedUrls);
     form.setValue('photos', updatedUrls);
