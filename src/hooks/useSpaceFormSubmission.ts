@@ -52,6 +52,13 @@ export const useSpaceFormSubmission = ({
       return;
     } */
 
+    sreLogger.info('Submitting space form', {
+      isEdit,
+      spaceId: initialDataId,
+      published: formData.published,
+      title: formData.title
+    });
+
     setIsSubmitting(true);
     
     try {
@@ -81,7 +88,7 @@ export const useSpaceFormSubmission = ({
         photos: photoUrls,
         latitude: formData.latitude || 0,
         longitude: formData.longitude || 0,
-        published: formData.published ?? false,
+        published: Boolean(formData.published), // Ensure strict boolean
         amenities: formData.amenities || [],
         seating_types: formData.seating_types || [],
         work_environment: formData.work_environment!,
