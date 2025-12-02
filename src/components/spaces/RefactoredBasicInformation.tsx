@@ -6,13 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { SpaceFormData } from "@/schemas/spaceSchema";
-
-// Use the EXACT database enum values from Supabase types
-const CATEGORY_OPTIONS = [
-  { value: "home", label: "Home", description: "Residential space" },
-  { value: "outdoor", label: "Outdoor", description: "Outdoor workspace" },
-  { value: "professional", label: "Professional", description: "Professional office space" }
-];
+import { CATEGORY_OPTIONS } from "@/types/space";
 
 export const RefactoredBasicInformation = () => {
   const form = useFormContext<SpaceFormData>();
