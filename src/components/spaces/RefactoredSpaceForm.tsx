@@ -80,13 +80,16 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
   // Load initial data if editing
   useEffect(() => {
     if (initialData) {
+      // Cast to any to access potentially aliased DB fields (name vs title, features vs workspace_features)
+      const dbData = initialData as any;
+
       // Parse availability if it exists
       let parsedAvailability = defaultAvailability;
-      if (initialData.availability) {
+      if (dbData.availability) {
         try {
-          const availabilityJson = typeof initialData.availability === 'string' 
-            ? JSON.parse(initialData.availability)
-            : initialData.availability;
+          const availabilityJson = typeof dbData.availability === 'string'
+            ? JSON.parse(dbData.availability)
+            : dbData.availability;
           
           if (availabilityJson && typeof availabilityJson === 'object' && availabilityJson.recurring) {
             parsedAvailability = availabilityJson;
@@ -94,39 +97,43 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         } catch (parseError) {
           error("Error parsing availability", parseError as Error, { 
             spaceId: initialData.id,
-            availabilityData: initialData.availability 
+            availabilityData: dbData.availability
           });
         }
       }
 
-      // Reset form with initial data
+      // Reset form with initial data, ensuring all fields are correctly mapped from DB schema
       form.reset({
-        title: initialData.title || "",
-        description: initialData.description || "",
-        category: initialData.category || "home",
-        max_capacity: initialData.max_capacity || 1,
-        workspace_features: initialData.workspace_features || [],
-        work_environment: initialData.work_environment || "silent",
-        amenities: initialData.amenities || [],
-        seating_types: initialData.seating_types || [],
-        price_per_hour: initialData.price_per_hour || 0,
-        price_per_day: initialData.price_per_day || 0,
-        address: initialData.address || "",
-        latitude: initialData.latitude || 0,
-        longitude: initialData.longitude || 0,
-        photos: initialData.photos || [],
-        rules: initialData.rules || "",
-        ideal_guest_tags: initialData.ideal_guest_tags || [],
-        event_friendly_tags: initialData.event_friendly_tags || [],
-        confirmation_type: initialData.confirmation_type || "host_approval",
+        title: dbData.title || dbData.name || "",
+        description: dbData.description || "",
+        category: dbData.category || "home",
+        max_capacity: dbData.max_capacity || 1,
+        workspace_features: dbData.workspace_features || dbData.features || [],
+        work_environment: dbData.work_environment || "silent",
+        amenities: dbData.amenities || [],
+        seating_types: dbData.seating_types || [],
+        price_per_hour: dbData.price_per_hour || 0,
+        price_per_day: dbData.price_per_day || 0,
+        address: dbData.address || "",
+        latitude: dbData.latitude || 0,
+        longitude: dbData.longitude || 0,
+        photos: dbData.photos || dbData.images || [],
+        rules: dbData.rules || "",
+        ideal_guest_tags: dbData.ideal_guest_tags || [],
+        event_friendly_tags: dbData.event_friendly_tags || [],
+        confirmation_type: dbData.confirmation_type || "host_approval",
         availability: parsedAvailability,
-        published: initialData.published || false
+        published: Boolean(dbData.published)
       });
       
       // Set up preview URLs for existing photos
-      if (initialData.photos && initialData.photos.length > 0) {
+      // Check both 'photos' (new schema) and 'images' (legacy schema)
+      const existingPhotos = dbData.photos || dbData.images;
+      if (existingPhotos && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
         // Filter out blob URLs that might have been accidentally saved
-        const validPhotos = (initialData.photos as string[]).filter(url => !url.startsWith('blob:'));
+        const validPhotos = existingPhotos.filter((url: any) =>
+          typeof url === 'string' && !url.startsWith('blob:')
+        );
         setPhotoPreviewUrls(validPhotos);
       }
     }

@@ -251,8 +251,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                       src={url}
                       alt={`Anteprima ${index + 1}`}
                       className="w-full h-full object-cover"
-                      onError={() => {
+                      onError={(e) => {
+                        // Fallback to placeholder or hide broken image
+                        e.currentTarget.style.display = 'none';
                         toast.error(`Errore nel caricamento dell'anteprima ${index + 1}`);
+                        sreLogger.error('Image preview load error', { url, index });
                       }}
                     />
                   </div>
