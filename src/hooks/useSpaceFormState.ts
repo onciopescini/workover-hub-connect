@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Space, SpaceInsert } from '@/types/space';
+import { Space } from '@/types/space';
+import { WorkspaceInsert } from '@/types/workspace';
 import { AvailabilityData } from '@/types/availability';
 import { defaultAvailability } from '@/utils/availabilityUtils';
 
 interface UseSpaceFormStateProps {
-  initialData?: Space | undefined;
+  initialData?: Space | WorkspaceInsert | undefined;
 }
 
 export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
@@ -13,7 +14,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [processingJobs, setProcessingJobs] = useState<string[]>([]);
   
-  // Usiamo 'any' qui per evitare blocchi se il tipo SpaceInsert non è aggiornato
+  // Use 'any' to avoid type blocking if types are not fully aligned with DB
   const [formData, setFormData] = useState<any>({
     title: '',
     description: '',
@@ -36,17 +37,17 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
   // Initialization Logic
   useEffect(() => {
     if (initialData) {
-      // TRUCCO: Convertiamo in 'any' per leggere tutti i campi dal DB
-      // anche se TypeScript non li conosce ancora.
+      // Cast to any to access all fields from DB regardless of strict type (Space vs Workspace)
       const dbData = initialData as any;
       
       console.log('Initializing form with DB data:', dbData);
 
       setFormData({
+        // Data Mapping: Map DB fields to form state
         title: dbData.title || dbData.name || '', 
         description: dbData.description || '',
-        category: dbData.category || '',
-        work_environment: dbData.work_environment || '',
+        category: dbData.category || '', // Mapped correctly
+        work_environment: dbData.work_environment || '', // Mapped correctly
         address: dbData.address || '',
         max_capacity: dbData.max_capacity || 1,
         price_per_hour: dbData.price_per_hour || 0,
@@ -56,7 +57,7 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
         seating_types: dbData.seating_types || [],
         rules: dbData.rules || '',
         confirmation_type: dbData.confirmation_type || 'instant',
-        published: Boolean(dbData.published), // Forza booleano
+        published: Boolean(dbData.published), // Ensure boolean type
         latitude: dbData.latitude,
         longitude: dbData.longitude,
       });
@@ -65,8 +66,8 @@ export const useSpaceFormState = ({ initialData }: UseSpaceFormStateProps) => {
         setAvailabilityData(dbData.availability as unknown as AvailabilityData);
       }
 
-      // Gestione Foto Corretta (Niente BLOB per URL esistenti)
-      // Controlliamo sia 'photos' (nuovo) che 'images' (vecchio)
+      // Handle Photos: Ensure they are treated as URL strings, not blobs
+      // Check both 'photos' (new schema) and 'images' (legacy schema)
       const existingPhotos = dbData.photos || dbData.images;
       if (existingPhotos && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
         console.log('Loading existing photos:', existingPhotos);
