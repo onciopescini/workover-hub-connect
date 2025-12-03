@@ -8,11 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { Space } from "@/types/space";
-import { toast } from "sonner";
-import { sreLogger } from '@/lib/sre-logger';
+import { useSpaceEdit } from '@/hooks/useSpaceEdit';
 
 const SpaceEdit = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,107 +16,8 @@ const SpaceEdit = () => {
   const { isHost } = useRoleAccess();
   const navigate = useNavigate();
   
-  if (!id) {
-    navigate('/host/spaces');
-    return null;
-  }
-  const [space, setSpace] = useState<Space | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSpace = async () => {
-      if (!id) {
-        toast.error("ID spazio non valido");
-        navigate('/host/spaces');
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        sreLogger.debug('Fetching space for edit', { spaceId: id, component: 'SpaceEdit' });
-        
-        // Refactor: Fetch from 'workspaces' table
-        const { data, error } = await (supabase
-          .from('workspaces' as any) as any)
-          .select('*')
-          .eq('id', id)
-          .eq('host_id', authState.user?.id ?? '') // Security check
-          .single();
-
-        if (error) {
-          sreLogger.error('Error fetching space', { spaceId: id, userId: authState.user?.id, component: 'SpaceEdit' }, error as Error);
-          toast.error("Errore nel caricamento dello spazio");
-          navigate('/host/spaces');
-          return;
-        }
-
-        if (!data) {
-          toast.error("Spazio non trovato o non hai i permessi per modificarlo");
-          navigate('/host/spaces');
-          return;
-        }
-
-        // Map workspace data to Space type for the form
-        const mappedSpace: Space = {
-          id: data.id,
-          title: data.name, // Map name -> title
-          description: data.description || "",
-          photos: data.photos || [],
-          address: data.address,
-          latitude: data.latitude || 0,
-          longitude: data.longitude || 0,
-          price_per_day: data.price_per_day,
-          price_per_hour: data.price_per_hour,
-          max_capacity: data.max_capacity,
-          capacity: data.max_capacity,
-          category: data.category,
-          workspace_features: data.features || [], // Map features -> workspace_features
-          amenities: data.amenities || [],
-          seating_types: data.seating_types || [],
-          work_environment: data.work_environment || "controlled",
-          rules: data.rules,
-          host_id: data.host_id,
-          published: data.published || false,
-          created_at: data.created_at,
-          updated_at: data.updated_at,
-          deleted_at: data.deleted_at || null,
-          is_suspended: data.is_suspended || false,
-          suspension_reason: data.suspension_reason || null,
-          suspended_at: data.suspended_at || null,
-          suspended_by: data.suspended_by || null,
-          availability: data.availability,
-          cancellation_policy: data.cancellation_policy,
-          confirmation_type: data.confirmation_type || "instant",
-          approved_at: null,
-          approved_by: null,
-          approximate_location: null,
-          cached_avg_rating: null,
-          cached_review_count: null,
-          city_name: null,
-          country_code: null,
-          event_friendly_tags: data.event_friendly_tags || [],
-          ideal_guest_tags: data.ideal_guest_tags || [],
-          pending_approval: false,
-          rejection_reason: null,
-          revision_notes: null,
-          revision_requested: false
-        };
-
-        sreLogger.debug('Space loaded for edit', { spaceId: id, title: mappedSpace.title, component: 'SpaceEdit' });
-        setSpace(mappedSpace);
-      } catch (error) {
-        sreLogger.error('Exception fetching space', { spaceId: id, component: 'SpaceEdit' }, error as Error);
-        toast.error("Errore nel caricamento dello spazio");
-        navigate('/host/spaces');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (authState.user?.id && !authState.isLoading) {
-      fetchSpace();
-    }
-  }, [id, authState.user?.id, authState.isLoading, navigate]);
+  // Use the refactored hook
+  const { space, isLoading } = useSpaceEdit(id);
 
   if (authState.isLoading || isLoading) {
     return (

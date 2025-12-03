@@ -1,49 +1,45 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Space } from "@/types/space";
 import { sreLogger } from '@/lib/sre-logger';
-
-type SpaceCategory = 'home' | 'outdoor' | 'professional';
-type WorkEnvironment = 'silent' | 'controlled' | 'dynamic';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export const useSpaceEdit = (id: string | undefined) => {
   const navigate = useNavigate();
+  const { authState } = useAuth();
   const [space, setSpace] = useState<Space | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
-  const [category, setCategory] = useState<SpaceCategory>('home');
-  const [workEnvironment, setWorkEnvironment] = useState<WorkEnvironment>('silent');
-  const [pricePerDay, setPricePerDay] = useState(0);
-  const [amenities, setAmenities] = useState<string[]>([]);
-  const [published, setPublished] = useState(false);
-
-  // Type guard functions
-  const isValidCategory = (value: any): value is SpaceCategory => {
-    return ['home', 'outdoor', 'professional'].includes(value);
-  };
-
-  const isValidWorkEnvironment = (value: any): value is WorkEnvironment => {
-    return ['silent', 'controlled', 'dynamic'].includes(value);
-  };
 
   useEffect(() => {
     const fetchSpace = async () => {
+      // Wait for auth to be ready
+      if (authState.isLoading) return;
+
+      if (!id) {
+        sreLogger.error("Space ID is missing", {});
+        navigate('/host/spaces');
+        return;
+      }
+
+      // Ensure user is authenticated
+      if (!authState.isAuthenticated || !authState.user?.id) {
+        // Let the page component handle auth redirect if needed,
+        // but stop fetching here.
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        if (!id) {
-          sreLogger.error("Space ID is missing", {});
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('spaces')
+        // Fetch from 'workspaces' table (new schema)
+        // using explicit casting to bypass type check for now
+        const { data, error } = await (supabase
+          .from('workspaces' as any) as any)
           .select('*')
           .eq('id', id)
+          .eq('host_id', authState.user.id) // Security check
           .single();
 
         if (error) {
@@ -53,61 +49,52 @@ export const useSpaceEdit = (id: string | undefined) => {
         }
 
         if (data) {
-          setSpace(data);
-          setTitle(data.title);
-          setDescription(data.description);
-          setAddress(data.address);
-          setCategory(isValidCategory(data.category) ? data.category : 'home');
-          setWorkEnvironment(isValidWorkEnvironment(data.work_environment) ? data.work_environment : 'silent');
-          setPricePerDay(data.price_per_day);
-          setAmenities(data.amenities || []);
-          setPublished(data.published);
+          // Map workspace data to Space type
+          // We map 'name' -> 'title', 'features' -> 'workspace_features', etc.
+          // This ensures the form receives data in the shape it expects.
+          const mappedSpace: any = {
+            id: data.id,
+            title: data.name,
+            description: data.description || "",
+            photos: data.photos || [],
+            address: data.address,
+            latitude: data.latitude || 0,
+            longitude: data.longitude || 0,
+            price_per_day: data.price_per_day,
+            price_per_hour: data.price_per_hour,
+            max_capacity: data.max_capacity,
+            capacity: data.max_capacity,
+            category: data.category,
+            workspace_features: data.features || [],
+            amenities: data.amenities || [],
+            seating_types: data.seating_types || [],
+            work_environment: data.work_environment || "controlled",
+            rules: data.rules,
+            host_id: data.host_id,
+            published: data.published || false,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            availability: data.availability,
+            cancellation_policy: data.cancellation_policy,
+            confirmation_type: data.confirmation_type || "instant",
+            event_friendly_tags: data.event_friendly_tags || [],
+            ideal_guest_tags: data.ideal_guest_tags || [],
+          };
+
+          setSpace(mappedSpace as Space);
+        } else {
+           toast.error("Space not found or permission denied");
+           navigate('/host/spaces');
         }
+      } catch (e) {
+         sreLogger.error("Exception fetching space", { spaceId: id }, e as Error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (id) {
-      fetchSpace();
-    }
-  }, [id]);
-
-  const handleUpdateSpace = async () => {
-    if (!id) {
-      sreLogger.error("Space ID is missing for update", {});
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      const { error } = await supabase
-        .from('spaces')
-        .update({
-          title,
-          description,
-          address,
-          category,
-          work_environment: workEnvironment,
-          price_per_day: pricePerDay,
-          amenities,
-          published,
-        })
-        .eq('id', id);
-
-      if (error) {
-        sreLogger.error("Error updating space", { spaceId: id }, error as Error);
-        toast.error("Failed to update space.");
-        return;
-      }
-
-      toast.success("Space updated successfully!");
-      navigate('/host/spaces');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchSpace();
+  }, [id, authState.isLoading, authState.isAuthenticated, authState.user?.id, navigate]);
 
   const handleDeleteSpace = async () => {
     if (!id) {
@@ -118,8 +105,9 @@ export const useSpaceEdit = (id: string | undefined) => {
     try {
       setIsLoading(true);
 
-      const { error } = await supabase
-        .from('spaces')
+      // Delete from workspaces table
+      const { error } = await (supabase
+        .from('workspaces' as any) as any)
         .delete()
         .eq('id', id);
 
@@ -136,34 +124,9 @@ export const useSpaceEdit = (id: string | undefined) => {
     }
   };
 
-  const handleAmenityChange = (amenity: string) => {
-    if (amenities.includes(amenity)) {
-      setAmenities(amenities.filter(a => a !== amenity));
-    } else {
-      setAmenities([...amenities, amenity]);
-    }
-  };
-
   return {
     space,
     isLoading,
-    title,
-    description,
-    address,
-    category,
-    workEnvironment,
-    pricePerDay,
-    amenities,
-    published,
-    setTitle,
-    setDescription,
-    setAddress,
-    setCategory,
-    setWorkEnvironment,
-    setPricePerDay,
-    setPublished,
-    handleUpdateSpace,
-    handleDeleteSpace,
-    handleAmenityChange
+    handleDeleteSpace
   };
 };
