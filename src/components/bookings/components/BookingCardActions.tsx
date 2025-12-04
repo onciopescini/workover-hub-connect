@@ -27,12 +27,13 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
   const handlePayNow = async () => {
     try {
       const { data: spaceData, error: spaceError } = await supabase
-        .from('spaces')
-        .select('price_per_hour, price_per_day, host_id, profiles(stripe_account_id)')
+        .from('workspaces')
+        .select('price_per_hour, price_per_day, host_id, profiles(stripe_account_id, stripe_connected)')
         .eq('id', booking.space_id)
         .single();
       
-      if (spaceError || !spaceData?.profiles?.stripe_account_id) {
+      // Strict validation: check for explicit true on stripe_connected
+      if (spaceError || !spaceData?.profiles?.stripe_connected) {
         toast.error('Host non collegato a Stripe');
         return;
       }

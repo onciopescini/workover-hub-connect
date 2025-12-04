@@ -267,7 +267,7 @@ export const useSpaceAvailability = (spaceId: string, selectedMonth: Date) => {
       
       // Recupera la configurazione di disponibilità dello spazio
       const { data: spaceData } = await supabase
-        .from('spaces')
+        .from('workspaces')
         .select('availability')
         .eq('id', spaceId)
         .single();
