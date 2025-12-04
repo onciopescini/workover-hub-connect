@@ -46,7 +46,7 @@ const SpaceDetail = () => {
       // Fetch host info
       const { data: hostData, error: hostError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, profile_photo_url, bio, created_at')
+        .select('id, first_name, last_name, profile_photo_url, bio, created_at, stripe_account_id, stripe_connected')
         .eq('id', workspaceData.host_id)
         .single();
 
@@ -151,8 +151,8 @@ const SpaceDetail = () => {
           created_at: new Date().toISOString()
         },
         host_total_spaces: 0, // Placeholder as we don't count here
-        host_stripe_account_id: '', // Not fetching for public view usually
-        host_stripe_connected: false
+        host_stripe_account_id: hostData?.stripe_account_id || '',
+        host_stripe_connected: hostData?.stripe_connected || false
       } as unknown as Space & {
         host?: {
           id: string;
