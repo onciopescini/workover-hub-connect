@@ -367,7 +367,8 @@ export function TwoStepBookingForm({
       setBookingState(prev => ({
         ...prev,
         availableSpots: capacity.availableSpots,
-        guestsCount: Math.min(prev.guestsCount, capacity.availableSpots) // Adjust guests if needed
+        // Ensure guest count is at least 1, even if spots are 0 (which triggers validation error later)
+        guestsCount: Math.max(1, Math.min(prev.guestsCount, capacity.availableSpots))
       }));
 
       if (capacity.availableSpots === 0) {
@@ -377,9 +378,12 @@ export function TwoStepBookingForm({
   };
 
   const handleGuestsChange = (count: number) => {
+    // Hard minimum constraint of 1
+    const validCount = Math.max(1, count);
+
     setBookingState(prev => ({
       ...prev,
-      guestsCount: count
+      guestsCount: validCount
     }));
   };
 
