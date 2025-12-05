@@ -18,6 +18,18 @@ module.exports = {
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+        diagnostics: {
+            ignoreCodes: [1343, 2339]
+        },
+        astTransformers: {
+            before: [
+                {
+                    path: 'ts-jest-mock-import-meta',
+                    options: { metaObjectReplacement: { env: { DEV: true } } }
+                }
+            ]
+        }
+    }],
   },
 };
