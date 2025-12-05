@@ -17,7 +17,7 @@ export async function getAvailableCapacity(
   try {
     // Get space max capacity
     const { data: space, error: spaceError } = await supabase
-      .from('spaces')
+      .from('workspaces' as any)
       .select('max_capacity')
       .eq('id', spaceId)
       .single();
