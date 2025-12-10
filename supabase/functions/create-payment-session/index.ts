@@ -203,13 +203,28 @@ serve(async (req) => {
       }
       
       // Verify host fiscal_regime
-      const { data: spaceData } = await supabase
-        .from('spaces')
-        .select('host_id, profiles!spaces_host_id_fkey(fiscal_regime)')
+      // Refactor: use workspaces table and decoupled profile fetch
+      const { data: workspaceData, error: wsError } = await supabase
+        .from('workspaces')
+        .select('host_id')
         .eq('id', space_id)
         .single();
+
+      if (wsError || !workspaceData) {
+        console.error('[FISCAL-DATA] Workspace not found:', wsError);
+        return new Response(
+          JSON.stringify({ error: 'Space not found' }),
+          { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+        );
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('fiscal_regime')
+        .eq('id', workspaceData.host_id)
+        .single();
       
-      if (!spaceData?.profiles?.fiscal_regime) {
+      if (profileError || !profileData?.fiscal_regime) {
         return new Response(
           JSON.stringify({ 
             error: 'Host non ha configurato il regime fiscale',
@@ -259,17 +274,11 @@ serve(async (req) => {
 
     // Validazione booking - blocca pagamento se in pending_approval
     console.log('[PAYMENT-SESSION] Validating booking status...');
+
+    // Step 1: Fetch booking only
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select(`
-        id,
-        status,
-        spaces (
-          id,
-          title,
-          confirmation_type
-        )
-      `)
+      .select('id, status, space_id')
       .eq('id', booking_id)
       .single();
 
@@ -281,6 +290,21 @@ serve(async (req) => {
       );
     }
 
+    // Step 2: Fetch workspace details (using workspaces table)
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id, name, confirmation_type')
+      .eq('id', booking.space_id)
+      .single();
+
+    if (workspaceError || !workspace) {
+      console.error('[PAYMENT-SESSION] Workspace not found:', workspaceError);
+      return new Response(
+        JSON.stringify({ error: 'Space not found associated with booking' }),
+        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
     // CRITICAL: Blocca pagamento se la prenotazione è in attesa di approvazione host
     if (booking.status === 'pending_approval') {
       console.log(`[PAYMENT-BLOCKED] Booking ${booking_id} is pending_approval, payment not allowed yet`);
@@ -288,7 +312,7 @@ serve(async (req) => {
         JSON.stringify({ 
           error: 'Questa prenotazione è in attesa di approvazione dall\'host. Non puoi ancora pagare.',
           status: booking.status,
-          space_title: booking.spaces?.title
+          space_title: workspace.name
         }),
         { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
       );
