@@ -73,8 +73,8 @@ function computePricing(i: PricingInput): PricingOutput {
   const total = round(base + serviceFee + vat);
   
   const guestLabel = i.guestsCount === 1 ? 'persona' : 'persone';
-  const labelPrice = i.pricePerDay && isDayRate ? i.pricePerDay : (i.pricePerHour || 0);
-  const labelUnit = isDayRate ? 'giorno' : 'ora';
+  // const labelPrice = i.pricePerDay && isDayRate ? i.pricePerDay : (i.pricePerHour || 0); // Unused
+  // const labelUnit = isDayRate ? 'giorno' : 'ora'; // Unused
 
   return {
     base: round(base),
@@ -92,6 +92,9 @@ function computePricing(i: PricingInput): PricingOutput {
 }
 
 serve(async (req) => {
+  // Log request for debugging
+  console.log(`[PAYMENT-SESSION] Request method: ${req.method}`);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: combineHeaders() });
   }
@@ -139,10 +142,22 @@ serve(async (req) => {
     const user = authData?.user;
     if (!user?.email) throw new Error('User not authenticated');
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error('[PAYMENT-SESSION] Invalid JSON body:', e);
+      return new Response(JSON.stringify({ error: 'Invalid JSON request body' }), {
+        status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' })
+      });
+    }
+
+    console.log('[PAYMENT-SESSION] Request body:', JSON.stringify(body));
+
     const { booking_id, fiscal_data } = body;
 
     if (!booking_id) {
+      console.error('[PAYMENT-SESSION] Missing booking_id');
       return new Response(JSON.stringify({ error: 'Missing booking_id' }), {
         status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' })
       });
@@ -157,13 +172,16 @@ serve(async (req) => {
       .single();
 
     if (bookingError || !booking) {
+      console.error('[PAYMENT-SESSION] Booking not found or error:', bookingError);
       return new Response(JSON.stringify({ error: 'Prenotazione non trovata' }), {
         status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' })
       });
     }
+    console.log('[PAYMENT-SESSION] Booking fetched:', JSON.stringify(booking));
 
     // Booking Status Validation
     if (['pending_approval', 'cancelled', 'rejected'].includes(booking.status)) {
+        console.error('[PAYMENT-SESSION] Invalid booking status:', booking.status);
         return new Response(JSON.stringify({
             error: `Stato prenotazione non valido: ${booking.status}`
         }), { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) });
@@ -171,6 +189,7 @@ serve(async (req) => {
 
     // 4. Calculate Duration
     if (!booking.booking_date || !booking.start_time || !booking.end_time) {
+        console.error('[PAYMENT-SESSION] Missing timing data for booking');
         return new Response(JSON.stringify({ error: 'Dati temporali prenotazione mancanti' }), {
             status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' })
         });
@@ -179,9 +198,8 @@ serve(async (req) => {
     const startDateTime = new Date(`${booking.booking_date}T${booking.start_time}`);
     const endDateTime = new Date(`${booking.booking_date}T${booking.end_time}`);
 
-    // Handle crossing midnight if needed (though unlikely for single booking_date)
-    // If end < start, assume next day? Safer to throw error for MVP unless specified.
     if (endDateTime <= startDateTime) {
+         console.error('[PAYMENT-SESSION] Invalid end time (before start)');
          return new Response(JSON.stringify({ error: 'Orario di fine non valido (precedente o uguale all\'inizio)' }), {
             status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' })
         });
@@ -189,6 +207,7 @@ serve(async (req) => {
 
     const durationMs = endDateTime.getTime() - startDateTime.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
+    console.log('[PAYMENT-SESSION] Calculated duration (hours):', durationHours);
 
     // 5. Fetch Workspace
     console.log('[PAYMENT-SESSION] Fetching workspace:', booking.space_id);
@@ -199,12 +218,15 @@ serve(async (req) => {
       .single();
 
     if (workspaceError || !workspace) {
+      console.error('[PAYMENT-SESSION] Workspace not found or error:', workspaceError);
       return new Response(JSON.stringify({ error: 'Spazio non trovato' }), {
         status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' })
       });
     }
+    console.log('[PAYMENT-SESSION] Workspace fetched:', JSON.stringify(workspace));
 
     // 6. Fetch Host Profile
+    console.log('[PAYMENT-SESSION] Fetching host profile:', workspace.host_id);
     const { data: hostProfile, error: hostProfileError } = await supabase
       .from('profiles')
       .select('id, stripe_account_id, stripe_connected, fiscal_regime')
@@ -212,23 +234,30 @@ serve(async (req) => {
       .single();
 
     if (hostProfileError || !hostProfile) {
+        console.error('[PAYMENT-SESSION] Host profile not found or error:', hostProfileError);
         return new Response(JSON.stringify({ error: 'Profilo host non trovato' }), {
             status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' })
         });
     }
+    console.log('[PAYMENT-SESSION] Host profile fetched (partial):', {
+        id: hostProfile.id,
+        stripe_connected: hostProfile.stripe_connected,
+        has_account_id: !!hostProfile.stripe_account_id
+    });
 
     if (!hostProfile.stripe_connected || !hostProfile.stripe_account_id) {
+        console.error('[PAYMENT-SESSION] Host not connected to Stripe');
         return new Response(JSON.stringify({
             error: 'Host non configurato per ricevere pagamenti',
             action: 'contact_support'
         }), { status: 412, headers: combineHeaders({ 'Content-Type': 'application/json' }) });
     }
 
-    // 7. Fiscal Validation (Preserved)
+    // 7. Fiscal Validation
     let fiscalMetadata = {};
     if (fiscal_data && fiscal_data.request_invoice) {
-       // ... (Minimal validation to save space, assuming frontend does heavy lifting but keeping basic check)
        if (!fiscal_data.tax_id) {
+         console.error('[PAYMENT-SESSION] Missing tax_id for invoice');
          return new Response(JSON.stringify({ error: 'Dati fiscali mancanti' }), {
              status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' })
          });
@@ -254,6 +283,7 @@ serve(async (req) => {
         vatPct,
         stripeTaxEnabled
     });
+    console.log('[PAYMENT-SESSION] Calculated pricing:', JSON.stringify(pricing));
 
     // 9. Create Stripe Session
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', { apiVersion: '2023-10-16' });
@@ -262,10 +292,15 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
+    // Ensure integers for Stripe
     const unitAmount = Math.round((stripeTaxEnabled ? pricing.base + pricing.serviceFee : pricing.total) * 100);
+    const applicationFeeAmount = Math.round(pricing.totalPlatformFee * 100);
+
+    console.log('[PAYMENT-SESSION] Stripe amounts (cents):', { unitAmount, applicationFeeAmount });
+
     const origin = req.headers.get('origin') ?? Deno.env.get('SITE_URL') ?? 'https://workover.example';
 
-    const session = await stripe.checkout.sessions.create({
+    const sessionPayload: any = {
         customer: customerId,
         customer_email: customerId ? undefined : user.email,
         line_items: [{
@@ -283,7 +318,7 @@ serve(async (req) => {
         mode: 'payment',
         automatic_tax: { enabled: stripeTaxEnabled },
         payment_intent_data: {
-            application_fee_amount: Math.round(pricing.totalPlatformFee * 100),
+            application_fee_amount: applicationFeeAmount,
             transfer_data: { destination: hostProfile.stripe_account_id },
             metadata: {
                 booking_id: booking_id,
@@ -302,7 +337,26 @@ serve(async (req) => {
         },
         success_url: `${origin}/bookings?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/bookings?cancelled=true`,
-    });
+    };
+
+    console.log('[PAYMENT-SESSION] Creating Stripe session with payload:', JSON.stringify(sessionPayload, null, 2));
+
+    let session;
+    try {
+        session = await stripe.checkout.sessions.create(sessionPayload);
+    } catch (stripeError: any) {
+        console.error('[PAYMENT-SESSION] Stripe API Error:', stripeError);
+        return new Response(JSON.stringify({
+            error: 'Errore durante la creazione della sessione di pagamento Stripe',
+            details: stripeError.message,
+            code: stripeError.code
+        }), {
+            status: 400, // Or 500, but often Stripe errors are client validation errors (e.g. min amount)
+            headers: combineHeaders({ 'Content-Type': 'application/json' })
+        });
+    }
+
+    console.log('[PAYMENT-SESSION] Stripe session created:', session.id);
 
     // 10. Record Payment (Pending)
     const supabaseAdmin = createClient(
@@ -321,12 +375,14 @@ serve(async (req) => {
         .maybeSingle();
 
     if (existingPayment && existingPayment.payment_status === 'completed') {
+        console.warn('[PAYMENT-SESSION] Payment already completed for booking:', booking_id);
         return new Response(JSON.stringify({ error: 'Pagamento già completato' }), {
             status: 409, headers: combineHeaders({ 'Content-Type': 'application/json' })
         });
     }
 
     // Insert Payment Record
+    console.log('[PAYMENT-SESSION] Inserting payment record for session:', session.id);
     const { error: paymentInsertError } = await supabaseAdmin.from('payments').insert({
         booking_id: booking_id,
         user_id: user.id,
@@ -355,8 +411,11 @@ serve(async (req) => {
     });
 
   } catch (err: any) {
-    console.error('Payment session error:', err);
-    return new Response(JSON.stringify({ error: String(err?.message ?? err) }), {
+    console.error('[PAYMENT-SESSION] Unhandled error:', err);
+    return new Response(JSON.stringify({
+        error: String(err?.message ?? err),
+        stack: err?.stack // Optional: include stack trace for debugging if safe
+    }), {
       status: 500, headers: combineHeaders({ 'Content-Type': 'application/json' })
     });
   }
