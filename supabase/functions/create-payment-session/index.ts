@@ -1,5 +1,5 @@
 // supabase/functions/create-payment-session/index.ts
-// Deno Edge Function - Stripe Checkout (Connect) con pricing coerente UI/server
+// Deno Edge Function - Stripe Checkout (Connect) con pricing server-side
 
 import Stripe from 'https://esm.sh/stripe@14.21.0';
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
@@ -68,7 +68,6 @@ serve(async (req) => {
   }
 
   try {
-    // ONDATA 2: FIX 2.9 - Rate Limiting
     // Check rate limit via RPC (5 payment sessions per minute per user)
     const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace('Bearer ', '');
@@ -123,45 +122,105 @@ serve(async (req) => {
     const user = authData?.user;
     if (!user?.email) throw new Error('User not authenticated or email missing');
 
-    // Body
+    // Body - Only extract booking_id and fiscal_data
     const body = await req.json();
     const {
-      space_id,
-      durationHours,
-      pricePerHour,
-      pricePerDay,
-      guestsCount,
-      host_stripe_account_id,
       booking_id,
       fiscal_data,
     } = body;
 
-    // Required fields validation with detailed error response
-    if (!space_id || !booking_id || !Number.isFinite(Number(durationHours)) ||
-        !Number.isFinite(Number(pricePerHour)) || !Number.isFinite(Number(pricePerDay)) ||
-        !Number.isFinite(Number(guestsCount)) || Number(guestsCount) < 1 ||
-        !host_stripe_account_id) {
+    // Required fields validation
+    if (!booking_id) {
       return new Response(JSON.stringify({
-        error: 'Invalid or missing fields',
-        missing: {
-          space_id: !space_id,
-          booking_id: !booking_id,
-          durationHours: !(Number.isFinite(Number(durationHours)) && Number(durationHours) > 0),
-          pricePerHour: !(Number.isFinite(Number(pricePerHour)) && Number(pricePerHour) >= 0),
-          pricePerDay: !(Number.isFinite(Number(pricePerDay)) && Number(pricePerDay) >= 0),
-          guestsCount: !(Number.isFinite(Number(guestsCount)) && Number(guestsCount) >= 1),
-          host_stripe_account_id: !host_stripe_account_id,
-        }
+        error: 'Missing booking_id',
       }), { headers: combineHeaders({ 'Content-Type': 'application/json' }), status: 400 });
+    }
+
+    // Step 1: Fetch Booking Data
+    console.log('[PAYMENT-SESSION] Fetching booking:', booking_id);
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('id, status, space_id, start_time, end_time, guests_count')
+      .eq('id', booking_id)
+      .single();
+
+    if (bookingError || !booking) {
+      console.error('[PAYMENT-SESSION] Booking not found:', bookingError);
+      return new Response(
+        JSON.stringify({ error: 'Prenotazione non trovata' }),
+        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    // Validate Booking Status
+    if (booking.status === 'pending_approval') {
+      return new Response(
+        JSON.stringify({
+          error: 'Questa prenotazione è in attesa di approvazione dall\'host. Non puoi ancora pagare.',
+          status: booking.status
+        }),
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'pending_payment') {
+      return new Response(
+        JSON.stringify({
+          error: 'Questa prenotazione non è in uno stato valido per il pagamento.',
+          status: booking.status
+        }),
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    // Step 2: Fetch Workspace Data
+    console.log('[PAYMENT-SESSION] Fetching workspace:', booking.space_id);
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id, name, host_id, price_per_hour, price_per_day')
+      .eq('id', booking.space_id)
+      .single();
+
+    if (workspaceError || !workspace) {
+      console.error('[PAYMENT-SESSION] Workspace not found:', workspaceError);
+      return new Response(
+        JSON.stringify({ error: 'Space not found associated with booking' }),
+        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    // Step 3: Fetch Host Profile Data (Stripe & Fiscal)
+    console.log('[PAYMENT-SESSION] Fetching host profile:', workspace.host_id);
+    const { data: hostProfile, error: hostProfileError } = await supabase
+      .from('profiles')
+      .select('id, stripe_account_id, stripe_connected, fiscal_regime')
+      .eq('id', workspace.host_id)
+      .single();
+
+    if (hostProfileError || !hostProfile) {
+      console.error('[PAYMENT-SESSION] Host profile not found:', hostProfileError);
+      return new Response(
+        JSON.stringify({ error: 'Host profile not found' }),
+        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    // Validate Host Stripe Connection
+    if (!hostProfile.stripe_connected || !hostProfile.stripe_account_id) {
+      console.error('[PAYMENT-SESSION] Host Stripe not connected:', hostProfile);
+      return new Response(
+        JSON.stringify({
+          error: 'L\'host non ha ancora configurato il metodo di pagamento.',
+          action: 'contact_support'
+        }),
+        { status: 412, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
     }
 
     // FASE 1.2: Fiscal Data Pre-Payment Validation
     let fiscalMetadata = {};
     if (fiscal_data && fiscal_data.request_invoice) {
-      console.log('[FISCAL-DATA] Processing invoice request:', {
-        tax_id: fiscal_data.tax_id ? '***' : 'none',
-        is_business: fiscal_data.is_business,
-      });
+      console.log('[FISCAL-DATA] Processing invoice request');
       
       // Validate required fields
       const requiredFields = {
@@ -202,29 +261,7 @@ serve(async (req) => {
         );
       }
       
-      // Verify host fiscal_regime
-      // Refactor: use workspaces table and decoupled profile fetch
-      const { data: workspaceData, error: wsError } = await supabase
-        .from('workspaces')
-        .select('host_id')
-        .eq('id', space_id)
-        .single();
-
-      if (wsError || !workspaceData) {
-        console.error('[FISCAL-DATA] Workspace not found:', wsError);
-        return new Response(
-          JSON.stringify({ error: 'Space not found' }),
-          { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
-        );
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('fiscal_regime')
-        .eq('id', workspaceData.host_id)
-        .single();
-      
-      if (profileError || !profileData?.fiscal_regime) {
+      if (!hostProfile.fiscal_regime) {
         return new Response(
           JSON.stringify({ 
             error: 'Host non ha configurato il regime fiscale',
@@ -248,100 +285,49 @@ serve(async (req) => {
       };
     }
 
-    // Input validation for pricing values
-    const numDurationHours = Number(durationHours);
-    const numPricePerHour = Number(pricePerHour);
-    const numPricePerDay = Number(pricePerDay);
-    
+    // Calculate Duration from Booking Times
+    if (!booking.start_time || !booking.end_time) {
+      console.error('[PAYMENT-SESSION] Booking missing start/end time');
+      return new Response(
+        JSON.stringify({ error: 'Orari di prenotazione mancanti' }),
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    const startTime = new Date(booking.start_time);
+    const endTime = new Date(booking.end_time);
+    const durationMs = endTime.getTime() - startTime.getTime();
+    const durationHours = durationMs / (1000 * 60 * 60);
+
+    if (durationHours <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Durata prenotazione non valida' }),
+        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
+      );
+    }
+
+    // Prepare Pricing Inputs
+    const guestsCount = booking.guests_count || 1;
+    const pricePerHour = Number(workspace.price_per_hour || 0);
+    const pricePerDay = Number(workspace.price_per_day || 0);
+
     // Env lato server (NO VITE_* qui)
     const serviceFeePct = Number(Deno.env.get('SERVICE_FEE_PCT') ?? '0.05');
     const vatPct = Number(Deno.env.get('DEFAULT_VAT_PCT') ?? '0.22');
     const stripeTaxEnabled = Deno.env.get('ENABLE_STRIPE_TAX') === 'true';
-    
-    // Comprehensive input validation - return 400 for any invalid inputs
-    if (
-      !Number.isFinite(numDurationHours) || numDurationHours <= 0 ||
-      !Number.isFinite(numPricePerHour) || numPricePerHour < 0 ||
-      !Number.isFinite(numPricePerDay) || numPricePerDay < 0 ||
-      !Number.isFinite(serviceFeePct) || serviceFeePct < 0 || serviceFeePct > 1 ||
-      !Number.isFinite(vatPct) || vatPct < 0 || vatPct > 1
-    ) {
-      return new Response(JSON.stringify({ error: 'Invalid pricing input' }), {
-        headers: combineHeaders({ 'Content-Type': 'application/json' }),
-        status: 400,
-      });
-    }
 
-    // Validazione booking - blocca pagamento se in pending_approval
-    console.log('[PAYMENT-SESSION] Validating booking status...');
-
-    // Step 1: Fetch booking only
-    const { data: booking, error: bookingError } = await supabase
-      .from('bookings')
-      .select('id, status, space_id')
-      .eq('id', booking_id)
-      .single();
-
-    if (bookingError || !booking) {
-      console.error('[PAYMENT-SESSION] Booking not found:', bookingError);
-      return new Response(
-        JSON.stringify({ error: 'Prenotazione non trovata' }),
-        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
-      );
-    }
-
-    // Step 2: Fetch workspace details (using workspaces table)
-    const { data: workspace, error: workspaceError } = await supabase
-      .from('workspaces')
-      .select('id, name, confirmation_type')
-      .eq('id', booking.space_id)
-      .single();
-
-    if (workspaceError || !workspace) {
-      console.error('[PAYMENT-SESSION] Workspace not found:', workspaceError);
-      return new Response(
-        JSON.stringify({ error: 'Space not found associated with booking' }),
-        { status: 404, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
-      );
-    }
-
-    // CRITICAL: Blocca pagamento se la prenotazione è in attesa di approvazione host
-    if (booking.status === 'pending_approval') {
-      console.log(`[PAYMENT-BLOCKED] Booking ${booking_id} is pending_approval, payment not allowed yet`);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Questa prenotazione è in attesa di approvazione dall\'host. Non puoi ancora pagare.',
-          status: booking.status,
-          space_title: workspace.name
-        }),
-        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
-      );
-    }
-
-    // Permetti pagamento solo per pending o pending_payment
-    if (booking.status !== 'pending' && booking.status !== 'pending_payment') {
-      console.log(`[PAYMENT-BLOCKED] Booking ${booking_id} has status ${booking.status}, payment not allowed`);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Questa prenotazione non è in uno stato valido per il pagamento.',
-          status: booking.status
-        }),
-        { status: 400, headers: combineHeaders({ 'Content-Type': 'application/json' }) }
-      );
-    }
-
-    console.log('[PAYMENT-SESSION] Booking status validated:', booking.status);
-
-    // Pricing server-side with validated inputs
+    // Pricing Calculation
     const pricing = computePricing({
-      durationHours: numDurationHours,
-      pricePerHour: numPricePerHour,
-      pricePerDay: numPricePerDay,
-      guestsCount: Number(guestsCount),
+      durationHours,
+      pricePerHour,
+      pricePerDay,
+      guestsCount,
       serviceFeePct,
       vatPct,
       stripeTaxEnabled,
     });
+
+    console.log('[PAYMENT-SESSION] Pricing calculated:', pricing);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -352,9 +338,9 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     const customerId = customers.data[0]?.id;
 
-    // unit_amount in centesimi - clamp to 2 decimals before conversion
+    // unit_amount in centesimi
     const baseAmount = stripeTaxEnabled ? pricing.base + pricing.serviceFee : pricing.total;
-    const clampedAmount = Math.round(baseAmount * 100) / 100; // Ensure 2 decimal places
+    const clampedAmount = Math.round(baseAmount * 100) / 100;
     const unitAmount = Math.round(clampedAmount * 100);
     
     if (!Number.isFinite(unitAmount) || unitAmount <= 0) {
@@ -381,7 +367,7 @@ serve(async (req) => {
           price_data: {
             currency: 'eur',
             product_data: {
-              name: 'WorkOver - Prenotazione spazio',
+              name: `Prenotazione: ${workspace.name}`,
               description: pricing.breakdownLabel,
             },
             unit_amount: unitAmount,
@@ -394,10 +380,10 @@ serve(async (req) => {
       automatic_tax: { enabled: stripeTaxEnabled },
       payment_intent_data: {
         application_fee_amount: Math.round(pricing.totalPlatformFee * 100),
-        transfer_data: { destination: host_stripe_account_id },
+        transfer_data: { destination: hostProfile.stripe_account_id },
         metadata: {
           booking_id: booking_id || '',
-          space_id,
+          space_id: booking.space_id,
           user_id: user.id,
           duration_hours: String(durationHours),
           base_amount: String(pricing.base),
@@ -414,7 +400,7 @@ serve(async (req) => {
       },
       metadata: {
         booking_id: booking_id || '',
-        space_id,
+        space_id: booking.space_id,
         user_id: user.id,
         duration_hours: String(durationHours),
         base_amount: String(pricing.base),
@@ -428,7 +414,7 @@ serve(async (req) => {
       cancel_url: `${origin}/bookings?cancelled=true`,
     });
 
-    // FASE 1.1: Check for existing payments (anti-duplicate)
+    // Check for existing payments (anti-duplicate)
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
