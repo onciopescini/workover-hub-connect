@@ -19,7 +19,7 @@ export const usePaymentLink = () => {
         // Fetch booking details
         const { data: booking, error: bookingError } = await supabase
           .from('bookings')
-          .select('*, spaces(price_per_hour, price_per_day, host_id, profiles(stripe_account_id))')
+          .select('*')
           .eq('id', payBookingId)
           .single();
 
@@ -35,7 +35,31 @@ export const usePaymentLink = () => {
           return;
         }
 
-        if (!booking.spaces?.profiles?.stripe_account_id) {
+        // Fetch workspace details (prices and host_id) from workspaces table
+        const { data: workspace, error: wsError } = await supabase
+          .from('workspaces')
+          .select('price_per_hour, price_per_day, host_id')
+          .eq('id', booking.space_id)
+          .single();
+
+        // Cast to handle missing types if needed
+        const workspaceData = workspace as any;
+
+        if (wsError || !workspaceData) {
+          console.error('Workspace fetch error:', wsError);
+          toast.error('Spazio non trovato');
+          navigate('/bookings', { replace: true });
+          return;
+        }
+
+        // Fetch host profile for Stripe account
+        const { data: hostProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('stripe_account_id')
+          .eq('id', workspaceData.host_id)
+          .single();
+
+        if (profileError || !hostProfile?.stripe_account_id) {
           toast.error('Host non collegato a Stripe');
           navigate('/bookings', { replace: true });
           return;
@@ -51,9 +75,9 @@ export const usePaymentLink = () => {
           body: {
             space_id: booking.space_id,
             durationHours,
-            pricePerHour: booking.spaces.price_per_hour,
-            pricePerDay: booking.spaces.price_per_day,
-            host_stripe_account_id: booking.spaces.profiles.stripe_account_id,
+            pricePerHour: workspaceData.price_per_hour,
+            pricePerDay: workspaceData.price_per_day,
+            host_stripe_account_id: hostProfile.stripe_account_id,
             booking_id: booking.id,
           },
         });
