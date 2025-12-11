@@ -205,6 +205,12 @@ serve(async (req) => {
     const unitAmountCents = Math.round(roundedTotal * 100)
     const applicationFeeCents = Math.round(roundedPlatformFee * 100)
 
+    console.log('FINAL VALUES:', { amount: unitAmountCents, fee: applicationFeeCents, dest: hostProfile.stripe_account_id });
+
+    if (applicationFeeCents > unitAmountCents) {
+      throw new Error(`Application fee (${applicationFeeCents}) exceeds total amount (${unitAmountCents}).`);
+    }
+
     const sessionData = {
       line_items: [
         {
@@ -240,7 +246,13 @@ serve(async (req) => {
 
     console.log('[CREATE-PAYMENT-SESSION] Creating Stripe Session:', JSON.stringify(sessionData, null, 2))
 
-    const session = await stripe.checkout.sessions.create(sessionData)
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sessionData)
+    } catch (error) {
+      console.error('STRIPE ERROR DETAILS:', error.raw || error);
+      throw error;
+    }
 
     console.log('[CREATE-PAYMENT-SESSION] Session created:', session.id)
 
