@@ -22,6 +22,7 @@ import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled 
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { z } from 'zod';
+import { useCheckout } from '@/hooks/useCheckout';
 
 // Helper functions for time calculations
 function parseHHMM(time: string): [number, number] {
@@ -116,6 +117,7 @@ export function TwoStepBookingForm({
   const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   
   const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
+  const { processCheckout, isLoading: isCheckoutLoading } = useCheckout();
   
   // Fiscal data hook - auto-loads saved data
   const { fiscalData: savedFiscalData, isLoading: isLoadingFiscalData } = useCoworkerFiscalData();
@@ -450,14 +452,13 @@ export function TwoStepBookingForm({
         return;
       }
 
-      debug('Attempting to reserve slot with lock', {
-        spaceId,
-        date: format(bookingState.selectedDate, 'yyyy-MM-dd'),
-        startTime: bookingState.selectedRange.startTime,
-        endTime: bookingState.selectedRange.endTime
-      });
+      // Prepare fiscal data for payment session
+      const fiscalMetadata = requestInvoice ? {
+        request_invoice: true,
+        ...coworkerFiscalData
+      } : null;
 
-      // Calculate client-side base price for server validation
+      // Calculate client-side price for validation
       const durationHours = bookingState.selectedRange.duration;
       const validationPricing = computePricing({
         durationHours,
@@ -469,230 +470,46 @@ export function TwoStepBookingForm({
         stripeTaxEnabled: isStripeTaxEnabled()
       });
 
-      debug('Client-side price calculated for validation', {
-        durationHours,
-        basePrice: validationPricing.base,
-        isDayRate: validationPricing.isDayRate
+      const result = await processCheckout({
+        spaceId,
+        userId: user.user.id,
+        date: bookingState.selectedDate,
+        startTime: bookingState.selectedRange.startTime,
+        endTime: bookingState.selectedRange.endTime,
+        guestsCount: bookingState.guestsCount,
+        confirmationType: confirmationType as 'instant' | 'host_approval',
+        pricePerHour,
+        pricePerDay,
+        durationHours: bookingState.selectedRange.duration,
+        hostStripeAccountId,
+        fiscalData: fiscalMetadata,
+        clientBasePrice: validationPricing.base
       });
 
-      // Retry logic for critical booking operation
-      let data = null;
-      let rpcError = null;
-      const maxRetries = 3;
-      
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const result = await supabase.rpc('validate_and_reserve_slot', {
-          space_id_param: spaceId,
-          date_param: format(bookingState.selectedDate, 'yyyy-MM-dd'),
-          start_time_param: bookingState.selectedRange.startTime,
-          end_time_param: bookingState.selectedRange.endTime,
-          user_id_param: user.user.id,
-          guests_count_param: bookingState.guestsCount,
-          confirmation_type_param: confirmationType,
-          client_base_price_param: validationPricing.base // Pass for server-side validation
-        } as any);
-
-        data = result.data;
-        rpcError = result.error;
-
-        // Success - exit retry loop
-        if (!rpcError && data) {
-          break;
+      if (!result.success) {
+        // Error handling is partly done in useCheckout but we catch specific UI needs here
+        if (result.error?.includes('Posti insufficienti')) {
+           toast.error('Posti insufficienti');
+        } else if (result.error?.includes('conflict')) {
+           toast.error('Slot non più disponibile');
+        } else {
+           onError(result.error || 'Errore durante la prenotazione');
         }
-
-        // Transient errors - retry
-        const isTransientError = rpcError?.code === 'PGRST301' || 
-                                  rpcError?.message?.includes('connection');
-        
-        if (isTransientError && attempt < maxRetries) {
-          const delay = 1000 * attempt;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          debug(`Retrying booking attempt ${attempt + 1}/${maxRetries}`, { spaceId });
-          continue;
-        }
-
-        // Non-transient error or max retries reached - handle error
-        if (rpcError) {
-          error('Slot reservation failed', rpcError, { spaceId, bookingState, attempt });
-          
-          // Handle capacity errors
-          if (rpcError.message?.includes('Posti insufficienti') || rpcError.message?.includes('available_spots')) {
-            toast.error(
-              <>
-                ⚠️ Posti insufficienti
-                <span data-testid="capacity-error-toast" className="sr-only">capacity-error</span>
-              </>, 
-              {
-                description: rpcError.message || 'Non ci sono abbastanza posti disponibili per questo orario.',
-                action: {
-                  label: "Aggiorna",
-                  onClick: () => {
-                    if (bookingState.selectedDate) {
-                      fetchAvailableSlots(bookingState.selectedDate);
-                      setCurrentStep('TIME');
-                    }
-                  }
-                }
-              }
-            );
-          } else if (rpcError.message?.includes('already booked') || rpcError.message?.includes('conflict')) {
-            toast.error(
-              <>
-                ⚠️ Slot non più disponibile
-                <span data-testid="lock-error-toast" className="sr-only">lock-error</span>
-              </>, 
-              {
-                description: (
-                  <>
-                    Qualcun altro ha prenotato questo orario. Seleziona un altro slot.
-                  </>
-                ),
-                action: {
-                  label: "Aggiorna",
-                  onClick: () => {
-                    if (bookingState.selectedDate) {
-                      fetchAvailableSlots(bookingState.selectedDate);
-                      setCurrentStep('TIME');
-                    }
-                  }
-                },
-                duration: 5000
-              }
-            );
-          } else {
-            onError('Errore nella prenotazione: ' + rpcError.message);
-          }
-          return;
-        }
-      }
-
-      if (!data || typeof data !== 'object') {
-        onError('Errore nella prenotazione');
         return;
       }
 
-      const responseData = data as { 
-        success?: boolean; 
-        error?: string; 
-        booking_id?: string;
-        confirmation_type?: string;
-        initial_status?: string;
-      };
-
-      if (!responseData.success) {
-        onError(responseData.error || 'Errore nella prenotazione');
-        return;
-      }
-
-      info('Slot reserved successfully', { 
-        bookingId: responseData.booking_id,
-        confirmationType: responseData.confirmation_type,
-        initialStatus: responseData.initial_status
-      });
-      
-      // Handle host_approval flow (no immediate payment)
-      if (responseData.confirmation_type === 'host_approval') {
+      // Success handling
+      if (confirmationType === 'host_approval') {
         toast.success('Richiesta di prenotazione inviata!', {
           description: 'L\'host riceverà la tua richiesta e ti risponderà entro le tempistiche previste.',
           duration: 5000
         });
         
-        // Redirect to bookings page after 2 seconds
         setTimeout(() => {
           onSuccess();
         }, 2000);
-        
-        return; // Do not proceed with payment for host_approval
       }
-      
-      // For instant bookings, proceed with payment
-      // Check if host has Stripe account configured
-      if (!hostStripeAccountId) {
-        toast.error('Host non collegato a Stripe', {
-          description: 'Impossibile procedere con il pagamento. Contatta il proprietario dello spazio.'
-        });
-        return;
-      }
-
-      // Calculate pricing for Stripe payment
-      const pricing = computePricing({
-        durationHours: bookingState.selectedRange.duration,
-        pricePerHour,
-        pricePerDay,
-        guestsCount: bookingState.guestsCount,
-        serviceFeePct: getServiceFeePct(),
-        vatPct: getDefaultVatPct(),
-        stripeTaxEnabled: isStripeTaxEnabled()
-      });
-
-      debug('Creating Stripe payment session', { 
-        pricing, 
-        bookingId: responseData.booking_id,
-        hostStripeAccountId 
-      });
-
-      // Prepare fiscal data for payment session
-      const fiscalMetadata = requestInvoice ? {
-        request_invoice: true,
-        ...coworkerFiscalData
-      } : null;
-
-      // Create Stripe Checkout session
-      const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-        'create-payment-session',
-        {
-          body: {
-            space_id: spaceId,
-            booking_id: responseData.booking_id,
-            durationHours: bookingState.selectedRange.duration,
-            pricePerHour,
-            pricePerDay,
-            guestsCount: bookingState.guestsCount,
-            host_stripe_account_id: hostStripeAccountId,
-            fiscal_data: fiscalMetadata,
-          }
-        }
-      );
-
-      if (fnError || !sessionData?.url) {
-        error('Payment session creation failed', fnError, { spaceId, bookingState });
-        toast.error('Errore nella creazione della sessione di pagamento', {
-          description: (
-            <>
-              Impossibile procedere con il pagamento
-              <span data-testid="payment-error-toast" className="sr-only">payment-error</span>
-            </>
-          ),
-        });
-        return;
-      }
-
-      // Log pricing comparison for debugging (non-blocking)
-      if (sessionData.serverTotals) {
-        const clientTotal = pricing.total;
-        const serverTotal = sessionData.serverTotals.total;
-        if (Math.abs(clientTotal - serverTotal) > 0.01) {
-          error('Pricing mismatch detected', new Error('Client/Server pricing mismatch'), {
-            client: { total: clientTotal, pricing },
-            server: { total: serverTotal, totals: sessionData.serverTotals },
-            difference: Math.abs(clientTotal - serverTotal)
-          });
-        }
-      }
-
-      info('Payment session created successfully', { 
-        sessionUrl: sessionData.url,
-        serverTotals: sessionData.serverTotals
-      });
-
-      toast.success('Slot riservato! Reindirizzamento al pagamento...', {
-        icon: <CheckCircle className="w-4 h-4" />
-      });
-
-      // Redirect to Stripe Checkout
-      setTimeout(() => {
-        window.location.href = sessionData.url;
-      }, 1500);
+      // Instant booking handles redirect in useCheckout
 
     } catch (err) {
       error('Unexpected error during booking', err as Error, { spaceId, bookingState });
@@ -888,10 +705,10 @@ export function TwoStepBookingForm({
               <Button
                 type="button"
                 onClick={handleConfirmBooking}
-                disabled={bookingState.isReserving || !hostStripeAccountId}
+                disabled={bookingState.isReserving || isCheckoutLoading || (!hostStripeAccountId && confirmationType === 'instant')}
                 className="min-w-32"
               >
-                {bookingState.isReserving ? (
+                {bookingState.isReserving || isCheckoutLoading ? (
                   <>
                     <span data-testid="checkout-loading-spinner" className="sr-only">loading</span>
                     Prenotando...
