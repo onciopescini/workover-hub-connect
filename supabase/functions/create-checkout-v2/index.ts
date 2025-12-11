@@ -8,16 +8,16 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // 1. Handle OPTIONS immediately
+  // 1. Handle OPTIONS immediately for CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     // -------------------------------------------------------------------------
-    // 1. HEADER LOG (Requirements V4)
+    // 1. DEPLOYMENT CONFIRMATION LOG
     // -------------------------------------------------------------------------
-    console.log("🚀 CHECKOUT V2 LIVE 🚀");
+    console.log("🚀 CHECKOUT V2 DEPLOYED successfully 🚀");
     console.log("Timestamp:", new Date().toISOString());
 
     // 2. Read Request Body
@@ -40,7 +40,7 @@ serve(async (req) => {
     }
 
     // 3. Setup Clients
-    // Client for Auth (User Context)
+    // Client for Auth (User Context) - used to verify the caller
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -71,7 +71,7 @@ serve(async (req) => {
     console.log('[CREATE-CHECKOUT-V2] User authenticated:', user.id)
 
     // -------------------------------------------------------------------------
-    // 5. SEQUENTIAL FETCHING (Decoupled Logic)
+    // 5. SEQUENTIAL FETCHING
     // -------------------------------------------------------------------------
 
     // A. Fetch Booking
@@ -92,7 +92,6 @@ serve(async (req) => {
     console.log('[1/3] Booking Found. Space ID:', booking.space_id)
 
     // B. Fetch Workspace
-    // NOTE: Using 'workspaces' table, NOT 'spaces'
     console.log('[2/3] Fetching Workspace:', booking.space_id)
     const { data: workspace, error: workspaceError } = await supabaseAdmin
       .from('workspaces')
@@ -125,7 +124,6 @@ serve(async (req) => {
       )
     }
 
-    // Validation
     if (!hostProfile.stripe_account_id) {
        console.error('[3/3] Host has NO Stripe Account ID')
        return new Response(
@@ -137,7 +135,7 @@ serve(async (req) => {
 
 
     // -------------------------------------------------------------------------
-    // 6. PRICING LOGIC (Hybrid: Hour vs Day)
+    // 6. PRICING LOGIC
     // -------------------------------------------------------------------------
     const startDate = new Date(`${booking.booking_date}T${booking.start_time}`)
     const endDate = new Date(`${booking.booking_date}T${booking.end_time}`)
@@ -148,28 +146,23 @@ serve(async (req) => {
     if (durationHours <= 0) throw new Error('Invalid duration')
 
     let unitPrice = 0
-    let isDayRate = false
 
-    // Logic: If >= 8 hours, use Day Rate. Else, use Hourly Rate.
-    // Fallbacks included if one rate is missing.
-    if (durationHours >= 8) {
-        isDayRate = true
+    // LOGIC:
+    // If duration < 8h & price_per_hour exists: use hourly rate * duration.
+    // Else: use daily rate.
+
+    if (durationHours < 8 && workspace.price_per_hour) {
+        console.log(`[PRICING] Using Hourly Rate: ${workspace.price_per_hour} * ${durationHours}h`)
+        unitPrice = workspace.price_per_hour * durationHours
+    } else {
+        console.log(`[PRICING] Using Daily Rate Fallback (Duration: ${durationHours}h, Hourly: ${workspace.price_per_hour}, Daily: ${workspace.price_per_day})`)
         if (workspace.price_per_day) {
             unitPrice = workspace.price_per_day
-        } else if (workspace.price_per_hour) {
-            unitPrice = workspace.price_per_hour * 8
         } else {
-             throw new Error('No price defined for workspace (Day/Hour)')
-        }
-    } else {
-        if (workspace.price_per_hour) {
-            unitPrice = workspace.price_per_hour * durationHours
-        } else if (workspace.price_per_day) {
-            // Pro-rate day rate? Or strict?
-            // Standard approach: Day Rate / 8 * hours
-            unitPrice = (workspace.price_per_day / 8) * durationHours
-        } else {
-            throw new Error('No price defined for workspace (Hour/Day)')
+            // If we are here, it means we fell through to Daily Rate logic but it's missing.
+            // If it was a short booking but no hourly rate, we are here.
+            // If it was a long booking but no daily rate, we are here.
+            throw new Error('Applicable price (Daily) not defined for this workspace')
         }
     }
 
@@ -195,7 +188,6 @@ serve(async (req) => {
     const origin = req.headers.get('origin') || 'http://localhost:3000'
 
     // Convert to CENTS (Integer)
-    // Rounding carefully
     const unitAmountCents = Math.round(totalPrice * 100)
     const applicationFeeCents = Math.round(totalPlatformFee * 100)
 
@@ -207,7 +199,7 @@ serve(async (req) => {
         applicationFeeCents
     })
 
-    // Safety Check
+    // Safety Check: Fee cannot exceed Total
     if (applicationFeeCents >= unitAmountCents) {
         throw new Error(`Fee (${applicationFeeCents}) cannot equal or exceed total (${unitAmountCents})`)
     }
@@ -252,7 +244,6 @@ serve(async (req) => {
     // -------------------------------------------------------------------------
     // 8. INSERT PAYMENT RECORD
     // -------------------------------------------------------------------------
-    // Using Admin client to ensure write permissions
     const { error: paymentError } = await supabaseAdmin
       .from('payments')
       .insert({
