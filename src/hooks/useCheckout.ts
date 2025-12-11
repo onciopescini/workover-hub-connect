@@ -47,12 +47,12 @@ export function useCheckout() {
 
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    try {
-      info('Starting checkout process', { spaceId, date: dateStr, confirmationType });
+    // Explicitly Log start
+    console.log('DEBUG: processCheckout started', { spaceId, userId, dateStr, confirmationType });
 
-      // Step 1: Validate availability via RPC
-      // We perform validation but we DO NOT rely on the RPC to insert the booking anymore
-      // or at least we treat it as just validation.
+    try {
+      // 1. Validate Availability via RPC
+      console.log('DEBUG: Step 1 - Validating availability...');
       const validationResult = await supabase.rpc('validate_and_reserve_slot', {
         space_id_param: spaceId,
         date_param: dateStr,
@@ -65,40 +65,34 @@ export function useCheckout() {
       } as any);
 
       if (validationResult.error) {
-         // RPC might throw or return { success: false, error: ... }
-         // Handle Supabase error object
-         throw validationResult.error;
+        console.error('DEBUG: Validation RPC Error', validationResult.error);
+        throw new Error(`Validation failed: ${validationResult.error.message}`);
       }
 
-      const validationData = validationResult.data as {
-        success?: boolean;
-        error?: string;
-        // If the RPC inserts, it returns these. We might ignore them if we force insert.
-        // But to avoid double booking if the RPC *does* insert, we should check if booking_id is returned.
-        // However, the user explicitly said the RPC does NOT insert.
-        booking_id?: string;
-      };
-
-      if (!validationData || (validationData.success === false)) {
-        throw new Error(validationData?.error || 'Validation failed');
+      const validationData = validationResult.data as { success?: boolean; error?: string };
+      if (validationData && validationData.success === false) {
+         console.error('DEBUG: Validation Data Error', validationData);
+         throw new Error(validationData.error || 'Slot validation returned false');
       }
+      console.log('DEBUG: Validation successful');
 
-      // Step 2: Prepare Booking Data for Insertion
-      // Logic replicated from previous SQL definition
+      // 2. Prepare Payload
+      console.log('DEBUG: Step 2 - Preparing insert payload...');
       const isInstant = confirmationType === 'instant';
       const now = new Date();
 
-      // Calculate deadlines
       let reservationDeadline: Date;
       let approvalDeadline: Date | null = null;
 
       if (isInstant) {
-        reservationDeadline = addHours(now, 2); // 2 hours for payment
+        reservationDeadline = addHours(now, 2);
       } else {
         reservationDeadline = addHours(now, 24);
         approvalDeadline = addHours(now, 24);
       }
 
+      // STRICT SEQUENCE: Prepare payload mapping form data to bookings table schema
+      // IMPORTANT: Use space_id (not workspace_id)
       const bookingInsertData: BookingInsert = {
         space_id: spaceId,
         user_id: userId,
@@ -108,45 +102,47 @@ export function useCheckout() {
         guests_count: guestsCount,
         status: isInstant ? 'pending_payment' : 'pending_approval',
         payment_required: isInstant,
-        // reservation_token: crypto.randomUUID(), // Let DB handle default if possible, or gen here
         slot_reserved_until: reservationDeadline.toISOString(),
         approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
       };
 
-      debug('Inserting booking record', bookingInsertData);
+      // 3. Insert Booking
+      console.log('DEBUG: Step 3 - Inserting booking...', bookingInsertData);
 
-      // Step 3: Insert Booking
       const { data: bookingData, error: insertError } = await supabase
         .from('bookings')
         .insert(bookingInsertData)
         .select('id')
         .single();
 
+      // Handle Insert Error: If the insert returns an error, STOP execution and show a toast error.
       if (insertError) {
-        throw insertError;
+        console.error('DEBUG: Insert Error', insertError);
+        throw new Error(`Insert failed: ${insertError.message} (Code: ${insertError.code})`);
       }
 
       if (!bookingData?.id) {
-        throw new Error('Booking insertion succeeded but no ID returned');
+        console.error('DEBUG: Insert returned no ID', bookingData);
+        throw new Error('Database insert succeeded but returned no ID');
       }
 
       const bookingId = bookingData.id;
-      info('Booking inserted successfully', { bookingId });
+      console.log('DEBUG: Insert Success. Booking ID:', bookingId);
 
-      // Step 4: Handle Payment (if instant)
+      // 4. Payment (ONLY if insert is successful)
       if (isInstant) {
         if (!hostStripeAccountId) {
-            throw new Error('Host Stripe account ID is missing for instant booking');
+           throw new Error('Host Stripe account ID is missing for instant booking');
         }
 
-        info('Creating payment session', { bookingId });
+        console.log('DEBUG: Step 4 - Calling create-payment-session...');
 
         const { data: sessionData, error: fnError } = await supabase.functions.invoke(
           'create-payment-session',
           {
             body: {
               space_id: spaceId,
-              booking_id: bookingId, // Explicitly passed!
+              booking_id: bookingId, // Passing the ID from Step 3
               durationHours: params.durationHours,
               pricePerHour: params.pricePerHour,
               pricePerDay: params.pricePerDay,
@@ -157,23 +153,32 @@ export function useCheckout() {
           }
         );
 
-        if (fnError) throw fnError;
-        if (!sessionData?.url) throw new Error('No payment URL returned');
+        if (fnError) {
+           console.error('DEBUG: Payment Function Error', fnError);
+           throw new Error(`Payment initialization failed: ${fnError.message}`);
+        }
 
-        // Redirect
+        if (!sessionData?.url) {
+           console.error('DEBUG: No payment URL', sessionData);
+           throw new Error('Payment session created but no URL returned');
+        }
+
+        console.log('DEBUG: Payment URL received. Redirecting...', sessionData.url);
         window.location.href = sessionData.url;
-
-        return { success: true, bookingId }; // Will redirect anyway
-      } else {
-        // Step 5: Handle Host Approval (Success, no payment yet)
-        return { success: true, bookingId };
+        return { success: true, bookingId }; // Browser redirects
       }
 
-    } catch (err) {
-      error('Checkout failed', err as Error);
+      // Non-instant (Request)
+      console.log('DEBUG: Request flow completed');
+      return { success: true, bookingId };
+
+    } catch (err: any) {
+      console.error('DEBUG: Checkout Flow Failed', err);
+      // Ensure specific message is propagated
+      const message = err instanceof Error ? err.message : 'Unknown error occurred';
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Unknown error'
+        error: message
       };
     } finally {
       setIsLoading(false);
