@@ -15,6 +15,8 @@ serve(async (req) => {
   }
 
   try {
+    // FORCE REDEPLOY CHECK
+    console.log("DEPLOY CHECK: Decoupled Logic Loaded - Timestamp: " + new Date().toISOString());
     console.log("PAYMENT SESSION v2: Decoupled logic active");
 
     // 2. Read and Log Request Body immediately
@@ -67,7 +69,7 @@ serve(async (req) => {
     }
     console.log('[CREATE-PAYMENT-SESSION] User authenticated:', user.id)
 
-    // 5. Fetch Booking
+    // 5. Fetch Booking (Decoupled - Step A)
     console.log('[CREATE-PAYMENT-SESSION] Fetching booking:', booking_id)
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
@@ -98,7 +100,8 @@ serve(async (req) => {
       )
     }
 
-    // 7. Fetch Workspace (from 'workspaces' table)
+    // 7. Fetch Workspace (Decoupled - Step B)
+    // IMPORTANT: Using 'workspaces' table and 'space_id' from booking
     console.log('[CREATE-PAYMENT-SESSION] Fetching workspace:', booking.space_id)
     const { data: workspace, error: workspaceError } = await supabaseAdmin
       .from('workspaces')
@@ -114,7 +117,7 @@ serve(async (req) => {
       )
     }
 
-    // 8. Fetch Host Profile
+    // 8. Fetch Host Profile (Decoupled - Step C)
     console.log('[CREATE-PAYMENT-SESSION] Fetching host profile:', workspace.host_id)
     const { data: hostProfile, error: hostProfileError } = await supabaseAdmin
       .from('profiles')
