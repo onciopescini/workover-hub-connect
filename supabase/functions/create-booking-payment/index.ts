@@ -20,7 +20,7 @@ serve(async (req) => {
   );
 
   try {
-    console.log('[BOOKING-PAYMENT] Starting payment creation');
+    console.log('[BOOKING-PAYMENT] Starting payment creation - Decoupled Logic');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
@@ -62,16 +62,10 @@ serve(async (req) => {
 
     console.log('[BOOKING-PAYMENT] Processing booking:', bookingId);
 
-    // Get booking details
+    // 1. Get booking details (No Joins)
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
-      .select(`
-        *,
-        space:spaces (
-          *,
-          host:profiles!spaces_host_id_fkey (*)
-        )
-      `)
+      .select('*')
       .eq('id', bookingId)
       .single();
 
@@ -81,16 +75,38 @@ serve(async (req) => {
 
     console.log('[BOOKING-PAYMENT] Booking loaded:', booking.id);
 
-    // Calculate amount
-    const space = booking.space as any;
-    const host = space.host as any;
+    // 2. Get Workspace details (from 'workspaces' using booking.space_id)
+    const { data: workspace, error: workspaceError } = await supabaseClient
+      .from('workspaces')
+      .select('*')
+      .eq('id', booking.space_id)
+      .single();
+
+    if (workspaceError) throw workspaceError;
+    if (!workspace) throw new Error('Workspace not found');
+
+    // 3. Get Host Profile (from 'profiles' using workspace.host_id)
+    const { data: host, error: hostError } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', workspace.host_id)
+      .single();
+
+    if (hostError) throw hostError;
+    if (!host) throw new Error('Host not found');
+
     
+    // Calculate amount
     // Calculate hours
     const startTime = new Date(`1970-01-01T${booking.start_time}`);
     const endTime = new Date(`1970-01-01T${booking.end_time}`);
     const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
     
-    const baseAmount = space.price_per_hour * hours;
+    // Use workspace prices (handling price_per_hour or defaulting)
+    // Note: workspace might have price_per_hour directly
+    const pricePerHour = workspace.price_per_hour || 0;
+
+    const baseAmount = pricePerHour * hours;
     const platformFee = baseAmount * 0.15; // 15% platform fee
     const totalAmount = Math.round(baseAmount * 100); // Convert to cents
     const hostAmount = Math.round((baseAmount - platformFee) * 100);
@@ -156,10 +172,10 @@ serve(async (req) => {
         booking_id: bookingId,
         user_id: user.id,
         host_id: host.id,
-        space_id: space.id,
+        space_id: workspace.id,
         idempotency_key: idempotencyKey,
       },
-      description: `Booking for ${space.title} - ${booking.booking_date}`,
+      description: `Booking for ${workspace.name} - ${booking.booking_date}`,
     }, {
       idempotencyKey: idempotencyKey // CRITICAL: prevents duplicate charges on retry
     });

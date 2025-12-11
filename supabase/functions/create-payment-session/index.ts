@@ -15,6 +15,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("PAYMENT SESSION v2: Decoupled logic active");
+
     // 2. Read and Log Request Body immediately
     let body
     try {
