@@ -487,13 +487,20 @@ export function TwoStepBookingForm({
       });
 
       if (!result.success) {
-        // Error handling is partly done in useCheckout but we catch specific UI needs here
-        if (result.error?.includes('Posti insufficienti')) {
+        console.error("Booking failed:", result.error);
+
+        // Show specific toast for DB errors
+        if (result.error?.includes('Insert failed')) {
+           toast.error('Errore Database', { description: result.error });
+        } else if (result.error?.includes('Posti insufficienti')) {
            toast.error('Posti insufficienti');
         } else if (result.error?.includes('conflict')) {
            toast.error('Slot non più disponibile');
         } else {
-           onError(result.error || 'Errore durante la prenotazione');
+           // Generic or propagated error
+           const errorMsg = result.error || 'Errore durante la prenotazione';
+           toast.error('Errore prenotazione', { description: errorMsg });
+           onError(errorMsg);
         }
         return;
       }
