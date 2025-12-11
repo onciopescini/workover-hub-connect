@@ -29,6 +29,7 @@ serve(async (req) => {
       )
     }
 
+    console.log('RECEIVED PAYLOAD:', body)
     console.log('[CREATE-PAYMENT-SESSION] Request Body:', JSON.stringify(body, null, 2))
 
     const { booking_id } = body
@@ -47,6 +48,12 @@ serve(async (req) => {
       }
     )
 
+    // Setup Supabase Admin Client
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     // 4. Get User
     const {
       data: { user },
@@ -62,7 +69,7 @@ serve(async (req) => {
 
     // 5. Fetch Booking
     console.log('[CREATE-PAYMENT-SESSION] Fetching booking:', booking_id)
-    const { data: booking, error: bookingError } = await supabaseClient
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .select('*')
       .eq('id', booking_id)
@@ -93,7 +100,7 @@ serve(async (req) => {
 
     // 7. Fetch Workspace (from 'workspaces' table)
     console.log('[CREATE-PAYMENT-SESSION] Fetching workspace:', booking.space_id)
-    const { data: workspace, error: workspaceError } = await supabaseClient
+    const { data: workspace, error: workspaceError } = await supabaseAdmin
       .from('workspaces')
       .select('id, name, host_id, price_per_hour, price_per_day')
       .eq('id', booking.space_id)
@@ -109,13 +116,7 @@ serve(async (req) => {
 
     // 8. Fetch Host Profile
     console.log('[CREATE-PAYMENT-SESSION] Fetching host profile:', workspace.host_id)
-    // We need to use the Service Role key here to ensure we can read the profile's sensitive data like stripe_account_id if RLS restricts it?
-    // Actually, usually profiles are public read, but let's stick to the authenticated client first.
-    // If stripe_account_id is protected, we might need admin client.
-    // Based on previous code, it used standard client.
-    // Let's stick to standard client but if it fails we know why.
-    // Wait, previous code checked `stripe_connected`.
-    const { data: hostProfile, error: hostProfileError } = await supabaseClient
+    const { data: hostProfile, error: hostProfileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_account_id')
       .eq('id', workspace.host_id)
@@ -243,10 +244,6 @@ serve(async (req) => {
     // 11. Insert Payment Record
     // Use Service Role to insert into payments if RLS is strict, or same client if user has permissions.
     // Safest to use Service Role for 'payments' table writes to ensure it works.
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     const { error: paymentError } = await supabaseAdmin
       .from('payments')
