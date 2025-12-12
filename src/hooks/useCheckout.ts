@@ -135,20 +135,14 @@ export function useCheckout() {
            throw new Error('Host Stripe account ID is missing for instant booking');
         }
 
-        console.log('DEBUG: Step 4 - Calling create-checkout-v2...');
+        console.log('DEBUG: Step 4 - Calling create-payment-session...');
 
         const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-          'create-checkout-v2',
+          'create-payment-session',
           {
             body: {
-              space_id: spaceId,
-              booking_id: bookingId, // Passing the ID from Step 3
-              durationHours: params.durationHours,
-              pricePerHour: params.pricePerHour,
-              pricePerDay: params.pricePerDay,
-              guestsCount: guestsCount,
-              host_stripe_account_id: hostStripeAccountId,
-              fiscal_data: fiscalData,
+              booking_id: bookingId,
+              origin: window.location.origin
             }
           }
         );
