@@ -14,9 +14,10 @@ import { sreLogger } from '@/lib/sre-logger';
 interface UseSpaceFormStateProps {
   initialData?: Space | WorkspaceInsert | undefined;
   isEdit?: boolean;
+  stripeOnboardingStatus?: 'none' | 'pending' | 'completed' | 'restricted';
 }
 
-export const useSpaceFormState = ({ initialData, isEdit = false }: UseSpaceFormStateProps) => {
+export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardingStatus = 'none' }: UseSpaceFormStateProps) => {
   const navigate = useNavigate();
   const { info, warn, error } = useLogger({ context: 'useSpaceFormState' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,6 +252,14 @@ export const useSpaceFormState = ({ initialData, isEdit = false }: UseSpaceFormS
         toast.error("Devi impostare almeno un giorno e orario di disponibilità per pubblicare lo spazio");
         return;
       }
+    }
+
+    // SECURITY ENFORCED: Prevent publishing without Stripe
+    if (data.published && stripeOnboardingStatus !== 'completed') {
+      toast.error("Non puoi pubblicare uno spazio senza completare la verifica Stripe.", {
+        description: "Completa l'onboarding nella sezione Pagamenti prima di pubblicare."
+      });
+      return;
     }
 
     setIsSubmitting(true);

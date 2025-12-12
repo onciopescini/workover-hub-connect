@@ -11,6 +11,15 @@ interface UseSpaceFormProps {
 }
 
 export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpaceFormProps) => {
+  // Get host progress data including stripe verification status
+  // Moved up to be passed to useSpaceFormState
+  const { data: hostProgressData } = useHostProgress({
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000 // 30 seconds
+  });
+
+  const stripeOnboardingStatus = hostProgressData?.stripeOnboardingStatus || 'none';
+
   const {
     formData,
     availabilityData,
@@ -26,17 +35,14 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     handleAddressChange,
     handleAvailabilityChange,
     handleCheckboxArrayChange
-  } = useSpaceFormState({ initialData });
+  } = useSpaceFormState({
+    initialData,
+    stripeOnboardingStatus // Pass the status here
+  });
 
   const { errors, validateForm, clearError } = useSpaceFormValidation({
     formData,
     availabilityData
-  });
-
-  // Get host progress data including stripe verification status
-  const { data: hostProgressData } = useHostProgress({
-    refetchOnWindowFocus: true,
-    staleTime: 30 * 1000 // 30 seconds
   });
 
   const { isSubmitting, handleSubmit } = useSpaceFormSubmission({
@@ -46,7 +52,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     validateForm,
     isEdit,
     initialDataId: initialData?.id ?? '',
-    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus || 'none'
+    stripeOnboardingStatus
   });
 
   // Enhanced input change handler that clears errors
@@ -78,7 +84,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     isSubmitting,
     uploadingPhotos,
     processingJobs,
-    stripeOnboardingStatus: hostProgressData?.stripeOnboardingStatus || 'none',
+    stripeOnboardingStatus,
     setUploadingPhotos,
     setProcessingJobs,
     setPhotoFiles,

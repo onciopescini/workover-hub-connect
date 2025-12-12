@@ -10,6 +10,7 @@ import { RefactoredAvailabilityScheduler } from "./RefactoredAvailabilitySchedul
 import { RefactoredPhotos } from "./RefactoredPhotos";
 import { RefactoredPublishingOptions } from "./RefactoredPublishingOptions";
 import { useSpaceFormState } from "@/hooks/useSpaceFormState";
+import { useHostProgress } from "@/hooks/useHostProgress";
 import type { Space } from "@/types/space";
 
 interface RefactoredSpaceFormProps {
@@ -19,6 +20,13 @@ interface RefactoredSpaceFormProps {
 
 const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFormProps) => {
   const navigate = useNavigate();
+
+  // Get Stripe onboarding status
+  const { data: hostProgressData } = useHostProgress({
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000 // 30 seconds
+  });
+  const stripeOnboardingStatus = hostProgressData?.stripeOnboardingStatus || 'none';
 
   // Initialize the hook as the single source of truth
   const {
@@ -30,7 +38,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     isSubmitting,
     uploadingPhotos,
     processingJobs
-  } = useSpaceFormState({ initialData, isEdit });
+  } = useSpaceFormState({ initialData, isEdit, stripeOnboardingStatus });
 
   return (
     <Form {...form}>
