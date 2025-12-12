@@ -61,24 +61,17 @@ export const createPaymentSession = async (
       return null;
     }
 
-    sreLogger.debug('Creating payment session with full payload', {
+    sreLogger.debug('Creating payment session via create-checkout-v3', {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      spaceId,
-      durationHours,
-      pricePerHour,
-      pricePerDay,
+      bookingId,
       hostStripeAccountId
     });
 
-    const { data, error } = await supabase.functions.invoke('create-payment-session', {
+    const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
       body: {
-        space_id: spaceId,
         booking_id: bookingId,
-        durationHours,
-        pricePerHour,
-        pricePerDay,
-        host_stripe_account_id: hostStripeAccountId,
+        origin: window.location.origin
       }
     });
 
@@ -86,7 +79,6 @@ export const createPaymentSession = async (
       sreLogger.error('createPaymentSession - Edge function error', {
         component: 'PaymentUtils',
         action: 'createPaymentSession',
-        spaceId,
         bookingId,
         status: (error as any).status,
         message: (error as any).message
@@ -114,7 +106,6 @@ export const createPaymentSession = async (
     sreLogger.error("Error creating payment session", {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      spaceId,
       bookingId
     }, error as Error);
     toast.error("Errore nella creazione della sessione di pagamento");

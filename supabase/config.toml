@@ -41,7 +41,7 @@ verify_jwt = true
 [functions.stripe-connect]
 verify_jwt = true
 
-[functions.create-payment-session]
+[functions.create-checkout-v3]
 verify_jwt = true
 timeout = 30
 

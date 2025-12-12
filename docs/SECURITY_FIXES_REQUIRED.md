@@ -20,7 +20,7 @@ This document outlines the remaining critical security fixes needed to address t
 - Created `schemas.ts` with typed validation schemas
 - All critical Edge Functions now have proper input validation:
   - ✅ `send-email` (already had Zod validation)
-  - ✅ `create-payment-session` (extensive validation)
+  - ✅ `create-checkout-v3` (extensive validation)
   - ✅ `admin-suspend-user` (now fixed)
 
 **Testing:**

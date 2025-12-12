@@ -8,7 +8,6 @@ import { CardContent } from "@/components/ui/card";
 import { ReviewButton } from "../ReviewButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { parseISO } from "date-fns";
 
 interface BookingCardActionsProps {
   booking: BookingWithDetails;
@@ -26,9 +25,10 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
 
   const handlePayNow = async () => {
     try {
+      // Validate host connection status
       const { data: spaceData, error: spaceError } = await supabase
         .from('workspaces')
-        .select('price_per_hour, price_per_day, host_id, profiles(stripe_account_id, stripe_connected)')
+        .select('profiles(stripe_connected)')
         .eq('id', booking.space_id)
         .single();
       
@@ -38,19 +38,10 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
         return;
       }
 
-      // Calculate duration
-      const startTime = parseISO(`${booking.booking_date}T${booking.start_time}`);
-      const endTime = parseISO(`${booking.booking_date}T${booking.end_time}`);
-      const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-
-      const { data, error } = await supabase.functions.invoke('create-payment-session', {
+      const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
         body: {
-          space_id: booking.space_id,
-          durationHours,
-          pricePerHour: spaceData.price_per_hour,
-          pricePerDay: spaceData.price_per_day,
-          host_stripe_account_id: spaceData.profiles.stripe_account_id,
           booking_id: booking.id,
+          origin: window.location.origin
         },
       });
 

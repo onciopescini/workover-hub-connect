@@ -321,7 +321,7 @@ graph LR
 ### Edge Functions
 ```
 supabase/functions/
-├── create-payment-session/    # Stripe checkout
+├── create-checkout-v3/        # Stripe checkout
 ├── stripe-webhook/             # Payment webhooks
 ├── check-rate-limit/           # Rate limiting
 └── _shared/                    # Shared utilities
