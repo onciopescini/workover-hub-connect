@@ -135,10 +135,10 @@ export function useCheckout() {
            throw new Error('Host Stripe account ID is missing for instant booking');
         }
 
-        console.log('DEBUG: Step 4 - Calling create-payment-session...');
+        console.log('DEBUG: Step 4 - Calling create-checkout-v3...');
 
         const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-          'create-payment-session',
+          'create-checkout-v3',
           {
             body: {
               booking_id: bookingId,
