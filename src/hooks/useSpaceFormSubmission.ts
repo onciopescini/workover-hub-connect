@@ -46,11 +46,13 @@ export const useSpaceFormSubmission = ({
     }
 
     // Check if trying to publish without completed Stripe verification
-    // TEMPORARY BYPASS: Commented out to allow testing space creation without Stripe
-    /* if (formData.published && stripeOnboardingStatus !== 'completed') {
-      toast.error("Non puoi pubblicare uno spazio senza completare la verifica Stripe. Completa l'onboarding prima di pubblicare.");
+    // SECURITY ENFORCED: Prevent publishing without Stripe
+    if (formData.published && stripeOnboardingStatus !== 'completed') {
+      toast.error("Non puoi pubblicare uno spazio senza completare la verifica Stripe.", {
+        description: "Completa l'onboarding nella sezione Pagamenti prima di pubblicare."
+      });
       return;
-    } */
+    }
 
     sreLogger.info('Submitting space form', {
       isEdit,
