@@ -36,16 +36,13 @@ test.describe('Stripe Checkout Integration', () => {
     await expect(page.locator('text=/IVA \\(22%\\)/')).toBeVisible();
 
     // Mock the payment session creation
-    await page.route('**/functions/v1/create-payment-session', async route => {
+    await page.route('**/functions/v1/create-checkout-v3', async route => {
       const request = route.request();
       const postData = request.postDataJSON();
       
       // Verify request contains required fields
-      expect(postData.space_id).toBeDefined();
-      expect(postData.durationHours).toBe(3);
-      expect(postData.pricePerHour).toBeDefined();
-      expect(postData.pricePerDay).toBeDefined();
-      expect(postData.host_stripe_account_id).toBeDefined();
+      expect(postData.booking_id).toBeDefined();
+      expect(postData.origin).toBeDefined();
 
       await route.fulfill({
         status: 200,
@@ -95,7 +92,7 @@ test.describe('Stripe Checkout Integration', () => {
     await expect(page.locator('text=/calcolata al pagamento/')).toBeVisible();
 
     // Mock payment session with Tax ON
-    await page.route('**/functions/v1/create-payment-session', async route => {
+    await page.route('**/functions/v1/create-checkout-v3', async route => {
       const postData = route.request().postDataJSON();
       
       await route.fulfill({
@@ -132,7 +129,7 @@ test.describe('Stripe Checkout Integration', () => {
     await page.getByRole('button', { name: /continua/i }).click();
 
     // Mock payment session error
-    await page.route('**/functions/v1/create-payment-session', async route => {
+    await page.route('**/functions/v1/create-checkout-v3', async route => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',

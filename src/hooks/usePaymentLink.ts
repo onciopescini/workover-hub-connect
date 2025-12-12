@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { parseISO } from 'date-fns';
 
 export const usePaymentLink = () => {
   const location = useLocation();
@@ -35,28 +34,25 @@ export const usePaymentLink = () => {
           return;
         }
 
-        // Fetch workspace details (prices and host_id) from workspaces table
+        // Fetch workspace and host details mainly for validation
         const { data: workspace, error: wsError } = await supabase
           .from('workspaces')
-          .select('price_per_hour, price_per_day, host_id')
+          .select('host_id')
           .eq('id', booking.space_id)
           .single();
 
-        // Cast to handle missing types if needed
-        const workspaceData = workspace as any;
-
-        if (wsError || !workspaceData) {
+        if (wsError || !workspace) {
           console.error('Workspace fetch error:', wsError);
           toast.error('Spazio non trovato');
           navigate('/bookings', { replace: true });
           return;
         }
 
-        // Fetch host profile for Stripe account
+        // Validate host Stripe account
         const { data: hostProfile, error: profileError } = await supabase
           .from('profiles')
           .select('stripe_account_id')
-          .eq('id', workspaceData.host_id)
+          .eq('id', workspace.host_id)
           .single();
 
         if (profileError || !hostProfile?.stripe_account_id) {
@@ -65,20 +61,11 @@ export const usePaymentLink = () => {
           return;
         }
 
-        // Calculate duration
-        const startTime = parseISO(`${booking.booking_date}T${booking.start_time}`);
-        const endTime = parseISO(`${booking.booking_date}T${booking.end_time}`);
-        const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-
-        // Create payment session
-        const { data, error } = await supabase.functions.invoke('create-payment-session', {
+        // Create checkout session using v3
+        const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
           body: {
-            space_id: booking.space_id,
-            durationHours,
-            pricePerHour: workspaceData.price_per_hour,
-            pricePerDay: workspaceData.price_per_day,
-            host_stripe_account_id: hostProfile.stripe_account_id,
             booking_id: booking.id,
+            origin: window.location.origin
           },
         });
 
