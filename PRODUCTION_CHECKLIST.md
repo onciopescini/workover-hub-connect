@@ -196,3 +196,8 @@ POSTHOG_API_KEY=phc_your-posthog-key
 **Risk Level**: Low  
 
 *WorkoverHub Connect is ready for immediate production deployment.*
+
+## 🧹 Codebase & Migration Sanity Checks
+- [ ] **Type Check (CRITICAL):** Run `npm run type-check` (or `tsc --noEmit`). If this fails, the build will fail. Ensure no components import deleted files (like `useBookings`).
+- [ ] **Legacy References Audit:** Check `docs/LEGACY_SPACES_REFERENCES.md`. Verify if critical components are still querying the deprecated `spaces` table.
+- [ ] **Security Enforcement:** Manually verify that `useSpaceFormSubmission.ts` and `useSpaceFormState.ts` contain the uncommented check for `stripeOnboardingStatus` preventing publication.
