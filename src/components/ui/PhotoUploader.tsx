@@ -54,7 +54,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   const processFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    const currentTotal = photoFiles.length;
+    const currentTotal = (photoFiles || []).length;
     
     if (currentTotal + fileArray.length > MAX_FILES) {
       toast.error(`Puoi caricare massimo ${MAX_FILES} foto. Attualmente ne hai ${currentTotal}.`);
@@ -85,7 +85,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   const removePhoto = useCallback((index: number) => {
     // Calculate offset to correctly identify if we are removing an existing photo or a new file
-    const existingCount = photoPreviewUrls.length - photoFiles.length;
+    const existingCount = (photoPreviewUrls || []).length - (photoFiles || []).length;
 
     // If we are removing a new file (appended at the end)
     if (index >= existingCount) {
@@ -139,7 +139,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   // Simulate upload progress for demo purposes
   // Upload simulation for demo - production ready implementation
   const simulateUpload = useCallback(async () => {
-    if (photoFiles.length === 0) {
+    if ((photoFiles || []).length === 0) {
       toast.error('Seleziona almeno una foto da caricare');
       return;
     }
@@ -158,7 +158,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       // Upload successful - photos ready for use
     } catch (error) {
       toast.error('Errore durante il caricamento delle foto');
-      sreLogger.error('Photo upload error', { photoCount: photoFiles.length }, error as Error);
+      sreLogger.error('Photo upload error', { photoCount: (photoFiles || []).length }, error as Error);
     } finally {
       setUploadingPhotos(false);
       setUploadProgress(0);
@@ -171,7 +171,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         <CardTitle className="flex items-center gap-2">
           <Camera className="h-5 w-5" />
           Caricamento Foto
-          <Badge variant="secondary">{photoFiles.length}/{MAX_FILES}</Badge>
+          <Badge variant="secondary">{(photoFiles || []).length}/{MAX_FILES}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -240,7 +240,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         )}
 
         {/* Photo Previews */}
-        {photoPreviewUrls.length > 0 && (
+        {(photoPreviewUrls || []).length > 0 && (
           <div className="space-y-3">
             <h4 className="font-medium">Foto Selezionate</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -284,11 +284,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         )}
 
         {/* Upload Actions */}
-        {photoFiles.length > 0 && !uploadingPhotos && (
+        {(photoFiles || []).length > 0 && !uploadingPhotos && (
           <div className="flex gap-2">
             <Button onClick={simulateUpload} disabled={uploadingPhotos}>
               <Upload className="h-4 w-4 mr-2" />
-              Carica {photoFiles.length} Foto
+              Carica {(photoFiles || []).length} Foto
             </Button>
             <Button 
               variant="outline" 
