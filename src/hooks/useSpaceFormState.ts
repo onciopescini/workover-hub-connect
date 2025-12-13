@@ -68,6 +68,35 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
     }
   });
 
+  // Watch form data to expose it to consumers
+  const formData = form.watch();
+  const availabilityData = formData.availability;
+
+  // Helper Wrappers to expose to consumers
+  const handleInputChange = (field: string, value: any) => {
+    form.setValue(field as any, value, { shouldValidate: true, shouldDirty: true });
+  };
+
+  const handleAddressChange = (address: string, coordinates?: { lat: number; lng: number }) => {
+    form.setValue('address', address, { shouldValidate: true });
+    if (coordinates) {
+      form.setValue('latitude', coordinates.lat);
+      form.setValue('longitude', coordinates.lng);
+    }
+  };
+
+  const handleAvailabilityChange = (data: any) => {
+    form.setValue('availability', data, { shouldValidate: true });
+  };
+
+  const handleCheckboxArrayChange = (field: string, value: string, checked: boolean) => {
+    const current = form.getValues(field as any) || [];
+    const updated = checked
+      ? [...current, value]
+      : current.filter((item: string) => item !== value);
+    form.setValue(field as any, updated, { shouldValidate: true });
+  };
+
   // Initialization Logic
   useEffect(() => {
     if (initialData) {
@@ -174,21 +203,6 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
             .from('space_photos')
             .getPublicUrl(fileName);
 
-          // NON-BLOCKING Image Optimization
-          // We intentionally do NOT await this, or we treat it as fire-and-forget
-          // However, the original code had `await startImageOptimization`
-          // The audit says: "Comment out/Remove the await startImageOptimization line"
-          // We will keep the call but make it fire-and-forget or just comment it out as requested.
-
-          /*
-          // Disabled as per Audit Report
-          try {
-             startImageOptimization(fileName, initialData?.id, file.size)
-               .then(jobId => setProcessingJobs(prev => [...prev, jobId]))
-               .catch(err => warn('Optimization start failed', { err }));
-          } catch (e) { ... }
-          */
-
           // Replace preview URL with actual URL
           const urlIndex = newPreviewUrls.indexOf(previewUrl);
           if (urlIndex !== -1) {
@@ -206,9 +220,6 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       setPhotoFiles(prev => [...prev, ...newFiles]);
 
       // We need to merge existing previewUrls with the new ones
-      // BUT we must be careful because `newPreviewUrls` contains the FINAL public URLs now (because we awaited the upload)
-      // So we can safely add them.
-
       setPhotoPreviewUrls(prev => {
         const updated = [...prev, ...newPreviewUrls];
         form.setValue('photos', updated); // Sync with form
@@ -228,10 +239,6 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
     const updatedUrls = photoPreviewUrls.filter((_, i) => i !== index);
     setPhotoPreviewUrls(updatedUrls);
     form.setValue('photos', updatedUrls);
-
-    // We should also try to clean up photoFiles if possible, but the index mapping is tricky
-    // if we don't strictly track which URL belongs to which File.
-    // For now, updating the URL list is sufficient for the form submission.
   };
 
   const submitSpace = async (data: SpaceFormData) => {
@@ -241,9 +248,6 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       isEdit,
       title: data.title
     });
-
-    // Validation check is handled by handleSubmit wrapper in component usually,
-    // but if we call this manually we rely on the data passed in.
 
     // Special validation for published spaces
     if (data.published && data.availability) {
@@ -323,12 +327,22 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
 
   return {
     form,
+    formData, // <--- CRITICAL FIX: Exposed formData
+    availabilityData, // <--- CRITICAL FIX: Exposed availabilityData
+    handleInputChange, // <--- Exposed handler
+    handleAddressChange, // <--- Exposed handler
+    handleAvailabilityChange, // <--- Exposed handler
+    handleCheckboxArrayChange, // <--- Exposed handler
     submitSpace,
     handlePhotoChange,
     removePhoto,
     photoPreviewUrls,
     isSubmitting,
     uploadingPhotos,
-    processingJobs
+    processingJobs,
+    setUploadingPhotos, // Exposed to match useSpaceForm usage if needed
+    setProcessingJobs, // Exposed to match useSpaceForm usage if needed
+    setPhotoFiles, // Exposed to match useSpaceForm usage if needed
+    setPhotoPreviewUrls // Exposed to match useSpaceForm usage if needed
   };
 };
