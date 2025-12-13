@@ -1,10 +1,10 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, MapPin, Users, RefreshCw, Eye } from "lucide-react";
+import { UserPlus, MapPin, Users, RefreshCw, Eye, Calendar } from "lucide-react";
 import { useNetworking } from "@/hooks/useNetworking";
 import { sendConnectionRequest } from "@/lib/networking-utils";
 import { useNavigate } from "react-router-dom";
@@ -31,45 +31,6 @@ export const ConnectionSuggestions = () => {
 
   const getUserInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase() || 'U';
-  };
-
-  const getReasonLabel = (reason: string) => {
-    switch (reason) {
-      case 'shared_space':
-        return 'Spazio condiviso';
-      case 'shared_event':
-        return 'Contesto condiviso';
-      case 'similar_interests':
-        return 'Interessi simili';
-      default:
-        return reason;
-    }
-  };
-
-  const getReasonColor = (reason: string) => {
-    switch (reason) {
-      case 'shared_space':
-        return 'bg-blue-100 text-blue-800';
-      case 'shared_event':
-        return 'bg-purple-100 text-purple-800';
-      case 'similar_interests':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getReasonIcon = (reason: string) => {
-    switch (reason) {
-      case 'shared_space':
-        return <MapPin className="w-3 h-3" />;
-      case 'shared_event':
-        return <Users className="w-3 h-3" />;
-      case 'similar_interests':
-        return <Users className="w-3 h-3" />;
-      default:
-        return <Users className="w-3 h-3" />;
-    }
   };
 
   return (
@@ -106,56 +67,49 @@ export const ConnectionSuggestions = () => {
       ) : (
         <div className="grid gap-4">
           {suggestions.map((suggestion) => {
-            const user = suggestion.suggested_user;
-            const hasRequest = hasConnectionRequest(suggestion.suggested_user_id);
+            const hasRequest = hasConnectionRequest(suggestion.user_id);
             
             return (
-              <Card key={suggestion.id} className="hover:shadow-md transition-shadow">
+              <Card key={`${suggestion.user_id}-${suggestion.workspace_name}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={user?.profile_photo_url || ""} />
+                        <AvatarImage src={suggestion.avatar_url || ""} />
                         <AvatarFallback className="text-lg">
-                          {getUserInitials(user?.first_name, user?.last_name)}
+                          {getUserInitials(suggestion.first_name, suggestion.last_name)}
                         </AvatarFallback>
                       </Avatar>
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {user?.first_name} {user?.last_name}
+                            {suggestion.first_name} {suggestion.last_name}
                           </h3>
-                          <Badge className={getReasonColor(suggestion.reason)}>
+                          <Badge className="bg-blue-100 text-blue-800">
                             <div className="flex items-center gap-1">
-                              {getReasonIcon(suggestion.reason)}
-                              {getReasonLabel(suggestion.reason)}
+                              <MapPin className="w-3 h-3" />
+                              Spazio condiviso
                             </div>
                           </Badge>
                         </div>
                         
-                        {user?.bio && (
-                          <p className="text-gray-600 mb-3 line-clamp-2">{user.bio}</p>
-                        )}
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            Score: {suggestion.score}
-                          </div>
-                           {suggestion.shared_context?.["space_title"] && (
-                             <div className="flex items-center gap-1">
-                               <MapPin className="w-4 h-4" />
-                               {suggestion.shared_context["space_title"]}
-                             </div>
-                           )}
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                           <div className="flex items-center gap-1">
+                             <MapPin className="w-4 h-4" />
+                             {suggestion.workspace_name}
+                           </div>
+                           <div className="flex items-center gap-1">
+                             <Calendar className="w-4 h-4" />
+                             {new Date(suggestion.booking_date).toLocaleDateString()}
+                           </div>
                         </div>
                       </div>
                     </div>
                     
                     <div className="flex flex-col gap-2">
                       <Button
-                        onClick={() => handleViewProfile(suggestion.suggested_user_id)}
+                        onClick={() => handleViewProfile(suggestion.user_id)}
                         variant="outline"
                         size="sm"
                         className="text-gray-600 hover:text-gray-800"
@@ -167,7 +121,7 @@ export const ConnectionSuggestions = () => {
                         <Badge variant="outline">Richiesta inviata</Badge>
                       ) : (
                         <Button 
-                          onClick={() => handleSendRequest(suggestion.suggested_user_id)}
+                          onClick={() => handleSendRequest(suggestion.user_id)}
                           size="sm"
                         >
                           <UserPlus className="w-4 h-4 mr-2" />

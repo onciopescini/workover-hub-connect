@@ -156,23 +156,8 @@ const Networking = () => {
               ) : (
                 filteredSuggestions.map((suggestion) => (
                   <EnhancedSuggestionCard 
-                    key={suggestion.id} 
-                    suggestion={{
-                      id: suggestion.id,
-                      suggested_user_id: suggestion.suggested_user_id,
-                      reason: suggestion.reason,
-                      score: suggestion.score,
-                      shared_context: suggestion.shared_context,
-                      ...(suggestion.suggested_user ? {
-                        suggested_user: {
-                          first_name: suggestion.suggested_user.first_name,
-                          last_name: suggestion.suggested_user.last_name,
-                          profile_photo_url: suggestion.suggested_user.profile_photo_url ?? '',
-                          bio: suggestion.suggested_user.bio ?? ''
-                        }
-                      } : {})
-                    }}
-                    
+                    key={`${suggestion.user_id}-${suggestion.workspace_name}`}
+                    suggestion={suggestion}
                   />
                 ))
               )}

@@ -24,20 +24,12 @@ export interface Connection {
 }
 
 export interface ConnectionSuggestion {
-  id: string;
   user_id: string;
-  suggested_user_id: string;
-  reason: 'shared_space' | 'shared_event' | 'similar_interests';
-  shared_context: Record<string, any>;
-  score: number;
-  created_at: string;
-  suggested_user?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    profile_photo_url?: string | null;
-    bio?: string | null;
-  };
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
+  workspace_name: string;
+  booking_date: string;
 }
 
 export interface PrivateChat {

@@ -58,7 +58,7 @@ export const useMessagesData = (activeTab: string) => {
                 )
               `)
               .eq("space.host_id", authState.user.id)
-              .eq("status", "confirmed")
+              .in("status", ["confirmed", "pending"])
               .gte("booking_date", new Date(Date.now() - TIME_CONSTANTS.MESSAGE_RETENTION).toISOString().split('T')[0])
               .order("created_at", { ascending: false });
 
