@@ -14,7 +14,7 @@ export const RefactoredBasicInformation = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
+        <CardTitle>Informazioni Base</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <FormField
@@ -23,11 +23,11 @@ export const RefactoredBasicInformation = () => {
           render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
-                Space Title <span className="text-red-500">*</span>
+                Titolo <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Enter a descriptive title for your space"
+                  placeholder="Inserisci un titolo descrittivo per il tuo spazio"
                   className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                   {...field}
                 />
@@ -43,11 +43,11 @@ export const RefactoredBasicInformation = () => {
           render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
-                Description <span className="text-red-500">*</span>
+                Descrizione <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe your space, its atmosphere, and what makes it special..."
+                  placeholder="Descrivi il tuo spazio, l'atmosfera e cosa lo rende speciale..."
                   rows={4}
                   className={fieldState.error ? "border-red-500 focus-visible:ring-red-500" : ""}
                   {...field}
@@ -64,12 +64,12 @@ export const RefactoredBasicInformation = () => {
           render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
-                Space Category <span className="text-red-500">*</span>
+                Categoria <span className="text-red-500">*</span>
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className={fieldState.error ? "border-red-500 focus:ring-red-500" : ""}>
-                    <SelectValue placeholder="Select space category" />
+                    <SelectValue placeholder="Seleziona una categoria" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>

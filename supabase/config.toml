@@ -133,5 +133,9 @@ timeout = 30
 [functions.retry-dac7-generation]
 verify_jwt = false
 timeout = 60
+
 [functions.create-checkout-v2]
 verify_jwt = true
+
+[functions.message-broadcast]
+verify_jwt = false
