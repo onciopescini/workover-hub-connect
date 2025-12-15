@@ -17,7 +17,7 @@ serve(async (req) => {
     // -------------------------------------------------------------------------
     // 1. DEPLOYMENT CONFIRMATION LOG
     // -------------------------------------------------------------------------
-    console.log("🚀 CHECKOUT V3 - ADVANCED & DECOUPLED 🚀");
+    console.log("🚀 CHECKOUT V3 - ADVANCED & DECOUPLED (W/ FISCAL DATA) 🚀");
     console.log("Timestamp:", new Date().toISOString());
 
     // 2. Read Request Body
@@ -92,6 +92,13 @@ serve(async (req) => {
     // Handle legacy 'space_id' vs new 'workspace_id' if needed, though schema says 'space_id'
     const spaceId = booking.space_id || booking.workspace_id;
     console.log('[1/3] Booking Found. Space ID:', spaceId)
+
+    // Check for Fiscal Data
+    if (booking.fiscal_data) {
+       console.log('[1/3] Fiscal Data Found:', booking.fiscal_data)
+    } else {
+       console.log('[1/3] No Fiscal Data provided')
+    }
 
     // B. Fetch Workspace
     console.log('[2/3] Fetching Workspace:', spaceId)
@@ -204,6 +211,28 @@ serve(async (req) => {
         throw new Error(`Fee (${applicationFeeCents}) cannot equal or exceed total (${unitAmountCents})`)
     }
 
+    // Prepare Invoice Metadata
+    let invoiceMetadata: Record<string, string> = {
+        booking_id: booking_id,
+        user_id: user.id
+    };
+
+    if (booking.fiscal_data) {
+        // Flatten and stringify fiscal data for Stripe Metadata
+        const fiscalFlat: Record<string, string> = {};
+        for (const [key, value] of Object.entries(booking.fiscal_data)) {
+            if (value === null || value === undefined) continue;
+            // Stripe metadata must be strings and < 500 chars
+            fiscalFlat[key] = String(value).substring(0, 500);
+        }
+
+        invoiceMetadata = {
+            ...invoiceMetadata,
+            ...fiscalFlat
+        };
+        console.log('[STRIPE] Adding fiscal data to metadata', invoiceMetadata)
+    }
+
     const sessionData = {
       line_items: [
         {
@@ -219,22 +248,19 @@ serve(async (req) => {
         },
       ],
       mode: 'payment',
-      success_url: `${origin}/bookings?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/bookings?canceled=true`,
+      // UPDATED: Redirect to dedicated success page
+      success_url: `${origin}/spaces/${spaceId}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/spaces/${spaceId}?canceled=true`,
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
         transfer_data: {
           destination: hostProfile.stripe_account_id,
         },
-        metadata: {
-            booking_id: booking_id,
-            user_id: user.id
-        }
+        metadata: invoiceMetadata
       },
-      metadata: {
-        booking_id: booking_id,
-        user_id: user.id,
-      },
+      metadata: invoiceMetadata,
+      // If fiscal data exists, we can try to pre-fill tax ID if supported or just rely on metadata
+      // customer_details: ... (omitted for now to keep it simple)
     }
 
     console.log('[STRIPE] Creating Session...')

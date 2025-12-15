@@ -85,6 +85,7 @@ export type RawBookingData = {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
+  fiscal_data?: any; // JSONB
 };
 
 // Reservation result type
