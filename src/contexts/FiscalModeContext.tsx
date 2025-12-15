@@ -22,7 +22,9 @@ export const FiscalModeProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    console.log(`[FISCAL MODE] Current mode: ${mode}`);
+    if (import.meta.env.DEV) {
+      console.log(`[FISCAL MODE] Current mode: ${mode}`);
+    }
   }, [mode]);
 
   return (

@@ -331,15 +331,6 @@ export const AppRoutes = () => {
           </LazyWrapper>
         } />
         
-        {/* Privacy deletion request */}
-        <Route path="privacy/deletion-request" element={
-          <AuthProtected>
-            <LazyWrapper>
-              <PrivacyDeletionRequest />
-            </LazyWrapper>
-          </AuthProtected>
-        } />
-
         {/* Coworker documents */}
         <Route path="my-documents" element={
           <AuthProtected>
