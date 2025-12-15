@@ -128,7 +128,31 @@ export const securitySchemas = {
     .refine(val => /[A-Z]/.test(val), 'Password deve contenere almeno una maiuscola')
     .refine(val => /[a-z]/.test(val), 'Password deve contenere almeno una minuscola')
     .refine(val => /[0-9]/.test(val), 'Password deve contenere almeno un numero')
-    .refine(val => /[^A-Za-z0-9]/.test(val), 'Password deve contenere almeno un carattere speciale')
+    .refine(val => /[^A-Za-z0-9]/.test(val), 'Password deve contenere almeno un carattere speciale'),
+
+  // Fiscal/Legal validators
+  codiceFiscale: z.string()
+    .trim()
+    .length(16, 'Il Codice Fiscale deve essere di 16 caratteri')
+    .regex(/^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i, 'Formato Codice Fiscale non valido')
+    .transform(val => val.toUpperCase()),
+
+  piva: z.string()
+    .trim()
+    .length(11, 'La Partita IVA deve essere di 11 cifre')
+    .regex(/^[0-9]{11}$/, 'La Partita IVA deve contenere solo numeri'),
+
+  ibanIT: z.string()
+    .trim()
+    .length(27, 'L\'IBAN italiano deve essere di 27 caratteri')
+    .regex(/^IT[A-Z0-9]{25}$/i, 'Formato IBAN non valido (deve iniziare con IT seguito da 25 caratteri alfanumerici)')
+    .transform(val => val.toUpperCase()),
+
+  sdiCode: z.string()
+    .trim()
+    .length(7, 'Il codice SDI deve essere di 7 caratteri')
+    .regex(/^[A-Z0-9]{7}$/i, 'Il codice SDI deve contenere solo lettere e numeri')
+    .transform(val => val.toUpperCase())
 };
 
 // HTML sanitization

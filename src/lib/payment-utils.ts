@@ -16,50 +16,21 @@ type Payment = {
   created_at: string;
 };
 
-export interface FiscalPaymentBreakdown {
-  net_amount: number;
-  platform_fee: number;
-  vat_amount: number;
-  gross_amount: number;
-  withholding_tax: number;
+// Interface for Supabase Edge Function errors
+export interface SupabaseError extends Error {
+  status?: number;
+  message: string;
+  code?: string;
+  details?: unknown;
 }
 
-export const hashSensitiveId = (id: string): string => {
-  if (!id) return '';
-  if (id.length <= 8) return '****';
-  return `****${id.slice(-4)}`;
-};
-
-/**
- * Calculates payment breakdown according to Italian fiscal rules.
- *
- * Rules:
- * 1. Platform Fee: 5% of Base Amount
- * 2. IVA (VAT): 22% applied only to the Platform Fee
- * 3. Withholding Tax (Ritenuta): 21% of Base Amount (if host is private)
- * 4. Net Payout: Base Amount - (Platform Fee + IVA + Withholding Tax)
- */
-export const calculatePaymentBreakdownWithTax = (
-  baseAmount: number,
-  isPrivateIndividual: boolean = false
-): FiscalPaymentBreakdown => {
-  const platformFee = Math.round(baseAmount * 0.05 * 100) / 100; // 5%
-  const vatAmount = Math.round(platformFee * 0.22 * 100) / 100; // 22% on fee
-
-  // Ritenuta d'acconto: 21% on Base Amount if host is private individual
-  const withholdingTax = isPrivateIndividual
-    ? Math.round(baseAmount * 0.21 * 100) / 100
-    : 0;
-
-  const netPayout = Math.round((baseAmount - platformFee - vatAmount - withholdingTax) * 100) / 100;
-
-  return {
-    gross_amount: baseAmount,
-    platform_fee: platformFee,
-    vat_amount: vatAmount,
-    withholding_tax: withholdingTax,
-    net_amount: netPayout
-  };
+// Type guard for SupabaseError
+const isSupabaseError = (error: unknown): error is SupabaseError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error
+  );
 };
 
 // Calculate payment breakdown with dual commission model
@@ -121,13 +92,15 @@ export const createPaymentSession = async (
     });
 
     if (error) {
+      const supabaseError = error as SupabaseError;
       sreLogger.error('createPaymentSession - Edge function error', {
         component: 'PaymentUtils',
         action: 'createPaymentSession',
-        bookingId: hashSensitiveId(bookingId),
-        status: (error as any).status,
-        message: (error as any).message
-      }, error as Error);
+        bookingId,
+        status: supabaseError.status,
+        message: supabaseError.message,
+        code: supabaseError.code
+      }, supabaseError);
       throw error;
     }
     
@@ -148,11 +121,19 @@ export const createPaymentSession = async (
     
     return data as PaymentSession;
   } catch (error) {
+    const errorDetails = isSupabaseError(error) ? {
+      status: error.status,
+      message: error.message,
+      code: error.code
+    } : { message: 'Unknown error' };
+
     sreLogger.error("Error creating payment session", {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId: hashSensitiveId(bookingId)
+      bookingId,
+      ...errorDetails
     }, error as Error);
+
     toast.error("Errore nella creazione della sessione di pagamento");
     return null;
   }
