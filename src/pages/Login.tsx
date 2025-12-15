@@ -11,6 +11,7 @@ import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ const Login = () => {
     // Check client-side rate limit BEFORE setting loading state
     const rateLimitCheck = checkAuthRateLimit(email);
     if (!rateLimitCheck.allowed) {
-      setError(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
+      toast.error(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
       return;
     }
 

@@ -30,6 +30,13 @@ const SECURITY_PATTERNS = {
   SAFE_URL: /^https?:\/\/[^\s<>"'`]+$/i
 };
 
+// Fiscal Validation Patterns
+export const FISCAL_PATTERNS = {
+  CODICE_FISCALE: /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i,
+  PIVA: /^[0-9]{11}$/,
+  IBAN_IT: /^IT[0-9]{2}[A-Z]{1}[0-9]{10}[A-Z0-9]{12}$/
+};
+
 // Security-first validation schemas
 export const securitySchemas = {
   // User input schemas
@@ -134,18 +141,18 @@ export const securitySchemas = {
   codiceFiscale: z.string()
     .trim()
     .length(16, 'Il Codice Fiscale deve essere di 16 caratteri')
-    .regex(/^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i, 'Formato Codice Fiscale non valido')
+    .regex(FISCAL_PATTERNS.CODICE_FISCALE, 'Codice Fiscale non valido')
     .transform(val => val.toUpperCase()),
 
   piva: z.string()
     .trim()
     .length(11, 'La Partita IVA deve essere di 11 cifre')
-    .regex(/^[0-9]{11}$/, 'La Partita IVA deve contenere solo numeri'),
+    .regex(FISCAL_PATTERNS.PIVA, 'Partita IVA non valida'),
 
   ibanIT: z.string()
     .trim()
     .length(27, 'L\'IBAN italiano deve essere di 27 caratteri')
-    .regex(/^IT[A-Z0-9]{25}$/i, 'Formato IBAN non valido (deve iniziare con IT seguito da 25 caratteri alfanumerici)')
+    .regex(FISCAL_PATTERNS.IBAN_IT, 'IBAN non valido')
     .transform(val => val.toUpperCase()),
 
   sdiCode: z.string()

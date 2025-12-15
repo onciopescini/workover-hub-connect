@@ -33,6 +33,18 @@ const isSupabaseError = (error: unknown): error is SupabaseError => {
   );
 };
 
+// Simple hash function for non-sensitive logging
+const hashValue = (val: string): string => {
+  if (!val) return 'null';
+  let hash = 0;
+  for (let i = 0; i < val.length; i++) {
+    const char = val.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(16);
+};
+
 // Calculate payment breakdown with dual commission model
 // @deprecated Use calculatePaymentBreakdownWithTax for fiscal compliance
 export const calculatePaymentBreakdown = (baseAmount: number) => {
@@ -80,8 +92,8 @@ export const createPaymentSession = async (
     sreLogger.debug('Creating payment session via create-checkout-v3', {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId: hashSensitiveId(bookingId),
-      hostStripeAccountId: hashSensitiveId(hostStripeAccountId)
+      bookingIdHash: hashValue(bookingId),
+      hasHostStripeAccount: !!hostStripeAccountId
     });
 
     const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
@@ -157,7 +169,7 @@ export const getPaymentStatus = async (bookingId: string): Promise<string | null
     sreLogger.error("Error fetching payment status", {
       component: 'PaymentUtils',
       action: 'getPaymentStatus',
-      bookingId: hashSensitiveId(bookingId)
+      bookingId: hashValue(bookingId)
     }, error as Error);
     return null;
   }
@@ -221,7 +233,7 @@ export const recordPayment = async (paymentData: Omit<PaymentInsert, 'user_id'>)
       component: 'PaymentUtils',
       action: 'recordPayment',
       userId: user?.user?.id,
-      bookingId: hashSensitiveId(paymentData.booking_id)
+      bookingId: hashValue(paymentData.booking_id)
     }, error as Error);
     return false;
   }
