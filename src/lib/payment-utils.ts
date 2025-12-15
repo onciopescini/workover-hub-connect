@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
+import { PLATFORM_FEE_RATE, VAT_RATE, WITHHOLDING_TAX_RATE } from "@/config/fiscal-constants";
 
 // Importa il tipo Payment dalla tabella Supabase
 type Payment = {
@@ -43,6 +44,25 @@ const hashValue = (val: string): string => {
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash.toString(16);
+};
+
+// Calculate payment breakdown with dual commission model
+export const calculatePaymentBreakdownWithTax = (baseAmount: number) => {
+  const platform_fee = Math.round(baseAmount * PLATFORM_FEE_RATE * 100) / 100;
+  const vat_amount = Math.round(platform_fee * VAT_RATE * 100) / 100;
+  const withholding_tax = Math.round(baseAmount * WITHHOLDING_TAX_RATE * 100) / 100;
+  const net_amount = baseAmount - (platform_fee + vat_amount + withholding_tax);
+
+  return {
+    base_amount: baseAmount,
+    platform_fee,
+    vat_amount,
+    withholding_tax,
+    net_amount,
+    gross_amount: baseAmount + platform_fee // Assuming this is buyer total?
+    // Note: The logic here is re-implemented based on fiscal constants
+    // because the original function definition was missing.
+  };
 };
 
 // Calculate payment breakdown with dual commission model

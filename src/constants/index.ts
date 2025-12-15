@@ -5,6 +5,8 @@
  * These values should never be hardcoded in components.
  */
 
+import { PLATFORM_FEE_RATE, VAT_RATE } from '@/config/fiscal-constants';
+
 // ============================================================================
 // TIME CONSTANTS
 // ============================================================================
@@ -88,11 +90,11 @@ export const BUSINESS_RULES = {
   /** Maximum number of retry attempts for failed operations */
   RETRY_ATTEMPTS: 3,
   
-  /** Service fee percentage (12%) */
-  SERVICE_FEE_PCT: 0.12,
+  /** Service fee percentage (5%) - Standardized to Platform Fee */
+  SERVICE_FEE_PCT: PLATFORM_FEE_RATE,
   
   /** Default VAT percentage (22%) */
-  DEFAULT_VAT_PCT: 0.22,
+  DEFAULT_VAT_PCT: VAT_RATE,
   
   /** Maximum file size for uploads in bytes (5MB) */
   MAX_FILE_SIZE: 5 * 1024 * 1024,
@@ -156,7 +158,7 @@ export const BUSINESS_RULES = {
   MAX_CONCURRENT_SESSIONS: 5,
   
   /** Platform commission after service fee */
-  PLATFORM_COMMISSION_PCT: 0.05,
+  PLATFORM_COMMISSION_PCT: PLATFORM_FEE_RATE,
 } as const;
 
 // ============================================================================

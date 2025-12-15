@@ -7,6 +7,7 @@
 
 import { sreLogger } from '@/lib/sre-logger';
 import { supabase } from '@/integrations/supabase/client';
+import { PLATFORM_FEE_RATE, VAT_RATE } from './fiscal-constants';
 
 interface AppConfig {
   api: {
@@ -84,9 +85,9 @@ export const appConfig: AppConfig = {
     networking: true,
   },
   pricing: {
-    // Business rules - imported from constants in future refactor
-    serviceFeePct: 0.05,
-    defaultVatPct: 0.22,
+    // Business rules - imported from fiscal constants
+    serviceFeePct: PLATFORM_FEE_RATE,
+    defaultVatPct: VAT_RATE,
   },
   analytics: {
     plausibleDomain: 'workover.app',
