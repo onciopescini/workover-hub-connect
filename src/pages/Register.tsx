@@ -31,6 +31,26 @@ const Register = () => {
     }
   }, [authState.isAuthenticated, authState.isLoading, navigate]);
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+
+    // Clear weak password error if length requirement is met
+    if (error === AUTH_ERRORS.WEAK_PASSWORD && newPassword.length >= 8) {
+      setError('');
+    }
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newConfirmPassword = e.target.value;
+    setConfirmPassword(newConfirmPassword);
+
+    // Clear mismatch error if passwords match
+    if (error === AUTH_ERRORS.PASSWORD_MISMATCH && newConfirmPassword === password) {
+      setError('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -132,10 +152,10 @@ const Register = () => {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                     required
                     disabled={isLoading}
-                    placeholder="Almeno 6 caratteri"
+                    placeholder="Almeno 8 caratteri"
                   />
                   <button
                     type="button"
@@ -158,7 +178,7 @@ const Register = () => {
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={handleConfirmPasswordChange}
                     required
                     disabled={isLoading}
                     placeholder="Ripeti la password"
