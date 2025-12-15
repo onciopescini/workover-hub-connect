@@ -33,6 +33,12 @@ const Login = () => {
     e.preventDefault();
     setError(null);
 
+    // Check network connection
+    if (!navigator.onLine) {
+      toast.error('Nessuna connessione internet. Riprova quando sei online.');
+      return;
+    }
+
     // Check client-side rate limit BEFORE setting loading state
     const rateLimitCheck = checkAuthRateLimit(email);
     if (!rateLimitCheck.allowed) {

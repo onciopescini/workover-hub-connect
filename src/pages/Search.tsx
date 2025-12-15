@@ -13,8 +13,6 @@ const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [spaces, setSpaces] = useState<Space[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize query from URL
   useEffect(() => {
@@ -28,41 +26,6 @@ const Search = () => {
     }
   }, [searchParams]);
 
-  const fetchSpaces = async (query?: string) => {
-    setIsLoading(true);
-    try {
-      let dbQuery = supabase
-        .from('workspaces') // Query workspaces table directly
-        .select('*')
-        .eq('published', true);
-
-      if (query) {
-        dbQuery = dbQuery.or(`name.ilike.%${query}%,city.ilike.%${query}%`);
-      } else {
-        dbQuery = dbQuery.limit(12); // Initial load limit
-      }
-
-      const { data, error } = await dbQuery;
-
-      if (error) throw error;
-
-      // Transform workspace data to Space type if necessary
-      const transformedSpaces: Space[] = (data || []).map((workspace: any) => ({
-        ...workspace,
-        title: workspace.name, // Map name to title
-        features: workspace.features || [],
-        amenities: workspace.amenities || [],
-        photos: workspace.photos || []
-      }));
-
-      setSpaces(transformedSpaces);
-    } catch (error) {
-      console.error('Error fetching spaces:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -75,7 +38,6 @@ const Search = () => {
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchParams({});
-    fetchSpaces();
   };
 
   // Fetch spaces logic
