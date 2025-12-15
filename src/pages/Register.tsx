@@ -49,7 +49,7 @@ const Register = () => {
     // Check client-side rate limit BEFORE setting loading state
     const rateLimitCheck = checkAuthRateLimit(email);
     if (!rateLimitCheck.allowed) {
-      setError(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
+      toast.error(rateLimitCheck.message || 'Troppi tentativi. Riprova più tardi.');
       return;
     }
 

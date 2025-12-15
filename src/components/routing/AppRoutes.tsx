@@ -168,14 +168,6 @@ export const AppRoutes = () => {
           </AuthProtected>
         } />
         
-        <Route path="privacy/deletion-request" element={
-          <AuthProtected>
-            <LazyWrapper>
-              <PrivacyDeletionRequest />
-            </LazyWrapper>
-          </AuthProtected>
-        } />
-        
         <Route path="privacy/confirm-deletion/:token" element={
           <LazyWrapper>
             <PrivacyConfirmDeletion />
