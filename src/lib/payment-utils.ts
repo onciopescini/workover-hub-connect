@@ -16,6 +16,23 @@ type Payment = {
   created_at: string;
 };
 
+// Interface for Supabase Edge Function errors
+export interface SupabaseError extends Error {
+  status?: number;
+  message: string;
+  code?: string;
+  details?: unknown;
+}
+
+// Type guard for SupabaseError
+const isSupabaseError = (error: unknown): error is SupabaseError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error
+  );
+};
+
 // Calculate payment breakdown with dual commission model
 export const calculatePaymentBreakdown = (baseAmount: number) => {
   const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% buyer fee
@@ -76,13 +93,15 @@ export const createPaymentSession = async (
     });
 
     if (error) {
+      const supabaseError = error as SupabaseError;
       sreLogger.error('createPaymentSession - Edge function error', {
         component: 'PaymentUtils',
         action: 'createPaymentSession',
         bookingId,
-        status: (error as any).status,
-        message: (error as any).message
-      }, error as Error);
+        status: supabaseError.status,
+        message: supabaseError.message,
+        code: supabaseError.code
+      }, supabaseError);
       throw error;
     }
     
@@ -103,11 +122,19 @@ export const createPaymentSession = async (
     
     return data as PaymentSession;
   } catch (error) {
+    const errorDetails = isSupabaseError(error) ? {
+      status: error.status,
+      message: error.message,
+      code: error.code
+    } : { message: 'Unknown error' };
+
     sreLogger.error("Error creating payment session", {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId
+      bookingId,
+      ...errorDetails
     }, error as Error);
+
     toast.error("Errore nella creazione della sessione di pagamento");
     return null;
   }
