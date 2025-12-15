@@ -37,9 +37,14 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
     }
 
     // Controllo onboarding solo se richiesto
+    // Check if onboarding is truly completed or if basic profile info exists (fallback)
+    const hasCompletedOnboarding =
+      authState.profile.onboarding_completed === true ||
+      (!!authState.profile.first_name && !!authState.profile.last_name);
+
     if (
       requireOnboarding &&
-      !authState.profile.onboarding_completed &&
+      !hasCompletedOnboarding &&
       !authState.roles.includes('admin') &&
       location.pathname !== '/onboarding'
     ) {
