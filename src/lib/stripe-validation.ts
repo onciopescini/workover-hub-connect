@@ -1,4 +1,5 @@
 import { sreLogger } from '@/lib/sre-logger';
+import { PLATFORM_FEE_RATE } from '@/config/fiscal-constants';
 
 // Stripe integration validation utilities
 export interface StripeValidationResult {
@@ -17,9 +18,10 @@ export const validateStripeAmounts = (basePrice: number): StripeValidationResult
   const errors: string[] = [];
   
   // Calculate expected amounts using our payment logic
-  const buyerFeeAmount = Math.round(basePrice * 0.05 * 100) / 100;
+  // Use PLATFORM_FEE_RATE instead of hardcoded 0.05
+  const buyerFeeAmount = Math.round(basePrice * PLATFORM_FEE_RATE * 100) / 100;
   const buyerTotalPrice = basePrice + buyerFeeAmount;
-  const hostFeeAmount = Math.round(basePrice * 0.05 * 100) / 100;
+  const hostFeeAmount = Math.round(basePrice * PLATFORM_FEE_RATE * 100) / 100;
   const hostPayout = basePrice - hostFeeAmount;
   
   // Convert to Stripe amounts (cents)
@@ -28,17 +30,17 @@ export const validateStripeAmounts = (basePrice: number): StripeValidationResult
   const hostTransferAmount = Math.round(hostPayout * 100);
   
   // Validation checks
-  const expectedSessionAmount = Math.round((basePrice * 1.05) * 100);
+  const expectedSessionAmount = Math.round((basePrice * (1 + PLATFORM_FEE_RATE)) * 100);
   if (stripeSessionAmount !== expectedSessionAmount) {
     errors.push(`Session amount mismatch: expected ${expectedSessionAmount} cents, got ${stripeSessionAmount} cents`);
   }
   
-  const expectedApplicationFee = Math.round((basePrice * 0.05) * 100);
+  const expectedApplicationFee = Math.round((basePrice * PLATFORM_FEE_RATE) * 100);
   if (stripeApplicationFee !== expectedApplicationFee) {
     errors.push(`Application fee mismatch: expected ${expectedApplicationFee} cents, got ${stripeApplicationFee} cents`);
   }
   
-  const expectedTransferAmount = Math.round((basePrice * 0.95) * 100);
+  const expectedTransferAmount = Math.round((basePrice * (1 - PLATFORM_FEE_RATE)) * 100);
   if (hostTransferAmount !== expectedTransferAmount) {
     errors.push(`Transfer amount mismatch: expected ${expectedTransferAmount} cents, got ${hostTransferAmount} cents`);
   }

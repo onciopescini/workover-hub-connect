@@ -1,11 +1,12 @@
 import { appConfig } from '@/config/app.config';
+import { PLATFORM_FEE_RATE } from '@/config/fiscal-constants';
 
 export interface PricingInput {
   durationHours: number;
   pricePerHour: number;
   pricePerDay: number;
   guestsCount: number;
-  serviceFeePct: number; // es. 0.12
+  serviceFeePct: number; // es. 0.05
   vatPct: number;        // es. 0.22 (placeholder se Stripe Tax off)
   stripeTaxEnabled?: boolean; // da env
 }
@@ -45,11 +46,11 @@ export function computePricing(input: PricingInput): PricingOutput {
 
 // Environment variable helpers
 export function getServiceFeePct(): number {
-  return appConfig.pricing.serviceFeePct;
+  return appConfig.pricing.serviceFeePct; // Returns PLATFORM_FEE_RATE
 }
 
 export function getDefaultVatPct(): number {
-  return appConfig.pricing.defaultVatPct;
+  return appConfig.pricing.defaultVatPct; // Returns VAT_RATE
 }
 
 export function isStripeTaxEnabled(): boolean {
