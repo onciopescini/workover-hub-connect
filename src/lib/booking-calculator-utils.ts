@@ -44,16 +44,20 @@ export const calculateBookingDetails = (
   space: Space,
   conflictCheck: { hasConflict: boolean; validated?: boolean },
   isOnline: boolean,
-  userTimezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
+  // ignoredUserTimezone is kept to avoid breaking call signature, but unused for logic
+  ignoredUserTimezone?: string
 ): BookingDetails | null => {
-  // Logic updated to respect user timezone
+  // STRICT REQUIREMENT: Use Space Timezone for calculations.
+  // Fallback to 'Europe/Rome' if not defined on space.
+  const timezone = space.timezone || 'Europe/Rome';
+
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const startDateTimeStr = `${dateStr} ${selectedStartTime}`; // e.g., "2023-10-25 09:00"
   const endDateTimeStr = `${dateStr} ${selectedEndTime}`;     // e.g., "2023-10-25 11:00"
 
-  // Parse strings as local time in the specified timezone
-  const startDateTime = fromZonedTime(startDateTimeStr, userTimezone);
-  const endDateTime = fromZonedTime(endDateTimeStr, userTimezone);
+  // Parse strings as local time in the SPACE'S timezone
+  const startDateTime = fromZonedTime(startDateTimeStr, timezone);
+  const endDateTime = fromZonedTime(endDateTimeStr, timezone);
   
   const hours = differenceInHours(endDateTime, startDateTime);
   

@@ -104,6 +104,7 @@ export function useCheckout() {
         payment_required: isInstant,
         slot_reserved_until: reservationDeadline.toISOString(),
         approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
+        fiscal_data: fiscalData // Persist fiscal data
       };
 
       // 3. Insert Booking
