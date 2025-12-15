@@ -75,7 +75,9 @@ export const useHostPendingInvoices = (hostId: string) => {
     queryKey: ['host-pending-invoices', hostId, isMockMode],
     queryFn: async () => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useHostPendingInvoices returning mock data');
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useHostPendingInvoices returning mock data');
+        }
         return generateMockPendingInvoices();
       }
       
@@ -120,7 +122,9 @@ export const useHostPendingCreditNotes = (hostId: string) => {
     queryKey: ['host-pending-credit-notes', hostId, isMockMode],
     queryFn: async () => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useHostPendingCreditNotes returning mock data');
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useHostPendingCreditNotes returning mock data');
+        }
         return generateMockCreditNotes();
       }
       
@@ -164,7 +168,9 @@ export const useHostInvoiceHistory = (hostId: string, year?: number) => {
     queryKey: ['host-invoice-history', hostId, year, isMockMode],
     queryFn: async () => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useHostInvoiceHistory returning mock data');
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useHostInvoiceHistory returning mock data');
+        }
         return [
           ...generateMockPendingInvoices().map(p => ({
             ...p,

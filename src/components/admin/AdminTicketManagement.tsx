@@ -55,7 +55,9 @@ export function AdminTicketManagement() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'support_tickets' },
         (payload) => {
-          console.log('🔔 Realtime ticket update:', payload);
+          if (import.meta.env.DEV) {
+            console.log('🔔 Realtime ticket update:', payload);
+          }
           fetchTickets();
         }
       )

@@ -66,7 +66,9 @@ export const useCoworkerReceipts = (coworkerId: string, year?: number) => {
     queryKey: ["coworker-receipts", coworkerId, year, isMockMode],
     queryFn: async () => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useCoworkerReceipts returning mock data');
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useCoworkerReceipts returning mock data');
+        }
         return generateMockReceipts(currentYear);
       }
       
@@ -116,7 +118,9 @@ export const useCoworkerInvoices = (coworkerId: string, year?: number) => {
     queryKey: ["coworker-invoices", coworkerId, year, isMockMode],
     queryFn: async () => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useCoworkerInvoices returning mock data');
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useCoworkerInvoices returning mock data');
+        }
         return generateMockInvoices(currentYear);
       }
       

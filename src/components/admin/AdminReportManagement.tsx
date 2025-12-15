@@ -38,7 +38,9 @@ const AdminReportManagement = () => {
           filter: 'status=eq.open'
         },
         (payload) => {
-          console.log('Realtime report update:', payload);
+          if (import.meta.env.DEV) {
+            console.log('Realtime report update:', payload);
+          }
           fetchReports();
         }
       )

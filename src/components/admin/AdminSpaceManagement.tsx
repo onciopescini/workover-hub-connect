@@ -59,7 +59,9 @@ export function AdminSpaceManagement() {
           filter: 'pending_approval=eq.true'
         },
         (payload) => {
-          console.log('Realtime space update:', payload);
+          if (import.meta.env.DEV) {
+            console.log('Realtime space update:', payload);
+          }
           fetchSpaces();
         }
       )

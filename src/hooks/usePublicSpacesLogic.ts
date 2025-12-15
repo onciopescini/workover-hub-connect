@@ -120,7 +120,7 @@ const checkSpacesAvailabilityBatch = async (
   }
   
   const { info, warn, error } = { 
-    info: (msg: string, ctx?: any) => console.log(msg, ctx),
+    info: (msg: string, ctx?: any) => { if (import.meta.env.DEV) console.log(msg, ctx) },
     warn: (msg: string, ctx?: any) => console.warn(msg, ctx),
     error: (msg: string, ctx?: any) => console.error(msg, ctx)
   };

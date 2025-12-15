@@ -49,7 +49,9 @@ export const GDPRRequestsManagement = () => {
           table: 'gdpr_requests'
         },
         (payload) => {
-          console.log('🔔 Realtime GDPR request update:', payload);
+          if (import.meta.env.DEV) {
+            console.log('🔔 Realtime GDPR request update:', payload);
+          }
           fetchGDPRRequests();
         }
       )

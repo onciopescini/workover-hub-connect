@@ -14,7 +14,9 @@ export function ServiceWorkerRegistration() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(swUrl: string, registration: ServiceWorkerRegistration | undefined) {
-      console.log('Service Worker registered:', swUrl);
+      if (import.meta.env.DEV) {
+        console.log('Service Worker registered:', swUrl);
+      }
       
       // Check for updates every hour
       setInterval(() => {
