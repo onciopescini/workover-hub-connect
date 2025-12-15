@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -6,12 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, Filter, MapPin } from 'lucide-react';
+import { Search as SearchIcon, MapPin } from 'lucide-react';
 import { Space } from '@/types/space';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Reusing logic from usePublicSpacesLogic in a simplified way for this page
-// We will manually fetch spaces using the same RPCs or tables
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -49,22 +45,16 @@ const Search = () => {
     queryKey: ['search-spaces', searchQuery],
     queryFn: async () => {
       let query = supabase
-        .from('workspaces' as any) // Type casting as workspaces is not fully typed yet
+        .from('workspaces' as any)
         .select('*');
 
       // Filter only published spaces
       query = query.eq('published', true);
 
-      // If we have a search query, we try to filter by title or city
-      // Note: This is a simple client-side-like filter on the query builder
-      // For more complex search we should use the RPCs like search_spaces_by_location_text
-      // But for now, let's keep it simple and robust
       if (searchQuery) {
         // Sanitize query to avoid PostgREST syntax errors with commas
         const sanitizedQuery = searchQuery.replace(/,/g, ' ').trim();
-        // Using 'ilike' for case-insensitive partial match
-        // Or statement: title ILIKE %query% OR city ILIKE %query%
-        // Supabase Postgrest syntax for OR
+
         if (sanitizedQuery) {
           query = query.or(`name.ilike.%${sanitizedQuery}%, city.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
         }

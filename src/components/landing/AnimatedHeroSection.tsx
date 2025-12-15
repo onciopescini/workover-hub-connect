@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { TypewriterText } from '@/components/ui/TypewriterText';
