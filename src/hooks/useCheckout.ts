@@ -47,16 +47,8 @@ export function useCheckout() {
 
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    // Explicitly Log start
-    if (import.meta.env.DEV) {
-      console.log('DEBUG: processCheckout started', { spaceId, userId, dateStr, confirmationType });
-    }
-
     try {
       // 1. Validate Availability via RPC
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Step 1 - Validating availability...');
-      }
       const validationResult = await supabase.rpc('validate_and_reserve_slot', {
         space_id_param: spaceId,
         date_param: dateStr,
@@ -78,14 +70,8 @@ export function useCheckout() {
          console.error('DEBUG: Validation Data Error', validationData);
          throw new Error(validationData.error || 'Slot validation returned false');
       }
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Validation successful');
-      }
 
       // 2. Prepare Payload
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Step 2 - Preparing insert payload...');
-      }
       const isInstant = confirmationType === 'instant';
       const now = new Date();
 
@@ -116,10 +102,6 @@ export function useCheckout() {
       };
 
       // 3. Insert Booking
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Step 3 - Inserting booking...', bookingInsertData);
-      }
-
       const { data: bookingData, error: insertError } = await supabase
         .from('bookings')
         .insert(bookingInsertData)
@@ -138,18 +120,11 @@ export function useCheckout() {
       }
 
       const bookingId = bookingData.id;
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Insert Success. Booking ID:', bookingId);
-      }
 
       // 4. Payment (ONLY if insert is successful)
       if (isInstant) {
         if (!hostStripeAccountId) {
            throw new Error('Host Stripe account ID is missing for instant booking');
-        }
-
-        if (import.meta.env.DEV) {
-          console.log('DEBUG: Step 4 - Calling create-checkout-v3...');
         }
 
         const { data: sessionData, error: fnError } = await supabase.functions.invoke(
@@ -172,17 +147,11 @@ export function useCheckout() {
            throw new Error('Payment session created but no URL returned');
         }
 
-        if (import.meta.env.DEV) {
-          console.log('DEBUG: Payment URL received. Redirecting...', sessionData.url);
-        }
         window.location.href = sessionData.url;
         return { success: true, bookingId }; // Browser redirects
       }
 
       // Non-instant (Request)
-      if (import.meta.env.DEV) {
-        console.log('DEBUG: Request flow completed');
-      }
       return { success: true, bookingId };
 
     } catch (err: any) {

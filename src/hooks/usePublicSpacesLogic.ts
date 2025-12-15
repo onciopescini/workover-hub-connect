@@ -14,21 +14,19 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useLogger } from '@/hooks/useLogger';
 import { TIME_CONSTANTS } from "@/constants";
 
-/**
- * Campi realmente esposti dalla view spaces_public_safe
- */
-const PUBLIC_SPACES_SELECT = [
+// Field selection for direct workspaces query (simulating the view structure)
+const WORKSPACES_SELECT = [
   'id',
-  'title', 
+  'name', // Will be mapped to title
   'description',
   'category',
   'work_environment',
   'max_capacity',
   'confirmation_type',
-  'workspace_features',
+  'features', // Will be mapped to workspace_features
   'amenities',
-  'seating_types',        // ARRAY
-  'ideal_guest_tags',     // ARRAY
+  'seating_types',
+  'ideal_guest_tags',
   'event_friendly_tags',
   'price_per_hour',
   'price_per_day',
@@ -36,9 +34,10 @@ const PUBLIC_SPACES_SELECT = [
   'rules',
   'availability',
   'cancellation_policy',
-  'city_name',
-  'country_code',
-  'approximate_location', // tipo POINT (x=lng, y=lat)
+  'city', // Will be mapped to city_name
+  // 'country_code', // Default to 'IT'
+  'latitude',
+  'longitude',
   'published',
   'created_at',
   'updated_at'
@@ -76,19 +75,38 @@ function parsePoint(p: unknown): { lat?: number; lng?: number } {
 
 /**
  * Normalize public space data for UI compatibility
- * - Derives latitude/longitude from approximate_location
+ * - Derives latitude/longitude from approximate_location (or direct columns)
  * - Constructs address from city_name + country_code
  * - Converts arrays to singular for backward compatibility
  */
 function normalizePublicSpace(raw: any): any {
-  const { lat, lng } = parsePoint(raw.approximate_location);
+  // Handle both raw workspaces data (with lat/lng) and view data (with approximate_location)
+  let lat = raw.latitude;
+  let lng = raw.longitude;
+
+  if (raw.approximate_location && (lat === undefined || lng === undefined)) {
+    const point = parsePoint(raw.approximate_location);
+    lat = point.lat;
+    lng = point.lng;
+  }
   
+  // Mapping 'workspaces' columns to expected UI props
+  const title = raw.title || raw.name;
+  const workspace_features = raw.workspace_features || raw.features;
+  const city_name = raw.city_name || raw.city;
+  const country_code = raw.country_code || 'IT'; // Default to IT as per migration logic
+
   return {
     ...raw,
+    title,
+    workspace_features,
+    city_name,
+    country_code,
+
     // Derived fields for UI compatibility
     latitude: lat ?? null,
     longitude: lng ?? null,
-    address: [raw.city_name, raw.country_code].filter(Boolean).join(', ') || '',
+    address: raw.address || [city_name, country_code].filter(Boolean).join(', ') || '',
     
     // Backward compatibility: singular from array
     seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
@@ -439,15 +457,16 @@ export const usePublicSpacesLogic = () => {
         return Array.isArray(data) ? data : [];
       }
       
-      // Fallback: Use standard query (fetch all + client-side filtering)
-      info('Using standard query with client-side filtering');
+      // Fallback: Use standard query (fetch all from workspaces + client-side filtering)
+      info('Using standard query with client-side filtering (direct to workspaces)');
       
       const { data: spacesData, error: spacesError } = await supabase
-        .from('spaces_public_safe')
-        .select(PUBLIC_SPACES_SELECT);
+        .from('workspaces' as any) // Explicit cast as generic
+        .select(WORKSPACES_SELECT)
+        .eq('published', true);
       
       if (spacesError) {
-        info('Failed to fetch spaces', { error: spacesError });
+        info('Failed to fetch workspaces', { error: spacesError });
         throw spacesError;
       }
 
@@ -491,9 +510,9 @@ export const usePublicSpacesLogic = () => {
         const searchTerm = filters.location.trim().toLowerCase();
         filteredSpaces = filteredSpaces.filter((space: any) => 
           space && (
-            space.city_name?.toLowerCase().includes(searchTerm) ||
-            space.country_code?.toLowerCase().includes(searchTerm) ||
-            space.address?.toLowerCase().includes(searchTerm)
+            (space.city_name || '').toLowerCase().includes(searchTerm) ||
+            (space.country_code || '').toLowerCase().includes(searchTerm) ||
+            (space.address || '').toLowerCase().includes(searchTerm)
           )
         );
       }

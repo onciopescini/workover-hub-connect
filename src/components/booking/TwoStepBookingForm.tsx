@@ -428,6 +428,12 @@ export function TwoStepBookingForm({
   };
 
   const handleConfirmBooking = async () => {
+    // Check network connection
+    if (!navigator.onLine) {
+      toast.error('Nessuna connessione internet. Riprova quando sei online.');
+      return;
+    }
+
     if (!bookingState.selectedDate || !bookingState.selectedRange) {
       toast.error('Completa tutti i passaggi prima di confermare');
       return;
