@@ -47,11 +47,15 @@ export const useAuthLogic = () => {
   }, [debug, logError]);
 
   // Funzione ottimizzata per aggiornare lo stato auth
-  const updateAuthState = useCallback(async (session: Session | null, profile: Profile | null = null) => {
+  const updateAuthState = useCallback(async (session: Session | null, profile: Profile | null = null, signal?: AbortSignal) => {
+    if (signal?.aborted) return;
+
     const user = session?.user || null;
     const isAuthenticated = !!session;
     const roles = session?.user ? await fetchUserRoles(session.user.id) : [];
     
+    if (signal?.aborted) return;
+
     // Aggiorna solo se necessario per evitare re-render
     setAuthState(prev => {
       const newState = {
@@ -72,20 +76,25 @@ export const useAuthLogic = () => {
 
     // Gestisci redirect solo se necessario
     if (session && profile) {
-      setTimeout(() => handleRoleBasedRedirect(profile, session, roles), 0);
+      // Direct call instead of setTimeout
+      handleRoleBasedRedirect(profile, session, roles);
     }
   }, [handleRoleBasedRedirect, fetchUserRoles, debug, logError]);
 
   // Profile fetching con gestione cache
-  const fetchUserProfile = useCallback(async (userId: string) => {
+  const fetchUserProfile = useCallback(async (userId: string, signal?: AbortSignal) => {
     // Evita fetch profilo duplicati
     if (currentUserId.current !== userId) {
       currentUserId.current = userId;
       
-      // Defer profile fetch per evitare deadlock
-      setTimeout(async () => {
+      // Direct async operations logic without setTimeout
+      try {
+        if (signal?.aborted) return;
         let profile = await fetchProfile(userId);
+        if (signal?.aborted) return;
+
         const { data: { session } } = await supabase.auth.getSession();
+        if (signal?.aborted) return;
 
         // Se il profilo non esiste, prova a crearlo tramite edge function e ricarica
         if (!profile && session?.user) {
@@ -99,6 +108,8 @@ export const useAuthLogic = () => {
               || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ').slice(1).join(' ')
               || '');
 
+            if (signal?.aborted) return;
+
             const { data: created, error: createErr } = await supabase.functions.invoke('create-profile', {
               body: {
                 user_id: session.user.id,
@@ -107,6 +118,8 @@ export const useAuthLogic = () => {
                 last_name: lastName,
               }
             });
+
+            if (signal?.aborted) return;
 
             if (createErr) {
               debug('create-profile error', { error: createErr });
@@ -138,21 +151,27 @@ export const useAuthLogic = () => {
             debug('create-profile invocation failed', { error: e });
           }
 
+          if (signal?.aborted) return;
+
           // In ogni caso prova a ricaricare dal DB
           if (!profile) {
             profile = await fetchProfile(userId);
           }
         }
 
-        updateAuthState(session, profile);
-      }, 0);
+        if (signal?.aborted) return;
+        updateAuthState(session, profile, signal);
+      } catch (error) {
+        logError('Error in fetchUserProfile', error as Error);
+      }
     } else {
       // Usa profilo cached se disponibile
       const cachedProfile = getCachedProfile(userId);
       const { data: { session } } = await supabase.auth.getSession();
-      updateAuthState(session, cachedProfile);
+      if (signal?.aborted) return;
+      updateAuthState(session, cachedProfile, signal);
     }
-  }, [fetchProfile, getCachedProfile, updateAuthState, debug]);
+  }, [fetchProfile, getCachedProfile, updateAuthState, debug, logError]);
 
   // Refresh profile forzato
   const refreshProfile = useCallback(async (): Promise<void> => {
@@ -164,13 +183,19 @@ export const useAuthLogic = () => {
   }, [authState.user, fetchProfile, invalidateProfile]);
 
   useEffect(() => {
-    let mounted = true;
+    // Main AbortController for cleanup on unmount
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Ref to manage race conditions for pending profile fetches
+    const pendingFetchController = { current: null as AbortController | null };
+
     const authSync = getAuthSyncChannel();
     
     // Listen for logout events from other tabs
     const unsubscribeLogout = authSync.on(AUTH_SYNC_EVENTS.LOGOUT, () => {
-      if (mounted) {
-        updateAuthState(null);
+      if (!signal.aborted) {
+        updateAuthState(null, null, signal);
         clearCache();
         window.location.href = '/login';
       }
@@ -178,13 +203,15 @@ export const useAuthLogic = () => {
 
     // Listen for profile updates from other tabs
     const unsubscribeProfileUpdate = authSync.on(AUTH_SYNC_EVENTS.PROFILE_UPDATE, () => {
-      if (mounted && authState.user) {
+      if (!signal.aborted && authState.user) {
         refreshProfile();
       }
     });
     
     const initializeAuth = async () => {
       try {
+        if (signal.aborted) return;
+
         // Check sessione esistente
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -192,30 +219,30 @@ export const useAuthLogic = () => {
           logError('Error getting session during auth initialization', error as Error, {
             operation: 'get_session'
           });
-          if (mounted) {
-            updateAuthState(null);
+          if (!signal.aborted) {
+            updateAuthState(null, null, signal);
           }
           return;
         }
 
-        if (session?.user && mounted) {
+        if (session?.user && !signal.aborted) {
           currentUserId.current = session.user.id;
           const profile = await fetchProfile(session.user.id);
-          if (mounted) {
-            updateAuthState(session, profile);
+          if (!signal.aborted) {
+            updateAuthState(session, profile, signal);
           }
-        } else if (mounted) {
-          updateAuthState(null);
+        } else if (!signal.aborted) {
+          updateAuthState(null, null, signal);
         }
       } catch (error) {
         logError('Auth initialization error', error as Error, {
           operation: 'auth_initialization'
         });
-        if (mounted) {
-          updateAuthState(null);
+        if (!signal.aborted) {
+          updateAuthState(null, null, signal);
         }
       } finally {
-        if (mounted) {
+        if (!signal.aborted) {
           isInitialized.current = true;
         }
       }
@@ -224,7 +251,7 @@ export const useAuthLogic = () => {
     // Setup auth state listener con logica ottimizzata
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (!mounted) return;
+        if (signal.aborted) return;
 
         debug('Auth state changed', {
           event,
@@ -239,17 +266,22 @@ export const useAuthLogic = () => {
           return;
         }
 
-        // Defer async operations per evitare deadlock
+        // Handle race conditions: cancel previous pending fetch
+        if (pendingFetchController.current) {
+          pendingFetchController.current.abort();
+        }
+
+        // Create new controller for this specific fetch operation
+        pendingFetchController.current = new AbortController();
+        const currentFetchSignal = pendingFetchController.current.signal;
+
         if (session?.user) {
-          setTimeout(() => {
-            if (mounted) {
-              fetchUserProfile(session.user.id);
-            }
-          }, 0);
+          // Pass the signal to fetchUserProfile
+          fetchUserProfile(session.user.id, currentFetchSignal);
         } else {
           currentUserId.current = null;
-          if (mounted) {
-            updateAuthState(null);
+          if (!signal.aborted) {
+            updateAuthState(null, null, signal);
           }
         }
       }
@@ -261,12 +293,19 @@ export const useAuthLogic = () => {
     }
 
     return () => {
-      mounted = false;
+      // Abort main controller (stops all operations scoped to this effect)
+      controller.abort();
+
+      // Also abort any pending profile fetch specifically
+      if (pendingFetchController.current) {
+        pendingFetchController.current.abort();
+      }
+
       subscription.unsubscribe();
       unsubscribeLogout();
       unsubscribeProfileUpdate();
     };
-  }, [updateAuthState, fetchProfile, fetchUserProfile, authState.user, clearCache, refreshProfile]);
+  }, [updateAuthState, fetchProfile, fetchUserProfile, authState.user, clearCache, refreshProfile, debug, logError]);
 
   return {
     authState,
