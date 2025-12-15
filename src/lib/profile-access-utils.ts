@@ -85,6 +85,16 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
   }
 };
 
+// Define safe public fields to select
+const PUBLIC_PROFILE_FIELDS = [
+  'id', 'first_name', 'last_name', 'profile_photo_url', 'bio',
+  'job_title', 'profession', 'location',
+  'skills', 'interests', 'competencies', 'industries',
+  'website', 'linkedin_url', 'twitter_url', 'instagram_url', 'facebook_url', 'youtube_url', 'github_url',
+  'created_at',
+  'collaboration_availability', 'collaboration_types', 'preferred_work_mode', 'collaboration_description'
+].join(',');
+
 // Fetch profilo utente con controllo accesso
 export const fetchUserProfileWithAccess = async (userId: string) => {
   try {
@@ -99,10 +109,10 @@ export const fetchUserProfileWithAccess = async (userId: string) => {
       };
     }
 
-    // Se ha accesso, recupera il profilo
+    // Se ha accesso, recupera il profilo (SOLO campi pubblici)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PUBLIC_PROFILE_FIELDS)
       .eq('id', userId)
       .single();
 
@@ -181,7 +191,7 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
     return baseData;
   }
 
-  // Full access - restituisce tutti i dati
+  // Full access - restituisce tutti i dati pubblici
   return {
     ...baseData,
     skills: profile['skills'],
@@ -195,6 +205,10 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
     facebook_url: profile['facebook_url'],
     youtube_url: profile['youtube_url'],
     github_url: profile['github_url'],
-    created_at: profile['created_at']
+    created_at: profile['created_at'],
+    collaboration_availability: profile['collaboration_availability'],
+    collaboration_types: profile['collaboration_types'],
+    preferred_work_mode: profile['preferred_work_mode'],
+    collaboration_description: profile['collaboration_description']
   };
 };
