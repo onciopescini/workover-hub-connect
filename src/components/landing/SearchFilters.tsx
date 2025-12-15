@@ -47,7 +47,7 @@ export const SearchFilters: React.FC = () => {
       params.append('endTime', endTime);
     }
 
-    navigate(`/spaces?${params.toString()}`);
+    navigate(`/search?${params.toString()}`);
   };
 
   const isSearchEnabled = location || date || startTime || endTime;

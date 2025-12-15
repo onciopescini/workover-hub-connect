@@ -17,7 +17,7 @@ export function Footer() {
               <span className="text-xl font-bold text-white">Workover</span>
             </div>
             <p className="text-gray-400 max-w-md">
-              {companyInfo.description}
+              WorkOver: Flessibilità professionale. Trova o offri spazi di lavoro in tutta Italia.
             </p>
           </div>
           <div>
@@ -43,11 +43,16 @@ export function Footer() {
           <div className="text-center mb-6">
             <h4 className="text-white font-semibold mb-3">{companyInfo.name}</h4>
             <div className="text-gray-400 text-sm space-y-1">
-              <p>P.IVA: {companyInfo.piva}</p>
+              <p>P.IVA: {companyInfo.vat} | REA {companyInfo.rea}</p>
               <p>Sede Legale: {companyInfo.address}</p>
+              <p>Capitale Sociale: {companyInfo.capital}</p>
               <div className="mt-2">
                 <a href={`mailto:${companyInfo.email}`} className="hover:text-white transition-colors">
                   {companyInfo.email}
+                </a>
+                {' | '}
+                <a href={`mailto:${companyInfo.pec}`} className="hover:text-white transition-colors">
+                  PEC
                 </a>
               </div>
             </div>

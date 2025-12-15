@@ -181,7 +181,7 @@ export const OptimizedUnifiedHeader = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/dashboard" className="flex items-center">
                         <Home className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
+                        <span>Area Riservata</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -216,7 +216,7 @@ export const OptimizedUnifiedHeader = () => {
             )}
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="md:hidden ml-2">
               <Button
                 variant="ghost"
                 size="sm"

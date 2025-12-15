@@ -1,7 +1,10 @@
 export const companyInfo = {
   name: "WorkOver Italia S.r.l.",
+  vat: "IT00000000000",
+  rea: "MI-1234567", // Placeholder
   address: "Via dell'Innovazione 42, 20121 Milano (MI)",
-  piva: "IT00000000000",
   email: "hello@workover.it",
-  description: "WorkOver: Flessibilità professionale. Trova o offri spazi di lavoro in tutta Italia."
+  pec: "workover@pec.it",
+  supportEmail: "hello@workover.it",
+  capital: "€ 10.000,00 i.v."
 };
