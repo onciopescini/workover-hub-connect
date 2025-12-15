@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +22,8 @@ export const ProfileEditContainer = () => {
     authState
   } = useProfileForm();
 
+  const [activeTab, setActiveTab] = useState("basic");
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header with Profile Photo */}
@@ -43,31 +44,31 @@ export const ProfileEditContainer = () => {
         </CardHeader>
       </Card>
 
-      <form onSubmit={handleSubmit}>
-        <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="basic" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Base
-            </TabsTrigger>
-            <TabsTrigger value="professional" className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              Professionale
-            </TabsTrigger>
-            <TabsTrigger value="social" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Social
-            </TabsTrigger>
-            <TabsTrigger value="collaboration" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Collaborazioni
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Impostazioni
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="basic" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Base
+          </TabsTrigger>
+          <TabsTrigger value="professional" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Professionale
+          </TabsTrigger>
+          <TabsTrigger value="social" className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Social
+          </TabsTrigger>
+          <TabsTrigger value="collaboration" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Collaborazioni
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Impostazioni
+          </TabsTrigger>
+        </TabsList>
 
+        <form onSubmit={handleSubmit}>
           <TabsContent value="basic">
             <BasicInfoTab 
               formData={formData}
@@ -100,39 +101,41 @@ export const ProfileEditContainer = () => {
             />
           </TabsContent>
 
-          <TabsContent value="settings">
-            <SettingsTab 
-              formData={formData}
-              handleInputChange={handleInputChange}
-              authState={authState}
-            />
-          </TabsContent>
-        </Tabs>
+          {/* Save Button - Only visible for profile tabs */}
+          {activeTab !== 'settings' && (
+            <Card className="mt-6">
+              <CardContent className="pt-6">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Save className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salva Modifiche
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </form>
 
-        {/* Save Button */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button 
-              type="submit" 
-              disabled={isLoading} 
-              className="w-full"
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <Save className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salva Modifiche
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </form>
+        <TabsContent value="settings">
+          <SettingsTab
+            formData={formData}
+            handleInputChange={handleInputChange}
+            authState={authState}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
