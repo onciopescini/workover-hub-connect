@@ -16,23 +16,68 @@ type Payment = {
   created_at: string;
 };
 
-// Calculate payment breakdown with dual commission model
-export const calculatePaymentBreakdown = (baseAmount: number) => {
-  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% buyer fee
-  const buyerTotalAmount = baseAmount + buyerFeeAmount;
-  
-  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% host fee
-  const hostNetPayout = baseAmount - hostFeeAmount;
-  
-  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+export interface FiscalPaymentBreakdown {
+  net_amount: number;
+  platform_fee: number;
+  vat_amount: number;
+  gross_amount: number;
+  withholding_tax: number;
+}
+
+export const hashSensitiveId = (id: string): string => {
+  if (!id) return '';
+  if (id.length <= 8) return '****';
+  return `****${id.slice(-4)}`;
+};
+
+/**
+ * Calculates payment breakdown according to Italian fiscal rules.
+ *
+ * Rules:
+ * 1. Platform Fee: 5% of Base Amount
+ * 2. IVA (VAT): 22% applied only to the Platform Fee
+ * 3. Withholding Tax (Ritenuta): 21% of Base Amount (if host is private)
+ * 4. Net Payout: Base Amount - (Platform Fee + IVA + Withholding Tax)
+ */
+export const calculatePaymentBreakdownWithTax = (
+  baseAmount: number,
+  isPrivateIndividual: boolean = false
+): FiscalPaymentBreakdown => {
+  const platformFee = Math.round(baseAmount * 0.05 * 100) / 100; // 5%
+  const vatAmount = Math.round(platformFee * 0.22 * 100) / 100; // 22% on fee
+
+  // Ritenuta d'acconto: 21% on Base Amount if host is private individual
+  const withholdingTax = isPrivateIndividual
+    ? Math.round(baseAmount * 0.21 * 100) / 100
+    : 0;
+
+  const netPayout = Math.round((baseAmount - platformFee - vatAmount - withholdingTax) * 100) / 100;
 
   return {
+    gross_amount: baseAmount,
+    platform_fee: platformFee,
+    vat_amount: vatAmount,
+    withholding_tax: withholdingTax,
+    net_amount: netPayout
+  };
+};
+
+// Calculate payment breakdown with dual commission model
+// @deprecated Use calculatePaymentBreakdownWithTax for fiscal compliance
+export const calculatePaymentBreakdown = (baseAmount: number) => {
+  const breakdown = calculatePaymentBreakdownWithTax(baseAmount);
+  
+  // Mapping new logic to old structure for backward compatibility where needed
+  // Note: Old logic had buyer fee + host fee. New logic focuses on Platform Fee (Host side).
+  // We approximate to keep legacy consumers working without crashing, but values might differ slightly.
+  
+  return {
     baseAmount,
-    buyerFeeAmount,
-    buyerTotalAmount,
-    hostFeeAmount,
-    hostNetPayout,
-    platformRevenue
+    buyerFeeAmount: 0, // No longer using buyer fee in this simplified model
+    buyerTotalAmount: baseAmount,
+    hostFeeAmount: breakdown.platform_fee,
+    hostNetPayout: breakdown.net_amount,
+    platformRevenue: breakdown.platform_fee
   };
 };
 
@@ -64,8 +109,8 @@ export const createPaymentSession = async (
     sreLogger.debug('Creating payment session via create-checkout-v3', {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId,
-      hostStripeAccountId
+      bookingId: hashSensitiveId(bookingId),
+      hostStripeAccountId: hashSensitiveId(hostStripeAccountId)
     });
 
     const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
@@ -79,7 +124,7 @@ export const createPaymentSession = async (
       sreLogger.error('createPaymentSession - Edge function error', {
         component: 'PaymentUtils',
         action: 'createPaymentSession',
-        bookingId,
+        bookingId: hashSensitiveId(bookingId),
         status: (error as any).status,
         message: (error as any).message
       }, error as Error);
@@ -106,7 +151,7 @@ export const createPaymentSession = async (
     sreLogger.error("Error creating payment session", {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId
+      bookingId: hashSensitiveId(bookingId)
     }, error as Error);
     toast.error("Errore nella creazione della sessione di pagamento");
     return null;
@@ -131,7 +176,7 @@ export const getPaymentStatus = async (bookingId: string): Promise<string | null
     sreLogger.error("Error fetching payment status", {
       component: 'PaymentUtils',
       action: 'getPaymentStatus',
-      bookingId
+      bookingId: hashSensitiveId(bookingId)
     }, error as Error);
     return null;
   }
@@ -195,7 +240,7 @@ export const recordPayment = async (paymentData: Omit<PaymentInsert, 'user_id'>)
       component: 'PaymentUtils',
       action: 'recordPayment',
       userId: user?.user?.id,
-      bookingId: paymentData.booking_id
+      bookingId: hashSensitiveId(paymentData.booking_id)
     }, error as Error);
     return false;
   }
