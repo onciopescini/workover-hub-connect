@@ -1,5 +1,6 @@
 
 import { differenceInHours, format } from 'date-fns';
+import { fromZonedTime } from 'date-fns-tz';
 import { Space } from '@/types/space';
 
 export interface BookingDetails {
@@ -42,10 +43,17 @@ export const calculateBookingDetails = (
   selectedEndTime: string,
   space: Space,
   conflictCheck: { hasConflict: boolean; validated?: boolean },
-  isOnline: boolean
+  isOnline: boolean,
+  userTimezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
 ): BookingDetails | null => {
-  const startDateTime = new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedStartTime}:00`);
-  const endDateTime = new Date(`${selectedDate.toISOString().split('T')[0]}T${selectedEndTime}:00`);
+  // Logic updated to respect user timezone
+  const dateStr = format(selectedDate, 'yyyy-MM-dd');
+  const startDateTimeStr = `${dateStr} ${selectedStartTime}`; // e.g., "2023-10-25 09:00"
+  const endDateTimeStr = `${dateStr} ${selectedEndTime}`;     // e.g., "2023-10-25 11:00"
+
+  // Parse strings as local time in the specified timezone
+  const startDateTime = fromZonedTime(startDateTimeStr, userTimezone);
+  const endDateTime = fromZonedTime(endDateTimeStr, userTimezone);
   
   const hours = differenceInHours(endDateTime, startDateTime);
   

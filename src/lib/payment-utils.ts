@@ -34,22 +34,21 @@ const isSupabaseError = (error: unknown): error is SupabaseError => {
 };
 
 // Calculate payment breakdown with dual commission model
+// @deprecated Use calculatePaymentBreakdownWithTax for fiscal compliance
 export const calculatePaymentBreakdown = (baseAmount: number) => {
-  const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% buyer fee
-  const buyerTotalAmount = baseAmount + buyerFeeAmount;
+  const breakdown = calculatePaymentBreakdownWithTax(baseAmount);
   
-  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100; // 5% host fee
-  const hostNetPayout = baseAmount - hostFeeAmount;
+  // Mapping new logic to old structure for backward compatibility where needed
+  // Note: Old logic had buyer fee + host fee. New logic focuses on Platform Fee (Host side).
+  // We approximate to keep legacy consumers working without crashing, but values might differ slightly.
   
-  const platformRevenue = buyerFeeAmount + hostFeeAmount;
-
   return {
     baseAmount,
-    buyerFeeAmount,
-    buyerTotalAmount,
-    hostFeeAmount,
-    hostNetPayout,
-    platformRevenue
+    buyerFeeAmount: 0, // No longer using buyer fee in this simplified model
+    buyerTotalAmount: baseAmount,
+    hostFeeAmount: breakdown.platform_fee,
+    hostNetPayout: breakdown.net_amount,
+    platformRevenue: breakdown.platform_fee
   };
 };
 
@@ -81,8 +80,8 @@ export const createPaymentSession = async (
     sreLogger.debug('Creating payment session via create-checkout-v3', {
       component: 'PaymentUtils',
       action: 'createPaymentSession',
-      bookingId,
-      hostStripeAccountId
+      bookingId: hashSensitiveId(bookingId),
+      hostStripeAccountId: hashSensitiveId(hostStripeAccountId)
     });
 
     const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
@@ -158,7 +157,7 @@ export const getPaymentStatus = async (bookingId: string): Promise<string | null
     sreLogger.error("Error fetching payment status", {
       component: 'PaymentUtils',
       action: 'getPaymentStatus',
-      bookingId
+      bookingId: hashSensitiveId(bookingId)
     }, error as Error);
     return null;
   }
@@ -222,7 +221,7 @@ export const recordPayment = async (paymentData: Omit<PaymentInsert, 'user_id'>)
       component: 'PaymentUtils',
       action: 'recordPayment',
       userId: user?.user?.id,
-      bookingId: paymentData.booking_id
+      bookingId: hashSensitiveId(paymentData.booking_id)
     }, error as Error);
     return false;
   }
