@@ -41,6 +41,7 @@ const Profile = lazy(() => import("@/pages/Profile"));
 const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
 const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 import Bookings from "@/pages/Bookings";
+const Search = lazy(() => import("@/pages/Search"));
 const ModernMessages = lazy(() => import("@/pages/ModernMessages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
@@ -115,6 +116,11 @@ export const AppRoutes = () => {
         
         {/* Public content */}
         <Route path="spaces" element={<PublicSpaces />} />
+        <Route path="search" element={
+          <LazyWrapper>
+            <Search />
+          </LazyWrapper>
+        } />
         <Route path="spaces/:id" element={
           <LazyWrapper>
             <SpaceDetail />

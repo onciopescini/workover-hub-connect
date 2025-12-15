@@ -52,10 +52,9 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
     navigate('/login');
   };
 
-  // Use weighted rating from database (calculated via RPC)
+  // Use weighted rating from database
   const averageRating = weightedRating;
 
-  // Transform space data for hero section
   // Mask address if user doesn't have precise location access
   const displayAddress = space.hasPreciseLocation 
     ? space.address 
@@ -73,7 +72,6 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
     isSuperhost: false
   };
 
-  // Transform space data for info cards
   const infoSpaceData = {
     max_capacity: space.max_capacity,
     amenities: space.amenities || [],
@@ -81,10 +79,10 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
     description: space.description
   };
 
-  // Transform space data for booking card
   const bookingSpaceData = {
     id: space.id,
     price_per_day: space.price_per_day,
+    price_per_hour: space.price_per_hour,
     max_capacity: space.max_capacity,
     title: space.title,
     confirmation_type: space.confirmation_type || 'host_approval',
@@ -94,44 +92,57 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="space-y-8">
-        {/* Hero Section */}
-        <SpaceHeroSection space={heroSpaceData} />
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* 2-Column Grid for Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Location Access Notice */}
-        <LocationAccessNotice 
-          hasAccess={!!space.hasPreciseLocation} 
-          hasConfirmedBooking={!!space.hasConfirmedBooking}
-        />
-        
-        {/* Booking Card - Integrated in main flow */}
-        <BookingCard
-          space={bookingSpaceData}
-          isAuthenticated={authState.isAuthenticated}
-          onLoginRequired={handleLoginRequired}
-          onBookingSuccess={handleBookingSuccess}
-          onBookingError={handleBookingError}
-        />
-        
-        {/* Space Information */}
-        <SpaceInfoCards space={infoSpaceData} />
-        
-        {/* Host Profile */}
-        {space.host && (
-          <HostProfileSection 
-            host={space.host} 
-            averageRating={averageRating}
-            totalReviews={reviews.length}
-            totalSpaces={space.host_total_spaces ?? 0}
-          />
-        )}
-        
-        {/* Who Works Here Widget */}
-        <WhoWorksHere spaceId={space.id} />
+        {/* Left Column: Main Content (2/3 width) */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Hero Section (Title, Gallery, Meta) */}
+          <SpaceHeroSection space={heroSpaceData} />
 
-        {/* Reviews Section */}
-        <SpaceReviews spaceId={space.id} reviews={reviews} />
+          {/* Location Access Notice */}
+          <LocationAccessNotice
+            hasAccess={!!space.hasPreciseLocation}
+            hasConfirmedBooking={!!space.hasConfirmedBooking}
+          />
+
+          {/* Space Information (Description, Amenities, Policies) */}
+          <SpaceInfoCards space={infoSpaceData} />
+
+          {/* Host Profile */}
+          {space.host && (
+            <HostProfileSection
+              host={space.host}
+              averageRating={averageRating}
+              totalReviews={reviews.length}
+              totalSpaces={space.host_total_spaces ?? 0}
+            />
+          )}
+
+          {/* Who Works Here Widget */}
+          <WhoWorksHere spaceId={space.id} />
+
+          {/* Reviews Section */}
+          <SpaceReviews spaceId={space.id} reviews={reviews} />
+        </div>
+
+        {/* Right Column: Sticky Booking Card (1/3 width) */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-24">
+             <BookingCard
+              space={bookingSpaceData}
+              isAuthenticated={authState.isAuthenticated}
+              onLoginRequired={handleLoginRequired}
+              onBookingSuccess={handleBookingSuccess}
+              onBookingError={handleBookingError}
+            />
+            {/* Additional trust signals or small widgets can go here below the booking card */}
+            <div className="mt-4 text-center text-xs text-gray-400">
+               <p>Segnala questo annuncio</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

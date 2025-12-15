@@ -2,6 +2,7 @@
 import React from "react";
 import { Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { companyInfo } from "@/config/companyInfo";
 
 export function Footer() {
   const navigate = useNavigate();
@@ -17,8 +18,7 @@ export function Footer() {
               <span className="text-xl font-bold text-white">Workover</span>
             </div>
             <p className="text-gray-400 max-w-md">
-              La piattaforma che connette professionisti e spazi di lavoro flessibili
-              per un futuro del lavoro più dinamico e collaborativo.
+              WorkOver: Flessibilità professionale. Trova o offri spazi di lavoro in tutta Italia.
             </p>
           </div>
           <div>
@@ -42,17 +42,17 @@ export function Footer() {
         <div className="border-t border-gray-800 mt-12 pt-8">
           {/* Company Data Section */}
           <div className="text-center mb-6">
-            <h4 className="text-white font-semibold mb-3">Workover S.r.l.</h4>
+            <h4 className="text-white font-semibold mb-3">{companyInfo.name}</h4>
             <div className="text-gray-400 text-sm space-y-1">
-              <p>P.IVA: 12345678901 | REA MI-1234567</p>
-              <p>Sede Legale: Via Roma 123, 20121 Milano, Italia</p>
-              <p>Capitale Sociale: € 10.000,00 i.v.</p>
+              <p>P.IVA: {companyInfo.vat} | REA {companyInfo.rea}</p>
+              <p>Sede Legale: {companyInfo.address}</p>
+              <p>Capitale Sociale: {companyInfo.capital}</p>
               <div className="mt-2">
-                <a href="mailto:info@workover.it" className="hover:text-white transition-colors">
-                  info@workover.it
+                <a href={`mailto:${companyInfo.email}`} className="hover:text-white transition-colors">
+                  {companyInfo.email}
                 </a>
                 {' | '}
-                <a href="mailto:workover@pec.workover.it" className="hover:text-white transition-colors">
+                <a href={`mailto:${companyInfo.pec}`} className="hover:text-white transition-colors">
                   PEC
                 </a>
               </div>
@@ -92,10 +92,7 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="text-center text-gray-400 text-sm">
-            <p>&copy; 2025 Workover S.r.l. - Tutti i diritti riservati.</p>
-            <p className="text-xs text-gray-500 mt-2">
-              Dati aziendali fittizi utilizzati a scopo dimostrativo
-            </p>
+            <p>&copy; {new Date().getFullYear()} {companyInfo.name} - Tutti i diritti riservati.</p>
           </div>
         </div>
       </div>

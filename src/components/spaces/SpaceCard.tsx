@@ -43,10 +43,13 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
   };
 
   return (
-    <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
+    <Card
+      className="group cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-gray-100 overflow-hidden"
+      onClick={onClick}
+    >
       <CardContent className="p-0">
-        {/* Image */}
-        <div className="relative h-48 overflow-hidden rounded-t-lg">
+        {/* Image Container */}
+        <div className="relative h-56 overflow-hidden">
           <ResponsiveImage
             src={getMainPhoto() || '/placeholder.svg'}
             alt={space.title || 'Space image'}
@@ -55,85 +58,67 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             enableWebP={true}
             priority={false}
             onLoadComplete={() => frontendLogger.componentLoad(`Space card image: ${space.title}`, undefined, { component: 'SpaceCard' })}
-            className="w-full h-full"
+            className="w-full h-full transform group-hover:scale-110 transition-transform duration-700"
           />
-          <div className="absolute top-2 left-2">
-            <Badge variant="secondary" className="bg-white/90">
+
+          {/* Overlay Gradient for Price Visibility */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
+
+          <div className="absolute top-3 left-3">
+            <Badge variant="secondary" className="bg-white/95 backdrop-blur-sm text-gray-800 shadow-sm font-medium">
               {getCategoryLabel()}
             </Badge>
           </div>
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-indigo-600">
-              €{space.price_per_hour}/ora
-            </Badge>
+          <div className="absolute bottom-3 right-3">
+             <div className="bg-indigo-600 text-white px-3 py-1 rounded-full shadow-lg font-bold text-sm">
+               €{space.price_per_hour} <span className="font-normal text-xs">/ora</span>
+             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-lg line-clamp-1">{space.title}</h3>
+        <div className="p-5">
+          <div className="flex justify-between items-start mb-2 gap-2">
+            <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+              {space.title}
+            </h3>
             {reviews.length > 0 && (
-              <div className="flex items-center gap-1 text-sm">
-                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                <span>{weightedRating.toFixed(1)}</span>
+              <div className="flex items-center gap-1 text-sm bg-gray-50 px-2 py-1 rounded-md shrink-0">
+                <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
+                <span className="font-bold text-gray-700">{weightedRating.toFixed(1)}</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-gray-600 mb-2">
-            <MapPin className="h-4 w-4" />
-            <span className="text-sm line-clamp-1">{space.address}</span>
-            {/* NEW: Show distance if available */}
+          <div className="flex items-center gap-1.5 text-gray-500 mb-4 text-sm">
+            <MapPin className="h-4 w-4 shrink-0 text-indigo-500" />
+            <span className="line-clamp-1">{space.address}</span>
             {(space as any).distance_km && (
-              <Badge variant="secondary" className="ml-auto text-xs">
+              <Badge variant="outline" className="ml-auto text-xs shrink-0 border-gray-200">
                 {(space as any).distance_km} km
               </Badge>
             )}
           </div>
 
-          {space.description && (
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-              {space.description}
-            </p>
-          )}
-
-          {/* Features */}
-          <div className="flex flex-wrap gap-1 mb-3">
-            {space.workspace_features?.slice(0, 2).map((feature, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {feature}
-              </Badge>
-            ))}
-            {space.workspace_features && space.workspace_features.length > 2 && (
-              <Badge variant="outline" className="text-xs">
-                +{space.workspace_features.length - 2}
-              </Badge>
-            )}
-          </div>
-
-          {/* Amenities icons */}
-          <div className="flex items-center gap-3 text-gray-500 mb-3">
-            {space.amenities?.includes('High-speed WiFi') && <Wifi className="h-4 w-4" />}
-            {space.amenities?.includes('Coffee & Tea') && <span className="text-sm">☕</span>}
-            {space.amenities?.includes('Parking') && <span className="text-sm">🅿️</span>}
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span className="text-sm">{space.max_capacity || space.capacity || 1}</span>
+          {/* Amenities icons row */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-4 text-gray-500">
+               <div className="flex items-center gap-1.5" title="Capienza">
+                <Users className="h-4 w-4" />
+                <span className="text-sm font-medium">{space.max_capacity || space.capacity || 1}</span>
+              </div>
+              {space.amenities?.includes('High-speed WiFi') && (
+                <div className="flex items-center gap-1.5" title="WiFi Veloce">
+                  <Wifi className="h-4 w-4" />
+                  <span className="text-xs">WiFi</span>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Work Environment */}
-          {space.work_environment && (
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-xs">
-                {getWorkEnvironmentLabel()}
-              </Badge>
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">
-                Visualizza dettagli
-              </Button>
-            </div>
-          )}
+            <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-0 font-medium text-xs">
+              Vedi dettagli
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

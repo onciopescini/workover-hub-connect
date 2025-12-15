@@ -43,6 +43,32 @@ export const SpaceInfoCards: React.FC<SpaceInfoCardsProps> = ({ space }) => {
     return iconMap[amenity] || <CheckCircle className="w-5 h-5" />;
   };
 
+  const getAmenityTranslation = (amenity: string) => {
+    const translationMap: { [key: string]: string } = {
+      'High-speed WiFi': 'WiFi Veloce',
+      'Coffee & Tea': 'Caffè e Tè',
+      'Parking': 'Parcheggio',
+      'Kitchen': 'Cucina',
+      'Air conditioning': 'Aria Condizionata',
+      'Printer': 'Stampante',
+      'Meeting Room': 'Sala Riunioni',
+      'Phone Booth': 'Cabina Telefonica',
+      'Pet Friendly': 'Animali ammessi',
+      'Wheelchair accessible': 'Accessibile disabili',
+      '24/7 Access': 'Accesso 24/7',
+      'Events': 'Eventi',
+      'Podcast Studio': 'Studio Podcast',
+      'Gym': 'Palestra',
+      'Shower': 'Doccia',
+      'Lounge': 'Area Relax',
+      'Bike Storage': 'Deposito Bici',
+      'Monitors': 'Monitor Esterni',
+      'Standing Desks': 'Scrivanie Elevabili',
+      'Ergonomic Chairs': 'Sedie Ergonomiche'
+    };
+    return translationMap[amenity] || amenity;
+  };
+
   const getEnvironmentLabel = (env: string) => {
     const labels: { [key: string]: { label: string; description: string; color: string } } = {
       'silent': { 
@@ -109,7 +135,7 @@ export const SpaceInfoCards: React.FC<SpaceInfoCardsProps> = ({ space }) => {
                 <div className="text-green-600">
                   {getAmenityIcon(amenity)}
                 </div>
-                <span className="text-sm text-gray-700">{amenity}</span>
+                <span className="text-sm text-gray-700">{getAmenityTranslation(amenity)}</span>
               </div>
             ))}
             {space.amenities?.length > 6 && (
