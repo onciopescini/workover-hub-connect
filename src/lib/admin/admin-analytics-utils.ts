@@ -318,6 +318,6 @@ export function exportAnalyticsToCSV(data: any) {
 
 export function exportAnalyticsToPDF(data: any) {
   // Simplified PDF export - in production, use a library like jsPDF
-  console.log("PDF export would be implemented with jsPDF library", data);
+  console.warn("PDF export would be implemented with jsPDF library", data);
   alert("PDF export feature - would use jsPDF library in production");
 }

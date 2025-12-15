@@ -101,7 +101,6 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
   useEffect(() => {
     if (initialData) {
       const dbData = initialData as any;
-      console.log('Initializing form with DB data:', dbData);
 
       // Parse availability
       let parsedAvailability = defaultAvailability;

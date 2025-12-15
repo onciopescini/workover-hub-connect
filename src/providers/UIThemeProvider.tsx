@@ -17,8 +17,6 @@ export default function UIThemeProvider({ children }: PropsWithChildren) {
     } else {
       html.removeAttribute("data-theme");
     }
-    
-    console.log(`[UIThemeProvider] Theme active: ${isStitch ? 'stitch' : 'classic'}`);
   }, []);
 
   return children as JSX.Element;

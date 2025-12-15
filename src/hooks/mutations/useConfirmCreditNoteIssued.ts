@@ -12,7 +12,9 @@ export const useConfirmCreditNoteIssued = () => {
   return useMutation({
     mutationFn: async (paymentId: string) => {
       if (isMockMode) {
-        console.log('[FISCAL MOCK] useConfirmCreditNoteIssued simulating success for payment:', paymentId);
+        if (import.meta.env.DEV) {
+          console.log('[FISCAL MOCK] useConfirmCreditNoteIssued simulating success for payment:', paymentId);
+        }
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
         return;

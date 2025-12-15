@@ -19,7 +19,5 @@ export const stripePromise = loadStripe(stripePublishableKey || '');
 if (import.meta.env.DEV) {
   if (!stripePublishableKey) {
     console.error('CRITICAL: VITE_STRIPE_PUBLISHABLE_KEY is not defined in environment variables.');
-  } else {
-    console.log('Stripe Key Loaded successfully:', stripePublishableKey.substring(0, 8) + '...');
   }
 }
