@@ -19,6 +19,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
+        tsconfig: 'tsconfig.app.json',
         diagnostics: {
             ignoreCodes: [1343, 2339]
         },

@@ -53,6 +53,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   };
 
   const processFiles = useCallback((files: FileList | File[]) => {
+    if (!files) return;
+
     const fileArray = Array.from(files);
     const currentTotal = (photoFiles || []).length;
     
@@ -77,8 +79,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     });
 
     if (validFiles.length > 0) {
-      setPhotoFiles([...photoFiles, ...validFiles]);
-      setPhotoPreviewUrls([...photoPreviewUrls, ...newPreviewUrls]);
+      setPhotoFiles([...(photoFiles || []), ...validFiles]);
+      setPhotoPreviewUrls([...(photoPreviewUrls || []), ...newPreviewUrls]);
       toast.success(`${validFiles.length} foto${validFiles.length > 1 ? '' : ''} aggiunta${validFiles.length > 1 ? 'e' : ''} con successo.`);
     }
   }, [photoFiles, photoPreviewUrls, setPhotoFiles, setPhotoPreviewUrls]);
