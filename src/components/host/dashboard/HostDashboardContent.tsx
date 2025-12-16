@@ -45,7 +45,7 @@ export const HostDashboardContent = ({
         component: 'HostDashboardContent',
         userId: authState.user?.id
       }, e as Error);
-      toast.error("Errore di configurazione del server. Verifica i segreti Stripe.");
+      toast.error("Connection failed. Please check STRIPE_SECRET_KEY in Supabase and Redirect URIs in Stripe Dashboard.");
     } finally {
       setIsConnecting(false);
     }

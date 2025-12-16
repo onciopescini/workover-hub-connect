@@ -60,7 +60,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
         created_at,
         sender_id,
         booking_id,
-        bookings!inner (
+        bookings!messages_booking_id_fkey!inner (
           space_id
         ),
         profiles (first_name, last_name)
