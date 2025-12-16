@@ -55,7 +55,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const processFiles = useCallback((files: FileList | File[]) => {
     if (!files) return;
 
-    const fileArray = Array.from(files);
+    // Defensive conversion using Array.from to ensure we have an array
+    const fileArray = Array.from(files || []);
     const currentTotal = (photoFiles || []).length;
     
     if (currentTotal + fileArray.length > MAX_FILES) {
@@ -94,16 +95,16 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       const fileIndex = index - existingCount;
 
       // Revoke the object URL to prevent memory leaks
-      if (photoPreviewUrls[index]) {
+      if (photoPreviewUrls && photoPreviewUrls[index]) {
         URL.revokeObjectURL(photoPreviewUrls[index]);
       }
 
-      const newFiles = photoFiles.filter((_, i) => i !== fileIndex);
+      const newFiles = (photoFiles || []).filter((_, i) => i !== fileIndex);
       setPhotoFiles(newFiles);
     }
     
     // Always remove from preview URLs
-    const newUrls = photoPreviewUrls.filter((_, i) => i !== index);
+    const newUrls = (photoPreviewUrls || []).filter((_, i) => i !== index);
     setPhotoPreviewUrls(newUrls);
 
     toast.success('Foto rimossa');
