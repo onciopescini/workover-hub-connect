@@ -39,19 +39,9 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
     if (bookingsError) throw bookingsError;
 
     // 3. Fetch Recent Messages
-    // We fetch messages linked to the bookings of the host's spaces
-    // Since we can't deep filter efficiently without the inner joins on spaces (which we can't do due to schema change)
-    // We will query messages where booking_id is in the list of bookings for these workspaces.
-    // However, fetching ALL booking IDs for the workspaces might be heavy if there are thousands.
-    // OPTIMIZATION: We only care about RECENT messages.
-    // We can try to fetch recent messages and filter by booking -> space_id match.
-    // OR we fetch the recent bookings (limit 50?) and get messages for those? No, a new message might come for an old booking.
-
-    // Alternative:
-    // messages -> booking_id -> bookings -> space_id
-    // Supabase allows filtering on joined resource columns if we join them.
-    // messages.select('*, bookings!inner(space_id)').in('bookings.space_id', workspaceIds)
-
+    // FIX: Disambiguate bookings join using specific foreign key
+    // messages has two FKs to bookings: fk_messages_booking_id and messages_booking_id_fkey
+    // We use messages_booking_id_fkey which is the standard one
     const { data: recentMessages, error: messagesError } = await supabase
       .from('messages')
       .select(`
@@ -60,7 +50,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
         created_at,
         sender_id,
         booking_id,
-        bookings!inner (
+        bookings!messages_booking_id_fkey!inner (
           space_id
         ),
         profiles (first_name, last_name)

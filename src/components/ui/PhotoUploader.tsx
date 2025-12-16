@@ -52,10 +52,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     return null;
   };
 
-  const processFiles = useCallback((files: FileList | File[]) => {
+  const processFiles = useCallback((files: FileList | File[] | null) => {
     if (!files) return;
 
     // Defensive conversion using Array.from to ensure we have an array
+    // Explicitly handle FileList iteration safety
     const fileArray = Array.from(files || []);
     const currentTotal = (photoFiles || []).length;
     

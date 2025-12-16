@@ -4,11 +4,13 @@ import { HostDashboardTabs } from "./HostDashboardTabs";
 import { HostProgressTracker } from "../onboarding/HostProgressTracker";
 import { HostDashboardContentProps } from "@/types/host/dashboard.types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 export const HostDashboardContent = ({
   firstName,
@@ -20,6 +22,29 @@ export const HostDashboardContent = ({
 }: HostDashboardContentProps) => {
   const { authState } = useAuth();
   const stripeConnected = authState.profile?.stripe_connected;
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+
+  const handleConnectStripe = async () => {
+    try {
+      setIsConnectingStripe(true);
+      const { data, error } = await supabase.functions.invoke('stripe-connect', {
+        body: { return_url: window.location.origin + '/host/dashboard?stripe_setup=success' }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No redirect URL returned');
+      }
+    } catch (error) {
+      console.error('Stripe connect error:', error);
+      toast.error("Si è verificato un errore durante la connessione a Stripe");
+    } finally {
+      setIsConnectingStripe(false);
+    }
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
@@ -39,9 +64,17 @@ export const HostDashboardContent = ({
               size="sm"
               variant="outline"
               className="bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
-              onClick={() => toast.info("Stripe configuration is disabled in Preview mode")}
+              onClick={handleConnectStripe}
+              disabled={isConnectingStripe}
             >
-              Collega Stripe Ora
+              {isConnectingStripe ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connessione...
+                </>
+              ) : (
+                "Collega Stripe Ora"
+              )}
             </Button>
           </AlertDescription>
         </Alert>
