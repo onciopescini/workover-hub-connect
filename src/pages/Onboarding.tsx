@@ -136,7 +136,7 @@ const Onboarding = () => {
       
       // Redirect hosts to specialized onboarding
       if (formData.role === 'host') {
-        navigate("/host/onboarding");
+        navigate("/host/dashboard");
       } else {
         navigate("/dashboard");
       }
