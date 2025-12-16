@@ -30,7 +30,25 @@ export default function HostStripeStatus({ className = "" }: Props) {
   }, [authState.profile?.stripe_connected, authState.profile?.stripe_account_id, authState.profile?.stripe_onboarding_status]);
 
   const connect = async () => {
-    toast.info("Stripe configuration is disabled in Preview mode");
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('stripe-connect', {
+        body: { return_url: window.location.origin + '/host/dashboard?stripe_setup=success' }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No redirect URL returned');
+      }
+    } catch (error) {
+      console.error('Stripe connect error:', error);
+      toast.error("Si è verificato un errore durante la connessione a Stripe");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
