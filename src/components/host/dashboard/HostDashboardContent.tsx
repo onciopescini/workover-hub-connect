@@ -8,6 +8,7 @@ import { AlertTriangle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { toast } from "sonner";
 
 export const HostDashboardContent = ({
   firstName,
@@ -34,8 +35,13 @@ export const HostDashboardContent = ({
               Non puoi <strong>pubblicare</strong> nuovi spazi finché non colleghi il tuo account Stripe.
               Puoi comunque creare bozze.
             </span>
-            <Button size="sm" variant="outline" className="bg-white border-amber-300 hover:bg-amber-100 text-amber-900" asChild>
-              <Link to="/host/onboarding?step=2">Collega Stripe Ora</Link>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
+              onClick={() => toast.info("Stripe configuration is disabled in Preview mode")}
+            >
+              Collega Stripe Ora
             </Button>
           </AlertDescription>
         </Alert>
