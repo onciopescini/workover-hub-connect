@@ -18,11 +18,14 @@ export const useAuthRedirects = () => {
     const primaryRole = getPrimaryRole(roles);
     
     // 1) Forza onboarding su tutte le pagine tranne quelle esplicitamente permesse
+    // CRITICAL FIX: Allow access to /host/dashboard even if onboarding_completed is false (or stale)
+    // to prevent redirect loops and allow data refresh.
     if (
       !skipRedirectPaths.includes(currentPath) &&
       !profile.onboarding_completed &&
       primaryRole !== 'admin' &&
-      currentPath !== '/onboarding'
+      currentPath !== '/onboarding' &&
+      !currentPath.startsWith('/host/dashboard')
     ) {
       navigate('/onboarding', { replace: true });
       return;

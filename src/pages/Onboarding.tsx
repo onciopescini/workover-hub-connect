@@ -134,7 +134,7 @@ const Onboarding = () => {
         if (draftKey) localStorage.removeItem(draftKey);
       } catch {}
       
-      // Redirect hosts to specialized onboarding
+      // Redirect hosts to unified dashboard, NEVER to the legacy wizard
       if (formData.role === 'host') {
         navigate("/host/dashboard");
       } else {
