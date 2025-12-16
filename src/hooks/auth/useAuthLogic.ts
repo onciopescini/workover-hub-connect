@@ -178,9 +178,11 @@ export const useAuthLogic = () => {
     if (authState.user) {
       invalidateProfile(authState.user.id);
       const profile = await fetchProfile(authState.user.id);
-      setAuthState(prev => ({ ...prev, profile }));
+      // Aggiorna anche i ruoli per garantire che lo stato sia coerente
+      const roles = await fetchUserRoles(authState.user.id);
+      setAuthState(prev => ({ ...prev, profile, roles }));
     }
-  }, [authState.user, fetchProfile, invalidateProfile]);
+  }, [authState.user, fetchProfile, invalidateProfile, fetchUserRoles]);
 
   useEffect(() => {
     // Main AbortController for cleanup on unmount
