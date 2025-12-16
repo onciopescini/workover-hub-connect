@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { sreLogger } from "@/lib/sre-logger";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 export const HostDashboardContent = ({
   firstName,
@@ -20,6 +24,32 @@ export const HostDashboardContent = ({
 }: HostDashboardContentProps) => {
   const { authState } = useAuth();
   const stripeConnected = authState.profile?.stripe_connected;
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleStripeConnect = async () => {
+    try {
+      setIsConnecting(true);
+      const returnUrl = `${window.location.origin}/host/dashboard?stripe_setup=success`;
+      const { data, error } = await supabase.functions.invoke("create-connect-onboarding-link", {
+        body: { return_url: returnUrl }
+      });
+
+      if (error) throw error;
+      if (!data?.url) {
+        toast.error("Link di onboarding non ricevuto");
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      sreLogger.error('Stripe Connect dashboard link creation failed', {
+        component: 'HostDashboardContent',
+        userId: authState.user?.id
+      }, e as Error);
+      toast.error("Errore di configurazione del server. Verifica i segreti Stripe.");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
@@ -39,9 +69,17 @@ export const HostDashboardContent = ({
               size="sm"
               variant="outline"
               className="bg-white border-amber-300 hover:bg-amber-100 text-amber-900"
-              onClick={() => toast.info("Stripe configuration is disabled in Preview mode")}
+              onClick={handleStripeConnect}
+              disabled={isConnecting}
             >
-              Collega Stripe Ora
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connessione...
+                </>
+              ) : (
+                "Collega Stripe Ora"
+              )}
             </Button>
           </AlertDescription>
         </Alert>

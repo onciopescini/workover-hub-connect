@@ -30,7 +30,28 @@ export default function HostStripeStatus({ className = "" }: Props) {
   }, [authState.profile?.stripe_connected, authState.profile?.stripe_account_id, authState.profile?.stripe_onboarding_status]);
 
   const connect = async () => {
-    toast.info("Stripe configuration is disabled in Preview mode");
+    try {
+      setLoading(true);
+      const returnUrl = `${window.location.origin}/host/dashboard?stripe_setup=success`;
+      const { data, error } = await supabase.functions.invoke("create-connect-onboarding-link", {
+        body: { return_url: returnUrl }
+      });
+
+      if (error) throw error;
+      if (!data?.url) {
+        toast.error("Link di onboarding non ricevuto");
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e: any) {
+      sreLogger.error('Stripe Connect onboarding link creation failed', {
+        component: 'HostStripeStatus',
+        userId: authState.user?.id
+      }, e as Error);
+      toast.error("Errore di configurazione del server. Verifica i segreti Stripe.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
