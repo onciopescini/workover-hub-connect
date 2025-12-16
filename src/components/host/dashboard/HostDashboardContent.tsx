@@ -3,6 +3,11 @@ import { HostDashboardMetrics } from "./HostDashboardMetrics";
 import { HostDashboardTabs } from "./HostDashboardTabs";
 import { HostProgressTracker } from "../onboarding/HostProgressTracker";
 import { HostDashboardContentProps } from "@/types/host/dashboard.types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 export const HostDashboardContent = ({
   firstName,
@@ -12,9 +17,39 @@ export const HostDashboardContent = ({
   setActiveTab,
   shouldShowProgressTracker
 }: HostDashboardContentProps) => {
+  const { authState } = useAuth();
+  const stripeConnected = authState.profile?.stripe_connected;
+
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
       <HostDashboardHeader firstName={firstName ?? ''} />
+
+      {/* Warning Banner for Missing Stripe Connection */}
+      {!stripeConnected && (
+        <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800 font-semibold">Configurazione Pagamenti Incompleta</AlertTitle>
+          <AlertDescription className="text-amber-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+            <span>
+              Non puoi <strong>pubblicare</strong> nuovi spazi finché non colleghi il tuo account Stripe.
+              Puoi comunque creare bozze.
+            </span>
+            <Button size="sm" variant="outline" className="bg-white border-amber-300 hover:bg-amber-100 text-amber-900" asChild>
+              <Link to="/host/onboarding?step=2">Collega Stripe Ora</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Explicit "Create Space" Action if not present in Header */}
+      <div className="flex justify-end">
+         <Button asChild className="gap-2">
+            <Link to="/host/space/new">
+               <Plus className="h-4 w-4" />
+               Crea Nuovo Spazio
+            </Link>
+         </Button>
+      </div>
       
       {metrics && <HostDashboardMetrics metrics={metrics} />}
       
