@@ -19,12 +19,12 @@ export const AccessGuard = ({
   // Self-healing: Assign 'host' role if user has no role and is accessing a host route
   useEffect(() => {
     const checkAndFixRole = async () => {
-      // Verifica se l'utente è autenticato ma non ha un ruolo nel profilo
-      // e sta cercando di accedere a una rotta che richiede ruolo 'host'
+      // Verifica se l'utente è autenticato ma non ha il ruolo richiesto (specificamente 'host')
+      // Utilizziamo hasAnyRole su authState.roles che è la fonte di verità corretta (da user_roles)
       if (
         authState.isAuthenticated &&
-        authState.profile &&
-        !authState.profile.role &&
+        authState.user &&
+        !hasAnyRole(authState.roles, ['host']) && // Controlla se manca il ruolo 'host'
         requiredRoles.includes('host') &&
         !isFixingRole
       ) {
@@ -44,16 +44,25 @@ export const AccessGuard = ({
         sessionStorage.setItem(ATTEMPT_KEY, 'true');
 
         setIsFixingRole(true);
-        console.log("Self-healing: User has no role. Assigning 'host' role (One-shot attempt)...");
+        console.log("Self-healing: User has no 'host' role. Assigning it via user_roles table (One-shot attempt)...");
 
         try {
-          // Aggiorna il ruolo nel database
+          // INSERT into user_roles table instead of updating profiles
           const { error } = await supabase
-            .from('profiles')
-            .update({ role: 'host' })
-            .eq('id', authState.user!.id);
+            .from('user_roles')
+            .insert({
+              user_id: authState.user.id,
+              role: 'host'
+            });
 
-          if (error) throw error;
+          if (error) {
+            // Check for duplicate key violation (code 23505) which means role already exists
+            // In that case we can proceed to refresh. Otherwise throw.
+            if (error.code !== '23505') {
+              throw error;
+            }
+            console.warn("Self-healing: Role already existed (race condition?), proceeding to refresh.");
+          }
 
           console.log("Self-healing: Role assigned successfully. Refreshing profile...");
           // Aggiorna lo stato locale per riflettere il cambiamento
@@ -73,7 +82,7 @@ export const AccessGuard = ({
     };
 
     checkAndFixRole();
-  }, [authState.isAuthenticated, authState.profile, requiredRoles, refreshProfile, isFixingRole, authState.user]);
+  }, [authState.isAuthenticated, authState.roles, requiredRoles, refreshProfile, isFixingRole, authState.user]);
 
   // Loading state (initial or during fix)
   if (authState.isLoading || isFixingRole) {
