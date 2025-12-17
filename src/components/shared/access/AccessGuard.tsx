@@ -28,8 +28,23 @@ export const AccessGuard = ({
         requiredRoles.includes('host') &&
         !isFixingRole
       ) {
+        // CHECK PERSISTENCE: If we already tried to fix this session/user, ABORT.
+        // This prevents infinite loops if the fix fails or if the role update doesn't reflect immediately.
+        const ATTEMPT_KEY = 'role_auto_fix_attempted';
+        const hasAttempted = sessionStorage.getItem(ATTEMPT_KEY);
+
+        if (hasAttempted === 'true') {
+          console.warn("Self-healing: Previously failed or stuck. Aborting and signing out to prevent loop.");
+          await supabase.auth.signOut();
+          window.location.href = '/login?error=role_missing';
+          return;
+        }
+
+        // Mark as attempted BEFORE trying (Optimistic lock against reloads)
+        sessionStorage.setItem(ATTEMPT_KEY, 'true');
+
         setIsFixingRole(true);
-        console.log("Self-healing: User has no role. Assigning 'host' role...");
+        console.log("Self-healing: User has no role. Assigning 'host' role (One-shot attempt)...");
 
         try {
           // Aggiorna il ruolo nel database
@@ -43,10 +58,14 @@ export const AccessGuard = ({
           console.log("Self-healing: Role assigned successfully. Refreshing profile...");
           // Aggiorna lo stato locale per riflettere il cambiamento
           await refreshProfile();
-          // Feedback opzionale, teniamo pulito per ora come richiesto ("trasparente")
+          // Note: We do NOT clear sessionStorage here. "One-shot" means one shot.
+          // If successful, the role check won't match next time, so the flag doesn't matter.
+
         } catch (err) {
           console.error("Self-healing failed:", err);
-          toast.error("Errore durante la configurazione dell'account");
+          // CRITICAL: Force logout and redirect on failure. DO NOT RETRY.
+          await supabase.auth.signOut();
+          window.location.href = '/login?error=role_missing';
         } finally {
           setIsFixingRole(false);
         }
