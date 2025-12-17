@@ -12,21 +12,24 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Users, Briefcase, CheckCircle, Mail } from "lucide-react";
+import { Users, Briefcase, CheckCircle, Mail, Search, Building } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 import { NavigationGuard } from '@/components/navigation/NavigationGuard';
 import { sreLogger } from '@/lib/sre-logger';
+import { hasAnyRole } from '@/lib/auth/role-utils';
 
 type UserRole = Database["public"]["Enums"]["app_role"];
 
 const Onboarding = () => {
-  const { authState, updateProfile } = useAuth();
+  const { authState, updateProfile, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  // If user already has a role, we skip the selection step.
+  // We initialize currentStep based on whether a role exists.
+  const [currentStep, setCurrentStep] = useState(0); // 0 = Role Selection
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    role: '' as UserRole,
+    role: '' as UserRole | '', // Allow empty initially
     profession: '',
     bio: '',
     location: '',
@@ -41,8 +44,26 @@ const Onboarding = () => {
 
   const draftKey = authState.user ? `onboarding_draft_${authState.user.id}` : null;
 
+  // Initial load effect
   useEffect(() => {
     if (!authState.user) return;
+
+    // Determine initial step based on existing role
+    if (authState.roles.length > 0) {
+       // If host, they should be in dashboard, but if they came here manually,
+       // or if they are just a 'user', we might show the wizard.
+       // However, the instructions say 'host' redirects to dashboard.
+       if (hasAnyRole(authState.roles, ['host'])) {
+         navigate('/host/dashboard');
+         return;
+       }
+       // If user/coworker, we assume they want to complete profile
+       setCurrentStep(1);
+       setFormData(prev => ({ ...prev, role: 'user' }));
+    } else {
+       setCurrentStep(0);
+    }
+
     try {
       if (draftKey) {
         const raw = localStorage.getItem(draftKey);
@@ -57,6 +78,7 @@ const Onboarding = () => {
         ...prev,
         firstName: (authState.profile?.first_name as string | undefined) ?? prev.firstName,
         lastName: (authState.profile?.last_name as string | undefined) ?? prev.lastName,
+        // Don't override role from DB if we just set it above
         role: (authState.roles[0] as UserRole | undefined) ?? prev.role,
         profession: (authState.profile?.profession as string | undefined) ?? prev.profession,
         bio: (authState.profile?.bio as string | undefined) ?? prev.bio,
@@ -64,7 +86,7 @@ const Onboarding = () => {
       }));
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authState.user?.id]);
+  }, [authState.user?.id, authState.roles]); // Added authState.roles dependency
 
   useEffect(() => {
     if (!authState.user || authState.profile?.onboarding_completed) return;
@@ -75,8 +97,42 @@ const Onboarding = () => {
     } catch {}
   }, [formData, draftKey, authState.user, authState.profile?.onboarding_completed]);
 
-  const handleRoleSelect = (role: string) => {
-    setFormData({ ...formData, role: role as UserRole });
+  const handleRoleSelection = async (selectedRole: UserRole) => {
+    if (!authState.user) return;
+
+    try {
+      // Immediate role assignment
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authState.user.id,
+          role: selectedRole
+        });
+
+      if (roleError) {
+         // Ignore duplicate key error in case of race conditions
+         if (roleError.code !== '23505') {
+            throw roleError;
+         }
+      }
+
+      // Refresh local auth state to reflect the new role
+      await refreshProfile();
+
+      if (selectedRole === 'host') {
+        toast.success("Account Host creato! Benvenuto nella dashboard.");
+        navigate('/host/dashboard');
+      } else {
+        // User/Coworker -> Continue to wizard
+        setFormData(prev => ({ ...prev, role: selectedRole }));
+        setCurrentStep(1);
+        toast.success("Profilo creato! Ora parlaci un po' di te.");
+      }
+
+    } catch (error) {
+      sreLogger.error("Failed to assign initial role", { userId: authState.user.id, role: selectedRole }, error as Error);
+      toast.error("Errore durante l'assegnazione del ruolo. Riprova.");
+    }
   };
 
   const handleNext = () => {
@@ -93,7 +149,7 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     try {
-      // Update profile (without role field)
+      // Update profile
       await updateProfile({
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -110,22 +166,9 @@ const Onboarding = () => {
         onboarding_completed: true,
       });
 
-      // Assign role in user_roles table
-      if (authState.user?.id && formData.role) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .upsert({
-            user_id: authState.user.id,
-            role: formData.role
-          }, {
-            onConflict: 'user_id,role'
-          });
-
-        if (roleError) {
-          sreLogger.error("Failed to assign role", { userId: authState.user.id, role: formData.role }, roleError as Error);
-          throw roleError;
-        }
-      }
+      // NOTE: We do NOT insert role here anymore, as it was done in Step 0.
+      // However, for robustness, if for some reason it's missing (legacy flow?), we could try upsert,
+      // but Step 0 guarantees it.
 
       toast.success("Onboarding completato con successo!");
       
@@ -134,7 +177,6 @@ const Onboarding = () => {
         if (draftKey) localStorage.removeItem(draftKey);
       } catch {}
       
-      // Redirect hosts to unified dashboard, NEVER to the legacy wizard
       if (formData.role === 'host') {
         navigate("/host/dashboard");
       } else {
@@ -149,7 +191,7 @@ const Onboarding = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.firstName && formData.lastName && formData.role;
+        return formData.firstName && formData.lastName; // Role is already set
       case 2:
         return formData.profession && formData.bio;
       case 3:
@@ -177,7 +219,7 @@ const Onboarding = () => {
   // Autosave su server (debounced)
   const autosaveTimer = React.useRef<number | undefined>(undefined);
   React.useEffect(() => {
-    if (!authState.user || authState.profile?.onboarding_completed) return;
+    if (!authState.user || authState.profile?.onboarding_completed || currentStep === 0) return;
     window.clearTimeout(autosaveTimer.current);
     autosaveTimer.current = window.setTimeout(async () => {
       try {
@@ -200,7 +242,7 @@ const Onboarding = () => {
       } catch {}
     }, 800);
     return () => window.clearTimeout(autosaveTimer.current);
-  }, [formData, authState.user?.id, authState.profile?.onboarding_completed]);
+  }, [formData, authState.user?.id, authState.profile?.onboarding_completed, currentStep]);
 
   // Stato: ci sono dati parziali?
   const hasAnyData = React.useMemo(() => {
@@ -215,7 +257,7 @@ const Onboarding = () => {
   return (
     <>
       <NavigationGuard
-        when={Boolean(authState.isAuthenticated && !authState.profile?.onboarding_completed && hasAnyData)}
+        when={Boolean(authState.isAuthenticated && !authState.profile?.onboarding_completed && hasAnyData && currentStep > 0)}
         title="Vuoi lasciare l'onboarding?"
         description="Hai modifiche non salvate. Uscendo potresti perdere i progressi. Vuoi davvero continuare?"
       />
@@ -224,7 +266,10 @@ const Onboarding = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Benvenuto in Workover!</CardTitle>
             <CardDescription>
-              Completiamo il tuo profilo per offrirti la migliore esperienza
+              {currentStep === 0
+                ? "Come vuoi utilizzare la piattaforma?"
+                : "Completiamo il tuo profilo per offrirti la migliore esperienza"
+              }
             </CardDescription>
           {authState.user && !authState.user.email_confirmed_at && (
             <div className="mt-3 p-3 rounded-md bg-blue-50 text-blue-800 flex items-center justify-between">
@@ -235,19 +280,60 @@ const Onboarding = () => {
               <Button size="sm" variant="outline" onClick={handleResendVerification}>Reinvia</Button>
             </div>
           )}
-          <div className="flex justify-center space-x-2 mt-4">
-            {[1, 2, 3].map((step) => (
-              <div
-                key={step}
-                className={`w-3 h-3 rounded-full ${
-                  step <= currentStep ? 'bg-blue-500' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
+
+          {currentStep > 0 && (
+            <div className="flex justify-center space-x-2 mt-4">
+              {[1, 2, 3].map((step) => (
+                <div
+                  key={step}
+                  className={`w-3 h-3 rounded-full ${
+                    step <= currentStep ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {currentStep === 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <Card
+                className="cursor-pointer border-2 hover:border-blue-500 hover:bg-blue-50 transition-all group h-full"
+                onClick={() => handleRoleSelection('host')}
+              >
+                <CardContent className="p-6 text-center flex flex-col items-center h-full justify-center space-y-4">
+                  <div className="p-4 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors">
+                    <Building className="h-10 w-10 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Diventa Host</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Hai uno spazio da condividere? Pubblicalo e inizia a guadagnare ospitando professionisti.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className="cursor-pointer border-2 hover:border-green-500 hover:bg-green-50 transition-all group h-full"
+                onClick={() => handleRoleSelection('user')}
+              >
+                <CardContent className="p-6 text-center flex flex-col items-center h-full justify-center space-y-4">
+                  <div className="p-4 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors">
+                    <Search className="h-10 w-10 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Cerca uno spazio</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Cerchi un luogo dove lavorare? Trova uffici, scrivanie e sale riunioni su misura per te.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {currentStep === 1 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Informazioni di base</h3>
@@ -270,37 +356,6 @@ const Onboarding = () => {
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     placeholder="Il tuo cognome"
                   />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Seleziona il tuo ruolo</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Card
-                    className={`cursor-pointer border-2 transition-colors ${
-                      formData.role === 'user' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                    }`}
-                    onClick={() => handleRoleSelect('user')}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Users className="h-8 w-8 mx-auto mb-2" />
-                      <h4 className="font-semibold">Utente</h4>
-                      <p className="text-sm text-gray-600">Cerco spazi di lavoro</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card
-                    className={`cursor-pointer border-2 transition-colors ${
-                      formData.role === 'host' ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                    }`}
-                    onClick={() => handleRoleSelect('host')}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <Briefcase className="h-8 w-8 mx-auto mb-2" />
-                      <h4 className="font-semibold">Host</h4>
-                      <p className="text-sm text-gray-600">Offro spazi di lavoro</p>
-                    </CardContent>
-                  </Card>
                 </div>
               </div>
             </div>
@@ -392,25 +447,32 @@ const Onboarding = () => {
             </div>
           )}
 
-          <div className="flex justify-between pt-4">
-            {currentStep > 1 && (
-              <Button variant="outline" onClick={handleBack}>
-                Indietro
-              </Button>
-            )}
-            
-            <div className="ml-auto">
-              {currentStep < 3 ? (
-                <Button onClick={handleNext} disabled={!isStepValid()}>
-                  Avanti
-                </Button>
-              ) : (
-                <Button onClick={handleComplete} disabled={!isStepValid()}>
-                  Completa registrazione
+          {currentStep > 0 && (
+            <div className="flex justify-between pt-4">
+              {/* Only show 'Back' if we are past Step 1. Step 1 shouldn't go back to Step 0 easily if role is set.
+                  However, user might have made a mistake. But since role is written to DB,
+                  going back would require removing role or handling complex state.
+                  For now, let's keep it simple: Once chosen, you are that role.
+              */}
+              {currentStep > 1 && (
+                <Button variant="outline" onClick={handleBack}>
+                  Indietro
                 </Button>
               )}
+
+              <div className="ml-auto">
+                {currentStep < 3 ? (
+                  <Button onClick={handleNext} disabled={!isStepValid()}>
+                    Avanti
+                  </Button>
+                ) : (
+                  <Button onClick={handleComplete} disabled={!isStepValid()}>
+                    Completa registrazione
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

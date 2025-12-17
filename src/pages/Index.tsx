@@ -1,7 +1,9 @@
 
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatedHeroSection } from '@/components/landing/AnimatedHeroSection';
 import { BetaNotice } from '@/components/beta/BetaNotice';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 // Lazy load below-the-fold sections for better LCP
 const InteractiveFeaturesSection = lazy(() => 
@@ -26,6 +28,15 @@ const InnovativeCTAStitch = lazy(() => import('@/feature/landing/InnovativeCTASt
 
 const Index = () => {
   const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
+  const { authState } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect stateless authenticated users to onboarding
+  useEffect(() => {
+    if (!authState.isLoading && authState.isAuthenticated && authState.roles.length === 0) {
+      navigate('/onboarding');
+    }
+  }, [authState.isLoading, authState.isAuthenticated, authState.roles, navigate]);
 
   return (
     <>
