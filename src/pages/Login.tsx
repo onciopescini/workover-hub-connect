@@ -25,8 +25,15 @@ const Login = () => {
   const { signIn, signInWithGoogle } = useAuth();
 
   useEffect(() => {
-    // Clear any existing errors when the component mounts or location changes
-    setError(null);
+    // Check for error parameters in URL
+    const searchParams = new URLSearchParams(location.search);
+    const errorParam = searchParams.get('error');
+
+    if (errorParam === 'role_missing') {
+      setError("Impossibile configurare l'account. Contatta il supporto.");
+    } else {
+      setError(null);
+    }
   }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
