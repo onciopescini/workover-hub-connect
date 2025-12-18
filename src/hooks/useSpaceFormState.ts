@@ -15,9 +15,10 @@ interface UseSpaceFormStateProps {
   initialData?: Space | WorkspaceInsert | undefined;
   isEdit?: boolean;
   stripeOnboardingStatus?: 'none' | 'pending' | 'completed' | 'restricted';
+  stripeConnected?: boolean;
 }
 
-export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardingStatus = 'none' }: UseSpaceFormStateProps) => {
+export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardingStatus = 'none', stripeConnected = false }: UseSpaceFormStateProps) => {
   const navigate = useNavigate();
   const { info, warn, error } = useLogger({ context: 'useSpaceFormState' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,7 +259,8 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
     }
 
     // SECURITY ENFORCED: Prevent publishing without Stripe
-    if (data.published && stripeOnboardingStatus !== 'completed') {
+    // Trust stripeConnected flag OR completed status
+    if (data.published && !stripeConnected && stripeOnboardingStatus !== 'completed') {
       toast.error("Non puoi pubblicare uno spazio senza completare la verifica Stripe.", {
         description: "Completa l'onboarding nella sezione Pagamenti prima di pubblicare."
       });

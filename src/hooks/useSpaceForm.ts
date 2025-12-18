@@ -19,6 +19,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
   });
 
   const stripeOnboardingStatus = hostProgressData?.stripeOnboardingStatus || 'none';
+  const stripeConnected = hostProgressData?.stripeConnected || false;
 
   const {
     formData,
@@ -37,7 +38,8 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     handleCheckboxArrayChange
   } = useSpaceFormState({
     initialData,
-    stripeOnboardingStatus // Pass the status here
+    stripeOnboardingStatus, // Pass the status here
+    stripeConnected
   });
 
   const { errors, validateForm, clearError } = useSpaceFormValidation({
@@ -52,7 +54,8 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     validateForm,
     isEdit,
     initialDataId: initialData?.id ?? '',
-    stripeOnboardingStatus
+    stripeOnboardingStatus,
+    stripeConnected
   });
 
   // Enhanced input change handler that clears errors
@@ -85,6 +88,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     uploadingPhotos,
     processingJobs,
     stripeOnboardingStatus,
+    stripeConnected,
     setUploadingPhotos,
     setProcessingJobs,
     setPhotoFiles,

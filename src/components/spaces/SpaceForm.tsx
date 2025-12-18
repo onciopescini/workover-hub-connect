@@ -30,6 +30,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
     uploadingPhotos,
     processingJobs,
     stripeOnboardingStatus,
+    stripeConnected,
     setUploadingPhotos,
     setProcessingJobs,
     setPhotoFiles,
@@ -259,6 +260,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
         onInputChange={handleInputChange}
         isSubmitting={isSubmitting}
         stripeOnboardingStatus={stripeOnboardingStatus}
+        stripeConnected={stripeConnected}
       />
 
       <Button type="submit" disabled={isSubmitting}>

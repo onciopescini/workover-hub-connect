@@ -10,15 +10,17 @@ interface PublishingOptionsProps {
   onInputChange: (field: string, value: any) => void;
   isSubmitting: boolean;
   stripeOnboardingStatus?: 'none' | 'pending' | 'completed' | 'restricted';
+  stripeConnected?: boolean;
 }
 
 export const PublishingOptions = ({
   published,
   onInputChange,
   isSubmitting,
-  stripeOnboardingStatus = 'none'
+  stripeOnboardingStatus = 'none',
+  stripeConnected = false
 }: PublishingOptionsProps) => {
-  const isStripeVerified = stripeOnboardingStatus === 'completed';
+  const isStripeVerified = stripeConnected || stripeOnboardingStatus === 'completed';
   
   return (
     <Card>
