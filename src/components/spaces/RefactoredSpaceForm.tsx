@@ -27,6 +27,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     staleTime: 30 * 1000 // 30 seconds
   });
   const stripeOnboardingStatus = hostProgressData?.stripeOnboardingStatus || 'none';
+  const stripeConnected = hostProgressData?.stripeConnected || false;
 
   // Initialize the hook as the single source of truth
   const {
@@ -38,7 +39,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
     isSubmitting,
     uploadingPhotos,
     processingJobs
-  } = useSpaceFormState({ initialData, isEdit, stripeOnboardingStatus });
+  } = useSpaceFormState({ initialData, isEdit, stripeOnboardingStatus, stripeConnected });
 
   return (
     <Form {...form}>

@@ -324,7 +324,7 @@ const Onboarding = () => {
                     <Search className="h-10 w-10 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-2">Cerca uno spazio</h3>
+                    <h3 className="text-xl font-bold mb-2">Diventa Coworker</h3>
                     <p className="text-muted-foreground text-sm">
                       Cerchi un luogo dove lavorare? Trova uffici, scrivanie e sale riunioni su misura per te.
                     </p>
