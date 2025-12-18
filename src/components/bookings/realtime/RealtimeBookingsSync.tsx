@@ -2,16 +2,23 @@
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 interface RealtimeBookingsSyncProps {
   onChange: () => void;
 }
 
 export const RealtimeBookingsSync = ({ onChange }: RealtimeBookingsSyncProps) => {
+  const { authState } = useAuth();
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = 5;
 
   useEffect(() => {
+    // Non avviare la sottoscrizione se l'utente non è autenticato o il profilo non è pronto
+    if (!authState.user || !authState.profile) {
+      return;
+    }
+
     const setupChannel = () => {
       const channel = supabase
         .channel("schema-db-changes")
