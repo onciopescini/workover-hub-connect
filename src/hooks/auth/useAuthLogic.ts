@@ -175,6 +175,12 @@ export const useAuthLogic = () => {
         updateAuthState(session, profile, signal);
       } catch (error) {
         logError('Error in fetchUserProfile', error as Error);
+        if (!signal?.aborted) {
+          // Ensure we stop loading state even if profile fetch fails
+          // Attempt to preserve session if possible
+          const { data: { session } } = await supabase.auth.getSession();
+          updateAuthState(session, null, signal);
+        }
       }
     } else {
       // Usa profilo cached se disponibile
