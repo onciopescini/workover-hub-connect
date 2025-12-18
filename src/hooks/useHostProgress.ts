@@ -34,7 +34,7 @@ export const useHostProgress = (options?: {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       // Get spaces data
       const { data: spaces } = await supabase

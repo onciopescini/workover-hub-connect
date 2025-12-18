@@ -35,6 +35,25 @@ export function ProfileDashboard() {
 
 
   if (!authState.profile) {
+    if (authState.user) {
+      // Caso utente loggato ma senza profilo (es. appena registrato)
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center max-w-md p-6 bg-white rounded-lg shadow-sm border">
+            <User className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Profilo incompleto</h2>
+            <p className="text-gray-600 mb-6">
+              Per accedere alla tua dashboard e utilizzare tutte le funzionalità, devi completare il tuo profilo.
+            </p>
+            <Button onClick={() => navigate('/profile/edit')} className="w-full">
+              Completa Profilo
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Caso utente non loggato
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
