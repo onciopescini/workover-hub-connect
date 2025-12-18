@@ -1,40 +1,111 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Mail, Phone, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, Mail, Phone, CreditCard, CheckCircle, XCircle, Send } from "lucide-react";
 import { Profile } from "@/types/auth";
 import { useProfileRoleDisplay } from '@/hooks/profile/useProfileRoleDisplay';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface TrustBadgesSectionProps {
   profile: Profile;
+  email?: string | null;
   emailConfirmedAt?: string | null;
+  phoneConfirmedAt?: string | null;
 }
 
-export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSectionProps) {
+export function TrustBadgesSection({ profile, email, emailConfirmedAt, phoneConfirmedAt }: TrustBadgesSectionProps) {
   const { roleLabel, roleBadgeVariant, isHost } = useProfileRoleDisplay();
-  
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [resendCooldown]);
+
+  const handleResendEmail = async () => {
+    const targetEmail = email || profile.email;
+
+    if (!targetEmail) {
+      toast.error("Email non trovata");
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: targetEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Email inviata con successo!");
+      setResendCooldown(60);
+    } catch (error: any) {
+      console.error("Error resending verification email:", error);
+      toast.error(error.message || "Errore durante l'invio dell'email");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const verificationItems = [
     {
       key: 'email',
-      label: 'Email Verificata',
+      label: 'Email',
       verified: !!emailConfirmedAt,
       icon: Mail,
-      color: 'text-green-600'
+      color: 'text-green-600',
+      action: !emailConfirmedAt ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleResendEmail}
+          disabled={resendCooldown > 0 || isResending}
+          className="ml-2 h-7 text-xs"
+        >
+          {isResending ? (
+            "Invio in corso..."
+          ) : resendCooldown > 0 ? (
+            `Attendi ${resendCooldown}s`
+          ) : (
+            <>
+              <Send className="w-3 h-3 mr-1" />
+              Invia di nuovo
+            </>
+          )}
+        </Button>
+      ) : null
     },
     {
       key: 'phone',
-      label: 'Telefono Inserito',
-      verified: !!profile.phone,
+      label: 'Telefono',
+      verified: !!phoneConfirmedAt,
       icon: Phone,
-      color: 'text-blue-600'
+      color: 'text-blue-600',
+      action: null
     },
     ...(isHost ? [{
       key: 'stripe',
-      label: 'Pagamenti Configurati',
+      label: 'Pagamenti',
       verified: profile.stripe_connected || false,
       icon: CreditCard,
-      color: 'text-purple-600'
+      color: 'text-purple-600',
+      action: null
     }] : [])
   ];
 
@@ -67,15 +138,30 @@ export function TrustBadgesSection({ profile, emailConfirmedAt }: TrustBadgesSec
         {/* Verification Items */}
         <div className="space-y-3">
           {verificationItems.map((item) => (
-            <div key={item.key} className="flex items-center justify-between p-3 border rounded-lg">
-              <div className="flex items-center gap-3">
-                <item.icon className={`h-5 w-5 ${item.color}`} />
-                <span className="text-sm font-medium">{item.label}</span>
+            <div key={item.key} className="flex flex-col gap-2 p-3 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <item.icon className={`h-5 w-5 ${item.color}`} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </div>
+                {item.verified ? (
+                  <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Verificato
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+                    <XCircle className="w-3 h-3 mr-1" />
+                    Non Verificato
+                  </Badge>
+                )}
               </div>
-              {item.verified ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <XCircle className="h-5 w-5 text-gray-400" />
+
+              {/* Action Button for Unverified Items (like Email) */}
+              {!item.verified && item.action && (
+                <div className="flex justify-end pt-1">
+                  {item.action}
+                </div>
               )}
             </div>
           ))}

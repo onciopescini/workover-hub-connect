@@ -215,7 +215,12 @@ export function ProfileDashboard() {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Trust & Verification */}
-            <TrustBadgesSection profile={profile} emailConfirmedAt={authState.user?.email_confirmed_at || null} />
+            <TrustBadgesSection
+              profile={profile}
+              email={authState.user?.email}
+              emailConfirmedAt={authState.user?.email_confirmed_at || null}
+              phoneConfirmedAt={authState.user?.phone_confirmed_at || null}
+            />
             
             {/* Social Links */}
             <SocialLinksSection profile={profile} />
