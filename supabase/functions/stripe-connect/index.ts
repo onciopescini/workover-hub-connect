@@ -62,6 +62,24 @@ serve(async (req) => {
 
     ErrorHandler.logInfo('User authenticated', { userId: user.id });
 
+    // Verifica ruolo nella tabella user_roles
+    const { data: userRole, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('role', 'host')
+      .single();
+
+    if (roleError || !userRole) {
+      ErrorHandler.logError('User is not a host', roleError, {
+        operation: 'role_validation',
+        userId: user.id
+      });
+      throw new Error('Only hosts can connect Stripe accounts');
+    }
+
+    ErrorHandler.logInfo('Role validated via user_roles', { role: 'host' });
+
     // Ottieni dati del profilo
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -70,24 +88,14 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
-      ErrorHandler.logError('Profile not found', profileError, { 
+      ErrorHandler.logError('Host profile not found', profileError, {
         operation: 'fetch_profile',
         userId: user.id 
       });
-      throw new Error('Profile not found');
+      throw new Error('Host profile not found');
     }
 
-    ErrorHandler.logInfo('Profile loaded', { profileId: profile.id, role: profile.role });
-
-    // Verifica che sia un host
-    if (profile.role !== 'host') {
-      ErrorHandler.logError('User is not a host', null, { 
-        operation: 'role_validation',
-        userId: user.id,
-        role: profile.role 
-      });
-      throw new Error('Only hosts can connect Stripe accounts');
-    }
+    ErrorHandler.logInfo('Profile loaded', { profileId: profile.id });
 
     // Prendi i parametri dal corpo della richiesta come fallback
     const { return_url: fallbackReturnUrl, refresh_url: fallbackRefreshUrl } = await req.json().catch(() => ({}));
