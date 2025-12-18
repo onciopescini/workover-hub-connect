@@ -78,7 +78,7 @@ serve(async (req) => {
     // Get user profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_account_id, stripe_connected')
+      .select('stripe_account_id, stripe_connected, stripe_onboarding_status')
       .eq('id', user.id)
       .single();
 
@@ -150,37 +150,92 @@ serve(async (req) => {
     }
     
     const isConnected = account.charges_enabled && account.payouts_enabled;
+    let onboardingStatus = 'none';
+    if (isConnected) {
+        onboardingStatus = 'completed';
+    } else if (account.details_submitted) {
+        onboardingStatus = 'pending';
+    } else if (account.requirements?.currently_due?.length > 0) {
+        onboardingStatus = 'pending'; // or 'restricted'
+    }
+
     logStep("🔵 Account status calculated", {
       accountId: account.id,
       charges_enabled: account.charges_enabled,
       payouts_enabled: account.payouts_enabled,
       isConnected,
-      currentDbStatus: profile.stripe_connected
+      onboardingStatus,
+      currentDbStatus: profile.stripe_connected,
+      currentDbOnboarding: profile.stripe_onboarding_status
     });
 
-    // Update database if status has changed
-    if (profile.stripe_connected !== isConnected) {
-      logStep("🔵 Status change detected, updating database", { 
-        oldStatus: profile.stripe_connected, 
-        newStatus: isConnected 
-      });
-
-      const { error: updateError } = await supabaseAdmin
+    // Update profiles table (Summary)
+    // We update if status changed OR if requested to verify (which is implied by calling this function)
+    // To be robust, we always update the latest status to ensure consistency
+    const { error: updateProfileError } = await supabaseAdmin
         .from('profiles')
         .update({ 
           stripe_connected: isConnected,
+          stripe_onboarding_status: onboardingStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
 
-      if (updateError) {
-        logStep("🔴 Database update failed", { error: updateError.message });
-        throw updateError;
-      } else {
-        logStep("✅ Database updated successfully");
-      }
+    if (updateProfileError) {
+        logStep("🔴 Profile update failed", { error: updateProfileError.message });
+        throw updateProfileError;
     } else {
-      logStep("🔵 Status unchanged, no update needed");
+        logStep("✅ Profile updated successfully");
+    }
+
+    // Update stripe_accounts table (Detailed)
+    // First, check if record exists to decide on insert vs update (or just use upsert)
+    // We assume user_id is unique enough for our purposes or we query by user_id
+
+    // We need to fetch the existing record id if we want to be safe, or upsert on user_id if unique constraint exists.
+    // Assuming 'user_id' is unique in stripe_accounts or we can find it.
+
+    // Let's try to find existing by user_id
+    const { data: existingAccount } = await supabaseAdmin
+        .from('stripe_accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    const stripeAccountData = {
+        user_id: user.id,
+        stripe_account_id: account.id,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        onboarding_completed: account.details_submitted, // using details_submitted as proxy for onboarding step completion
+        account_status: account.charges_enabled ? 'active' : 'pending',
+        requirements_due: account.requirements,
+        metadata: account.metadata,
+        country_code: account.country,
+        currency: account.default_currency,
+        updated_at: new Date().toISOString()
+    };
+
+    let stripeAccountError;
+    if (existingAccount) {
+        const { error } = await supabaseAdmin
+            .from('stripe_accounts')
+            .update(stripeAccountData)
+            .eq('id', existingAccount.id);
+        stripeAccountError = error;
+    } else {
+        const { error } = await supabaseAdmin
+            .from('stripe_accounts')
+            .insert([{ ...stripeAccountData, created_at: new Date().toISOString() }]);
+        stripeAccountError = error;
+    }
+
+    if (stripeAccountError) {
+         logStep("🔴 stripe_accounts update/insert failed", { error: stripeAccountError.message });
+         // We don't throw here to avoid failing the whole request if profiles was updated successfully,
+         // but we log it.
+    } else {
+         logStep("✅ stripe_accounts updated/inserted successfully");
     }
 
     const response = {
@@ -189,9 +244,10 @@ serve(async (req) => {
       charges_enabled: account.charges_enabled,
       payouts_enabled: account.payouts_enabled,
       details_submitted: account.details_submitted,
-      updated: profile.stripe_connected !== isConnected,
+      updated: true, // We always attempt update now
       country: account.country,
-      business_type: account.business_type
+      business_type: account.business_type,
+      onboarding_status: onboardingStatus
     };
 
     logStep("✅ Function completed successfully", response);
