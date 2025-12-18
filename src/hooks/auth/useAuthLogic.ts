@@ -104,8 +104,16 @@ export const useAuthLogic = () => {
           if (roles.length === 0) {
             debug('User has no roles, skipping profile creation to allow onboarding redirect');
             if (!signal?.aborted) {
-              // Update state with empty roles, which triggers AuthProtected to redirect to onboarding
-              updateAuthState(session, null, signal);
+              // DIRECT STATE UPDATE: Force isLoading to false immediately
+              // This prevents the infinite spinner by bypassing any async overhead in updateAuthState
+              setAuthState({
+                user: session.user,
+                session: session,
+                profile: null,
+                roles: [],
+                isLoading: false,
+                isAuthenticated: true
+              });
             }
             return;
           }
