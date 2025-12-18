@@ -36,6 +36,20 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
       return { action: 'loading' };
     }
 
+    // FIX: Limbo User Check
+    // Se l'utente è autenticato ma non ha ruoli, reindirizzalo forzatamente all'onboarding
+    // Questo previene loop o accessi a dashboard senza ruolo
+    if (
+      authState.roles.length === 0 &&
+      location.pathname !== '/onboarding'
+    ) {
+      return {
+        action: 'redirect',
+        to: '/onboarding',
+        state: { from: location.pathname }
+      };
+    }
+
     // Controllo onboarding solo se richiesto
     if (
       requireOnboarding &&
@@ -56,6 +70,7 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
     authState.isLoading, 
     authState.isAuthenticated, 
     authState.profile, 
+    authState.roles,
     requireOnboarding, 
     location.pathname, 
     isInitialCheck
