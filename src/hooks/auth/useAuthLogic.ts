@@ -98,6 +98,18 @@ export const useAuthLogic = () => {
 
         // Se il profilo non esiste, prova a crearlo tramite edge function e ricarica
         if (!profile && session?.user) {
+          // Verify roles first - prevent premature profile creation for users without role
+          const roles = await fetchUserRoles(session.user.id);
+
+          if (roles.length === 0) {
+            debug('User has no roles, skipping profile creation to allow onboarding redirect');
+            if (!signal?.aborted) {
+              // Update state with empty roles, which triggers AuthProtected to redirect to onboarding
+              updateAuthState(session, null, signal);
+            }
+            return;
+          }
+
           try {
             const firstName = (session.user.user_metadata?.['given_name']
               || session.user.user_metadata?.['first_name']

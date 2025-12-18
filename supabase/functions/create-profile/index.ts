@@ -57,6 +57,30 @@ serve(async (req) => {
       throw new Error('Missing required fields: user_id, email');
     }
 
+    // CRITICAL FIX: Verify that the user has a role assigned in user_roles.
+    // If user_roles is empty, we must NOT create a profile because it would fail
+    // due to database constraints/triggers or create an invalid "limbo" state.
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user_id);
+
+    if (rolesError) {
+      throw rolesError;
+    }
+
+    // If no roles found, return 400 Bad Request to stop the process gracefully
+    if (!userRoles || userRoles.length === 0) {
+      ErrorHandler.logWarning('Attempted to create profile for user without roles', { user_id, email });
+      return new Response(
+        JSON.stringify({ error: 'Role missing' }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Provide fallbacks for first_name and last_name
     const finalFirstName = first_name || email.split('@')[0];
     const finalLastName = last_name || '';
