@@ -37,7 +37,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   
   const confirmationType = space.confirmation_type || 'host_approval';
   const isInstantBooking = confirmationType === 'instant';
-  const canCheckout = Boolean(space?.host_stripe_account_id);
+  const canCheckout = Boolean(space?.host_stripe_account_id) && Boolean(space?.host_stripe_connected);
   
   debug('BookingCard rendered', {
     spaceId: space.id,

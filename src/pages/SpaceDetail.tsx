@@ -1,6 +1,6 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { Space } from '@/types/space';
@@ -12,6 +12,7 @@ const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
 
 const SpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
   
   sreLogger.debug('SpaceDetail - ID from URL', { spaceId: id, component: 'SpaceDetail' });
@@ -204,6 +205,50 @@ const SpaceDetail = () => {
     hasPreciseLocation: !!preciseLocation,
     showingCityOnly: !preciseLocation
   });
+
+  // Realtime subscription for host profile updates (Stripe status)
+  useEffect(() => {
+    if (!space?.host_id) return;
+
+    const channel = supabase
+      .channel(`host-updates-${space.host_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${space.host_id}`
+        },
+        (payload: any) => {
+          sreLogger.debug('Realtime profile update received', { payload });
+          const newStripeConnected = payload.new.stripe_connected;
+          const newStripeAccountId = payload.new.stripe_account_id;
+
+          // Update the query cache
+          queryClient.setQueryData(['space', id], (oldData: any) => {
+            if (!oldData) return oldData;
+
+            return {
+              ...oldData,
+              host_stripe_connected: newStripeConnected,
+              host_stripe_account_id: newStripeAccountId,
+              // Update nested host object as well
+              host: oldData.host ? {
+                ...oldData.host,
+                stripe_connected: newStripeConnected,
+                stripe_account_id: newStripeAccountId
+              } : oldData.host
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [space?.host_id, id, queryClient]);
 
   // Loading state con debug info
   if (spaceLoading) {
