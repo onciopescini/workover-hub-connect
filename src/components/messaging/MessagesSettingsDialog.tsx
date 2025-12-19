@@ -43,13 +43,13 @@ export const MessagesSettingsDialog = ({ open, onOpenChange }: MessagesSettingsD
 
       if (profileError) throw profileError;
       
-      // Check if user has 'user' role (coworker)
+      // Check if user has 'coworker' role
       const { data: rolesData } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', authState.user?.id || '');
       
-      const isCoworkerRole = !rolesData || rolesData.length === 0 || rolesData.some(r => r.role === 'user');
+      const isCoworkerRole = !rolesData || rolesData.length === 0 || rolesData.some(r => r.role === 'coworker');
       
       setIsCoworker(isCoworkerRole);
       setNetworkingNotifications(profileData.networking_enabled || false);

@@ -59,7 +59,7 @@ const Onboarding = () => {
        }
        // If user/coworker, we assume they want to complete profile
        setCurrentStep(1);
-       setFormData(prev => ({ ...prev, role: 'user' }));
+       setFormData(prev => ({ ...prev, role: 'coworker' }));
     } else {
        setCurrentStep(0);
     }
@@ -126,7 +126,7 @@ const Onboarding = () => {
       // Upsert profile.
       // For Coworker (user), we set onboarding_completed = true to skip the wizard.
       // For Host, we leave it false (or true, but they go to host dashboard anyway).
-      const onboardingCompleted = selectedRole === 'user';
+      const onboardingCompleted = selectedRole === 'coworker';
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -345,7 +345,7 @@ const Onboarding = () => {
 
               <Card
                 className="cursor-pointer border-2 hover:border-green-500 hover:bg-green-50 transition-all group h-full"
-                onClick={() => handleRoleSelection('user')}
+                onClick={() => handleRoleSelection('coworker')}
               >
                 <CardContent className="p-6 text-center flex flex-col items-center h-full justify-center space-y-4">
                   <div className="p-4 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors">

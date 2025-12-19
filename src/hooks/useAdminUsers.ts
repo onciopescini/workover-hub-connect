@@ -40,7 +40,7 @@ export const useAdminUsers = () => {
         // Merge profiles con system_roles and assign role from user_roles
         const usersWithRoles = profilesData.map(profile => {
           const userRoles = (rolesData as any)?.filter((r: any) => r.user_id === profile.id) || [];
-          const primaryRole = userRoles[0]?.role || 'user';
+          const primaryRole = userRoles[0]?.role || 'coworker';
           
           return {
             ...profile,

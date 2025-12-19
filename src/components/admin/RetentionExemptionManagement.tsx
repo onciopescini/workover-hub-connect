@@ -50,7 +50,7 @@ export const RetentionExemptionManagement = () => {
             .select('role')
             .eq('user_id', profile.id);
           
-          const primaryRole = rolesData?.[0]?.role || 'user';
+          const primaryRole = rolesData?.[0]?.role || 'coworker';
           return { ...profile, role: primaryRole };
         })
       );
