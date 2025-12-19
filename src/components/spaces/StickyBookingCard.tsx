@@ -42,7 +42,7 @@ export const StickyBookingCard: React.FC<StickyBookingCardProps> = ({
   const isInstantBooking = confirmationType === 'instant';
   
   // Stripe account check
-  const canCheckout = Boolean(space?.host_stripe_account_id);
+  const canCheckout = Boolean(space?.host_stripe_account_id) && Boolean(space?.host_stripe_connected);
   
   debug('Space confirmation type validation', {
     operation: 'validate_confirmation_type',
