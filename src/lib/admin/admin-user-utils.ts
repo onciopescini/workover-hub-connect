@@ -54,7 +54,7 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
       const userRolesList = allRoles?.filter(r => r.user_id === user.id).map(r => r.role) || [];
       return {
         ...user,
-        role: userRolesList[0] || 'user', // Primary role for backward compatibility
+        role: userRolesList[0] || 'coworker', // Primary role for backward compatibility
         roles: userRolesList
       };
     });
