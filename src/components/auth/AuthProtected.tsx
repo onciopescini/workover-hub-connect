@@ -33,6 +33,14 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
 
     // Autenticato ma profilo non caricato ancora
     if (!authState.profile) {
+      // SPECIAL CASE: Onboarding
+      // Se l'utente è sulla pagina di onboarding, permettiamo l'accesso anche senza profilo.
+      // Questo è cruciale per i "Limbo Users" (utenti autenticati ma senza record in profiles)
+      // che devono poter accedere alla pagina per creare il loro profilo.
+      if (location.pathname === '/onboarding') {
+        return { action: 'render' };
+      }
+
       return { action: 'loading' };
     }
 
@@ -88,6 +96,9 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
   // Timeout per evitare spinner infiniti se il profilo non si carica
   useEffect(() => {
     if (authState.isAuthenticated && !authState.profile && !authState.isLoading) {
+      // Se siamo in onboarding, non mostrare timeout error, perché è previsto che il profilo manchi
+      if (location.pathname === '/onboarding') return undefined;
+
       const timeout = setTimeout(() => {
         setProfileLoadTimeout(true);
       }, 10000); // 10 secondi timeout
@@ -97,7 +108,7 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
       setProfileLoadTimeout(false);
       return undefined;
     }
-  }, [authState.isAuthenticated, authState.profile, authState.isLoading]);
+  }, [authState.isAuthenticated, authState.profile, authState.isLoading, location.pathname]);
 
   // Early return ottimizzato
   if (navigationDecision.action === 'loading') {
