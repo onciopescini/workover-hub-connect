@@ -101,7 +101,7 @@ const Onboarding = () => {
     if (!authState.user) return;
 
     try {
-      // Immediate role assignment
+      // 1. Immediate role assignment
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
@@ -116,17 +116,45 @@ const Onboarding = () => {
          }
       }
 
-      // Refresh local auth state to reflect the new role
+      // 2. Immediate profile creation (to ensure subsequent logic works)
+      // Extract metadata or use fallbacks
+      const metadata = authState.user.user_metadata || {};
+      const firstName = metadata.first_name || metadata.full_name?.split(' ')[0] || '';
+      const lastName = metadata.last_name || metadata.full_name?.split(' ').slice(1).join(' ') || '';
+      const email = authState.user.email;
+
+      // Upsert profile.
+      // For Coworker (user), we set onboarding_completed = true to skip the wizard.
+      // For Host, we leave it false (or true, but they go to host dashboard anyway).
+      const onboardingCompleted = selectedRole === 'user';
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authState.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          email: email, // Assuming email column exists in profiles or is handled by trigger, but explicit insert is safer if allowed
+          onboarding_completed: onboardingCompleted,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+
+      if (profileError) {
+        sreLogger.error("Failed to upsert profile during role selection", { userId: authState.user.id }, profileError);
+        // Continue anyway as the trigger might have created it
+      }
+
+      // 3. Refresh local auth state to reflect the new role and profile
       await refreshProfile();
 
+      // 4. Redirect based on role
       if (selectedRole === 'host') {
         toast.success("Account Host creato! Benvenuto nella dashboard.");
         navigate('/host/dashboard');
       } else {
-        // User/Coworker -> Continue to wizard
-        setFormData(prev => ({ ...prev, role: selectedRole }));
-        setCurrentStep(1);
-        toast.success("Profilo creato! Ora parlaci un po' di te.");
+        // Coworker -> Redirect to Home Page immediately
+        toast.success("Benvenuto! Inizia a cercare il tuo spazio.");
+        navigate('/');
       }
 
     } catch (error) {

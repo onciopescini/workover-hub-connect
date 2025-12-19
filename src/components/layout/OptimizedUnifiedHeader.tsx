@@ -33,6 +33,12 @@ export const OptimizedUnifiedHeader = () => {
       ];
     }
 
+    // Limbo user check: authenticated but no roles
+    // We check roles directly from authState to avoid dependency issues
+    if (!authState.roles || authState.roles.length === 0) {
+      return []; // Hide all navigation for Limbo users
+    }
+
     const baseItems = [
       { name: 'Spazi', href: '/spaces', icon: MapPin },
       
@@ -62,9 +68,27 @@ export const OptimizedUnifiedHeader = () => {
   const userInitials = useMemo(() => {
     const firstName = authState.profile?.first_name;
     const lastName = authState.profile?.last_name;
-    if (!firstName || !lastName) return 'U';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  }, [authState.profile?.first_name, authState.profile?.last_name]);
+
+    if (firstName && lastName) {
+      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    }
+
+    // Fallback if profile is missing (Limbo user)
+    if (authState.user?.email) {
+      return authState.user.email.charAt(0).toUpperCase();
+    }
+
+    return 'U';
+  }, [authState.profile?.first_name, authState.profile?.last_name, authState.user?.email]);
+
+  // Display Name logic
+  const displayName = useMemo(() => {
+    if (authState.profile?.first_name) {
+      return `${authState.profile.first_name} ${authState.profile.last_name || ''}`;
+    }
+    // Fallback: local part of email or 'Utente'
+    return authState.user?.email?.split('@')[0] || 'Utente';
+  }, [authState.profile, authState.user]);
 
   // Ottimizzata funzione isActivePath
   const isActivePath = useCallback((path: string) => {
@@ -132,16 +156,16 @@ export const OptimizedUnifiedHeader = () => {
 
           {/* Auth Section */}
           <div className="flex items-center space-x-4">
-            {authState.isAuthenticated && authState.profile ? (
+            {authState.isAuthenticated ? (
               <>
-                <NotificationIcon />
+                {authState.roles && authState.roles.length > 0 && <NotificationIcon />}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                        <Avatar className="h-8 w-8">
                          <AvatarImage 
-                           src={authState.profile.profile_photo_url ?? undefined} 
-                           alt={authState.profile.first_name ?? 'User'} 
+                           src={authState.profile?.profile_photo_url ?? undefined}
+                           alt={displayName}
                          />
                          <AvatarFallback>
                            {userInitials}
@@ -153,8 +177,8 @@ export const OptimizedUnifiedHeader = () => {
                     <div className="flex items-center justify-start gap-2 p-2">
                        <Avatar className="h-8 w-8">
                          <AvatarImage 
-                           src={authState.profile.profile_photo_url ?? undefined} 
-                           alt={authState.profile.first_name ?? 'User'} 
+                           src={authState.profile?.profile_photo_url ?? undefined}
+                           alt={displayName}
                          />
                          <AvatarFallback>
                            {userInitials}
@@ -162,15 +186,16 @@ export const OptimizedUnifiedHeader = () => {
                        </Avatar>
                       <div className="flex flex-col space-y-1 leading-none">
                         <p className="font-medium text-sm">
-                          {authState.profile.first_name} {authState.profile.last_name}
+                          {displayName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {authState.profile.job_title}
+                          {authState.profile?.job_title || authState.user?.email}
                         </p>
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {authState.profile && !authState.profile.onboarding_completed && !isAdmin && (
+                    {/* Show onboarding link if profile exists but incomplete, OR if no roles (Limbo) */}
+                    {((authState.profile && !authState.profile.onboarding_completed) || (!authState.roles || authState.roles.length === 0)) && !isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link to="/onboarding" className="flex items-center">
                           <CheckCircle className="mr-2 h-4 w-4" />
