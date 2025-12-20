@@ -48,13 +48,14 @@ export const useNotificationPreferences = () => {
       if (missingTypes.length > 0) {
         const { error: insertError } = await supabase
           .from('notification_preferences')
-          .insert(
+          .upsert(
             missingTypes.map(t => ({
               user_id: authState.user!.id,
               notification_type: t.type,
               enabled: true,
               channel: 'in_app' as const
-            }))
+            })),
+            { onConflict: 'user_id,notification_type' }
           );
 
         if (insertError) throw insertError;

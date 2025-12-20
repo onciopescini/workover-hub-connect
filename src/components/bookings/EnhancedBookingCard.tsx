@@ -39,8 +39,8 @@ export const EnhancedBookingCard = ({
       };
     } else {
       return {
-        id: booking.space?.host_id || '',
-        name: booking.space?.title || "Spazio",
+        id: booking.workspaces?.host_id || '',
+        name: booking.workspaces?.name || "Spazio",
         photo: null,
         role: "Host"
       };
@@ -92,7 +92,7 @@ export const EnhancedBookingCard = ({
 
   const getBookingStatusInfo = () => {
     if (booking.status === 'pending') {
-      if (booking.space?.confirmation_type === 'instant') {
+      if (booking.workspaces?.confirmation_type === 'instant') {
         return {
           icon: <Euro className="w-4 h-4" />,
           text: "In attesa di pagamento",
@@ -124,7 +124,7 @@ export const EnhancedBookingCard = ({
     );
     
     if (booking.status === 'pending') {
-      if (booking.space?.confirmation_type === 'instant') {
+      if (booking.workspaces?.confirmation_type === 'instant') {
         // Enable chat for instant bookings if payment is completed
         if (hasCompletedPayment) {
           return {
@@ -183,8 +183,8 @@ export const EnhancedBookingCard = ({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              {booking.space?.title || 'Spazio senza titolo'}
-              {booking.space?.confirmation_type === 'instant' && (
+              {booking.workspaces?.name || 'Spazio senza titolo'}
+              {booking.workspaces?.confirmation_type === 'instant' && (
                 <Badge variant="secondary" className="bg-green-100 text-green-800">
                   <Shield className="w-3 h-3 mr-1" />
                   Immediata
@@ -193,7 +193,7 @@ export const EnhancedBookingCard = ({
             </CardTitle>
             <div className="flex items-center text-sm text-gray-600 mt-1">
               <MapPin className="w-4 h-4 mr-1" />
-              {booking.space?.address || 'Indirizzo non disponibile'}
+              {booking.workspaces?.address || 'Indirizzo non disponibile'}
             </div>
             {statusInfo && (
               <div className={`flex items-center text-sm mt-1 ${statusInfo.color}`}>
@@ -269,7 +269,7 @@ export const EnhancedBookingCard = ({
                   booking={booking}
                   reviewType="space"
                   targetId={booking.space_id}
-                  targetName={booking.space?.title || "Spazio"}
+                  targetName={booking.workspaces?.name || "Spazio"}
                 />
               )
             )

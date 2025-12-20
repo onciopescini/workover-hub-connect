@@ -45,9 +45,9 @@ export type BookingWithDetails = {
   approval_reminder_sent?: boolean | null;
   payment_reminder_sent?: boolean | null;
   service_completed_at?: string | null;
-  space: {
+  workspaces: {
     id: string;
-    title: string;
+    name: string;
     address: string;
     photos: string[];
     host_id: string;

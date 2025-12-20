@@ -18,11 +18,11 @@ export const BookingCardHeader = ({ booking, status }: BookingCardHeaderProps) =
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <CardTitle className="text-lg font-semibold text-gray-900">
-            {booking.space?.title || 'Spazio senza titolo'}
+            {booking.workspaces?.name || 'Spazio senza titolo'}
           </CardTitle>
           <div className="flex items-center text-sm text-gray-600 mt-1">
             <MapPin className="w-4 h-4 mr-1" />
-            {booking.space?.address || 'Indirizzo non disponibile'}
+            {booking.workspaces?.address || 'Indirizzo non disponibile'}
           </div>
         </div>
         <div className="flex gap-2 items-center">

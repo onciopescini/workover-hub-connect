@@ -34,7 +34,7 @@ export const CompactBookingCard: React.FC<CompactBookingCardProps> = ({
         photo: booking.coworker?.profile_photo_url 
       }
     : { 
-        name: booking.space?.title || 'Host',
+        name: booking.workspaces?.name || 'Host',
         photo: null 
       };
 
@@ -53,7 +53,7 @@ export const CompactBookingCard: React.FC<CompactBookingCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <h3 className="font-semibold text-sm truncate">
-              {userRole === 'host' ? otherUser.name : booking.space?.title}
+              {userRole === 'host' ? otherUser.name : booking.workspaces?.name}
             </h3>
             <Badge 
               variant={BOOKING_STATUS_COLORS[booking.status] as any}
@@ -75,10 +75,10 @@ export const CompactBookingCard: React.FC<CompactBookingCardProps> = ({
                 {booking.start_time} - {booking.end_time}
               </div>
             )}
-            {userRole === 'coworker' && booking.space?.address && (
+            {userRole === 'coworker' && booking.workspaces?.address && (
               <div className="flex items-center gap-1 truncate">
                 <MapPin className="h-3 w-3" />
-                <span className="truncate">{booking.space.address}</span>
+                <span className="truncate">{booking.workspaces.address}</span>
               </div>
             )}
           </div>
@@ -113,7 +113,7 @@ export const CompactBookingCard: React.FC<CompactBookingCardProps> = ({
                   booking={booking}
                   reviewType="space"
                   targetId={booking.space_id}
-                  targetName={booking.space?.title || "Spazio"}
+                  targetName={booking.workspaces?.name || "Spazio"}
                 />
               )
             )

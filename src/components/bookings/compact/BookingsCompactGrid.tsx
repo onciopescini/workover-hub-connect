@@ -43,7 +43,7 @@ export const BookingsCompactGrid: React.FC<BookingsCompactGridProps> = ({
           booking={booking}
           userRole={getUserRole(booking)}
           isChatEnabled={isChatEnabled(booking)}
-          onOpenMessage={() => onOpenMessageDialog(booking.id, booking.space?.title || 'Spazio')}
+          onOpenMessage={() => onOpenMessageDialog(booking.id, booking.workspaces?.name || 'Spazio')}
           onOpenCancel={() => onOpenCancelDialog(booking)}
         />
       ))}
