@@ -141,7 +141,7 @@ export function BookingsList() {
                       <TableCell>
                         {booking.coworker?.first_name} {booking.coworker?.last_name}
                       </TableCell>
-                      <TableCell>{booking.space?.title || 'N/A'}</TableCell>
+                      <TableCell>{booking.workspaces?.name || 'N/A'}</TableCell>
                       <TableCell>{getBookingStatusBadge(booking.status)}</TableCell>
                       <TableCell>
                         {booking.payments?.[0] 

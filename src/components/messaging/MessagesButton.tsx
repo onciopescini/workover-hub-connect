@@ -12,9 +12,9 @@ interface MessagesButtonProps {
     id: string;
     space_id: string;
     user_id: string;
-    space?: {
+    workspaces?: {
       host_id: string;
-      title?: string;
+      name?: string;
     };
   };
   variant?: "default" | "outline" | "secondary" | "ghost";
@@ -40,7 +40,7 @@ export function MessagesButton({
     setIsLoading(true);
     try {
       // Determine host and coworker IDs
-      const hostId = booking.space?.host_id;
+      const hostId = booking.workspaces?.host_id;
       const coworkerId = booking.user_id;
       
       if (!hostId || !coworkerId) {

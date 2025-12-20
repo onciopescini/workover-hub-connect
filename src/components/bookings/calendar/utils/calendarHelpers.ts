@@ -55,7 +55,7 @@ export const getCalendarDays = (year: number, month: number, bookingsByDate: Boo
  * Formatta il badge di una prenotazione per la visualizzazione compatta
  */
 export const formatBookingBadge = (booking: BookingWithDetails) => {
-  const spaceTitle = booking.space?.title || 'Spazio';
+  const spaceTitle = booking.workspaces?.name || 'Spazio';
   const abbreviatedTitle = spaceTitle.length > 12 ? `${spaceTitle.substring(0, 12)}...` : spaceTitle;
   
   const startTime = booking.start_time ? booking.start_time.substring(0, 5) : '';

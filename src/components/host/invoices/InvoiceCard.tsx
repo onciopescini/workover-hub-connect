@@ -27,7 +27,11 @@ export function InvoiceCard({ payment }: InvoiceCardProps) {
   
   const booking = payment.booking;
   const coworker = Array.isArray(booking?.coworker) ? booking.coworker[0] : booking?.coworker;
-  const space = Array.isArray(booking?.space) ? booking.space[0] : booking?.space;
+
+  // Handle space/workspaces property mismatch
+  const workspaceData = (booking as any).workspaces || (booking as any).space;
+  const space = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
+
   // Fiscal data would come from booking metadata when available
   const fiscalData = undefined as CoworkerFiscalData | undefined;
 
@@ -50,7 +54,7 @@ ${fiscalData?.sdi_code ? `Codice SDI: ${fiscalData.sdi_code}` : ''}
 Indirizzo: ${fiscalData?.billing_address}, ${fiscalData?.billing_city} (${fiscalData?.billing_province}) ${fiscalData?.billing_postal_code}
 
 Servizio Erogato:
-Spazio: ${space?.title}
+Spazio: ${space?.name || space?.title}
 Data: ${booking?.booking_date ? format(parseISO(booking.booking_date), 'dd MMMM yyyy', { locale: it }) : ''}
 Orario: ${booking?.start_time ? format(parseISO(booking.start_time), 'HH:mm') : ''} - ${booking?.end_time ? format(parseISO(booking.end_time), 'HH:mm') : ''}
 
@@ -76,7 +80,7 @@ Scadenza: ${deadline ? format(deadline, 'dd MMMM yyyy', { locale: it }) : 'N/A'}
           <div>
             <CardTitle>Fattura #{payment.id.slice(0, 8)}</CardTitle>
             <CardDescription>
-              {space?.title} - {booking?.booking_date ? format(parseISO(booking.booking_date), 'dd MMMM yyyy', { locale: it }) : 'Data non disponibile'}
+              {space?.name || space?.title} - {booking?.booking_date ? format(parseISO(booking.booking_date), 'dd MMMM yyyy', { locale: it }) : 'Data non disponibile'}
             </CardDescription>
           </div>
           <Badge variant={isExpired ? 'destructive' : 'default'}>

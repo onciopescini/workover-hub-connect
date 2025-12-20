@@ -22,8 +22,8 @@ export const UserBookingsHistory: React.FC<UserBookingsHistoryProps> = ({ userId
           end_time,
           status,
           guests_count,
-          spaces (
-            title,
+          workspaces (
+            name,
             city
           )
         `)
@@ -74,7 +74,7 @@ export const UserBookingsHistory: React.FC<UserBookingsHistoryProps> = ({ userId
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium text-sm">
-                      {(booking.spaces as any)?.title || 'Spazio sconosciuto'}
+                      {(booking.workspaces as any)?.name || 'Spazio sconosciuto'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

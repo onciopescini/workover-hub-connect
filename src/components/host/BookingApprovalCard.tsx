@@ -50,10 +50,10 @@ export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprov
           user_id: booking.user_id,
           type: 'booking',
           title: 'Prenotazione approvata!',
-          content: `La tua prenotazione presso "${booking.space?.title}" è stata approvata dall'host. Completa il pagamento entro 2h per confermare!`,
+          content: `La tua prenotazione presso "${booking.workspaces?.name}" è stata approvata dall'host. Completa il pagamento entro 2h per confermare!`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.space?.title,
+            space_title: booking.workspaces?.name,
             action: 'approved',
             payment_deadline: paymentDeadline.toISOString()
           }
@@ -97,10 +97,10 @@ export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprov
           user_id: booking.user_id,
           type: 'booking',
           title: 'Prenotazione rifiutata',
-          content: `La tua richiesta di prenotazione presso "${booking.space?.title}" è stata rifiutata dall'host.`,
+          content: `La tua richiesta di prenotazione presso "${booking.workspaces?.name}" è stata rifiutata dall'host.`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.space?.title,
+            space_title: booking.workspaces?.name,
             action: 'rejected'
           }
         });
@@ -128,11 +128,11 @@ export const BookingApprovalCard = ({ booking, onApprovalUpdate }: BookingApprov
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <CardTitle className="text-lg font-semibold text-gray-900">
-                {booking.space?.title || 'Spazio senza titolo'}
+                {booking.workspaces?.name || 'Spazio senza titolo'}
               </CardTitle>
               <div className="flex items-center text-sm text-gray-600 mt-1">
                 <MapPin className="w-4 h-4 mr-1" />
-                {booking.space?.address || 'Indirizzo non disponibile'}
+                {booking.workspaces?.address || 'Indirizzo non disponibile'}
               </div>
             </div>
             <div className="flex gap-2">

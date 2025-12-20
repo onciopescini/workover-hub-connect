@@ -9,8 +9,8 @@ import { it } from 'date-fns/locale';
 interface PayoutQueueItem {
   id: string;
   booking_date: string;
-  spaces: {
-    title: string;
+  workspaces: {
+    name: string;
     host_id: string;
   };
   payments: {
@@ -30,7 +30,7 @@ export const PayoutQueueWidget = () => {
         .select(`
           id,
           booking_date,
-          spaces(title, host_id),
+          workspaces(name, host_id),
           payments(host_amount, payment_status)
         `)
         .eq('status', 'confirmed')
@@ -38,7 +38,7 @@ export const PayoutQueueWidget = () => {
         .limit(10);
 
       if (error) throw error;
-      return data as PayoutQueueItem[];
+      return data as any[];
     },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -72,13 +72,13 @@ export const PayoutQueueWidget = () => {
             {payoutQueue.map((booking) => (
               <div key={booking.id} className="flex justify-between items-center border-b pb-2 last:border-0">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{booking.spaces.title}</p>
+                  <p className="font-medium text-sm">{booking.workspaces?.name}</p>
                   <p className="text-xs text-muted-foreground">
                     Data: {new Date(booking.booking_date).toLocaleDateString('it-IT')}
                   </p>
                 </div>
                 <Badge variant="outline">
-                  €{booking.payments[0]?.host_amount.toFixed(2)}
+                  €{booking.payments[0]?.host_amount?.toFixed(2) || '0.00'}
                 </Badge>
               </div>
             ))}
@@ -92,4 +92,4 @@ export const PayoutQueueWidget = () => {
       </CardContent>
     </Card>
   );
-};
+}

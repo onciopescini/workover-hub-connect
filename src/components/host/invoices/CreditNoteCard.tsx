@@ -17,7 +17,10 @@ export function CreditNoteCard({ payment }: CreditNoteCardProps) {
   
   const booking = payment.booking;
   const coworker = Array.isArray(booking?.coworker) ? booking.coworker[0] : booking?.coworker;
-  const space = Array.isArray(booking?.space) ? booking.space[0] : booking?.space;
+
+  // Handle space/workspaces property mismatch
+  const workspaceData = (booking as any).workspaces || (booking as any).space;
+  const space = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
 
   const deadline = payment.credit_note_deadline ? new Date(payment.credit_note_deadline) : null;
   const daysRemaining = deadline ? differenceInDays(deadline, new Date()) : 0;
@@ -30,7 +33,7 @@ export function CreditNoteCard({ payment }: CreditNoteCardProps) {
           <div>
             <CardTitle>Nota di Credito #{payment.id.slice(0, 8)}</CardTitle>
             <CardDescription>
-              {space?.title} - {booking?.booking_date ? format(parseISO(booking.booking_date), 'dd MMMM yyyy', { locale: it }) : 'Data non disponibile'}
+              {space?.name || space?.title} - {booking?.booking_date ? format(parseISO(booking.booking_date), 'dd MMMM yyyy', { locale: it }) : 'Data non disponibile'}
             </CardDescription>
           </div>
           <Badge variant={isExpired ? 'destructive' : 'default'}>

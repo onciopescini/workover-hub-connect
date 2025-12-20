@@ -24,7 +24,7 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
         .from('bookings')
         .select(`
           *,
-          space:spaces(id, title, address, host_id, price_per_day),
+          workspaces (id, name, address, host_id, price_per_day),
           coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url),
           payments(id, amount, payment_status, method, receipt_url, stripe_session_id, created_at)
         `)
@@ -36,7 +36,8 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
       // Transform coworker from array to single object
       return {
         ...data,
-        coworker: Array.isArray(data.coworker) ? data.coworker[0] : data.coworker
+        coworker: Array.isArray(data.coworker) ? data.coworker[0] : data.coworker,
+        workspaces: Array.isArray((data as any).workspaces) ? (data as any).workspaces[0] : (data as any).workspaces
       };
     },
     enabled: open
@@ -130,8 +131,8 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p className="font-medium">{booking.space.title}</p>
-                <p className="text-sm text-muted-foreground">{booking.space.address}</p>
+                <p className="font-medium">{booking.workspaces?.name}</p>
+                <p className="text-sm text-muted-foreground">{booking.workspaces?.address}</p>
               </CardContent>
             </Card>
           </div>
