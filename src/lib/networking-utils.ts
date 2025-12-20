@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Connection, ConnectionSuggestion, PrivateChat, PrivateMessage } from "@/types/networking";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
+import { getOrCreateConversation, sendMessageToConversation } from '@/lib/conversations';
 
 // Fetch user connections
 export const getUserConnections = async (): Promise<Connection[]> => {
@@ -266,58 +267,38 @@ export const getUserPrivateChats = async (): Promise<PrivateChat[]> => {
 // Alias for backward compatibility - export the same function with the expected name
 export const fetchUserPrivateChats = getUserPrivateChats;
 
-// Create or get private chat
+// Create or get private chat (Unified Migration)
 export const createOrGetPrivateChat = async (otherUserId: string): Promise<string | null> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return null;
 
-    const userId = user.user.id;
+    const conversationId = await getOrCreateConversation({
+        hostId: otherUserId,
+        coworkerId: user.user.id,
+        spaceId: null,
+        bookingId: null
+    });
 
-    // Check if chat already exists
-    const { data: existingChat } = await supabase
-      .from('private_chats')
-      .select('id')
-      .or(`and(participant_1_id.eq.${userId},participant_2_id.eq.${otherUserId}),and(participant_1_id.eq.${otherUserId},participant_2_id.eq.${userId})`)
-      .single();
-
-    if (existingChat) {
-      return existingChat.id;
-    }
-
-    // Create new chat
-    const { data: newChat, error } = await supabase
-      .from('private_chats')
-      .insert({
-        participant_1_id: userId,
-        participant_2_id: otherUserId
-      })
-      .select('id')
-      .single();
-
-    if (error) throw error;
-    return newChat?.id || null;
+    return conversationId;
   } catch (error) {
     sreLogger.error("Error creating/getting private chat", { otherUserId }, error as Error);
     return null;
   }
 };
 
-// Send private message
+// Send private message (Unified Migration)
 export const sendPrivateMessage = async (chatId: string, content: string): Promise<boolean> => {
   try {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return false;
 
-    const { error } = await supabase
-      .from('private_messages')
-      .insert({
-        chat_id: chatId,
-        sender_id: user.user.id,
-        content
-      });
+    await sendMessageToConversation({
+        conversationId: chatId,
+        content: content,
+        senderId: user.user.id
+    });
 
-    if (error) throw error;
     return true;
   } catch (error) {
     sreLogger.error("Error sending private message", { chatId, content }, error as Error);
