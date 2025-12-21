@@ -100,7 +100,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
                 booking={booking}
                 reviewType="space"
                 targetId={booking.space_id}
-                targetName={booking.workspaces?.name || "Spazio"}
+                targetName={booking.space?.title || "Spazio"}
               />
             )
           )
