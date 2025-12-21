@@ -36,7 +36,7 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
     
     const chatId = await createOrGetPrivateChat(otherUser.id);
     if (chatId) {
-      navigate(`/networking/chat/${chatId}`);
+      navigate(`/messages?id=${chatId}`);
     } else {
       toast.error("Impossibile avviare la chat");
     }
