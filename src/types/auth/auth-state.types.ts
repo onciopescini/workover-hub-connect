@@ -11,7 +11,7 @@ export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   industries?: string[] | null;
 };
 
-export type UserRole = "host" | "user" | "admin" | "moderator";
+export type UserRole = "host" | "user" | "admin" | "moderator" | "coworker";
 
 export type AuthState = {
   user: User | null;

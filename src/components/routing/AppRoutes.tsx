@@ -45,7 +45,7 @@ const Search = lazy(() => import("@/pages/Search"));
 const ModernMessages = lazy(() => import("@/pages/ModernMessages"));
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
-const PrivateChats = lazy(() => import("@/pages/PrivateChats"));
+// const PrivateChats = lazy(() => import("@/pages/PrivateChats"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
 const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
@@ -243,6 +243,7 @@ export const AppRoutes = () => {
           </AuthProtected>
         } />
         
+        {/*
         <Route path="private-chats" element={
           <AuthProtected>
             <LazyWrapper>
@@ -258,6 +259,7 @@ export const AppRoutes = () => {
             </LazyWrapper>
           </AuthProtected>
         } />
+        */}
         
         <Route path="networking" element={
           <AuthProtected>
