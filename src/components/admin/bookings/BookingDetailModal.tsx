@@ -20,24 +20,39 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
   const { data: booking, isLoading } = useQuery({
     queryKey: ['admin-booking-detail', bookingId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch booking details
+      const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
           *,
-          workspaces (id, name, address, host_id, price_per_day),
           coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url),
           payments(id, amount, payment_status, method, receipt_url, stripe_session_id, created_at)
         `)
         .eq('id', bookingId)
         .single();
 
-      if (error) throw error;
-      
-      // Transform coworker from array to single object
+      if (bookingError) throw bookingError;
+
+      // Fetch space details separately (to handle workspaces vs spaces transition)
+      const { data: spaceData, error: spaceError } = await supabase
+        .from('workspaces')
+        .select('id, name, address, host_id, price_per_day')
+        .eq('id', bookingData.space_id)
+        .single();
+
+      if (spaceError) throw spaceError;
+
+      // Transform data to match UI expectations
       return {
-        ...data,
-        coworker: Array.isArray(data.coworker) ? data.coworker[0] : data.coworker,
-        workspaces: Array.isArray((data as any).workspaces) ? (data as any).workspaces[0] : (data as any).workspaces
+        ...bookingData,
+        coworker: Array.isArray(bookingData.coworker) ? bookingData.coworker[0] : bookingData.coworker,
+        space: {
+          id: spaceData.id,
+          title: spaceData.name, // Mapping name -> title here
+          address: spaceData.address,
+          host_id: spaceData.host_id,
+          price_per_day: spaceData.price_per_day
+        }
       };
     },
     enabled: open
@@ -131,8 +146,8 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p className="font-medium">{booking.workspaces?.name}</p>
-                <p className="text-sm text-muted-foreground">{booking.workspaces?.address}</p>
+                <p className="font-medium">{booking.space?.title}</p>
+                <p className="text-sm text-muted-foreground">{booking.space?.address}</p>
               </CardContent>
             </Card>
           </div>

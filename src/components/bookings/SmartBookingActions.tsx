@@ -68,7 +68,7 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
     },
     instructions: {
       title: "Istruzioni di Accesso",
-      content: `Ciao ${booking.coworker?.first_name}! 📍\n\nEcco le informazioni per l'accesso:\n\n🗝️ Codice d'accesso: [DA INSERIRE]\n🕐 Orario di arrivo: ${booking.start_time || '09:00'}\n📍 Indirizzo esatto: ${booking.workspaces?.address || 'Indirizzo non disponibile'}\n\n📋 Istruzioni:\n1. Suona al citofono [NOME]\n2. Sali al [PIANO]\n3. Lo spazio si trova [DIREZIONI]\n\nBuon lavoro!`
+      content: `Ciao ${booking.coworker?.first_name}! 📍\n\nEcco le informazioni per l'accesso:\n\n🗝️ Codice d'accesso: [DA INSERIRE]\n🕐 Orario di arrivo: ${booking.start_time || '09:00'}\n📍 Indirizzo esatto: ${booking.space?.address || 'Indirizzo non disponibile'}\n\n📋 Istruzioni:\n1. Suona al citofono [NOME]\n2. Sali al [PIANO]\n3. Lo spazio si trova [DIREZIONI]\n\nBuon lavoro!`
     },
     followup: {
       title: "Follow-up Post-Visita",

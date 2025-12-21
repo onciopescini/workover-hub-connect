@@ -13,6 +13,8 @@ export const UserBookingsHistory: React.FC<UserBookingsHistoryProps> = ({ userId
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['user-bookings', userId],
     queryFn: async () => {
+      // Fetch booking data with related workspace info
+      // Note: We use .select() with workspaces to get the raw DB data first
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -32,7 +34,16 @@ export const UserBookingsHistory: React.FC<UserBookingsHistoryProps> = ({ userId
         .limit(5);
 
       if (error) throw error;
-      return data;
+
+      // Transform data to match UI expectations
+      return data.map(booking => ({
+        ...booking,
+        // Map the workspaces object to the expected 'space' structure with 'title'
+        space: {
+          title: (booking.workspaces as any)?.name || 'Spazio sconosciuto',
+          city: (booking.workspaces as any)?.city
+        }
+      }));
     }
   });
 
@@ -74,7 +85,7 @@ export const UserBookingsHistory: React.FC<UserBookingsHistoryProps> = ({ userId
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium text-sm">
-                      {(booking.workspaces as any)?.name || 'Spazio sconosciuto'}
+                      {booking.space.title}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -6,17 +6,10 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { logInfo, logError } from '@/lib/sre-logger';
+import { BookingWithDetails } from '@/types/booking';
 
 interface MessagesButtonProps {
-  booking: {
-    id: string;
-    space_id: string;
-    user_id: string;
-    workspaces?: {
-      host_id: string;
-      name?: string;
-    };
-  };
+  booking: BookingWithDetails;
   variant?: "default" | "outline" | "secondary" | "ghost";
   size?: "default" | "sm" | "lg";
   disabled?: boolean;
@@ -40,7 +33,7 @@ export function MessagesButton({
     setIsLoading(true);
     try {
       // Determine host and coworker IDs
-      const hostId = booking.workspaces?.host_id;
+      const hostId = booking.space?.host_id;
       const coworkerId = booking.user_id;
       
       if (!hostId || !coworkerId) {

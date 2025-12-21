@@ -35,7 +35,7 @@ export function CancelBookingDialog({
   
   const cancellationInfo = calculateCancellationFee(
     booking.booking_date, 
-    booking.workspaces?.price_per_day || 0
+    booking.space?.price_per_day || 0
   );
 
   const handleConfirm = async () => {
@@ -52,7 +52,7 @@ export function CancelBookingDialog({
             Conferma Cancellazione
           </DialogTitle>
           <DialogDescription>
-            Stai per cancellare la tua prenotazione per "{booking.workspaces?.name}".
+            Stai per cancellare la tua prenotazione per "{booking.space?.title}".
           </DialogDescription>
         </DialogHeader>
 

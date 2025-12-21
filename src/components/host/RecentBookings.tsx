@@ -102,7 +102,7 @@ export function RecentBookings({ bookings, onBookingUpdate }: RecentBookingsProp
                 <Calendar className="w-3 h-3 mr-1" />
                 {new Date(booking.booking_date).toLocaleDateString('it-IT')}
                 <MapPin className="w-3 h-3 ml-2 mr-1" />
-                <span className="truncate">{booking.workspaces?.name}</span>
+                <span className="truncate">{booking.space?.title}</span>
               </div>
             </div>
             

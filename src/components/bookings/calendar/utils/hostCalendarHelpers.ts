@@ -22,11 +22,11 @@ export const extractHostSpaces = (bookings: BookingWithDetails[]): HostSpaceOpti
   const spacesMap = new Map<string, HostSpaceOption>();
   
   bookings.forEach(booking => {
-    if (booking.space_id && booking.workspaces?.name) {
+    if (booking.space_id && booking.space?.title) {
       if (!spacesMap.has(booking.space_id)) {
         spacesMap.set(booking.space_id, {
           id: booking.space_id,
-          title: booking.workspaces.name,
+          title: booking.space.title,
           bookingCount: 0
         });
       }
@@ -88,7 +88,7 @@ export const groupBookingsBySpace = (bookings: BookingWithDetails[]): Map<string
   
   bookings.forEach(booking => {
     const spaceId = booking.space_id;
-    const spaceTitle = booking.workspaces?.name || 'Spazio senza nome';
+    const spaceTitle = booking.space?.title || 'Spazio senza nome';
     
     if (!grouped.has(spaceId)) {
       grouped.set(spaceId, {

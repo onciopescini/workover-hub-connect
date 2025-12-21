@@ -71,12 +71,12 @@ export const BookingsTableView: React.FC<BookingsTableViewProps> = ({
             return (
               <TableRow key={booking.id} className="hover:bg-muted/50">
                 <TableCell className="font-medium">
-                  {booking.workspaces?.name || 'N/A'}
+                  {booking.space?.title || 'N/A'}
                 </TableCell>
                 <TableCell>
                   {userRole === 'host' 
                     ? `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim()
-                    : booking.workspaces?.name || 'N/A'
+                    : booking.space?.title || 'N/A'
                   }
                 </TableCell>
                 <TableCell>
@@ -102,7 +102,7 @@ export const BookingsTableView: React.FC<BookingsTableViewProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onOpenMessageDialog(booking.id, booking.workspaces?.name || 'Spazio')}
+                        onClick={() => onOpenMessageDialog(booking.id, booking.space?.title || 'Spazio')}
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
@@ -124,7 +124,7 @@ export const BookingsTableView: React.FC<BookingsTableViewProps> = ({
                             booking={booking}
                             reviewType="space"
                             targetId={booking.space_id}
-                            targetName={booking.workspaces?.name || "Spazio"}
+                            targetName={booking.space?.title || "Spazio"}
                           />
                         )
                       )
