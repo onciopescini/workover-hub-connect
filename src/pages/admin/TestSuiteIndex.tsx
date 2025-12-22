@@ -38,15 +38,6 @@ const TestSuiteIndex = () => {
       badgeVariant: 'secondary'
     },
     {
-      id: 'regression',
-      title: 'Regression Validation',
-      description: 'Regression tests per platform integrity, validazione completa cross-modulo.',
-      path: '/regression-validation',
-      icon: <AlertTriangle className="w-6 h-6 text-yellow-600" />,
-      badge: 'Safety checks',
-      badgeVariant: 'outline'
-    },
-    {
       id: 'strict-mode',
       title: 'TypeScript Strict Mode Fixer',
       description: 'Tool per risolvere errori TypeScript strict mode e migliorare la qualità del codice.',

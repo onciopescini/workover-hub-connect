@@ -4,43 +4,40 @@ import { sreLogger } from "@/lib/sre-logger";
 import { toast } from "sonner";
 
 /**
- * Creates or retrieves a private chat conversation with a specific user.
- *
- * In the context of networking/private chats:
- * - The current user (initiator) is treated as the 'coworker'
- * - The target user (recipient) is treated as the 'host'
- *
- * The underlying database RPC `get_or_create_conversation` handles bidirectional checks,
- * so it will find an existing conversation regardless of who initiated it originally.
+ * Crea o recupera una conversazione di chat privata con un utente specifico.
+ * L'iniziatore è il 'coworker', il destinatario è l' 'host'.
  */
 export async function createOrGetPrivateChat(targetUserId: string): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      sreLogger.warn('Attempted to start chat without authentication');
+      sreLogger.warn('Tentativo di avviare chat senza autenticazione');
       return null;
     }
 
     if (user.id === targetUserId) {
-      sreLogger.warn('Attempted to start chat with self');
+      sreLogger.warn('Tentativo di avviare chat con se stessi');
       return null;
     }
 
     const conversationId = await getOrCreateConversation({
-      hostId: targetUserId,      // Target is Host
-      coworkerId: user.id,       // Initiator is Coworker
+      hostId: targetUserId,      // Il destinatario è l'Host
+      coworkerId: user.id,        // L'iniziatore è il Coworker
       spaceId: null,
       bookingId: null
     });
 
     return conversationId;
   } catch (error) {
-    sreLogger.error('Failed to create or get private chat', { targetUserId }, error as Error);
+    sreLogger.error('Errore nella creazione della chat privata', { targetUserId }, error as Error);
     return null;
   }
 }
 
+/**
+ * Invia una richiesta di connessione (Networking).
+ */
 export async function sendConnectionRequest(targetUserId: string): Promise<boolean> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -58,7 +55,7 @@ export async function sendConnectionRequest(targetUserId: string): Promise<boole
       });
 
     if (error) {
-      if (error.code === '23505') { // Unique violation
+      if (error.code === '23505') { // Violazione unicità
         toast.info("Richiesta di connessione già inviata");
         return true;
       }
@@ -68,7 +65,7 @@ export async function sendConnectionRequest(targetUserId: string): Promise<boole
     toast.success("Richiesta di connessione inviata");
     return true;
   } catch (error) {
-    sreLogger.error('Failed to send connection request', { targetUserId }, error as Error);
+    sreLogger.error('Errore invio richiesta connessione', { targetUserId }, error as Error);
     toast.error("Errore nell'invio della richiesta");
     return false;
   }
@@ -86,7 +83,7 @@ export async function acceptConnectionRequest(requestId: string): Promise<boolea
     toast.success("Connessione accettata");
     return true;
   } catch (error) {
-    sreLogger.error('Failed to accept connection request', { requestId }, error as Error);
+    sreLogger.error('Errore accettazione connessione', { requestId }, error as Error);
     toast.error("Errore nell'accettare la richiesta");
     return false;
   }
@@ -104,7 +101,7 @@ export async function rejectConnectionRequest(requestId: string): Promise<boolea
     toast.success("Connessione rifiutata");
     return true;
   } catch (error) {
-    sreLogger.error('Failed to reject connection request', { requestId }, error as Error);
+    sreLogger.error('Errore rifiuto connessione', { requestId }, error as Error);
     toast.error("Errore nel rifiutare la richiesta");
     return false;
   }
@@ -122,7 +119,7 @@ export async function removeConnection(connectionId: string): Promise<boolean> {
     toast.success("Connessione rimossa");
     return true;
   } catch (error) {
-    sreLogger.error('Failed to remove connection', { connectionId }, error as Error);
+    sreLogger.error('Errore rimozione connessione', { connectionId }, error as Error);
     toast.error("Errore nella rimozione della connessione");
     return false;
   }
