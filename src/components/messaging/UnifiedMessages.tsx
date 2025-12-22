@@ -1,17 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useUnifiedMessaging } from '@/hooks/useUnifiedMessaging';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { sendMessageToConversation } from '@/lib/conversations';
+import { useUserPresence } from '@/hooks/useUserPresence';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Send, User, Calendar, MapPin, MoreVertical, Phone, ArrowLeft, Loader2 } from "lucide-react";
+import { Send, User, Calendar, MapPin, MoreVertical, Phone, ArrowLeft, Loader2, Filter, Eye } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { OnlineStatusIndicator } from './OnlineStatusIndicator';
+import { BookingDetailDialog } from './BookingDetailDialog';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+type FilterType = 'all' | 'booking' | 'networking' | 'unread';
 
 export const UnifiedMessages = () => {
   const {
@@ -24,8 +30,13 @@ export const UnifiedMessages = () => {
   } = useUnifiedMessaging();
 
   const { authState } = useAuth();
+  const { isUserOnline } = useUserPresence();
+
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [showBookingDetail, setShowBookingDetail] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
@@ -36,6 +47,12 @@ export const UnifiedMessages = () => {
   }, [activeMessages]);
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+  // Mark as read in background when conversation becomes active
+  useEffect(() => {
+    // Logic handled in hook via setActiveConversationId,
+    // but we ensure side effects here if needed
+  }, [activeConversationId]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !activeConversationId || !authState.user?.id) return;
@@ -61,6 +78,21 @@ export const UnifiedMessages = () => {
     return conv.host_id === authState.user.id ? conv.coworker : conv.host;
   };
 
+  // Filtering Logic
+  const filteredConversations = useMemo(() => {
+    return conversations.filter(conv => {
+       const isBooking = !!conv.booking_id;
+       const unread = unreadCounts[conv.id] || 0;
+
+       switch (filter) {
+         case 'booking': return isBooking;
+         case 'networking': return !isBooking;
+         case 'unread': return unread > 0;
+         default: return true;
+       }
+    });
+  }, [conversations, filter, unreadCounts]);
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] items-center justify-center">
@@ -73,20 +105,60 @@ export const UnifiedMessages = () => {
     <div className="flex h-[calc(100vh-8rem)] w-full bg-background border rounded-lg overflow-hidden shadow-sm">
       {/* LEFT SIDEBAR: Conversations List */}
       <div className={`${activeConversationId ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 flex-col border-r`}>
-        <div className="p-4 border-b">
-          <h2 className="font-semibold text-lg">Messaggi</h2>
+        <div className="p-4 border-b space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold text-lg">Messaggi</h2>
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
+             <Button
+               variant={filter === 'all' ? 'default' : 'ghost'}
+               size="sm"
+               className="text-xs h-7 px-2"
+               onClick={() => setFilter('all')}
+             >
+               Tutti
+             </Button>
+             <Button
+               variant={filter === 'booking' ? 'default' : 'ghost'}
+               size="sm"
+               className="text-xs h-7 px-2"
+               onClick={() => setFilter('booking')}
+             >
+               Prenotazioni
+             </Button>
+             <Button
+               variant={filter === 'networking' ? 'default' : 'ghost'}
+               size="sm"
+               className="text-xs h-7 px-2"
+               onClick={() => setFilter('networking')}
+             >
+               Networking
+             </Button>
+             <Button
+               variant={filter === 'unread' ? 'default' : 'ghost'}
+               size="sm"
+               className="text-xs h-7 px-2"
+               onClick={() => setFilter('unread')}
+             >
+               Non letti
+             </Button>
+          </div>
         </div>
+
         <ScrollArea className="flex-1">
           <div className="flex flex-col">
-            {conversations.length === 0 ? (
+            {filteredConversations.length === 0 ? (
                <div className="p-8 text-center text-muted-foreground text-sm">
-                 Nessuna conversazione attiva.
+                 Nessuna conversazione trovata.
                </div>
             ) : (
-               conversations.map((conv) => {
+               filteredConversations.map((conv) => {
                  const participant = getParticipant(conv);
                  const unread = unreadCounts[conv.id] || 0;
                  const isBooking = !!conv.booking_id;
+                 const isOnline = participant ? isUserOnline(participant.id) : false;
 
                  return (
                    <div
@@ -94,10 +166,16 @@ export const UnifiedMessages = () => {
                      onClick={() => setActiveConversationId(conv.id)}
                      className={`flex items-start gap-3 p-4 cursor-pointer hover:bg-accent/50 transition-colors border-b last:border-0 ${activeConversationId === conv.id ? 'bg-accent' : ''}`}
                    >
-                     <Avatar>
-                       <AvatarImage src={participant?.profile_photo_url} />
-                       <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                     </Avatar>
+                     <div className="relative">
+                       <Avatar>
+                         <AvatarImage src={participant?.profile_photo_url} />
+                         <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                       </Avatar>
+                       {isOnline && (
+                         <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background"></span>
+                       )}
+                     </div>
+
                      <div className="flex-1 overflow-hidden">
                        <div className="flex justify-between items-center mb-1">
                          <span className="font-medium truncate text-sm">
@@ -139,10 +217,15 @@ export const UnifiedMessages = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
 
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={getParticipant(activeConversation)?.profile_photo_url} />
-                <AvatarFallback><User /></AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={getParticipant(activeConversation)?.profile_photo_url} />
+                  <AvatarFallback><User /></AvatarFallback>
+                </Avatar>
+                 {getParticipant(activeConversation) && isUserOnline(getParticipant(activeConversation).id) && (
+                   <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background"></span>
+                 )}
+              </div>
 
               <div className="flex-1">
                 <h3 className="font-semibold text-sm">
@@ -212,10 +295,15 @@ export const UnifiedMessages = () => {
       {activeConversation && (
         <div className="hidden lg:flex w-80 border-l bg-background flex-col p-6 space-y-6">
           <div className="text-center">
-            <Avatar className="h-20 w-20 mx-auto mb-4">
-              <AvatarImage src={getParticipant(activeConversation)?.profile_photo_url} />
-              <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
-            </Avatar>
+            <div className="relative inline-block">
+              <Avatar className="h-20 w-20 mx-auto mb-4">
+                <AvatarImage src={getParticipant(activeConversation)?.profile_photo_url} />
+                <AvatarFallback><User className="h-8 w-8" /></AvatarFallback>
+              </Avatar>
+              {getParticipant(activeConversation) && isUserOnline(getParticipant(activeConversation).id) && (
+                 <span className="absolute bottom-4 right-0 h-5 w-5 rounded-full bg-green-500 border-4 border-background"></span>
+              )}
+            </div>
             <h3 className="font-semibold text-lg">
               {getParticipant(activeConversation)?.first_name} {getParticipant(activeConversation)?.last_name}
             </h3>
@@ -247,18 +335,55 @@ export const UnifiedMessages = () => {
                     </Badge>
                   </div>
                 )}
+
+                <Button
+                  variant="outline"
+                  className="w-full mt-2"
+                  size="sm"
+                  onClick={() => setShowBookingDetail(true)}
+                >
+                  <Eye className="w-3 h-3 mr-2" />
+                  Vedi Dettagli
+                </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Info Networking</h4>
-               <p className="text-sm text-muted-foreground">
+               <p className="text-sm text-muted-foreground mb-4">
                  Questa è una conversazione privata di networking.
                </p>
+
+               {/* Skills / Competencies */}
+               {(getParticipant(activeConversation)?.competencies || getParticipant(activeConversation)?.skills) && (
+                 <div>
+                   <h5 className="text-xs font-semibold mb-2">Competenze & Tags</h5>
+                   <div className="flex flex-wrap gap-1">
+                     {getParticipant(activeConversation)?.competencies?.map((skill: string, idx: number) => (
+                       <Badge key={idx} variant="secondary" className="text-[10px]">
+                         {skill}
+                       </Badge>
+                     ))}
+                     {/* Fallback to skills string if competencies is empty */}
+                     {(!getParticipant(activeConversation)?.competencies || getParticipant(activeConversation)?.competencies.length === 0) && getParticipant(activeConversation)?.skills && (
+                       <Badge variant="secondary" className="text-[10px]">
+                         {getParticipant(activeConversation).skills}
+                       </Badge>
+                     )}
+                   </div>
+                 </div>
+               )}
             </div>
           )}
         </div>
       )}
+
+      {/* Modals */}
+      <BookingDetailDialog
+        isOpen={showBookingDetail}
+        onClose={() => setShowBookingDetail(false)}
+        booking={activeConversation?.booking ? { ...activeConversation.booking, space: activeConversation.space } : null}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, TestTube, CheckCircle } from 'lucide-react';
+import { Menu, X, User, Settings, LogOut, Bell, MessageSquare, Calendar, MapPin, Users, Home, CheckCircle } from 'lucide-react';
 import { useLogger } from '@/hooks/useLogger';
 import {
   DropdownMenu,
@@ -14,11 +14,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { Badge } from '@/components/ui/badge';
 
 export const OptimizedUnifiedHeader = () => {
   const { error } = useLogger({ context: 'OptimizedUnifiedHeader' });
   const { authState, signOut } = useAuth();
   const { isAdmin, isHost } = useRoleAccess();
+  const { counts: unreadCounts } = useUnreadCount();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -41,10 +44,9 @@ export const OptimizedUnifiedHeader = () => {
 
     const baseItems = [
       { name: 'Spazi', href: '/spaces', icon: MapPin },
-      
       { name: 'Networking', href: '/networking', icon: Users },
       { name: 'Prenotazioni', href: '/bookings', icon: Calendar },
-      { name: 'Messaggi', href: '/messages', icon: MessageSquare },
+      // "Messaggi" is now removed from here and moved to a standalone icon
     ];
     
     if (isHost) {
@@ -62,7 +64,7 @@ export const OptimizedUnifiedHeader = () => {
     }
     
     return baseItems;
-  }, [authState.isAuthenticated, isAdmin, isHost]);
+  }, [authState.isAuthenticated, isAdmin, isHost, authState.roles]);
 
   // Memoized user initials
   const userInitials = useMemo(() => {
@@ -155,13 +157,39 @@ export const OptimizedUnifiedHeader = () => {
           {authState.isAuthenticated && <div className="flex-1" />}
 
           {/* Auth Section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 md:space-x-4">
             {authState.isAuthenticated ? (
               <>
-                {authState.roles && authState.roles.length > 0 && <NotificationIcon />}
+                {authState.roles && authState.roles.length > 0 && (
+                  <div className="flex items-center gap-1 md:gap-2">
+                     {/* Messages Icon Button */}
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="relative"
+                       asChild
+                     >
+                       <Link to="/messages" aria-label="Messaggi">
+                         <MessageSquare className="w-5 h-5 text-gray-600" />
+                         {unreadCounts.total > 0 && (
+                           <Badge
+                             variant="destructive"
+                             className="absolute -top-1 -right-1 w-4 h-4 text-[10px] p-0 flex items-center justify-center rounded-full"
+                           >
+                             {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
+                           </Badge>
+                         )}
+                       </Link>
+                     </Button>
+
+                     {/* Notification Icon */}
+                     <NotificationIcon />
+                  </div>
+                )}
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1">
                        <Avatar className="h-8 w-8">
                          <AvatarImage 
                            src={authState.profile?.profile_photo_url ?? undefined}
@@ -276,6 +304,11 @@ export const OptimizedUnifiedHeader = () => {
                   </Link>
                 );
               })}
+              {/* Also add Messages here for mobile if not already covered, though standard nav usually handles main links.
+                  Since we removed 'Messaggi' from navigationItems, let's explicitly add it for mobile if desired,
+                  or rely on the top bar icon which is visible on mobile too.
+                  Actually, typically top bar icons are the way to go for critical features like Messages on mobile.
+              */}
             </div>
           </div>
         )}

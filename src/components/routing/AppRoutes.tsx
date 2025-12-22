@@ -42,7 +42,7 @@ const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
 const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 import Bookings from "@/pages/Bookings";
 const Search = lazy(() => import("@/pages/Search"));
-const ModernMessages = lazy(() => import("@/pages/ModernMessages"));
+// ModernMessages removed as part of cleanup
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
@@ -218,13 +218,7 @@ export const AppRoutes = () => {
           </AuthProtected>
         } />
         
-        <Route path="messages" element={
-          <AuthProtected>
-            <LazyWrapper>
-              <ModernMessages />
-            </LazyWrapper>
-          </AuthProtected>
-        } />
+        {/* ModernMessages route removed - redirection handled via other means or new unified component */}
         
         <Route path="messages/conversation/:conversationId" element={
           <AuthProtected>
