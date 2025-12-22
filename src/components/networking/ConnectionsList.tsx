@@ -50,7 +50,7 @@ export const ConnectionsList = () => {
   const handleStartChat = async (userId: string) => {
     const chatId = await createOrGetPrivateChat(userId);
     if (chatId) {
-      navigate(`/private-chats/${chatId}`);
+      navigate(`/messages/conversation/${chatId}`);
     } else {
       toast.error("Impossibile aprire la chat");
     }
