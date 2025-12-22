@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -10,8 +10,6 @@ interface RealtimeBookingsSyncProps {
 
 export const RealtimeBookingsSync = ({ onChange }: RealtimeBookingsSyncProps) => {
   const { authState } = useAuth();
-  const reconnectAttemptsRef = useRef(0);
-  const maxReconnectAttempts = 5;
 
   useEffect(() => {
     // Non avviare la sottoscrizione se l'utente non è autenticato o il profilo non è pronto
@@ -19,54 +17,36 @@ export const RealtimeBookingsSync = ({ onChange }: RealtimeBookingsSyncProps) =>
       return;
     }
 
-    const setupChannel = () => {
-      const channel = supabase
-        .channel("schema-db-changes")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "bookings" },
-          (payload) => {
-            logger.debug("Realtime booking change detected", { 
-              component: "RealtimeBookingsSync"
-            });
-            onChange();
-          }
-        )
-        .on("system", { event: "error" }, (error) => {
-          logger.error("Realtime connection error", { 
+    const channel = supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        (payload) => {
+          logger.debug("Realtime booking change detected", {
             component: "RealtimeBookingsSync"
-          }, error instanceof Error ? error : undefined);
-          
-          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-            reconnectAttemptsRef.current++;
-            const delay = 2000 * reconnectAttemptsRef.current;
-            logger.info(`Attempting reconnection in ${delay}ms`, { 
-              component: "RealtimeBookingsSync"
-            });
-            setTimeout(() => {
-              supabase.removeChannel(channel);
-              setupChannel();
-            }, delay);
-          }
-        })
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            reconnectAttemptsRef.current = 0;
-            logger.info("Realtime connection established", { 
-              component: "RealtimeBookingsSync" 
-            });
-          }
-        });
-
-      return channel;
-    };
-
-    const channel = setupChannel();
+          });
+          onChange();
+        }
+      )
+      .on("system", { event: "error" }, (error) => {
+        // Just log the error, let Supabase client handle reconnection internally
+        logger.error("Realtime connection error", {
+          component: "RealtimeBookingsSync"
+        }, error instanceof Error ? error : undefined);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info("Realtime connection established", {
+            component: "RealtimeBookingsSync"
+          });
+        }
+      });
     
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [onChange]);
+  }, [onChange, authState.user, authState.profile]);
 
   return null;
 };
