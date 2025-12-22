@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useLogger } from '@/hooks/useLogger';
-import { toast } from 'sonner';
 
 /**
  * AuthRedirector - The Traffic Controller
@@ -26,6 +25,11 @@ export const AuthRedirector = () => {
   const wasAuthenticated = useRef(authState.isAuthenticated);
   const previousUserId = useRef(authState.user?.id);
 
+  // Guard against redirect loops
+  const lastRedirectPath = useRef<string | null>(null);
+  const lastRedirectTime = useRef<number>(0);
+  const REDIRECT_COOLDOWN_MS = 2000;
+
   useEffect(() => {
     // We only care about the transition from Unauthenticated -> Authenticated
     // OR if the user is authenticated but landed on a public page like Login/Register/Home
@@ -33,8 +37,6 @@ export const AuthRedirector = () => {
 
     const isNowAuthenticated = authState.isAuthenticated;
     const isTransitioningToAuth = !wasAuthenticated.current && isNowAuthenticated;
-    const isSameUser = previousUserId.current === authState.user?.id;
-
     // Update refs for next render
     wasAuthenticated.current = isNowAuthenticated;
     previousUserId.current = authState.user?.id;
@@ -54,50 +56,61 @@ export const AuthRedirector = () => {
 
     // Traffic Control Logic
     const roles = authState.roles || [];
-    const profile = authState.profile;
+
+    // Safety check: ensure roles are loaded or we handle the empty case
+    // If roles are loading, we shouldn't redirect yet?
+    // Usually authState.isAuthenticated is true only after initial load.
 
     debug('Traffic Controller Active', { roles, path: location.pathname });
 
+    let targetPath: string | null = null;
+
     // Case A: No Role (or incomplete)
     if (roles.length === 0) {
-      if (location.pathname !== '/onboarding') {
-        debug('Redirecting to Onboarding (No Role)');
-        navigate('/onboarding', { replace: true });
-      }
-      return;
+      targetPath = '/onboarding';
     }
-
     // Case B: Admin / Moderator
-    if (roles.includes('admin') || roles.includes('moderator')) {
+    else if (roles.includes('admin') || roles.includes('moderator')) {
       if (!location.pathname.startsWith('/admin')) {
-         debug('Redirecting to Admin Panel');
-         navigate('/admin', { replace: true });
+         targetPath = '/admin';
       }
-      return;
     }
-
     // Case C: Host
-    if (roles.includes('host')) {
+    else if (roles.includes('host')) {
       if (!location.pathname.startsWith('/host')) {
-        debug('Redirecting to Host Dashboard');
-        navigate('/host/dashboard', { replace: true });
+        targetPath = '/host/dashboard';
       }
-      return;
     }
-
     // Case D: Coworker
-    if (roles.includes('coworker')) {
+    else if (roles.includes('coworker')) {
       // For coworkers, we want to send them to /profile ONLY if they are on a guest page
       // If they are deep linking (e.g. to a booking), we let them pass.
       if (isGuestPage) {
-        debug('Redirecting to Profile (Coworker)');
-        navigate('/profile', { replace: true });
+        targetPath = '/profile';
       }
-      return;
     }
 
-    // Fallback
-    debug('No specific rule matched, staying on current route', { path: location.pathname });
+    // Execute Redirect with Guard
+    if (targetPath && location.pathname !== targetPath) {
+      const now = Date.now();
+
+      // If we are trying to redirect to the same place we just redirected to
+      // within the cooldown window, block it.
+      if (
+        lastRedirectPath.current === targetPath &&
+        (now - lastRedirectTime.current) < REDIRECT_COOLDOWN_MS
+      ) {
+        debug('Blocked rapid redirect loop', { targetPath });
+        return;
+      }
+
+      debug(`Redirecting to ${targetPath}`);
+      lastRedirectPath.current = targetPath;
+      lastRedirectTime.current = now;
+      navigate(targetPath, { replace: true });
+    } else {
+       debug('No specific rule matched or already on target path', { path: location.pathname });
+    }
 
   }, [
     authState.isAuthenticated,

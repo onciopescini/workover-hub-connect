@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
@@ -16,7 +16,8 @@ export const useUnreadCount = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUnreadCounts = async () => {
+  // STABILIZED: useCallback to prevent re-creation on every render
+  const fetchUnreadCounts = useCallback(async () => {
     if (!authState.user?.id) {
       setCounts({ bookingMessages: 0, total: 0 });
       setIsLoading(false);
@@ -41,14 +42,19 @@ export const useUnreadCount = () => {
         total: bookingCount || 0
       };
 
-      setCounts(newCounts);
+      setCounts(prev => {
+        if (prev.bookingMessages === newCounts.bookingMessages && prev.total === newCounts.total) {
+          return prev;
+        }
+        return newCounts;
+      });
     } catch (error) {
       sreLogger.error("Error fetching unread counts", { userId: authState.user?.id }, error as Error);
       setCounts({ bookingMessages: 0, total: 0 });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [authState.user?.id]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -76,7 +82,7 @@ export const useUnreadCount = () => {
     return () => {
       supabase.removeChannel(bookingChannel);
     };
-  }, [authState.user?.id]);
+  }, [authState.user?.id, fetchUnreadCounts]);
 
   return {
     counts,

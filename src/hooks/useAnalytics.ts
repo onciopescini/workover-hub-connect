@@ -18,7 +18,7 @@
  * identify('user123', { plan: 'pro' });
  * ```
  */
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import posthog from 'posthog-js';
 import * as Sentry from '@sentry/react';
 import { useConsent } from '@/hooks/useConsent';
@@ -41,6 +41,7 @@ interface UserProperties {
  */
 export const useAnalytics = () => {
   const { consent } = useConsent();
+  const lastTrackedPath = useRef<string | null>(null);
 
   /**
    * Track custom events
@@ -151,7 +152,12 @@ export const useAnalytics = () => {
   useEffect(() => {
     if (consent?.analytics && typeof window !== 'undefined') {
       const currentPath = window.location.pathname;
-      pageview(currentPath);
+
+      // Prevent duplicate pageviews for the same path
+      if (lastTrackedPath.current !== currentPath) {
+        pageview(currentPath);
+        lastTrackedPath.current = currentPath;
+      }
     }
   }, [consent?.analytics, pageview]);
 

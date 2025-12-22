@@ -25,23 +25,41 @@ export const useUserPresence = () => {
              }
            });
         }
-        setOnlineUsers(users);
+
+        // STABILIZATION: Only update state if the set content actually changed
+        setOnlineUsers(prev => {
+           if (prev.size === users.size) {
+               let isSame = true;
+               for (const userId of users) {
+                   if (!prev.has(userId)) {
+                       isSame = false;
+                       break;
+                   }
+               }
+               if (isSame) return prev; // Return same reference to skip render
+           }
+           return users;
+        });
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         setOnlineUsers(prev => {
+          // Check if we actually have new users to add
+          const usersToAdd = newPresences.filter((p: any) => p.user_id && !prev.has(p.user_id));
+          if (usersToAdd.length === 0) return prev;
+
           const newSet = new Set(prev);
-          newPresences.forEach((p: any) => {
-            if (p.user_id) newSet.add(p.user_id);
-          });
+          usersToAdd.forEach((p: any) => newSet.add(p.user_id));
           return newSet;
         });
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         setOnlineUsers(prev => {
+           // Check if we actually have users to remove
+           const usersToRemove = leftPresences.filter((p: any) => p.user_id && prev.has(p.user_id));
+           if (usersToRemove.length === 0) return prev;
+
            const newSet = new Set(prev);
-           leftPresences.forEach((p: any) => {
-             if (p.user_id) newSet.delete(p.user_id);
-           });
+           usersToRemove.forEach((p: any) => newSet.delete(p.user_id));
            return newSet;
         });
       })
