@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, UserCheck, UserX } from "lucide-react";
+import { Shield, UserCheck, UserX, Home } from "lucide-react";
 import { UserActions } from "./UserActions";
 import { UserDetailModal } from "./UserDetailModal";
 import { AdminUser } from '@/types/admin-user';
@@ -37,6 +37,33 @@ export const UserCard: React.FC<UserCardProps> = ({
     setShowDetail(true);
   };
 
+  const renderRoleBadge = () => {
+    if (user.role === 'admin') {
+      return (
+        <Badge variant="secondary">
+          <Shield className="w-3 h-3 mr-1" />
+          Admin
+        </Badge>
+      );
+    }
+
+    if (user.role === 'host') {
+      return (
+        <Badge variant="default">
+          <Home className="w-3 h-3 mr-1" />
+          Host
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="outline">
+        <UserCheck className="w-3 h-3 mr-1" />
+        Coworker
+      </Badge>
+    );
+  };
+
   return (
     <>
       <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
@@ -53,17 +80,7 @@ export const UserCard: React.FC<UserCardProps> = ({
         </div>
         
         <div className="flex items-center space-x-2">
-          {user.role === 'admin' ? (
-            <Badge variant="secondary">
-              <Shield className="w-3 h-3 mr-1" />
-              Admin
-            </Badge>
-          ) : (
-            <Badge variant="outline">
-              <UserCheck className="w-3 h-3 mr-1" />
-              Coworker
-            </Badge>
-          )}
+          {renderRoleBadge()}
           
           {user.is_suspended && (
             <Badge variant="destructive">

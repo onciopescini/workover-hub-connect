@@ -16,29 +16,43 @@ export const useUnifiedMessaging = () => {
 
   const activeConversationId = searchParams.get('id');
 
-  // Load messages for active conversation
+  // Helper to mark read and update local state
+  const handleMarkAsRead = useCallback(async (conversationId: string) => {
+    if (!authState.user?.id) return;
+
+    // Call backend to update DB
+    await markConversationAsRead(conversationId, authState.user.id);
+
+    // Update local state immediately
+    setUnreadCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[conversationId];
+      return newCounts;
+    });
+  }, [authState.user?.id]);
+
+  // Load messages for active conversation and mark as read
   useEffect(() => {
     if (activeConversationId) {
+      // Fetch messages
       fetchConversationMessages(activeConversationId)
         .then(setActiveMessages)
         .catch(err => console.error("Error loading messages", err));
+
+      // Mark as read when opening conversation
+      handleMarkAsRead(activeConversationId);
     } else {
       setActiveMessages([]);
     }
-  }, [activeConversationId]);
+  }, [activeConversationId, handleMarkAsRead]);
 
   const setActiveConversationId = useCallback((id: string | null) => {
     if (id) {
       setSearchParams({ id });
-      // Optimistically mark as read
-      if (authState.user?.id) {
-         markConversationAsRead(id, authState.user.id);
-         setUnreadCounts(prev => ({ ...prev, [id]: 0 }));
-      }
     } else {
       setSearchParams({});
     }
-  }, [setSearchParams, authState.user?.id]);
+  }, [setSearchParams]);
 
   const refreshData = useCallback(async () => {
     if (!authState.user?.id) return;
@@ -75,17 +89,8 @@ export const useUnifiedMessaging = () => {
           table: 'messages'
         },
         async (payload) => {
-          // Determine if this message is relevant to us
-          // Since we don't have easy access to participant list without joining,
-          // we might just refresh.
-          // However, for performance, we can check if conversation_id exists in our list.
-
           if (payload.eventType === 'INSERT') {
              const newMessage = payload.new as any;
-             // If we are the sender, we don't need to increment unread.
-             // If we are receiver (or not sender), increment unread.
-             // Note: payload.new doesn't tell us who the participants are unless we check existing conversations.
-
              const isMeSender = newMessage.sender_id === authState.user?.id;
 
              // Update conversations list order/content
@@ -112,10 +117,14 @@ export const useUnifiedMessaging = () => {
              // Update active messages if relevant
              if (newMessage.conversation_id === activeConversationId) {
                 setActiveMessages(prev => {
-                   // Avoid duplicates just in case
                    if (prev.some(m => m.id === newMessage.id)) return prev;
                    return [...prev, newMessage];
                 });
+
+                // If I am receiving a message in the ACTIVE conversation, mark it read immediately
+                if (!isMeSender) {
+                   handleMarkAsRead(newMessage.conversation_id);
+                }
              }
 
              if (!isMeSender) {
@@ -139,7 +148,6 @@ export const useUnifiedMessaging = () => {
            table: 'conversations'
         },
         () => {
-           // Conversation update (e.g. status change)
            refreshData();
         }
       )
@@ -148,7 +156,7 @@ export const useUnifiedMessaging = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authState.user?.id, activeConversationId, refreshData]);
+  }, [authState.user?.id, activeConversationId, refreshData, handleMarkAsRead]);
 
   return {
     conversations,
