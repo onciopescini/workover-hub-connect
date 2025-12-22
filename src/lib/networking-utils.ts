@@ -1,139 +1,126 @@
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { TIME_CONSTANTS } from '@/constants';
-import { getOrCreateConversation } from '@/lib/conversations';
-import { sreLogger } from '@/lib/sre-logger';
+import { supabase } from "@/integrations/supabase/client";
+import { getOrCreateConversation } from "./conversations";
+import { sreLogger } from "@/lib/sre-logger";
+import { toast } from "sonner";
 
 /**
- * Creates or gets a private chat conversation between the current user and the target user.
- * This is a wrapper around getOrCreateConversation that handles current user fetching.
+ * Crea o recupera una conversazione di chat privata con un utente specifico.
+ * L'iniziatore è il 'coworker', il destinatario è l' 'host'.
  */
-export const createOrGetPrivateChat = async (otherUserId: string): Promise<string> => {
+export async function createOrGetPrivateChat(targetUserId: string): Promise<string | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
-      throw new Error('User not authenticated');
+      sreLogger.warn('Tentativo di avviare chat senza autenticazione');
+      return null;
     }
 
-    return await getOrCreateConversation({
-      hostId: otherUserId,
-      coworkerId: user.id
+    if (user.id === targetUserId) {
+      sreLogger.warn('Tentativo di avviare chat con se stessi');
+      return null;
+    }
+
+    const conversationId = await getOrCreateConversation({
+      hostId: targetUserId,      // Il destinatario è l'Host
+      coworkerId: user.id,        // L'iniziatore è il Coworker
+      spaceId: null,
+      bookingId: null
     });
+
+    return conversationId;
   } catch (error) {
-    sreLogger.error('Error in createOrGetPrivateChat:', { otherUserId }, error as Error);
-    toast.error('Failed to start conversation');
-    throw error;
+    sreLogger.error('Errore nella creazione della chat privata', { targetUserId }, error as Error);
+    return null;
   }
-};
+}
 
 /**
- * Sends a connection request to another user.
+ * Invia una richiesta di connessione (Networking).
  */
-export const sendConnectionRequest = async (receiverId: string): Promise<boolean> => {
+export async function sendConnectionRequest(targetUserId: string): Promise<boolean> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast.error("You must be logged in to connect.");
+      toast.error("Devi essere loggato per connetterti");
       return false;
     }
 
     const { error } = await supabase
       .from('connections')
-      .insert([
-        {
-          sender_id: user.id,
-          receiver_id: receiverId,
-          status: 'pending',
-          expires_at: new Date(Date.now() + TIME_CONSTANTS.CONNECTION_REQUEST_EXPIRY).toISOString(),
-        },
-      ]);
+      .insert({
+        sender_id: user.id,
+        receiver_id: targetUserId,
+        status: 'pending'
+      });
 
     if (error) {
-      sreLogger.error('Error sending connection request', { receiverId }, error);
-      toast.error("Failed to send connection request.");
-      return false;
-    } else {
-      toast.success("Connection request sent successfully!");
-      return true;
+      if (error.code === '23505') { // Violazione unicità
+        toast.info("Richiesta di connessione già inviata");
+        return true;
+      }
+      throw error;
     }
-  } catch (err: unknown) {
-    sreLogger.error('Unexpected error sending connection request', {}, err as Error);
-    toast.error("An unexpected error occurred.");
+
+    toast.success("Richiesta di connessione inviata");
+    return true;
+  } catch (error) {
+    sreLogger.error('Errore invio richiesta connessione', { targetUserId }, error as Error);
+    toast.error("Errore nell'invio della richiesta");
     return false;
   }
-};
+}
 
-/**
- * Accepts a connection request.
- */
-export const acceptConnectionRequest = async (connectionId: string): Promise<boolean> => {
+export async function acceptConnectionRequest(requestId: string): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('connections')
       .update({ status: 'accepted' })
-      .eq('id', connectionId);
+      .eq('id', requestId);
 
-    if (error) {
-      sreLogger.error('Error accepting connection request', { connectionId }, error);
-      toast.error("Failed to accept connection request.");
-      return false;
-    } else {
-      toast.success("Connection request accepted successfully!");
-      return true;
-    }
-  } catch (err: unknown) {
-    sreLogger.error('Unexpected error accepting connection request', {}, err as Error);
-    toast.error("An unexpected error occurred.");
+    if (error) throw error;
+
+    toast.success("Connessione accettata");
+    return true;
+  } catch (error) {
+    sreLogger.error('Errore accettazione connessione', { requestId }, error as Error);
+    toast.error("Errore nell'accettare la richiesta");
     return false;
   }
-};
+}
 
-/**
- * Rejects a connection request.
- */
-export const rejectConnectionRequest = async (connectionId: string): Promise<boolean> => {
+export async function rejectConnectionRequest(requestId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('connections')
+      .update({ status: 'rejected' })
+      .eq('id', requestId);
+
+    if (error) throw error;
+
+    toast.success("Connessione rifiutata");
+    return true;
+  } catch (error) {
+    sreLogger.error('Errore rifiuto connessione', { requestId }, error as Error);
+    toast.error("Errore nel rifiutare la richiesta");
+    return false;
+  }
+}
+
+export async function removeConnection(connectionId: string): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('connections')
       .delete()
       .eq('id', connectionId);
 
-    if (error) {
-      sreLogger.error('Error rejecting connection request', { connectionId }, error);
-      toast.error("Failed to reject connection request.");
-      return false;
-    } else {
-      toast.success("Connection request rejected successfully!");
-      return true;
-    }
-  } catch (err: unknown) {
-    sreLogger.error('Unexpected error rejecting connection request', {}, err as Error);
-    toast.error("An unexpected error occurred.");
+    if (error) throw error;
+
+    toast.success("Connessione rimossa");
+    return true;
+  } catch (error) {
+    sreLogger.error('Errore rimozione connessione', { connectionId }, error as Error);
+    toast.error("Errore nella rimozione della connessione");
     return false;
   }
-};
-
-/**
- * Removes an existing connection.
- */
-export const removeConnection = async (connectionId: string): Promise<boolean> => {
-  try {
-    const { error } = await supabase
-      .from('connections')
-      .delete()
-      .eq('id', connectionId);
-
-    if (error) {
-      sreLogger.error('Error removing connection', { connectionId }, error);
-      toast.error("Failed to remove connection.");
-      return false;
-    } else {
-      toast.success("Connection removed successfully!");
-      return true;
-    }
-  } catch (err: unknown) {
-    sreLogger.error('Unexpected error removing connection', {}, err as Error);
-    toast.error("An unexpected error occurred.");
-    return false;
-  }
-};
+}
