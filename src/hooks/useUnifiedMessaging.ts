@@ -17,21 +17,28 @@ export const useUnifiedMessaging = () => {
   const activeConversationId = searchParams.get('id');
 
   // Helper to mark read and update local state
+  // STABILIZED: depends only on user ID
   const handleMarkAsRead = useCallback(async (conversationId: string) => {
     if (!authState.user?.id) return;
 
     // Call backend to update DB
-    await markConversationAsRead(conversationId, authState.user.id);
+    // We catch errors here to prevent unhandled promise rejections
+    try {
+       await markConversationAsRead(conversationId, authState.user.id);
 
-    // Update local state immediately
-    setUnreadCounts(prev => {
-      const newCounts = { ...prev };
-      delete newCounts[conversationId];
-      return newCounts;
-    });
+       // Update local state immediately
+       setUnreadCounts(prev => {
+         const newCounts = { ...prev };
+         delete newCounts[conversationId];
+         return newCounts;
+       });
+    } catch (e) {
+       console.error("Failed to mark conversation as read", e);
+    }
   }, [authState.user?.id]);
 
   // Load messages for active conversation and mark as read
+  // STABILIZED: This effect handles "View Change" only.
   useEffect(() => {
     if (activeConversationId) {
       // Fetch messages
@@ -54,6 +61,7 @@ export const useUnifiedMessaging = () => {
     }
   }, [setSearchParams]);
 
+  // STABILIZED: refreshData depends only on user ID.
   const refreshData = useCallback(async () => {
     if (!authState.user?.id) return;
     try {
@@ -71,11 +79,14 @@ export const useUnifiedMessaging = () => {
     }
   }, [authState.user?.id]);
 
+  // Initial Data Load
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
   // Realtime Subscription
+  // STABILIZED: Removed `activeConversationId` from dependencies.
+  // The subscription is now global for the user and persistent across navigation within the component.
   useEffect(() => {
     if (!authState.user?.id) return;
 
@@ -115,22 +126,53 @@ export const useUnifiedMessaging = () => {
              });
 
              // Update active messages if relevant
-             if (newMessage.conversation_id === activeConversationId) {
-                setActiveMessages(prev => {
-                   if (prev.some(m => m.id === newMessage.id)) return prev;
-                   return [...prev, newMessage];
-                });
+             // We use a functional update to access the *current* active messages without depending on activeConversationId
+             setActiveMessages(prev => {
+                 // We can't easily check activeConversationId here because it's not in dependency array.
+                 // However, we can check if the message belongs to the conversation of the currently displayed messages.
+                 // Or we can rely on the fact that if setActiveMessages is called, the user is looking at *some* conversation.
 
-                // If I am receiving a message in the ACTIVE conversation, mark it read immediately
-                if (!isMeSender) {
+                 // Better approach: Check URL params directly if needed, or better yet, check if the message conversation_id
+                 // matches the id of the first message in the list (heuristic) or just append if it looks right.
+                 // Actually, we can use `activeConversationId` from the closure IF we add it to deps, but we want to avoid that.
+
+                 // Solution: We rely on `searchParams.get('id')` which is accessible via closure?
+                 // No, searchParams changes.
+
+                 // If we simply update activeMessages only if the conversation ID matches the currently loaded messages...
+                 // But we don't store conversation ID in `activeMessages` array usually (it's in the message object).
+                 if (prev.length > 0 && prev[0].conversation_id === newMessage.conversation_id) {
+                     if (prev.some(m => m.id === newMessage.id)) return prev;
+                     return [...prev, newMessage];
+                 } else if (prev.length === 0) {
+                     // If empty, we can't be sure without checking the URL.
+                     // But if it's empty, maybe we just started the convo.
+                     // It is safer to re-fetch or let `activeConversationId` effect handle it if it triggers.
+                     // But for Realtime, we want instant update.
+                     return prev;
+                 }
+                 return prev;
+             });
+
+             // NOTE: We need to handle "Mark as Read" and "Unread Count" without `activeConversationId` dependency.
+             // We can use a ref or check window location.
+             const currentParams = new URLSearchParams(window.location.search);
+             const currentActiveId = currentParams.get('id');
+
+             if (newMessage.conversation_id === currentActiveId) {
+                // If I am receiving a message in the ACTIVE conversation
+                 if (!isMeSender) {
                    handleMarkAsRead(newMessage.conversation_id);
-                }
-             }
 
-             if (!isMeSender) {
-                // If not current active conversation, increment unread
-                if (newMessage.conversation_id !== activeConversationId) {
-                   setUnreadCounts(prev => ({
+                   // Also force update activeMessages if it was empty (first message case)
+                   setActiveMessages(prev => {
+                       if (prev.length === 0) return [newMessage];
+                       return prev;
+                   });
+                }
+             } else {
+                if (!isMeSender) {
+                    setUnreadCounts(prev => ({
                       ...prev,
                       [newMessage.conversation_id]: (prev[newMessage.conversation_id] || 0) + 1
                    }));
@@ -156,7 +198,7 @@ export const useUnifiedMessaging = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authState.user?.id, activeConversationId, refreshData, handleMarkAsRead]);
+  }, [authState.user?.id, refreshData, handleMarkAsRead]); // Removed activeConversationId
 
   return {
     conversations,
