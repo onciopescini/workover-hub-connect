@@ -49,7 +49,8 @@ const AuthProtected = ({ children, requireOnboarding = true }: AuthProtectedProp
     // Questo previene loop o accessi a dashboard senza ruolo
     if (
       authState.roles.length === 0 &&
-      location.pathname !== '/onboarding'
+      location.pathname !== '/onboarding' &&
+      location.pathname !== '/profile'
     ) {
       return {
         action: 'redirect',

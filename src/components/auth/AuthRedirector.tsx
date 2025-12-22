@@ -67,7 +67,8 @@ export const AuthRedirector = () => {
 
     // Case A: No Role (or incomplete)
     if (roles.length === 0) {
-      targetPath = '/onboarding';
+      // Changed from /onboarding to /profile to allow safe landing
+      targetPath = '/profile';
     }
     // Case B: Admin / Moderator
     else if (roles.includes('admin') || roles.includes('moderator')) {
