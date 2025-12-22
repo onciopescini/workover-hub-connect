@@ -33,11 +33,6 @@ export default function NetworkingAdvanced() {
             <span className="hidden sm:inline">Scopri Persone</span>
             <span className="sm:hidden">Scopri</span>
           </TabsTrigger>
-          <TabsTrigger value="messages" className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            <span className="hidden sm:inline">Chat Private</span>
-            <span className="sm:hidden">Chat</span>
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="connections" className="space-y-6">
@@ -46,25 +41,6 @@ export default function NetworkingAdvanced() {
 
         <TabsContent value="suggestions" className="space-y-6">
           <ConnectionSuggestions />
-        </TabsContent>
-
-        <TabsContent value="messages" className="space-y-6">
-          <div className="text-center py-12">
-            <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Chat Private
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Gestisci le tue conversazioni private con altri professionisti
-            </p>
-            <Button 
-              onClick={() => navigate("/private-chats")}
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Vai alle Chat Private
-            </Button>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
