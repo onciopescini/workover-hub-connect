@@ -69,8 +69,8 @@ export const useUnifiedMessaging = () => {
         fetchConversations(authState.user.id),
         fetchUnreadCounts(authState.user.id)
       ]);
-      setConversations(convs);
-      setUnreadCounts(unreads);
+      setConversations(convs || []); // Ensure array
+      setUnreadCounts(unreads || {}); // Ensure object
     } catch (error) {
       console.error("Error fetching messaging data:", error);
       toast.error("Impossibile caricare i messaggi");
@@ -106,21 +106,22 @@ export const useUnifiedMessaging = () => {
 
              // Update conversations list order/content
              setConversations(prev => {
-                const existingIdx = prev.findIndex(c => c.id === newMessage.conversation_id);
+                const safePrev = Array.isArray(prev) ? prev : [];
+                const existingIdx = safePrev.findIndex(c => c.id === newMessage.conversation_id);
                 if (existingIdx === -1) {
                   // New conversation? Refresh entire list to get details
                   refreshData();
-                  return prev;
+                  return safePrev;
                 }
 
                 const updatedConv = {
-                  ...prev[existingIdx],
+                  ...safePrev[existingIdx],
                   last_message: newMessage.content,
                   last_message_at: newMessage.created_at
                 };
 
                 // Move to top
-                const newConvs = [...prev];
+                const newConvs = [...safePrev];
                 newConvs.splice(existingIdx, 1);
                 return [updatedConv, ...newConvs];
              });
@@ -128,6 +129,7 @@ export const useUnifiedMessaging = () => {
              // Update active messages if relevant
              // We use a functional update to access the *current* active messages without depending on activeConversationId
              setActiveMessages(prev => {
+                 const safePrev = Array.isArray(prev) ? prev : [];
                  // We can't easily check activeConversationId here because it's not in dependency array.
                  // However, we can check if the message belongs to the conversation of the currently displayed messages.
                  // Or we can rely on the fact that if setActiveMessages is called, the user is looking at *some* conversation.
@@ -141,17 +143,17 @@ export const useUnifiedMessaging = () => {
 
                  // If we simply update activeMessages only if the conversation ID matches the currently loaded messages...
                  // But we don't store conversation ID in `activeMessages` array usually (it's in the message object).
-                 if (prev.length > 0 && prev[0].conversation_id === newMessage.conversation_id) {
-                     if (prev.some(m => m.id === newMessage.id)) return prev;
-                     return [...prev, newMessage];
-                 } else if (prev.length === 0) {
+                 if (safePrev.length > 0 && safePrev[0].conversation_id === newMessage.conversation_id) {
+                     if (safePrev.some(m => m.id === newMessage.id)) return safePrev;
+                     return [...safePrev, newMessage];
+                 } else if (safePrev.length === 0) {
                      // If empty, we can't be sure without checking the URL.
                      // But if it's empty, maybe we just started the convo.
                      // It is safer to re-fetch or let `activeConversationId` effect handle it if it triggers.
                      // But for Realtime, we want instant update.
-                     return prev;
+                     return safePrev;
                  }
-                 return prev;
+                 return safePrev;
              });
 
              // NOTE: We need to handle "Mark as Read" and "Unread Count" without `activeConversationId` dependency.
@@ -166,8 +168,9 @@ export const useUnifiedMessaging = () => {
 
                    // Also force update activeMessages if it was empty (first message case)
                    setActiveMessages(prev => {
-                       if (prev.length === 0) return [newMessage];
-                       return prev;
+                       const safePrev = Array.isArray(prev) ? prev : [];
+                       if (safePrev.length === 0) return [newMessage];
+                       return safePrev;
                    });
                 }
              } else {

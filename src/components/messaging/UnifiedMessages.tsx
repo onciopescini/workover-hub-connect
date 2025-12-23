@@ -9,13 +9,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Send, User, Calendar, MapPin, MoreVertical, Phone, ArrowLeft, Loader2, Filter, Eye } from "lucide-react";
+import { Send, User, Calendar, MapPin, ArrowLeft, Loader2, Eye } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { OnlineStatusIndicator } from './OnlineStatusIndicator';
 import { BookingDetailDialog } from './BookingDetailDialog';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type FilterType = 'all' | 'booking' | 'networking' | 'unread';
 
@@ -25,11 +23,11 @@ const safeRender = (value: any, fallback = ""): string => {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
   if (typeof value === 'object') {
-    console.warn("UnifiedMessages: Attempted to render object", value);
     // Try to extract common text fields if it's an object
     if (value.content && typeof value.content === 'string') return value.content;
     if (value.message && typeof value.message === 'string') return value.message;
-    return fallback || "[Contenuto non valido]";
+    if (value.label && typeof value.label === 'string') return value.label;
+    return fallback || "";
   }
   return String(value);
 };
@@ -61,7 +59,7 @@ export const UnifiedMessages = () => {
     }
   }, [activeMessages]);
 
-  const activeConversation = conversations.find(c => c.id === activeConversationId);
+  const activeConversation = conversations?.find(c => c.id === activeConversationId);
 
   // Mark as read in background when conversation becomes active
   useEffect(() => {
@@ -89,13 +87,16 @@ export const UnifiedMessages = () => {
   };
 
   const getParticipant = (conv: any) => {
-    if (!authState.user?.id) return null;
+    if (!authState.user?.id || !conv) return null;
     return conv.host_id === authState.user.id ? conv.coworker : conv.host;
   };
 
   // Filtering Logic
   const filteredConversations = useMemo(() => {
-    return conversations.filter(conv => {
+    const safeConversations = Array.isArray(conversations) ? conversations : [];
+
+    return safeConversations.filter(conv => {
+       if (!conv) return false;
        const isBooking = !!conv.booking_id;
        const unread = unreadCounts[conv.id] || 0;
 
@@ -376,11 +377,10 @@ export const UnifiedMessages = () => {
                    <div className="flex flex-wrap gap-1">
                      {Array.isArray(getParticipant(activeConversation)?.competencies) &&
                       getParticipant(activeConversation)?.competencies.map((skill: any, idx: number) => {
-                        // Ensure skill is a string before rendering
-                        if (typeof skill !== 'string') return null;
+                        const label = typeof skill === 'object' ? (skill.label || JSON.stringify(skill)) : String(skill);
                         return (
                           <Badge key={idx} variant="secondary" className="text-[10px]">
-                            {skill}
+                            {label}
                           </Badge>
                         );
                       })}

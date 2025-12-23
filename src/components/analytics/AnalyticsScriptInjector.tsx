@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { sreLogger } from '@/lib/sre-logger';
 
 /**
@@ -8,9 +8,15 @@ import { sreLogger } from '@/lib/sre-logger';
  * the main application render. Handles errors gracefully.
  */
 export const AnalyticsScriptInjector: React.FC = () => {
+  const injectedRef = useRef(false);
+
   useEffect(() => {
-    // Prevent duplicate injection
+    // Prevent duplicate injection in strict mode or re-renders
+    if (injectedRef.current) return;
+
+    // Check if already in DOM
     if (document.querySelector('script[data-domain="preview--workover-hub-connect.lovable.app"]')) {
+      injectedRef.current = true;
       return;
     }
 
@@ -27,6 +33,7 @@ export const AnalyticsScriptInjector: React.FC = () => {
       };
 
       document.head.appendChild(script);
+      injectedRef.current = true;
     } catch (error) {
       // Log but do not crash
       sreLogger.warn('Failed to inject analytics script', {}, error as Error);
