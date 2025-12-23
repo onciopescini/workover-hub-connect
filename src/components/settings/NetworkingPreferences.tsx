@@ -61,9 +61,13 @@ export function NetworkingPreferences() {
       if (error) throw error;
 
       if (data) {
+        // Map DB value 'busy' to UI value 'limited'
+        let availability = (data.collaboration_availability as string);
+        if (availability === 'busy') availability = 'limited';
+
         setSettings({
           networking_enabled: data.networking_enabled ?? true,
-          collaboration_availability: (data.collaboration_availability as 'available' | 'limited' | 'not_available') || 'available',
+          collaboration_availability: (availability as 'available' | 'limited' | 'not_available') || 'available',
           collaboration_types: data.collaboration_types || [],
           preferred_work_mode: (data.preferred_work_mode as 'remoto' | 'presenza' | 'flessibile') || 'flessibile'
         });
@@ -79,11 +83,16 @@ export function NetworkingPreferences() {
   const saveSettings = async () => {
     try {
       setIsSaving(true);
+
+      // Map UI value 'limited' to DB value 'busy'
+      let dbAvailability = settings.collaboration_availability as string;
+      if (dbAvailability === 'limited') dbAvailability = 'busy';
+
       const { error } = await supabase
         .from('profiles')
         .update({
           networking_enabled: settings.networking_enabled,
-          collaboration_availability: settings.collaboration_availability,
+          collaboration_availability: dbAvailability,
           collaboration_types: settings.collaboration_types,
           preferred_work_mode: settings.preferred_work_mode
         })

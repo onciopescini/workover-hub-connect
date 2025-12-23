@@ -29,7 +29,7 @@ export const useUnreadCount = () => {
       // Fetch unread messages count
       const { count: messagesCount, error: messagesError } = await supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('read', false)
         .neq('sender_id', authState.user.id);
 
@@ -40,7 +40,7 @@ export const useUnreadCount = () => {
       if (authState.roles.includes('host')) {
         const { count, error: bookingsError } = await supabase
           .from('bookings')
-          .select('*', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('status', 'pending')
           // This is a simplified check. Ideally we join with workspaces where host_id = user.id
           // But for now, we rely on RLS or specific RPCs if available.
@@ -58,7 +58,7 @@ export const useUnreadCount = () => {
       // Fetch unread notifications
       const { count: notificationsCount, error: notifError } = await supabase
         .from('user_notifications')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('user_id', authState.user.id)
         .eq('read', false);
 
