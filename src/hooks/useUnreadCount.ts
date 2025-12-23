@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -6,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export interface UnreadCounts {
   total: number;
-  bookings: number;
+  bookingMessages: number;
   messages: number;
   notifications: number;
   privateMessages: number;
@@ -17,7 +16,7 @@ export const useUnreadCount = () => {
   const queryClient = useQueryClient();
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
     total: 0,
-    bookings: 0,
+    bookingMessages: 0,
     messages: 0,
     notifications: 0,
     privateMessages: 0
@@ -67,7 +66,7 @@ export const useUnreadCount = () => {
 
       setUnreadCounts({
         total: (messagesCount || 0) + bookingsCount + (notificationsCount || 0),
-        bookings: bookingsCount,
+        bookingMessages: bookingsCount,
         messages: messagesCount || 0,
         notifications: notificationsCount || 0,
         privateMessages: messagesCount || 0 // Mapping messages to privateMessages as they are now unified
@@ -116,5 +115,6 @@ export const useUnreadCount = () => {
     };
   }, [authState.user]);
 
-  return { unreadCounts, refetch: fetchUnreadCounts };
+  // Return "counts" to match the destructuring in consumers
+  return { counts: unreadCounts, refetch: fetchUnreadCounts };
 };
