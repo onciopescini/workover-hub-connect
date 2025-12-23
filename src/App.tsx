@@ -8,6 +8,7 @@ import { GDPRProvider } from "@/components/gdpr/GDPRProvider";
 import { CSPProvider } from "@/components/security/CSPProvider";
 import { SecurityHeadersProvider } from "@/components/security/SecurityHeadersProvider";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+import { AnalyticsScriptInjector } from "@/components/analytics/AnalyticsScriptInjector";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { AppRoutes } from "@/components/routing/AppRoutes";
 import { ProductionMonitoring } from "@/components/shared/ProductionMonitoring";
@@ -47,6 +48,7 @@ function App() {
               />
               <BrowserRouter>
                 <AnalyticsProvider>
+                  <AnalyticsScriptInjector />
                   <AuthProvider>
                     <MapboxTokenProvider>
                       <FiscalModeProvider>
