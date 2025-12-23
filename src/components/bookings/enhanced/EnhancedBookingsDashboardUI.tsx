@@ -78,7 +78,7 @@ export function EnhancedBookingsDashboardUI({
   return (
     <EnhancedBookingsDashboardLayout>
       <PaymentSuccessHandler />
-      <RealtimeBookingsSync onChange={refetch} />
+      {/* <RealtimeBookingsSync onChange={refetch} /> */}
 
       <BookingsDashboardHeader
         totalBookings={enhancedStats.total}
