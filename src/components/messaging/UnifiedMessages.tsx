@@ -55,7 +55,7 @@ export const UnifiedMessages = () => {
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [activeMessages]);
 
@@ -257,7 +257,7 @@ export const UnifiedMessages = () => {
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4" viewportRef={scrollRef}>
+            <ScrollArea className="flex-1 p-4">
               <div className="flex flex-col gap-4 max-w-3xl mx-auto">
                 {activeMessages.map((msg) => {
                   const isMe = msg.sender_id === authState.user?.id;
@@ -279,6 +279,7 @@ export const UnifiedMessages = () => {
                     </div>
                   );
                 })}
+                <div ref={scrollRef} />
               </div>
             </ScrollArea>
 
@@ -409,3 +410,5 @@ export const UnifiedMessages = () => {
     </div>
   );
 };
+
+export default UnifiedMessages;

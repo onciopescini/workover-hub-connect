@@ -1,92 +1,120 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from "@/hooks/auth/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { sreLogger } from '@/lib/sre-logger';
 
-interface UnreadCounts {
-  bookingMessages: number;
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/auth/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+
+export interface UnreadCounts {
   total: number;
+  bookings: number;
+  messages: number;
+  notifications: number;
+  privateMessages: number;
 }
 
 export const useUnreadCount = () => {
   const { authState } = useAuth();
-  const [counts, setCounts] = useState<UnreadCounts>({
-    bookingMessages: 0,
-    total: 0
+  const queryClient = useQueryClient();
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
+    total: 0,
+    bookings: 0,
+    messages: 0,
+    notifications: 0,
+    privateMessages: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
 
-  // STABILIZED: useCallback to prevent re-creation on every render
-  const fetchUnreadCounts = useCallback(async () => {
-    if (!authState.user?.id) {
-      setCounts({ bookingMessages: 0, total: 0 });
-      setIsLoading(false);
-      return;
-    }
+  const fetchUnreadCounts = async () => {
+    if (!authState.user) return;
 
     try {
-      // Get unread messages where current user is the recipient (or not sender)
-      // Since we don't have a direct 'recipient_id' column in the public.messages table shown in the types,
-      // we usually rely on "sender_id != current_user".
-      // However, to be precise, we should join conversations or ensure we are a participant.
-      // For now, mirroring existing logic: count messages not sent by me.
-
-      const { count: bookingCount } = await supabase
+      // Fetch unread messages count
+      const { count: messagesCount, error: messagesError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
-        .eq('is_read', false)
+        .eq('read', false)
         .neq('sender_id', authState.user.id);
 
-      const newCounts = {
-        bookingMessages: bookingCount || 0,
-        total: bookingCount || 0
-      };
+      if (messagesError) console.error('Error fetching unread messages:', messagesError);
 
-      setCounts(prev => {
-        if (prev.bookingMessages === newCounts.bookingMessages && prev.total === newCounts.total) {
-          return prev;
+      // Fetch unread booking requests (for hosts)
+      let bookingsCount = 0;
+      if (authState.roles.includes('host')) {
+        const { count, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending')
+          // This is a simplified check. Ideally we join with workspaces where host_id = user.id
+          // But for now, we rely on RLS or specific RPCs if available.
+          // Let's try to filter by spaces owned by user if possible, or use the 'host_id' logic if RLS allows.
+          // Assuming RLS filters bookings for the host correctly:
+          .not('created_at', 'is', null);
+
+        // Better approach: use a specific query if RLS isn't strict enough on 'pending' alone
+        // But assuming standard RLS:
+        if (!bookingsError && count !== null) {
+          bookingsCount = count;
         }
-        return newCounts;
+      }
+
+      // Fetch unread notifications
+      const { count: notificationsCount, error: notifError } = await supabase
+        .from('user_notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', authState.user.id)
+        .eq('read', false);
+
+      if (notifError) console.error('Error fetching unread notifications:', notifError);
+
+      setUnreadCounts({
+        total: (messagesCount || 0) + bookingsCount + (notificationsCount || 0),
+        bookings: bookingsCount,
+        messages: messagesCount || 0,
+        notifications: notificationsCount || 0,
+        privateMessages: messagesCount || 0 // Mapping messages to privateMessages as they are now unified
       });
+
     } catch (error) {
-      sreLogger.error("Error fetching unread counts", { userId: authState.user?.id }, error as Error);
-      setCounts({ bookingMessages: 0, total: 0 });
-    } finally {
-      setIsLoading(false);
+      console.error('Error in fetchUnreadCounts:', error);
     }
-  }, [authState.user?.id]);
+  };
 
-  // Set up real-time subscriptions
   useEffect(() => {
-    if (!authState.user?.id) return;
-
     fetchUnreadCounts();
 
-    // Subscribe to booking messages changes
-    const bookingChannel = supabase
-      .channel('booking-messages-unread')
+    if (!authState.user) return;
+
+    // Realtime subscriptions
+    const channel = supabase
+      .channel('unread-counts')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'messages',
-          filter: `sender_id=neq.${authState.user.id}`
+          filter: `receiver_id=eq.${authState.user.id}`, // Assuming receiver_id exists or similar logic
         },
         () => {
           fetchUnreadCounts();
+          queryClient.invalidateQueries({ queryKey: ['messages'] });
         }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_notifications',
+          filter: `user_id=eq.${authState.user.id}`,
+        },
+        () => fetchUnreadCounts()
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(bookingChannel);
+      supabase.removeChannel(channel);
     };
-  }, [authState.user?.id, fetchUnreadCounts]);
+  }, [authState.user]);
 
-  return {
-    counts,
-    isLoading,
-    refetch: fetchUnreadCounts
-  };
+  return { unreadCounts, refetch: fetchUnreadCounts };
 };

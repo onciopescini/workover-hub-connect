@@ -48,7 +48,10 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
         coworker: Array.isArray(bookingData.coworker) ? bookingData.coworker[0] : bookingData.coworker,
         space: {
           id: spaceData.id,
-          title: spaceData.name, // Mapping name -> title here
+          // Correctly map workspace 'name' to 'title' but also keep 'name' available
+          // Fixes the discrepancy between legacy 'spaces' usage and 'workspaces'
+          title: spaceData.name,
+          name: spaceData.name,
           address: spaceData.address,
           host_id: spaceData.host_id,
           price_per_day: spaceData.price_per_day
@@ -146,7 +149,8 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p className="font-medium">{booking.space?.title}</p>
+                {/* Robustly handle title/name property */}
+                <p className="font-medium">{booking.space?.title || booking.space?.name}</p>
                 <p className="text-sm text-muted-foreground">{booking.space?.address}</p>
               </CardContent>
             </Card>
