@@ -31,11 +31,16 @@ export const RealtimeBookingsSync = ({ onChange }: RealtimeBookingsSyncProps) =>
       )
       .on("system", { event: "error" }, (error) => {
         // Just log the error, let Supabase client handle reconnection internally
+        const safeErrorMessage = typeof error === 'object' ? JSON.stringify(error) : String(error);
         logger.error("Realtime connection error", {
           component: "RealtimeBookingsSync"
-        }, error instanceof Error ? error : undefined);
+        }, new Error(safeErrorMessage));
       })
       .subscribe((status) => {
+        if (!status || typeof status !== 'string') {
+          return;
+        }
+
         if (status === 'SUBSCRIBED') {
           logger.info("Realtime connection established", {
             component: "RealtimeBookingsSync"
