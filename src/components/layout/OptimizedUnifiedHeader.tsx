@@ -171,12 +171,12 @@ export const OptimizedUnifiedHeader = () => {
                      >
                        <Link to="/messages" aria-label="Messaggi">
                          <MessageSquare className="w-5 h-5 text-gray-600" />
-                         {unreadCounts.total > 0 && (
+                         {(unreadCounts?.total || 0) > 0 && (
                            <Badge
                              variant="destructive"
                              className="absolute -top-1 -right-1 w-4 h-4 text-[10px] p-0 flex items-center justify-center rounded-full"
                            >
-                             {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
+                             {(unreadCounts?.total || 0) > 99 ? '99+' : unreadCounts?.total}
                            </Badge>
                          )}
                        </Link>

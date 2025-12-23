@@ -39,9 +39,9 @@ export const MessagesTabsManager = ({
                 <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("all")}
                 </Badge>
-                {unreadCounts.total > 0 && (
+                {(unreadCounts?.total || 0) > 0 && (
                   <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
-                    {unreadCounts.total > 99 ? '99+' : unreadCounts.total}
+                    {(unreadCounts?.total || 0) > 99 ? '99+' : unreadCounts?.total}
                   </Badge>
                 )}
               </div>
@@ -54,9 +54,9 @@ export const MessagesTabsManager = ({
                 <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("bookings")}
                 </Badge>
-                {unreadCounts.bookingMessages > 0 && (
+                {(unreadCounts?.bookingMessages || 0) > 0 && (
                   <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
-                    {unreadCounts.bookingMessages > 99 ? '99+' : unreadCounts.bookingMessages}
+                    {(unreadCounts?.bookingMessages || 0) > 99 ? '99+' : unreadCounts?.bookingMessages}
                   </Badge>
                 )}
               </div>
@@ -69,9 +69,9 @@ export const MessagesTabsManager = ({
                 <Badge variant="secondary" className="text-xs min-w-[1.5rem] h-5 px-1.5">
                   {getTabCount("private")}
                 </Badge>
-                {unreadCounts.privateMessages > 0 && (
+                {(unreadCounts?.privateMessages || 0) > 0 && (
                   <Badge variant="destructive" className="w-5 h-5 text-xs p-0 flex items-center justify-center flex-shrink-0">
-                    {unreadCounts.privateMessages > 99 ? '99+' : unreadCounts.privateMessages}
+                    {(unreadCounts?.privateMessages || 0) > 99 ? '99+' : unreadCounts?.privateMessages}
                   </Badge>
                 )}
               </div>
