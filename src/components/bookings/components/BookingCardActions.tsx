@@ -26,6 +26,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
   const handlePayNow = async () => {
     try {
       // Validate host connection status
+      // Explicitly querying 'workspaces' table as source of truth
       const { data: spaceData, error: spaceError } = await supabase
         .from('workspaces')
         .select('profiles(stripe_connected)')
@@ -100,7 +101,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
                 booking={booking}
                 reviewType="space"
                 targetId={booking.space_id}
-                targetName={booking.space?.title || "Spazio"}
+                targetName={booking.space?.title || booking.space?.name || "Spazio"}
               />
             )
           )

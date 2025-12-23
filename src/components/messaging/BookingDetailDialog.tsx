@@ -21,7 +21,9 @@ interface BookingDetailDialogProps {
 export const BookingDetailDialog = ({ isOpen, onClose, booking }: BookingDetailDialogProps) => {
   if (!booking) return null;
 
-  const space = booking.space || {};
+  // Robustly handle both 'space' (from joined queries or prop injection) and 'workspaces' (raw DB join)
+  const space = booking.space || booking.workspaces || {};
+
   const statusLabels: Record<string, string> = {
     pending: 'In attesa',
     confirmed: 'Confermata',
@@ -49,18 +51,22 @@ export const BookingDetailDialog = ({ isOpen, onClose, booking }: BookingDetailD
 
           {/* Space Info */}
           <div className="flex gap-4">
-             {space.images?.[0] && (
+             {space.images?.[0] || space.image_url ? (
                <img
-                 src={space.images[0]}
-                 alt={space.name}
+                 src={space.images?.[0] || space.image_url}
+                 alt={space.name || space.title}
                  className="w-20 h-20 rounded-lg object-cover"
                />
+             ) : (
+               <div className="w-20 h-20 rounded-lg bg-slate-100 flex items-center justify-center">
+                 <MapPin className="text-slate-400" />
+               </div>
              )}
              <div>
-               <h3 className="font-semibold">{space.name}</h3>
+               <h3 className="font-semibold">{space.name || space.title || "Spazio"}</h3>
                <div className="flex items-center text-sm text-muted-foreground mt-1">
                  <MapPin className="w-3 h-3 mr-1" />
-                 {space.city || space.address}
+                 {space.city || space.address || "Indirizzo non disponibile"}
                </div>
              </div>
           </div>
@@ -82,7 +88,6 @@ export const BookingDetailDialog = ({ isOpen, onClose, booking }: BookingDetailD
                 Orario
               </div>
               <div className="text-sm">
-                 {/* Assuming standard fields, adjust if necessary */}
                  {booking.start_time || '09:00'} - {booking.end_time || '18:00'}
               </div>
             </div>
@@ -97,7 +102,7 @@ export const BookingDetailDialog = ({ isOpen, onClose, booking }: BookingDetailD
              <span className="font-medium">{booking.guests_count || 1} persone</span>
           </div>
 
-          {/* Payment Info (Simplified) */}
+          {/* Payment Info */}
           <div className="flex items-center justify-between text-sm">
              <div className="flex items-center gap-2">
                <CreditCard className="w-4 h-4 text-muted-foreground" />
