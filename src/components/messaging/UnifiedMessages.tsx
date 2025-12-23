@@ -269,7 +269,9 @@ export const UnifiedMessages = () => {
                           ? 'bg-primary text-primary-foreground rounded-tr-sm'
                           : 'bg-white border text-foreground rounded-tl-sm'}
                       `}>
-                        {safeRender(msg.content)}
+                        <span className="text-sm">
+                          {typeof msg.content === 'string' ? msg.content : 'Message content unavailable'}
+                        </span>
                         <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                           {format(new Date(msg.created_at), 'HH:mm')}
                         </div>
