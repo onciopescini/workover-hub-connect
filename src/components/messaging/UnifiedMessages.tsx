@@ -19,6 +19,21 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type FilterType = 'all' | 'booking' | 'networking' | 'unread';
 
+// Helper to safely render potentially malformed data
+const safeRender = (value: any, fallback = ""): string => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    console.warn("UnifiedMessages: Attempted to render object", value);
+    // Try to extract common text fields if it's an object
+    if (value.content && typeof value.content === 'string') return value.content;
+    if (value.message && typeof value.message === 'string') return value.message;
+    return fallback || "[Contenuto non valido]";
+  }
+  return String(value);
+};
+
 export const UnifiedMessages = () => {
   const {
     conversations,
@@ -196,7 +211,7 @@ export const UnifiedMessages = () => {
                        </div>
 
                        <p className={`text-xs truncate ${unread > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                         {conv.last_message || "Nessun messaggio"}
+                         {safeRender(conv.last_message, "Nessun messaggio")}
                        </p>
                      </div>
                    </div>
@@ -253,7 +268,7 @@ export const UnifiedMessages = () => {
                           ? 'bg-primary text-primary-foreground rounded-tr-sm'
                           : 'bg-white border text-foreground rounded-tl-sm'}
                       `}>
-                        {msg.content}
+                        {safeRender(msg.content)}
                         <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                           {format(new Date(msg.created_at), 'HH:mm')}
                         </div>
@@ -359,15 +374,20 @@ export const UnifiedMessages = () => {
                  <div>
                    <h5 className="text-xs font-semibold mb-2">Competenze & Tags</h5>
                    <div className="flex flex-wrap gap-1">
-                     {getParticipant(activeConversation)?.competencies?.map((skill: string, idx: number) => (
-                       <Badge key={idx} variant="secondary" className="text-[10px]">
-                         {skill}
-                       </Badge>
-                     ))}
+                     {Array.isArray(getParticipant(activeConversation)?.competencies) &&
+                      getParticipant(activeConversation)?.competencies.map((skill: any, idx: number) => {
+                        // Ensure skill is a string before rendering
+                        if (typeof skill !== 'string') return null;
+                        return (
+                          <Badge key={idx} variant="secondary" className="text-[10px]">
+                            {skill}
+                          </Badge>
+                        );
+                      })}
                      {/* Fallback to skills string if competencies is empty */}
-                     {(!getParticipant(activeConversation)?.competencies || getParticipant(activeConversation)?.competencies.length === 0) && getParticipant(activeConversation)?.skills && (
+                     {(!getParticipant(activeConversation)?.competencies || getParticipant(activeConversation)?.competencies?.length === 0) && getParticipant(activeConversation)?.skills && (
                        <Badge variant="secondary" className="text-[10px]">
-                         {getParticipant(activeConversation).skills}
+                         {safeRender(getParticipant(activeConversation).skills)}
                        </Badge>
                      )}
                    </div>
