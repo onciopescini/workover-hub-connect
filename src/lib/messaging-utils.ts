@@ -75,7 +75,7 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
     booking_id: bookingId,
     content: content,
     sender_id: user.id,
-    receiver_id: recipientId, // Feed the trigger!
+    // receiver_id: recipientId, // REMOVED: Column does not exist
     attachments: [] // Initialize empty
   };
 

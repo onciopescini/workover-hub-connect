@@ -32,10 +32,11 @@ export async function sendMessageToConversation(params: {
   bookingId?: string | null;
   content: string;
   senderId: string;
+  recipientId?: string; // New optional parameter for safe fallback
 }) {
-  const { conversationId, bookingId, content, senderId } = params;
+  const { conversationId, bookingId, content, senderId, recipientId } = params;
   
-  sreLogger.info('Sending message', { conversationId, bookingId, senderId });
+  sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
   
   const messageData: any = {
     conversation_id: conversationId,
@@ -48,6 +49,7 @@ export async function sendMessageToConversation(params: {
     messageData.booking_id = bookingId;
   }
   
+  // Step 1: Insert Message
   const { data, error } = await supabase
     .from('messages')
     .insert(messageData)
@@ -60,12 +62,44 @@ export async function sendMessageToConversation(params: {
   }
   
   sreLogger.info('Message sent', { messageId: data.id });
+
+  // Step 2: Safe Notification Fallback
+  if (recipientId) {
+    try {
+      const { error: notifError } = await supabase
+        .from('user_notifications')
+        .insert({
+          user_id: recipientId,
+          type: 'message',
+          title: 'Nuovo Messaggio',
+          content: 'Hai ricevuto un nuovo messaggio nella tua prenotazione.',
+          metadata: {
+            conversation_id: conversationId,
+            message_id: data.id,
+            booking_id: bookingId || null
+          }
+        });
+
+      if (notifError) {
+        console.warn('Fallback notification failed (non-blocking):', notifError.message);
+      } else {
+        sreLogger.info('Fallback notification sent', { recipientId });
+      }
+    } catch (err) {
+      console.warn('Fallback notification exception (non-blocking):', err);
+    }
+  }
+
   return data;
 }
 
 export async function fetchConversations(userId: string) {
   sreLogger.info('Fetching conversations', { userId });
   
+  if (!userId) {
+    return [];
+  }
+
   // Using explicit foreign key relationships and correct table names
   const { data, error } = await supabase
     .from('conversations')
@@ -82,6 +116,13 @@ export async function fetchConversations(userId: string) {
     
   if (error) {
     sreLogger.error('fetchConversations error', { userId }, error as Error);
+    // Return empty array instead of throwing to prevent 406 UI crashes if it's a transient network issue
+    // though the user asked to fix the 406 specifically.
+    // The 406 is usually a header mismatch. Supabase client handles headers.
+    // If the error persists, it might be due to the shape of the return not matching the expectation?
+    // But .select() returns [] on no match.
+    // If it's a strictly 406 error, it's typically "Not Acceptable".
+    // We will throw if it's a real error, but we've added the userId guard which was a suspected cause.
     throw new Error(error.message);
   }
   
