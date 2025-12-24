@@ -30,7 +30,7 @@ export const useUnreadCount = () => {
       const { count: messagesCount, error: messagesError } = await supabase
         .from('messages')
         .select('id', { count: 'exact' })
-        .eq('read', false)
+        .eq('is_read', false)
         .neq('sender_id', authState.user.id);
 
       if (messagesError) console.error('Error fetching unread messages:', messagesError);
@@ -60,7 +60,7 @@ export const useUnreadCount = () => {
         .from('user_notifications')
         .select('id', { count: 'exact' })
         .eq('user_id', authState.user.id)
-        .eq('read', false);
+        .eq('is_read', false);
 
       if (notifError) console.error('Error fetching unread notifications:', notifError);
 

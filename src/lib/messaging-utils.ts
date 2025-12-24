@@ -34,6 +34,32 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated");
 
+  // Determine recipient
+  let recipientId: string | null = null;
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('user_id, workspaces(host_id)')
+    .eq('id', bookingId)
+    .single();
+
+  if (booking) {
+    // If current user is the booking creator (coworker), recipient is host
+    // If current user is the host, recipient is the booking creator
+    const hostId = (booking.workspaces as any)?.host_id;
+    if (user.id === booking.user_id) {
+       recipientId = hostId;
+    } else if (user.id === hostId) {
+       recipientId = booking.user_id;
+    }
+  }
+
+  if (!recipientId) {
+    console.warn("Could not determine recipient for message. Aborting to prevent trigger failure.");
+    // We do not throw to avoid crashing UI completely, but we return early.
+    // Or we throw if we want the UI to show an error.
+    throw new Error("Could not determine message recipient.");
+  }
+
   // To maintain compatibility with new unified messaging, we should ideally fetch or create a conversation.
   // However, for this simple utility, we insert with booking_id and let the backend trigger handle conversation creation/lookup if possible.
   // BUT: The trigger 'handle_new_message_notification_v2' depends on conversation_id or booking_id lookup.
@@ -49,6 +75,7 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
     booking_id: bookingId,
     content: content,
     sender_id: user.id,
+    receiver_id: recipientId, // Feed the trigger!
     attachments: [] // Initialize empty
   };
 
