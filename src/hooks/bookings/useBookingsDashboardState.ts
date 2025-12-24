@@ -8,13 +8,21 @@ import { BookingWithDetails } from '@/types/booking';
 import { BookingsDashboardState, BookingsStats, BookingTabType } from '@/types/bookings/bookings-dashboard.types';
 import { BookingsActions } from '@/types/bookings/bookings-actions.types';
 import { UserRole } from '@/types/bookings/bookings-ui.types';
+import { useNavigate } from 'react-router-dom';
+import { getOrCreateConversation } from '@/lib/conversations';
+import { toast } from 'sonner';
 
 export const useBookingsDashboardState = () => {
   const { hasAnyRole } = useRoleAccess();
   const { debug, error: logError } = useLogger({ context: 'useBookingsDashboardState' });
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<BookingFilter>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
+
+  // These are effectively unused now for message dialog, but kept for compatibility if needed or removed cleanly
+  // Ideally we remove them, but the DashboardState type expects them.
+  // We will keep the state variables to satisfy TypeScript interfaces but they will be unused logic-wise.
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [messageBookingId, setMessageBookingId] = useState("");
@@ -116,31 +124,64 @@ export const useBookingsDashboardState = () => {
     return isHost ? "host" : "coworker";
   }, [isHost]);
 
-  const handleOpenMessageDialog = useCallback((bookingId: string, spaceTitle: string) => {
+  const handleOpenMessageDialog = useCallback(async (bookingId: string, spaceTitle: string) => {
     try {
       const booking = bookings.find(b => b?.id === bookingId);
-      if (!booking || !isChatEnabled(booking)) {
+
+      if (!booking) {
+        toast.error("Prenotazione non trovata");
+        return;
+      }
+
+      if (!isChatEnabled(booking)) {
         if (booking?.status === 'pending' && booking?.space?.confirmation_type === 'host_approval') {
-          alert('La chat sarà disponibile dopo l\'approvazione dell\'host e il completamento del pagamento.');
+          toast.info('La chat sarà disponibile dopo l\'approvazione dell\'host e il completamento del pagamento.');
         } else if (booking?.status === 'pending') {
-          alert('La chat sarà disponibile dopo il completamento del pagamento.');
+          toast.info('La chat sarà disponibile dopo il completamento del pagamento.');
         } else {
-          alert('Chat non disponibile per questa prenotazione.');
+          toast.info('Chat non disponibile per questa prenotazione.');
         }
         return;
       }
+
+      // Logic to find host and coworker IDs
+      // If I am host, the other is coworker. If I am coworker, the other is host.
+      // However, getOrCreateConversation requires explicit hostId and coworkerId.
+
+      const hostId = booking.space?.host_id;
+      const coworkerId = booking.user_id || booking.coworker?.id;
+
+      if (!hostId || !coworkerId) {
+        toast.error('Dati mancanti per avviare la chat');
+        logError('Missing IDs for chat', new Error('Missing hostId or coworkerId'), {
+            bookingId: booking.id,
+            hostId,
+            coworkerId,
+            bookingUserId: booking.user_id,
+            bookingCoworkerId: booking.coworker?.id
+        });
+        return;
+      }
       
-      setMessageBookingId(bookingId);
-      setMessageSpaceTitle(spaceTitle);
-      setMessageDialogOpen(true);
+      const conversationId = await getOrCreateConversation({
+        hostId,
+        coworkerId,
+        spaceId: booking.space_id,
+        bookingId: booking.id
+      });
+
+      // Navigate to the unified messages page with the conversation ID
+      navigate(`/messages?id=${conversationId}`);
+
     } catch (dialogError) {
-      logError('Error opening message dialog', dialogError as Error, {
+      logError('Error opening conversation', dialogError as Error, {
         operation: 'open_message_dialog',
         bookingId,
         spaceTitle
       });
+      toast.error("Errore nell'apertura della chat");
     }
-  }, [bookings, isChatEnabled]);
+  }, [bookings, isChatEnabled, navigate]);
 
   const handleOpenCancelDialog = useCallback((booking: BookingWithDetails) => {
     try {

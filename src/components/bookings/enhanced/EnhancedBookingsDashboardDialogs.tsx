@@ -1,5 +1,4 @@
 import React from 'react';
-import { MessageDialog } from '@/components/messaging/MessageDialog';
 import { CancelBookingDialog } from '../CancelBookingDialog';
 import { BookingWithDetails } from '@/types/booking';
 
@@ -16,10 +15,6 @@ interface EnhancedBookingsDashboardDialogsProps {
 }
 
 export function EnhancedBookingsDashboardDialogs({
-  messageDialogOpen,
-  setMessageDialogOpen,
-  messageBookingId,
-  messageSpaceTitle,
   cancelDialogOpen,
   setCancelDialogOpen,
   selectedBooking,
@@ -28,12 +23,7 @@ export function EnhancedBookingsDashboardDialogs({
 }: EnhancedBookingsDashboardDialogsProps) {
   return (
     <>
-      <MessageDialog
-        open={messageDialogOpen}
-        onOpenChange={setMessageDialogOpen}
-        bookingId={messageBookingId}
-        bookingTitle={messageSpaceTitle}
-      />
+      {/* MessageDialog removed as we now redirect to /messages */}
 
       {selectedBooking && (
         <CancelBookingDialog

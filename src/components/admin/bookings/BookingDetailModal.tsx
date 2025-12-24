@@ -35,7 +35,7 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
 
       // Fetch space details separately (to handle workspaces vs spaces transition)
       const { data: spaceData, error: spaceError } = await supabase
-        .from('workspaces')
+        .from('spaces')
         .select('id, name, address, host_id, price_per_day')
         .eq('id', bookingData.space_id)
         .single();
