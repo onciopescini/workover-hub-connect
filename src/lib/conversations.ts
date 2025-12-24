@@ -8,6 +8,12 @@ export async function getOrCreateConversation(params: {
   bookingId?: string | null;
 }): Promise<string> {
   const { hostId, coworkerId, spaceId, bookingId } = params;
+
+  if (!hostId || !coworkerId) {
+    const errorMsg = 'Missing required parameters for conversation creation';
+    sreLogger.error(errorMsg, { hostId, coworkerId });
+    throw new Error(errorMsg);
+  }
   
   sreLogger.info('Creating conversation', { hostId, coworkerId, spaceId, bookingId });
   
@@ -97,6 +103,7 @@ export async function fetchConversations(userId: string) {
   sreLogger.info('Fetching conversations', { userId });
   
   if (!userId) {
+    console.warn('fetchConversations called with empty userId');
     return [];
   }
 
