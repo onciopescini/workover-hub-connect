@@ -11,7 +11,8 @@ import { Card } from "@/components/ui/card";
 interface BookingCardProps {
   booking: BookingWithDetails;
   userRole: UserRole;
-  onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
+  /** @deprecated Replaced by direct navigation in useBookingCardState */
+  onOpenMessageDialog?: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
 }
 

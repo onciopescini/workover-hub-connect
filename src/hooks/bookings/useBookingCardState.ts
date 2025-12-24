@@ -1,15 +1,19 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { it } from "date-fns/locale";
+import { toast } from "sonner";
 import { BookingWithDetails } from "@/types/booking";
 import { BookingCardDisplayData, UserRole } from '@/types/bookings/bookings-ui.types';
 import { BookingCardActions } from '@/types/bookings/bookings-actions.types';
 import { sreLogger } from '@/lib/sre-logger';
+import { getOrCreateConversation } from '@/lib/conversations';
 
 interface UseBookingCardStateProps {
   booking: BookingWithDetails;
   userRole: UserRole;
-  onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
+  /** @deprecated Replaced by direct navigation in useBookingCardState */
+  onOpenMessageDialog?: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
 }
 
@@ -19,6 +23,7 @@ export const useBookingCardState = ({
   onOpenMessageDialog,
   onOpenCancelDialog
 }: UseBookingCardStateProps) => {
+  const navigate = useNavigate();
   
   const displayData: BookingCardDisplayData = useMemo(() => {
     const getOtherParty = () => {
@@ -112,9 +117,34 @@ export const useBookingCardState = ({
   }, [booking, userRole]);
 
   const actions: BookingCardActions = useMemo(() => ({
-    onMessage: () => onOpenMessageDialog(booking.id, booking.space?.title || "Spazio"),
+    onMessage: async () => {
+      // Logic for redirecting to unified messages
+      try {
+        const hostId = booking.space?.host_id;
+        const coworkerId = booking.user_id;
+
+        if (!hostId || !coworkerId) {
+          toast.error("Impossibile avviare la chat: dati mancanti");
+          return;
+        }
+
+        const conversationId = await getOrCreateConversation({
+          hostId,
+          coworkerId,
+          spaceId: booking.space_id,
+          bookingId: booking.id
+        });
+
+        if (conversationId) {
+          navigate(`/messages?id=${conversationId}`);
+        }
+      } catch (error) {
+        console.error("Error creating conversation:", error);
+        toast.error("Errore nell'apertura della chat");
+      }
+    },
     onCancel: () => onOpenCancelDialog(booking),
-  }), [booking, onOpenMessageDialog, onOpenCancelDialog]);
+  }), [booking, onOpenCancelDialog, navigate]);
 
   return {
     displayData,
