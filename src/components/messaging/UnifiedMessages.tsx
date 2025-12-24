@@ -72,14 +72,30 @@ export const UnifiedMessages = () => {
 
     setIsSending(true);
     try {
+      // Determine recipient for notification fallback
+      let recipientId: string | undefined = undefined;
+
+      if (activeConversation) {
+        if (authState.user.id === activeConversation.host_id) {
+          recipientId = activeConversation.coworker_id;
+        } else if (authState.user.id === activeConversation.coworker_id) {
+          recipientId = activeConversation.host_id;
+        } else {
+          // Fallback if user is neither (e.g. admin or weird state)
+          recipientId = activeConversation.host_id;
+        }
+      }
+
       await sendMessageToConversation({
         conversationId: activeConversationId,
         content: newMessage,
         senderId: authState.user.id,
-        bookingId: activeConversation?.booking_id
+        bookingId: activeConversation?.booking_id,
+        recipientId
       });
       setNewMessage("");
     } catch (error) {
+      console.error("Failed to send message:", error);
       toast.error("Errore nell'invio del messaggio");
     } finally {
       setIsSending(false);
