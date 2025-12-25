@@ -115,7 +115,7 @@ export async function fetchConversations(userId: string) {
       host:profiles!conversations_host_id_fkey(id, first_name, last_name, profile_photo_url),
       coworker:profiles!conversations_coworker_id_fkey(id, first_name, last_name, profile_photo_url),
       space:workspaces(id, name, address, city, price_per_hour, photos),
-      booking:bookings(id, booking_date, status, total_amount, start_time, end_time)
+      booking:bookings(id, booking_date, status, start_time, end_time)
     `)
     .or(`host_id.eq.${userId},coworker_id.eq.${userId}`)
     .order('last_message_at', { ascending: false, nullsFirst: false })
