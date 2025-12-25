@@ -2,23 +2,23 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Star, MessageSquare, Filter, ThumbsUp } from "lucide-react";
-import { SpaceReview, calculateReviewStats, formatReviewAuthor, getTimeSinceReview } from "@/lib/space-review-utils";
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { MessageSquare, Filter } from "lucide-react";
+import { calculateSpaceReviewStats } from '@/lib/space-review-service';
+import { SpaceReviewWithDetails } from '@/types/space-review';
+import { ReviewCard } from '@/components/reviews/ReviewCard';
+import { StarRating } from '@/components/ui/StarRating';
 
 interface SpaceReviewsProps {
   spaceId: string;
-  reviews: SpaceReview[];
+  reviews: SpaceReviewWithDetails[];
 }
 
 export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   
-  const { averageRating, totalReviews, ratingDistribution: distMap } = calculateReviewStats(reviews);
+  const { averageRating, totalReviews, ratingDistribution: distMap } = calculateSpaceReviewStats(reviews);
   const visibleReviews = reviews.filter(review => review.is_visible !== false);
   
   // Filter by rating if selected
@@ -35,29 +35,6 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
     const percentage = visibleReviews.length > 0 ? (count / visibleReviews.length) * 100 : 0;
     return { rating, count, percentage };
   });
-
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
-    const sizeClasses = {
-      sm: 'w-3 h-3',
-      md: 'w-4 h-4',
-      lg: 'w-5 h-5'
-    };
-    
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${sizeClasses[size]} ${
-              star <= rating
-                ? "text-yellow-400 fill-current"
-                : "text-gray-300"
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
 
   if (visibleReviews.length === 0) {
     return (
@@ -98,7 +75,7 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
           <div className="text-center">
             <div className="text-4xl font-bold mb-2">{averageRating.toFixed(1)}</div>
             <div className="flex justify-center mb-2">
-              {renderStars(Math.round(averageRating), 'lg')}
+              <StarRating rating={Math.round(averageRating)} size="lg" readOnly />
             </div>
             <p className="text-gray-600">su {visibleReviews.length} recensioni</p>
           </div>
@@ -112,7 +89,7 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
                 onClick={() => setSelectedRating(selectedRating === rating ? null : rating)}
               >
                 <span className="text-sm w-6">{rating}</span>
-                {renderStars(rating, 'sm')}
+                <StarRating rating={rating} size="sm" readOnly />
                 <div className="flex-1 bg-gray-200 rounded-full h-2 mx-2">
                   <div 
                     className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
@@ -145,40 +122,11 @@ export function SpaceReviews({ spaceId, reviews }: SpaceReviewsProps) {
         {/* Reviews List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {reviewsToShow.map((review) => (
-            <div key={review.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-start gap-3 mb-3">
-                <Avatar className="w-10 h-10">
-                  {review.author_profile_photo_url ? (
-                    <AvatarImage src={review.author_profile_photo_url} alt="Profile" />
-                  ) : (
-                    <AvatarFallback>
-                      {review.author_first_name?.[0] || 'U'}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm truncate">{formatReviewAuthor(review)}</span>
-                    <Badge variant="outline" className="text-xs">
-                      <ThumbsUp className="w-2 h-2 mr-1" />
-                      Verificato
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {renderStars(review.rating, 'sm')}
-                    <span className="text-xs text-gray-500">
-                      {getTimeSinceReview(review.created_at)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              {review.content && (
-                <p className="text-gray-700 text-sm leading-relaxed">
-                  {review.content}
-                </p>
-              )}
-            </div>
+            <ReviewCard
+              key={review.id}
+              review={{ ...review, type: 'space' }}
+              variant="compact"
+            />
           ))}
         </div>
         

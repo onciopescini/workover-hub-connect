@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Star } from 'lucide-react';
 import { addBookingReview } from '@/lib/booking-review-utils';
 import { ReviewFormSchema, ReviewFormData } from '@/schemas/reviewSchema';
 import { useLogger } from '@/hooks/useLogger';
 import { supabase } from '@/integrations/supabase/client';
+import { StarRating } from '@/components/ui/StarRating';
 
 interface ReviewFormProps {
   type: 'booking';
@@ -28,7 +28,6 @@ export function ReviewForm({
   onSuccess 
 }: ReviewFormProps) {
   const { error } = useLogger({ context: 'ReviewForm' });
-  const [hoveredRating, setHoveredRating] = useState(0);
 
   const form = useForm<ReviewFormData>({
     resolver: zodResolver(ReviewFormSchema),
@@ -37,8 +36,6 @@ export function ReviewForm({
       content: ""
     }
   });
-
-  const watchedRating = form.watch('rating');
 
   const onSubmit = async (data: ReviewFormData) => {
     try {
@@ -88,24 +85,11 @@ export function ReviewForm({
                 <FormItem>
                   <FormLabel>Valutazione</FormLabel>
                   <div className="flex space-x-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => field.onChange(star)}
-                        onMouseEnter={() => setHoveredRating(star)}
-                        onMouseLeave={() => setHoveredRating(0)}
-                        className="focus:outline-none"
-                      >
-                        <Star
-                          className={`w-8 h-8 ${
-                            star <= (hoveredRating || watchedRating)
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
+                    <StarRating
+                      rating={field.value}
+                      onRatingChange={field.onChange}
+                      size="xl"
+                    />
                   </div>
                   <FormMessage />
                 </FormItem>

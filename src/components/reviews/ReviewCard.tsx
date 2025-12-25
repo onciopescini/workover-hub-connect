@@ -4,27 +4,45 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Star } from 'lucide-react';
+import { StarRating } from '@/components/ui/StarRating';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { BookingReviewWithDetails } from '@/types/review';
+import { SpaceReviewWithDetails } from '@/types/space-review';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
+import { User, MessageSquare } from 'lucide-react';
+
+// Union type to handle both Booking and Space reviews
+export type GenericReview =
+  | (BookingReviewWithDetails & { type: 'booking' })
+  | (SpaceReviewWithDetails & { type: 'space' });
 
 interface ReviewCardProps {
-  review: BookingReviewWithDetails;
-  type: 'booking';
+  review: GenericReview;
   showVisibility?: boolean;
+  onRefresh?: () => void;
+  variant?: 'compact' | 'full';
 }
 
-export function ReviewCard({ review, type, showVisibility = false }: ReviewCardProps) {
-  const author = review.author;
-  const target = review.target;
-  
-  const getInitials = (firstName: string = '', lastName: string = '') => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+export function ReviewCard({ review, showVisibility = false, onRefresh, variant = 'full' }: ReviewCardProps) {
+  // Normalize data access
+  const authorName = review.type === 'booking'
+    ? `${review.author?.first_name || ''} ${review.author?.last_name || ''}`.trim() || 'Utente'
+    : `${review.author_first_name || ''} ${review.author_last_name || ''}`.trim() || 'Utente';
+
+  const authorPhoto = review.type === 'booking'
+    ? review.author?.profile_photo_url
+    : review.author_profile_photo_url;
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
+
+  const targetName = review.type === 'booking'
+    ? `${review.target?.first_name || ''} ${review.target?.last_name || ''}`.trim()
+    : 'Space Review'; // Space reviews don't usually show target name in the same way
 
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -38,7 +56,7 @@ export function ReviewCard({ review, type, showVisibility = false }: ReviewCardP
         return;
       }
       const { error } = await supabase.from('reports').insert({
-        target_type: 'booking_review',
+        target_type: review.type === 'booking' ? 'booking_review' : 'space_review', // Ensure 'space_review' is valid enum in DB or handled
         target_id: review.id,
         reason: reportReason || 'Altro',
         description: reportDescription || null,
@@ -55,66 +73,61 @@ export function ReviewCard({ review, type, showVisibility = false }: ReviewCardP
     }
   };
 
+  // Visibility logic (if needed for moderation)
+  const isVisible = review.is_visible !== false; // Default true if null/undefined
+
   return (
-    <Card className={`${!review.is_visible ? 'opacity-60 border-dashed' : ''}`}>
+    <Card className={`${!isVisible ? 'opacity-60 border-dashed' : ''} h-full`}>
       <CardContent className="p-4">
         <div className="flex items-start space-x-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={author?.profile_photo_url || undefined} />
+            <AvatarImage src={authorPhoto || undefined} />
             <AvatarFallback>
-              {getInitials(author?.first_name, author?.last_name)}
+              {getInitials(authorName)}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm">
-                  {author?.first_name} {author?.last_name}
+                <p className="font-medium text-sm text-gray-900">
+                  {authorName}
                 </p>
-                <p className="text-xs text-gray-500">
-                  per {target?.first_name} {target?.last_name}
-                </p>
+                {review.type === 'booking' && targetName && (
+                  <p className="text-xs text-gray-500">
+                    per {targetName}
+                  </p>
+                )}
               </div>
               
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`w-4 h-4 ${
-                      i < review.rating 
-                        ? 'fill-yellow-400 text-yellow-400' 
-                        : 'text-gray-300'
-                    }`} 
-                  />
-                ))}
-              </div>
+              <StarRating rating={review.rating} readOnly size="sm" />
             </div>
             
             {review.content && (
-              <p className="text-sm text-gray-700 mt-2">
+              <p className={`text-sm text-gray-700 mt-2 ${variant === 'compact' ? 'line-clamp-3' : ''}`}>
                 {review.content}
               </p>
             )}
             
             <div className="flex items-center justify-between mt-3">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 flex items-center gap-1">
                 {formatDistanceToNow(new Date(review.created_at ?? new Date()), { 
                   addSuffix: true, 
                   locale: it 
                 })}
               </span>
+
               <div className="flex items-center gap-2">
                 {showVisibility && (
                   <span className={`text-xs px-2 py-1 rounded ${
-                    review.is_visible 
+                    isVisible
                       ? 'bg-green-100 text-green-700' 
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {review.is_visible ? 'Visibile' : 'Non visibile'}
+                    {isVisible ? 'Visibile' : 'Non visibile'}
                   </span>
                 )}
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setReportOpen(true)}>
+                <Button variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => setReportOpen(true)}>
                   Segnala
                 </Button>
               </div>

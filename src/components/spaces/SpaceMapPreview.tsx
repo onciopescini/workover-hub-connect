@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
-import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 
 interface SpaceMapPreviewProps {
   space: Space;
@@ -14,8 +14,8 @@ interface SpaceMapPreviewProps {
 }
 
 export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewDetails }) => {
-  const { data: reviews = [] } = useSpaceReviews(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
+  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];

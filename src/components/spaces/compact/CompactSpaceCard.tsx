@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Star, Users, Wifi, Euro, ChevronDown, ChevronUp } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
-import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 import { DailyAvailabilityCalendar } from '@/components/spaces/availability/DailyAvailabilityCalendar';
 import { useSpaceHourlyAvailability } from '@/hooks/useSpaceHourlyAvailability';
 import { useNavigate } from 'react-router-dom';
@@ -25,8 +25,8 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
   size = 'standard',
   selectedDate = null,
 }) => {
-  const { data: reviews = [] } = useSpaceReviews(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
+  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
   const [showAvailability, setShowAvailability] = useState(false);
   const navigate = useNavigate();
   
