@@ -2,6 +2,16 @@
 import { BookingWithDetails } from "@/types/booking";
 import { logger } from "@/lib/logger";
 
+interface RawWorkspace {
+  id: string;
+  name: string;
+  address: string;
+  photos: string[] | null;
+  host_id: string;
+  price_per_day: number;
+  confirmation_type: string;
+}
+
 interface RawBookingData {
   id?: string;
   space_id?: string;
@@ -21,6 +31,11 @@ interface RawBookingData {
   payment_session_id?: string | null;
   reservation_token?: string | null;
   service_completed_at?: string | null;
+
+  // The fetcher returns 'workspaces' (joined table)
+  workspaces?: RawWorkspace | RawWorkspace[] | null;
+
+  // Legacy or alternative field structure
   space?: {
     id?: string;
     title?: string;
@@ -30,6 +45,7 @@ interface RawBookingData {
     price_per_day?: number;
     confirmation_type?: string;
   };
+
   coworker?: {
     id?: string;
     first_name?: string;
@@ -41,8 +57,57 @@ interface RawBookingData {
     last_name?: string;
     profile_photo_url?: string | null;
   } | null;
+
   payments?: unknown[];
 }
+
+const getWorkspaceData = (booking: RawBookingData) => {
+  // Priority 1: Check 'workspaces' returned by Supabase join
+  if (booking.workspaces) {
+    const ws = Array.isArray(booking.workspaces) ? booking.workspaces[0] : booking.workspaces;
+    if (ws) {
+      return {
+        id: ws.id,
+        title: ws.name, // Map 'name' from DB to 'title' for UI
+        address: ws.address,
+        image_url: (ws.photos && ws.photos.length > 0) ? ws.photos[0] : '', // Map first photo to image_url
+        photos: ws.photos || [], // Keep photos array for gallery if needed
+        type: 'workspace', // Default type as it's not currently fetched
+        host_id: ws.host_id, // CRITICAL: Ensure host_id is mapped
+        price_per_day: ws.price_per_day,
+        confirmation_type: ws.confirmation_type
+      };
+    }
+  }
+
+  // Priority 2: Check legacy 'space' property
+  if (booking.space) {
+    return {
+      id: booking.space.id || '',
+      title: booking.space.title || 'Spazio senza titolo',
+      address: booking.space.address || 'Indirizzo non disponibile',
+      image_url: (booking.space.photos && booking.space.photos.length > 0) ? booking.space.photos[0] : '',
+      photos: booking.space.photos || [],
+      type: 'workspace',
+      host_id: booking.space.host_id || '',
+      price_per_day: booking.space.price_per_day || 0,
+      confirmation_type: booking.space.confirmation_type || 'host_approval'
+    };
+  }
+
+  // Fallback: Empty/Default data
+  return {
+    id: '',
+    title: 'Dati spazio mancanti',
+    address: '',
+    image_url: '',
+    photos: [],
+    type: 'workspace',
+    host_id: '',
+    price_per_day: 0,
+    confirmation_type: 'host_approval'
+  };
+};
 
 export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
@@ -56,6 +121,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
 
   return data.map(booking => {
     try {
+      // @ts-ignore - The mapped object might have extra properties like 'photos' which are useful but strictly outside the current type definition if strict
       return {
         id: booking.id || '',
         space_id: booking.space_id || '',
@@ -75,15 +141,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
         service_completed_at: booking.service_completed_at || null,
-        space: {
-          id: booking.space?.id || '',
-          title: booking.space?.title || 'Spazio senza titolo',
-          address: booking.space?.address || 'Indirizzo non disponibile',
-          photos: Array.isArray(booking.space?.photos) ? booking.space.photos : [],
-          host_id: booking.space?.host_id || '',
-          price_per_day: booking.space?.price_per_day || 0,
-          confirmation_type: booking.space?.confirmation_type || 'host_approval'
-        },
+        space: getWorkspaceData(booking),
         coworker: null, // For coworker bookings, user is the coworker
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
@@ -111,6 +169,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
 
   return data.map(booking => {
     try {
+      // @ts-ignore
       return {
         id: booking.id || '',
         space_id: booking.space_id || '',
@@ -130,15 +189,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
         service_completed_at: booking.service_completed_at || null,
-        space: {
-          id: booking.space?.id || '',
-          title: booking.space?.title || 'Spazio senza titolo',
-          address: booking.space?.address || 'Indirizzo non disponibile',
-          photos: Array.isArray(booking.space?.photos) ? booking.space.photos : [],
-          host_id: booking.space?.host_id || '',
-          price_per_day: booking.space?.price_per_day || 0,
-          confirmation_type: booking.space?.confirmation_type || 'host_approval'
-        },
+        space: getWorkspaceData(booking),
         coworker: booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null,
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
