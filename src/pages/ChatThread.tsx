@@ -147,11 +147,21 @@ export default function ChatThread() {
     
     setIsSending(true);
     try {
+      let recipientId: string | undefined = undefined;
+      if (conversation) {
+        if (conversation.host_id === authState.user.id) {
+          recipientId = conversation.coworker_id;
+        } else {
+          recipientId = conversation.host_id;
+        }
+      }
+
       await sendMessageToConversation({ 
         conversationId, 
         content: trimmed,
         senderId: authState.user.id,
-        bookingId: conversation?.booking_id || null
+        bookingId: conversation?.booking_id || null,
+        recipientId
       });
       setText('');
     } catch (error) {
