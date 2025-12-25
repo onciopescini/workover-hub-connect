@@ -142,10 +142,7 @@ export async function fetchConversationMessages(conversationId: string) {
   
   const { data, error } = await supabase
     .from('messages')
-    .select(`
-      *,
-      sender:profiles(id, first_name, last_name, profile_photo_url)
-    `)
+    .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
     

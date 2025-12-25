@@ -126,53 +126,21 @@ export const useUnifiedMessaging = () => {
                 return [updatedConv, ...newConvs];
              });
 
-             // Update active messages if relevant
-             // We use a functional update to access the *current* active messages without depending on activeConversationId
-             setActiveMessages(prev => {
-                 const safePrev = Array.isArray(prev) ? prev : [];
-                 // We can't easily check activeConversationId here because it's not in dependency array.
-                 // However, we can check if the message belongs to the conversation of the currently displayed messages.
-                 // Or we can rely on the fact that if setActiveMessages is called, the user is looking at *some* conversation.
-
-                 // Better approach: Check URL params directly if needed, or better yet, check if the message conversation_id
-                 // matches the id of the first message in the list (heuristic) or just append if it looks right.
-                 // Actually, we can use `activeConversationId` from the closure IF we add it to deps, but we want to avoid that.
-
-                 // Solution: We rely on `searchParams.get('id')` which is accessible via closure?
-                 // No, searchParams changes.
-
-                 // If we simply update activeMessages only if the conversation ID matches the currently loaded messages...
-                 // But we don't store conversation ID in `activeMessages` array usually (it's in the message object).
-                 if (safePrev.length > 0 && safePrev[0].conversation_id === newMessage.conversation_id) {
-                     if (safePrev.some(m => m.id === newMessage.id)) return safePrev;
-                     return [...safePrev, newMessage];
-                 } else if (safePrev.length === 0) {
-                     // If empty, we can't be sure without checking the URL.
-                     // But if it's empty, maybe we just started the convo.
-                     // It is safer to re-fetch or let `activeConversationId` effect handle it if it triggers.
-                     // But for Realtime, we want instant update.
-                     return safePrev;
-                 }
-                 return safePrev;
-             });
-
-             // NOTE: We need to handle "Mark as Read" and "Unread Count" without `activeConversationId` dependency.
-             // We can use a ref or check window location.
+             // Check if the message belongs to the active conversation
              const currentParams = new URLSearchParams(window.location.search);
              const currentActiveId = currentParams.get('id');
 
              if (newMessage.conversation_id === currentActiveId) {
-                // If I am receiving a message in the ACTIVE conversation
+                 setActiveMessages(prev => {
+                     const safePrev = Array.isArray(prev) ? prev : [];
+                     if (safePrev.some(m => m.id === newMessage.id)) return safePrev;
+                     return [...safePrev, newMessage];
+                 });
+
+                 // If it's an incoming message, mark as read
                  if (!isMeSender) {
                    handleMarkAsRead(newMessage.conversation_id);
-
-                   // Also force update activeMessages if it was empty (first message case)
-                   setActiveMessages(prev => {
-                       const safePrev = Array.isArray(prev) ? prev : [];
-                       if (safePrev.length === 0) return [newMessage];
-                       return safePrev;
-                   });
-                }
+                 }
              } else {
                 if (!isMeSender) {
                     setUnreadCounts(prev => ({
