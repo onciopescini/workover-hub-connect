@@ -7,7 +7,7 @@ import { MapPin, Star, Users, Wifi } from 'lucide-react';
 import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
 import { Space } from '@/types/space';
 import { frontendLogger } from '@/utils/frontend-logger';
-import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 
 interface SpaceCardProps {
   space: Space;
@@ -15,8 +15,8 @@ interface SpaceCardProps {
 }
 
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
-  const { data: reviews = [] } = useSpaceReviews(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
+  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];

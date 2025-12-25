@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, TrendingUp, TrendingDown, Calendar, Users, Euro, BarChart3, ArrowLeft, Filter } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Users, Euro, BarChart3, ArrowLeft, Filter, Star } from 'lucide-react';
+import { StarRating } from '@/components/ui/StarRating';
 import { useSpaceMetrics } from '@/hooks/queries/useSpaceMetrics';
-import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviews';
-import { calculateReviewStats, formatReviewAuthor, getTimeSinceReview } from '@/lib/space-review-utils';
+import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery';
+import { calculateSpaceReviewStats, formatSpaceReviewAuthor, getTimeSinceSpaceReview } from '@/lib/space-review-service';
 import { Link } from 'react-router-dom';
 
 const SpaceRecap = () => {
@@ -63,7 +64,7 @@ const SpaceRecap = () => {
     );
   }
 
-  const stats = calculateReviewStats(reviews);
+  const stats = calculateSpaceReviewStats(reviews);
   
   const filteredReviews = reviews.filter(review => {
     if (ratingFilter === 'all') return true;
@@ -76,26 +77,7 @@ const SpaceRecap = () => {
     }
   });
 
-  const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
-    const sizeClasses = {
-      sm: 'w-3 h-3',
-      md: 'w-4 h-4', 
-      lg: 'w-5 h-5'
-    };
-
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${sizeClasses[size]} ${
-              star <= rating ? 'fill-warning text-warning' : 'text-muted-foreground'
-            }`}
-          />
-        ))}
-      </div>
-    );
-  };
+  // renderStars removed in favor of StarRating component
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -139,7 +121,7 @@ const SpaceRecap = () => {
             <h2 className="text-xl text-muted-foreground">{metrics?.space_title}</h2>
           </div>
           <div className="flex items-center gap-3">
-            {renderStars(Math.round(weightedRating), 'lg')}
+            <StarRating rating={Math.round(weightedRating)} size="lg" readOnly fillColorClass="text-warning fill-warning" />
             <span className="text-2xl font-bold">{weightedRating.toFixed(1)}</span>
             <Badge variant="outline">{metrics?.total_reviews} recensioni</Badge>
           </div>
@@ -276,14 +258,14 @@ const SpaceRecap = () => {
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                               <span className="text-sm font-medium text-primary">
-                                {formatReviewAuthor(review).charAt(0)}
+                                {formatSpaceReviewAuthor(review).charAt(0)}
                               </span>
                             </div>
-                            <span className="font-medium">{formatReviewAuthor(review)}</span>
+                            <span className="font-medium">{formatSpaceReviewAuthor(review)}</span>
                           </div>
-                          {renderStars(review.rating, 'sm')}
+                          <StarRating rating={review.rating} size="sm" readOnly fillColorClass="text-warning fill-warning" />
                           <span className="text-sm text-muted-foreground">
-                            {getTimeSinceReview(review.created_at)}
+                            {getTimeSinceSpaceReview(review.created_at)}
                           </span>
                         </div>
                         {review.content && (

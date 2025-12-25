@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ReviewFormSchema, type ReviewFormData } from "@/schemas/reviewSchema";
 import { addSpaceReview } from "@/lib/space-review-service";
 import { supabase } from "@/integrations/supabase/client";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface SpaceReviewFormProps {
   bookingId: string;
@@ -74,24 +74,12 @@ export function SpaceReviewForm({ bookingId, spaceId, spaceName, onSuccess }: Sp
               <FormItem>
                 <FormLabel>Valutazione *</FormLabel>
                 <FormControl>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((rating) => (
-                      <button
-                        key={rating}
-                        type="button"
-                        onClick={() => field.onChange(rating)}
-                        className="transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded"
-                      >
-                        <Star
-                          className={`w-8 h-8 ${
-                            rating <= selectedRating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
+                  <StarRating
+                    rating={field.value}
+                    onRatingChange={field.onChange}
+                    size="xl"
+                    className="gap-2"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

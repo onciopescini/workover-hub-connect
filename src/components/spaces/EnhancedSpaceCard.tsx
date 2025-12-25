@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
-import { useSpaceWeightedRating, useSpaceReviews } from '@/hooks/queries/useSpaceReviews';
+import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 
 interface EnhancedSpaceCardProps {
   space: Space;
@@ -32,8 +32,8 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
   const [isLiked, setIsLiked] = useState(false);
   
   // Carica recensioni e rating reali
-  const { data: reviews = [] } = useSpaceReviews(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRating(space.id);
+  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
+  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
 
   const getMainPhotos = () => {
     if (space.photos && space.photos.length > 0) {
