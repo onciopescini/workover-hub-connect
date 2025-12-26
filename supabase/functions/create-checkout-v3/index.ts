@@ -214,7 +214,8 @@ serve(async (req) => {
     // Prepare Invoice Metadata
     let invoiceMetadata: Record<string, string> = {
         booking_id: booking_id,
-        user_id: user.id
+        user_id: user.id,
+        base_amount: String(basePrice)
     };
 
     if (booking.fiscal_data) {

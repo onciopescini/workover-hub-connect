@@ -2,23 +2,32 @@
 import Stripe from "https://esm.sh/stripe@15.0.0";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Payment calculator with dual commission model
+// Payment calculator with proper VAT on Fee model (mirrors EnhancedPaymentCalculator)
 function calculatePaymentBreakdown(baseAmount: number) {
+  // 5% Service Fee
   const buyerFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
-  const buyerTotalAmount = baseAmount + buyerFeeAmount;
   
-  const hostFeeAmount = Math.round(baseAmount * 0.05 * 100) / 100;
-  const hostNetPayout = baseAmount - hostFeeAmount;
+  // 22% VAT on Service Fee
+  const vat = Math.round(buyerFeeAmount * 0.22 * 100) / 100;
   
-  const platformRevenue = buyerFeeAmount + hostFeeAmount;
+  // Platform Revenue = Fee + VAT
+  const platformRevenue = buyerFeeAmount + vat;
   
-  // For Stripe Connect: application fee includes both commissions
-  const stripeApplicationFee = Math.round(baseAmount * 0.10 * 100) / 100;
+  // Total Amount = Base + Fee + VAT
+  const buyerTotalAmount = baseAmount + platformRevenue;
+
+  // Host Fee is 0 in current model (Host receives full base amount)
+  const hostFeeAmount = 0;
+  const hostNetPayout = baseAmount;
+
+  // Stripe Application Fee = Platform Revenue (Fee + VAT)
+  const stripeApplicationFee = platformRevenue;
   const stripeTransferAmount = hostNetPayout;
 
   return {
     baseAmount,
     buyerFeeAmount,
+    vat,
     buyerTotalAmount,
     hostFeeAmount,
     hostNetPayout,
