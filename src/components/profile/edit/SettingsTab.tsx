@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { CreditCard, Mail, FileText } from "lucide-react";
 import { ProfileFormData } from "@/hooks/useProfileForm";
 import { AuthState } from "@/types/auth";
@@ -36,18 +37,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       <CardContent className="space-y-6">
         <div className="flex items-center justify-between p-4 border rounded-lg">
           <div>
-            <h3 className="font-medium">Networking Abilitato</h3>
+            <h3 className="font-medium">Networking Attivo</h3>
             <p className="text-sm text-gray-600">
-              Permetti ad altri utenti di trovarti e connettersi con te
+              Permetti agli altri coworker di vederti se avete prenotato lo stesso spazio alla stessa ora.
             </p>
           </div>
-          <Button
-            type="button"
-            variant={formData.networking_enabled ? "default" : "outline"}
-            onClick={() => handleInputChange('networking_enabled', !formData.networking_enabled)}
-          >
-            {formData.networking_enabled ? 'Abilitato' : 'Disabilitato'}
-          </Button>
+          <Switch
+            checked={formData.networking_enabled}
+            onCheckedChange={(checked) => handleInputChange('networking_enabled', checked)}
+          />
         </div>
 
         <div className="p-4 border rounded-lg">

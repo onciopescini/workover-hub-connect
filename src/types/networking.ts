@@ -67,3 +67,12 @@ export interface PrivateMessage {
     profile_photo_url?: string;
   };
 }
+
+export interface Coworker {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profession: string | null;
+  avatar_url: string | null;
+  linkedin_url: string | null;
+}

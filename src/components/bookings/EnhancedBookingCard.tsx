@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
 import { MessagesButton } from "@/components/messaging/MessagesButton";
+import { CoworkerList } from "@/components/networking/CoworkerList";
 
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
@@ -287,6 +288,12 @@ export const EnhancedBookingCard = ({
             </Button>
           )}
         </div>
+
+        {booking.status === 'served' && userRole === 'coworker' && (
+          <div className="mt-6 pt-4 border-t">
+            <CoworkerList bookingId={booking.id} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
