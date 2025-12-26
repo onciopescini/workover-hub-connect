@@ -25,7 +25,7 @@ const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWith
         ),
         booking:bookings!booking_reviews_booking_id_fkey(
           booking_date,
-          space:workspaces(
+          workspaces(
             title:name,
             address
           )
@@ -37,16 +37,24 @@ const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWith
     if (error) throw error;
 
     // Transform booking space data if necessary (mapping name->title)
-    const transformedData = (data || []).map(review => ({
-      ...review,
-      booking: review.booking ? {
-        ...review.booking,
-        space: review.booking.space ? {
-          title: (review.booking.space as any).title || (review.booking.space as any).name || 'Unknown Space',
-          address: review.booking.space.address
-        } : { title: 'Unknown', address: '' }
-      } : null
-    }));
+    const transformedData = (data || []).map(review => {
+      // Access the workspaces data correctly, handling potential array or object return
+      const workspaceData = review.booking?.workspaces;
+      // In PostgREST, a belongs-to relationship (many-to-one) returns an object, not an array.
+      // But we should cast safely.
+      const spaceObj = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
+
+      return {
+        ...review,
+        booking: review.booking ? {
+          ...review.booking,
+          space: spaceObj ? {
+            title: (spaceObj as any).title || (spaceObj as any).name || 'Unknown Space',
+            address: spaceObj.address
+          } : { title: 'Unknown', address: '' }
+        } : null
+      };
+    });
 
     return transformedData as BookingReviewWithDetails[];
   } catch (error) {
@@ -75,7 +83,7 @@ const getUserGivenReviews = async (userId: string): Promise<BookingReviewWithDet
         ),
         booking:bookings!booking_reviews_booking_id_fkey(
           booking_date,
-          space:workspaces(
+          workspaces(
             title:name,
             address
           )
@@ -87,16 +95,21 @@ const getUserGivenReviews = async (userId: string): Promise<BookingReviewWithDet
     if (error) throw error;
 
     // Transform booking space data
-    const transformedData = (data || []).map(review => ({
-      ...review,
-      booking: review.booking ? {
-        ...review.booking,
-        space: review.booking.space ? {
-          title: (review.booking.space as any).title || (review.booking.space as any).name || 'Unknown Space',
-          address: review.booking.space.address
-        } : { title: 'Unknown', address: '' }
-      } : null
-    }));
+    const transformedData = (data || []).map(review => {
+      const workspaceData = review.booking?.workspaces;
+      const spaceObj = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
+
+      return {
+        ...review,
+        booking: review.booking ? {
+          ...review.booking,
+          space: spaceObj ? {
+            title: (spaceObj as any).title || (spaceObj as any).name || 'Unknown Space',
+            address: spaceObj.address
+          } : { title: 'Unknown', address: '' }
+        } : null
+      };
+    });
 
     return transformedData as BookingReviewWithDetails[];
   } catch (error) {

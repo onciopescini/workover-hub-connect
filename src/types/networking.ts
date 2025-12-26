@@ -75,4 +75,6 @@ export interface Coworker {
   profession: string | null;
   avatar_url: string | null;
   linkedin_url: string | null;
+  cached_avg_rating?: number;
+  cached_review_count?: number;
 }

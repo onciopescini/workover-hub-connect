@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { isCompleteProfile } from "@/types/strict-type-guards";
 import { getUserPublicReviews, UserPublicReview } from "@/lib/user-review-utils";
 import { sreLogger } from "@/lib/sre-logger";
+import { ReviewCard, GenericReview } from "@/components/reviews/ReviewCard";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface UserProfile {
   id: string;
@@ -41,6 +43,8 @@ interface UserProfile {
   preferred_work_mode?: string;
   collaboration_description?: string;
   created_at: string;
+  cached_avg_rating?: number;
+  cached_review_count?: number;
 }
 
 interface UserSpace {
@@ -51,18 +55,6 @@ interface UserSpace {
   price_per_day: number;
   photos: string[];
   address: string;
-}
-
-interface UserReview {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  reviewer?: {
-    first_name: string;
-    last_name: string;
-    profile_photo_url?: string;
-  } | undefined;
 }
 
 const UserProfileView = () => {
@@ -80,7 +72,7 @@ const UserProfileView = () => {
   });
 
   const [spaces, setSpaces] = useState<UserSpace[]>([]);
-  const [reviews, setReviews] = useState<UserReview[]>([]);
+  const [reviews, setReviews] = useState<GenericReview[]>([]);
   const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
@@ -96,7 +88,7 @@ const UserProfileView = () => {
       // Fetch spaces solo se ha accesso completo
       if (canViewFullProfile) {
         const { data: spacesData, error: spacesError } = await supabase
-          .from('spaces')
+          .from('spaces') // Using view or alias if needed, but keeping original code
           .select('*')
           .eq('host_id', userId)
           .eq('published', true);
@@ -112,15 +104,22 @@ const UserProfileView = () => {
         
         if (publicReviews && publicReviews.length > 0) {
           setReviews(publicReviews.map((review: UserPublicReview) => ({
-            ...review,
-            comment: review.content ?? '', // booking_reviews uses 'content' instead of 'comment'
-            created_at: review.created_at ?? '',
-            reviewer: {
+            id: review.id,
+            rating: review.rating,
+            content: review.content,
+            created_at: review.created_at || new Date().toISOString(),
+            updated_at: review.created_at || new Date().toISOString(),
+            author_id: review.author_id,
+            target_id: userId,
+            booking_id: '', // Not needed for display
+            is_visible: true,
+            type: 'booking',
+            author: {
               first_name: review.author_first_name,
               last_name: review.author_last_name,
-              profile_photo_url: review.author_profile_photo_url ?? ''
+              profile_photo_url: review.author_profile_photo_url
             }
-          })));
+          } as unknown as GenericReview)));
         }
       }
     } catch (error) {
@@ -145,29 +144,6 @@ const UserProfileView = () => {
     } finally {
       setStartingChat(false);
     }
-  };
-
-  const calculateAverageRating = () => {
-    if (reviews.length === 0) return 0;
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return total / reviews.length;
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-4 h-4 ${
-              star <= rating
-                ? "text-yellow-400 fill-current"
-                : "text-gray-300"
-            }`}
-          />
-        ))}
-      </div>
-    );
   };
 
   if (isLoading) {
@@ -197,7 +173,13 @@ const UserProfileView = () => {
     );
   }
 
-  const averageRating = calculateAverageRating();
+  // Use cached values if available, otherwise calculate fallback
+  const cachedAvg = typeof profile['cached_avg_rating'] === 'number' ? profile['cached_avg_rating'] : 0;
+  const cachedCount = typeof profile['cached_review_count'] === 'number' ? profile['cached_review_count'] : reviews.length;
+
+  // Fallback calculation if cache is missing but reviews are loaded
+  const averageRating = cachedAvg > 0 ? cachedAvg : (reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0);
+  const reviewCount = cachedCount > 0 ? cachedCount : reviews.length;
 
   const renderSocialLinks = () => {
     if (visibilityLevel !== 'full') return null;
@@ -308,13 +290,13 @@ const UserProfileView = () => {
                   <span>{profile['location']}</span>
                 </div>
               )}
-              {reviews.length > 0 && (
+              {reviewCount > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center">
-                    {renderStars(Math.round(calculateAverageRating()))}
+                    <StarRating rating={averageRating} readOnly size="sm" />
                   </div>
-                  <span className="font-medium">{calculateAverageRating().toFixed(1)}</span>
-                  <span className="text-sm">({reviews.length} recensioni)</span>
+                  <span className="font-medium">{averageRating.toFixed(1)}</span>
+                  <span className="text-sm">({reviewCount} recensioni)</span>
                 </div>
               )}
             </div>
@@ -518,7 +500,7 @@ const UserProfileView = () => {
                     </p>
                   </div>
 
-                  {reviews.length > 0 && (
+                  {reviewCount > 0 && (
                     <div className="mb-6 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
                       <h3 className="font-semibold mb-3 flex items-center gap-2">
                         <Star className="h-4 w-4 text-amber-500" />
@@ -526,10 +508,10 @@ const UserProfileView = () => {
                       </h3>
                       <div className="flex items-center space-x-3">
                         <div className="flex items-center">
-                          {renderStars(Math.round(averageRating))}
+                          <StarRating rating={averageRating} readOnly size="sm" />
                         </div>
                         <span className="text-xl font-bold text-amber-600 dark:text-amber-400">{averageRating.toFixed(1)}</span>
-                        <span className="text-muted-foreground font-medium">({reviews.length} recensioni)</span>
+                        <span className="text-muted-foreground font-medium">({reviewCount} recensioni)</span>
                       </div>
                     </div>
                   )}
@@ -585,44 +567,19 @@ const UserProfileView = () => {
             {/* Reviews */}
             <Card>
               <CardHeader>
-                <CardTitle>Recensioni ({reviews.length})</CardTitle>
+                <CardTitle>Recensioni ({reviewCount})</CardTitle>
               </CardHeader>
               <CardContent>
-                {reviews.length === 0 ? (
+                {reviewCount === 0 ? (
                   <p className="text-gray-600">Nessuna recensione disponibile.</p>
                 ) : (
                   <div className="space-y-4">
                     {reviews.slice(0, 5).map((review) => (
                       <div key={review.id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            {renderStars(review.rating)}
-                            <span className="text-sm text-gray-500">
-                              {format(new Date(review.created_at), 'dd MMM yyyy', { locale: it })}
-                            </span>
-                          </div>
-                        </div>
-                        {review.comment && (
-                          <p className="text-gray-700 mb-2">{review.comment}</p>
-                        )}
-                        {review.reviewer && (
-                          <div className="flex items-center space-x-2">
-                            <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                              {review.reviewer.profile_photo_url ? (
-                                <img 
-                                  src={review.reviewer.profile_photo_url} 
-                                  alt="Reviewer" 
-                                  className="w-6 h-6 rounded-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-3 h-3 text-gray-500" />
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-500">
-                              {review.reviewer.first_name} {review.reviewer.last_name}
-                            </p>
-                          </div>
-                        )}
+                         <ReviewCard
+                           review={review}
+                           variant="compact"
+                         />
                       </div>
                     ))}
                     {reviews.length > 5 && (
