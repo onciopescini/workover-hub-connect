@@ -14,6 +14,7 @@ import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
 import { MessagesButton } from "@/components/messaging/MessagesButton";
 import { CoworkerList } from "@/components/networking/CoworkerList";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
@@ -36,14 +37,16 @@ export const EnhancedBookingCard = ({
         id: booking.user_id,
         name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
         photo: booking.coworker?.profile_photo_url,
-        role: "Coworker"
+        role: "Coworker",
+        rating: booking.coworker?.cached_avg_rating
       };
     } else {
       return {
         id: booking.space?.host_id || '',
         name: booking.space?.title || "Spazio",
         photo: null,
-        role: "Host"
+        role: "Host",
+        rating: undefined
       };
     }
   };
@@ -220,7 +223,14 @@ export const EnhancedBookingCard = ({
             </Avatar>
             <div>
               <p className="font-medium text-gray-900">{otherParty.name}</p>
-              <p className="text-sm text-gray-600">{otherParty.role}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600">{otherParty.role}</p>
+                {otherParty.rating !== undefined && (
+                   <div className="flex items-center">
+                     <StarRating rating={otherParty.rating} readOnly size="xs" />
+                   </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -7,6 +7,7 @@ import { User, Briefcase, Linkedin } from "lucide-react";
 import { Coworker } from "@/types/networking";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StarRating } from "@/components/ui/StarRating";
 
 interface CoworkerListProps {
   bookingId: string;
@@ -91,6 +92,11 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
                     {coworker.profession || 'N/A'}
                   </span>
                 </div>
+                {coworker.cached_avg_rating && (
+                   <div className="flex justify-center mt-1">
+                     <StarRating rating={coworker.cached_avg_rating} readOnly size="xs" />
+                   </div>
+                )}
               </div>
               {coworker.linkedin_url && (
                  <a
