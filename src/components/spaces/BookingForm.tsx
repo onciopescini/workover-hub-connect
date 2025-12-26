@@ -24,6 +24,8 @@ interface BookingFormProps {
   onError: (message: string) => void;
   hostStripeAccountId?: string; // Required for Stripe Connect payments
   availability?: any; // Availability configuration from host
+  authorId?: string;
+  minBookingHours?: number;
 }
 
 const generateSlotId = () => {

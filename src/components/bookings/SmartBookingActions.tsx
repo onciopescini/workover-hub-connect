@@ -18,20 +18,23 @@ import {
 import { BookingWithDetails } from '@/types/booking';
 import { analyzeGuestProfile, generateBookingRecommendation, GuestProfile, BookingRecommendation } from '@/lib/bookings/smart-booking-service';
 import { sreLogger } from '@/lib/sre-logger';
+import { useApproveBooking, useRejectBooking } from '@/hooks/mutations/useBookingApproval';
 
 interface SmartBookingActionsProps {
   booking: BookingWithDetails;
-  onApprove: (bookingId: string) => void;
-  onReject: (bookingId: string, reason: string) => void;
+  onApprove?: (bookingId: string) => void;
+  onReject?: (bookingId: string, reason: string) => void;
   onSendMessage: (bookingId: string, message: string, template?: string) => void;
 }
 
 export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
   booking,
-  onApprove,
-  onReject,
+  onApprove: externalApprove,
+  onReject: externalReject,
   onSendMessage
 }) => {
+  const { mutate: approveBooking, isPending: isApproving } = useApproveBooking();
+  const { mutate: rejectBooking, isPending: isRejecting } = useRejectBooking();
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customMessage, setCustomMessage] = useState<string>('');
   const [rejectionReason, setRejectionReason] = useState<string>('');
@@ -118,9 +121,21 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
     }
   };
 
+  const handleApprove = () => {
+    if (externalApprove) {
+      externalApprove(booking.id);
+    } else {
+      approveBooking(booking.id);
+    }
+  };
+
   const handleReject = () => {
     if (rejectionReason) {
-      onReject(booking.id, rejectionReason);
+      if (externalReject) {
+        externalReject(booking.id, rejectionReason);
+      } else {
+        rejectBooking({ bookingId: booking.id, reason: rejectionReason });
+      }
       setRejectionReason('');
     }
   };
@@ -179,9 +194,13 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
           
           {displayRecommendation.action === 'auto-approve' && (
             <div className="flex gap-2">
-              <Button onClick={() => onApprove(booking.id)} className="bg-green-600 hover:bg-green-700">
+              <Button
+                onClick={handleApprove}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={isApproving}
+              >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Auto-Approva
+                {isApproving ? 'Approvo...' : 'Auto-Approva'}
               </Button>
               <Button variant="outline" size="sm">
                 Invia Messaggio di Benvenuto
@@ -203,22 +222,23 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
           <CardContent className="space-y-4">
             <div className="flex gap-2 flex-wrap">
               <Button 
-                onClick={() => onApprove(booking.id)}
+                onClick={handleApprove}
                 className="bg-green-600 hover:bg-green-700"
                 size="sm"
+                disabled={isApproving}
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
-                Approva
+                {isApproving ? 'Approvo...' : 'Approva'}
               </Button>
               
               <Button 
                 variant="destructive" 
                 onClick={handleReject}
-                disabled={!rejectionReason}
+                disabled={!rejectionReason || isRejecting}
                 size="sm"
               >
                 <XCircle className="w-4 h-4 mr-2" />
-                Rifiuta
+                {isRejecting ? 'Rifiuto...' : 'Rifiuta'}
               </Button>
               
               <Button variant="outline" size="sm">
