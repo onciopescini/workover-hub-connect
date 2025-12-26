@@ -17,7 +17,7 @@ serve(async (req) => {
     // -------------------------------------------------------------------------
     // 1. DEPLOYMENT CONFIRMATION LOG
     // -------------------------------------------------------------------------
-    console.log("🚀 CHECKOUT V3 - FIXED IMPORTS & SPACES TABLE 🚀");
+    console.log("🚀 CHECKOUT V3 - SWITCH TO WORKSPACES & ADMIN 🚀");
     console.log("Timestamp:", new Date().toISOString());
 
     // 2. Read Request Body
@@ -94,22 +94,25 @@ serve(async (req) => {
     const spaceId = booking.space_id;
     console.log('[1/3] Booking Found. Space ID:', spaceId);
 
-    // B. Fetch Space (using 'spaces' table as requested)
-    console.log('[2/3] Fetching Space:', spaceId);
+    // B. Fetch Space (using 'workspaces' table to fix PGRST116)
+    // Using 'as any' to bypass TypeScript build errors due to missing legacy types
+    console.log('[2/3] Fetching Space (Workspaces Table):', spaceId);
     const { data: space, error: spaceError } = await supabaseAdmin
-      .from('spaces')
+      .from('workspaces' as any)
       .select('*')
       .eq('id', spaceId)
       .single();
 
     if (spaceError || !space) {
-      console.error('[2/3] Space Error (Table: spaces):', spaceError);
+      console.error('[2/3] Space Error (Table: workspaces):', spaceError);
       return new Response(
-        JSON.stringify({ error: 'Space not found' }),
+        JSON.stringify({ error: 'Space not found (in workspaces)' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     console.log('[2/3] Space Found. Host ID:', space.host_id);
+    console.log('[2/3] Space Pricing:', { day: space.price_per_day, hour: space.price_per_hour });
+
 
     // C. Fetch Host Profile
     console.log('[3/3] Fetching Host Profile:', space.host_id);
