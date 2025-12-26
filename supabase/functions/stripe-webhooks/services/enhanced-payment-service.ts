@@ -60,9 +60,9 @@ export class EnhancedPaymentService {
             id,
             space_id,
             user_id,
-            spaces!inner (
+            workspaces!inner (
               id,
-              title,
+              title:name,
               host_id,
               confirmation_type
             )

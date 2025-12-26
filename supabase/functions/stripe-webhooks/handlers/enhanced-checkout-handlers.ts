@@ -142,31 +142,35 @@ export class EnhancedCheckoutHandlers {
     }
 
     // Determine new booking status
-    const confirmationType = booking.spaces.confirmation_type;
+    const confirmationType = booking.workspaces.confirmation_type;
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending';
     
-    // Update booking status
-    const bookingUpdated = await BookingService.updateBookingStatus(
-      supabaseAdmin,
-      bookingId,
-      newStatus
-    );
+    // Update booking status and save payment intent ID
+    const { error: updateBookingError } = await supabaseAdmin
+      .from('bookings')
+      .update({
+        status: newStatus,
+        stripe_payment_intent_id: session.payment_intent || session.id // Use payment_intent or session ID as fallback
+      })
+      .eq('id', bookingId);
     
-    if (!bookingUpdated) {
+    if (updateBookingError) {
+      ErrorHandler.logError('Failed to update booking status and payment intent', updateBookingError);
       return { success: false, error: 'Failed to update booking status' };
     }
 
-    ErrorHandler.logSuccess('Booking status updated', {
+    ErrorHandler.logSuccess('Booking updated with status and payment intent', {
       bookingId,
       newStatus,
-      confirmationType
+      confirmationType,
+      paymentIntentId: session.payment_intent
     });
 
     // Send notifications
     await this.sendCompletionNotifications(booking, breakdown, supabaseAdmin);
 
     // Generate fiscal documents asynchronously (MOCK mode)
-    this.generateFiscalDocuments(payment.id, bookingId, booking.spaces.host_id, booking.user_id, supabaseAdmin);
+    this.generateFiscalDocuments(payment.id, bookingId, booking.workspaces.host_id, booking.user_id, supabaseAdmin);
 
     return { 
       success: true, 
@@ -233,7 +237,7 @@ export class EnhancedCheckoutHandlers {
     breakdown: ReturnType<typeof EnhancedPaymentCalculator.calculateBreakdown>,
     supabaseAdmin: any
   ): Promise<void> {
-    const confirmationType = booking.spaces.confirmation_type;
+    const confirmationType = booking.workspaces.confirmation_type;
     
     // Notification to coworker
     const coworkerTitle = confirmationType === 'instant' 
@@ -241,8 +245,8 @@ export class EnhancedCheckoutHandlers {
       : 'Pagamento completato - In attesa di approvazione';
     
     const coworkerContent = confirmationType === 'instant'
-      ? `La tua prenotazione presso "${booking.spaces.title}" è stata confermata automaticamente. Buon lavoro!`
-      : `Il pagamento per "${booking.spaces.title}" è stato completato. In attesa dell'approvazione dell'host.`;
+      ? `La tua prenotazione presso "${booking.workspaces.title}" è stata confermata automaticamente. Buon lavoro!`
+      : `Il pagamento per "${booking.workspaces.title}" è stato completato. In attesa dell'approvazione dell'host.`;
 
     await NotificationService.sendBookingNotification(
       supabaseAdmin,
@@ -251,7 +255,7 @@ export class EnhancedCheckoutHandlers {
       coworkerContent,
       {
         booking_id: booking.id,
-        space_title: booking.spaces.title,
+        space_title: booking.workspaces.title,
         confirmation_type: confirmationType,
         amount_paid: breakdown.buyerTotalAmount,
         status: confirmationType === 'instant' ? 'confirmed' : 'pending'
@@ -262,12 +266,12 @@ export class EnhancedCheckoutHandlers {
     if (confirmationType === 'instant') {
       await NotificationService.sendBookingNotification(
         supabaseAdmin,
-        booking.spaces.host_id,
+        booking.workspaces.host_id,
         'Nuova prenotazione confermata',
-        `Hai ricevuto una prenotazione per "${booking.spaces.title}". Riceverai €${breakdown.hostNetPayout.toFixed(2)} come pagamento.`,
+        `Hai ricevuto una prenotazione per "${booking.workspaces.title}". Riceverai €${breakdown.hostNetPayout.toFixed(2)} come pagamento.`,
         {
           booking_id: booking.id,
-          space_title: booking.spaces.title,
+          space_title: booking.workspaces.title,
           payment_received: true,
           host_payout: breakdown.hostNetPayout,
           auto_confirmed: true
@@ -276,12 +280,12 @@ export class EnhancedCheckoutHandlers {
     } else {
       await NotificationService.sendBookingNotification(
         supabaseAdmin,
-        booking.spaces.host_id,
+        booking.workspaces.host_id,
         'Nuova richiesta di prenotazione',
-        `Hai ricevuto una richiesta di prenotazione per "${booking.spaces.title}". Vai alla dashboard per approvarla.`,
+        `Hai ricevuto una richiesta di prenotazione per "${booking.workspaces.title}". Vai alla dashboard per approvarla.`,
         {
           booking_id: booking.id,
-          space_title: booking.spaces.title,
+          space_title: booking.workspaces.title,
           action_required: 'approve_booking',
           host_payout: breakdown.hostNetPayout,
           payment_completed: true

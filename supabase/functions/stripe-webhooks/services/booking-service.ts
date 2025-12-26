@@ -11,11 +11,11 @@ export class BookingService {
           id,
           space_id,
           user_id,
-          spaces!inner (
+          workspaces!inner (
             id,
             confirmation_type,
             host_id,
-            title
+            title:name
           )
         `)
         .eq('id', bookingId)
