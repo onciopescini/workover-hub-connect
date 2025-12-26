@@ -42,16 +42,30 @@ export class CheckoutHandlers {
     
     PaymentCalculator.logBreakdown(breakdown);
 
+    // Get Payment Intent ID
+    const paymentIntentId = typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
     // Update payment status
     const paymentUpdated = await PaymentService.updatePaymentStatus(
       supabaseAdmin,
       session.id,
       'completed',
-      session.receipt_url || undefined
+      session.receipt_url || undefined,
+      paymentIntentId
     );
 
     if (!paymentUpdated) {
       return { success: false, error: 'Failed to update payment' };
+    }
+
+    // Update booking with payment intent ID if available
+    if (paymentIntentId) {
+      await supabaseAdmin
+        .from('bookings')
+        .update({ stripe_payment_intent_id: paymentIntentId })
+        .eq('id', bookingId);
     }
 
     // Get booking details

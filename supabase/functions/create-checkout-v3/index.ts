@@ -103,7 +103,7 @@ serve(async (req) => {
     // B. Fetch Workspace
     console.log('[2/3] Fetching Workspace:', spaceId)
     const { data: workspace, error: workspaceError } = await supabaseAdmin
-      .from('workspaces')
+      .from('spaces')
       .select('*')
       .eq('id', spaceId)
       .single()
