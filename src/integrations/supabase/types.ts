@@ -560,6 +560,7 @@ export type Database = {
           space_id: string
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
+          stripe_payment_intent_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -596,6 +597,7 @@ export type Database = {
           space_id: string
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -632,6 +634,7 @@ export type Database = {
           space_id?: string
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
+          stripe_payment_intent_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -2419,6 +2422,7 @@ export type Database = {
           receipt_url: string | null
           stripe_event_id: string | null
           stripe_idempotency_key: string | null
+          stripe_payment_intent_id: string | null
           stripe_session_id: string | null
           stripe_transfer_id: string | null
           user_id: string
@@ -2446,6 +2450,7 @@ export type Database = {
           receipt_url?: string | null
           stripe_event_id?: string | null
           stripe_idempotency_key?: string | null
+          stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id: string
@@ -2473,6 +2478,7 @@ export type Database = {
           receipt_url?: string | null
           stripe_event_id?: string | null
           stripe_idempotency_key?: string | null
+          stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
           user_id?: string

@@ -8,12 +8,16 @@ export class PaymentService {
     supabaseAdmin: any,
     sessionId: string,
     status: string,
-    receiptUrl?: string
+    receiptUrl?: string,
+    paymentIntentId?: string
   ): Promise<boolean> {
     try {
       const updateData: any = { payment_status: status };
       if (receiptUrl) {
         updateData.receipt_url = receiptUrl;
+      }
+      if (paymentIntentId) {
+        updateData.stripe_payment_intent_id = paymentIntentId;
       }
 
       const { error } = await supabaseAdmin

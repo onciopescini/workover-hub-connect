@@ -31,7 +31,7 @@ serve(async (req) => {
     // Get payment for this booking
     const { data: payment, error: paymentError } = await supabaseClient
       .from('payments')
-      .select('id, amount, stripe_session_id, bookings(cancellation_fee)')
+      .select('id, amount, stripe_session_id, stripe_payment_intent_id, bookings(cancellation_fee)')
       .eq('booking_id', booking_id)
       .eq('payment_status', 'completed')
       .single();
@@ -41,6 +41,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Payment not found or not completed' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 404,
+      });
+    }
+
+    // Fallback to session ID only if PI is missing (though PI is preferred for refunds)
+    // Note: session ID usually can't be used for refund.create, it needs payment_intent ID.
+    // If stripe_payment_intent_id is missing, we might have a problem for old data.
+    // However, for new flow it will be present.
+    const paymentIntentId = payment.stripe_payment_intent_id;
+
+    if (!paymentIntentId) {
+       console.error('[PROCESS-REFUND] Missing Payment Intent ID');
+       return new Response(JSON.stringify({ error: 'Missing Payment Intent ID - Cannot process refund' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
       });
     }
 
@@ -78,7 +92,7 @@ serve(async (req) => {
     const refundAmountCents = Math.round(refundAmount * 100);
     
     const refund = await stripe.refunds.create({
-      payment_intent: payment.stripe_session_id,
+      payment_intent: paymentIntentId,
       amount: refundAmountCents,
       reason: cancelled_by_host ? 'requested_by_customer' : 'requested_by_customer',
       metadata: {

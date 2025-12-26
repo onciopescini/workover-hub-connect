@@ -79,6 +79,26 @@ export const cancelBooking = async (
       return { success: false, error: errorMessage };
     }
 
+    // Trigger automatic refund process
+    try {
+      const { data: refundData, error: refundError } = await supabase.functions.invoke('process-refund', {
+        body: {
+          booking_id: bookingId,
+          cancelled_by_host: cancelledByHost
+        }
+      });
+
+      if (refundError) {
+        sreLogger.error('Error triggering refund process', { bookingId, error: refundError });
+        // Don't fail the cancellation if refund trigger fails, but log it
+        toast.warning("Prenotazione cancellata, ma il rimborso automatico potrebbe aver subito ritardi. Contatta il supporto se necessario.");
+      } else {
+        sreLogger.info('Refund process triggered successfully', { bookingId, refundData });
+      }
+    } catch (e) {
+      sreLogger.error('Exception triggering refund process', { bookingId }, e as Error);
+    }
+
     toast.success("Prenotazione cancellata con successo");
     return { 
       success: true, 
