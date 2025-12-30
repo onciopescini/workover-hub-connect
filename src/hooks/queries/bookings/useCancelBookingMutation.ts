@@ -22,16 +22,13 @@ export const useCancelBookingMutation = () => {
     }) => {
       logger.info('Cancelling booking', { component: 'useCancelBookingMutation', action: 'cancel', metadata: { bookingId } });
       
-      const params: any = {
-        booking_id: bookingId,
-        cancelled_by_host: isHost
-      };
-      
-      if (reason) {
-        params.reason = reason;
-      }
-      
-      const { data, error } = await supabase.rpc('cancel_booking', params);
+      const { data, error } = await supabase.functions.invoke('cancel-booking', {
+        body: {
+          booking_id: bookingId,
+          cancelled_by_host: isHost,
+          reason: reason
+        }
+      });
 
       if (error) {
         sreLogger.error('Cancel booking error', { bookingId }, error);
