@@ -58,6 +58,7 @@ export class EnhancedPaymentService {
           *,
           bookings!inner (
             id,
+            status,
             space_id,
             user_id,
             workspaces!inner (
