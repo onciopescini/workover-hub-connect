@@ -43,68 +43,34 @@ export const cancelBooking = async (
   reason?: string
 ): Promise<{ success: boolean; fee?: number; error?: string }> => {
   try {
-    const rpcParams: { booking_id: string; cancelled_by_host: boolean; reason?: string } = {
-      booking_id: bookingId,
-      cancelled_by_host: cancelledByHost
-    };
-
-    if (reason) {
-      rpcParams.reason = reason;
-    }
-
-    const { data, error } = await supabase.rpc('cancel_booking', rpcParams);
+    const { data, error } = await supabase.functions.invoke('cancel-booking', {
+      body: {
+        booking_id: bookingId,
+        cancelled_by_host: cancelledByHost,
+        reason: reason
+      }
+    });
 
     if (error) {
       sreLogger.error('Error cancelling booking', { bookingId, cancelledByHost }, error as Error);
-      toast.error("Errore nella cancellazione della prenotazione");
-      return { success: false, error: error.message };
-    }
-
-    // Safe cast through unknown first
-    const result = data as unknown as CancelBookingResponse;
-
-    // Optional validation for extra safety
-    if (
-      typeof result !== "object" ||
-      result === null ||
-      typeof result.success !== "boolean"
-    ) {
-      toast.error("Risposta inattesa dal server");
-      return { success: false, error: "Risposta inattesa dal server" };
-    }
-
-    if (!result.success) {
-      const errorMessage = result.error ?? "Errore nella cancellazione";
+      const errorMessage = error.message || "Errore nella cancellazione della prenotazione";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     }
 
-    // Trigger automatic refund process
-    try {
-      const { data: refundData, error: refundError } = await supabase.functions.invoke('process-refund', {
-        body: {
-          booking_id: bookingId,
-          cancelled_by_host: cancelledByHost
-        }
-      });
-
-      if (refundError) {
-        sreLogger.error('Error triggering refund process', { bookingId, error: refundError });
-        // Don't fail the cancellation if refund trigger fails, but log it
-        toast.warning("Prenotazione cancellata, ma il rimborso automatico potrebbe aver subito ritardi. Contatta il supporto se necessario.");
-      } else {
-        sreLogger.info('Refund process triggered successfully', { bookingId, refundData });
-      }
-    } catch (e) {
-      sreLogger.error('Exception triggering refund process', { bookingId }, e as Error);
+    // In the edge function response, we expect success: true
+    if (!data?.success) {
+       const errorMessage = data?.error || "Errore sconosciuto nella cancellazione";
+       toast.error(errorMessage);
+       return { success: false, error: errorMessage };
     }
 
-    toast.success("Prenotazione cancellata con successo");
+    toast.success(data.message || "Prenotazione cancellata con successo");
     return { 
       success: true, 
-      fee: result.cancellation_fee || 0 
+      fee: data.cancellation_fee || 0
     };
-  } catch (error) {
+  } catch (error: any) {
     sreLogger.error('Error cancelling booking', { bookingId, cancelledByHost }, error as Error);
     toast.error("Errore nella cancellazione della prenotazione");
     return { success: false, error: "Errore di rete" };
