@@ -1,9 +1,10 @@
 
 export interface BookingDetails {
   id: string;
+  status: string;
   space_id: string;
   user_id: string;
-  spaces: {
+  workspaces: {
     id: string;
     confirmation_type: string;
     host_id: string;

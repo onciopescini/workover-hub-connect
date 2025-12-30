@@ -9,6 +9,7 @@ export class BookingService {
         .from('bookings')
         .select(`
           id,
+          status,
           space_id,
           user_id,
           workspaces!inner (
