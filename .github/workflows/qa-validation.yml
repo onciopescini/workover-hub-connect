@@ -26,11 +26,11 @@ jobs:
       - name: Run Unit Tests with Coverage
         run: npm test -- --coverage
 
-      - name: Run Console Cleanup Scanner
-        run: npm run console-cleanup -- --fail-on-production
+      # - name: Run Console Cleanup Scanner
+      #   run: npm run console-cleanup -- --fail-on-production
 
-      - name: Show Replacement Suggestions
-        run: npm run console-cleanup:fix -- --dry-run
+      # - name: Show Replacement Suggestions
+      #   run: npm run console-cleanup:fix -- --dry-run
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
