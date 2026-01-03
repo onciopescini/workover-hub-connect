@@ -72,104 +72,104 @@ jobs:
   #     with:
   #       sarif_file: 'trivy-results.sarif'
         
-  migrate:
-    name: Run Database Migrations
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: [test]
+  # migrate:
+  #   name: Run Database Migrations
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   needs: [test]
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
       
-    - name: Setup Supabase CLI
-      uses: supabase/setup-cli@v1
-      with:
-        version: latest
+  #   - name: Setup Supabase CLI
+  #     uses: supabase/setup-cli@v1
+  #     with:
+  #       version: latest
         
-    - name: Run migrations
-      run: |
-        supabase db push --db-url ${{ secrets.DATABASE_URL }}
+  #   - name: Run migrations
+  #     run: |
+  #       supabase db push --db-url ${{ secrets.DATABASE_URL }}
         
-    - name: Verify migration status
-      run: |
-        supabase migration list --db-url ${{ secrets.DATABASE_URL }}
+  #   - name: Verify migration status
+  #     run: |
+  #       supabase migration list --db-url ${{ secrets.DATABASE_URL }}
         
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    needs: [test]
-    environment: staging
+  # deploy-staging:
+  #   name: Deploy to Staging
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/develop'
+  #   needs: [test]
+  #   environment: staging
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+  #   - name: Setup Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: ${{ env.NODE_VERSION }}
+  #       cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+  #   - name: Install dependencies
+  #     run: npm ci
       
-    - name: Build application
-      run: npm run build
-      env:
-        VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+  #   - name: Build application
+  #     run: npm run build
+  #     env:
+  #       VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+  #       VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
         
-    - name: Deploy to staging
-      run: |
-        # Deploy to staging environment
-        echo "Deploying to staging..."
+  #   - name: Deploy to staging
+  #     run: |
+  #       # Deploy to staging environment
+  #       echo "Deploying to staging..."
         
-    - name: Run smoke tests
-      run: |
-        echo "Running smoke tests against ${{ secrets.STAGING_URL }}"
-        # Smoke tests implementation pending
-      env:
-        TEST_URL: ${{ secrets.STAGING_URL }}
+  #   - name: Run smoke tests
+  #     run: |
+  #       echo "Running smoke tests against ${{ secrets.STAGING_URL }}"
+  #       # Smoke tests implementation pending
+  #     env:
+  #       TEST_URL: ${{ secrets.STAGING_URL }}
         
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: [test, migrate]
-    environment: production
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   needs: [test, migrate]
+  #   environment: production
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
       
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+  #   - name: Setup Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: ${{ env.NODE_VERSION }}
+  #       cache: 'npm'
         
-    - name: Install dependencies
-      run: npm ci
+  #   - name: Install dependencies
+  #     run: npm ci
       
-    - name: Build application
-      run: npm run build
-      env:
-        VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  #   - name: Build application
+  #     run: npm run build
+  #     env:
+  #       VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  #       VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         
-    - name: Deploy to production
-      run: |
-        # Deploy to production environment
-        echo "Deploying to production..."
+  #   - name: Deploy to production
+  #     run: |
+  #       # Deploy to production environment
+  #       echo "Deploying to production..."
         
-    - name: Run post-deployment tests
-      run: |
-        echo "Running post-deployment verification for ${{ secrets.PRODUCTION_URL }}"
-        # Post-deploy tests implementation pending
-      env:
-        TEST_URL: ${{ secrets.PRODUCTION_URL }}
+  #   - name: Run post-deployment tests
+  #     run: |
+  #       echo "Running post-deployment verification for ${{ secrets.PRODUCTION_URL }}"
+  #       # Post-deploy tests implementation pending
+  #     env:
+  #       TEST_URL: ${{ secrets.PRODUCTION_URL }}
         
     # - name: Notify team
     #   if: always()
