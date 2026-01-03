@@ -5,7 +5,6 @@ verify_jwt = false
 
 [functions.update-tax-details]
 verify_jwt = true
-timeout = 15
 
 [functions.mark-bookings-served]
 verify_jwt = false
@@ -21,7 +20,6 @@ verify_jwt = false
 
 [functions.stripe-webhooks]
 verify_jwt = false
-timeout = 25
 
 [functions.send-email]
 verify_jwt = false
@@ -43,11 +41,9 @@ verify_jwt = true
 
 [functions.create-checkout-v3]
 verify_jwt = true
-timeout = 30
 
 [functions.cancel-booking]
 verify_jwt = true
-timeout = 30
 
 [functions.validate-payment]
 verify_jwt = true
@@ -87,7 +83,6 @@ verify_jwt = false
 
 [functions.generate-host-invoice]
 verify_jwt = false
-timeout = 15
 
 [functions.notify-host-invoice-required]
 verify_jwt = false
@@ -100,7 +95,6 @@ verify_jwt = false
 
 [functions.generate-dac7-reports]
 verify_jwt = false
-timeout = 60
 
 [functions.generate-invoice-pdf]
 verify_jwt = true
@@ -125,18 +119,15 @@ verify_jwt = false
 
 [functions.save-host-tax-details]
 verify_jwt = true
-timeout = 15
 
 [functions.approve-kyc]
 verify_jwt = true
 
 [functions.export-admin-csv]
 verify_jwt = true
-timeout = 30
 
 [functions.retry-dac7-generation]
 verify_jwt = false
-timeout = 60
 
 [functions.create-checkout-v2]
 verify_jwt = true
