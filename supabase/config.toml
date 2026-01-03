@@ -111,9 +111,6 @@ verify_jwt = true
 [functions.create-stripe-connect-account]
 verify_jwt = true
 
-[functions.create-booking-payment]
-verify_jwt = true
-
 [functions.storage-cleanup]
 verify_jwt = false
 
@@ -128,9 +125,6 @@ verify_jwt = true
 
 [functions.retry-dac7-generation]
 verify_jwt = false
-
-[functions.create-checkout-v2]
-verify_jwt = true
 
 [functions.message-broadcast]
 verify_jwt = false
