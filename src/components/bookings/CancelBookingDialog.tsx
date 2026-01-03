@@ -35,13 +35,28 @@ export function CancelBookingDialog({
   
   const cancellationInfo = calculateCancellationFee(
     booking.booking_date, 
-    booking.space?.price_per_day || 0
+    booking.space?.price_per_day || 0,
+    booking.start_time // Pass start_time for accurate hourly calculation
   );
 
   const handleConfirm = async () => {
+    // Prevent double submission
+    if (isLoading) return;
+
     await onConfirm(reason.trim() || undefined);
-    setReason("");
+    // Only clear reason if successful - but onConfirm is likely void.
+    // We rely on the parent to close the dialog on success, or keep it open on error.
+    // If it stays open, we might want to keep the reason.
+    // But standard pattern is setReason("") if successful.
+    // Since we don't know the result here (async void), we'll reset when dialog closes/opens.
   };
+
+  // Reset reason when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setReason("");
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,6 +105,7 @@ export function CancelBookingDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               rows={3}
+              disabled={isLoading}
             />
           </div>
 

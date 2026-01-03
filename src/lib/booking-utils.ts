@@ -3,35 +3,57 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CancelBookingResponse } from "@/types/booking";
 import { sreLogger } from '@/lib/sre-logger';
+import { differenceInHours, parseISO } from "date-fns";
 
-// Calculate cancellation fee based on booking date
-export const calculateCancellationFee = (bookingDate: string, pricePerDay: number): { fee: number; percentage: string; description: string } => {
-  const today = new Date();
-  const booking = new Date(bookingDate);
+// Calculate cancellation fee based on booking start time relative to now (in hours)
+// Policy:
+// < 24h: 100% penalty
+// < 48h: 50% penalty
+// >= 48h: 0% penalty
+export const calculateCancellationFee = (
+  bookingDate: string,
+  pricePerDay: number,
+  startTime?: string // Optional for backward compatibility, but highly recommended for accuracy
+): { fee: number; percentage: string; description: string } => {
+  const now = new Date();
   
-  // Reset time to compare only dates
-  today.setHours(0, 0, 0, 0);
-  booking.setHours(0, 0, 0, 0);
+  // Construct the full booking start datetime
+  // If startTime is provided, use it. Otherwise default to start of bookingDate (00:00) which is conservative.
+  // Ideally, bookingDate is YYYY-MM-DD and startTime is HH:mm:ss
   
-  const daysUntilBooking = Math.ceil((booking.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  let bookingStart: Date;
   
-  if (daysUntilBooking < 0) {
+  try {
+    if (startTime) {
+      bookingStart = parseISO(`${bookingDate}T${startTime}`);
+    } else {
+      bookingStart = parseISO(bookingDate);
+    }
+  } catch (e) {
+    // Fallback if parsing fails
+    bookingStart = new Date(bookingDate);
+  }
+
+  // Calculate hours difference: (Booking Start - Now)
+  const hoursUntilBooking = differenceInHours(bookingStart, now);
+
+  if (hoursUntilBooking < 24) {
     return {
       fee: pricePerDay,
       percentage: "100%",
-      description: "Prenotazione già iniziata - nessun rimborso"
+      description: "Meno di 24h all'inizio - Nessun rimborso"
     };
-  } else if (daysUntilBooking === 0) {
+  } else if (hoursUntilBooking < 48) {
     return {
       fee: pricePerDay * 0.5,
       percentage: "50%",
-      description: "Cancellazione nel giorno stesso"
+      description: "Meno di 48h all'inizio - Rimborso del 50%"
     };
   } else {
     return {
       fee: 0,
       percentage: "0%",
-      description: "Cancellazione gratuita"
+      description: "Più di 48h all'inizio - Cancellazione gratuita"
     };
   }
 };
