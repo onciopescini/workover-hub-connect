@@ -33,6 +33,7 @@ export type BookingWithDetails = {
   updated_at: string;
   cancelled_at?: string | null;
   cancellation_fee?: number | null;
+  cancellation_policy?: string | null;
   cancelled_by_host?: boolean | null;
   cancellation_reason?: string | null;
   slot_reserved_until?: string | null;
@@ -80,6 +81,7 @@ export type RawBookingData = {
   updated_at: string;
   cancelled_at?: string | null;
   cancellation_fee?: number | null;
+  cancellation_policy?: string | null;
   cancelled_by_host?: boolean | null;
   cancellation_reason?: string | null;
   slot_reserved_until?: string | null;
