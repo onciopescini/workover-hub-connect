@@ -206,6 +206,100 @@ serve(async (req) => {
         .eq('id', payment.id);
     }
 
+    // 5. Send Email Notifications (Non-blocking)
+    try {
+      console.log('[cancel-booking] Fetching details for email notifications...');
+
+      // Fetch details for both parties
+      const { data: workspaceData } = await supabaseClient
+        .from('workspaces')
+        .select('title, host_id')
+        .eq('id', booking.space_id)
+        .single();
+
+      const { data: guestProfile } = await supabaseClient
+        .from('profiles')
+        .select('email, first_name, last_name')
+        .eq('id', booking.user_id)
+        .single();
+
+      const { data: hostProfile } = await supabaseClient
+        .from('profiles')
+        .select('email, first_name, last_name')
+        .eq('id', workspaceData?.host_id)
+        .single();
+
+      if (guestProfile?.email && hostProfile?.email && workspaceData) {
+        const guestName = `${guestProfile.first_name} ${guestProfile.last_name}`;
+        const hostName = `${hostProfile.first_name} ${hostProfile.last_name}`;
+
+        // Convert cents to currency units (e.g., 1000 cents -> 10.00)
+        const refundAmountUnit = refundAmount / 100;
+        const cancellationFeeUnit = cancellationFee / 100;
+
+        const emailPromises = [];
+
+        // 1. Email to Guest
+        emailPromises.push(
+          fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'booking_cancelled',
+              to: guestProfile.email,
+              data: {
+                userName: guestProfile.first_name,
+                spaceTitle: workspaceData.title,
+                bookingDate: booking.booking_date,
+                reason: reason || (cancelled_by_host ? 'Host initiated' : 'User initiated'),
+                cancellationFee: cancellationFeeUnit,
+                refundAmount: refundAmountUnit,
+                currency: 'EUR',
+                bookingId: booking.id.slice(0, 8), // Short ID
+                cancelledByHost: cancelled_by_host
+              }
+            })
+          })
+        );
+
+        // 2. Email to Host
+        emailPromises.push(
+          fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: 'host_booking_cancelled',
+              to: hostProfile.email,
+              data: {
+                hostName: hostProfile.first_name,
+                guestName: guestName,
+                spaceTitle: workspaceData.title,
+                bookingDate: booking.booking_date,
+                refundAmount: refundAmountUnit,
+                bookingId: booking.id.slice(0, 8),
+                cancelledByHost: cancelled_by_host
+              }
+            })
+          })
+        );
+
+        await Promise.allSettled(emailPromises);
+        console.log('[cancel-booking] Email notifications sent.');
+      } else {
+        console.warn('[cancel-booking] Missing profile data, skipped emails.');
+      }
+
+    } catch (emailError) {
+      // Non-blocking error
+      console.error('[cancel-booking] Failed to send email notifications:', emailError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       refund_amount: refundAmount,
