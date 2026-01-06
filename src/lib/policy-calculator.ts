@@ -11,11 +11,11 @@ export interface RefundCalculationResult {
 /**
  * Calculates the refund and penalty for a booking cancellation based on the policy.
  *
- * @param totalAmount The total amount paid for the booking (should be in cents if using Stripe)
+ * @param totalAmount The total amount paid for the booking (can be float Euros or integer Cents)
  * @param policy The cancellation policy ('flexible', 'moderate', 'strict')
  * @param bookingStart The start date of the booking (JS Date object)
  * @param cancellationTime The time of cancellation (JS Date object, defaults to now)
- * @returns RefundCalculationResult
+ * @returns RefundCalculationResult with amounts rounded to 2 decimal places
  */
 export function calculateRefund(
   totalAmount: number,
@@ -80,9 +80,14 @@ export function calculateRefund(
     }
   }
 
-  // Calculate amounts with strict integer rounding for financial precision
-  const refundAmount = Math.round(totalAmount * refundPercentage);
-  const penaltyAmount = totalAmount - refundAmount;
+  // Calculate amounts with 2 decimal precision (safe for Euros float and Cents integer)
+  // Logic: Multiply by 100, round, divide by 100.
+  // Note: Using Number.EPSILON to handle floating point errors before rounding
+  const refundAmount = Math.round((totalAmount * refundPercentage + Number.EPSILON) * 100) / 100;
+
+  // Calculate penalty as difference to ensure sum equals total (handling rounding diffs)
+  const penaltyAmount = Math.round((totalAmount - refundAmount + Number.EPSILON) * 100) / 100;
+
   const penaltyPercentage = (1 - refundPercentage) * 100;
 
   return {

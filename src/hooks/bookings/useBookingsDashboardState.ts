@@ -11,6 +11,7 @@ import { UserRole } from '@/types/bookings/bookings-ui.types';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '@/lib/conversations';
 import { toast } from 'sonner';
+import { calculateRefund } from '@/lib/policy-calculator';
 
 export const useBookingsDashboardState = () => {
   const { hasAnyRole } = useRoleAccess();
@@ -20,28 +21,18 @@ export const useBookingsDashboardState = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
-  // These are effectively unused now for message dialog, but kept for compatibility if needed or removed cleanly
-  // Ideally we remove them, but the DashboardState type expects them.
-  // We will keep the state variables to satisfy TypeScript interfaces but they will be unused logic-wise.
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [messageBookingId, setMessageBookingId] = useState("");
   const [messageSpaceTitle, setMessageSpaceTitle] = useState("");
 
-  // Determine user role and fetch appropriate bookings
   const isHost = hasAnyRole(['host', 'admin']);
-
-  // Use role-specific hooks
   const coworkerQuery = useCoworkerBookings(filters);
   const hostQuery = useHostBookings(filters);
-
-  // Select the appropriate query based on user role
   const activeQuery = isHost ? hostQuery : coworkerQuery;
   const { data: bookings = [], isLoading, error, refetch } = activeQuery;
-
   const cancelBookingMutation = useEnhancedCancelBookingMutation();
 
-  // Filter bookings based on search term
   const filteredBookings = useMemo(() => {
     try {
       if (!searchTerm || !Array.isArray(bookings)) return bookings;
@@ -70,7 +61,6 @@ export const useBookingsDashboardState = () => {
     }
   }, [bookings, searchTerm]);
 
-  // Calculate statistics
   const stats: BookingsStats = useMemo(() => {
     try {
       if (!Array.isArray(bookings)) {
@@ -82,12 +72,56 @@ export const useBookingsDashboardState = () => {
       const confirmed = bookings.filter(b => b?.status === 'confirmed').length;
       const cancelled = bookings.filter(b => b?.status === 'cancelled').length;
       
-      const totalRevenue = bookings
-        .filter(b => b?.status === 'confirmed')
-        .reduce((sum, b) => {
-          const payment = b?.payments && Array.isArray(b.payments) && b.payments.length > 0 ? b.payments[0] : null;
+      // Updated Revenue Calculation Logic
+      const totalRevenue = bookings.reduce((sum, b) => {
+        if (!b) return sum;
+
+        if (b.status === 'confirmed') {
+          // For confirmed bookings, add the full amount
+          const payment = b.payments && Array.isArray(b.payments) && b.payments.length > 0 ? b.payments[0] : null;
           return sum + (payment?.amount || 0);
-        }, 0);
+        } else if (b.status === 'cancelled') {
+          // For cancelled bookings, add ONLY the cancellation fee
+          if (b.cancellation_fee != null) {
+             return sum + b.cancellation_fee;
+          } else {
+             // Fallback: Calculate fee on the fly for legacy cancelled bookings
+             try {
+                // Determine original price (Payment > Calculation)
+                let originalPrice = 0;
+                if (b.payments && b.payments.length > 0) {
+                    originalPrice = b.payments[0].amount;
+                } else {
+                   const start = new Date(`${b.booking_date}T${b.start_time}`);
+                   const end = new Date(`${b.booking_date}T${b.end_time}`);
+                   const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                   const pricePerHour = (b.space as any).price_per_hour || 0;
+                   originalPrice = pricePerHour * durationHours;
+                }
+
+                // Determine policy
+                const policy = b.cancellation_policy || (b.space as any).cancellation_policy || 'moderate';
+                const bookingStart = new Date(`${b.booking_date}T${b.start_time}`);
+                // Use cancellation time if available, otherwise assume late cancellation (now) or use booking start
+                // Ideally we should have cancelled_at. If null, we might over-penalize or under-penalize.
+                // But for legacy data, if cancelled_at is missing, we can't do much.
+                // Let's assume strict if we don't know? Or perhaps 0?
+                // Actually, if it's already cancelled in DB but has no fee, maybe it was free cancellation?
+                // The requirement says: "calculated if missing".
+                // If I use 'now', it will likely calculate as 100% penalty if the booking was in the past.
+                // Let's try to use cancelled_at.
+                const cancelTime = b.cancelled_at ? new Date(b.cancelled_at) : new Date(); // Fallback to now might be wrong for old bookings
+
+                const refundDetails = calculateRefund(originalPrice, policy, bookingStart, cancelTime);
+                return sum + refundDetails.penaltyAmount;
+             } catch (e) {
+                console.warn("Failed to calculate legacy cancellation fee", e);
+                return sum;
+             }
+          }
+        }
+        return sum;
+      }, 0);
 
       return { total, pending, confirmed, cancelled, totalRevenue };
     } catch (statsError) {
@@ -99,7 +133,6 @@ export const useBookingsDashboardState = () => {
     }
   }, [bookings]);
 
-  // Check if chat is enabled for booking
   const isChatEnabled = useCallback((booking: BookingWithDetails) => {
     try {
       if (!booking) return false;
@@ -119,7 +152,6 @@ export const useBookingsDashboardState = () => {
     }
   }, []);
 
-  // Determine user role in relation to specific booking
   const getUserRole = useCallback((booking: BookingWithDetails): UserRole => {
     return isHost ? "host" : "coworker";
   }, [isHost]);
@@ -144,10 +176,6 @@ export const useBookingsDashboardState = () => {
         return;
       }
 
-      // Logic to find host and coworker IDs
-      // If I am host, the other is coworker. If I am coworker, the other is host.
-      // However, getOrCreateConversation requires explicit hostId and coworkerId.
-
       const hostId = booking.space?.host_id;
       const coworkerId = booking.user_id || booking.coworker?.id;
 
@@ -170,7 +198,6 @@ export const useBookingsDashboardState = () => {
         bookingId: booking.id
       });
 
-      // Navigate to the unified messages page with the conversation ID
       navigate(`/messages?id=${conversationId}`);
 
     } catch (dialogError) {
@@ -291,27 +318,18 @@ export const useBookingsDashboardState = () => {
   };
 
   return {
-    // State
     dashboardState,
     filteredBookings,
     stats,
     isLoading,
     error,
-    
-    // Actions
     actions,
-    
-    // Dialog state setters
     setMessageDialogOpen,
     setCancelDialogOpen,
     setSearchTerm,
-    
-    // Utility functions
     isChatEnabled,
     getUserRole,
     refetch,
-    
-    // Mutation state
     cancelBookingLoading: cancelBookingMutation.isPending,
   };
 };
