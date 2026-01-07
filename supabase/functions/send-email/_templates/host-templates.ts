@@ -81,6 +81,62 @@ export const newBookingRequestTemplate = (data: {
   };
 };
 
+export const hostBookingCancelledTemplate = (data: {
+  hostName: string;
+  guestName: string;
+  spaceTitle: string;
+  bookingDate: string;
+  refundAmount: number;
+  bookingId: string;
+  cancelledByHost: boolean;
+}): EmailTemplate => {
+  const content = createHeader(
+    '❌ Prenotazione Cancellata',
+    data.cancelledByHost ? 'Conferma cancellazione' : 'Cancellata dall\'ospite'
+  ) + createContent(`
+    <p>Ciao ${data.hostName},</p>
+    <p>${data.cancelledByHost
+      ? `Hai cancellato con successo la prenotazione #${data.bookingId}.`
+      : `${data.guestName} ha cancellato la prenotazione #${data.bookingId}.`}</p>
+
+    <div class="info-box ${data.cancelledByHost ? 'success' : 'warning'}">
+      <h3 style="margin-bottom: 12px; color: ${data.cancelledByHost ? '#065f46' : '#92400e'};">
+        ${data.cancelledByHost ? '✅ Cancellazione Confermata' : '⚠️ Spazio Nuovamente Disponibile'}
+      </h3>
+      <div class="details-table">
+        <table>
+          <tr><td>Spazio:</td><td><strong>${data.spaceTitle}</strong></td></tr>
+          <tr><td>Data:</td><td><strong>${data.bookingDate}</strong></td></tr>
+          ${!data.cancelledByHost ? `<tr><td>Ospite:</td><td><strong>${data.guestName}</strong></td></tr>` : ''}
+          <tr><td>ID Prenotazione:</td><td><strong>#${data.bookingId}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+
+    ${data.refundAmount > 0 ? `
+      <div class="info-box warning">
+        <h3 style="margin-bottom: 12px; color: #92400e;">💰 Dettagli Rimborso</h3>
+        <p style="margin: 0;">È stato emesso un rimborso di <strong>€${data.refundAmount.toFixed(2)}</strong> all'ospite.</p>
+        <p style="margin: 8px 0 0 0; font-size: 0.9em;">Questo importo verrà dedotto dal tuo prossimo payout.</p>
+      </div>
+    ` : ''}
+
+    <h3>📅 Aggiornamento Calendario</h3>
+    <p>Il calendario del tuo spazio è stato aggiornato automaticamente e la data è tornata disponibile per nuove prenotazioni.</p>
+
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="https://workover.it.com/host/bookings" class="button">Gestisci Prenotazioni</a>
+    </div>
+
+    <p><strong>Il Team Workover</strong></p>
+  `);
+
+  return {
+    subject: `❌ Cancellazione Prenotazione #${data.bookingId} - ${data.spaceTitle}`,
+    html: createBaseTemplate(content)
+  };
+};
+
 export const hostPayoutProcessedTemplate = (data: {
   hostName: string;
   amount: number;

@@ -15,7 +15,8 @@ import {
   newBookingRequestTemplate, 
   hostPayoutProcessedTemplate, 
   spaceApprovedTemplate, 
-  spaceRejectedTemplate 
+  spaceRejectedTemplate,
+  hostBookingCancelledTemplate
 } from "./_templates/host-templates.ts";
 import { 
   welcomeTemplate, 
@@ -83,6 +84,7 @@ const emailTemplates = {
   host_payout_processed: hostPayoutProcessedTemplate,
   space_approved: spaceApprovedTemplate,
   space_rejected: spaceRejectedTemplate,
+  host_booking_cancelled: hostBookingCancelledTemplate,
   
   // Admin Templates
   new_user_registration: newUserRegistrationTemplate,
