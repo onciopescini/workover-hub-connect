@@ -1,3 +1,6 @@
+/**
+ * Client-side Pricing Engine - Force Update
+ */
 export const PricingEngine = {
   // Constants
   GUEST_FEE_PERCENT: 0.05,

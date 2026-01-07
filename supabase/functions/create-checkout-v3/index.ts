@@ -18,6 +18,7 @@ serve(async (req) => {
     // -------------------------------------------------------------------------
     // 1. DEPLOYMENT CONFIRMATION LOG
     // -------------------------------------------------------------------------
+    console.log("USING PRICING ENGINE V2 - MIN FEE 0.50 - FORCE UPDATE");
     console.log("🚀 CHECKOUT V3 - PRICING ENGINE INTEGRATION 🚀");
     console.log("Timestamp:", new Date().toISOString());
 
