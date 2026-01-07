@@ -1,5 +1,6 @@
+// Fixed build dependency
 /**
- * Client-side Pricing Engine - Force Update
+ * Shared Pricing Engine - Force Update
  */
 export const PricingEngine = {
   // Constants
