@@ -82,11 +82,11 @@ export function calculateRefund(
 
   // Calculate amounts with 2 decimal precision (safe for Euros float and Cents integer)
   // Logic: Multiply by 100, round, divide by 100.
-  // Note: Using Number.EPSILON to handle floating point errors before rounding
-  const refundAmount = Math.round((totalAmount * refundPercentage + Number.EPSILON) * 100) / 100;
+  // Note: Using simple Math.round as per strict requirement (no EPSILON)
+  const refundAmount = Math.round(totalAmount * refundPercentage * 100) / 100;
 
   // Calculate penalty as difference to ensure sum equals total (handling rounding diffs)
-  const penaltyAmount = Math.round((totalAmount - refundAmount + Number.EPSILON) * 100) / 100;
+  const penaltyAmount = Math.round((totalAmount - refundAmount) * 100) / 100;
 
   const penaltyPercentage = (1 - refundPercentage) * 100;
 
