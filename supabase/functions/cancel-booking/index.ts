@@ -87,6 +87,17 @@ serve(async (req) => {
       console.error("[cancel-booking] Workspace not found for auth check:", workspaceError);
     }
 
+    // Fetch Host Profile (moved up for Stripe logic)
+    const { data: hostProfile } = await supabaseClient
+      .from('profiles')
+      .select('email, first_name, last_name, stripe_account_id')
+      .eq('id', workspace?.host_id)
+      .single();
+
+    if (!hostProfile?.stripe_account_id) {
+       console.warn("[cancel-booking] Host Stripe Account ID not found. Fallback transfer lookup will fail if needed.");
+    }
+
     // Security Check: Verify User is Guest or Host
     const isGuest = booking.user_id === user.id;
     const isHost = workspace?.host_id === user.id;
@@ -114,7 +125,7 @@ serve(async (req) => {
     // Note: DB typically stores Euros (Float). We work in Cents here for safety.
 
     let basePriceCents = 0;
-    let transferId = null;
+    let transferId: string | null = null;
     let hostTransferAmountCents = 0;
     let stripeAvailable = false;
 
@@ -123,7 +134,7 @@ serve(async (req) => {
             // A. Fetch Detailed Stripe Data (including Charge and Transfer)
             console.log(`[cancel-booking] Fetching Stripe data for PI: ${paymentIntentId}`);
             const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-                expand: ['latest_charge']
+                expand: ['latest_charge.transfer']
             });
 
             stripeAvailable = true;
@@ -145,12 +156,37 @@ serve(async (req) => {
             // Ideally it is on the Charge
             const charge = paymentIntent.latest_charge as Stripe.Charge;
 
-            if (charge && charge.transfer) {
-                // It's a string ID if expanded, or object if we expand further.
-                // We didn't expand 'latest_charge.transfer', so it should be an ID string.
-                // Wait, 'latest_charge' is expanded, so it returns a Charge Object.
-                // Inside Charge Object, 'transfer' is ID string unless expanded.
-                transferId = charge.transfer as string;
+            if (charge?.transfer) {
+                // Handle both expanded object and string ID
+                transferId = typeof charge.transfer === 'string'
+                    ? charge.transfer
+                    : (charge.transfer as Stripe.Transfer).id;
+            }
+
+            // FALLBACK: If Transfer ID is missing, try listing transfers
+            if (!transferId && hostProfile?.stripe_account_id && booking.created_at) {
+                 console.log("[cancel-booking] Transfer ID missing on Charge. Attempting Fallback Lookup via List...");
+
+                 const bookingTime = new Date(booking.created_at).getTime() / 1000;
+                 // Look for transfers to this destination created around booking time
+                 const transfers = await stripe.transfers.list({
+                     destination: hostProfile.stripe_account_id,
+                     limit: 1,
+                     created: {
+                         gt: Math.floor(bookingTime - 60) // 1 minute buffer before creation
+                     }
+                 });
+
+                 if (transfers.data.length > 0) {
+                     transferId = transfers.data[0].id;
+                     console.log(`[cancel-booking] Fallback: Found Transfer ID ${transferId}`);
+                 }
+            }
+
+            // STRICT CHECK: Abort if we expect a transfer but can't find it
+            if (!transferId) {
+                console.error("[cancel-booking] CRITICAL: Missing Transfer ID. Aborting to prevent platform drain.");
+                throw new Error("Cancellation Failed: Unable to locate Host Transfer. Please contact support.");
             }
 
             // If we found a transfer ID, let's fetch it to be sure of the amount the host got.
@@ -158,12 +194,12 @@ serve(async (req) => {
                 const transfer = await stripe.transfers.retrieve(transferId);
                 hostTransferAmountCents = transfer.amount;
                 console.log(`[cancel-booking] Host Transfer found: ${transferId}, Amount: ${hostTransferAmountCents}`);
-            } else {
-                console.warn(`[cancel-booking] No Transfer ID found on Charge. Host might not have been paid yet or Platform Account.`);
             }
 
         } catch (e) {
             console.error(`[cancel-booking] Error fetching Stripe data:`, e);
+            // Re-throw if it's our critical error, otherwise wrap it
+            if (e.message.includes("Cancellation Failed")) throw e;
             throw new Error(`Payment Provider Error: ${e.message}`);
         }
     } else {
@@ -303,11 +339,7 @@ serve(async (req) => {
         .eq('id', booking.user_id)
         .single();
 
-      const { data: hostProfile } = await supabaseClient
-        .from('profiles')
-        .select('email, first_name, last_name')
-        .eq('id', workspace?.host_id)
-        .single();
+      // Note: hostProfile was already fetched above
 
       if (guestProfile?.email && hostProfile?.email && workspace) {
          const refundAmountEur = guestRefundCents / 100;
