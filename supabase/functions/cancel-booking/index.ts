@@ -4,6 +4,7 @@ import Stripe from "https://esm.sh/stripe@15.0.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { calculateRefund } from "../_shared/policy-calculator.ts";
 
+console.log("CANCEL BOOKING - FORCE UPDATE");
 console.log("Hello from cancel-booking!");
 
 serve(async (req) => {
