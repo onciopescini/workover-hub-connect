@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
-import { PLATFORM_FEE_RATE, VAT_RATE, WITHHOLDING_TAX_RATE } from "@/config/fiscal-constants";
+import { PricingEngine } from "@/lib/pricing-engine";
 
 // Importa il tipo Payment dalla tabella Supabase
 type Payment = {
@@ -46,41 +46,33 @@ const hashValue = (val: string): string => {
   return hash.toString(16);
 };
 
-// Calculate payment breakdown with dual commission model
+// Calculate payment breakdown with dual commission model + Floor
 export const calculatePaymentBreakdownWithTax = (baseAmount: number) => {
-  const platform_fee = Math.round(baseAmount * PLATFORM_FEE_RATE * 100) / 100;
-  const vat_amount = Math.round(platform_fee * VAT_RATE * 100) / 100;
-  const withholding_tax = Math.round(baseAmount * WITHHOLDING_TAX_RATE * 100) / 100;
-  const net_amount = baseAmount - (platform_fee + vat_amount + withholding_tax);
+  const breakdown = PricingEngine.calculatePricing(baseAmount);
 
   return {
-    base_amount: baseAmount,
-    platform_fee,
-    vat_amount,
-    withholding_tax,
-    net_amount,
-    gross_amount: baseAmount + platform_fee // Assuming this is buyer total?
-    // Note: The logic here is re-implemented based on fiscal constants
-    // because the original function definition was missing.
+    base_amount: breakdown.basePrice,
+    platform_fee: breakdown.guestFee, // Guest fee part
+    vat_amount: breakdown.guestVat,
+    withholding_tax: 0, // Not handled in this simplified calculator
+    net_amount: breakdown.hostPayout, // What host receives
+    gross_amount: breakdown.totalGuestPay // What guest pays
   };
 };
 
 // Calculate payment breakdown with dual commission model
 // @deprecated Use calculatePaymentBreakdownWithTax for fiscal compliance
 export const calculatePaymentBreakdown = (baseAmount: number) => {
-  const breakdown = calculatePaymentBreakdownWithTax(baseAmount);
+  const breakdown = PricingEngine.calculatePricing(baseAmount);
   
-  // Mapping new logic to old structure for backward compatibility where needed
-  // Note: Old logic had buyer fee + host fee. New logic focuses on Platform Fee (Host side).
-  // We approximate to keep legacy consumers working without crashing, but values might differ slightly.
-  
+  // Mapping to old structure for UI compatibility
   return {
-    baseAmount,
-    buyerFeeAmount: 0, // No longer using buyer fee in this simplified model
-    buyerTotalAmount: baseAmount,
-    hostFeeAmount: breakdown.platform_fee,
-    hostNetPayout: breakdown.net_amount,
-    platformRevenue: breakdown.platform_fee
+    baseAmount: breakdown.basePrice,
+    buyerFeeAmount: breakdown.guestFee,
+    buyerTotalAmount: breakdown.totalGuestPay,
+    hostFeeAmount: breakdown.hostFee,
+    hostNetPayout: breakdown.hostPayout,
+    platformRevenue: breakdown.applicationFee
   };
 };
 
