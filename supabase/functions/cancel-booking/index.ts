@@ -145,7 +145,11 @@ serve(async (req) => {
     if (paymentIntentId && refundAmount > 0) {
       try {
         // Convert Euro float to Cents integer
+        // Use Math.round to handle floating point errors (e.g. 531.0000001 -> 531)
         const refundAmountCents = Math.round(refundAmount * 100);
+
+        // CRITICAL DEBUGGING LOG for Precision Verification
+        console.log(`[REFUND DEBUG] Original: ${grossAmount}, CalculatedRefund: ${refundAmount}, StripeCents: ${refundAmountCents}`);
 
         if (refundAmountCents > 0) {
            const refund = await stripe.refunds.create({
