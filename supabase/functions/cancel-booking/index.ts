@@ -144,8 +144,8 @@ serve(async (req) => {
 
     if (paymentIntentId && refundAmount > 0) {
       try {
-        // Ensure integer cents
-        const refundAmountCents = Math.round(refundAmount);
+        // Convert Euro float to Cents integer
+        const refundAmountCents = Math.round(refundAmount * 100);
 
         if (refundAmountCents > 0) {
            const refund = await stripe.refunds.create({
@@ -233,9 +233,9 @@ serve(async (req) => {
         const guestName = `${guestProfile.first_name} ${guestProfile.last_name}`;
         const hostName = `${hostProfile.first_name} ${hostProfile.last_name}`;
 
-        // Convert cents to currency units (e.g., 1000 cents -> 10.00)
-        const refundAmountUnit = refundAmount / 100;
-        const cancellationFeeUnit = cancellationFee / 100;
+        // refundAmount and cancellationFee are already in Euros (float)
+        const refundAmountUnit = refundAmount;
+        const cancellationFeeUnit = cancellationFee;
 
         const emailPromises = [];
 
