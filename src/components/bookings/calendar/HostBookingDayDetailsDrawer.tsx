@@ -27,6 +27,7 @@ interface HostBookingDayDetailsDrawerProps {
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
   viewMode: 'all' | 'single';
+  onBookingClick?: (booking: BookingWithDetails) => void;
 }
 
 export const HostBookingDayDetailsDrawer = ({
@@ -38,7 +39,8 @@ export const HostBookingDayDetailsDrawer = ({
   isChatEnabled,
   onOpenMessageDialog,
   onOpenCancelDialog,
-  viewMode
+  viewMode,
+  onBookingClick
 }: HostBookingDayDetailsDrawerProps) => {
   if (!selectedDate) return null;
 
@@ -95,14 +97,25 @@ export const HostBookingDayDetailsDrawer = ({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {spaceBookings.map((booking) => (
-                      <EnhancedBookingCard
+                      <div
                         key={booking.id}
-                        booking={booking}
-                        userRole={getUserRole(booking)}
-                        onOpenMessageDialog={onOpenMessageDialog}
-                        onOpenCancelDialog={onOpenCancelDialog}
-                        isChatEnabled={isChatEnabled(booking)}
-                      />
+                        onClick={(e) => {
+                          const target = e.target as HTMLElement;
+                          const isInteractive = target.closest('button') || target.closest('a') || target.closest('[role="button"]');
+                          if (!isInteractive && onBookingClick) {
+                            onBookingClick(booking);
+                          }
+                        }}
+                        className="cursor-pointer transition-opacity hover:opacity-90"
+                      >
+                        <EnhancedBookingCard
+                          booking={booking}
+                          userRole={getUserRole(booking)}
+                          onOpenMessageDialog={onOpenMessageDialog}
+                          onOpenCancelDialog={onOpenCancelDialog}
+                          isChatEnabled={isChatEnabled(booking)}
+                        />
+                      </div>
                     ))}
                   </CardContent>
                 </Card>
@@ -112,14 +125,25 @@ export const HostBookingDayDetailsDrawer = ({
             // Vista "Spazio singolo" - lista semplice
             <div className="space-y-4">
               {bookings.map((booking) => (
-                <EnhancedBookingCard
+                <div
                   key={booking.id}
-                  booking={booking}
-                  userRole={getUserRole(booking)}
-                  onOpenMessageDialog={onOpenMessageDialog}
-                  onOpenCancelDialog={onOpenCancelDialog}
-                  isChatEnabled={isChatEnabled(booking)}
-                />
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    const isInteractive = target.closest('button') || target.closest('a') || target.closest('[role="button"]');
+                    if (!isInteractive && onBookingClick) {
+                      onBookingClick(booking);
+                    }
+                  }}
+                  className="cursor-pointer transition-opacity hover:opacity-90"
+                >
+                  <EnhancedBookingCard
+                    booking={booking}
+                    userRole={getUserRole(booking)}
+                    onOpenMessageDialog={onOpenMessageDialog}
+                    onOpenCancelDialog={onOpenCancelDialog}
+                    isChatEnabled={isChatEnabled(booking)}
+                  />
+                </div>
               ))}
             </div>
           )}

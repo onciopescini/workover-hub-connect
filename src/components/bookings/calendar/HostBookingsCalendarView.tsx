@@ -16,6 +16,7 @@ interface HostBookingsCalendarViewProps {
   isChatEnabled: (booking: BookingWithDetails) => boolean;
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  onEventClick?: (booking: BookingWithDetails) => void;
 }
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -25,7 +26,8 @@ export const HostBookingsCalendarView = ({
   getUserRole,
   isChatEnabled,
   onOpenMessageDialog,
-  onOpenCancelDialog
+  onOpenCancelDialog,
+  onEventClick
 }: HostBookingsCalendarViewProps) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -212,6 +214,7 @@ export const HostBookingsCalendarView = ({
         onOpenMessageDialog={onOpenMessageDialog}
         onOpenCancelDialog={onOpenCancelDialog}
         viewMode={viewMode}
+        onBookingClick={onEventClick}
       />
     </div>
   );

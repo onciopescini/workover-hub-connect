@@ -52,46 +52,9 @@ export const EnhancedBookingCard = ({
   };
 
   const canCancelBooking = () => {
-    // Check if we can cancel based on status
-    const canCancelByStatus = booking.status === "confirmed" || booking.status === "pending";
-    
-    // Check if we're before the booking start time (with Italian timezone)
-    const now = new Date();
-    const timeZone = 'Europe/Rome';
-    let canCancelByTime = true;
-    
-    if (booking.booking_date && booking.start_time) {
-      try {
-        // Create date string in ISO format
-        const dateTimeString = `${booking.booking_date}T${booking.start_time}`;
-        
-        // Parse the booking date as if it's in Italian timezone
-        const bookingStartUTC = parseISO(dateTimeString);
-        const bookingStartLocal = toZonedTime(bookingStartUTC, timeZone);
-        const nowLocal = toZonedTime(now, timeZone);
-        
-        // Validate that the parsed date is valid
-        if (isNaN(bookingStartLocal.getTime())) {
-          canCancelByTime = false;
-        } else {
-          // Can't cancel if current time is at or past the booking start time
-          canCancelByTime = isBefore(nowLocal, bookingStartLocal);
-          
-          // Additional safety check - if booking is more than 1 day in the past, definitely can't cancel
-          const oneDayAgo = addMinutes(nowLocal, -24 * 60);
-          if (isBefore(bookingStartLocal, oneDayAgo)) {
-            canCancelByTime = false;
-          }
-        }
-      } catch (error) {
-        // If there's an error parsing, don't allow cancellation for safety
-        canCancelByTime = false;
-      }
-    } else {
-      canCancelByTime = false;
-    }
-    
-    return canCancelByStatus && canCancelByTime;
+    // Allows cancellation for confirmed and pending bookings regardless of time
+    // Pending bookings can be withdrawn, Confirmed can be cancelled (potentially with fee)
+    return booking.status === "confirmed" || booking.status === "pending";
   };
 
   const getBookingStatusInfo = () => {

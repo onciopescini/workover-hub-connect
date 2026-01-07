@@ -23,6 +23,7 @@ interface BookingDayDetailsDrawerProps {
   isChatEnabled: (booking: BookingWithDetails) => boolean;
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  onBookingClick?: (booking: BookingWithDetails) => void;
 }
 
 export const BookingDayDetailsDrawer = ({
@@ -33,7 +34,8 @@ export const BookingDayDetailsDrawer = ({
   getUserRole,
   isChatEnabled,
   onOpenMessageDialog,
-  onOpenCancelDialog
+  onOpenCancelDialog,
+  onBookingClick
 }: BookingDayDetailsDrawerProps) => {
   if (!selectedDate) return null;
 
@@ -66,14 +68,26 @@ export const BookingDayDetailsDrawer = ({
               </p>
             ) : (
               bookings.map((booking) => (
-                <EnhancedBookingCard
+                <div
                   key={booking.id}
-                  booking={booking}
-                  userRole={getUserRole(booking)}
-                  onOpenMessageDialog={onOpenMessageDialog}
-                  onOpenCancelDialog={onOpenCancelDialog}
-                  isChatEnabled={isChatEnabled(booking)}
-                />
+                  onClick={(e) => {
+                    // Prevent click if targeting a button or interactive element
+                    const target = e.target as HTMLElement;
+                    const isInteractive = target.closest('button') || target.closest('a') || target.closest('[role="button"]');
+                    if (!isInteractive && onBookingClick) {
+                      onBookingClick(booking);
+                    }
+                  }}
+                  className="cursor-pointer transition-opacity hover:opacity-90"
+                >
+                  <EnhancedBookingCard
+                    booking={booking}
+                    userRole={getUserRole(booking)}
+                    onOpenMessageDialog={onOpenMessageDialog}
+                    onOpenCancelDialog={onOpenCancelDialog}
+                    isChatEnabled={isChatEnabled(booking)}
+                  />
+                </div>
               ))
             )}
           </div>

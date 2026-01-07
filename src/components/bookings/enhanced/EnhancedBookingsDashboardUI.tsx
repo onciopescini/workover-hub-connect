@@ -11,15 +11,16 @@ import { Button } from '@/components/ui/button';
 import { exportBookingsToCSV } from '@/utils/csv/exportBookingsCsv';
 import { BulkSelectionDrawer } from '@/components/bookings/bulk/BulkSelectionDrawer';
 import { useBulkBookingActions } from '@/hooks/bookings/useBulkBookingActions';
-import { RealtimeBookingsSync } from '@/components/bookings/realtime/RealtimeBookingsSync';
 import { ReportSubscriptionToggle } from '@/components/host/reports/ReportSubscriptionToggle';
 import { BookingsCalendarView } from '../calendar/BookingsCalendarView';
 import { HostBookingsCalendarView } from '../calendar/HostBookingsCalendarView';
 import { useRoleAccess } from '@/hooks/useRoleAccess';
-import { CompactBookingsFilters } from '../compact/CompactBookingsFilters';
-import { BookingsCompactGrid } from '../compact/BookingsCompactGrid';
-import { BookingsTableView } from '../table/BookingsTableView';
-import { LayoutGrid, Table as TableIcon, Calendar } from 'lucide-react';
+import { CompactBookingsFilters } from '../filters/CompactBookingsFilters';
+import { EnhancedBookingCard } from '../EnhancedBookingCard';
+import { BookingDetailDialog } from './BookingDetailDialog';
+import { LayoutList, Calendar } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { EmptyBookingsState } from '../EmptyBookingsState';
 
 interface EnhancedBookingsDashboardUIProps {
   dashboardState: BookingsDashboardState;
@@ -49,7 +50,9 @@ export function EnhancedBookingsDashboardUI({
   refetch
 }: EnhancedBookingsDashboardUIProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'table' | 'calendar'>('grid');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<BookingWithDetails | null>(null);
+
   const { hasAnyRole } = useRoleAccess();
   const isHost = hasAnyRole(['host', 'admin']);
 
@@ -73,12 +76,15 @@ export function EnhancedBookingsDashboardUI({
     await groupMessage(ids, content);
   }, [groupMessage]);
 
+  const handleCalendarEventClick = useCallback((booking: BookingWithDetails) => {
+    setSelectedBookingDetails(booking);
+  }, []);
+
   const drawerBookings = useMemo(() => filteredBookings, [filteredBookings]);
 
   return (
     <EnhancedBookingsDashboardLayout>
       <PaymentSuccessHandler />
-      {/* <RealtimeBookingsSync onChange={refetch} /> */}
 
       <BookingsDashboardHeader
         totalBookings={enhancedStats.total}
@@ -112,22 +118,13 @@ export function EnhancedBookingsDashboardUI({
         {/* View Mode Toggle */}
         <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode('list')}
             className="h-8"
           >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Griglia
-          </Button>
-          <Button
-            variant={viewMode === 'table' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('table')}
-            className="h-8"
-          >
-            <TableIcon className="h-4 w-4 mr-2" />
-            Tabella
+            <LayoutList className="h-4 w-4 mr-2" />
+            Lista
           </Button>
           <Button
             variant={viewMode === 'calendar' ? 'default' : 'ghost'}
@@ -142,47 +139,54 @@ export function EnhancedBookingsDashboardUI({
       </div>
 
       {/* Content Views */}
-      <div className="px-4">
-        {viewMode === 'grid' && (
-          <BookingsCompactGrid
-            bookings={filteredBookings}
-            isLoading={isLoading}
-            getUserRole={getUserRole}
-            isChatEnabled={isChatEnabled}
-            onOpenMessageDialog={actions.onOpenMessageDialog}
-            onOpenCancelDialog={actions.onOpenCancelDialog}
-          />
-        )}
-
-        {viewMode === 'table' && (
-          <BookingsTableView
-            bookings={filteredBookings}
-            isLoading={isLoading}
-            getUserRole={getUserRole}
-            isChatEnabled={isChatEnabled}
-            onOpenMessageDialog={actions.onOpenMessageDialog}
-            onOpenCancelDialog={actions.onOpenCancelDialog}
-          />
-        )}
-
-        {viewMode === 'calendar' && (
+      <div className="px-4 pb-12">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner />
+          </div>
+        ) : (
           <>
-            {isHost ? (
-              <HostBookingsCalendarView
-                bookings={filteredBookings}
-                getUserRole={getUserRole}
-                isChatEnabled={isChatEnabled}
-                onOpenMessageDialog={actions.onOpenMessageDialog}
-                onOpenCancelDialog={actions.onOpenCancelDialog}
-              />
-            ) : (
-              <BookingsCalendarView
-                bookings={filteredBookings}
-                getUserRole={getUserRole}
-                isChatEnabled={isChatEnabled}
-                onOpenMessageDialog={actions.onOpenMessageDialog}
-                onOpenCancelDialog={actions.onOpenCancelDialog}
-              />
+            {viewMode === 'list' && (
+              filteredBookings.length > 0 ? (
+                <div className="space-y-4 max-w-3xl mx-auto">
+                  {filteredBookings.map((booking) => (
+                    <EnhancedBookingCard
+                      key={booking.id}
+                      booking={booking}
+                      userRole={getUserRole(booking)}
+                      isChatEnabled={isChatEnabled(booking)}
+                      onOpenMessageDialog={actions.onOpenMessageDialog}
+                      onOpenCancelDialog={actions.onOpenCancelDialog}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyBookingsState activeTab={dashboardState.filters.status || 'all'} />
+              )
+            )}
+
+            {viewMode === 'calendar' && (
+              <>
+                {isHost ? (
+                  <HostBookingsCalendarView
+                    bookings={filteredBookings}
+                    getUserRole={getUserRole}
+                    isChatEnabled={isChatEnabled}
+                    onOpenMessageDialog={actions.onOpenMessageDialog}
+                    onOpenCancelDialog={actions.onOpenCancelDialog}
+                    onEventClick={handleCalendarEventClick}
+                  />
+                ) : (
+                  <BookingsCalendarView
+                    bookings={filteredBookings}
+                    getUserRole={getUserRole}
+                    isChatEnabled={isChatEnabled}
+                    onOpenMessageDialog={actions.onOpenMessageDialog}
+                    onOpenCancelDialog={actions.onOpenCancelDialog}
+                    onEventClick={handleCalendarEventClick}
+                  />
+                )}
+              </>
             )}
           </>
         )}
@@ -198,6 +202,19 @@ export function EnhancedBookingsDashboardUI({
         selectedBooking={dashboardState.selectedBooking}
         onCancelBooking={actions.onCancelBooking}
         cancelBookingLoading={cancelBookingLoading}
+      />
+
+      <BookingDetailDialog
+        isOpen={!!selectedBookingDetails}
+        onClose={() => setSelectedBookingDetails(null)}
+        booking={selectedBookingDetails}
+        userRole={selectedBookingDetails ? getUserRole(selectedBookingDetails) : 'coworker'}
+        isChatEnabled={selectedBookingDetails ? isChatEnabled(selectedBookingDetails) : false}
+        onOpenMessageDialog={actions.onOpenMessageDialog}
+        onOpenCancelDialog={(booking) => {
+          setSelectedBookingDetails(null); // Close details modal first
+          actions.onOpenCancelDialog(booking);
+        }}
       />
 
       <BulkSelectionDrawer
