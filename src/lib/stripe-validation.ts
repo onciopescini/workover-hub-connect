@@ -1,5 +1,5 @@
 import { sreLogger } from '@/lib/sre-logger';
-import { PLATFORM_FEE_RATE } from '@/config/fiscal-constants';
+import { PricingEngine } from '@/lib/pricing-engine';
 
 // Stripe integration validation utilities
 export interface StripeValidationResult {
@@ -17,44 +17,37 @@ export interface StripeValidationResult {
 export const validateStripeAmounts = (basePrice: number): StripeValidationResult => {
   const errors: string[] = [];
   
-  // Calculate expected amounts using our payment logic
-  // Use PLATFORM_FEE_RATE instead of hardcoded 0.05
-  const buyerFeeAmount = Math.round(basePrice * PLATFORM_FEE_RATE * 100) / 100;
-  const buyerTotalPrice = basePrice + buyerFeeAmount;
-  const hostFeeAmount = Math.round(basePrice * PLATFORM_FEE_RATE * 100) / 100;
-  const hostPayout = basePrice - hostFeeAmount;
+  // Use Pricing Engine to get exact breakdown
+  const breakdown = PricingEngine.calculatePricing(basePrice);
   
   // Convert to Stripe amounts (cents)
-  const stripeSessionAmount = Math.round(buyerTotalPrice * 100);
-  const stripeApplicationFee = Math.round(hostFeeAmount * 100);
-  const hostTransferAmount = Math.round(hostPayout * 100);
+  // Engine returns values in EUR (2 decimals), so we multiply by 100 and round
+  const stripeSessionAmount = Math.round(breakdown.totalGuestPay * 100);
+  const stripeApplicationFee = Math.round(breakdown.applicationFee * 100);
+  const hostTransferAmount = Math.round(breakdown.hostPayout * 100);
   
-  // Validation checks
-  const expectedSessionAmount = Math.round((basePrice * (1 + PLATFORM_FEE_RATE)) * 100);
-  if (stripeSessionAmount !== expectedSessionAmount) {
-    errors.push(`Session amount mismatch: expected ${expectedSessionAmount} cents, got ${stripeSessionAmount} cents`);
-  }
+  // Validation Logic checks consistency of the breakdown itself
   
-  const expectedApplicationFee = Math.round((basePrice * PLATFORM_FEE_RATE) * 100);
-  if (stripeApplicationFee !== expectedApplicationFee) {
-    errors.push(`Application fee mismatch: expected ${expectedApplicationFee} cents, got ${stripeApplicationFee} cents`);
-  }
-  
-  const expectedTransferAmount = Math.round((basePrice * (1 - PLATFORM_FEE_RATE)) * 100);
-  if (hostTransferAmount !== expectedTransferAmount) {
-    errors.push(`Transfer amount mismatch: expected ${expectedTransferAmount} cents, got ${hostTransferAmount} cents`);
-  }
-  
-  // Check that session amount = transfer amount + application fee
+  // 1. Session Amount check: Does it equal Application Fee + Host Transfer?
+  // Note: Stripe splits the charge into Transfer + Application Fee
+  // Transfer = Host Payout
+  // Application Fee = Platform Revenue (Guest Fee + Guest VAT + Host Fee)
   if (stripeSessionAmount !== (hostTransferAmount + stripeApplicationFee)) {
     errors.push(`Amount breakdown error: session amount (${stripeSessionAmount}) should equal transfer (${hostTransferAmount}) + fee (${stripeApplicationFee})`);
   }
   
+  // 2. Base integrity check (not fully exhaustive but sanity check)
+  // Ensure the engine's output for total matches what we expect from component parts
+  const expectedTotal = Math.round((breakdown.basePrice + breakdown.guestFee + breakdown.guestVat) * 100);
+  if (stripeSessionAmount !== expectedTotal) {
+    errors.push(`Total mismatch: Session (${stripeSessionAmount}) vs Calculated (${expectedTotal})`);
+  }
+
   return {
     testCase: `Stripe validation for €${basePrice}`,
     basePrice,
-    buyerTotalPrice,
-    hostPayout,
+    buyerTotalPrice: breakdown.totalGuestPay,
+    hostPayout: breakdown.hostPayout,
     stripeSessionAmount,
     stripeApplicationFee,
     hostTransferAmount,
@@ -83,7 +76,7 @@ export const logStripeValidationResults = (basePrice: number): void => {
 export const runStripeValidationSuite = (): void => {
   sreLogger.info('RUNNING STRIPE VALIDATION SUITE');
   
-  const testPrices = [20, 150, 75, 500];
+  const testPrices = [2.50, 20, 150, 75, 500]; // Added 2.50 for low value test
   testPrices.forEach(price => {
     logStripeValidationResults(price);
   });

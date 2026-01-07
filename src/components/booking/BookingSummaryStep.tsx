@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info, Users } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
+import { computePricing } from "@/lib/pricing";
 import type { SelectedTimeRange } from './TwoStepBookingForm';
 
 interface BookingSummaryStepProps {
@@ -25,16 +25,11 @@ export function BookingSummaryStep({
   confirmationType,
   guestsCount = 1
 }: BookingSummaryStepProps) {
-  const stripeTaxEnabled = isStripeTaxEnabled();
-  
   const pricing = computePricing({
     durationHours: selectedRange.duration,
     pricePerHour,
     pricePerDay,
     guestsCount,
-    serviceFeePct: getServiceFeePct(),
-    vatPct: getDefaultVatPct(),
-    stripeTaxEnabled
   });
 
   const isInstantBooking = confirmationType === 'instant';
@@ -146,10 +141,10 @@ export function BookingSummaryStep({
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                IVA {stripeTaxEnabled ? '' : `(${Math.round(getDefaultVatPct() * 100)}%)`}
+                IVA (22%)
               </span>
               <span>
-                {stripeTaxEnabled ? 'calcolata al pagamento' : `€${pricing.vat.toFixed(2)}`}
+                €{pricing.vat.toFixed(2)}
               </span>
             </div>
 

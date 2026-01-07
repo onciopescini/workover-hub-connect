@@ -7,7 +7,7 @@
 
 import { sreLogger } from '@/lib/sre-logger';
 import { supabase } from '@/integrations/supabase/client';
-import { PLATFORM_FEE_RATE, VAT_RATE } from './fiscal-constants';
+import { PricingEngine } from '@/lib/pricing-engine';
 
 interface AppConfig {
   api: {
@@ -20,6 +20,8 @@ interface AppConfig {
     networking: boolean;
   };
   pricing: {
+    // Deprecated: Access PricingEngine directly for calculations
+    // These remain for backward compatibility with monitoring/logging if needed
     serviceFeePct: number;
     defaultVatPct: number;
   };
@@ -85,9 +87,9 @@ export const appConfig: AppConfig = {
     networking: true,
   },
   pricing: {
-    // Business rules - imported from fiscal constants
-    serviceFeePct: PLATFORM_FEE_RATE,
-    defaultVatPct: VAT_RATE,
+    // Using constants from PricingEngine to maintain compatibility
+    serviceFeePct: PricingEngine.GUEST_FEE_PERCENT,
+    defaultVatPct: PricingEngine.VAT_RATE,
   },
   analytics: {
     plausibleDomain: 'workover.app',
