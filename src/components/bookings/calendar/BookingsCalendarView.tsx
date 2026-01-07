@@ -14,6 +14,7 @@ interface BookingsCalendarViewProps {
   isChatEnabled: (booking: BookingWithDetails) => boolean;
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  onEventClick?: (booking: BookingWithDetails) => void;
 }
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -23,7 +24,8 @@ export const BookingsCalendarView = ({
   getUserRole,
   isChatEnabled,
   onOpenMessageDialog,
-  onOpenCancelDialog
+  onOpenCancelDialog,
+  onEventClick
 }: BookingsCalendarViewProps) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -60,6 +62,19 @@ export const BookingsCalendarView = ({
 
   const handleDayClick = (date: Date, bookings: BookingWithDetails[]) => {
     if (bookings.length > 0) {
+      // If we have an onEventClick handler and exactly one booking (or logic to handle list),
+      // we might want to prioritize that.
+      // However, current implementation opens a drawer for the day.
+      // If the user wants "clicking a slot opens the SAME details/actions modal",
+      // we need to hook into the drawer's item click or modify this.
+      //
+      // BUT, for a calendar DAY view, there might be multiple bookings.
+      // So opening the drawer (BookingDayDetailsDrawer) is correct for the day click.
+      // The "slot" click logic must be inside the drawer or the day cell rendering if individual slots are rendered.
+
+      // Since BookingCalendarDay renders a summary or dots, clicking the DAY opens the drawer.
+      // Inside the drawer, we list bookings. Clicking ONE of them should trigger onEventClick.
+
       setSelectedDate(date);
       setDrawerOpen(true);
     }
@@ -146,6 +161,7 @@ export const BookingsCalendarView = ({
         isChatEnabled={isChatEnabled}
         onOpenMessageDialog={onOpenMessageDialog}
         onOpenCancelDialog={onOpenCancelDialog}
+        onBookingClick={onEventClick}
       />
     </div>
   );
