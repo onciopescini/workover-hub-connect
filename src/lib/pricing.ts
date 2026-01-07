@@ -1,63 +1,39 @@
-import { appConfig } from '@/config/app.config';
-import { PLATFORM_FEE_RATE } from '@/config/fiscal-constants';
+import { PricingEngine } from './pricing-engine';
 
 export interface PricingInput {
   durationHours: number;
   pricePerHour: number;
   pricePerDay: number;
   guestsCount: number;
-  serviceFeePct: number; // es. 0.05
-  vatPct: number;        // es. 0.22 (placeholder se Stripe Tax off)
-  stripeTaxEnabled?: boolean; // da env
 }
 
 export interface PricingOutput {
   base: number;          // oraria o giornaliera
-  serviceFee: number;    // fee piattaforma
-  vat: number;           // 0 se stripeTaxEnabled === true (calcola Stripe)
-  total: number;
+  serviceFee: number;    // fee piattaforma (include minimo €0.50)
+  vat: number;           // IVA sulla fee (22% della fee)
+  total: number;         // Totale a carico del Guest
   isDayRate: boolean;
   breakdownLabel: string; // "3.5h × €15/h" o "Tariffa giornaliera (9h)"
 }
-
-const round = (n: number) => Math.round(n * 100) / 100;
 
 export function computePricing(input: PricingInput): PricingOutput {
   const isDayRate = input.durationHours >= 8;
   const basePerPerson = isDayRate ? input.pricePerDay : input.durationHours * input.pricePerHour;
   const base = basePerPerson * input.guestsCount;
-  const serviceFee = round(base * input.serviceFeePct);
-  const vat = input.stripeTaxEnabled ? 0 : round(serviceFee * input.vatPct);
-  const total = round(base + serviceFee + vat);
+
+  // Delegate all financial calculations to the Pricing Engine
+  const pricing = PricingEngine.calculatePricing(base);
   
   const guestLabel = input.guestsCount === 1 ? 'persona' : 'persone';
   
   return {
-    base: round(base),
-    serviceFee,
-    vat,
-    total,
+    base: pricing.basePrice,
+    serviceFee: pricing.guestFee,
+    vat: pricing.guestVat,
+    total: pricing.totalGuestPay,
     isDayRate,
     breakdownLabel: isDayRate
       ? `Tariffa giornaliera (${input.durationHours}h) × ${input.guestsCount} ${guestLabel}`
       : `${input.durationHours}h × €${input.pricePerHour}/h × ${input.guestsCount} ${guestLabel}`,
   };
-}
-
-// Environment variable helpers
-export function getServiceFeePct(): number {
-  return appConfig.pricing.serviceFeePct; // Returns PLATFORM_FEE_RATE
-}
-
-export function getDefaultVatPct(): number {
-  return appConfig.pricing.defaultVatPct; // Returns VAT_RATE
-}
-
-export function isStripeTaxEnabled(): boolean {
-  if (typeof window !== 'undefined') {
-    const override = window.localStorage.getItem('ENABLE_STRIPE_TAX');
-    if (override === 'true') return true;
-    if (override === 'false') return false;
-  }
-  return appConfig.features.stripeTax;
 }
