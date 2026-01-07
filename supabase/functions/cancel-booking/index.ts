@@ -54,7 +54,6 @@ serve(async (req) => {
     console.log(`[cancel-booking] Processing cancellation for booking: ${booking_id}, user: ${user.id}`);
 
     // 1. Fetch Booking and Payment Details
-    // CRITICAL: We now use booking.cancellation_policy, NOT workspace policy.
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
@@ -77,17 +76,15 @@ serve(async (req) => {
       });
     }
 
-    // Determine host_id (we still need to know who the host is for permission check)
-    // We can fetch it from workspaces briefly, or trust the frontend? No, must verify.
+    // Determine host_id from workspace
     const { data: workspace, error: workspaceError } = await supabaseClient
       .from('workspaces')
-      .select('host_id')
+      .select('host_id, title')
       .eq('id', booking.space_id)
       .single();
 
     if (workspaceError) {
       console.error("[cancel-booking] Workspace not found for auth check:", workspaceError);
-      // Proceeding might be risky if we can't verify host, but user.id == booking.user_id is safe.
     }
 
     // Security Check: Verify User is Guest or Host
@@ -102,95 +99,183 @@ serve(async (req) => {
     }
 
     const cancelled_by_host = isHost;
-
-    // SNAPSHOT: Use the policy stored on the booking. Fallback to moderate if missing (old booking pre-backfill? shouldn't happen)
     const cancellationPolicy = booking.cancellation_policy || 'moderate';
+
+    // -------------------------------------------------------------------------
+    // STRIPE & REFUND LOGIC
+    // -------------------------------------------------------------------------
 
     // Find the successful payment
     const payment = booking.payments?.find((p: any) => p.payment_status === 'completed');
     const paymentIntentId = payment?.stripe_payment_intent_id || booking.stripe_payment_intent_id;
-    const grossAmount = payment?.amount || 0; // This is in cents usually? Or whatever database stores. Assuming matches Stripe unit.
 
-    console.log(`[cancel-booking] Found payment: ${payment?.id}, Amount: ${grossAmount}, PI: ${paymentIntentId}, Policy: ${cancellationPolicy}`);
+    // Fallback Gross Amount (From DB) - used if we can't get fresh data
+    let grossAmountCents = payment?.amount ? Math.round(payment.amount * 100) : 0; // If DB stores Euros
+    // Note: DB typically stores Euros (Float). We work in Cents here for safety.
 
-    // 2. Calculate Refund Amount using Shared Logic
-    let refundAmount = 0;
-    let cancellationFee = 0;
+    let basePriceCents = 0;
+    let transferId = null;
+    let hostTransferAmountCents = 0;
+    let stripeAvailable = false;
+
+    if (paymentIntentId) {
+        try {
+            // A. Fetch Detailed Stripe Data (including Charge and Transfer)
+            console.log(`[cancel-booking] Fetching Stripe data for PI: ${paymentIntentId}`);
+            const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+                expand: ['latest_charge']
+            });
+
+            stripeAvailable = true;
+            grossAmountCents = paymentIntent.amount; // Use Stripe as source of truth
+
+            // B. Extract Metadata (Base Price) - New "Pricing Engine" Aware
+            const metaBase = paymentIntent.metadata?.base_amount || paymentIntent.metadata?.basePrice;
+            if (metaBase) {
+                 // Convert string "100.50" to cents
+                 basePriceCents = Math.round(parseFloat(metaBase) * 100);
+                 console.log(`[cancel-booking] Base Price found in metadata: ${basePriceCents} cents`);
+            } else {
+                 // FALLBACK: Legacy Mode (Treat Total as Base)
+                 console.warn(`[cancel-booking] LEGACY BOOKING: No base_amount in metadata. Using Gross Amount (${grossAmountCents}) as Base.`);
+                 basePriceCents = grossAmountCents;
+            }
+
+            // C. Find Host Transfer ID
+            // Ideally it is on the Charge
+            const charge = paymentIntent.latest_charge as Stripe.Charge;
+
+            if (charge && charge.transfer) {
+                // It's a string ID if expanded, or object if we expand further.
+                // We didn't expand 'latest_charge.transfer', so it should be an ID string.
+                // Wait, 'latest_charge' is expanded, so it returns a Charge Object.
+                // Inside Charge Object, 'transfer' is ID string unless expanded.
+                transferId = charge.transfer as string;
+            }
+
+            // If we found a transfer ID, let's fetch it to be sure of the amount the host got.
+            if (transferId) {
+                const transfer = await stripe.transfers.retrieve(transferId);
+                hostTransferAmountCents = transfer.amount;
+                console.log(`[cancel-booking] Host Transfer found: ${transferId}, Amount: ${hostTransferAmountCents}`);
+            } else {
+                console.warn(`[cancel-booking] No Transfer ID found on Charge. Host might not have been paid yet or Platform Account.`);
+            }
+
+        } catch (e) {
+            console.error(`[cancel-booking] Error fetching Stripe data:`, e);
+            throw new Error(`Payment Provider Error: ${e.message}`);
+        }
+    } else {
+        console.warn(`[cancel-booking] No Payment Intent ID found. Assuming free booking or manual override.`);
+    }
+
+    // -------------------------------------------------------------------------
+    // CALCULATION
+    // -------------------------------------------------------------------------
+
+    // Determine Refund Percentage
+    let refundPercentage = 0;
+    if (cancelled_by_host) {
+        refundPercentage = 1.0; // 100%
+    } else {
+        // Guest Cancel -> Use Policy
+        const bookingDateStr = booking.booking_date;
+        const startTimeStr = booking.start_time || "00:00:00";
+        const bookingDateTime = new Date(`${bookingDateStr}T${startTimeStr}`);
+        const now = new Date();
+
+        // Pass dummy amount 100 to get percentage easily from result
+        const result = calculateRefund(100, cancellationPolicy, bookingDateTime, now);
+        refundPercentage = 1 - (result.penaltyPercentage / 100); // e.g. 0.5 or 1.0
+        console.log(`[cancel-booking] Policy: ${cancellationPolicy}, Percentage: ${refundPercentage}`);
+    }
+
+    // Calculate Final Amounts
+    let guestRefundCents = 0;
+    let hostReversalCents = 0;
 
     if (cancelled_by_host) {
-      // Host cancels -> 100% refund
-      refundAmount = grossAmount;
-      cancellationFee = 0;
-      console.log(`[cancel-booking] Host cancellation. Full refund: ${refundAmount}`);
+        // HOST CANCEL: Refund Everything. Reverse Everything.
+        guestRefundCents = grossAmountCents;
+        hostReversalCents = hostTransferAmountCents;
     } else {
-      // Guest cancels -> Use Calculator
-      const bookingDateStr = booking.booking_date; // "YYYY-MM-DD"
-      const startTimeStr = booking.start_time || "00:00:00";
-      // Construct UTC-ish date for calculation (Relative difference matters most)
-      // Ideally we parse timezone. But the calculator uses standard JS Date.
-      // We will construct Date objects.
-      const bookingDateTime = new Date(`${bookingDateStr}T${startTimeStr}`);
-      const now = new Date();
-
-      const result = calculateRefund(grossAmount, cancellationPolicy, bookingDateTime, now);
-      refundAmount = result.refundAmount;
-      cancellationFee = result.penaltyAmount;
-
-      console.log(`[cancel-booking] Calculator Result:`, result);
+        // GUEST CANCEL: Refund % of BASE. Reverse % of TRANSFER.
+        guestRefundCents = Math.round(basePriceCents * refundPercentage);
+        hostReversalCents = Math.round(hostTransferAmountCents * refundPercentage);
     }
 
-    // 3. Execute Stripe Refund (if applicable) - ATOMIC
-    let refundId = null;
+    // Logging Financials
+    console.log(`[FINANCIAL] Guest Refund: ${guestRefundCents}, Host Reversal: ${hostReversalCents} (Percentage: ${refundPercentage})`);
 
-    if (paymentIntentId && refundAmount > 0) {
-      try {
-        // Convert Euro float to Cents integer
-        // Use Math.round to handle floating point errors (e.g. 531.0000001 -> 531)
-        const refundAmountCents = Math.round(refundAmount * 100);
+    // -------------------------------------------------------------------------
+    // EXECUTION - ATOMIC SEQUENCE
+    // -------------------------------------------------------------------------
 
-        // CRITICAL DEBUGGING LOG for Precision Verification
-        console.log(`[REFUND DEBUG] Original: ${grossAmount}, CalculatedRefund: ${refundAmount}, StripeCents: ${refundAmountCents}`);
-
-        if (refundAmountCents > 0) {
-           const refund = await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            amount: refundAmountCents,
-            reason: cancelled_by_host ? 'requested_by_customer' : 'requested_by_customer',
-            metadata: {
-              booking_id: booking_id,
-              initiated_by: cancelled_by_host ? 'host' : 'guest',
-              policy_applied: cancellationPolicy
-            }
-          });
-          refundId = refund.id;
-          console.log(`[cancel-booking] Stripe refund successful: ${refundId}`);
+    // Step 1: REVERSE TRANSFER (The Safety Valve)
+    if (stripeAvailable && hostReversalCents > 0 && transferId) {
+        try {
+            console.log(`[cancel-booking] Attempting Reversal of ${hostReversalCents} cents from ${transferId}...`);
+            await stripe.transfers.createReversal(transferId, {
+                amount: hostReversalCents
+            });
+            console.log(`[cancel-booking] Reversal Successful.`);
+        } catch (reversalError: any) {
+            console.error(`[cancel-booking] Reversal Failed:`, reversalError);
+            // CRITICAL ABORT: If we can't pull money back, we don't refund.
+            return new Response(JSON.stringify({
+                error: 'Cancellation Failed: Unable to recover funds from Host. Please contact support.',
+                details: reversalError.message
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400
+            });
         }
-      } catch (stripeError: any) {
-        console.error("[cancel-booking] Stripe refund failed:", stripeError);
-        // CRITICAL: Atomic Failure.
-        // Return 400 and do NOT update the DB.
-        return new Response(JSON.stringify({
-          error: 'Refund processing failed. The booking has NOT been cancelled. Please try again.',
-          details: stripeError.message
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400, // Client error (logic valid, but payment gateway rejected) or 500? 400 is safer for UI feedback.
-        });
-      }
-    } else if (!paymentIntentId && refundAmount > 0) {
-        // If we calculated a refund but have no way to refund it (no payment intent), what do we do?
-        // Usually log a warning. For now, we proceed to cancel but cannot refund automatically.
-        console.warn("[cancel-booking] Refund calculated but no Payment Intent found. Manual refund required.");
     }
 
-    // 4. Update DB (Only reached if refund succeeded or wasn't needed)
+    // Step 2: REFUND GUEST
+    let refundId = null;
+    if (stripeAvailable && guestRefundCents > 0 && paymentIntentId) {
+        try {
+            console.log(`[cancel-booking] Attempting Refund of ${guestRefundCents} cents...`);
+             const refund = await stripe.refunds.create({
+                payment_intent: paymentIntentId,
+                amount: guestRefundCents,
+                reason: cancelled_by_host ? 'requested_by_customer' : 'requested_by_customer',
+                metadata: {
+                    booking_id: booking_id,
+                    initiated_by: cancelled_by_host ? 'host' : 'guest',
+                    policy_applied: cancellationPolicy,
+                    base_price_cents: String(basePriceCents),
+                    host_reversal_cents: String(hostReversalCents)
+                }
+            });
+            refundId = refund.id;
+            console.log(`[cancel-booking] Refund Successful: ${refundId}`);
+        } catch (refundError: any) {
+             console.error(`[cancel-booking] Refund Failed:`, refundError);
+             // Reversal succeeded but Refund failed. This is bad but rare.
+             // We return error, but funds are already reversed.
+             // In a perfect world we would undo reversal, but that's complex (transfer again).
+             // For now, we error out so user retries or calls support.
+             return new Response(JSON.stringify({
+                error: 'Refund Processing Failed. Funds may have been reserved. Please contact support.',
+                details: refundError.message
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400
+            });
+        }
+    }
+
+    // Step 3: UPDATE DB (Only if financial ops succeeded)
     const { error: updateError } = await supabaseClient
       .from('bookings')
       .update({
         status: 'cancelled',
         cancelled_at: new Date().toISOString(),
         cancelled_by_host: cancelled_by_host,
-        cancellation_fee: cancellationFee,
+        cancellation_fee: (grossAmountCents - guestRefundCents) / 100, // Convert back to Euro Float for DB
         cancellation_reason: reason || (cancelled_by_host ? 'Host initiated' : 'User initiated')
       })
       .eq('id', booking_id);
@@ -199,7 +284,6 @@ serve(async (req) => {
       throw new Error(`Failed to update booking status: ${updateError.message}`);
     }
 
-    // Update payment status if refund was issued
     if (refundId && payment) {
       await supabaseClient
         .from('payments')
@@ -210,18 +294,10 @@ serve(async (req) => {
         .eq('id', payment.id);
     }
 
-    // 5. Send Email Notifications (Non-blocking)
+    // Step 4: NOTIFICATIONS
     try {
-      console.log('[cancel-booking] Fetching details for email notifications...');
-
-      // Fetch details for both parties
-      const { data: workspaceData } = await supabaseClient
-        .from('workspaces')
-        .select('title, host_id')
-        .eq('id', booking.space_id)
-        .single();
-
-      const { data: guestProfile } = await supabaseClient
+        // Fire and forget email logic (kept same as before)
+         const { data: guestProfile } = await supabaseClient
         .from('profiles')
         .select('email, first_name, last_name')
         .eq('id', booking.user_id)
@@ -230,21 +306,16 @@ serve(async (req) => {
       const { data: hostProfile } = await supabaseClient
         .from('profiles')
         .select('email, first_name, last_name')
-        .eq('id', workspaceData?.host_id)
+        .eq('id', workspace?.host_id)
         .single();
 
-      if (guestProfile?.email && hostProfile?.email && workspaceData) {
-        const guestName = `${guestProfile.first_name} ${guestProfile.last_name}`;
-        const hostName = `${hostProfile.first_name} ${hostProfile.last_name}`;
+      if (guestProfile?.email && hostProfile?.email && workspace) {
+         const refundAmountEur = guestRefundCents / 100;
+         const feeEur = (grossAmountCents - guestRefundCents) / 100;
 
-        // refundAmount and cancellationFee are already in Euros (float)
-        const refundAmountUnit = refundAmount;
-        const cancellationFeeUnit = cancellationFee;
-
-        const emailPromises = [];
-
-        // 1. Email to Guest
-        emailPromises.push(
+         const emailPromises = [];
+         // Guest Email
+         emailPromises.push(
           fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
             method: 'POST',
             headers: {
@@ -256,20 +327,19 @@ serve(async (req) => {
               to: guestProfile.email,
               data: {
                 userName: guestProfile.first_name,
-                spaceTitle: workspaceData.title,
+                spaceTitle: workspace.title || 'Space',
                 bookingDate: booking.booking_date,
                 reason: reason || (cancelled_by_host ? 'Host initiated' : 'User initiated'),
-                cancellationFee: cancellationFeeUnit,
-                refundAmount: refundAmountUnit,
+                cancellationFee: feeEur,
+                refundAmount: refundAmountEur,
                 currency: 'EUR',
-                bookingId: booking.id.slice(0, 8), // Short ID
+                bookingId: booking.id.slice(0, 8),
                 cancelledByHost: cancelled_by_host
               }
             })
           })
         );
-
-        // 2. Email to Host
+        // Host Email
         emailPromises.push(
           fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
             method: 'POST',
@@ -282,34 +352,27 @@ serve(async (req) => {
               to: hostProfile.email,
               data: {
                 hostName: hostProfile.first_name,
-                guestName: guestName,
-                spaceTitle: workspaceData.title,
+                guestName: `${guestProfile.first_name} ${guestProfile.last_name}`,
+                spaceTitle: workspace.title || 'Space',
                 bookingDate: booking.booking_date,
-                refundAmount: refundAmountUnit,
+                refundAmount: refundAmountEur,
                 bookingId: booking.id.slice(0, 8),
                 cancelledByHost: cancelled_by_host
               }
             })
           })
         );
-
         await Promise.allSettled(emailPromises);
-        console.log('[cancel-booking] Email notifications sent.');
-      } else {
-        console.warn('[cancel-booking] Missing profile data, skipped emails.');
       }
-
     } catch (emailError) {
-      // Non-blocking error
-      console.error('[cancel-booking] Failed to send email notifications:', emailError);
+        console.error("Email notification failed", emailError);
     }
 
     return new Response(JSON.stringify({
       success: true,
-      refund_amount: refundAmount,
-      cancellation_fee: cancellationFee,
+      refund_amount: guestRefundCents / 100,
       refund_id: refundId,
-      message: refundId ? 'Cancellation and refund successful' : 'Cancellation successful'
+      message: 'Cancellation successful'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
