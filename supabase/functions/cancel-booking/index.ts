@@ -411,9 +411,10 @@ serve(async (req) => {
       status: 200,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[cancel-booking] Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    return new Response(JSON.stringify({ error: err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     });

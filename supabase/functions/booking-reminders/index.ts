@@ -48,13 +48,13 @@ serve(async (req) => {
 
         // Notifica l'host
         await supabaseAdmin.from("user_notifications").insert({
-          user_id: booking.spaces.host_id,
+          user_id: booking.spaces?.[0]?.host_id,
           type: "booking",
           title: "⏰ Richiesta urgente in scadenza",
-          content: `Hai 2 ore per approvare/rifiutare la richiesta di prenotazione per "${booking.spaces.title}"!`,
+          content: `Hai 2 ore per approvare/rifiutare la richiesta di prenotazione per "${booking.spaces?.[0]?.title}"!`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
+            space_title: booking.spaces?.[0]?.title,
             deadline: booking.approval_deadline,
             urgent: true,
           },
@@ -92,8 +92,8 @@ serve(async (req) => {
           type: "booking",
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
-            message: `⚠️ La tua prenotazione per "${booking.spaces.title}" è stata approvata! Completa il pagamento entro 2h o perderai la prenotazione.`,
+            space_title: booking.spaces?.[0]?.title,
+            message: `⚠️ La tua prenotazione per "${booking.spaces?.[0]?.title}" è stata approvata! Completa il pagamento entro 2h o perderai la prenotazione.`,
             deadline: booking.payment_deadline,
             urgent: true,
             payment_url: `/bookings?pay=${booking.id}`,
@@ -115,8 +115,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("[BOOKING-REMINDERS] Error:", error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

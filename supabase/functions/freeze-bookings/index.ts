@@ -28,7 +28,10 @@ serve(async (req) => {
 
     let frozen = 0;
     for (const booking of bookings || []) {
-      if (booking.spaces.profiles.stripe_connected) continue;
+      // FIX: Access array elements [0] for both spaces and profiles relations
+      const isStripeConnected = booking.spaces?.[0]?.profiles?.[0]?.stripe_connected;
+
+      if (isStripeConnected) continue;
 
       await supabaseAdmin.from('bookings').update({ status: 'frozen' }).eq('id', booking.id);
       frozen++;
@@ -38,7 +41,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
     });
   }

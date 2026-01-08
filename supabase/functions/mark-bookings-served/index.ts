@@ -94,7 +94,8 @@ serve(async (req) => {
       console.log(`[MARK-SERVED] ✅ Booking ${booking.id} marked as served`);
 
       // Trigger fiscal document generation
-      const hostProfile = booking.spaces?.profiles;
+      // FIX: Access array elements [0] for both spaces and profiles relations
+      const hostProfile = booking.spaces?.[0]?.profiles?.[0];
       const fiscalRegime = hostProfile?.fiscal_regime;
 
       try {
@@ -133,8 +134,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("[MARK-SERVED] Fatal error:", error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
