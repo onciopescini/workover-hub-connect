@@ -7,6 +7,7 @@ import { StripeStatusPill } from "@/components/host/StripeStatusPill";
 import { CreditCard, RefreshCw } from "lucide-react";
 import { sreLogger } from '@/lib/sre-logger';
 import { useStripeStatus } from "@/hooks/useStripeStatus";
+import { API_ENDPOINTS } from "@/constants";
 
 type Props = {
   className?: string;
@@ -32,7 +33,7 @@ export default function HostStripeStatus({ className = "" }: Props) {
   const connect = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('stripe-connect', {
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.STRIPE_CONNECT, {
         body: { return_url: window.location.origin + '/host/dashboard?stripe_setup=success' }
       });
 

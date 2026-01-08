@@ -4,6 +4,7 @@ import { useLogger } from '@/hooks/useLogger';
 import { toast } from 'sonner';
 import { addHours, format } from 'date-fns';
 import { BookingInsert } from '@/types/booking';
+import { API_ENDPOINTS } from '@/constants';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -128,7 +129,7 @@ export function useCheckout() {
         }
 
         const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-          'create-checkout-v3',
+          API_ENDPOINTS.CREATE_CHECKOUT,
           {
             body: {
               booking_id: bookingId,

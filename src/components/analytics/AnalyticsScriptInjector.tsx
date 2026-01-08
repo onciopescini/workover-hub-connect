@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { sreLogger } from '@/lib/sre-logger';
+import { API_ENDPOINTS, SUPABASE_URL } from '@/constants';
 
 /**
  * AnalyticsScriptInjector
@@ -24,7 +25,13 @@ export const AnalyticsScriptInjector: React.FC = () => {
       const script = document.createElement('script');
       script.defer = true;
       script.setAttribute('data-domain', 'preview--workover-hub-connect.lovable.app');
-      script.setAttribute('data-api', 'https://khtqwzvrxzsgfhsslwyz.supabase.co/functions/v1/analytics-proxy');
+
+      // Construct URL dynamically using constants
+      // Remove trailing slash from SUPABASE_URL if present to avoid double slashes
+      const baseUrl = SUPABASE_URL.replace(/\/$/, '');
+      const analyticsUrl = `${baseUrl}/functions/v1/${API_ENDPOINTS.ANALYTICS_PROXY}`;
+
+      script.setAttribute('data-api', analyticsUrl);
       script.src = 'https://plausible.io/js/script.js';
 
       script.onerror = (e) => {

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { CancelBookingResponse } from "@/types/booking";
 import { sreLogger } from '@/lib/sre-logger';
 import { differenceInHours, parseISO } from "date-fns";
+import { API_ENDPOINTS } from "@/constants";
 
 // Calculate cancellation fee based on booking start time relative to now (in hours)
 // Policy:
@@ -65,7 +66,7 @@ export const cancelBooking = async (
   reason?: string
 ): Promise<{ success: boolean; fee?: number; error?: string }> => {
   try {
-    const { data, error } = await supabase.functions.invoke('cancel-booking', {
+    const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CANCEL_BOOKING, {
       body: {
         booking_id: bookingId,
         cancelled_by_host: cancelledByHost,

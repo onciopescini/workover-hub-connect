@@ -102,7 +102,7 @@ export function StripeSetup({ context = 'dashboard', onComplete }: StripeSetupPr
       // I return_url e refresh_url personalizzati sono già nel profilo e verranno
       // recuperati dal server nel edge function
 
-      const { data, error } = await supabase.functions.invoke('stripe-connect', {
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.STRIPE_CONNECT, {
         body: {
           return_url: defaultReturnUrl,
           refresh_url: defaultRefreshUrl

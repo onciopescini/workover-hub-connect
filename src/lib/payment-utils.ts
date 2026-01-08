@@ -3,6 +3,7 @@ import { PaymentInsert, PaymentSession } from "@/types/payment";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
 import { PricingEngine } from "@/lib/pricing-engine";
+import { API_ENDPOINTS } from "@/constants";
 
 // Importa il tipo Payment dalla tabella Supabase
 type Payment = {
@@ -108,7 +109,7 @@ export const createPaymentSession = async (
       hasHostStripeAccount: !!hostStripeAccountId
     });
 
-    const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
+    const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CREATE_CHECKOUT, {
       body: {
         booking_id: bookingId,
         origin: window.location.origin
