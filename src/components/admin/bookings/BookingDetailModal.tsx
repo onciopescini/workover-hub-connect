@@ -34,28 +34,31 @@ export function BookingDetailModal({ bookingId, open, onClose }: BookingDetailMo
       if (bookingError) throw bookingError;
 
       // Fetch space details separately (to handle workspaces vs spaces transition)
+      // Type assertion needed as Supabase types are stale for 'workspaces' table
       const { data: spaceData, error: spaceError } = await supabase
-        .from('workspaces')
+        .from('workspaces' as any)
         .select('id, name, address, host_id, price_per_day')
         .eq('id', bookingData.space_id)
         .single();
 
       if (spaceError) throw spaceError;
 
+      const space = spaceData as unknown as { id: string; name: string; address: string; host_id: string; price_per_day: number } | null;
+
       // Transform data to match UI expectations
       return {
         ...bookingData,
         coworker: Array.isArray(bookingData.coworker) ? bookingData.coworker[0] : bookingData.coworker,
-        space: {
-          id: spaceData.id,
+        space: space ? {
+          id: space.id,
           // Correctly map workspace 'name' to 'title' but also keep 'name' available
           // Fixes the discrepancy between legacy 'spaces' usage and 'workspaces'
-          title: spaceData.name,
-          name: spaceData.name,
-          address: spaceData.address,
-          host_id: spaceData.host_id,
-          price_per_day: spaceData.price_per_day
-        }
+          title: space.name,
+          name: space.name,
+          address: space.address,
+          host_id: space.host_id,
+          price_per_day: space.price_per_day
+        } : null
       };
     },
     enabled: open

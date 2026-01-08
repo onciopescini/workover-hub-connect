@@ -5,6 +5,22 @@ export interface PricingInput {
   pricePerHour: number;
   pricePerDay: number;
   guestsCount: number;
+  serviceFeePct?: number;
+  vatPct?: number;
+  stripeTaxEnabled?: boolean;
+}
+
+// Helper functions for pricing configuration
+export function getServiceFeePct(): number {
+  return PricingEngine.GUEST_FEE_PERCENT; // 0.05 (5%)
+}
+
+export function getDefaultVatPct(): number {
+  return PricingEngine.VAT_RATE; // 0.22 (22%)
+}
+
+export function isStripeTaxEnabled(): boolean {
+  return false; // Manual VAT calculation, not Stripe Tax
 }
 
 export interface PricingOutput {

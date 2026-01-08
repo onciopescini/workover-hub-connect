@@ -33,12 +33,14 @@ export const EnhancedBookingCard = ({
 }: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
     if (userRole === "host") {
+      // Cast to any to access cached_avg_rating which may not be in strict type
+      const coworker = booking.coworker as any;
       return {
         id: booking.user_id,
         name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
         photo: booking.coworker?.profile_photo_url,
         role: "Coworker",
-        rating: booking.coworker?.cached_avg_rating
+        rating: coworker?.cached_avg_rating as number | undefined
       };
     } else {
       return {
@@ -190,7 +192,7 @@ export const EnhancedBookingCard = ({
                 <p className="text-sm text-gray-600">{otherParty.role}</p>
                 {otherParty.rating !== undefined && (
                    <div className="flex items-center">
-                     <StarRating rating={otherParty.rating} readOnly size="xs" />
+                     <StarRating rating={otherParty.rating} readOnly size="sm" />
                    </div>
                 )}
               </div>

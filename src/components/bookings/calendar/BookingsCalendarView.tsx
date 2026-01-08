@@ -161,7 +161,7 @@ export const BookingsCalendarView = ({
         isChatEnabled={isChatEnabled}
         onOpenMessageDialog={onOpenMessageDialog}
         onOpenCancelDialog={onOpenCancelDialog}
-        onBookingClick={onEventClick}
+        {...(onEventClick ? { onBookingClick: onEventClick } : {})}
       />
     </div>
   );

@@ -18,7 +18,7 @@ import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogger } from "@/hooks/useLogger";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
-import { computePricing, getServiceFeePct, getDefaultVatPct, isStripeTaxEnabled } from "@/lib/pricing";
+import { computePricing } from "@/lib/pricing";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { z } from 'zod';
@@ -470,10 +470,7 @@ export function TwoStepBookingForm({
         durationHours,
         pricePerHour,
         pricePerDay,
-        guestsCount: bookingState.guestsCount,
-        serviceFeePct: getServiceFeePct(),
-        vatPct: getDefaultVatPct(),
-        stripeTaxEnabled: isStripeTaxEnabled()
+        guestsCount: bookingState.guestsCount
       });
 
       const result = await processCheckout({
@@ -487,7 +484,7 @@ export function TwoStepBookingForm({
         pricePerHour,
         pricePerDay,
         durationHours: bookingState.selectedRange.duration,
-        hostStripeAccountId,
+        ...(hostStripeAccountId ? { hostStripeAccountId } : {}),
         fiscalData: fiscalMetadata,
         clientBasePrice: validationPricing.base
       });

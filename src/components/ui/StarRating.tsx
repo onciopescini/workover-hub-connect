@@ -10,7 +10,7 @@ export interface StarRatingProps {
   /** Callback for interactive rating */
   onRatingChange?: (rating: number) => void;
   /** Size of the stars */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   /** Read-only mode */
   readOnly?: boolean;
   /** Custom class name */
@@ -34,6 +34,7 @@ export function StarRating({
   const [hoveredRating, setHoveredRating] = React.useState(0);
 
   const sizeClasses = {
+    xs: 'w-2 h-2',
     sm: 'w-3 h-3',
     md: 'w-4 h-4',
     lg: 'w-5 h-5',
