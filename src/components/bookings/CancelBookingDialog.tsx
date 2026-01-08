@@ -47,8 +47,8 @@ export function CancelBookingDialog({
   // Determine amount
   // "Use booking.payments[0].amount if available. Fallback: booking.space.price_per_hour * duration"
   let originalPrice = 0;
-  if (booking.payments && booking.payments.length > 0) {
-    originalPrice = booking.payments[0].amount;
+  if (booking.payments && booking.payments.length > 0 && booking.payments[0]) {
+    originalPrice = booking.payments[0].amount ?? 0;
   } else {
     // Fallback calculation
     // We need duration in hours.

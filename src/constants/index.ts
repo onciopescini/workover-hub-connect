@@ -3,8 +3,8 @@ import { PricingEngine } from '@/lib/pricing-engine';
 export const APP_NAME = 'WorkOver';
 export const APP_VERSION = '1.0.0';
 
-export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const SUPABASE_URL = import.meta.env['VITE_SUPABASE_URL'];
+export const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
 export const API_ENDPOINTS = {
   CREATE_CHECKOUT: 'create-checkout-v3',
@@ -39,6 +39,10 @@ export const TIME_CONSTANTS = {
   CACHE_DURATION: 300000, // 5 minutes in ms
   TOAST_DURATION: 5000,   // 5 seconds in ms
   DEBOUNCE_DELAY: 300,    // 300ms
+  STALE_TIME: 60000,      // 1 minute in ms
+  POLLING_INTERVAL: 30000, // 30 seconds in ms
+  COWORKER_ACTIVITY_WINDOW: 7, // 7 days
+  CALENDAR_REFRESH: 60000, // 1 minute in ms
 };
 
 export const BUSINESS_RULES = {

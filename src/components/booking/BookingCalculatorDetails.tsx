@@ -25,10 +25,7 @@ export function BookingCalculatorDetails({
     durationHours,
     pricePerHour,
     pricePerDay,
-    guestsCount,
-    serviceFeePct: getServiceFeePct(),
-    vatPct: getDefaultVatPct(),
-    stripeTaxEnabled
+    guestsCount
   });
 
   return (

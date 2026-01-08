@@ -28,14 +28,20 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
     try {
       // Validate host connection status
       // Explicitly querying 'workspaces' table as source of truth
+      // Type assertion needed as Supabase types are stale for 'workspaces' table
       const { data: spaceData, error: spaceError } = await supabase
-        .from('workspaces')
+        .from('workspaces' as any)
         .select('profiles(stripe_connected)')
         .eq('id', booking.space_id)
         .single();
       
       // Strict validation: check for explicit true on stripe_connected
-      if (spaceError || !spaceData?.profiles?.stripe_connected) {
+      // Handle profiles as potential array (Supabase relation)
+      const profiles = (spaceData as any)?.profiles;
+      const stripeConnected = Array.isArray(profiles) 
+        ? profiles[0]?.stripe_connected 
+        : profiles?.stripe_connected;
+      if (spaceError || !stripeConnected) {
         toast.error('Host non collegato a Stripe');
         return;
       }
@@ -102,7 +108,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
                 booking={booking}
                 reviewType="space"
                 targetId={booking.space_id}
-                targetName={booking.space?.title || booking.space?.name || "Spazio"}
+                targetName={booking.space?.title || "Spazio"}
               />
             )
           )

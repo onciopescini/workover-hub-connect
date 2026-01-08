@@ -19,8 +19,8 @@ export class InvoiceService {
           host_id: hostId,
           breakdown: {
             host_fee: breakdown.hostFeeAmount,
-            host_vat: breakdown.hostVat,
-            total: breakdown.hostFeeAmount + breakdown.hostVat
+            host_vat: Math.round(breakdown.hostFeeAmount * 0.22 * 100) / 100, // 22% VAT on host fee
+            total: breakdown.hostFeeAmount + Math.round(breakdown.hostFeeAmount * 0.22 * 100) / 100
           }
         }
       });

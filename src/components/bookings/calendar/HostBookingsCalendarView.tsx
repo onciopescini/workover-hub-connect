@@ -214,7 +214,7 @@ export const HostBookingsCalendarView = ({
         onOpenMessageDialog={onOpenMessageDialog}
         onOpenCancelDialog={onOpenCancelDialog}
         viewMode={viewMode}
-        onBookingClick={onEventClick}
+        {...(onEventClick ? { onBookingClick: onEventClick } : {})}
       />
     </div>
   );
