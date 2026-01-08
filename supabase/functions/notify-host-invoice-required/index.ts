@@ -237,8 +237,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[NOTIFY-HOST-INVOICE] Error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

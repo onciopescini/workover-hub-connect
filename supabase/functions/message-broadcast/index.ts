@@ -68,7 +68,7 @@ serve(async (req) => {
 
     // 4. Get recipient email
     if (!recipientId) {
-      console.warn(`No recipient ID for booking ${booking.id}`);
+      console.warn(`No recipient ID for booking ${record.booking_id}`);
       // Return 200 to acknowledge receipt even if we can't send email
       return new Response(JSON.stringify({ message: 'No recipient identified' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -29,7 +29,7 @@ serve(async (req) => {
 
     let sent = 0;
     for (const payment of payments || []) {
-      const hostId = payment.bookings?.spaces?.[0]?.profiles?.[0]?.id;
+      const hostId = payment.bookings?.[0]?.spaces?.[0]?.profiles?.[0]?.id;
       if (!hostId) continue;
 
       await supabaseAdmin.from('user_notifications').insert({
@@ -47,7 +47,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500
     });
   }
