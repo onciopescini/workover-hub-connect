@@ -50,10 +50,10 @@ serve(async (req) => {
           user_id: booking.user_id,
           type: "booking",
           title: "Richiesta di prenotazione scaduta",
-          content: `La tua richiesta di prenotazione per "${booking.spaces.title}" è scaduta perché l'host non ha risposto in tempo.`,
+          content: `La tua richiesta di prenotazione per "${booking.spaces?.[0]?.title}" è scaduta perché l'host non ha risposto in tempo.`,
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
+            space_title: booking.spaces?.[0]?.title,
             reason: "approval_expired",
           },
         });
@@ -91,20 +91,20 @@ serve(async (req) => {
           type: "booking_cancelled",
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
-            message: `La tua prenotazione per "${booking.spaces.title}" è stata cancellata perché non hai completato il pagamento in tempo.`,
+            space_title: booking.spaces?.[0]?.title,
+            message: `La tua prenotazione per "${booking.spaces?.[0]?.title}" è stata cancellata perché non hai completato il pagamento in tempo.`,
             reason: "payment_expired",
           },
         });
 
         // Notifica l'host
         await supabaseAdmin.from("notifications").insert({
-          user_id: booking.spaces.host_id,
+          user_id: booking.spaces?.[0]?.host_id,
           type: "booking_cancelled",
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
-            message: `La prenotazione per "${booking.spaces.title}" è stata cancellata perché il coworker non ha completato il pagamento.`,
+            space_title: booking.spaces?.[0]?.title,
+            message: `La prenotazione per "${booking.spaces?.[0]?.title}" è stata cancellata perché il coworker non ha completato il pagamento.`,
             reason: "payment_expired",
           },
         });
@@ -144,8 +144,8 @@ serve(async (req) => {
           type: "booking_cancelled",
           metadata: {
             booking_id: booking.id,
-            space_title: booking.spaces.title,
-            message: `La tua prenotazione per "${booking.spaces.title}" è stata annullata perché non hai completato il pagamento entro 15 minuti.`,
+            space_title: booking.spaces?.[0]?.title,
+            message: `La tua prenotazione per "${booking.spaces?.[0]?.title}" è stata annullata perché non hai completato il pagamento entro 15 minuti.`,
             reason: "slot_expired",
           },
         });
@@ -166,8 +166,9 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("[BOOKING-EXPIRY] Error:", error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
