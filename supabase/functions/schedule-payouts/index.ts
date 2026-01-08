@@ -31,8 +31,8 @@ serve(async (req) => {
 
     let scheduled = 0;
     for (const booking of bookings || []) {
-      const host = booking.spaces.profiles;
-      if (!host.stripe_connected || !host.kyc_documents_verified) continue;
+      const host = booking.spaces?.[0]?.profiles?.[0];
+      if (!host?.stripe_connected || !host?.kyc_documents_verified) continue;
 
       await supabaseAdmin.from('bookings').update({ 
         payout_scheduled_at: new Date().toISOString() 

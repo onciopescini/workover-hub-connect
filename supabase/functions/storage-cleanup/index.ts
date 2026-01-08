@@ -68,12 +68,13 @@ Deno.serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
-    console.error('[STORAGE-CLEANUP] Fatal error:', error);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('[STORAGE-CLEANUP] Fatal error:', err);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: err.message,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -129,8 +130,9 @@ async function cleanupKYCDocuments(supabase: any): Promise<CleanupResult> {
         }
       }
     }
-  } catch (error) {
-    result.errors.push(`Cleanup error: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    result.errors.push(`Cleanup error: ${err.message}`);
   }
 
   return result;
@@ -191,8 +193,9 @@ async function cleanupDeletedSpacePhotos(supabase: any): Promise<CleanupResult> 
           .eq('id', space.id);
       }
     }
-  } catch (error) {
-    result.errors.push(`Cleanup error: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    result.errors.push(`Cleanup error: ${err.message}`);
   }
 
   return result;
@@ -242,8 +245,9 @@ async function cleanupOrphanedFiles(supabase: any): Promise<CleanupResult> {
         }
       }
     }
-  } catch (error) {
-    result.errors.push(`Cleanup error: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    result.errors.push(`Cleanup error: ${err.message}`);
   }
 
   return result;

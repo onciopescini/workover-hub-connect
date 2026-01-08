@@ -197,11 +197,12 @@ serve(async (req) => {
                 console.log(`[cancel-booking] Host Transfer found: ${transferId}, Amount: ${hostTransferAmountCents}`);
             }
 
-        } catch (e) {
-            console.error(`[cancel-booking] Error fetching Stripe data:`, e);
+        } catch (e: unknown) {
+            const err = e instanceof Error ? e : new Error(String(e));
+            console.error(`[cancel-booking] Error fetching Stripe data:`, err);
             // Re-throw if it's our critical error, otherwise wrap it
-            if (e.message.includes("Cancellation Failed")) throw e;
-            throw new Error(`Payment Provider Error: ${e.message}`);
+            if (err.message.includes("Cancellation Failed")) throw err;
+            throw new Error(`Payment Provider Error: ${err.message}`);
         }
     } else {
         console.warn(`[cancel-booking] No Payment Intent ID found. Assuming free booking or manual override.`);
@@ -257,12 +258,13 @@ serve(async (req) => {
                 amount: hostReversalCents
             });
             console.log(`[cancel-booking] Reversal Successful.`);
-        } catch (reversalError: any) {
-            console.error(`[cancel-booking] Reversal Failed:`, reversalError);
+        } catch (reversalError: unknown) {
+            const err = reversalError instanceof Error ? reversalError : new Error(String(reversalError));
+            console.error(`[cancel-booking] Reversal Failed:`, err);
             // CRITICAL ABORT: If we can't pull money back, we don't refund.
             return new Response(JSON.stringify({
                 error: 'Cancellation Failed: Unable to recover funds from Host. Please contact support.',
-                details: reversalError.message
+                details: err.message
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400
@@ -289,15 +291,16 @@ serve(async (req) => {
             });
             refundId = refund.id;
             console.log(`[cancel-booking] Refund Successful: ${refundId}`);
-        } catch (refundError: any) {
-             console.error(`[cancel-booking] Refund Failed:`, refundError);
+        } catch (refundError: unknown) {
+             const err = refundError instanceof Error ? refundError : new Error(String(refundError));
+             console.error(`[cancel-booking] Refund Failed:`, err);
              // Reversal succeeded but Refund failed. This is bad but rare.
              // We return error, but funds are already reversed.
              // In a perfect world we would undo reversal, but that's complex (transfer again).
              // For now, we error out so user retries or calls support.
              return new Response(JSON.stringify({
                 error: 'Refund Processing Failed. Funds may have been reserved. Please contact support.',
-                details: refundError.message
+                details: err.message
             }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400
