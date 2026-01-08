@@ -41,9 +41,10 @@ export class InvoiceService {
       });
 
       return { success: true, invoiceId: data.invoice.id };
-    } catch (error) {
-      ErrorHandler.logError('Error in invoice generation service', error);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      ErrorHandler.logError('Error in invoice generation service', err);
+      return { success: false, error: err.message };
     }
   }
 }

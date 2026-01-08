@@ -91,7 +91,7 @@ serve(async (req) => {
         .single();
 
       if (profileError) {
-        ErrorHandler.logWarning('Error fetching user profile', profileError, { user_id });
+        ErrorHandler.logWarning('Error fetching user profile', { error: profileError instanceof Error ? profileError.message : profileError, user_id });
       } else {
         userProfile = profile;
       }
@@ -100,7 +100,7 @@ serve(async (req) => {
       const { data: auth, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
       
       if (authError) {
-        ErrorHandler.logWarning('Error fetching user auth data', authError, { user_id });
+        ErrorHandler.logWarning('Error fetching user auth data', { error: authError instanceof Error ? authError.message : authError, user_id });
       } else {
         authUser = auth;
       }
@@ -162,9 +162,7 @@ serve(async (req) => {
             }
           });
       } catch (notificationError) {
-        ErrorHandler.logWarning('Failed to create user notification', notificationError, {
-          ticketId: ticket.id
-        });
+        ErrorHandler.logWarning('Failed to create user notification', { error: notificationError instanceof Error ? notificationError.message : notificationError, ticketId: ticket.id });
       }
     } else {
       ErrorHandler.logInfo('Skipping user notification for anonymous ticket', { ticketId: ticket.id });
@@ -198,7 +196,8 @@ serve(async (req) => {
       });
       
       if (emailError) {
-        ErrorHandler.logWarning('Failed to send admin email notification', emailError, {
+        ErrorHandler.logWarning('Failed to send admin email notification', {
+          error: emailError instanceof Error ? emailError.message : emailError,
           ticketId: ticket.id,
           emailResponse: emailData
         });
@@ -206,7 +205,8 @@ serve(async (req) => {
         ErrorHandler.logSuccess('Admin email sent', { ticketId: ticket.id, to: adminEmail });
       }
     } catch (emailError) {
-      ErrorHandler.logWarning('Exception sending admin email notification', emailError, {
+      ErrorHandler.logWarning('Exception sending admin email notification', {
+        error: emailError instanceof Error ? emailError.message : emailError,
         ticketId: ticket.id
       });
     }
@@ -230,7 +230,8 @@ serve(async (req) => {
         });
         
         if (emailError) {
-          ErrorHandler.logWarning('Failed to send user confirmation email', emailError, {
+          ErrorHandler.logWarning('Failed to send user confirmation email', {
+            error: emailError instanceof Error ? emailError.message : emailError,
             ticketId: ticket.id,
             userEmail: userConfirmationEmail,
             emailResponse: emailData
@@ -243,7 +244,8 @@ serve(async (req) => {
           });
         }
       } catch (emailError) {
-        ErrorHandler.logWarning('Exception sending user confirmation email', emailError, {
+        ErrorHandler.logWarning('Exception sending user confirmation email', {
+          error: emailError instanceof Error ? emailError.message : emailError,
           ticketId: ticket.id,
           userEmail: userConfirmationEmail
         });

@@ -34,3 +34,10 @@ export interface NotificationData {
   content: string;
   metadata: Record<string, any>;
 }
+
+export interface StripeOnboardingState {
+  isVerified: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+}

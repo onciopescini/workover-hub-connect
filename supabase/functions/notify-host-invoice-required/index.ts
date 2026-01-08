@@ -61,7 +61,11 @@ serve(async (req) => {
       throw new Error(`Booking not found: ${bookingError?.message}`);
     }
 
-    const host = booking.spaces.profiles;
+    const host = booking.spaces?.[0]?.profiles?.[0];
+
+    if (!host) {
+      throw new Error('Host profile not found');
+    }
     
     // Check if host requires invoice
     if (!host.fiscal_regime || host.fiscal_regime === 'privato') {
@@ -165,7 +169,7 @@ serve(async (req) => {
           payment_id: payment.id,
           deadline: deadline.toISOString(),
           pdf_url: publicUrl,
-          space_title: booking.spaces.title,
+          space_title: booking.spaces?.[0]?.title,
           canone_amount: payment.host_amount
         }
       });
@@ -190,7 +194,7 @@ serve(async (req) => {
             subject: `Fattura richiesta - Prenotazione ${new Date(booking.booking_date).toLocaleDateString('it-IT')}`,
             html: `
               <h1>Ciao ${host.first_name},</h1>
-              <p>La prenotazione del <strong>${new Date(booking.booking_date).toLocaleDateString('it-IT')}</strong> per lo spazio "${booking.spaces.title}" è stata completata.</p>
+              <p>La prenotazione del <strong>${new Date(booking.booking_date).toLocaleDateString('it-IT')}</strong> per lo spazio "${booking.spaces?.[0]?.title}" è stata completata.</p>
               <p><strong>Devi emettere fattura entro ${deadline.toLocaleDateString('it-IT')}</strong>.</p>
               <p>Importo canone: <strong>€${payment.host_amount.toFixed(2)}</strong></p>
               <h3>Dati destinatario:</h3>
@@ -257,7 +261,7 @@ ${coworker.sdi_code ? `Codice SDI: ${coworker.sdi_code}` : ''}
 ${coworker.legal_address ? `Indirizzo: ${coworker.legal_address}` : ''}
 
 DETTAGLI PRENOTAZIONE:
-Spazio: ${space.title}
+Spazio: ${Array.isArray(space) ? space[0]?.title : space?.title}
 Data: ${new Date(booking.booking_date).toLocaleDateString('it-IT')}
 Orario: ${booking.start_time} - ${booking.end_time}
 Booking ID: ${booking.id}

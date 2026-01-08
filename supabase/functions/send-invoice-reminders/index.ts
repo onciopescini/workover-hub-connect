@@ -29,8 +29,11 @@ serve(async (req) => {
 
     let sent = 0;
     for (const payment of payments || []) {
+      const hostId = payment.bookings?.spaces?.[0]?.profiles?.[0]?.id;
+      if (!hostId) continue;
+
       await supabaseAdmin.from('user_notifications').insert({
-        user_id: payment.bookings.spaces.profiles.id,
+        user_id: hostId,
         type: 'invoice',
         title: 'Reminder: Fattura da Emettere',
         content: 'Ricorda di emettere la fattura entro la scadenza.'

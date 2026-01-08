@@ -67,6 +67,15 @@ serve(async (req) => {
     }
 
     // 4. Get recipient email
+    if (!recipientId) {
+      console.warn(`No recipient ID for booking ${booking.id}`);
+      // Return 200 to acknowledge receipt even if we can't send email
+      return new Response(JSON.stringify({ message: 'No recipient identified' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(recipientId)
     
     if (userError || !userData.user) {
