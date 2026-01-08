@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from 'react-router-dom';
 import { Space } from "@/types/space";
-import { SpaceReview } from "@/lib/space-review-utils";
 import { SpaceHeroSection } from './SpaceHeroSection';
 import { SpaceInfoCards } from './SpaceInfoCards';
 import { HostProfileSection } from './HostProfileSection';
@@ -11,6 +10,20 @@ import { SpaceReviews } from './SpaceReviews';
 import { LocationAccessNotice } from './LocationAccessNotice';
 import { toast } from 'sonner';
 import { WhoWorksHere } from './WhoWorksHere';
+
+// Inline interface definition to replace missing import
+export interface SpaceReview {
+  id: string;
+  rating: number;
+  content?: string;
+  created_at: string;
+  user_id: string;
+  user?: {
+    first_name: string;
+    last_name: string;
+    profile_photo_url?: string;
+  };
+}
 
 interface ExtendedSpace extends Space {
   host?: {

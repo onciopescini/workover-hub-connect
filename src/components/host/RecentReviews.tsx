@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BookingReviewWithDetails } from "@/types/review";
-import { ReviewVisibilityBadge } from "@/components/reviews/ReviewVisibilityBadge";
 import { Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
@@ -65,11 +64,7 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
                           />
                         ))}
                       </div>
-                      <ReviewVisibilityBadge
-                        isVisible={review.is_visible ?? false}
-                        createdAt={review.created_at!}
-                        hasReceivedReview={false}
-                      />
+                        {/* Review visibility badge removed */}
                     </div>
                   </div>
                   

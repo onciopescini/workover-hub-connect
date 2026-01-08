@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 interface TrustBadgesSectionProps {
   profile: Profile;
-  email?: string | null;
+  email?: string | null | undefined;
   emailConfirmedAt?: string | null;
   phoneConfirmedAt?: string | null;
 }

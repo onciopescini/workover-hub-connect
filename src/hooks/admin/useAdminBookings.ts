@@ -31,7 +31,8 @@ export function useAdminBookings({ search = "", statusFilter = "", paymentFilter
         // This is trickier - we'll filter in memory after the query
       }
 
-      const { data, error } = await query;
+      // Force cast to bypass SelectQueryError for joined relations
+      const { data, error } = (await query) as unknown as { data: any[], error: any };
 
       if (error) throw error;
 

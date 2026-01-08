@@ -74,9 +74,10 @@ export const StartChatButton = ({ targetUserId, onChatStarted }: StartChatButton
 
     setIsLoading(true);
     try {
-      const chat = await findOrCreatePrivateChat(targetUserId);
+      // Fixed: Pass current user ID as second argument
+      const chat = await findOrCreatePrivateChat(authState.user.id, targetUserId);
       if (chat) {
-        onChatStarted?.(chat.id);
+        onChatStarted?.(chat); // findOrCreatePrivateChat returns the ID string directly
         toast({
           title: "Chat avviata",
           description: "Ora puoi iniziare a messaggiare",
