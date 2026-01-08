@@ -36,7 +36,8 @@ export const AnalyticsScriptInjector: React.FC = () => {
 
       script.onerror = (e) => {
         // Log but do not crash
-        sreLogger.warn('Analytics script failed to load', {}, e as Error);
+        const error = e instanceof Error ? e : new Error('Script load failed');
+        sreLogger.warn('Analytics script failed to load', {}, error);
       };
 
       document.head.appendChild(script);
