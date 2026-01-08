@@ -18,9 +18,9 @@ serve(async (req) => {
     // -------------------------------------------------------------------------
     // 1. DEPLOYMENT CONFIRMATION LOG
     // -------------------------------------------------------------------------
-    console.log("USING PRICING ENGINE V2 - MIN FEE 0.50 - FORCE UPDATE 2025-01-27");
+    console.log(`[DEPLOY CHECK] Active Version: ${new Date().toISOString()} - FIX: Excluded transfer amount`);
+    console.log("USING PRICING ENGINE V2 - MIN FEE 0.50");
     console.log("🚀 CHECKOUT V3 - STRIPE PARAMETERS FIX 🚀");
-    console.log("Timestamp:", new Date().toISOString());
 
     // 2. Read Request Body
     let body;
@@ -198,7 +198,8 @@ serve(async (req) => {
     // We strictly enforce Total = HostPayout + ApplicationFee.
     // We prioritize the HostPayout (what the host expects) and the Total (what the guest pays).
     // Any rounding discrepancy is absorbed by the Application Fee.
-    const finalApplicationFeeCents = unitAmountCents - hostPayoutCents;
+    // SAFEGUARD: Ensure fee is never negative.
+    const finalApplicationFeeCents = Math.max(0, unitAmountCents - hostPayoutCents);
 
     console.log('FINAL STRIPE VALUES (Cents):', {
         unitAmountCents, // Total charge to Guest
@@ -255,6 +256,8 @@ serve(async (req) => {
           destination: hostProfile.stripe_account_id,
           // CRITICAL FIX: Do NOT specify amount here when application_fee_amount is present.
           // Stripe infers Transfer Amount = Total - Application Fee.
+          // Explicitly setting undefined to prevent object merging issues.
+          amount: undefined,
         },
         metadata: invoiceMetadata
       },
