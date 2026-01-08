@@ -5,6 +5,7 @@ import { CreditCard, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants";
 
 export const StripeConnectButton = () => {
   const { toast } = useToast();
@@ -32,7 +33,7 @@ export const StripeConnectButton = () => {
     setIsConnecting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-stripe-connect-account');
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CREATE_STRIPE_CONNECT_ACCOUNT);
 
       if (error) throw error;
 

@@ -8,6 +8,7 @@ import { CardContent } from "@/components/ui/card";
 import { ReviewButton } from "../ReviewButton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { API_ENDPOINTS } from "@/constants";
 
 interface BookingCardActionsProps {
   booking: BookingWithDetails;
@@ -39,7 +40,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CREATE_CHECKOUT, {
         body: {
           booking_id: booking.id,
           origin: window.location.origin

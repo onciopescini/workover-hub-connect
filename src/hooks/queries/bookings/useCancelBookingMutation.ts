@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
+import { API_ENDPOINTS } from '@/constants';
 
 export const useCancelBookingMutation = () => {
   const queryClient = useQueryClient();
@@ -22,7 +23,7 @@ export const useCancelBookingMutation = () => {
     }) => {
       logger.info('Cancelling booking', { component: 'useCancelBookingMutation', action: 'cancel', metadata: { bookingId } });
       
-      const { data, error } = await supabase.functions.invoke('cancel-booking', {
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CANCEL_BOOKING, {
         body: {
           booking_id: bookingId,
           cancelled_by_host: isHost,

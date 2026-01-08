@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { API_ENDPOINTS } from '@/constants';
 
 export const usePaymentLink = () => {
   const location = useLocation();
@@ -62,7 +63,7 @@ export const usePaymentLink = () => {
         }
 
         // Create checkout session using v3
-        const { data, error } = await supabase.functions.invoke('create-checkout-v3', {
+        const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.CREATE_CHECKOUT, {
           body: {
             booking_id: booking.id,
             origin: window.location.origin

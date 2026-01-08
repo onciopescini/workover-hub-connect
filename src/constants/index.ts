@@ -6,6 +6,16 @@ export const APP_VERSION = '1.0.0';
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+export const API_ENDPOINTS = {
+  CREATE_CHECKOUT: 'create-checkout-v3',
+  CANCEL_BOOKING: 'cancel-booking',
+  STRIPE_CONNECT: 'stripe-connect',
+  CREATE_STRIPE_CONNECT_ACCOUNT: 'create-stripe-connect-account',
+  ANALYTICS_PROXY: 'analytics-proxy',
+  UNSPLASH_BASE: 'https://images.unsplash.com',
+  STRIPE_DASHBOARD: 'https://dashboard.stripe.com',
+};
+
 // Pricing constants - now derived from PricingEngine
 export const PRICING = {
   SERVICE_FEE_PCT: PricingEngine.GUEST_FEE_PERCENT,

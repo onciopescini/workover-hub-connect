@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, jest, beforeEach } from '@jest/globals';
+import { API_ENDPOINTS } from '@/constants';
 
 // Define the shape of our chainable mock
 const createChainableMock = (overrides: any = {}) => {
@@ -170,7 +171,7 @@ describe('Payment-Publish Integration Tests', () => {
         error: { message: 'Missing fiscal_regime' }
     });
 
-    const { error } = await supabase.functions.invoke('create-checkout-v3', {
+    const { error } = await supabase.functions.invoke(API_ENDPOINTS.CREATE_CHECKOUT, {
       body: {
         booking_id: 'booking-id',
         origin: 'http://localhost'

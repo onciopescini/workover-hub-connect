@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { API_ENDPOINTS } from "@/constants";
 
 export const HostDashboardContent = ({
   firstName,
@@ -27,7 +28,7 @@ export const HostDashboardContent = ({
   const handleConnectStripe = async () => {
     try {
       setIsConnectingStripe(true);
-      const { data, error } = await supabase.functions.invoke('stripe-connect', {
+      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.STRIPE_CONNECT, {
         body: { return_url: window.location.origin + '/host/dashboard?stripe_setup=success' }
       });
 
