@@ -193,31 +193,18 @@ serve(async (req) => {
     // Convert to CENTS (Integer)
     const unitAmountCents = Math.round(pricing.totalGuestPay * 100);
     const hostPayoutCents = Math.round(pricing.hostPayout * 100);
-    const applicationFeeCents = Math.round(pricing.applicationFee * 100);
+
+    // STRATEGIC FIX: Math Integrity
+    // We strictly enforce Total = HostPayout + ApplicationFee.
+    // We prioritize the HostPayout (what the host expects) and the Total (what the guest pays).
+    // Any rounding discrepancy is absorbed by the Application Fee.
+    const finalApplicationFeeCents = unitAmountCents - hostPayoutCents;
 
     console.log('FINAL STRIPE VALUES (Cents):', {
         unitAmountCents, // Total charge to Guest
-        hostPayoutCents, // Transfer to Host
-        applicationFeeCents // Kept by Platform
+        hostPayoutCents, // Transfer to Host (Implicitly calculated by Stripe as Total - Fee)
+        finalApplicationFeeCents // Kept by Platform (Calculated as remainder)
     });
-
-    // Safety Check: Transfer + Fee must approx equal Total (allowing for rounding diffs < 1 cent)
-    // Stripe constraint: amount = transfer_data.amount + application_fee_amount
-    const checkSum = hostPayoutCents + applicationFeeCents;
-    if (Math.abs(checkSum - unitAmountCents) > 1) {
-         console.warn(`[PRICING] Rounding Discrepancy detected: Total(${unitAmountCents}) vs Split(${checkSum}). Adjusting Fee.`);
-         // Adjust fee to absorb rounding difference
-         // We prioritize Host Payout correctness, so we adjust fee.
-         const adjustedFeeCents = unitAmountCents - hostPayoutCents;
-         // Note: applicationFeeCents is redefined in scope of block if we used let, but we used const.
-         // Let's just trust Stripe will error if we don't fix it, or we rely on the logic:
-         // Engine returns rounded values.
-         // Example: 100.00 Base.
-         // Guest: 5.00 + 1.10 VAT = 106.10 Total. (10610 cents)
-         // Host: 95.00 Payout. (9500 cents)
-         // Fee: 11.10. (1110 cents)
-         // 9500 + 1110 = 10610. Perfect.
-    }
 
     // Prepare Invoice Metadata
     let invoiceMetadata: Record<string, string> = {
@@ -263,10 +250,11 @@ serve(async (req) => {
       success_url: `${origin}/spaces/${spaceId}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/spaces/${spaceId}?canceled=true`,
       payment_intent_data: {
-        application_fee_amount: applicationFeeCents,
+        application_fee_amount: finalApplicationFeeCents,
         transfer_data: {
           destination: hostProfile.stripe_account_id,
-          amount: hostPayoutCents // Explicitly set transfer amount (Host Payout)
+          // CRITICAL FIX: Do NOT specify amount here when application_fee_amount is present.
+          // Stripe infers Transfer Amount = Total - Application Fee.
         },
         metadata: invoiceMetadata
       },
