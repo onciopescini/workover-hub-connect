@@ -21,7 +21,8 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   logger.debug('Fetching bookings for user', { component: 'useBookingsQuery', userId });
 
   // Fetch bookings where user is the coworker
-  const { data: coworkerBookingsRaw, error: coworkerError } = await supabase
+  // Force casting to avoid SelectQueryError with the relation join
+  const { data: coworkerBookingsRaw, error: coworkerError } = (await supabase
     .from("bookings")
     .select(`
       *,
@@ -35,7 +36,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       )
     `)
     .eq("user_id", userId)
-    .order("booking_date", { ascending: false });
+    .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
 
   if (coworkerError) {
     sreLogger.error('Coworker bookings error', { userId }, coworkerError);
@@ -46,7 +47,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   let hostBookings: Array<Record<string, unknown>> = [];
   const isHostOrAdmin = userRoles.includes("host") || userRoles.includes("admin");
   if (isHostOrAdmin) {
-    const { data: hostBookingsRaw, error: hostError } = await supabase
+    const { data: hostBookingsRaw, error: hostError } = (await supabase
       .from("bookings")
       .select(`
         *,
@@ -67,7 +68,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       `)
       .eq("spaces.host_id", userId)
       .neq("user_id", userId)
-      .order("booking_date", { ascending: false });
+      .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
 
     if (!hostError && hostBookingsRaw) {
       hostBookings = hostBookingsRaw;

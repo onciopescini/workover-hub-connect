@@ -91,7 +91,7 @@ export const UnifiedMessages = () => {
         content: newMessage,
         senderId: authState.user.id,
         bookingId: activeConversation?.booking_id,
-        recipientId
+        recipientId: recipientId || ""
       });
       setNewMessage("");
     } catch (error) {

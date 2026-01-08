@@ -215,7 +215,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
         </CardHeader>
         <CardContent className="grid gap-4">
           <AvailabilityEditor
-            availabilityData={availabilityData}
+            availabilityData={availabilityData as any}
             onAvailabilityChange={handleAvailabilityChange}
           />
           {errors['availability'] && <p className="text-red-500 text-sm">{errors['availability']}</p>}
@@ -246,7 +246,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
         </CardHeader>
         <CardContent className="space-y-6">
           <CancellationPolicySection
-            cancellationPolicy={formData['cancellation_policy'] || 'moderate'}
+            cancellationPolicy={(formData['cancellation_policy'] as 'flexible' | 'moderate' | 'strict') || 'moderate'}
             rules={formData['rules'] || ''}
             onInputChange={handleInputChange}
             isSubmitting={isSubmitting}
