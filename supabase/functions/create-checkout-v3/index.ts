@@ -21,6 +21,7 @@ serve(async (req) => {
     console.log(`[DEPLOY CHECK] Active Version: ${new Date().toISOString()} - FIX: Excluded transfer amount`);
     console.log("USING PRICING ENGINE V2 - MIN FEE 0.50");
     console.log("🚀 CHECKOUT V3 - STRIPE PARAMETERS FIX 🚀");
+    console.log("DEPLOY CHECK: " + new Date().toISOString() + " - STRIPE PARAMS REFACTORED");
 
     // 2. Read Request Body
     let body;
@@ -233,6 +234,23 @@ serve(async (req) => {
         console.log('[STRIPE] Adding fiscal data to metadata', invoiceMetadata);
     }
 
+    // -------------------------------------------------------------------------
+    // REFACTOR: Explicit Configuration Objects (No 'amount' key)
+    // -------------------------------------------------------------------------
+
+    // 1. Construct Transfer Data (STRICT)
+    // ONLY include destination. Do NOT include 'amount' key (not even as undefined).
+    const transferDataConfig = {
+      destination: hostProfile.stripe_account_id,
+    };
+
+    // 2. Construct Payment Intent Data
+    const paymentIntentConfig = {
+      application_fee_amount: finalApplicationFeeCents,
+      transfer_data: transferDataConfig, // Inject the clean object
+      metadata: invoiceMetadata,
+    };
+
     const sessionData = {
       line_items: [
         {
@@ -250,17 +268,7 @@ serve(async (req) => {
       mode: 'payment',
       success_url: `${origin}/spaces/${spaceId}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/spaces/${spaceId}?canceled=true`,
-      payment_intent_data: {
-        application_fee_amount: finalApplicationFeeCents,
-        transfer_data: {
-          destination: hostProfile.stripe_account_id,
-          // CRITICAL FIX: Do NOT specify amount here when application_fee_amount is present.
-          // Stripe infers Transfer Amount = Total - Application Fee.
-          // Explicitly setting undefined to prevent object merging issues.
-          amount: undefined,
-        },
-        metadata: invoiceMetadata
-      },
+      payment_intent_data: paymentIntentConfig,
       metadata: invoiceMetadata,
     };
 
