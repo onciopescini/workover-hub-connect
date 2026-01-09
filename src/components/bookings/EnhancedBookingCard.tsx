@@ -15,6 +15,7 @@ import { ReviewButton } from "./ReviewButton";
 import { MessagesButton } from "@/components/messaging/MessagesButton";
 import { CoworkerList } from "@/components/networking/CoworkerList";
 import { StarRating } from "@/components/ui/StarRating";
+import { BookingQRCode } from "./checkin/BookingQRCode";
 
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
@@ -263,6 +264,15 @@ export const EnhancedBookingCard = ({
             </Button>
           )}
         </div>
+
+        {/* QR Code for Guest Check-in - Only for Coworker view */}
+        {userRole === 'coworker' && (
+          <BookingQRCode 
+            bookingId={booking.id}
+            bookingDate={booking.booking_date}
+            status={booking.status}
+          />
+        )}
 
         {booking.status === 'served' && userRole === 'coworker' && (
           <div className="mt-6 pt-4 border-t">

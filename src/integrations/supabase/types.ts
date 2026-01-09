@@ -523,6 +523,9 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by_host: boolean | null
+          check_in_method: string | null
+          checked_in_at: string | null
+          checked_in_by: string | null
           created_at: string | null
           end_time: string | null
           fiscal_data: Json | null
@@ -562,6 +565,9 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by_host?: boolean | null
+          check_in_method?: string | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
           created_at?: string | null
           end_time?: string | null
           fiscal_data?: Json | null
@@ -601,6 +607,9 @@ export type Database = {
           cancellation_reason?: string | null
           cancelled_at?: string | null
           cancelled_by_host?: boolean | null
+          check_in_method?: string | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
           created_at?: string | null
           end_time?: string | null
           fiscal_data?: Json | null
@@ -5020,16 +5029,16 @@ export type Database = {
             }[]
           }
         | {
-            Args: { _booking_id: string }
+            Args: { booking_id?: string; current_user_id?: string }
             Returns: {
               avatar_url: string
-              cached_avg_rating: number
-              cached_review_count: number
+              city: string
               first_name: string
               id: string
+              job_title: string
               last_name: string
-              linkedin_url: string
-              profession: string
+              nickname: string
+              role: string
             }[]
           }
       get_cron_job_runs: {
@@ -5367,6 +5376,9 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by_host: boolean | null
+          check_in_method: string | null
+          checked_in_at: string | null
+          checked_in_by: string | null
           created_at: string | null
           end_time: string | null
           fiscal_data: Json | null
@@ -5415,6 +5427,9 @@ export type Database = {
           cancellation_reason: string | null
           cancelled_at: string | null
           cancelled_by_host: boolean | null
+          check_in_method: string | null
+          checked_in_at: string | null
+          checked_in_by: string | null
           created_at: string | null
           end_time: string | null
           fiscal_data: Json | null
@@ -6339,6 +6354,7 @@ export type Database = {
         | "refunded"
         | "disputed"
         | "frozen"
+        | "checked_in"
       cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
@@ -6498,6 +6514,7 @@ export const Constants = {
         "refunded",
         "disputed",
         "frozen",
+        "checked_in",
       ],
       cancellation_policy: ["flexible", "moderate", "strict"],
       confirmation_type: ["instant", "host_approval"],

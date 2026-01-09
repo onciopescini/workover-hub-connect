@@ -101,6 +101,8 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
         title: bookingData.spaces?.title as string,
         address: bookingData.spaces?.address as string,
         photos: bookingData.spaces?.photos as string[],
+        image_url: (bookingData.spaces?.photos as string[])?.[0] || '',
+        type: 'workspace',
         host_id: bookingData.spaces?.host_id as string,
         price_per_day: bookingData.spaces?.price_per_day as number
       },
@@ -131,6 +133,8 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
         title: bookingData.spaces?.title as string,
         address: bookingData.spaces?.address as string,
         photos: bookingData.spaces?.photos as string[],
+        image_url: (bookingData.spaces?.photos as string[])?.[0] || '',
+        type: 'workspace',
         host_id: bookingData.spaces?.host_id as string,
         price_per_day: bookingData.spaces?.price_per_day as number
       },

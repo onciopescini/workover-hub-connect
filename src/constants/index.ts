@@ -43,6 +43,7 @@ export const TIME_CONSTANTS = {
   POLLING_INTERVAL: 30000, // 30 seconds in ms
   COWORKER_ACTIVITY_WINDOW: 7, // 7 days
   CALENDAR_REFRESH: 60000, // 1 minute in ms
+  CONNECTION_REQUEST_EXPIRY: 3 * 24 * 60 * 60 * 1000, // 3 days in ms
 };
 
 export const BUSINESS_RULES = {
