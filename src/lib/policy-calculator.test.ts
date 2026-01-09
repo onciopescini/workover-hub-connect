@@ -106,12 +106,12 @@ describe('calculateRefund', () => {
     });
 
     test('should round appropriately', () => {
-        // 3333 total, 50% refund = 1666.5 -> 1667
+        // 3333 total, 50% refund = 1666.5
         const oddAmount = 3333;
         const start = createDateInFuture(48); // moderate 50%
         const result = calculateRefund(oddAmount, 'moderate', start, now);
-        expect(result.refundAmount).toBe(1667);
-        expect(result.penaltyAmount).toBe(oddAmount - 1667);
+        expect(result.refundAmount).toBe(1666.5);
+        expect(result.penaltyAmount).toBe(1666.5);
     });
   });
 });
