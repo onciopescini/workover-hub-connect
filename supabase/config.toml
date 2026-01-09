@@ -102,9 +102,6 @@ verify_jwt = true
 [functions.generate-non-fiscal-receipt-pdf]
 verify_jwt = true
 
-[functions.process-refund]
-verify_jwt = true
-
 [functions.upload-kyc-document]
 verify_jwt = true
 

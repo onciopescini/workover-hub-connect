@@ -215,57 +215,6 @@ test.describe('Credit Notes Flow', () => {
     expect(updateCalled).toBeTruthy();
   });
 
-  test('should unlock refund after credit note confirmation', async ({ page }) => {
-    let refundProcessed = false;
-
-    await page.route('**/rest/v1/payments*', async (route) => {
-      const method = route.request().method();
-      
-      if (method === 'PATCH') {
-        const body = await route.request().postDataJSON();
-        if (body.credit_note_issued_by_host === true) {
-          refundProcessed = true;
-        }
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify({ success: true })
-        });
-      } else {
-        await route.fulfill({
-          status: 200,
-          body: JSON.stringify([])
-        });
-      }
-    });
-
-    await page.route('**/functions/v1/process-refund', async (route) => {
-      await route.fulfill({
-        status: 200,
-        body: JSON.stringify({ 
-          success: true,
-          message: 'Refund processed successfully' 
-        })
-      });
-    });
-
-    // Simulate confirming credit note
-    await page.goto('/host/invoices');
-    
-    // Mock the state to show a pending credit note
-    await page.evaluate(() => {
-      // This would trigger the mutation in real scenario
-      window.dispatchEvent(new CustomEvent('confirm-credit-note', {
-        detail: { paymentId: 'payment-nc-1' }
-      }));
-    });
-
-    await page.waitForTimeout(1000);
-
-    // Verify refund was triggered
-    const refundMessage = page.getByText(/refund/i).or(page.getByText(/rimborso/i));
-    // This might not always be visible, so we check the flag instead
-    expect(refundProcessed).toBeTruthy();
-  });
 
   test('should show credit note in history after confirmation', async ({ page }) => {
     await page.route('**/rest/v1/payments*', async (route) => {
