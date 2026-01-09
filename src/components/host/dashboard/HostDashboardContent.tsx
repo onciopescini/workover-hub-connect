@@ -2,11 +2,11 @@ import { HostDashboardHeader } from "./HostDashboardHeader";
 import { HostDashboardMetrics } from "./HostDashboardMetrics";
 import { HostDashboardTabs } from "./HostDashboardTabs";
 import { HostProgressTracker } from "../onboarding/HostProgressTracker";
+import { QuickActions } from "../QuickActions";
 import { HostDashboardContentProps } from "@/types/host/dashboard.types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Plus, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,15 +81,8 @@ export const HostDashboardContent = ({
         </Alert>
       )}
 
-      {/* Explicit "Create Space" Action if not present in Header */}
-      <div className="flex justify-end">
-         <Button asChild className="gap-2">
-            <Link to="/host/space/new">
-               <Plus className="h-4 w-4" />
-               Crea Nuovo Spazio
-            </Link>
-         </Button>
-      </div>
+      {/* Quick Actions Component - Includes Check-in Scanner */}
+      <QuickActions />
       
       {metrics && <HostDashboardMetrics metrics={metrics} />}
       
