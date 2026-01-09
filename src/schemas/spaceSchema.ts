@@ -82,6 +82,9 @@ export const SpaceFormSchema = z.object({
   // Photos
   photos: z.array(z.string()).default([]),
 
+  // Policy
+  cancellation_policy: z.string().optional(),
+
   // Publishing
   published: z.boolean().default(false),
 });
