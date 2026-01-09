@@ -53,7 +53,7 @@ export const usePaymentLink = () => {
         const { data: hostProfile, error: profileError } = await supabase
           .from('profiles')
           .select('stripe_account_id')
-          .eq('id', workspace.host_id)
+          .eq('id', workspace.host_id ?? '')
           .single();
 
         if (profileError || !hostProfile?.stripe_account_id) {

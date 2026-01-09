@@ -28,7 +28,7 @@ export type BookingWithDetails = {
   booking_date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment' | 'served' | 'refunded' | 'disputed' | 'frozen';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment' | 'served' | 'refunded' | 'disputed' | 'frozen' | 'checked_in';
   created_at: string;
   updated_at: string;
   cancelled_at?: string | null;
@@ -50,8 +50,9 @@ export type BookingWithDetails = {
     id: string;
     title: string;
     address: string;
-    image_url: string;
-    type: string;
+    image_url?: string;
+    photos?: string[];
+    type?: string;
     host_id: string;
     price_per_day?: number;
     confirmation_type?: string;
@@ -136,6 +137,7 @@ export const BOOKING_STATUS_COLORS = {
   refunded: "bg-cyan-100 text-cyan-800",
   disputed: "bg-rose-100 text-rose-800",
   frozen: "bg-gray-100 text-gray-800",
+  checked_in: "bg-emerald-100 text-emerald-800",
 };
 
 export const BOOKING_STATUS_LABELS = {
@@ -148,4 +150,5 @@ export const BOOKING_STATUS_LABELS = {
   refunded: "Rimborsata",
   disputed: "Contestata",
   frozen: "Sospesa",
+  checked_in: "Check-in effettuato",
 };
