@@ -19,11 +19,13 @@ export const useUserPresence = () => {
 
         for (const key in newState) {
            const presenceList = newState[key];
-           presenceList.forEach((presence: any) => {
-             if (presence.user_id) {
-               users.add(presence.user_id);
-             }
-           });
+           if (Array.isArray(presenceList)) {
+             presenceList.forEach((presence: any) => {
+               if (presence.user_id) {
+                 users.add(presence.user_id);
+               }
+             });
+           }
         }
 
         // STABILIZATION: Only update state if the set content actually changed

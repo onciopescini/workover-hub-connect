@@ -20,8 +20,8 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
   useEffect(() => {
     const fetchCoworkers = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_coworkers', {
-          _booking_id: bookingId
+      const { data, error } = await supabase.rpc('get_coworkers', {
+          booking_id: bookingId
         });
 
         if (error) {
@@ -31,7 +31,7 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
 
         if (data) {
           // Type casting since RPC returns generic json or array
-          setCoworkers(data as Coworker[]);
+          setCoworkers(data as unknown as Coworker[]);
         }
       } catch (err) {
         console.error('Unexpected error fetching coworkers:', err);

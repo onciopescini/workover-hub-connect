@@ -40,9 +40,7 @@ export const usePaymentInvoiceReconciliation = () => {
         .from('payments')
         .select(`
           *,
-          booking:bookings(
-            spaces(host_id, title)
-          )
+          booking:bookings(id, space_id)
         `)
         .eq('payment_status', 'completed')
         .order('created_at', { ascending: false });
@@ -51,6 +49,15 @@ export const usePaymentInvoiceReconciliation = () => {
         sreLogger.error('Error fetching payments', { error: paymentsError });
         throw paymentsError;
       }
+
+      // Fetch spaces separately to avoid FK relationship issues
+      const spaceIds = [...new Set(payments?.map(p => p.booking?.space_id).filter(Boolean) || [])];
+      const { data: spaces } = await supabase
+        .from('spaces')
+        .select('id, host_id, title')
+        .in('id', spaceIds);
+      
+      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
 
       // Check which payments have invoices
       const paymentIds = payments?.map(p => p.id) || [];
@@ -66,11 +73,17 @@ export const usePaymentInvoiceReconciliation = () => {
 
       const invoicedPaymentIds = new Set(invoices?.map(i => i.payment_id) || []);
       
-      const paymentsWithoutInvoice = payments?.filter(
-        p => !invoicedPaymentIds.has(p.id)
-      ) || [];
+      const paymentsWithoutInvoice = (payments || [])
+        .filter(p => !invoicedPaymentIds.has(p.id))
+        .map(p => ({
+          ...p,
+          booking: p.booking ? {
+            ...p.booking,
+            spaces: p.booking.space_id ? spacesMap.get(p.booking.space_id) : undefined
+          } : undefined
+        }));
 
-      return paymentsWithoutInvoice as PaymentWithoutInvoice[];
+      return paymentsWithoutInvoice as unknown as PaymentWithoutInvoice[];
     }
   });
 

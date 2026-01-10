@@ -16,18 +16,23 @@ export const useFixBookingStatus = () => {
       // Get booking details
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          spaces!inner (
-            confirmation_type,
-            title
-          )
-        `)
+        .select('*')
         .eq('id', bookingId)
         .single();
 
       if (bookingError || !booking) {
         throw new Error('Booking not found');
+      }
+      
+      // Fetch space details separately
+      const { data: space, error: spaceError } = await supabase
+        .from('spaces')
+        .select('confirmation_type, title')
+        .eq('id', booking.space_id)
+        .single();
+        
+      if (spaceError || !space) {
+        throw new Error('Space not found');
       }
 
       // Check if payment is completed
@@ -43,7 +48,7 @@ export const useFixBookingStatus = () => {
       }
 
       // If space has instant confirmation and payment is completed, auto-confirm
-      if (booking.spaces.confirmation_type === 'instant' && booking.status === 'pending') {
+      if (space.confirmation_type === 'instant' && booking.status === 'pending') {
         const { error: updateError } = await supabase
           .from('bookings')
           .update({ 
@@ -65,10 +70,10 @@ export const useFixBookingStatus = () => {
             user_id: booking.user_id,
             type: 'booking',
             title: 'Prenotazione confermata!',
-            content: `La tua prenotazione presso "${booking.spaces.title}" è stata confermata.`,
+            content: `La tua prenotazione presso "${space.title}" è stata confermata.`,
             metadata: {
               booking_id: bookingId,
-              space_title: booking.spaces.title
+              space_title: space.title
             }
           });
 

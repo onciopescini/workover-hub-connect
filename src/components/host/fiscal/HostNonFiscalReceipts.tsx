@@ -14,7 +14,8 @@ export const HostNonFiscalReceipts = () => {
     queryFn: async () => {
       if (!authState.user?.id) return [];
       
-      const { data, error } = await supabase
+      // Fetch receipts without nested spaces relation
+      const { data: receiptsData, error } = await supabase
         .from('non_fiscal_receipts')
         .select(`
           id,
@@ -28,16 +29,31 @@ export const HostNonFiscalReceipts = () => {
           bookings (
             id,
             booking_date,
-            spaces (
-              title
-            )
+            space_id
           )
         `)
         .eq('host_id', authState.user.id)
         .order('receipt_date', { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Fetch spaces separately
+      const spaceIds = [...new Set(receiptsData?.map(r => r.bookings?.space_id).filter(Boolean) || [])];
+      const { data: spaces } = await supabase
+        .from('spaces')
+        .select('id, title')
+        .in('id', spaceIds);
+        
+      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
+      
+      // Attach space info
+      return (receiptsData || []).map(r => ({
+        ...r,
+        bookings: r.bookings ? {
+          ...r.bookings,
+          spaces: r.bookings.space_id ? spacesMap.get(r.bookings.space_id) : null
+        } : null
+      }));
     },
     enabled: !!authState.user?.id,
   });

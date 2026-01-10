@@ -37,8 +37,8 @@ const fetchHourlyAvailability = async (
   if (spaceError || !space) {
     throw new Error('Failed to fetch space details');
   }
-
-  const maxCapacity = space.max_capacity;
+  
+  const maxCapacity = space.max_capacity ?? 1;
   const dateStr = format(date, 'yyyy-MM-dd');
 
   // Get all bookings for this space on this date
