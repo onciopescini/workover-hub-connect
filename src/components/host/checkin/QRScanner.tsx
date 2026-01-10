@@ -117,6 +117,35 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
 
   const handleError = useCallback((error: unknown) => {
     console.error('QR Scanner error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Detect specific error types for better UX
+    if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
+      toast.error('Permesso fotocamera negato', {
+        description: 'Consenti l\'accesso alla fotocamera nelle impostazioni del browser.'
+      });
+      setManualMode(true);
+    } else if (errorMessage.includes('NotFoundError')) {
+      toast.error('Fotocamera non trovata', {
+        description: 'Nessuna fotocamera disponibile su questo dispositivo.'
+      });
+      setManualMode(true);
+    } else if (errorMessage.includes('CSP') || errorMessage.includes('Content Security Policy') || errorMessage.includes('wasm') || errorMessage.includes('WebAssembly')) {
+      toast.error('Errore di sicurezza', {
+        description: 'Configurazione browser non compatibile. Usa inserimento manuale.'
+      });
+      setManualMode(true);
+    } else if (errorMessage.includes('NotReadableError')) {
+      toast.error('Fotocamera in uso', {
+        description: 'La fotocamera potrebbe essere usata da un\'altra applicazione.'
+      });
+      setManualMode(true);
+    } else {
+      toast.error('Errore fotocamera', {
+        description: 'Riprova o usa l\'inserimento manuale.'
+      });
+    }
   }, []);
 
   return (

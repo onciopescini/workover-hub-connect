@@ -3256,6 +3256,7 @@ export type Database = {
           suspended_at: string | null
           suspended_by: string | null
           suspension_reason: string | null
+          timezone: string | null
           title: string
           updated_at: string
           work_environment: Database["public"]["Enums"]["work_environment"]
@@ -3302,6 +3303,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          timezone?: string | null
           title: string
           updated_at?: string
           work_environment: Database["public"]["Enums"]["work_environment"]
@@ -3348,6 +3350,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           suspension_reason?: string | null
+          timezone?: string | null
           title?: string
           updated_at?: string
           work_environment?: Database["public"]["Enums"]["work_environment"]
