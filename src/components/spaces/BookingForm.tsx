@@ -26,13 +26,14 @@ interface BookingFormProps {
   availability?: any; // Availability configuration from host
   authorId?: string;
   minBookingHours?: number;
+  timezone?: string;
 }
 
 const generateSlotId = () => {
   return Math.random().toString(36).substr(2, 9);
 };
 
-export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId, availability }: BookingFormProps) {
+export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId, availability, timezone }: BookingFormProps) {
   // Use the new 2-step booking form with visual calendar as default
   return (
     <TwoStepBookingForm
@@ -48,6 +49,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
       bufferMinutes={0} // Default buffer
       slotInterval={30} // Default 30-minute slots
       availability={availability}
+      timezone={timezone}
       {...(hostStripeAccountId && { hostStripeAccountId })}
     />
   );

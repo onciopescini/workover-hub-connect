@@ -44,6 +44,7 @@ serve(async (req) => {
     }
 
     console.log(`[checkin-booking] Processing check-in for booking: ${booking_id} by user: ${user.id}`);
+    console.log("Enforcing time validation rules");
 
     // 5. Fetch Booking & Workspace Details
     // We need the workspace to verify host ownership and to get timezone

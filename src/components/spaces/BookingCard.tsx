@@ -29,6 +29,7 @@ export const BookingCard = (props: BookingCardProps) => {
   const maxCapacity = spaceData.max_capacity || 1;
   const hostStripeAccountId = spaceData.host_stripe_account_id;
   const availability = spaceData.availability;
+  const timezone = spaceData.timezone;
 
   const handleSuccess = () => {
     if (props.onBookingSuccess) props.onBookingSuccess();
@@ -67,6 +68,7 @@ export const BookingCard = (props: BookingCardProps) => {
           availability={availability}
           authorId={authorId}
           minBookingHours={minBookingHours}
+          timezone={timezone}
         />
       </CardContent>
     </Card>

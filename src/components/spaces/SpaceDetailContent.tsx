@@ -101,7 +101,8 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
     confirmation_type: space.confirmation_type || 'host_approval',
     host_stripe_account_id: space.host_stripe_account_id ?? '',
     host_stripe_connected: space.host_stripe_connected ?? false,
-    availability: (space as any).availability || null
+    availability: (space as any).availability || null,
+    timezone: space.timezone
   };
 
   return (

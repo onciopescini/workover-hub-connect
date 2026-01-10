@@ -271,6 +271,8 @@ export const EnhancedBookingCard = ({
             bookingId={booking.id}
             bookingDate={booking.booking_date}
             status={booking.status}
+            startTime={booking.start_time}
+            endTime={booking.end_time}
           />
         )}
 
