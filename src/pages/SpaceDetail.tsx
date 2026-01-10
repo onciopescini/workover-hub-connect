@@ -32,7 +32,7 @@ const SpaceDetail = () => {
         .from('workspaces' as any) as any)
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (workspaceError) {
         sreLogger.error('Database error', { spaceId: id, component: 'SpaceDetail' }, workspaceError as Error);
@@ -40,8 +40,9 @@ const SpaceDetail = () => {
       }
       
       if (!workspaceData) {
-        sreLogger.error('No space found for ID', { spaceId: id, component: 'SpaceDetail' }, new Error('Space not found'));
-        throw new Error('Space not found');
+        sreLogger.warn('No space found for ID', { spaceId: id, component: 'SpaceDetail' });
+        // Return null instead of throwing, so the UI can handle the "Not Found" state
+        return null;
       }
 
       // Fetch host info

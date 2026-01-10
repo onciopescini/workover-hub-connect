@@ -16,17 +16,26 @@ export async function getAvailableCapacity(
 }> {
   try {
     // Get space max capacity
-    const { data: space, error: spaceError } = await supabase
-      .from('spaces')
+    // Use workspaces table and maybeSingle to handle missing/hidden spaces gracefully
+    const { data: space, error: spaceError } = await (supabase
+      .from('workspaces' as any) as any)
       .select('max_capacity')
       .eq('id', spaceId)
-      .single();
+      .maybeSingle();
 
-    if (spaceError || !space) {
+    if (spaceError) {
       sreLogger.error('Error fetching space capacity', { 
         context: 'getAvailableCapacity',
         spaceId 
       }, spaceError as Error);
+      return { availableSpots: 0, maxCapacity: 0, totalBooked: 0 };
+    }
+
+    if (!space) {
+      sreLogger.warn('Space not found during capacity check', {
+        context: 'getAvailableCapacity',
+        spaceId
+      });
       return { availableSpots: 0, maxCapacity: 0, totalBooked: 0 };
     }
     

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { addHours, format } from 'date-fns';
 import { BookingInsert } from '@/types/booking';
 import { API_ENDPOINTS } from '@/constants';
+import { useNavigate } from 'react-router-dom';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -31,6 +32,7 @@ export interface CheckoutResult {
 export function useCheckout() {
   const [isLoading, setIsLoading] = useState(false);
   const { info, error, debug } = useLogger({ context: 'useCheckout' });
+  const navigate = useNavigate();
 
   const processCheckout = async (params: CheckoutParams): Promise<CheckoutResult> => {
     setIsLoading(true);
@@ -112,6 +114,12 @@ export function useCheckout() {
       // Handle Insert Error: If the insert returns an error, STOP execution and show a toast error.
       if (insertError) {
         console.error('DEBUG: Insert Error', insertError);
+        // Specifically handle Foreign Key Violation (Space not found)
+        if (insertError.code === '23503') {
+           toast.error("This space is no longer available or has been removed by the host.");
+           navigate('/');
+           return { success: false, error: "Space not found" };
+        }
         throw new Error(`Insert failed: ${insertError.message} (Code: ${insertError.code})`);
       }
 
