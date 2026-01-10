@@ -118,7 +118,7 @@ export function DisputeManagementPanel() {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <CardTitle className="text-base">
-                          {dispute.space?.title}
+                          {(dispute as any).space?.title}
                         </CardTitle>
                         <CardDescription>
                           {dispute.coworker?.first_name} {dispute.coworker?.last_name}

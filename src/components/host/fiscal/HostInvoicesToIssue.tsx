@@ -110,7 +110,7 @@ export const HostInvoicesToIssue = () => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
-                        <h4 className="font-semibold">{space?.title}</h4>
+                        <h4 className="font-semibold">{(space as any)?.title}</h4>
                         {isUrgent && (
                           <Badge variant="destructive">
                             <AlertCircle className="h-3 w-3 mr-1" />

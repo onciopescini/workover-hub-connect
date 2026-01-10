@@ -22,7 +22,7 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
       try {
       const { data, error } = await supabase.rpc('get_coworkers', {
           booking_id: bookingId
-        });
+        } as any);
 
         if (error) {
           console.error('Error fetching coworkers:', error);

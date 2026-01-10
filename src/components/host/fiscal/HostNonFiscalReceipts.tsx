@@ -102,7 +102,7 @@ export const HostNonFiscalReceipts = () => {
                           <Calendar className="h-3 w-3" />
                           {new Date(receipt.receipt_date).toLocaleDateString('it-IT')}
                         </p>
-                        <p>Spazio: {space?.title}</p>
+                        <p>Spazio: {(space as any)?.title}</p>
                         <p>Importo canone: €{Number(receipt.canone_amount).toFixed(2)}</p>
                         {receipt.discount_amount && receipt.discount_amount > 0 && (
                           <p>Sconto: €{Number(receipt.discount_amount).toFixed(2)}</p>
