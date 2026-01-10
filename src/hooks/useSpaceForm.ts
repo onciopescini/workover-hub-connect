@@ -37,7 +37,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     handleAvailabilityChange,
     handleCheckboxArrayChange
   } = useSpaceFormState({
-    initialData,
+    initialData: initialData as any,
     stripeOnboardingStatus, // Pass the status here
     stripeConnected
   });
