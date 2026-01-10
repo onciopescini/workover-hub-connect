@@ -34,7 +34,7 @@ export function TrustBadgesSection({ profile, email, emailConfirmedAt, phoneConf
   }, [resendCooldown]);
 
   const handleResendEmail = async () => {
-    const targetEmail = email || profile.email;
+    const targetEmail = email;
 
     if (!targetEmail) {
       toast.error("Email non trovata");

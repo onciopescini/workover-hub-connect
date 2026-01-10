@@ -28,8 +28,7 @@ export function DisputeManagementPanel() {
         .from('bookings')
         .select(`
           *,
-          space:spaces(id, title),
-          coworker:profiles!bookings_user_id_fkey(id, first_name, last_name),
+          coworker:profiles!fk_bookings_user_id(id, first_name, last_name),
           payments(id, amount, payment_status)
         `)
         .or('cancelled_at.not.is.null,cancellation_reason.not.is.null')
@@ -38,9 +37,19 @@ export function DisputeManagementPanel() {
 
       if (error) throw error;
       
-      // Transform coworker from array to single object
+      // Fetch space details separately to avoid FK issues
+      const bookingIds = data?.map(b => b.space_id) || [];
+      const { data: spaces } = await supabase
+        .from('spaces')
+        .select('id, title')
+        .in('id', bookingIds);
+      
+      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
+      
+      // Transform coworker from array to single object and add space
       return (data || []).map(booking => ({
         ...booking,
+        space: spacesMap.get(booking.space_id) || null,
         coworker: Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker
       }));
     }

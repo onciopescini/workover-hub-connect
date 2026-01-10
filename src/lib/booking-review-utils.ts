@@ -64,8 +64,8 @@ export const getBookingReviews = async (userId: string): Promise<{
     if (receivedError) throw receivedError;
 
     return {
-      given: givenReviews as BookingReviewWithDetails[] || [],
-      received: receivedReviews as BookingReviewWithDetails[] || [],
+      given: (givenReviews as unknown as BookingReviewWithDetails[]) || [],
+      received: (receivedReviews as unknown as BookingReviewWithDetails[]) || [],
     };
   } catch (error) {
     sreLogger.error('Error fetching booking reviews', { userId }, error as Error);

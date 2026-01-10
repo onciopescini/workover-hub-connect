@@ -89,7 +89,7 @@ export const useBookingsDashboardState = () => {
              try {
                 // Determine original price (Payment > Calculation)
                 let originalPrice = 0;
-                if (b.payments && b.payments.length > 0) {
+                if (b.payments && b.payments.length > 0 && b.payments[0]) {
                     originalPrice = b.payments[0].amount;
                 } else {
                    const start = new Date(`${b.booking_date}T${b.start_time}`);

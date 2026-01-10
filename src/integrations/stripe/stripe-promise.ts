@@ -3,11 +3,11 @@ import { appConfig } from '@/config/app.config';
 import { sreLogger } from '@/lib/sre-logger';
 
 // Direct fallback to ensure import.meta.env is read even if appConfig is not updated in memory immediately (unlikely but safe)
-const stripePublishableKey = appConfig.external.stripePublishableKey || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePublishableKey = appConfig.external.stripePublishableKey || import.meta.env['VITE_STRIPE_PUBLISHABLE_KEY'];
 
 if (!stripePublishableKey) {
   sreLogger.error('Stripe publishable key is missing from configuration', {
-    envVarPresent: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+    envVarPresent: !!import.meta.env['VITE_STRIPE_PUBLISHABLE_KEY'],
     configPresent: !!appConfig.external.stripePublishableKey
   });
 }

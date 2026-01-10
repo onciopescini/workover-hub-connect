@@ -92,11 +92,14 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
 
       const isToday = format(selectedDate, 'yyyy-MM-dd') === format(zonedNow, 'yyyy-MM-dd');
       if (isToday) {
-        const [slotHH, slotMM] = time.split(':').map(Number);
+        const timeParts = time.split(':').map(Number);
+        const slotHH = timeParts[0];
+        const slotMM = timeParts[1];
         const currentHH = zonedNow.getHours();
         const currentMM = zonedNow.getMinutes();
 
-        if (slotHH < currentHH || (slotHH === currentHH && slotMM <= currentMM)) {
+        if (slotHH !== undefined && slotMM !== undefined && 
+            (slotHH < currentHH || (slotHH === currentHH && slotMM <= currentMM))) {
           return 'occupied'; // Treat past slots as occupied/unavailable
         }
       }

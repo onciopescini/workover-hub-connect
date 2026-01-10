@@ -94,7 +94,7 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
       // OPTIMIZED: Batch fetch booking details first (single query)
       const { data: bookings, error: fetchError } = await supabase
         .from("bookings")
-        .select("id, user_id, space_id, spaces!inner(host_id)")
+        .select("id, user_id, space_id")
         .in("id", bookingIds);
 
       if (fetchError || !bookings) {
@@ -103,13 +103,23 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
         opts?.onAfterAll?.();
         return { success, failed };
       }
+      
+      // Fetch spaces separately to get host_id
+      const spaceIds = [...new Set(bookings.map(b => b.space_id))];
+      const { data: spaces } = await supabase
+        .from("spaces")
+        .select("id, host_id")
+        .in("id", spaceIds);
+      
+      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
 
       // Process cancellations in parallel
       const results = await Promise.allSettled(
         bookings.map(async (booking) => {
+          const space = spacesMap.get(booking.space_id);
           const payload = {
             booking_id: booking.id,
-            cancelled_by_host: booking.spaces.host_id === authState.user?.id,
+            cancelled_by_host: space?.host_id === authState.user?.id,
             ...(reason ? { reason } : {}),
           };
           

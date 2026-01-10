@@ -49,7 +49,7 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
       bufferMinutes={0} // Default buffer
       slotInterval={30} // Default 30-minute slots
       availability={availability}
-      timezone={timezone}
+      timezone={timezone || 'Europe/Rome'}
       {...(hostStripeAccountId && { hostStripeAccountId })}
     />
   );

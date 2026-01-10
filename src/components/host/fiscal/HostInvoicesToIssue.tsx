@@ -15,7 +15,8 @@ export const HostInvoicesToIssue = () => {
     queryFn: async () => {
       if (!authState.user?.id) return [];
       
-      const { data, error } = await supabase
+      // Fetch payments without nested spaces relation
+      const { data: payments, error } = await supabase
         .from('payments')
         .select(`
           id,
@@ -26,17 +27,33 @@ export const HostInvoicesToIssue = () => {
           bookings (
             id,
             booking_date,
-            spaces (
-              id,
-              title
-            )
+            space_id
           )
         `)
-        .eq('host_invoice_required', true)
-        .eq('bookings.spaces.host_id', authState.user.id);
+        .eq('host_invoice_required', true);
 
       if (error) throw error;
-      return data;
+      
+      // Fetch spaces separately and filter by host
+      const spaceIds = [...new Set(payments?.map(p => p.bookings?.space_id).filter(Boolean) || [])];
+      const { data: spaces } = await supabase
+        .from('spaces')
+        .select('id, title, host_id')
+        .in('id', spaceIds)
+        .eq('host_id', authState.user.id);
+        
+      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
+      
+      // Filter payments by host's spaces and attach space info
+      return (payments || [])
+        .filter(p => p.bookings?.space_id && spacesMap.has(p.bookings.space_id))
+        .map(p => ({
+          ...p,
+          bookings: {
+            ...p.bookings,
+            spaces: p.bookings?.space_id ? spacesMap.get(p.bookings.space_id) : null
+          }
+        }));
     },
     enabled: !!authState.user?.id,
   });

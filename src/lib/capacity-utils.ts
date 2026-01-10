@@ -17,7 +17,7 @@ export async function getAvailableCapacity(
   try {
     // Get space max capacity
     const { data: space, error: spaceError } = await supabase
-      .from('workspaces' as any)
+      .from('spaces')
       .select('max_capacity')
       .eq('id', spaceId)
       .single();
@@ -29,6 +29,8 @@ export async function getAvailableCapacity(
       }, spaceError as Error);
       return { availableSpots: 0, maxCapacity: 0, totalBooked: 0 };
     }
+    
+    const maxCapacity = space.max_capacity ?? 1;
 
     // Get total guests booked for overlapping time slots
     // A booking overlaps if:
@@ -51,18 +53,18 @@ export async function getAvailableCapacity(
         endTime
       }, bookingsError as Error);
       return { 
-        availableSpots: space.max_capacity, 
-        maxCapacity: space.max_capacity, 
+        availableSpots: maxCapacity, 
+        maxCapacity: maxCapacity, 
         totalBooked: 0 
       };
     }
 
     const totalBooked = bookings?.reduce((sum, b) => sum + (b.guests_count || 0), 0) || 0;
-    const availableSpots = Math.max(0, space.max_capacity - totalBooked);
+    const availableSpots = Math.max(0, maxCapacity - totalBooked);
 
     return {
       availableSpots,
-      maxCapacity: space.max_capacity,
+      maxCapacity: maxCapacity,
       totalBooked
     };
   } catch (error) {
