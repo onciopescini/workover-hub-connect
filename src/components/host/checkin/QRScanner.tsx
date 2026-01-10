@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,12 +18,43 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
   const [scanResult, setScanResult] = useState<'success' | 'error' | null>(null);
   const [manualMode, setManualMode] = useState(false);
   const [manualBookingId, setManualBookingId] = useState('');
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+
+  const addLog = (msg: string) => {
+    setDebugLogs(prev => [...prev.slice(-19), `[${new Date().toISOString().split('T')[1].split('.')[0]}] ${msg}`]);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setDebugLogs([]); // Clear logs on open
+    addLog('Component Mounted');
+    addLog('Requesting camera stream...');
+
+    // CSP Check for WASM/Library assets
+    fetch('https://fastly.jsdelivr.net/npm/zxing-wasm@2.2.4/package.json')
+      .then(res => {
+        if (res.ok) addLog('CSP Check: Success (WASM/JS accessible)');
+        else addLog(`CSP Check: Failed (${res.status})`);
+      })
+      .catch(err => {
+        const msg = err instanceof Error ? err.message : String(err);
+        addLog(`CSP Check: Blocked/Error (${msg})`);
+      });
+
+    const interval = setInterval(() => {
+      addLog('Scanning frame... (Heartbeat)');
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isOpen]);
 
   const resetState = () => {
     setScanResult(null);
     setIsProcessing(false);
     setManualMode(false);
     setManualBookingId('');
+    setDebugLogs([]);
   };
 
   const handleClose = () => {
@@ -34,6 +65,7 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
   const processCheckin = async (bookingId: string) => {
     if (isProcessing) return;
     setIsProcessing(true);
+    addLog(`Processing Check-in: ${bookingId}`);
     
     try {
       const { data, error } = await supabase.functions.invoke('checkin-booking', {
@@ -44,6 +76,7 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
 
       if (data?.success) {
         setScanResult('success');
+        addLog('Check-in Success');
         toast.success('Check-in Confermato!', {
           description: 'Il coworker è stato registrato con successo.',
           duration: 4000
@@ -60,6 +93,7 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Errore sconosciuto';
       setScanResult('error');
+      addLog(`Check-in Error: ${message}`);
       
       // User-friendly error messages
       let displayMessage = message;
@@ -90,16 +124,19 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
     if (isProcessing || !result) return;
     
     try {
+      addLog(`CODE FOUND: ${result.substring(0, 30)}...`);
       const payload = JSON.parse(result);
       const bookingId = payload.booking_id;
       
       if (!bookingId) {
+        addLog('Invalid QR Payload: missing booking_id');
         toast.error('QR Code non valido');
         return;
       }
 
       processCheckin(bookingId);
-    } catch {
+    } catch (e) {
+      addLog('Invalid QR: JSON parse failed');
       toast.error('QR Code non valido', {
         description: 'Il codice scansionato non è un QR valido.'
       });
@@ -116,6 +153,8 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
   };
 
   const handleError = useCallback((error: unknown) => {
+    const msg = error instanceof Error ? error.message : String(error);
+    addLog(`CRITICAL ERROR: ${msg}`);
     console.error('QR Scanner error:', error);
   }, []);
 
@@ -156,18 +195,40 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
         ) : (
           <>
             <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-black">
+              {/* Visual Debug Overlay */}
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'rgba(0,0,0,0.8)',
+                color: '#00ff00',
+                fontSize: '10px',
+                maxHeight: '150px',
+                overflowY: 'auto',
+                zIndex: 9999,
+                pointerEvents: 'none',
+                padding: '4px',
+                fontFamily: 'monospace',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {debugLogs.map((log, i) => (
+                  <div key={i}>{log}</div>
+                ))}
+              </div>
+
               {scanResult === 'success' ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500 text-white">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-500 text-white z-10">
                   <CheckCircle2 className="w-16 h-16 mb-4" />
                   <p className="text-xl font-semibold">Check-in Riuscito!</p>
                 </div>
               ) : scanResult === 'error' ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-500 text-white">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-500 text-white z-10">
                   <XCircle className="w-16 h-16 mb-4" />
                   <p className="text-xl font-semibold">Errore</p>
                 </div>
               ) : isProcessing ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
                   <Loader2 className="w-12 h-12 animate-spin text-white" />
                 </div>
               ) : (
