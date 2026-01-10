@@ -6,6 +6,7 @@ import { generateTimeSlots, TimeSlot, checkRealTimeConflicts } from '@/lib/avail
 import { getAlternativeTimeSlots } from '@/lib/availability-rpc';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { AvailabilityFeedback } from './AvailabilityFeedback';
 import { ConflictHandler } from './ConflictHandler';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
@@ -20,6 +21,7 @@ interface TimeSlotPickerProps {
   loading?: boolean;
   spaceId: string;
   onRefresh?: () => void;
+  timezone?: string;
 }
 
 export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
@@ -30,7 +32,8 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
   onTimeSelection,
   loading = false,
   spaceId,
-  onRefresh
+  onRefresh,
+  timezone
 }) => {
   const [dragStart, setDragStart] = React.useState<string | null>(null);
   const [dragEnd, setDragEnd] = React.useState<string | null>(null);
@@ -76,6 +79,29 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({
   }
 
   const getSlotStatus = (time: string) => {
+    // Legacy support strict time check
+    if (selectedDate) {
+      const now = new Date();
+      const targetTimezone = timezone || 'Europe/Rome';
+      let zonedNow: Date;
+      try {
+        zonedNow = toZonedTime(now, targetTimezone);
+      } catch {
+        zonedNow = now;
+      }
+
+      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(zonedNow, 'yyyy-MM-dd');
+      if (isToday) {
+        const [slotHH, slotMM] = time.split(':').map(Number);
+        const currentHH = zonedNow.getHours();
+        const currentMM = zonedNow.getMinutes();
+
+        if (slotHH < currentHH || (slotHH === currentHH && slotMM <= currentMM)) {
+          return 'occupied'; // Treat past slots as occupied/unavailable
+        }
+      }
+    }
+
     const slot = availableSlots.find(s => s.start === time);
     return slot?.available ? 'available' : 'occupied';
   };

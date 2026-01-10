@@ -20,6 +20,7 @@ import { useLogger } from "@/hooks/useLogger";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
 import { computePricing } from "@/lib/pricing";
 import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { it } from 'date-fns/locale';
 import { z } from 'zod';
 import { useCheckout } from '@/hooks/useCheckout';
@@ -55,6 +56,7 @@ export interface TwoStepBookingFormProps {
   hostStripeAccountId?: string; // Optional for Stripe Connect payments
   availability?: any; // Availability configuration from host
   hostFiscalRegime?: string; // Host's fiscal regime to determine if invoice can be requested
+  timezone?: string;
 }
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
@@ -102,7 +104,8 @@ export function TwoStepBookingForm({
   slotInterval = 30,
   hostStripeAccountId,
   availability,
-  hostFiscalRegime
+  hostFiscalRegime,
+  timezone
 }: TwoStepBookingFormProps) {
   const [currentStep, setCurrentStep] = useState<BookingStep>('DATE');
   const [bookingState, setBookingState] = useState<BookingState>({
@@ -304,14 +307,51 @@ export function TwoStepBookingForm({
       // Generate base time slots based on availability
       const baseSlots = generateTimeSlots(interval, date);
       
-      // Mark unavailable slots based on blocked intervals (including buffer)
+      // Calculate current time in space's timezone (or strict device time fallback)
+      const now = new Date();
+      // If timezone is provided, use it. Otherwise assume space is in same zone as user (device time)
+      const targetTimezone = timezone || 'Europe/Rome';
+      let zonedNow: Date;
+      try {
+        zonedNow = toZonedTime(now, targetTimezone);
+      } catch (e) {
+        // Fallback if timezone string is invalid
+        console.warn('Invalid timezone', timezone, e);
+        zonedNow = now;
+      }
+
+      // Check if selected date is "Today" in the target timezone
+      // We compare YYYY-MM-DD of the selected date vs the zoned "now"
+      const isToday = format(date, 'yyyy-MM-dd') === format(zonedNow, 'yyyy-MM-dd');
+      const currentHH = zonedNow.getHours();
+      const currentMM = zonedNow.getMinutes();
+
+      // Mark unavailable slots based on blocked intervals (including buffer) AND strict time check
       const updatedSlots = baseSlots.map(slot => {
         const isBlocked = blocked.some((block: { start: string; end: string }) => slot.time >= block.start && slot.time < block.end);
         
+        // Strict Time Validation for Today
+        let isPastTime = false;
+        if (isToday) {
+          const [slotHH, slotMM] = parseHHMM(slot.time);
+          // If slot start time is strictly before current time (or equal/less minutes in same hour)
+          // Actually requirement says "if it is 12:05, slots like 09:00-12:00 must be unselectable"
+          // AND "if current time is 12:05, the 12:00 slot must be disabled".
+          // So if slot_start <= current_time, disable it.
+          // 12:00 slot (starts 12:00) vs 12:05 current. 12:00 < 12:05. Disable.
+          // 12:30 slot (starts 12:30) vs 12:05 current. 12:30 > 12:05. Enable.
+          if (slotHH < currentHH || (slotHH === currentHH && slotMM <= currentMM)) {
+            isPastTime = true;
+          }
+        }
+
+        const isAvailable = !isBlocked && !isPastTime;
+
         return {
           ...slot,
-          available: !isBlocked,
-          reserved: isBlocked
+          available: isAvailable,
+          reserved: isBlocked // reserved implies "booked by someone else" usually, but here we just use it for "blocked" status logic if needed.
+          // Note: The UI usually renders "gray" for !available.
         };
       });
       
