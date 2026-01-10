@@ -6,8 +6,8 @@ export const getHostSpaces = async (hostId: string) => {
   
   try {
     const { data, error } = await supabase
-      .from('spaces')
-      .select('*')
+      .from('workspaces')
+      .select('*, title:name') // Alias name to title for backward compatibility within this function if needed, but best to use updated types
       .eq('host_id', hostId)
       .order('created_at', { ascending: false });
 
@@ -21,14 +21,15 @@ export const getHostSpaces = async (hostId: string) => {
       spacesCount: data?.length || 0,
       spaces: data?.map(space => ({
         id: space.id,
-        title: space.title,
+        title: space.name,
         published: space.published,
-        is_suspended: space.is_suspended,
+        // is_suspended: space.is_suspended, // Removed as not in workspaces
         host_id: space.host_id
       }))
     });
     
-    return data || [];
+    // Map name back to title for consumers of this utility if they expect 'title' property
+    return (data || []).map(s => ({...s, title: s.name}));
   } catch (error) {
     sreLogger.error('getHostSpaces: Exception occurred', { hostId }, error as Error);
     throw error;
@@ -41,7 +42,7 @@ export const getHostBookings = async (hostId: string) => {
   try {
     // First get host's spaces
     const { data: spaces, error: spacesError } = await supabase
-      .from('spaces')
+      .from('workspaces')
       .select('id')
       .eq('host_id', hostId);
 
@@ -62,9 +63,9 @@ export const getHostBookings = async (hostId: string) => {
       .from('bookings')
       .select(`
         *,
-        space:spaces!inner (
+        space:workspaces!inner (
           id,
-          title,
+          title:name,
           address,
           photos,
           host_id,

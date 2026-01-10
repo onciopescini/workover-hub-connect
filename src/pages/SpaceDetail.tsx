@@ -27,9 +27,9 @@ const SpaceDetail = () => {
       
       sreLogger.debug('Fetching space with ID', { spaceId: id, component: 'SpaceDetail' });
       
-      // Refactor: Query 'workspaces' table instead of RPC/spaces
-      const { data: workspaceData, error: workspaceError } = await (supabase
-        .from('workspaces' as any) as any)
+      // Query 'workspaces' table directly
+      const { data: workspaceData, error: workspaceError } = await supabase
+        .from('workspaces')
         .select('*')
         .eq('id', id)
         .maybeSingle();
@@ -49,7 +49,7 @@ const SpaceDetail = () => {
       const { data: hostData, error: hostError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, profile_photo_url, bio, created_at, stripe_account_id, stripe_connected')
-        .eq('id', workspaceData.host_id)
+        .eq('id', workspaceData.host_id || '')
         .single();
 
       if (hostError) {
@@ -59,7 +59,7 @@ const SpaceDetail = () => {
       
       sreLogger.debug('Space fetched successfully', {
         spaceId: workspaceData.id,
-        title: workspaceData.name,
+        name: workspaceData.name,
         published: workspaceData.published,
         component: 'SpaceDetail'
       });
@@ -74,19 +74,20 @@ const SpaceDetail = () => {
         }
         
         if (availabilityData && typeof availabilityData === 'object') {
+          const availObj = availabilityData as any;
           // Ensure recurring has all days with enabled and slots
           const defaultDay = { enabled: false, slots: [] };
           normalizedAvailability = {
             recurring: {
-              monday: availabilityData.recurring?.monday || defaultDay,
-              tuesday: availabilityData.recurring?.tuesday || defaultDay,
-              wednesday: availabilityData.recurring?.wednesday || defaultDay,
-              thursday: availabilityData.recurring?.thursday || defaultDay,
-              friday: availabilityData.recurring?.friday || defaultDay,
-              saturday: availabilityData.recurring?.saturday || defaultDay,
-              sunday: availabilityData.recurring?.sunday || defaultDay,
+              monday: availObj.recurring?.monday || defaultDay,
+              tuesday: availObj.recurring?.tuesday || defaultDay,
+              wednesday: availObj.recurring?.wednesday || defaultDay,
+              thursday: availObj.recurring?.thursday || defaultDay,
+              friday: availObj.recurring?.friday || defaultDay,
+              saturday: availObj.recurring?.saturday || defaultDay,
+              sunday: availObj.recurring?.sunday || defaultDay,
             },
-            exceptions: availabilityData.exceptions || []
+            exceptions: availObj.exceptions || []
           };
         }
       } catch (parseError) {
@@ -95,67 +96,8 @@ const SpaceDetail = () => {
       }
 
       // Transform the response to match expected Space interface
-      return {
-        id: workspaceData.id,
-        title: workspaceData.name, // Map name to title
-        description: workspaceData.description || "",
-        photos: workspaceData.photos || [],
-        address: workspaceData.address,
-        latitude: workspaceData.latitude || 0,
-        longitude: workspaceData.longitude || 0,
-        price_per_day: workspaceData.price_per_day,
-        price_per_hour: workspaceData.price_per_hour,
-        max_capacity: workspaceData.max_capacity,
-        capacity: workspaceData.max_capacity,
-        category: workspaceData.category,
-        workspace_features: workspaceData.features || [], // Map features to workspace_features
-        amenities: workspaceData.amenities || [],
-        seating_types: workspaceData.seating_types || [],
-        work_environment: workspaceData.work_environment || "controlled",
-        rules: workspaceData.rules,
-        host_id: workspaceData.host_id, // Keep hidden-for-security logic if needed, but here we use actual ID or masked one
-        published: workspaceData.published || false,
-        created_at: workspaceData.created_at || new Date().toISOString(),
-        updated_at: workspaceData.updated_at || new Date().toISOString(),
-        deleted_at: workspaceData.deleted_at || null,
-        is_suspended: workspaceData.is_suspended || false,
-        suspension_reason: workspaceData.suspension_reason || null,
-        suspended_at: workspaceData.suspended_at || null,
-        suspended_by: workspaceData.suspended_by || null,
-        availability: normalizedAvailability,
-        cancellation_policy: workspaceData.cancellation_policy,
-        confirmation_type: workspaceData.confirmation_type || "instant",
-        approved_at: null,
-        approved_by: null,
-        approximate_location: null,
-        cached_avg_rating: null,
-        cached_review_count: null,
-        city_name: null,
-        country_code: null,
-        event_friendly_tags: workspaceData.event_friendly_tags || [],
-        ideal_guest_tags: workspaceData.ideal_guest_tags || [],
-        pending_approval: false,
-        rejection_reason: null,
-        revision_notes: null,
-        revision_requested: false,
-        host: hostData ? {
-          id: hostData.id,
-          first_name: hostData.first_name,
-          last_name: hostData.last_name,
-          profile_photo_url: hostData.profile_photo_url,
-          bio: hostData.bio,
-          created_at: hostData.created_at
-        } : {
-          id: 'unknown',
-          first_name: 'Host',
-          last_name: '',
-          profile_photo_url: null,
-          created_at: new Date().toISOString()
-        },
-        host_total_spaces: 0, // Placeholder as we don't count here
-        host_stripe_account_id: hostData?.stripe_account_id || '',
-        host_stripe_connected: hostData?.stripe_connected || false
-      } as unknown as Space & {
+      // Note: We are using the updated Space type which extends workspaces Row
+      const spaceObj: Space & {
         host?: {
           id: string;
           first_name: string;
@@ -164,7 +106,44 @@ const SpaceDetail = () => {
           bio?: string;
           created_at: string;
         };
+        host_total_spaces: number;
+        host_stripe_account_id: string;
+        host_stripe_connected: boolean;
+      } = {
+        ...workspaceData,
+        availability: normalizedAvailability,
+        // Ensure arrays are not null
+        photos: workspaceData.photos || [],
+        amenities: workspaceData.amenities || [],
+        seating_types: workspaceData.seating_types || [],
+        features: workspaceData.features || [],
+        event_friendly_tags: workspaceData.event_friendly_tags || [],
+        ideal_guest_tags: workspaceData.ideal_guest_tags || [],
+        // Explicitly set optional fields if they are missing from workspaces
+        timezone: undefined,
+        city: workspaceData.city || undefined,
+        country_code: undefined,
+
+        host: hostData ? {
+          id: hostData.id,
+          first_name: hostData.first_name,
+          last_name: hostData.last_name,
+          profile_photo_url: hostData.profile_photo_url,
+          bio: hostData.bio || undefined,
+          created_at: hostData.created_at
+        } : {
+          id: 'unknown',
+          first_name: 'Host',
+          last_name: '',
+          profile_photo_url: null,
+          created_at: new Date().toISOString()
+        },
+        host_total_spaces: 0,
+        host_stripe_account_id: hostData?.stripe_account_id || '',
+        host_stripe_connected: hostData?.stripe_connected || false
       };
+
+      return spaceObj;
     },
     enabled: !!id
   });
@@ -192,7 +171,7 @@ const SpaceDetail = () => {
       };
     }
     
-    // Otherwise, keep city-level location from spaces_public_safe
+    // Otherwise, try to construct a display address from city
     return {
       ...space,
       hasPreciseLocation: false,

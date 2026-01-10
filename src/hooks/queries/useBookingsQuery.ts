@@ -26,9 +26,9 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
     .from("bookings")
     .select(`
       *,
-      spaces!inner (
+      space:workspaces!inner (
         id,
-        title,
+        title:name,
         address,
         photos,
         host_id,
@@ -51,9 +51,9 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       .from("bookings")
       .select(`
         *,
-        spaces!inner (
+        space:workspaces!inner (
           id,
-          title,
+          title:name,
           address,
           photos,
           host_id,
@@ -66,7 +66,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
           profile_photo_url
         )
       `)
-      .eq("spaces.host_id", userId)
+      .eq("space.host_id", userId)
       .neq("user_id", userId)
       .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
 
@@ -97,14 +97,14 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       cancellation_reason: bookingData.cancellation_reason as string,
       service_completed_at: bookingData.service_completed_at as string | null,
       space: {
-        id: bookingData.spaces?.id as string,
-        title: bookingData.spaces?.title as string,
-        address: bookingData.spaces?.address as string,
-        photos: bookingData.spaces?.photos as string[],
-        image_url: (bookingData.spaces?.photos as string[])?.[0] || '',
+        id: bookingData.space?.id as string,
+        title: bookingData.space?.title as string, // Access via alias
+        address: bookingData.space?.address as string,
+        photos: bookingData.space?.photos as string[],
+        image_url: (bookingData.space?.photos as string[])?.[0] || '',
         type: 'workspace',
-        host_id: bookingData.spaces?.host_id as string,
-        price_per_day: bookingData.spaces?.price_per_day as number
+        host_id: bookingData.space?.host_id as string,
+        price_per_day: bookingData.space?.price_per_day as number
       },
       coworker: null
     };
@@ -129,14 +129,14 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       cancellation_reason: bookingData.cancellation_reason as string,
       service_completed_at: bookingData.service_completed_at as string | null,
       space: {
-        id: bookingData.spaces?.id as string,
-        title: bookingData.spaces?.title as string,
-        address: bookingData.spaces?.address as string,
-        photos: bookingData.spaces?.photos as string[],
-        image_url: (bookingData.spaces?.photos as string[])?.[0] || '',
+        id: bookingData.space?.id as string,
+        title: bookingData.space?.title as string, // Access via alias
+        address: bookingData.space?.address as string,
+        photos: bookingData.space?.photos as string[],
+        image_url: (bookingData.space?.photos as string[])?.[0] || '',
         type: 'workspace',
-        host_id: bookingData.spaces?.host_id as string,
-        price_per_day: bookingData.spaces?.price_per_day as number
+        host_id: bookingData.space?.host_id as string,
+        price_per_day: bookingData.space?.price_per_day as number
       },
       coworker: {
         id: bookingData.profiles?.id as string,

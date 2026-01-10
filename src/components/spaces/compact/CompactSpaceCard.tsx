@@ -124,7 +124,7 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
           <div className={`relative ${config.imageWidth} flex-shrink-0`}>
             <OptimizedImage
               src={getMainPhoto()}
-              alt={space.title || 'Space'}
+              alt={space.title || space.name || 'Space'}
               aspectRatio="square"
               className="w-full h-full object-cover"
             />
@@ -140,7 +140,7 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
             {/* Top section */}
             <div className="space-y-1">
               <h3 className={`font-semibold line-clamp-1 text-foreground ${config.titleSize}`}>
-                {space.title}
+                {space.title || space.name}
               </h3>
               
               <div className="flex items-center gap-1 text-xs text-muted-foreground">

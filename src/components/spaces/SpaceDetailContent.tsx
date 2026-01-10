@@ -71,7 +71,7 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
   // Mask address if user doesn't have precise location access
   const displayAddress = space.hasPreciseLocation 
     ? space.address 
-    : `${space.city_name || 'Città'}${space.country_code ? ', ' + space.country_code : ''}`;
+    : `${space.city || space.city_name || 'Città'}${space.country_code ? ', ' + space.country_code : ''}`;
 
   const heroSpaceData = {
     id: space.id,
