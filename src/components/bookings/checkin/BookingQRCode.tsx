@@ -30,24 +30,34 @@ export const BookingQRCode = ({ bookingId, bookingDate, status, startTime, endTi
 
   if (startTime && endTime) {
     // Construct Date objects for start and end times today
-    const [startHH, startMM] = startTime.split(':').map(Number);
-    const [endHH, endMM] = endTime.split(':').map(Number);
+    const timeParts = startTime.split(':').map(Number);
+    const endParts = endTime.split(':').map(Number);
+    
+    const startHH = timeParts[0];
+    const startMM = timeParts[1];
+    const endHH = endParts[0];
+    const endMM = endParts[1];
 
-    // Create dates based on "today" (since we checked isToday above)
-    // We use device time reference frame as requested
-    const startDateTime = new Date();
-    startDateTime.setHours(startHH, startMM, 0, 0);
+    // Guard against invalid time format
+    if (startHH === undefined || startMM === undefined || endHH === undefined || endMM === undefined) {
+      console.warn('Invalid time format in booking', { startTime, endTime });
+    } else {
+      // Create dates based on "today" (since we checked isToday above)
+      // We use device time reference frame as requested
+      const startDateTime = new Date();
+      startDateTime.setHours(startHH, startMM, 0, 0);
 
-    const endDateTime = new Date();
-    endDateTime.setHours(endHH, endMM, 0, 0);
+      const endDateTime = new Date();
+      endDateTime.setHours(endHH, endMM, 0, 0);
 
-    // Check-in opens 2 hours before
-    const checkinOpenTime = addHours(startDateTime, -2);
+      // Check-in opens 2 hours before
+      const checkinOpenTime = addHours(startDateTime, -2);
 
-    if (isBefore(now, checkinOpenTime)) {
-      isTooEarly = true;
-    } else if (isAfter(now, endDateTime)) {
-      isExpired = true;
+      if (isBefore(now, checkinOpenTime)) {
+        isTooEarly = true;
+      } else if (isAfter(now, endDateTime)) {
+        isExpired = true;
+      }
     }
   }
 
