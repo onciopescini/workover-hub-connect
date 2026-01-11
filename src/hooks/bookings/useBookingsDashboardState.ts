@@ -4,6 +4,7 @@ import { useLogger } from "@/hooks/useLogger";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
 import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
 import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
+import { useApproveBooking, useRejectBooking } from '@/hooks/mutations/useBookingApproval';
 import { BookingWithDetails } from '@/types/booking';
 import { BookingsDashboardState, BookingsStats, BookingTabType } from '@/types/bookings/bookings-dashboard.types';
 import { BookingsActions } from '@/types/bookings/bookings-actions.types';
@@ -23,6 +24,7 @@ export const useBookingsDashboardState = () => {
 
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [messageBookingId, setMessageBookingId] = useState("");
   const [messageSpaceTitle, setMessageSpaceTitle] = useState("");
 
@@ -32,6 +34,8 @@ export const useBookingsDashboardState = () => {
   const activeQuery = isHost ? hostQuery : coworkerQuery;
   const { data: bookings = [], isLoading, error, refetch } = activeQuery;
   const cancelBookingMutation = useEnhancedCancelBookingMutation();
+  const approveBookingMutation = useApproveBooking();
+  const rejectBookingMutation = useRejectBooking();
 
   const filteredBookings = useMemo(() => {
     try {
@@ -245,6 +249,48 @@ export const useBookingsDashboardState = () => {
     }
   }, [selectedBooking, getUserRole, cancelBookingMutation]);
 
+  const handleApproveBooking = useCallback(async (bookingId: string) => {
+    try {
+      await approveBookingMutation.mutateAsync(bookingId);
+    } catch (error) {
+      logError('Error approving booking', error as Error, {
+        operation: 'approve_booking',
+        bookingId
+      });
+    }
+  }, [approveBookingMutation]);
+
+  const handleOpenRejectDialog = useCallback((booking: BookingWithDetails) => {
+    try {
+      if (!booking) return;
+      setSelectedBooking(booking);
+      setRejectDialogOpen(true);
+    } catch (error) {
+      logError('Error opening reject dialog', error as Error, {
+        operation: 'open_reject_dialog',
+        bookingId: booking?.id
+      });
+    }
+  }, []);
+
+  const handleRejectBooking = useCallback(async (reason: string) => {
+    if (!selectedBooking) return;
+
+    try {
+      await rejectBookingMutation.mutateAsync({
+        bookingId: selectedBooking.id,
+        reason
+      });
+      setRejectDialogOpen(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      logError('Error rejecting booking', error as Error, {
+        operation: 'reject_booking',
+        bookingId: selectedBooking?.id
+      });
+    }
+  }, [selectedBooking, rejectBookingMutation]);
+
   const handleStatusFilter = useCallback((status: string) => {
     try {
       setFilters(prev => {
@@ -315,6 +361,9 @@ export const useBookingsDashboardState = () => {
     onStatusFilter: handleStatusFilter,
     onDateRangeFilter: handleDateRangeFilter,
     onClearFilters: handleClearFilters,
+    onApproveBooking: handleApproveBooking,
+    onOpenRejectDialog: handleOpenRejectDialog,
+    onRejectBooking: handleRejectBooking,
   };
 
   return {
@@ -326,10 +375,13 @@ export const useBookingsDashboardState = () => {
     actions,
     setMessageDialogOpen,
     setCancelDialogOpen,
+    setRejectDialogOpen,
     setSearchTerm,
     isChatEnabled,
     getUserRole,
     refetch,
     cancelBookingLoading: cancelBookingMutation.isPending,
+    rejectBookingLoading: rejectBookingMutation.isPending,
+    rejectDialogOpen,
   };
 };
