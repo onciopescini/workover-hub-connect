@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 export const useApproveBooking = () => {
   const queryClient = useQueryClient();
+  // Force frontend rebuild for booking approval alignment
 
   return useMutation({
     mutationFn: async (bookingId: string) => {
