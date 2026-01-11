@@ -32,7 +32,10 @@ interface EnhancedBookingsDashboardUIProps {
   isChatEnabled: (booking: BookingWithDetails) => boolean;
   setMessageDialogOpen: (open: boolean) => void;
   setCancelDialogOpen: (open: boolean) => void;
+  setRejectDialogOpen: (open: boolean) => void;
   cancelBookingLoading: boolean;
+  rejectBookingLoading: boolean;
+  rejectDialogOpen: boolean;
   refetch: () => void;
 }
 
@@ -46,7 +49,10 @@ export function EnhancedBookingsDashboardUI({
   isChatEnabled,
   setMessageDialogOpen,
   setCancelDialogOpen,
+  setRejectDialogOpen,
   cancelBookingLoading,
+  rejectBookingLoading,
+  rejectDialogOpen,
   refetch
 }: EnhancedBookingsDashboardUIProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -157,6 +163,8 @@ export function EnhancedBookingsDashboardUI({
                       isChatEnabled={isChatEnabled(booking)}
                       onOpenMessageDialog={actions.onOpenMessageDialog}
                       onOpenCancelDialog={actions.onOpenCancelDialog}
+                      onApproveBooking={actions.onApproveBooking}
+                      onOpenRejectDialog={actions.onOpenRejectDialog}
                     />
                   ))}
                 </div>
@@ -199,9 +207,13 @@ export function EnhancedBookingsDashboardUI({
         messageSpaceTitle={dashboardState.dialogStates.messageSpaceTitle}
         cancelDialogOpen={dashboardState.dialogStates.cancelDialog}
         setCancelDialogOpen={setCancelDialogOpen}
+        rejectDialogOpen={rejectDialogOpen}
+        setRejectDialogOpen={setRejectDialogOpen}
         selectedBooking={dashboardState.selectedBooking}
         onCancelBooking={actions.onCancelBooking}
+        onRejectBooking={actions.onRejectBooking}
         cancelBookingLoading={cancelBookingLoading}
+        rejectBookingLoading={rejectBookingLoading}
       />
 
       <BookingDetailDialog

@@ -5,11 +5,12 @@ import { it } from "date-fns/locale";
 import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-utils";
 import { canCancelBooking } from "@/lib/booking-datetime-utils";
 import { BookingWithDetails } from "@/types/booking";
-import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro } from "lucide-react";
+import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
 import { MessagesButton } from "@/components/messaging/MessagesButton";
@@ -22,6 +23,8 @@ interface EnhancedBookingCardProps {
   userRole: "host" | "coworker";
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  onApproveBooking?: (bookingId: string) => Promise<void>;
+  onOpenRejectDialog?: (booking: BookingWithDetails) => void;
   isChatEnabled?: boolean;
 }
 
@@ -30,6 +33,8 @@ export const EnhancedBookingCard = ({
   userRole, 
   onOpenMessageDialog, 
   onOpenCancelDialog,
+  onApproveBooking,
+  onOpenRejectDialog,
   isChatEnabled = false
 }: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
@@ -55,9 +60,23 @@ export const EnhancedBookingCard = ({
   };
 
   const canCancelBooking = () => {
-    // Allows cancellation for confirmed and pending bookings regardless of time
-    // Pending bookings can be withdrawn, Confirmed can be cancelled (potentially with fee)
+    // Allows cancellation for confirmed bookings.
+    // Pending bookings use Reject instead of Cancel for hosts, but Coworkers might still want to cancel.
+    // However, per requirements: "Do NOT show the "Cancel" button for pending requests (Reject covers this)."
+    // This implies for the HOST view.
+    // If I am a Coworker, I should still be able to cancel my pending request?
+    // The requirement says "Host Booking interface needs functionality updates".
+    // So for userRole === 'host', we hide Cancel on pending.
+
+    if (userRole === 'host' && booking.status === 'pending') {
+      return false;
+    }
+
     return booking.status === "confirmed" || booking.status === "pending";
+  };
+
+  const canActionPending = () => {
+    return booking.status === "pending" && userRole === "host" && booking.space?.confirmation_type === 'host_approval';
   };
 
   const getBookingStatusInfo = () => {
@@ -181,14 +200,45 @@ export const EnhancedBookingCard = ({
       <CardContent className="pt-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar className="w-10 h-10">
-              <AvatarImage src={otherParty.photo || undefined} />
-              <AvatarFallback>
-                <User className="w-5 h-5" />
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative group">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={otherParty.photo || undefined} />
+                <AvatarFallback>
+                  <User className="w-5 h-5" />
+                </AvatarFallback>
+              </Avatar>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a
+                      href={`/users/${otherParty.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="bg-primary/10 text-primary rounded-full p-1">
+                        <User className="w-3 h-3" />
+                      </div>
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Visualizza profilo</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <div>
-              <p className="font-medium text-gray-900">{otherParty.name}</p>
+              <a
+                href={`/users/${otherParty.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-gray-900 hover:text-primary transition-colors flex items-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {otherParty.name}
+                <ExternalLink className="w-3 h-3 text-gray-400" />
+              </a>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-600">{otherParty.role}</p>
                 {otherParty.rating !== undefined && (
@@ -252,6 +302,49 @@ export const EnhancedBookingCard = ({
             )
           )}
           
+          {/* Pending Approval Actions - Host Only */}
+          {canActionPending() && onApproveBooking && onOpenRejectDialog && (
+            <>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex items-center bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => onApproveBooking(booking.id)}
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Accetta
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Approva la richiesta</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex items-center"
+                      onClick={() => onOpenRejectDialog(booking)}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Rifiuta
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Rifiuta la richiesta</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </>
+          )}
+
           {canCancelBooking() && (
             <Button
               variant="destructive"
