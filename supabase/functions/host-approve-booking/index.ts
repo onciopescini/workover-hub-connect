@@ -7,7 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-console.log("HOST-APPROVE-BOOKING V2 START");
+console.log("HOST-APPROVE-BOOKING V3 - FORCE UPDATE");
+
+// Verify critical environment variables immediately
+const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+if (!stripeKey) {
+  console.error("[HOST-APPROVE] CRITICAL: STRIPE_SECRET_KEY is missing in environment variables!");
+} else {
+  console.log("[HOST-APPROVE] STRIPE_SECRET_KEY is present.");
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
