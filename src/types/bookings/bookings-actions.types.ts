@@ -7,9 +7,14 @@ export interface BookingsActions {
   onStatusFilter: (status: string) => void;
   onDateRangeFilter: (range: { start: string; end: string } | undefined) => void;
   onClearFilters: () => void;
+  onApproveBooking: (bookingId: string) => Promise<void>;
+  onOpenRejectDialog: (booking: BookingWithDetails) => void;
+  onRejectBooking: (reason: string) => Promise<void>;
 }
 
 export interface BookingCardActions {
   onMessage: () => void;
   onCancel: () => void;
+  onApprove: () => void;
+  onReject: () => void;
 }
