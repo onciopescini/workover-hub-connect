@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@15.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +18,6 @@ serve(async (req) => {
     // 1. AUTHENTICATION CHECK
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("[HOST-APPROVE] Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Unauthorized: Missing authorization" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
@@ -35,14 +35,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     if (authError || !user) {
-      console.error("[HOST-APPROVE] Invalid token:", authError);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Invalid token" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
       );
     }
-
-    console.log(`[HOST-APPROVE] Authenticated user: ${user.id}`);
 
     const { booking_id } = await req.json();
 
@@ -53,15 +50,14 @@ serve(async (req) => {
       );
     }
 
-    // 2. FETCH BOOKING WITH SPACE DETAILS
+    // 2. FETCH BOOKING
     const { data: booking, error: fetchError } = await supabaseAdmin
       .from("bookings")
-      .select("id, user_id, status, booking_date, start_time, end_time, space_id, request_invoice, spaces(title, host_id)")
+      .select("id, user_id, status, stripe_payment_intent_id, booking_date, start_time, end_time, space_id, request_invoice, spaces(title, host_id)")
       .eq("id", booking_id)
       .single();
 
     if (fetchError || !booking) {
-      console.error("[HOST-APPROVE] Booking not found:", fetchError);
       return new Response(
         JSON.stringify({ error: "Booking not found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
@@ -70,7 +66,6 @@ serve(async (req) => {
 
     // 3. VALIDATE HOST OWNERSHIP
     if (booking.spaces.host_id !== user.id) {
-      console.error(`[HOST-APPROVE] Unauthorized: user ${user.id} is not host of space ${booking.space_id}`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: You are not the host of this space" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
@@ -78,99 +73,88 @@ serve(async (req) => {
     }
 
     if (booking.status !== "pending_approval") {
-      console.error("[HOST-APPROVE] Booking is not in pending_approval status:", booking.status);
       return new Response(
         JSON.stringify({ error: "Booking is not in pending_approval status" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // 4. CHECK SLOT AVAILABILITY
-    const { data: conflictCheck, error: conflictError } = await supabaseAdmin.rpc(
-      "check_slot_conflicts",
-      {
-        space_id_param: booking.space_id,
-        date_param: booking.booking_date,
-        start_time_param: booking.start_time,
-        end_time_param: booking.end_time,
-        exclude_booking_id: booking.id
-      }
-    );
+    // 4. STRIPE CAPTURE (If applicable)
+    let captureId = null;
+    if (booking.stripe_payment_intent_id) {
+        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+            apiVersion: '2023-10-16',
+        });
 
-    if (conflictError) {
-      console.error("[HOST-APPROVE] Error checking conflicts:", conflictError);
-      return new Response(
-        JSON.stringify({ error: "Failed to verify slot availability" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
+        console.log(`[HOST-APPROVE] Checking Payment Intent: ${booking.stripe_payment_intent_id}`);
+        const pi = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+
+        if (pi.status === 'requires_capture') {
+            console.log(`[HOST-APPROVE] Capturing funds for PI: ${pi.id}`);
+            try {
+                const capturedPi = await stripe.paymentIntents.capture(pi.id);
+                if (capturedPi.status === 'succeeded') {
+                    captureId = capturedPi.id;
+                    console.log(`[HOST-APPROVE] Capture successful.`);
+                } else {
+                    throw new Error(`Capture failed with status: ${capturedPi.status}`);
+                }
+            } catch (stripeError) {
+                console.error(`[HOST-APPROVE] Stripe Capture Error:`, stripeError);
+                return new Response(
+                    JSON.stringify({ error: "Payment Capture Failed. The authorized funds could not be captured. Please contact support or the guest." }),
+                    { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 402 }
+                );
+            }
+        } else if (pi.status === 'succeeded') {
+             console.log(`[HOST-APPROVE] Payment already captured.`);
+        } else {
+             console.warn(`[HOST-APPROVE] Payment Intent status unexpected: ${pi.status}`);
+             // We allow proceeding if it's already processed, but warn.
+        }
+    } else {
+        console.warn(`[HOST-APPROVE] No Payment Intent ID found on booking. Proceeding with database update only.`);
     }
 
-    if (conflictCheck?.has_conflict) {
-      console.error("[HOST-APPROVE] Slot conflict detected:", conflictCheck);
-      return new Response(
-        JSON.stringify({ 
-          error: "Slot is no longer available due to conflicts",
-          details: conflictCheck
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
-      );
-    }
-
-    // 5. CALCULATE DYNAMIC PAYMENT DEADLINE
-    // Italian requirements: 72h if invoice requested, otherwise 2h
-    const now = new Date();
-    const invoiceRequired = booking.request_invoice || false;
-    const deadlineHours = invoiceRequired ? 72 : 2;
-    const payment_deadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000).toISOString();
-    
-    console.log(`[HOST-APPROVE] Payment deadline: ${payment_deadline} (invoice required: ${invoiceRequired})`);
-
-    // Aggiorna booking a pending_payment
+    // 5. UPDATE BOOKING STATUS
     const { error: updateError } = await supabaseAdmin
       .from("bookings")
       .update({
-        status: "pending_payment",
-        payment_deadline,
-        updated_at: now.toISOString(),
+        status: "confirmed",
+        updated_at: new Date().toISOString(),
       })
       .eq("id", booking_id);
 
     if (updateError) {
-      console.error("[HOST-APPROVE] Error updating booking:", updateError);
       return new Response(
-        JSON.stringify({ error: "Failed to update booking" }),
+        JSON.stringify({ error: "Failed to update booking status" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }
 
     // 6. SEND NOTIFICATION TO COWORKER
-    const deadlineHoursText = invoiceRequired ? "72 ore" : "2 ore";
     await supabaseAdmin.from("user_notifications").insert({
       user_id: booking.user_id,
       type: "booking",
-      title: "Prenotazione Approvata",
-      content: `🎉 La tua prenotazione per "${booking.spaces.title}" è stata approvata! Completa il pagamento entro ${deadlineHoursText}.`,
+      title: "Prenotazione Confermata!",
+      content: `🎉 La tua prenotazione per "${booking.spaces.title}" è stata confermata dall'host.`,
       metadata: {
         booking_id: booking.id,
         space_title: booking.spaces.title,
-        deadline: payment_deadline,
-        payment_url: `/bookings?pay=${booking.id}`,
-        action_required: "payment",
-        urgent: !invoiceRequired, // urgent only for 2h deadline
-        invoice_required: invoiceRequired,
+        action_required: "none",
+        urgent: false,
       },
     });
 
-    console.log(`[HOST-APPROVE] Booking ${booking_id} approved and notification sent`);
-
     return new Response(
-      JSON.stringify({ success: true, booking_id, payment_deadline }),
+      JSON.stringify({ success: true, booking_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
     console.error("[HOST-APPROVE] Error:", error);
+    const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: msg }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
