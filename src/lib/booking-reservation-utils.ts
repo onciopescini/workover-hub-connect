@@ -381,17 +381,18 @@ export const reserveMultipleSlots = async (
 export const getSpacesWithConnectedHosts = async () => {
   try {
     const { data, error } = await supabase
-      .from('spaces')
+      .from('workspaces')
       .select(`
         *,
-        profiles!spaces_host_id_fkey (
+        title:name,
+        profiles!workspaces_owner_id_fkey (
           stripe_connected,
           first_name,
           last_name
         )
       `)
       .eq('published', true)
-      .eq('is_suspended', false)
+      // .eq('is_suspended', false) // is_suspended not in workspaces, rely on published
       .eq('profiles.stripe_connected', true);
 
     if (error) {

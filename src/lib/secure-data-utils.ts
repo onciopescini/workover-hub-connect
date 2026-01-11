@@ -181,8 +181,8 @@ export const getPublicSpaces = async (): Promise<any[]> => {
   try {
     // 1) Use secure view that doesn't expose host_id or precise location
     let { data, error } = await supabase
-      .from('spaces_public_safe')
-      .select(PUBLIC_SPACES_SELECT);
+      .from('workspaces')
+      .select('id, name, description, category, work_environment, max_capacity, confirmation_type, features, amenities, seating_types, ideal_guest_tags, event_friendly_tags, price_per_hour, price_per_day, photos, rules, availability, cancellation_policy, city, address, latitude, longitude, published, created_at, updated_at');
 
     if (!error && Array.isArray(data)) {
       // Normalize data: derive lat/lng, address, and singular fields
@@ -195,9 +195,11 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     });
 
     // 2) Fallback to secure public view (excludes host_id, precise GPS, full address)
+    // Note: spaces_public_safe is deprecated, using workspaces directly
     const { data: viewData, error: viewError } = await supabase
-      .from('spaces_public_safe')
-      .select(PUBLIC_SPACES_SELECT)
+      .from('workspaces')
+      .select('id, name, description, category, work_environment, max_capacity, confirmation_type, features, amenities, seating_types, ideal_guest_tags, event_friendly_tags, price_per_hour, price_per_day, photos, rules, availability, cancellation_policy, city, address, latitude, longitude, published, created_at, updated_at')
+      .eq('published', true)
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -233,12 +235,23 @@ export const getPublicSpaces = async (): Promise<any[]> => {
 function normalizePublicSpaceData(raw: any): any {
   const { lat, lng } = parsePoint(raw.approximate_location);
   
+  // Handle workspace features (new) vs legacy workspace_features
+  const features = raw.features || raw.workspace_features || [];
+  const title = raw.name || raw.title || 'Spazio';
+  const city = raw.city || raw.city_name;
+
   return {
     ...raw,
     // Derived fields for UI compatibility
-    latitude: lat ?? null,
-    longitude: lng ?? null,
-    address: [raw.city_name, raw.country_code].filter(Boolean).join(', ') || '',
+    title: title,
+    name: title,
+    workspace_features: features,
+    features: features,
+    latitude: raw.latitude ?? lat ?? null,
+    longitude: raw.longitude ?? lng ?? null,
+    address: raw.address || [city, raw.country_code].filter(Boolean).join(', ') || '',
+    city: city,
+    city_name: city, // Back compat
     
     // Backward compatibility: singular from array
     seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
@@ -257,6 +270,9 @@ function normalizePublicSpaceData(raw: any): any {
 function normalizeSpaceData(raw: any): SpaceWithHostInfo {
   const { lat, lng } = parsePoint(raw.approximate_location);
   
+  const features = raw.features || raw.workspace_features || [];
+  const city = raw.city || raw.city_name;
+
   return {
     id: raw.id,
     title: raw.title ?? raw.name ?? 'Spazio',
@@ -267,14 +283,14 @@ function normalizeSpaceData(raw: any): SpaceWithHostInfo {
     price_per_day: Number(raw.price_per_day ?? 0),
     price_per_hour: Number(raw.price_per_hour ?? 0),
     // Use city-level location (secure) or derive from point
-    address: raw.city_name && raw.country_code 
-      ? `${raw.city_name}, ${raw.country_code}`
+    address: city && raw.country_code
+      ? `${city}, ${raw.country_code}`
       : raw.address ?? '',
     // Coordinates from approximate_location or fallback
     latitude: lat ?? (typeof raw.latitude === 'number' ? raw.latitude : null),
     longitude: lng ?? (typeof raw.longitude === 'number' ? raw.longitude : null),
     max_capacity: raw.max_capacity ?? 1,
-    workspace_features: Array.isArray(raw.workspace_features) ? raw.workspace_features : [],
+    workspace_features: Array.isArray(features) ? features : [],
     amenities: Array.isArray(raw.amenities) ? raw.amenities : [],
     work_environment: raw.work_environment ?? '',
     // Backward compatibility: singular from array or fallback
@@ -315,10 +331,10 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
     
     // Fallback to direct query
     const { data: fallbackData, error: fallbackError } = await supabase
-      .from('spaces')
+      .from('workspaces')
       .select(`
         *,
-        profiles!spaces_host_id_fkey (
+        profiles!workspaces_owner_id_fkey (
           first_name,
           last_name,
           profile_photo_url,

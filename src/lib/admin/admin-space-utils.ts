@@ -8,12 +8,12 @@ import { sreLogger } from '@/lib/sre-logger';
 export const getAllSpaces = async (): Promise<AdminSpace[]> => {
   try {
     const { data, error } = await supabase
-      .from("spaces")
-      .select("*")
+      .from("workspaces")
+      .select("*, title:name, workspace_features:features")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as AdminSpace[];
+    return data as unknown as AdminSpace[];
   } catch (error) {
     sreLogger.error('Error fetching spaces', {}, error as Error);
     throw error;

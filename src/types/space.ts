@@ -3,14 +3,26 @@ import { Database } from "@/integrations/supabase/types";
 
 // Exteding the auto-generated Space type to include optional fields that might be missing or added via views/migrations
 // This helps avoid 'as any' casting for known fields like timezone
-export type Space = Database["public"]["Tables"]["spaces"]["Row"] & {
+export type Space = Database["public"]["Tables"]["workspaces"]["Row"] & {
   timezone?: string;
   city?: string;
   country_code?: string;
+  is_suspended?: boolean;
+  suspension_reason?: string | null;
+  suspended_at?: string | null;
+  suspended_by?: string | null;
+  deleted_at?: string | null;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  pending_approval?: boolean | null;
+  rejection_reason?: string | null;
+  revision_notes?: string | null;
+  revision_requested?: boolean | null;
+  approximate_location?: unknown;
 };
 
-export type SpaceInsert = Database["public"]["Tables"]["spaces"]["Insert"];
-export type SpaceUpdate = Database["public"]["Tables"]["spaces"]["Update"];
+export type SpaceInsert = Database["public"]["Tables"]["workspaces"]["Insert"];
+export type SpaceUpdate = Database["public"]["Tables"]["workspaces"]["Update"];
 
 export const WORKSPACE_FEATURES_OPTIONS = [
   "Dedicated desk",
