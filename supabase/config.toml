@@ -45,6 +45,9 @@ verify_jwt = true
 [functions.cancel-booking]
 verify_jwt = true
 
+[functions.host-approve-booking]
+verify_jwt = true
+
 [functions.validate-payment]
 verify_jwt = true
 

@@ -50,22 +50,40 @@ serve(async (req) => {
       );
     }
 
-    // 2. FETCH BOOKING
+    // 2. FETCH BOOKING AND WORKSPACE SEQUENTIALLY
+    // Fetch Booking
     const { data: booking, error: fetchError } = await supabaseAdmin
       .from("bookings")
-      .select("id, user_id, status, stripe_payment_intent_id, booking_date, start_time, end_time, space_id, request_invoice, spaces(title, host_id)")
+      .select("id, user_id, status, stripe_payment_intent_id, booking_date, start_time, end_time, space_id, request_invoice")
       .eq("id", booking_id)
       .single();
 
     if (fetchError || !booking) {
+      console.error("[HOST-APPROVE] Booking fetch error:", fetchError);
       return new Response(
         JSON.stringify({ error: "Booking not found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
       );
     }
 
+    // Fetch Workspace (using "workspaces" table and aliasing name as title)
+    // Note: Cast as any to avoid type errors with dynamic aliasing in Deno
+    const { data: workspace, error: workspaceError } = await supabaseAdmin
+      .from("workspaces")
+      .select("host_id, title:name")
+      .eq("id", booking.space_id)
+      .single();
+
+    if (workspaceError || !workspace) {
+      console.error("[HOST-APPROVE] Workspace fetch error:", workspaceError);
+      return new Response(
+        JSON.stringify({ error: "Workspace not found for this booking" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+      );
+    }
+
     // 3. VALIDATE HOST OWNERSHIP
-    if (booking.spaces.host_id !== user.id) {
+    if (workspace.host_id !== user.id) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: You are not the host of this space" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
@@ -126,6 +144,7 @@ serve(async (req) => {
       .eq("id", booking_id);
 
     if (updateError) {
+      console.error("[HOST-APPROVE] Booking update error:", updateError);
       return new Response(
         JSON.stringify({ error: "Failed to update booking status" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
@@ -133,14 +152,17 @@ serve(async (req) => {
     }
 
     // 6. SEND NOTIFICATION TO COWORKER
+    // Cast workspace to access title safely
+    const workspaceData = workspace as any;
+
     await supabaseAdmin.from("user_notifications").insert({
       user_id: booking.user_id,
       type: "booking",
       title: "Prenotazione Confermata!",
-      content: `🎉 La tua prenotazione per "${booking.spaces.title}" è stata confermata dall'host.`,
+      content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
       metadata: {
         booking_id: booking.id,
-        space_title: booking.spaces.title,
+        space_title: workspaceData.title,
         action_required: "none",
         urgent: false,
       },
