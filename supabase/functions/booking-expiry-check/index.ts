@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@15.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,12 +21,16 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+        apiVersion: '2023-10-16',
+    });
+
     const now = new Date().toISOString();
 
     // 1. Cancella prenotazioni pending_approval scadute
     const { data: expiredApprovals, error: approvalError } = await supabaseAdmin
       .from("bookings")
-      .select("id, space_id, user_id, booking_date, spaces(title, host_id)")
+      .select("id, space_id, user_id, booking_date, stripe_payment_intent_id, spaces(title, host_id)")
       .eq("status", "pending_approval")
       .lte("approval_deadline", now);
 
@@ -35,6 +40,20 @@ serve(async (req) => {
       console.log(`[BOOKING-EXPIRY] Found ${expiredApprovals.length} expired approval requests`);
 
       for (const booking of expiredApprovals) {
+
+        // RELEASE STRIPE AUTH IF EXISTS
+        if (booking.stripe_payment_intent_id) {
+             try {
+                const pi = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+                if (pi.status === 'requires_capture') {
+                    console.log(`[BOOKING-EXPIRY] Releasing Auth for booking ${booking.id} (PI: ${pi.id})`);
+                    await stripe.paymentIntents.cancel(pi.id);
+                }
+             } catch (stripeError) {
+                 console.error(`[BOOKING-EXPIRY] Failed to release auth for booking ${booking.id}:`, stripeError);
+             }
+        }
+
         // Cancella la prenotazione
         await supabaseAdmin
           .from("bookings")

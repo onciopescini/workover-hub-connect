@@ -76,11 +76,11 @@ export const EnhancedBookingCard = ({
   };
 
   const canActionPending = () => {
-    return booking.status === "pending" && userRole === "host" && booking.space?.confirmation_type === 'host_approval';
+    return (booking.status === "pending_approval" || booking.status === "pending") && userRole === "host";
   };
 
   const getBookingStatusInfo = () => {
-    if (booking.status === 'pending') {
+    if (booking.status === 'pending' || booking.status === 'pending_approval') {
       if (booking.space?.confirmation_type === 'instant') {
         return {
           icon: <Euro className="w-4 h-4" />,
@@ -112,7 +112,7 @@ export const EnhancedBookingCard = ({
       payment => payment.payment_status === 'completed' || payment.payment_status === 'paid'
     );
     
-    if (booking.status === 'pending') {
+    if (booking.status === 'pending' || booking.status === 'pending_approval') {
       if (booking.space?.confirmation_type === 'instant') {
         // Enable chat for instant bookings if payment is completed
         if (hasCompletedPayment) {

@@ -133,7 +133,8 @@ export class EnhancedCheckoutHandlers {
 
     // CRITICAL: Conferma solo se lo stato attuale permette il pagamento
     const currentStatus = booking.status;
-    if (currentStatus !== 'pending_payment' && currentStatus !== 'pending') {
+    // Allow 'pending_approval' for requests that just authorized payment
+    if (currentStatus !== 'pending_payment' && currentStatus !== 'pending' && currentStatus !== 'pending_approval') {
       ErrorHandler.logWarning('Booking status does not allow payment confirmation', {
         bookingId,
         currentStatus
@@ -143,7 +144,8 @@ export class EnhancedCheckoutHandlers {
 
     // Determine new booking status
     const confirmationType = booking.workspaces.confirmation_type;
-    const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending';
+    // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
+    const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
     
     // Update booking status and save payment intent ID
     const { error: updateBookingError } = await supabaseAdmin

@@ -249,6 +249,7 @@ serve(async (req) => {
       application_fee_amount: finalApplicationFeeCents,
       transfer_data: transferDataConfig, // Inject the clean object
       metadata: invoiceMetadata,
+      capture_method: space.confirmation_type === 'host_approval' ? 'manual' : 'automatic',
     };
 
     const sessionData = {

@@ -7,24 +7,24 @@ export const useApproveBooking = () => {
 
   return useMutation({
     mutationFn: async (bookingId: string) => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .update({ status: 'confirmed' })
-        .eq('id', bookingId)
-        .select()
-        .single();
+      // Use Edge Function to handle Stripe Capture + DB Update Atomically
+      const { data, error } = await supabase.functions.invoke('host-approve-booking', {
+        body: { booking_id: bookingId }
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
       return data;
     },
     onSuccess: () => {
-      toast.success('Prenotazione approvata con successo');
+      toast.success('Prenotazione approvata e pagamento confermato');
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['host-activities'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error approving booking:', error);
-      toast.error('Errore durante l\'approvazione della prenotazione');
+      toast.error(error.message || 'Errore durante l\'approvazione della prenotazione');
     },
   });
 };
@@ -34,29 +34,27 @@ export const useRejectBooking = () => {
 
   return useMutation({
     mutationFn: async ({ bookingId, reason }: { bookingId: string; reason: string }) => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .update({
-          status: 'cancelled',
-          cancellation_reason: reason,
-          cancelled_by_host: true,
-          cancelled_at: new Date().toISOString()
-        })
-        .eq('id', bookingId)
-        .select()
-        .single();
+      // Use Edge Function to handle Stripe Release + DB Update Atomically
+      const { data, error } = await supabase.functions.invoke('cancel-booking', {
+        body: {
+          booking_id: bookingId,
+          reason: reason || "Rifiutata dall'host"
+        }
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
       return data;
     },
     onSuccess: () => {
-      toast.success('Prenotazione rifiutata');
+      toast.success('Prenotazione rifiutata e autorizzazione rilasciata');
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['host-activities'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error rejecting booking:', error);
-      toast.error('Errore durante il rifiuto della prenotazione');
+      toast.error(error.message || 'Errore durante il rifiuto della prenotazione');
     },
   });
 };

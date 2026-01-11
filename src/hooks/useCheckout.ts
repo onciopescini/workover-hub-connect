@@ -130,38 +130,35 @@ export function useCheckout() {
 
       const bookingId = bookingData.id;
 
-      // 4. Payment (ONLY if insert is successful)
-      if (isInstant) {
-        if (!hostStripeAccountId) {
-           throw new Error('Host Stripe account ID is missing for instant booking');
-        }
-
-        const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-          API_ENDPOINTS.CREATE_CHECKOUT,
-          {
-            body: {
-              booking_id: bookingId,
-              origin: window.location.origin
-            }
-          }
-        );
-
-        if (fnError) {
-           console.error('DEBUG: Payment Function Error', fnError);
-           throw new Error(`Payment initialization failed: ${fnError.message}`);
-        }
-
-        if (!sessionData?.url) {
-           console.error('DEBUG: No payment URL', sessionData);
-           throw new Error('Payment session created but no URL returned');
-        }
-
-        window.location.href = sessionData.url;
-        return { success: true, bookingId }; // Browser redirects
+      // 4. Payment (Now required for BOTH Instant and Request types)
+      // Instant -> Capture Automatic
+      // Request -> Capture Manual (Auth Only)
+      if (!hostStripeAccountId) {
+          throw new Error('Host Stripe account ID is missing');
       }
 
-      // Non-instant (Request)
-      return { success: true, bookingId };
+      const { data: sessionData, error: fnError } = await supabase.functions.invoke(
+        API_ENDPOINTS.CREATE_CHECKOUT,
+        {
+          body: {
+            booking_id: bookingId,
+            origin: window.location.origin
+          }
+        }
+      );
+
+      if (fnError) {
+          console.error('DEBUG: Payment Function Error', fnError);
+          throw new Error(`Payment initialization failed: ${fnError.message}`);
+      }
+
+      if (!sessionData?.url) {
+          console.error('DEBUG: No payment URL', sessionData);
+          throw new Error('Payment session created but no URL returned');
+      }
+
+      window.location.href = sessionData.url;
+      return { success: true, bookingId }; // Browser redirects
 
     } catch (err: any) {
       console.error('DEBUG: Checkout Flow Failed', err);
