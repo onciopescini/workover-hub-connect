@@ -4,15 +4,20 @@ import Stripe from "https://esm.sh/stripe@15.0.0";
 import { corsHeaders } from "../_shared/cors.ts";
 import { calculateRefund } from "../_shared/policy-calculator.ts";
 
-console.log("CANCEL BOOKING - FORCE UPDATE V4 (STRIPE FIX)");
+console.log("CANCEL BOOKING - FORCE UPDATE V5 (WILDCARD & AUTH RELEASE)");
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // 1. WILDCARD ROUTING: Handle OPTIONS and POST regardless of path suffix
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY is missing");
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -39,11 +44,21 @@ serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
 
-    const { booking_id, reason } = await req.json();
+    let body;
+    try {
+        body = await req.json();
+    } catch {
+        return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+        });
+    }
+
+    const { booking_id, reason } = body;
 
     if (!booking_id) {
       throw new Error("Missing booking_id");
@@ -51,7 +66,7 @@ serve(async (req) => {
 
     console.log(`[cancel-booking] Processing cancellation for booking: ${booking_id}, user: ${user.id}`);
 
-    // 1. Fetch Booking
+    // 2. FETCH DATA
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
@@ -74,7 +89,7 @@ serve(async (req) => {
     }
 
     // Determine host_id from workspace
-    // FIX: Use 'workspaces' table and alias 'name' as 'title'
+    // Alias 'name' to 'title' for compatibility
     const { data: workspace, error: workspaceError } = await supabaseClient
       .from('workspaces')
       .select('host_id, title:name')
@@ -96,7 +111,7 @@ serve(async (req) => {
       .eq('id', workspace?.host_id)
       .single();
 
-    // Security Check
+    // 3. SECURITY CHECK
     const isGuest = booking.user_id === user.id;
     const isHost = workspace?.host_id === user.id;
 
@@ -111,12 +126,11 @@ serve(async (req) => {
     const cancellationPolicy = booking.cancellation_policy || 'moderate';
 
     // -------------------------------------------------------------------------
-    // STRIPE LOGIC: AUTH vs CAPTURE
+    // 4. STRIPE LOGIC: AUTH vs CAPTURE
     // -------------------------------------------------------------------------
 
     // Find Payment Intent ID
     // Priority: 1. Completed Payment (for refunds) 2. Booking Record (for auth release)
-    // Note: If payment is not 'completed' yet (e.g. auth only), it might not be in payments table with 'completed' status.
     const payment = booking.payments?.find((p: any) => p.payment_status === 'completed');
     const paymentIntentId = payment?.stripe_payment_intent_id || booking.stripe_payment_intent_id;
 
@@ -143,11 +157,10 @@ serve(async (req) => {
                         actionTaken = 'auth_released';
                     } else {
                         console.error(`[cancel-booking] Authorization cancellation returned status: ${canceledPi.status}`);
-                        // We continue to allow DB cancellation, but log error.
                     }
                 } catch (cancelError) {
                      console.error(`[cancel-booking] FAILED to cancel authorization:`, cancelError);
-                     // Logic: "log the error if Stripe fails but still allow cancellation to prevent DB lockup"
+                     // Allow DB cancellation to proceed to unlock the calendar
                 }
 
             } else if (pi.status === 'succeeded') {
@@ -181,7 +194,7 @@ serve(async (req) => {
 
                 if (!transferId && hostProfile?.stripe_account_id) {
                      console.log("[cancel-booking] Transfer ID missing on charge, attempting lookup...");
-                     // Fallback could go here, but omitted for brevity as usually charge has it
+                     // Fallback could go here
                 }
 
                 if (transferId) {
@@ -209,7 +222,6 @@ serve(async (req) => {
                             console.log(`[cancel-booking] Transfer reversed.`);
                         } catch (revError) {
                             console.error(`[cancel-booking] Transfer reversal failed:`, revError);
-                            // Proceed to refund guest anyway? Yes, safer for platform liability (we pay guest).
                         }
                     }
 
@@ -228,8 +240,7 @@ serve(async (req) => {
                         }
                     }
                 } else {
-                    console.warn(`[cancel-booking] No transfer ID found to reverse. Refund might fail if funds insufficient.`);
-                    // Attempt refund without reversal?
+                    console.warn(`[cancel-booking] No transfer ID found. Attempting simple refund.`);
                      try {
                         const refund = await stripe.refunds.create({
                             payment_intent: paymentIntentId,
@@ -239,18 +250,18 @@ serve(async (req) => {
                     } catch (e) { console.error('Refund no-transfer failed', e); }
                 }
             } else {
-                console.warn(`[cancel-booking] PI status '${pi.status}' is not handled (neither requires_capture nor succeeded).`);
+                console.warn(`[cancel-booking] PI status '${pi.status}' unhandled.`);
             }
         } catch (stripeError) {
-             console.error(`[cancel-booking] Critical Stripe Error (Retrieval/General):`, stripeError);
-             // We allow DB cancellation to proceed.
+             console.error(`[cancel-booking] Critical Stripe Error:`, stripeError);
+             // Allow DB cancellation to proceed
         }
     } else {
         console.warn(`[cancel-booking] No Payment Intent ID found. Skipping Stripe logic.`);
     }
 
     // -------------------------------------------------------------------------
-    // DB UPDATE (Always happens if we reached here, even if Stripe failed)
+    // 5. DB UPDATE (Always happens if we reached here)
     // -------------------------------------------------------------------------
     const { error: updateError } = await supabaseClient
       .from('bookings')
@@ -272,10 +283,6 @@ serve(async (req) => {
     } else if (actionTaken === 'auth_released' && payment) {
          await supabaseClient.from('payments').update({ payment_status: 'cancelled' }).eq('id', payment.id);
     }
-
-    // Email Notifications (Simplified)
-    // Use the alias 'title' for workspace name
-    // ... email sending logic would go here ...
 
     return new Response(JSON.stringify({
       success: true,
