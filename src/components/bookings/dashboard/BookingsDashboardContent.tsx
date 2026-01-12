@@ -6,6 +6,7 @@ import { Calendar, AlertTriangle } from 'lucide-react';
 import { EnhancedBookingCard } from '../EnhancedBookingCard';
 import { MessageDialog } from '../../messaging/MessageDialog';
 import { CancelBookingDialog } from '../CancelBookingDialog';
+import { RejectBookingDialog } from '../RejectBookingDialog';
 import { BookingWithDetails } from '@/types/booking';
 
 interface BookingsDashboardContentProps {
@@ -25,6 +26,14 @@ interface BookingsDashboardContentProps {
   selectedBooking: BookingWithDetails | null;
   onCancelBooking: (reason?: string) => Promise<void>;
   cancelBookingLoading: boolean;
+
+  // New props for Host Approval Workflow
+  onApproveBooking: (bookingId: string) => Promise<void>;
+  onOpenRejectDialog: (booking: BookingWithDetails) => void;
+  rejectDialogOpen: boolean;
+  setRejectDialogOpen: (open: boolean) => void;
+  onRejectBooking: (reason: string) => Promise<void>;
+  rejectBookingLoading: boolean;
 }
 
 export const BookingsDashboardContent = ({
@@ -43,7 +52,13 @@ export const BookingsDashboardContent = ({
   setCancelDialogOpen,
   selectedBooking,
   onCancelBooking,
-  cancelBookingLoading
+  cancelBookingLoading,
+  onApproveBooking,
+  onOpenRejectDialog,
+  rejectDialogOpen,
+  setRejectDialogOpen,
+  onRejectBooking,
+  rejectBookingLoading
 }: BookingsDashboardContentProps) => {
   if (isLoading) {
     return (
@@ -98,6 +113,8 @@ export const BookingsDashboardContent = ({
             onOpenMessageDialog={onOpenMessageDialog}
             onOpenCancelDialog={onOpenCancelDialog}
             isChatEnabled={isChatEnabled(booking)}
+            onApproveBooking={onApproveBooking}
+            onOpenRejectDialog={onOpenRejectDialog}
           />
         ))}
       </div>
@@ -117,6 +134,16 @@ export const BookingsDashboardContent = ({
           booking={selectedBooking}
           onConfirm={onCancelBooking}
           isLoading={cancelBookingLoading}
+        />
+      )}
+
+      {selectedBooking && (
+        <RejectBookingDialog
+          open={rejectDialogOpen}
+          onOpenChange={setRejectDialogOpen}
+          booking={selectedBooking}
+          onConfirm={onRejectBooking}
+          isLoading={rejectBookingLoading}
         />
       )}
     </>
