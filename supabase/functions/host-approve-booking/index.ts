@@ -7,25 +7,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-console.log("HOST-APPROVE-BOOKING V3 - FORCE UPDATE");
-
-// Verify critical environment variables immediately
-const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-if (!stripeKey) {
-  console.error("[HOST-APPROVE] CRITICAL: STRIPE_SECRET_KEY is missing in environment variables!");
-} else {
-  console.log("[HOST-APPROVE] STRIPE_SECRET_KEY is present.");
-}
+console.log("HOST-APPROVE-BOOKING V4 - ATOMIC & WILDCARD FIX");
 
 serve(async (req) => {
+  // 1. WILDCARD ROUTING: Handle OPTIONS and POST regardless of path
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("[HOST-APPROVE] Starting host approval process");
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY is missing");
+    }
 
-    // 1. AUTHENTICATION CHECK
+    // 2. AUTHENTICATION
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -40,7 +36,6 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Verify JWT token
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
@@ -51,7 +46,18 @@ serve(async (req) => {
       );
     }
 
-    const { booking_id } = await req.json();
+    // 3. INPUT VALIDATION
+    // Robust body parsing
+    let booking_id;
+    try {
+      const body = await req.json();
+      booking_id = body.booking_id;
+    } catch {
+       return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
 
     if (!booking_id) {
       return new Response(
@@ -60,8 +66,9 @@ serve(async (req) => {
       );
     }
 
-    // 2. FETCH BOOKING AND WORKSPACE SEQUENTIALLY
-    // Fetch Booking
+    console.log(`[HOST-APPROVE] Processing booking: ${booking_id}`);
+
+    // 4. DATA FETCHING
     const { data: booking, error: fetchError } = await supabaseAdmin
       .from("bookings")
       .select("id, user_id, status, stripe_payment_intent_id, booking_date, start_time, end_time, space_id, request_invoice")
@@ -69,15 +76,12 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !booking) {
-      console.error("[HOST-APPROVE] Booking fetch error:", fetchError);
       return new Response(
         JSON.stringify({ error: "Booking not found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
       );
     }
 
-    // Fetch Workspace (using "workspaces" table and aliasing name as title)
-    // Note: Cast as any to avoid type errors with dynamic aliasing in Deno
     const { data: workspace, error: workspaceError } = await supabaseAdmin
       .from("workspaces")
       .select("host_id, title:name")
@@ -85,105 +89,115 @@ serve(async (req) => {
       .single();
 
     if (workspaceError || !workspace) {
-      console.error("[HOST-APPROVE] Workspace fetch error:", workspaceError);
       return new Response(
-        JSON.stringify({ error: "Workspace not found for this booking" }),
+        JSON.stringify({ error: "Workspace not found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
       );
     }
 
-    // 3. VALIDATE HOST OWNERSHIP
+    // 5. SECURITY CHECKS
     if (workspace.host_id !== user.id) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: You are not the host of this space" }),
+        JSON.stringify({ error: "Unauthorized: Not the host" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
       );
     }
 
     if (booking.status !== "pending_approval") {
       return new Response(
-        JSON.stringify({ error: "Booking is not in pending_approval status" }),
+        JSON.stringify({ error: "Booking is not pending_approval" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // 4. STRIPE CAPTURE (If applicable)
-    let captureId = null;
-    if (booking.stripe_payment_intent_id) {
-        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-            apiVersion: '2023-10-16',
-        });
+    // 6. ATOMIC TRANSACTION (Capture -> DB Update -> Compensating Refund)
+    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
+    let capturePerformed = false;
+    const paymentIntentId = booking.stripe_payment_intent_id;
 
-        console.log(`[HOST-APPROVE] Checking Payment Intent: ${booking.stripe_payment_intent_id}`);
-        const pi = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+    try {
+      // Step A: Capture Payment (if exists)
+      if (paymentIntentId) {
+        console.log(`[HOST-APPROVE] Checking PI: ${paymentIntentId}`);
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
 
         if (pi.status === 'requires_capture') {
-            console.log(`[HOST-APPROVE] Capturing funds for PI: ${pi.id}`);
-            try {
-                const capturedPi = await stripe.paymentIntents.capture(pi.id);
-                if (capturedPi.status === 'succeeded') {
-                    captureId = capturedPi.id;
-                    console.log(`[HOST-APPROVE] Capture successful.`);
-                } else {
-                    throw new Error(`Capture failed with status: ${capturedPi.status}`);
-                }
-            } catch (stripeError) {
-                console.error(`[HOST-APPROVE] Stripe Capture Error:`, stripeError);
-                return new Response(
-                    JSON.stringify({ error: "Payment Capture Failed. The authorized funds could not be captured. Please contact support or the guest." }),
-                    { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 402 }
-                );
-            }
+          console.log(`[HOST-APPROVE] Capturing funds...`);
+          const capturedPi = await stripe.paymentIntents.capture(pi.id);
+
+          if (capturedPi.status !== 'succeeded') {
+            throw new Error(`Capture failed with status: ${capturedPi.status}`);
+          }
+          capturePerformed = true;
+          console.log(`[HOST-APPROVE] Capture successful.`);
         } else if (pi.status === 'succeeded') {
-             console.log(`[HOST-APPROVE] Payment already captured.`);
-        } else {
-             console.warn(`[HOST-APPROVE] Payment Intent status unexpected: ${pi.status}`);
-             // We allow proceeding if it's already processed, but warn.
+           console.log(`[HOST-APPROVE] Already captured.`);
         }
-    } else {
-        console.warn(`[HOST-APPROVE] No Payment Intent ID found on booking. Proceeding with database update only.`);
-    }
+      }
 
-    // 5. UPDATE BOOKING STATUS
-    const { error: updateError } = await supabaseAdmin
-      .from("bookings")
-      .update({
-        status: "confirmed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", booking_id);
+      // Step B: Update Database
+      const { error: updateError } = await supabaseAdmin
+        .from("bookings")
+        .update({
+          status: "confirmed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", booking_id);
 
-    if (updateError) {
-      console.error("[HOST-APPROVE] Booking update error:", updateError);
+      if (updateError) {
+        throw new Error(`DB Update Failed: ${updateError.message}`);
+      }
+
+      // Step C: Send Notification (Non-critical, can happen after success)
+      const workspaceData = workspace as any;
+      await supabaseAdmin.from("user_notifications").insert({
+        user_id: booking.user_id,
+        type: "booking",
+        title: "Prenotazione Confermata!",
+        content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
+        metadata: {
+          booking_id: booking.id,
+          space_title: workspaceData.title,
+          action_required: "none",
+          urgent: false,
+        },
+      });
+
       return new Response(
-        JSON.stringify({ error: "Failed to update booking status" }),
+        JSON.stringify({ success: true, booking_id }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+
+    } catch (transactionError: any) {
+      console.error(`[HOST-APPROVE] Transaction Failed: ${transactionError.message}`);
+
+      // COMPENSATING TRANSACTION
+      if (capturePerformed && paymentIntentId) {
+        console.warn(`[HOST-APPROVE] ROLLBACK: Attempting to refund captured funds for PI ${paymentIntentId}...`);
+        try {
+          await stripe.refunds.create({
+            payment_intent: paymentIntentId,
+            reason: 'requested_by_customer', // Best fit for "System Error/Rollback"
+            metadata: {
+              reason: "system_rollback_db_failure",
+              original_error: transactionError.message
+            }
+          });
+          console.log(`[HOST-APPROVE] ROLLBACK: Refund successful.`);
+        } catch (refundError) {
+          console.error(`[HOST-APPROVE] CRITICAL: ROLLBACK FAILED. Funds captured but Booking not confirmed! Error:`, refundError);
+          // In a real system, we would alert an admin channel here.
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ error: `Transaction failed: ${transactionError.message}` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }
 
-    // 6. SEND NOTIFICATION TO COWORKER
-    // Cast workspace to access title safely
-    const workspaceData = workspace as any;
-
-    await supabaseAdmin.from("user_notifications").insert({
-      user_id: booking.user_id,
-      type: "booking",
-      title: "Prenotazione Confermata!",
-      content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
-      metadata: {
-        booking_id: booking.id,
-        space_title: workspaceData.title,
-        action_required: "none",
-        urgent: false,
-      },
-    });
-
-    return new Response(
-      JSON.stringify({ success: true, booking_id }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
   } catch (error) {
-    console.error("[HOST-APPROVE] Error:", error);
+    console.error("[HOST-APPROVE] Top-level Error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({ error: msg }),
