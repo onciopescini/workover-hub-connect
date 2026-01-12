@@ -107,14 +107,7 @@ export const useBookingsDashboardState = () => {
                 const policy = b.cancellation_policy || (b.space as any).cancellation_policy || 'moderate';
                 const bookingStart = new Date(`${b.booking_date}T${b.start_time}`);
                 // Use cancellation time if available, otherwise assume late cancellation (now) or use booking start
-                // Ideally we should have cancelled_at. If null, we might over-penalize or under-penalize.
-                // But for legacy data, if cancelled_at is missing, we can't do much.
-                // Let's assume strict if we don't know? Or perhaps 0?
-                // Actually, if it's already cancelled in DB but has no fee, maybe it was free cancellation?
-                // The requirement says: "calculated if missing".
-                // If I use 'now', it will likely calculate as 100% penalty if the booking was in the past.
-                // Let's try to use cancelled_at.
-                const cancelTime = b.cancelled_at ? new Date(b.cancelled_at) : new Date(); // Fallback to now might be wrong for old bookings
+                const cancelTime = b.cancelled_at ? new Date(b.cancelled_at) : new Date();
 
                 const refundDetails = calculateRefund(originalPrice, policy, bookingStart, cancelTime);
                 return sum + refundDetails.penaltyAmount;

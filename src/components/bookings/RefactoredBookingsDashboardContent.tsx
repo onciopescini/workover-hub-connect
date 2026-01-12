@@ -20,11 +20,14 @@ export function RefactoredBookingsDashboardContent() {
     actions,
     setMessageDialogOpen,
     setCancelDialogOpen,
+    setRejectDialogOpen,
     setSearchTerm,
     isChatEnabled,
     getUserRole,
     refetch,
     cancelBookingLoading,
+    rejectBookingLoading,
+    rejectDialogOpen,
   } = useBookingsDashboardState();
 
   if (error) {
@@ -71,6 +74,14 @@ export function RefactoredBookingsDashboardContent() {
         selectedBooking={dashboardState.selectedBooking}
         onCancelBooking={actions.onCancelBooking}
         cancelBookingLoading={cancelBookingLoading}
+
+        // Host Approval Props
+        onApproveBooking={actions.onApproveBooking}
+        onOpenRejectDialog={actions.onOpenRejectDialog}
+        rejectDialogOpen={rejectDialogOpen}
+        setRejectDialogOpen={setRejectDialogOpen}
+        onRejectBooking={actions.onRejectBooking}
+        rejectBookingLoading={rejectBookingLoading}
       />
     </div>
   );

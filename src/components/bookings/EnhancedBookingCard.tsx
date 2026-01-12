@@ -23,6 +23,7 @@ interface EnhancedBookingCardProps {
   userRole: "host" | "coworker";
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  // Approval workflow props - Required for Host Dashboard
   onApproveBooking?: (bookingId: string) => Promise<void>;
   onOpenRejectDialog?: (booking: BookingWithDetails) => void;
   isChatEnabled?: boolean;
