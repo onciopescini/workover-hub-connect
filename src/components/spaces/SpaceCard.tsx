@@ -7,16 +7,16 @@ import { MapPin, Star, Users, Wifi } from 'lucide-react';
 import { ResponsiveImage } from '@/components/ui/ResponsiveImage';
 import { Space } from '@/types/space';
 import { frontendLogger } from '@/utils/frontend-logger';
-import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
-
 interface SpaceCardProps {
   space: Space;
   onClick: () => void;
 }
 
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
-  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
+  // OPTIMIZATION: Use cached values from workspace record instead of separate fetches
+  const reviewCount = space.cached_review_count || 0;
+  const rating = space.cached_avg_rating || 0;
+
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];
@@ -82,10 +82,10 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
               {space.title}
             </h3>
-            {reviews.length > 0 && (
+            {reviewCount > 0 && (
               <div className="flex items-center gap-1 text-sm bg-gray-50 px-2 py-1 rounded-md shrink-0">
                 <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
-                <span className="font-bold text-gray-700">{weightedRating.toFixed(1)}</span>
+                <span className="font-bold text-gray-700">{rating.toFixed(1)}</span>
               </div>
             )}
           </div>
