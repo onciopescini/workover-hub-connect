@@ -101,7 +101,10 @@ export function EnhancedConnectionCard({ connection }: EnhancedConnectionCardPro
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           {/* Avatar with online status */}
-          <div className="relative">
+          <div
+            className="relative cursor-pointer transition-transform hover:scale-105"
+            onClick={handleViewProfile}
+          >
             <Avatar className="w-16 h-16">
               <AvatarImage src={otherUser.profile_photo_url || undefined} />
               <AvatarFallback className="text-lg font-semibold bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
@@ -119,7 +122,10 @@ export function EnhancedConnectionCard({ connection }: EnhancedConnectionCardPro
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-gray-900 text-lg">
+                  <h3
+                    className="font-semibold text-gray-900 text-lg cursor-pointer hover:text-indigo-600 transition-colors"
+                    onClick={handleViewProfile}
+                  >
                     {otherUser.first_name} {otherUser.last_name}
                   </h3>
                   {professionalData.isVerified && (

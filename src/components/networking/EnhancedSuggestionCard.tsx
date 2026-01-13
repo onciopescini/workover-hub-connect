@@ -46,16 +46,24 @@ export const EnhancedSuggestionCard = ({ suggestion }: SuggestionCardProps) => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={suggestion.avatar_url || ""} />
-              <AvatarFallback className="text-lg">
-                {getUserInitials(suggestion.first_name, suggestion.last_name)}
-              </AvatarFallback>
-            </Avatar>
+            <div
+              className="cursor-pointer transition-transform hover:scale-105"
+              onClick={handleViewProfile}
+            >
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={suggestion.avatar_url || ""} />
+                <AvatarFallback className="text-lg">
+                  {getUserInitials(suggestion.first_name, suggestion.last_name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3
+                  className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                  onClick={handleViewProfile}
+                >
                   {suggestion.first_name} {suggestion.last_name}
                 </h3>
                 <Badge className="bg-blue-100 text-blue-800">

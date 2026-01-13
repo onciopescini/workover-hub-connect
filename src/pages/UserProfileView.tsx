@@ -567,7 +567,7 @@ const UserProfileView = () => {
             {/* Reviews */}
             <Card>
               <CardHeader>
-                <CardTitle>Recensioni ({reviewCount})</CardTitle>
+                <CardTitle>Recensioni dagli Host ({reviewCount})</CardTitle>
               </CardHeader>
               <CardContent>
                 {reviewCount === 0 ? (

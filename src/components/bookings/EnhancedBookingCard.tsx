@@ -278,6 +278,28 @@ export const EnhancedBookingCard = ({
             disabled={!chatState.enabled}
           />
           
+          {/* View Profile Button - Explicit for Hosts to inspect applicants */}
+          {userRole === 'host' && otherParty.id && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center"
+                    onClick={() => window.open(`/users/${otherParty.id}`, '_blank')}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profilo
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Visualizza profilo coworker</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {/* Review button - only show for completed bookings */}
           {booking.status === 'served' && (
             userRole === 'host' ? (
