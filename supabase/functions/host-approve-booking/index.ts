@@ -7,12 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-console.log("HOST-APPROVE-BOOKING V4 - ATOMIC & WILDCARD FIX");
+console.log("HOST-APPROVE-BOOKING V5 - GOLD STANDARD RAW HANDLER");
 
 serve(async (req) => {
-  // 1. WILDCARD ROUTING: Handle OPTIONS and POST regardless of path
+  // 1. CORS PREFLIGHT
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // 2. METHOD VALIDATION
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method Not Allowed" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 405 }
+    );
   }
 
   try {
@@ -21,7 +29,7 @@ serve(async (req) => {
       throw new Error("STRIPE_SECRET_KEY is missing");
     }
 
-    // 2. AUTHENTICATION
+    // 3. AUTHENTICATION & SETUP
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -30,12 +38,16 @@ serve(async (req) => {
       );
     }
 
+    // Service Role for DB operations (bypass RLS for update if needed, though usually better to stick to rules,
+    // but the prompt implies a system-level atomic operation)
+    // The previous code used Service Role. I will stick to it for the atomic transaction safety.
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
 
+    // Verify the calling user is valid
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
@@ -46,8 +58,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. INPUT VALIDATION
-    // Robust body parsing
+    // 4. INPUT VALIDATION
     let booking_id;
     try {
       const body = await req.json();
@@ -66,12 +77,12 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[HOST-APPROVE] Processing booking: ${booking_id}`);
+    console.log(`[HOST-APPROVE] Processing booking: ${booking_id} by User: ${user.id}`);
 
-    // 4. DATA FETCHING
+    // 5. DATA FETCHING
     const { data: booking, error: fetchError } = await supabaseAdmin
       .from("bookings")
-      .select("id, user_id, status, stripe_payment_intent_id, booking_date, start_time, end_time, space_id, request_invoice")
+      .select("id, user_id, status, stripe_payment_intent_id, space_id")
       .eq("id", booking_id)
       .single();
 
@@ -95,22 +106,22 @@ serve(async (req) => {
       );
     }
 
-    // 5. SECURITY CHECKS
+    // 6. SECURITY CHECKS
     if (workspace.host_id !== user.id) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized: Not the host" }),
+        JSON.stringify({ error: "Unauthorized: You are not the host of this workspace" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
       );
     }
 
     if (booking.status !== "pending_approval") {
       return new Response(
-        JSON.stringify({ error: "Booking is not pending_approval" }),
+        JSON.stringify({ error: `Booking status is '${booking.status}', expected 'pending_approval'` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // 6. ATOMIC TRANSACTION (Capture -> DB Update -> Compensating Refund)
+    // 7. ATOMIC TRANSACTION (Capture -> DB Update -> Compensating Refund)
     const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
     let capturePerformed = false;
     const paymentIntentId = booking.stripe_payment_intent_id;
@@ -118,7 +129,7 @@ serve(async (req) => {
     try {
       // Step A: Capture Payment (if exists)
       if (paymentIntentId) {
-        console.log(`[HOST-APPROVE] Checking PI: ${paymentIntentId}`);
+        console.log(`[HOST-APPROVE] Retrieving PI: ${paymentIntentId}`);
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
 
         if (pi.status === 'requires_capture') {
@@ -131,8 +142,12 @@ serve(async (req) => {
           capturePerformed = true;
           console.log(`[HOST-APPROVE] Capture successful.`);
         } else if (pi.status === 'succeeded') {
-           console.log(`[HOST-APPROVE] Already captured.`);
+           console.log(`[HOST-APPROVE] Payment already captured (idempotent path).`);
+        } else {
+           console.warn(`[HOST-APPROVE] Unexpected PI status: ${pi.status}. Proceeding with caution.`);
         }
+      } else {
+          console.warn(`[HOST-APPROVE] No payment intent ID found on booking. Proceeding without capture.`);
       }
 
       // Step B: Update Database
@@ -148,20 +163,25 @@ serve(async (req) => {
         throw new Error(`DB Update Failed: ${updateError.message}`);
       }
 
-      // Step C: Send Notification (Non-critical, can happen after success)
-      const workspaceData = workspace as any;
-      await supabaseAdmin.from("user_notifications").insert({
-        user_id: booking.user_id,
-        type: "booking",
-        title: "Prenotazione Confermata!",
-        content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
-        metadata: {
-          booking_id: booking.id,
-          space_title: workspaceData.title,
-          action_required: "none",
-          urgent: false,
-        },
-      });
+      // Step C: Notifications (Fire and forget, or awaited - keeping it simple/robust)
+      // Notification failure should NOT trigger a refund of the money.
+      try {
+        const workspaceData = workspace as any;
+        await supabaseAdmin.from("user_notifications").insert({
+            user_id: booking.user_id,
+            type: "booking",
+            title: "Prenotazione Confermata!",
+            content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
+            metadata: {
+                booking_id: booking.id,
+                space_title: workspaceData.title,
+                action_required: "none",
+                urgent: false,
+            },
+        });
+      } catch (notifyError) {
+          console.error("[HOST-APPROVE] Notification failed (non-critical):", notifyError);
+      }
 
       return new Response(
         JSON.stringify({ success: true, booking_id }),
@@ -171,22 +191,22 @@ serve(async (req) => {
     } catch (transactionError: any) {
       console.error(`[HOST-APPROVE] Transaction Failed: ${transactionError.message}`);
 
-      // COMPENSATING TRANSACTION
+      // COMPENSATING TRANSACTION (ROLLBACK)
+      // Only necessary if we actually captured money in this run or found it captured
       if (capturePerformed && paymentIntentId) {
-        console.warn(`[HOST-APPROVE] ROLLBACK: Attempting to refund captured funds for PI ${paymentIntentId}...`);
+        console.warn(`[HOST-APPROVE] STARTING ROLLBACK: Refund for PI ${paymentIntentId}...`);
         try {
           await stripe.refunds.create({
             payment_intent: paymentIntentId,
-            reason: 'requested_by_customer', // Best fit for "System Error/Rollback"
+            reason: 'requested_by_customer', // Indicates to Stripe this isn't fraud, but a user/system request
             metadata: {
               reason: "system_rollback_db_failure",
               original_error: transactionError.message
             }
           });
-          console.log(`[HOST-APPROVE] ROLLBACK: Refund successful.`);
+          console.log(`[HOST-APPROVE] ROLLBACK SUCCESSFUL: Funds returned.`);
         } catch (refundError) {
-          console.error(`[HOST-APPROVE] CRITICAL: ROLLBACK FAILED. Funds captured but Booking not confirmed! Error:`, refundError);
-          // In a real system, we would alert an admin channel here.
+          console.error(`[HOST-APPROVE] CRITICAL: ROLLBACK FAILED. Manual Intervention Required. PI: ${paymentIntentId}`, refundError);
         }
       }
 
