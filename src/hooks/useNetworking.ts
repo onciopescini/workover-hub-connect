@@ -69,14 +69,14 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         .from('connections')
         .select(`
           *,
-          sender:profiles!connections_sender_id_fkey (
+          sender:profiles!connections_sender_id_fkey!inner (
             id,
             first_name,
             last_name,
             profile_photo_url,
             bio
           ),
-          receiver:profiles!connections_receiver_id_fkey (
+          receiver:profiles!connections_receiver_id_fkey!inner (
             id,
             first_name,
             last_name,
@@ -91,7 +91,10 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setError(error.message);
         toast.error("Failed to load connections.");
       } else {
-        const typedConnections: Connection[] = (data || []).map(item => ({
+        // Strict client-side filter to ensure both parties are visible (handles RLS edge cases)
+        const validConnections = (data || []).filter(item => item.sender && item.receiver);
+
+        const typedConnections: Connection[] = validConnections.map(item => ({
           ...item,
           status: item.status as "pending" | "rejected" | "accepted",
           created_at: item.created_at ?? '',
