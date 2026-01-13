@@ -13,40 +13,10 @@ import { ProfileAccessResult } from "@/lib/profile-access-utils";
 import { ProfileAccessDenied } from "@/components/profile/ProfileAccessDenied";
 import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
-import { isCompleteProfile } from "@/types/strict-type-guards";
 import { getUserPublicReviews, UserPublicReview } from "@/lib/user-review-utils";
 import { sreLogger } from "@/lib/sre-logger";
 import { ReviewCard, GenericReview } from "@/components/reviews/ReviewCard";
 import { StarRating } from "@/components/ui/StarRating";
-
-interface UserProfile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  profile_photo_url?: string;
-  bio?: string;
-  location?: string;
-  profession?: string;
-  job_title?: string;
-  website?: string;
-  linkedin_url?: string;
-  twitter_url?: string;
-  instagram_url?: string;
-  facebook_url?: string;
-  youtube_url?: string;
-  github_url?: string;
-  skills?: string;
-  interests?: string;
-  competencies?: string[];
-  industries?: string[];
-  collaboration_availability?: string;
-  collaboration_types?: string[];
-  preferred_work_mode?: string;
-  collaboration_description?: string;
-  created_at: string;
-  cached_avg_rating?: number;
-  cached_review_count?: number;
-}
 
 interface UserSpace {
   id: string;

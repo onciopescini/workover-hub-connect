@@ -9,7 +9,7 @@ import { SpaceReviewForm } from "@/components/reviews/SpaceReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
 import { getSpaceReviewStatus } from "@/lib/space-review-service";
-import { differenceInHours, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -49,7 +49,7 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
 
   const checkReviewEligibility = () => {
     if (booking.status !== 'served') {
-      return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
+      return { canReview: false, expired: false, daysUntilExpiry: 14 };
     }
 
     let completedAt: Date;
@@ -59,33 +59,26 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
     } else if (booking.end_time) {
       // Fallback: usa booking_date + end_time
       completedAt = new Date(`${booking.booking_date}T${booking.end_time}`);
-      sreLogger.warn('ReviewButton using fallback for service_completed_at', {
-        bookingId: booking.id,
-        booking_date: booking.booking_date,
-        end_time: booking.end_time
-      });
     } else {
       // Nessun dato disponibile
-      return { canReview: false, hoursUntilEligible: 24, expired: false, daysUntilExpiry: 14 };
+      return { canReview: false, expired: false, daysUntilExpiry: 14 };
     }
 
     const now = new Date();
-    const hoursPassedSinceEnd = differenceInHours(now, completedAt);
     const daysSinceEnd = differenceInDays(now, completedAt);
 
-    const isAfter24h = hoursPassedSinceEnd >= 24;
+    // Removed 24h delay check - reviews are available immediately after 'served' status
     const expired = daysSinceEnd > 14;
-    const canReview = isAfter24h && !expired;
+    const canReview = !expired;
 
     return {
       canReview,
-      hoursUntilEligible: Math.max(0, 24 - hoursPassedSinceEnd),
       expired,
       daysUntilExpiry: Math.max(0, 14 - daysSinceEnd)
     };
   };
 
-  const { canReview, hoursUntilEligible, expired, daysUntilExpiry } = checkReviewEligibility();
+  const { canReview, expired, daysUntilExpiry } = checkReviewEligibility();
 
   if (loading) {
     return (
@@ -112,8 +105,8 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
     onReviewSubmitted?.();
   };
 
+  // Explicitly handle all non-eligible cases to avoid fallthrough
   if (!canReview) {
-    // ✅ Messaggi migliorati con tooltip
     if (expired) {
       return (
         <TooltipProvider>
@@ -132,38 +125,18 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
       );
     }
 
-    if (booking.status !== 'served') {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" disabled className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                Servizio non completato
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Puoi recensire solo dopo che il servizio è stato completato</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-
+    // Default case for !canReview (e.g. status != served)
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" disabled className="flex items-center">
               <Clock className="w-4 h-4 mr-1" />
-              Tra {Math.ceil(hoursUntilEligible)}h
+              Servizio non completato
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Potrai recensire 24 ore dopo la fine del servizio</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Hai {daysUntilExpiry} giorni per lasciare una recensione
-            </p>
+            <p>Puoi recensire solo dopo che il servizio è stato completato</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
