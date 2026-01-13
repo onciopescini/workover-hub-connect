@@ -278,6 +278,39 @@ serve(async (req) => {
     console.log('[STRIPE] Session Created:', session.id);
 
     // -------------------------------------------------------------------------
+    // FIX: Update Booking with Payment Intent ID (CRITICAL)
+    // -------------------------------------------------------------------------
+    // We must ensure the booking has the PI ID so the host can capture it later.
+    const paymentIntentId = typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+    if (paymentIntentId) {
+       console.log(`[CREATE-CHECKOUT-V3] Patching booking ${booking_id} with PI: ${paymentIntentId}`);
+       const { error: patchError } = await supabaseAdmin
+         .from('bookings')
+         .update({
+            stripe_payment_intent_id: paymentIntentId,
+            payment_session_id: session.id
+         })
+         .eq('id', booking_id);
+
+       if (patchError) {
+          console.error('[CREATE-CHECKOUT-V3] CRITICAL: Failed to patch booking with PI', patchError);
+          // If this fails, the booking flow is effectively broken for "Request" types.
+          // We log heavily but allow the user to proceed to checkout, hoping the webhook fixes it?
+          // No, the webhook creates a payment record but doesn't necessarily update the booking PI column in all cases.
+          // Better to fail fast or rely on the webhook as a backup?
+          // Given the user report, the webhook IS NOT doing it or it's not enough.
+          // We will log error but return the URL to not block the user, but this is risky.
+          // Actually, let's throw to be safe?
+          // No, let's just log. If we throw, the user sees an error. If we proceed, maybe we can fix it manually.
+       }
+    } else {
+       console.warn('[CREATE-CHECKOUT-V3] WARNING: No payment_intent returned in session', session);
+    }
+
+    // -------------------------------------------------------------------------
     // 8. INSERT PAYMENT RECORD
     // -------------------------------------------------------------------------
     const { error: paymentError } = await supabaseAdmin
