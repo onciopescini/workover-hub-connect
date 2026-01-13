@@ -147,12 +147,25 @@ export class EnhancedCheckoutHandlers {
     // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
     
+    // STRICT: Extract Payment Intent ID (pi_...)
+    // Must handle string or object (though typically string in this webhook event)
+    const paymentIntentId = typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+    ErrorHandler.logInfo('Extracted Payment Intent ID for Booking Update', {
+      bookingId,
+      paymentIntentId,
+      rawPaymentIntent: typeof session.payment_intent === 'object' ? 'object' : session.payment_intent
+    });
+
     // Update booking status and save payment intent ID
+    // CRITICAL: We strictly use paymentIntentId. If null, we set null. NO fallback to session.id.
     const { error: updateBookingError } = await supabaseAdmin
       .from('bookings')
       .update({
         status: newStatus,
-        stripe_payment_intent_id: session.payment_intent || session.id // Use payment_intent or session ID as fallback
+        stripe_payment_intent_id: paymentIntentId || null
       })
       .eq('id', bookingId);
     
@@ -165,7 +178,7 @@ export class EnhancedCheckoutHandlers {
       bookingId,
       newStatus,
       confirmationType,
-      paymentIntentId: session.payment_intent
+      paymentIntentId: paymentIntentId || 'NULL (Warning)'
     });
 
     // Send notifications
