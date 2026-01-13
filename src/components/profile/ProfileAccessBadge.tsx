@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Lock, Eye, EyeOff, Users, CheckCircle } from "lucide-react";
+import { Lock, Eye, EyeOff, Users, CheckCircle, Calendar } from "lucide-react";
 
 interface ProfileAccessBadgeProps {
   accessReason: string;
@@ -33,6 +33,13 @@ export const ProfileAccessBadge = ({ accessReason, visibilityLevel, className }:
           text: 'Contesto condiviso',
           variant: 'secondary' as const,
           tooltip: 'Accesso completo tramite spazi condivisi'
+        };
+      case 'host_access':
+        return {
+          icon: <Calendar className="w-3 h-3" />,
+          text: 'Prenotazione',
+          variant: 'default' as const,
+          tooltip: 'Accesso garantito dalla prenotazione'
         };
       case 'suggestion_exists':
         return {

@@ -98,45 +98,67 @@ const PUBLIC_PROFILE_FIELDS = [
 // Fetch profilo utente con controllo accesso
 export const fetchUserProfileWithAccess = async (userId: string) => {
   try {
-    // Prima verifica l'accesso
-    const accessResult = await checkProfileAccess(userId);
-    
-    if (!accessResult.has_access) {
+    // Eseguiamo RPC e fetch in parallelo per efficienza e per gestire le priorità
+    const [accessResult, profileResponse] = await Promise.all([
+      checkProfileAccess(userId),
+      supabase
+        .from('profiles')
+        .select(PUBLIC_PROFILE_FIELDS)
+        .eq('id', userId)
+        .maybeSingle()
+    ]);
+
+    const { data: profile, error: profileError } = profileResponse;
+
+    // 1. PRIORITÀ 1: L'RPC dice che abbiamo accesso (es. own_profile, accepted_connection)
+    // Usiamo il risultato RPC per mantenere la "reason" corretta (badge specifico)
+    if (accessResult.has_access) {
+      // Se il fetch è fallito o non ha trovato dati nonostante l'accesso, è un errore tecnico o inconsistenza
+      if (profileError || !profile) {
+        sreLogger.error('Error fetching profile after access grant', {
+          component: 'ProfileAccessUtils',
+          action: 'fetchUserProfileWithAccess',
+          userId,
+          error: profileError,
+          missingProfile: !profile
+        });
+        return {
+          profile: null,
+          accessResult: {
+            has_access: false,
+            access_reason: 'profile_error',
+            message: 'Errore nel recupero del profilo'
+          },
+          hasAccess: false
+        };
+      }
+
       return {
-        profile: null,
+        profile,
         accessResult,
-        hasAccess: false
+        hasAccess: true
       };
     }
 
-    // Se ha accesso, recupera il profilo (SOLO campi pubblici)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select(PUBLIC_PROFILE_FIELDS)
-      .eq('id', userId)
-      .single();
-
-    if (profileError) {
-      sreLogger.error('Error fetching profile', {
-        component: 'ProfileAccessUtils',
-        action: 'fetchUserProfileWithAccess',
-        userId
-      }, profileError as Error);
+    // 2. PRIORITÀ 2 (HOST FALLBACK): L'RPC dice NO, ma i dati ci sono (RLS permette)
+    // Questo accade per gli Host che vedono i profili dei Guest (RPC networking_enabled=false, ma RLS policy=true)
+    if (profile && !profileError) {
       return {
-        profile: null,
+        profile,
         accessResult: {
-          has_access: false,
-          access_reason: 'profile_error',
-          message: 'Errore nel recupero del profilo'
+          has_access: true,
+          access_reason: 'host_access', // Usiamo la reason specifica per Host/Guest
+          message: 'Accesso garantito dalla prenotazione'
         },
-        hasAccess: false
+        hasAccess: true
       };
     }
 
+    // 3. PRIORITÀ 3: Entrambi dicono NO (o fetch fallito e RPC fallito)
     return {
-      profile,
+      profile: null,
       accessResult,
-      hasAccess: true
+      hasAccess: false
     };
   } catch (error) {
     sreLogger.error('Error in fetchUserProfileWithAccess', {
@@ -162,6 +184,7 @@ export const getProfileVisibilityLevel = (accessReason: string): 'full' | 'limit
     case 'own_profile':
     case 'accepted_connection':
     case 'mutual_suggestion':
+    case 'host_access': // Accesso garantito dalla presenza dei dati (es. Host)
       return 'full';
     case 'suggestion_exists':
       return 'limited';
