@@ -31,7 +31,10 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
 
         if (data) {
           // Type casting since RPC returns generic json or array
-          setCoworkers(data as unknown as Coworker[]);
+          const rawCoworkers = data as unknown as Coworker[];
+          // Strict client-side filter to remove hidden/incomplete profiles (RLS effect)
+          const validCoworkers = rawCoworkers.filter(c => c && c.id && c.first_name);
+          setCoworkers(validCoworkers);
         }
       } catch (err) {
         console.error('Unexpected error fetching coworkers:', err);

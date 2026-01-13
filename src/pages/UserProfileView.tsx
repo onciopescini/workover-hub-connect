@@ -9,6 +9,7 @@ import { it } from 'date-fns/locale';
 import { supabase } from "@/integrations/supabase/client";
 import { createOrGetPrivateChat } from "@/lib/networking-utils";
 import { useProfileAccess } from "@/hooks/useProfileAccess";
+import { ProfileAccessResult } from "@/lib/profile-access-utils";
 import { ProfileAccessDenied } from "@/components/profile/ProfileAccessDenied";
 import { ProfileAccessBadge } from "@/components/profile/ProfileAccessBadge";
 import { toast } from "sonner";
@@ -156,21 +157,30 @@ const UserProfileView = () => {
 
   // Gestione accesso negato con componente dedicato
   if (!hasAccess && accessResult) {
+    // If reason is profile_error, it implies RLS blocked the read (PGRST116)
+    // Treat this as a private profile
+    if (accessResult.access_reason === 'profile_error') {
+      const privateResult: ProfileAccessResult = {
+        has_access: false,
+        access_reason: 'networking_disabled',
+        message: 'This user has disabled networking and their profile is not visible.'
+      };
+      return <ProfileAccessDenied accessResult={privateResult} />;
+    }
+
     const profileName = profile ? `${profile['first_name']} ${profile['last_name']}` : '';
     return <ProfileAccessDenied accessResult={accessResult} profileName={profileName} />;
   }
 
   if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card>
-          <CardContent className="p-8">
-            <h1 className="text-xl font-bold mb-2">Profilo non disponibile</h1>
-            <p>Non è possibile caricare i dati del profilo.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    // Se il profilo è null ma l'accesso non è esplicitamente negato (es. RLS filtrato),
+    // costruiamo un risultato di accesso negato per privacy
+    const privacyAccessResult: ProfileAccessResult = {
+      has_access: false,
+      access_reason: 'networking_disabled',
+      message: 'This user has disabled networking and their profile is not visible.'
+    };
+    return <ProfileAccessDenied accessResult={privacyAccessResult} />;
   }
 
   // Use cached values if available, otherwise calculate fallback
