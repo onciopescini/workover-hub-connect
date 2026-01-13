@@ -36,12 +36,14 @@ export class EnhancedCheckoutHandlers {
     
     // Validate payment was successful
     if (session.payment_status !== 'paid' || session.status !== 'complete') {
-      ErrorHandler.logWarning('Session not completed successfully', {
+      // Relaxed check: Log warning but PROCEED to ensure we capture the Payment Intent ID
+      // This is critical for "Auth & Capture" flows where status might be 'unpaid' initially
+      ErrorHandler.logWarning('Session status is not strictly paid/complete, but proceeding to save Payment Intent', {
         sessionId: session.id,
         paymentStatus: session.payment_status,
         sessionStatus: session.status
       });
-      return { success: false, error: 'Session not completed successfully' };
+      // We do NOT return error here anymore. We trust checkout.session.completed event.
     }
 
     // Validate metadata
