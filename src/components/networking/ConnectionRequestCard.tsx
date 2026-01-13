@@ -63,17 +63,25 @@ export function ConnectionRequestCard({ connection, type }: ConnectionRequestCar
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <div className="flex items-start gap-4">
-        <Avatar className="w-16 h-16">
-          <AvatarImage src={otherUser.profile_photo_url || undefined} />
-          <AvatarFallback>
-            {getInitials(otherUser.first_name, otherUser.last_name)}
-          </AvatarFallback>
-        </Avatar>
+        <div
+          className="cursor-pointer transition-transform hover:scale-105"
+          onClick={handleViewProfile}
+        >
+          <Avatar className="w-16 h-16">
+            <AvatarImage src={otherUser.profile_photo_url || undefined} />
+            <AvatarFallback>
+              {getInitials(otherUser.first_name, otherUser.last_name)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900 text-lg">
+              <h3
+                className="font-semibold text-gray-900 text-lg cursor-pointer hover:text-blue-600 transition-colors"
+                onClick={handleViewProfile}
+              >
                 {otherUser.first_name} {otherUser.last_name}
               </h3>
               {otherUser.bio && (
