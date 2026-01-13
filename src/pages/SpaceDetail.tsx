@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { Space } from '@/types/space';
-import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery';
+import { useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 
@@ -148,8 +148,8 @@ const SpaceDetail = () => {
     enabled: !!id
   });
 
-  // Load reviews and weighted rating from database
-  const { reviews, weightedRating, isLoading: reviewsLoading } = useSpaceReviewsWithRating(id || '');
+  // Load reviews (list only) - rating comes from cached_avg_rating in workspace data
+  const { data: reviews = [] } = useSpaceReviewsQuery(id || '');
 
   // Try to fetch precise location (only if user has confirmed booking or is owner/admin)
   const { data: preciseLocation } = useSpaceLocation(id, !!id);
@@ -304,6 +304,9 @@ const SpaceDetail = () => {
     component: 'SpaceDetail' 
   });
   
+  // Use cached rating from workspace data, fallback to 0
+  const cachedRating = enhancedSpace?.cached_avg_rating || 0;
+
   return (
     <div className={`container mx-auto py-8 ${isStitch ? 'bg-stitch-bg' : ''}`}>
       {isStitch ? (
@@ -312,7 +315,7 @@ const SpaceDetail = () => {
             <SpaceDetailContent 
               space={enhancedSpace!} 
               reviews={reviews}
-              weightedRating={weightedRating}
+              weightedRating={cachedRating}
             />
           </SpaceHeroStitch>
         </Suspense>
@@ -320,7 +323,7 @@ const SpaceDetail = () => {
         <SpaceDetailContent 
           space={enhancedSpace!} 
           reviews={reviews}
-          weightedRating={weightedRating}
+          weightedRating={cachedRating}
         />
       )}
     </div>

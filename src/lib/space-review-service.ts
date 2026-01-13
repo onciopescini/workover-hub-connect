@@ -25,6 +25,7 @@ export const getSpaceReviews = async (spaceId: string): Promise<SpaceReviewWithD
 
 /**
  * Calculates weighted average rating for a space
+ * @deprecated This function is deprecated. Use the cached_avg_rating field on the workspace object instead.
  */
 export const getSpaceWeightedRating = async (spaceId: string): Promise<number> => {
   try {
@@ -84,14 +85,41 @@ export const getSpaceReviewStatus = async (
  */
 export const addSpaceReview = async (review: SpaceReviewInsert): Promise<boolean> => {
   try {
-    // Rate limiting check
+    // 1. Validate Booking Status (Backend Security Check)
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('status, user_id')
+      .eq('id', review.booking_id)
+      .maybeSingle();
+
+    if (bookingError || !booking) {
+      sreLogger.error('Error fetching booking for review validation', { error: bookingError, bookingId: review.booking_id });
+      toast.error("Prenotazione non trovata.");
+      return false;
+    }
+
+    // Verify ownership (optional extra check, though RLS should handle it)
+    if (booking.user_id !== review.author_id) {
+       sreLogger.warn('Review author mismatch', { bookingUser: booking.user_id, reviewAuthor: review.author_id });
+       toast.error("Non autorizzato.");
+       return false;
+    }
+
+    // STRICT CHECK: Only allow reviews for 'served' bookings
+    if (booking.status !== 'served') {
+      sreLogger.warn('Attempt to review unserved booking', { bookingId: review.booking_id, status: booking.status });
+      toast.error("Puoi recensire solo prenotazioni completate.");
+      return false;
+    }
+
+    // 2. Rate limiting check
     const canCreate = await checkSpaceReviewRateLimit(review.author_id);
     if (!canCreate) {
       toast.error("Troppo veloce! Aspetta un momento prima di recensire di nuovo.");
       return false;
     }
 
-    // Check for duplicate
+    // 3. Check for duplicate
     const { data: existing } = await supabase
       .from('space_reviews' as any)
       .select('id')
@@ -104,7 +132,7 @@ export const addSpaceReview = async (review: SpaceReviewInsert): Promise<boolean
       return false;
     }
 
-    // Insert review
+    // 4. Insert review
     const { error } = await supabase
       .from('space_reviews' as any)
       .insert([review]);

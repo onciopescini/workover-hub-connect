@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
-import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 
 interface EnhancedSpaceCardProps {
   space: Space;
@@ -31,9 +30,9 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   
-  // Carica recensioni e rating reali
-  const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
-  const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
+  // OPTIMIZATION: Use cached values from workspace record instead of separate fetches
+  const reviewCount = space.cached_review_count || 0;
+  const rating = space.cached_avg_rating || 0;
 
   const getMainPhotos = () => {
     if (space.photos && space.photos.length > 0) {
@@ -61,8 +60,6 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
   };
 
   const photos = getMainPhotos();
-  const rating = weightedRating;
-  const reviewCount = reviews.length;
   // Note: questi campi non esistono nel tipo Space, rimossi per ora
   const isVerified = false; 
   const isSuperhost = false;
