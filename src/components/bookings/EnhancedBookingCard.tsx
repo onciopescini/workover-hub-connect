@@ -5,9 +5,10 @@ import { it } from "date-fns/locale";
 import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-utils";
 import { canCancelBooking } from "@/lib/booking-datetime-utils";
 import { BookingWithDetails } from "@/types/booking";
-import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -211,17 +212,15 @@ export const EnhancedBookingCard = ({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a
-                      href={`/users/${otherParty.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Link
+                      to={`/users/${otherParty.id}`}
                       className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm border border-gray-100 hover:bg-gray-50 transition-colors z-10"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="bg-primary/10 text-primary rounded-full p-1">
                         <User className="w-3 h-3" />
                       </div>
-                    </a>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Visualizza profilo</p>
@@ -230,16 +229,13 @@ export const EnhancedBookingCard = ({
               </TooltipProvider>
             </div>
             <div>
-              <a
-                href={`/users/${otherParty.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to={`/users/${otherParty.id}`}
                 className="font-medium text-gray-900 hover:text-primary transition-colors flex items-center gap-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 {otherParty.name}
-                <ExternalLink className="w-3 h-3 text-gray-400" />
-              </a>
+              </Link>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-600">{otherParty.role}</p>
                 {otherParty.rating !== undefined && (
@@ -287,10 +283,12 @@ export const EnhancedBookingCard = ({
                     variant="outline"
                     size="sm"
                     className="flex items-center"
-                    onClick={() => window.open(`/users/${otherParty.id}`, '_blank')}
+                    asChild
                   >
-                    <User className="w-4 h-4 mr-2" />
-                    Profilo
+                    <Link to={`/users/${otherParty.id}`}>
+                      <User className="w-4 h-4 mr-2" />
+                      Profilo
+                    </Link>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
