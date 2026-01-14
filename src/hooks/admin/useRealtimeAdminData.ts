@@ -10,19 +10,21 @@ import { toast } from 'sonner';
  */
 export const useRealtimeAdminData = () => {
   /**
-   * Pending spaces count - aggiornato ogni 30 secondi
+   * Latest spaces - fetching top 50 recently created spaces
+   * Replaces the old pendingSpacesCount logic
    */
-  const { data: pendingSpacesCount } = useQuery({
-    queryKey: queryKeys.admin.pendingSpacesCount(),
+  const { data: latestSpaces } = useQuery({
+    queryKey: queryKeys.admin.latestSpaces(),
     queryFn: async () => {
       try {
-        const { count, error } = await supabase
+        const { data, error } = await supabase
           .from('workspaces')
-          .select('*', { count: 'exact', head: true })
-          .eq('pending_approval', true);
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50);
         
         if (error) throw error;
-        return count || 0;
+        return data || [];
       } catch (error) {
         const rlsResult = handleRLSError(error);
         if (rlsResult.isRLSError && rlsResult.shouldShowToast) {
@@ -118,7 +120,7 @@ export const useRealtimeAdminData = () => {
   });
 
   return {
-    pendingSpacesCount,
+    latestSpaces,
     openReportsCount,
     unresolvedTicketsCount,
     pendingGdprCount,
