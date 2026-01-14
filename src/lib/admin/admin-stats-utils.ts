@@ -26,9 +26,11 @@ export const getAdminStats = async (): Promise<AdminStats> => {
       .from("workspaces")
       .select("id", { count: "exact", head: true });
 
-    // Pending spaces concept might be deprecated in workspaces or needs different logic
-    // Returning 0 for now to prevent errors as pending_approval column is missing in workspaces
-    const pendingSpaces = 0;
+    // Get pending spaces count
+    const { count: pendingSpaces } = await supabase
+      .from("workspaces")
+      .select("id", { count: "exact", head: true })
+      .eq("pending_approval", true);
 
     // Get booking counts
     const { count: totalBookings } = await supabase

@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { hasAnyRole } from "@/lib/auth/role-utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AppSidebar() {
   const { authState } = useAuth();
@@ -22,9 +24,28 @@ export function AppSidebar() {
   const location = useLocation();
   const isCollapsed = state === "collapsed";
 
+  const { data: pendingSpacesCount } = useQuery({
+    queryKey: ['admin-pending-spaces'],
+    queryFn: async () => {
+       const { count, error } = await supabase
+         .from("workspaces")
+         .select("id", { count: "exact", head: true })
+         .eq("pending_approval", true);
+       if (error) throw error;
+       return count || 0;
+    },
+    enabled: authState.roles.includes('admin'),
+    staleTime: 60000,
+  });
+
   const baseItems = [
     { title: "Home", url: "/", icon: Home },
-    { title: "Spazi", url: "/spaces", icon: Building2 },
+    {
+      title: "Spazi",
+      url: "/spaces",
+      icon: Building2,
+      badge: (authState.roles.includes('admin') && pendingSpacesCount && pendingSpacesCount > 0) ? pendingSpacesCount : undefined
+    },
     { title: "Prenotazioni", url: "/bookings", icon: Calendar },
     { title: "Messaggi", url: "/messages", icon: MessageSquare },
     { title: "Networking", url: "/networking", icon: Users },
@@ -72,9 +93,16 @@ export function AppSidebar() {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                      <NavLink to={item.url}>
-                        <Icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                      <NavLink to={item.url} className="flex justify-between items-center w-full">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                        {item.badge && (
+                          <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center ml-auto">
+                            {item.badge}
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
