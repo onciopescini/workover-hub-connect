@@ -2,7 +2,7 @@
 import React from 'react';
 import { FinancialMetricsCards } from './components/FinancialMetricsCards';
 import { FinancialMetricsCharts } from './components/FinancialMetricsCharts';
-import { FinancialMetricsInsights } from './components/FinancialMetricsInsights';
+// import { FinancialMetricsInsights } from './components/FinancialMetricsInsights';
 import { FinancialMetricsProps } from './types/financial-metrics-types';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -50,10 +50,10 @@ export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
         revenueByCategory={revenueByCategory}
       />
 
-      <FinancialMetricsInsights
+      {/* <FinancialMetricsInsights
         revenueGrowth={actualRevenueGrowth}
         occupancyRate={actualOccupancyRate}
-      />
+      /> */}
     </div>
   );
 };
