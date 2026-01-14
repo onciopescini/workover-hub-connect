@@ -10,6 +10,12 @@ import { EnhancedConnectionCard } from "@/components/networking/EnhancedConnecti
 import { EnhancedSuggestionCard } from "@/components/networking/EnhancedSuggestionCard";
 import { NetworkingSearch } from "@/components/networking/NetworkingSearch";
 import { ConnectionRequestCard } from "@/components/networking/ConnectionRequestCard";
+import { WhoIsHere } from "@/components/networking/WhoIsHere";
+import { useNetworkingSearch } from "@/hooks/useNetworkingSearch";
+import { CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Briefcase, MapPin, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Networking = () => {
   const { authState } = useAuth();
@@ -21,6 +27,9 @@ const Networking = () => {
     getActiveConnections 
   } = useNetworking();
   
+  const { searchResults, isSearching, searchUsers } = useNetworkingSearch();
+  const navigate = useNavigate();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilters, setSearchFilters] = useState<any>({});
 
@@ -42,7 +51,7 @@ const Networking = () => {
   const handleSearch = (query: string, filters: any) => {
     setSearchQuery(query);
     setSearchFilters(filters);
-    // In a real app, this would trigger API calls to search with filters
+    searchUsers(query, filters);
   };
 
   const filteredConnections = getActiveConnections().filter(conn => {
@@ -95,6 +104,52 @@ const Networking = () => {
           onSearch={handleSearch}
           savedSearches={savedSearches}
         />
+
+        {/* Search Results */}
+        {(searchQuery || Object.keys(searchFilters).some(k => searchFilters[k])) && (
+            <div className="space-y-4">
+               <div className="flex items-center gap-2">
+                   <Search className="h-5 w-5 text-indigo-600" />
+                   <h2 className="text-xl font-semibold">Risultati Ricerca Globali</h2>
+               </div>
+
+               {isSearching ? (
+                   <div className="text-center py-8 text-gray-500">Ricerca in corso...</div>
+               ) : searchResults.length === 0 ? (
+                   <div className="text-center py-8 text-gray-500">Nessun professionista trovato con questi criteri.</div>
+               ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {searchResults.map(user => (
+                           <Card key={user.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/users/${user.id}`)}>
+                               <CardContent className="p-4 flex items-start gap-4">
+                                   <Avatar className="h-12 w-12">
+                                       <AvatarImage src={user.profile_photo_url || undefined} />
+                                       <AvatarFallback>{user.first_name[0]}{user.last_name[0]}</AvatarFallback>
+                                   </Avatar>
+                                   <div>
+                                       <h3 className="font-semibold">{user.first_name} {user.last_name}</h3>
+                                       {user.job_title && (
+                                           <p className="text-sm text-gray-600 flex items-center gap-1">
+                                               <Briefcase className="h-3 w-3" /> {user.job_title}
+                                           </p>
+                                       )}
+                                       {user.city && (
+                                           <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                               <MapPin className="h-3 w-3" /> {user.city}
+                                           </p>
+                                       )}
+                                   </div>
+                               </CardContent>
+                           </Card>
+                       ))}
+                   </div>
+               )}
+               <hr className="border-gray-200 my-6" />
+            </div>
+        )}
+
+        {/* Who's Here Section */}
+        <WhoIsHere />
 
         <Tabs defaultValue="connections" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">

@@ -138,6 +138,14 @@ export const profileEditSchema = z.object({
     )
     .optional()
     .or(z.literal('')),
+
+  portfolio_url: z.string()
+    .refine(
+      (val) => !val || (URL_REGEX.test(val) && /^https?:\/\//.test(val)),
+      { message: 'URL portfolio non valido' }
+    )
+    .optional()
+    .or(z.literal('')),
   
   linkedin_url: z.string()
     .refine(

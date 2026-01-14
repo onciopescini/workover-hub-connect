@@ -30,26 +30,44 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Globe className="h-5 w-5" />
-          Collegamenti Social
+          Collegamenti Social e Portfolio
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="website" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Sito Web
-            </Label>
-            <Input
-              id="website"
-              value={formData.website}
-              onChange={(e) => handleInputChange('website', e.target.value)}
-              placeholder="https://tuosito.com"
-              className={errors['website'] ? 'border-destructive' : ''}
-            />
-            {errors['website'] && (
-              <p className="text-sm text-destructive">{errors['website']}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="website" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Sito Web
+              </Label>
+              <Input
+                id="website"
+                value={formData.website}
+                onChange={(e) => handleInputChange('website', e.target.value)}
+                placeholder="https://tuosito.com"
+                className={errors['website'] ? 'border-destructive' : ''}
+              />
+              {errors['website'] && (
+                <p className="text-sm text-destructive">{errors['website']}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="portfolio_url" className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4" />
+                Portfolio
+              </Label>
+              <Input
+                id="portfolio_url"
+                value={formData.portfolio_url || ''}
+                onChange={(e) => handleInputChange('portfolio_url', e.target.value)}
+                placeholder="https://tuoportfolio.com"
+                className={errors['portfolio_url'] ? 'border-destructive' : ''}
+              />
+              {errors['portfolio_url'] && (
+                <p className="text-sm text-destructive">{errors['portfolio_url']}</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
