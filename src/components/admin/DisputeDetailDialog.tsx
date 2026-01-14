@@ -29,19 +29,39 @@ export function DisputeDetailDialog({ isOpen, onClose, dispute, onUpdate }: Disp
   const handleStatusUpdate = async (newStatus: "resolved" | "refunded") => {
     try {
       setIsUpdating(true);
-      const { error } = await supabase
-        .from("disputes")
-        .update({ status: newStatus })
-        .eq("id", dispute.id);
 
-      if (error) throw error;
+      if (newStatus === "refunded") {
+        const { error } = await supabase.functions.invoke('admin-process-refund', {
+          body: { disputeId: dispute.id }
+        });
 
-      toast.success(`Dispute marked as ${newStatus}`);
+        if (error) throw error;
+        toast.success("Refund processed via Stripe and status updated");
+      } else {
+        const { error } = await supabase
+          .from("disputes")
+          .update({ status: newStatus })
+          .eq("id", dispute.id);
+
+        if (error) throw error;
+        toast.success(`Dispute marked as ${newStatus}`);
+      }
+
       onUpdate();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating dispute:", error);
-      toast.error("Failed to update dispute status");
+      // Try to parse the error message if it comes from the Edge Function
+      let errorMessage = "Failed to update dispute status";
+      if (error.message) errorMessage = error.message;
+      try {
+        const body = JSON.parse(error.message);
+        if (body.error) errorMessage = body.error;
+      } catch (e) {
+        // Not a JSON string
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsUpdating(false);
     }
