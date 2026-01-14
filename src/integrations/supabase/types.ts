@@ -14,6 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: "user" | "assistant" | "system"
+          thread_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: "user" | "assistant" | "system"
+          thread_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: "user" | "assistant" | "system"
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_threads: {
+        Row: {
+          assistant_id: string | null
+          created_at: string
+          id: string
+          owner_id: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          assistant_id?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assistant_id?: string | null
+          created_at?: string
+          id?: string
+          owner_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_threads_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_configs: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean | null
+          model: string
+          name: string
+          owner_id: string | null
+          system_prompt: string | null
+          temperature: number | null
+          tools: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          model: string
+          name: string
+          owner_id?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          model?: string
+          name?: string
+          owner_id?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          tools?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accessibility_audits: {
         Row: {
           audit_type: string
@@ -681,8 +805,9 @@ export type Database = {
         Row: {
           checkin_time: string
           checkout_time: string | null
+          created_at: string
           id: string
-          metadata: Json
+          metadata: Json | null
           method: string | null
           user_id: string
           workspace_id: string
@@ -690,8 +815,9 @@ export type Database = {
         Insert: {
           checkin_time?: string
           checkout_time?: string | null
+          created_at?: string
           id?: string
-          metadata?: Json
+          metadata?: Json | null
           method?: string | null
           user_id: string
           workspace_id: string
@@ -699,8 +825,9 @@ export type Database = {
         Update: {
           checkin_time?: string
           checkout_time?: string | null
+          created_at?: string
           id?: string
-          metadata?: Json
+          metadata?: Json | null
           method?: string | null
           user_id?: string
           workspace_id?: string
@@ -4291,11 +4418,13 @@ export type Database = {
           longitude: number | null
           max_capacity: number | null
           name: string
+          pending_approval: boolean | null
           photos: string[] | null
           price_per_day: number | null
           price_per_hour: number | null
           price_per_month: number | null
           published: boolean | null
+          rejection_reason: string | null
           rules: string | null
           seating_types: string[] | null
           updated_at: string | null
@@ -4322,11 +4451,13 @@ export type Database = {
           longitude?: number | null
           max_capacity?: number | null
           name: string
+          pending_approval?: boolean | null
           photos?: string[] | null
           price_per_day?: number | null
           price_per_hour?: number | null
           price_per_month?: number | null
           published?: boolean | null
+          rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
           updated_at?: string | null
@@ -4353,11 +4484,13 @@ export type Database = {
           longitude?: number | null
           max_capacity?: number | null
           name?: string
+          pending_approval?: boolean | null
           photos?: string[] | null
           price_per_day?: number | null
           price_per_hour?: number | null
           price_per_month?: number | null
           published?: boolean | null
+          rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
           updated_at?: string | null

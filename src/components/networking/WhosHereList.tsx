@@ -53,13 +53,21 @@ export const WhosHereList = () => {
         if (error) {
           console.error('Error fetching check-ins:', error);
         } else {
-          // Cast the joined data safely
-          const typedData = (data as any[]).map(item => ({
+          // Transform data to match CheckIn interface
+          const typedData: CheckIn[] = data.map(item => ({
             user_id: item.user_id,
             workspace_id: item.workspace_id,
             checkin_time: item.checkin_time,
-            profiles: item.profiles,
-            workspaces: item.workspaces
+            profiles: {
+              first_name: item.profiles?.first_name || '',
+              last_name: item.profiles?.last_name || '',
+              profile_photo_url: item.profiles?.profile_photo_url || null,
+              profession: item.profiles?.profession || null
+            },
+            workspaces: {
+              name: item.workspaces?.name || 'Workspace',
+              city: item.workspaces?.city || null
+            }
           }));
           setCheckIns(typedData);
         }

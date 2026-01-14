@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { BookingCardDisplayData, UserRole } from '@/types/bookings/bookings-ui.t
 import { BookingCardActions } from '@/types/bookings/bookings-actions.types';
 import { sreLogger } from '@/lib/sre-logger';
 import { getOrCreateConversation } from '@/lib/conversations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseBookingCardStateProps {
   booking: BookingWithDetails;
@@ -24,6 +26,7 @@ export const useBookingCardState = ({
   onOpenCancelDialog
 }: UseBookingCardStateProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const displayData: BookingCardDisplayData = useMemo(() => {
     const getOtherParty = () => {
@@ -144,6 +147,46 @@ export const useBookingCardState = ({
       }
     },
     onCancel: () => onOpenCancelDialog(booking),
+    onApprove: async () => {
+      try {
+        const { error } = await supabase
+          .from('bookings')
+          .update({ status: 'confirmed' })
+          .eq('id', booking.id);
+
+        if (error) throw error;
+
+        toast.success("Prenotazione confermata con successo");
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        queryClient.invalidateQueries({ queryKey: ['host-activities'] });
+      } catch (error) {
+        console.error("Error approving booking:", error);
+        toast.error("Errore durante l'approvazione della prenotazione");
+      }
+    },
+    onReject: async () => {
+      try {
+        const reason = "Rifiutata dall'host";
+
+        const { error } = await supabase
+          .from('bookings')
+          .update({
+            status: 'cancelled',
+            cancelled_by_host: true,
+            cancellation_reason: reason
+          })
+          .eq('id', booking.id);
+
+        if (error) throw error;
+
+        toast.success("Prenotazione rifiutata");
+        queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        queryClient.invalidateQueries({ queryKey: ['host-activities'] });
+      } catch (error) {
+        console.error("Error rejecting booking:", error);
+        toast.error("Errore durante il rifiuto della prenotazione");
+      }
+    }
   }), [booking, onOpenCancelDialog, navigate]);
 
   return {
