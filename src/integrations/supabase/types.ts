@@ -168,6 +168,54 @@ export type Database = {
         }
         Relationships: []
       }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          booking_id: string
+          created_at: string
+          id: string
+          opened_by: string
+          reason: string
+          status: "open" | "resolved" | "refunded"
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          booking_id: string
+          created_at?: string
+          id?: string
+          opened_by: string
+          reason: string
+          status?: "open" | "resolved" | "refunded"
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          booking_id?: string
+          created_at?: string
+          id?: string
+          opened_by?: string
+          reason?: string
+          status?: "open" | "resolved" | "refunded"
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       account_deletion_requests: {
         Row: {
           confirmed_at: string | null
@@ -2878,6 +2926,8 @@ export type Database = {
         Row: {
           admin_notes: string | null
           age_confirmed: boolean | null
+          ban_reason: string | null
+          banned_at: string | null
           bio: string | null
           cached_avg_rating: number | null
           cached_review_count: number | null
@@ -2949,6 +2999,8 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           age_confirmed?: boolean | null
+          ban_reason?: string | null
+          banned_at?: string | null
           bio?: string | null
           cached_avg_rating?: number | null
           cached_review_count?: number | null
@@ -3020,6 +3072,8 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           age_confirmed?: boolean | null
+          ban_reason?: string | null
+          banned_at?: string | null
           bio?: string | null
           cached_avg_rating?: number | null
           cached_review_count?: number | null
@@ -4414,6 +4468,7 @@ export type Database = {
           host_id: string | null
           id: string
           ideal_guest_tags: string[] | null
+          is_suspended: boolean | null
           latitude: number | null
           longitude: number | null
           max_capacity: number | null
@@ -4427,6 +4482,7 @@ export type Database = {
           rejection_reason: string | null
           rules: string | null
           seating_types: string[] | null
+          suspension_reason: string | null
           updated_at: string | null
           work_environment: string | null
         }
@@ -4447,6 +4503,7 @@ export type Database = {
           host_id?: string | null
           id?: string
           ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
           max_capacity?: number | null
@@ -4460,6 +4517,7 @@ export type Database = {
           rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
+          suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
         }
@@ -4480,6 +4538,7 @@ export type Database = {
           host_id?: string | null
           id?: string
           ideal_guest_tags?: string[] | null
+          is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
           max_capacity?: number | null
@@ -4493,6 +4552,7 @@ export type Database = {
           rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
+          suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
         }
