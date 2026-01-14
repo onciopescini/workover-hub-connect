@@ -54,13 +54,15 @@ export function useBookingValidation() {
     const validationResult = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
     if (validationResult.error) {
-      logError('Validation RPC Error', validationResult.error);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('Validation RPC Error', validationResult.error as any);
       throw new Error(`Validation failed: ${validationResult.error.message}`);
     }
 
     const validationData = validationResult.data as { success?: boolean; error?: string };
     if (validationData && validationData.success === false) {
-      logError('Validation Data Error', validationData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('Validation Data Error', validationData as any);
       throw new Error(validationData.error || 'Slot validation returned false');
     }
 
