@@ -1,0 +1,58 @@
+import { supabase } from '@/integrations/supabase/client';
+import { useLogger } from '@/hooks/useLogger';
+
+export interface ValidationParams {
+  spaceId: string;
+  userId: string;
+  dateStr: string;
+  startTime: string;
+  endTime: string;
+  guestsCount: number;
+  confirmationType: 'instant' | 'host_approval';
+  clientBasePrice?: number;
+}
+
+export function useBookingValidation() {
+  const { debug, error: logError } = useLogger({ context: 'useBookingValidation' });
+
+  const validateBooking = async (params: ValidationParams) => {
+    debug('Validating booking slot', params);
+
+    const {
+      spaceId,
+      userId,
+      dateStr,
+      startTime,
+      endTime,
+      guestsCount,
+      confirmationType,
+      clientBasePrice
+    } = params;
+
+    const validationResult = await supabase.rpc('validate_and_reserve_slot', {
+      space_id_param: spaceId,
+      date_param: dateStr,
+      start_time_param: startTime,
+      end_time_param: endTime,
+      user_id_param: userId,
+      guests_count_param: guestsCount,
+      confirmation_type_param: confirmationType,
+      client_base_price_param: clientBasePrice
+    } as any);
+
+    if (validationResult.error) {
+      logError('Validation RPC Error', validationResult.error);
+      throw new Error(`Validation failed: ${validationResult.error.message}`);
+    }
+
+    const validationData = validationResult.data as { success?: boolean; error?: string };
+    if (validationData && validationData.success === false) {
+      logError('Validation Data Error', validationData);
+      throw new Error(validationData.error || 'Slot validation returned false');
+    }
+
+    return validationData;
+  };
+
+  return { validateBooking };
+}

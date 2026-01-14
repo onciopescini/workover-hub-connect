@@ -34,7 +34,22 @@ const generateSlotId = () => {
 };
 
 export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationType, maxCapacity, cancellationPolicy, rules, onSuccess, onError, hostStripeAccountId, availability, timezone }: BookingFormProps) {
+  // Move hooks to top level to comply with Rules of Hooks
+  const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([
+    {
+      id: generateSlotId(),
+      date: '',
+      startTime: '',
+      endTime: ''
+    }
+  ]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [reservationStep, setReservationStep] = useState<'form' | 'reserved' | 'payment'>('form');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const { info, error, debug } = useLogger({ context: 'MultiDayBookingForm' });
+
   // Use the new 2-step booking form with visual calendar as default
+  // This return renders the new component, making the rest of the code unreachable but hooks must still run.
   return (
     <TwoStepBookingForm
       spaceId={spaceId}
@@ -54,19 +69,9 @@ export function BookingForm({ spaceId, pricePerDay, pricePerHour, confirmationTy
     />
   );
   
-  // Original multi-day booking form logic continues below...
-  const [bookingSlots, setBookingSlots] = useState<BookingSlot[]>([
-    {
-      id: generateSlotId(),
-      date: '',
-      startTime: '',
-      endTime: ''
-    }
-  ]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [reservationStep, setReservationStep] = useState<'form' | 'reserved' | 'payment'>('form');
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const { info, error, debug } = useLogger({ context: 'MultiDayBookingForm' });
+  /* Original logic is currently unreachable but kept for reference or future re-enablement
+   * Hooks above must remain unconditionally executed.
+   */
 
   debug('BookingForm initialized', {
     spaceId,
