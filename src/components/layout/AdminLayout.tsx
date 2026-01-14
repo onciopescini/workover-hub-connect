@@ -91,6 +91,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     { label: "Utenti", path: "/admin/users", icon: <Users className="w-4 h-4" />, roles: ['admin'] },
     { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" />, roles: ['admin'] },
     { label: "Spazi", path: "/admin/spaces", icon: <Building className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+    { label: "Gestione Dispute", path: "/admin/disputes", icon: <Scale className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Supporto", path: "/admin/tickets", icon: <Headphones className="w-4 h-4" />, roles: ['admin', 'moderator'] },
