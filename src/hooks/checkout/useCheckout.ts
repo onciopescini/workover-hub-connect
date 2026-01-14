@@ -4,8 +4,10 @@ import { useLogger } from '@/hooks/useLogger';
 import { toast } from 'sonner';
 import { addHours, format } from 'date-fns';
 import { BookingInsert } from '@/types/booking';
-import { API_ENDPOINTS } from '@/constants';
 import { useNavigate } from 'react-router-dom';
+import { useBookingValidation } from './useBookingValidation';
+import { useBookingPayment } from './useBookingPayment';
+import type { CoworkerFiscalData } from '@/components/booking/checkout/CheckoutFiscalFields';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -19,7 +21,7 @@ export interface CheckoutParams {
   pricePerDay: number;
   durationHours: number;
   hostStripeAccountId?: string;
-  fiscalData?: any;
+  fiscalData?: CoworkerFiscalData;
   clientBasePrice?: number;
 }
 
@@ -31,8 +33,10 @@ export interface CheckoutResult {
 
 export function useCheckout() {
   const [isLoading, setIsLoading] = useState(false);
-  const { info, error, debug } = useLogger({ context: 'useCheckout' });
+  const { debug, error: logError } = useLogger({ context: 'useCheckout' });
   const navigate = useNavigate();
+  const { validateBooking } = useBookingValidation();
+  const { initializePayment } = useBookingPayment();
 
   const processCheckout = async (params: CheckoutParams): Promise<CheckoutResult> => {
     setIsLoading(true);
@@ -52,27 +56,16 @@ export function useCheckout() {
 
     try {
       // 1. Validate Availability via RPC
-      const validationResult = await supabase.rpc('validate_and_reserve_slot', {
-        space_id_param: spaceId,
-        date_param: dateStr,
-        start_time_param: startTime,
-        end_time_param: endTime,
-        user_id_param: userId,
-        guests_count_param: guestsCount,
-        confirmation_type_param: confirmationType,
-        client_base_price_param: params.clientBasePrice
-      } as any);
-
-      if (validationResult.error) {
-        console.error('DEBUG: Validation RPC Error', validationResult.error);
-        throw new Error(`Validation failed: ${validationResult.error.message}`);
-      }
-
-      const validationData = validationResult.data as { success?: boolean; error?: string };
-      if (validationData && validationData.success === false) {
-         console.error('DEBUG: Validation Data Error', validationData);
-         throw new Error(validationData.error || 'Slot validation returned false');
-      }
+      await validateBooking({
+        spaceId,
+        userId,
+        dateStr,
+        startTime,
+        endTime,
+        guestsCount,
+        confirmationType,
+        clientBasePrice: params.clientBasePrice
+      });
 
       // 2. Prepare Payload
       const isInstant = confirmationType === 'instant';
@@ -101,7 +94,7 @@ export function useCheckout() {
         payment_required: isInstant,
         slot_reserved_until: reservationDeadline.toISOString(),
         approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
-        fiscal_data: fiscalData // Persist fiscal data
+        fiscal_data: fiscalData ?? null
       };
 
       // 3. Insert Booking
@@ -113,7 +106,8 @@ export function useCheckout() {
 
       // Handle Insert Error: If the insert returns an error, STOP execution and show a toast error.
       if (insertError) {
-        console.error('DEBUG: Insert Error', insertError);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        logError('Insert Error', insertError as any);
         // Specifically handle Foreign Key Violation (Space not found)
         if (insertError.code === '23503') {
            toast.error("This space is no longer available or has been removed by the host.");
@@ -124,7 +118,8 @@ export function useCheckout() {
       }
 
       if (!bookingData?.id) {
-        console.error('DEBUG: Insert returned no ID', bookingData);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        logError('Insert returned no ID', bookingData as any);
         throw new Error('Database insert succeeded but returned no ID');
       }
 
@@ -137,36 +132,21 @@ export function useCheckout() {
           throw new Error('Host Stripe account ID is missing');
       }
 
-      const { data: sessionData, error: fnError } = await supabase.functions.invoke(
-        API_ENDPOINTS.CREATE_CHECKOUT,
-        {
-          body: {
-            booking_id: bookingId,
-            origin: window.location.origin
-          }
-        }
-      );
+      const paymentUrl = await initializePayment({
+        bookingId,
+        hostStripeAccountId
+      });
 
-      if (fnError) {
-          console.error('DEBUG: Payment Function Error', fnError);
-          throw new Error(`Payment initialization failed: ${fnError.message}`);
-      }
-
-      if (!sessionData?.url) {
-          console.error('DEBUG: No payment URL', sessionData);
-          throw new Error('Payment session created but no URL returned');
-      }
-
-      window.location.href = sessionData.url;
+      window.location.href = paymentUrl;
       return { success: true, bookingId }; // Browser redirects
 
-    } catch (err: any) {
-      console.error('DEBUG: Checkout Flow Failed', err);
-      // Ensure specific message is propagated
-      const message = err instanceof Error ? err.message : 'Unknown error occurred';
+    } catch (err) {
+      const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('Checkout Flow Failed', caughtError as any);
       return {
         success: false,
-        error: message
+        error: caughtError.message
       };
     } finally {
       setIsLoading(false);

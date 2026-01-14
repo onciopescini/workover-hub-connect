@@ -21,6 +21,11 @@ const SpacesManage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Rules of Hooks fix: move state and effects to top level
+  // Calculate total revenue from completed bookings
+  const [totalRevenue, setTotalRevenue] = React.useState<number>(0);
+  const [spacesMetrics, setSpacesMetrics] = React.useState<Map<string, { bookings: number; revenue: number }>>(new Map());
+
   const { isAdmin } = useModeratorCheck();
 
   const fetchSpaces = async () => {
@@ -246,27 +251,6 @@ const SpacesManage = () => {
     navigate(`/host/spaces/${spaceId}/recap`);
   };
 
-  if (!authState.isAuthenticated) {
-    return (
-      <AppLayout title="Accesso Richiesto" subtitle="Effettua il login per gestire i tuoi spazi">
-        <div className="container mx-auto mt-8">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h2 className="text-xl font-semibold mb-2">Autenticazione Richiesta</h2>
-              <p className="text-gray-600">Effettua il login per accedere alla gestione degli spazi.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </AppLayout>
-    );
-  }
-
-  const publishedCount = spaces.filter((space) => space.published).length;
-  
-  // Calculate total revenue from completed bookings
-  const [totalRevenue, setTotalRevenue] = React.useState<number>(0);
-  const [spacesMetrics, setSpacesMetrics] = React.useState<Map<string, { bookings: number; revenue: number }>>(new Map());
-
   React.useEffect(() => {
     const fetchHostMetrics = async () => {
       if (!authState.user?.id || spaces.length === 0) return;
@@ -319,6 +303,24 @@ const SpacesManage = () => {
 
     fetchHostMetrics();
   }, [spaces, authState.user?.id]);
+
+
+  if (!authState.isAuthenticated) {
+    return (
+      <AppLayout title="Accesso Richiesto" subtitle="Effettua il login per gestire i tuoi spazi">
+        <div className="container mx-auto mt-8">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <h2 className="text-xl font-semibold mb-2">Autenticazione Richiesta</h2>
+              <p className="text-gray-600">Effettua il login per accedere alla gestione degli spazi.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const publishedCount = spaces.filter((space) => space.published).length;
 
   return (
     <AppLayout title="Gestisci i Tuoi Spazi" subtitle="Crea, modifica e gestisci i tuoi spazi">
