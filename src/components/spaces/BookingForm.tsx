@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, CalendarDays, Clock, Euro, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { reserveBookingSlot, calculateBookingTotal, handlePaymentFlow } from "@/lib/booking-reservation-utils";
-import { useBookingConflictCheck } from "@/hooks/useBookingConflictCheck";
+import { reserveBookingSlot, handlePaymentFlow } from "@/lib/booking-reservation-utils";
 import { useLogger } from "@/hooks/useLogger";
 import { sreLogger } from '@/lib/sre-logger';
 import { BookingSlot, MultiDayBookingData } from "@/types/booking";
