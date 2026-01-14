@@ -143,7 +143,8 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         event_friendly_tags: dbData.event_friendly_tags || [],
         confirmation_type: dbData.confirmation_type || "host_approval",
         availability: parsedAvailability,
-        published: Boolean(dbData.published)
+        published: Boolean(dbData.published),
+        cancellation_policy: dbData.cancellation_policy || undefined
       });
 
       // Handle Photos
@@ -344,6 +345,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
     setUploadingPhotos, // Exposed to match useSpaceForm usage if needed
     setProcessingJobs, // Exposed to match useSpaceForm usage if needed
     setPhotoFiles, // Exposed to match useSpaceForm usage if needed
-    setPhotoPreviewUrls // Exposed to match useSpaceForm usage if needed
+    setPhotoPreviewUrls, // Exposed to match useSpaceForm usage if needed
+    photoFiles // Exposed to match useSpaceForm usage
   };
 };

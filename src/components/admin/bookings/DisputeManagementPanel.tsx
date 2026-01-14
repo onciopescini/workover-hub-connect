@@ -38,7 +38,7 @@ export function DisputeManagementPanel() {
       if (error) throw error;
       
       // Fetch space details separately to avoid FK issues
-      const bookingIds = data?.map(b => b.space_id) || [];
+      const bookingIds = (data?.map(b => b.space_id) || []).filter((id): id is string => !!id);
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, title')

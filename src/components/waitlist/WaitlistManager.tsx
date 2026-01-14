@@ -49,14 +49,17 @@ export function WaitlistManager() {
       if (error) throw error;
 
       // Type-safe filtering to remove entries with missing relations
-      const validWaitlists: WaitlistEntry[] = (data || [])
-        .filter(entry => entry.user && entry.space_id)
-        .map(entry => ({
+      const validWaitlists: WaitlistEntry[] = ((data as any) || [])
+        .filter((entry: any) => entry.user && entry.space_id)
+        .map((entry: any) => ({
           ...entry,
           space_id: entry.space_id ?? '',
           created_at: entry.created_at ?? new Date().toISOString(),
           user: entry.user as WaitlistEntry['user'],
-          space: entry.space ?? { title: '', max_capacity: 0 }
+          space: entry.space ? {
+             title: entry.space.title || entry.space.name || '',
+             max_capacity: entry.space.max_capacity || 0
+          } : { title: '', max_capacity: 0 }
         }));
 
       setWaitlists(validWaitlists);

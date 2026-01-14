@@ -87,13 +87,15 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
   if (profilesError) throw profilesError;
 
   // Transform bookings
-  return rawBookings.map(booking => {
+  return rawBookings
+    .filter(booking => booking.space_id !== null) // Filter out bookings with null space_id
+    .map(booking => {
     const coworkerProfile = coworkerProfiles?.find(p => p.id === booking.user_id);
     const workspace = workspacesDetails?.find((w: any) => w.id === booking.space_id);
     
     return {
       id: booking.id,
-      space_id: booking.space_id,
+      space_id: booking.space_id as string,
       user_id: booking.user_id,
       booking_date: booking.booking_date,
       start_time: booking.start_time ?? '',
