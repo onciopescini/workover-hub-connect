@@ -106,7 +106,8 @@ export function useCheckout() {
 
       // Handle Insert Error: If the insert returns an error, STOP execution and show a toast error.
       if (insertError) {
-        logError('Insert Error', insertError);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        logError('Insert Error', insertError as any);
         // Specifically handle Foreign Key Violation (Space not found)
         if (insertError.code === '23503') {
            toast.error("This space is no longer available or has been removed by the host.");
@@ -117,7 +118,8 @@ export function useCheckout() {
       }
 
       if (!bookingData?.id) {
-        logError('Insert returned no ID', bookingData);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        logError('Insert returned no ID', bookingData as any);
         throw new Error('Database insert succeeded but returned no ID');
       }
 
@@ -140,7 +142,8 @@ export function useCheckout() {
 
     } catch (err) {
       const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
-      logError('Checkout Flow Failed', caughtError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('Checkout Flow Failed', caughtError as any);
       return {
         success: false,
         error: caughtError.message

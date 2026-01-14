@@ -29,12 +29,14 @@ export function useBookingPayment() {
     );
 
     if (fnError) {
-      logError('Payment Function Error', fnError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('Payment Function Error', fnError as any);
       throw new Error(`Payment initialization failed: ${fnError.message}`);
     }
 
     if (!sessionData?.url) {
-      logError('No payment URL', sessionData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logError('No payment URL', sessionData as any);
       throw new Error('Payment session created but no URL returned');
     }
 
