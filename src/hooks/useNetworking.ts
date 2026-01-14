@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TIME_CONSTANTS } from "@/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Connection, ConnectionSuggestion } from "@/types/networking";
+import { Connection, ConnectionSuggestion, Coworker } from "@/types/networking";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -11,10 +11,19 @@ interface UseNetworkingProps {
   initialConnections?: Connection[];
 }
 
+export interface SearchFilters {
+  location?: string;
+  profession?: string;
+  industry?: string;
+  skills?: string;
+}
+
 export const useNetworking = ({ initialSuggestions = [], initialConnections = [] }: UseNetworkingProps = {}) => {
   const { authState } = useAuth();
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>(initialSuggestions);
   const [connections, setConnections] = useState<Connection[]>(initialConnections);
+  const [searchResults, setSearchResults] = useState<Coworker[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -246,6 +255,89 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
     return connections.filter((connection) => connection.status === 'accepted');
   };
 
+  const searchCoworkers = async (query: string, filters: SearchFilters) => {
+    setIsSearching(true);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      let dbQuery = supabase
+        .from('profiles')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          profession,
+          profile_photo_url,
+          linkedin_url,
+          cached_avg_rating,
+          cached_review_count,
+          bio,
+          skills,
+          industry,
+          location
+        `)
+        .eq('networking_enabled', true)
+        .neq('id', authState.user?.id || '');
+
+      if (query) {
+        dbQuery = dbQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,bio.ilike.%${query}%`);
+      }
+
+      if (filters.industry) {
+        dbQuery = dbQuery.ilike('industry', `%${filters.industry}%`);
+      }
+
+      if (filters.skills) {
+        // User confirmed skills is text match
+        dbQuery = dbQuery.ilike('skills', `%${filters.skills}%`);
+      }
+
+      if (filters.location) {
+        dbQuery = dbQuery.ilike('location', `%${filters.location}%`);
+      }
+
+      if (filters.profession) {
+        dbQuery = dbQuery.ilike('profession', `%${filters.profession}%`);
+      }
+
+      const { data, error } = await dbQuery;
+
+      if (error) {
+        sreLogger.error('Error searching coworkers', { query, filters }, error);
+        setError(error.message);
+        toast.error("Failed to search coworkers.");
+      } else {
+        const typedResults: Coworker[] = (data || []).map(item => ({
+          id: item.id,
+          first_name: item.first_name || '',
+          last_name: item.last_name || '',
+          profession: item.profession,
+          avatar_url: item.profile_photo_url,
+          linkedin_url: item.linkedin_url,
+          cached_avg_rating: item.cached_avg_rating || 0,
+          cached_review_count: item.cached_review_count || 0,
+          bio: item.bio,
+          skills: item.skills,
+          industry: item.industry,
+          location: item.location
+        }));
+        setSearchResults(typedResults);
+      }
+    } catch (err: unknown) {
+      sreLogger.error('Unexpected error searching coworkers', {}, err as Error);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      toast.error("An unexpected error occurred while searching.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchResults([]);
+    setIsSearching(false);
+  };
+
   useEffect(() => {
     if (authState.user) {
       fetchSuggestions();
@@ -269,5 +361,9 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
     getSentRequests,
     getReceivedRequests,
     getActiveConnections,
+    searchCoworkers,
+    searchResults,
+    isSearching,
+    clearSearch,
   };
 };

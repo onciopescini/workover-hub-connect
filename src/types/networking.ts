@@ -77,4 +77,9 @@ export interface Coworker {
   linkedin_url: string | null;
   cached_avg_rating?: number;
   cached_review_count?: number;
+  bio?: string | null;
+  skills?: string | null;
+  industry?: string | null;
+  location?: string | null;
+  profile_photo_url?: string | null;
 }
