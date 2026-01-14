@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Calendar, Clock, CreditCard, AlertTriangle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { TimeSlotSelectionStep } from "./TimeSlotSelectionStep";
 import { BookingSummaryStep } from "./BookingSummaryStep";
@@ -11,53 +10,6 @@ import { GuestsSelector } from './GuestsSelector';
 import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckoutFiscalFields, type CoworkerFiscalData } from './checkout/CheckoutFiscalFields';
-import { coworkerFiscalSchema } from '@/lib/validation/checkoutFiscalSchema';
-import { useCoworkerFiscalData } from '@/hooks/useCoworkerFiscalData';
-import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
-import { getAvailableCapacity } from "@/lib/capacity-utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useLogger } from "@/hooks/useLogger";
-import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
-import { computePricing } from "@/lib/pricing";
-import { format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
-import { it } from 'date-fns/locale';
-import { z } from 'zod';
-import { useCheckout } from '@/hooks/useCheckout';
-
-// Helper functions for time calculations
-function parseHHMM(time: string): [number, number] {
-  const parts = time.split(':');
-  const hour = parseInt(parts[0] || '0');
-  const minute = parseInt(parts[1] || '0');
-  return [hour, minute];
-}
-
-function addMinutesHHMM(time: string, minutes: number): string {
-  const [hour, minute] = parseHHMM(time);
-  const totalMinutes = hour * 60 + minute + minutes;
-  const newHour = Math.floor(totalMinutes / 60);
-  const newMinute = totalMinutes % 60;
-  return `${newHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
-}
-
-export interface TwoStepBookingFormProps {
-  spaceId: string;
-  pricePerDay: number;
-  pricePerHour: number;
-  confirmationType: string;
-  maxCapacity: number;
-  cancellationPolicy?: string;
-  rules?: string;
-  onSuccess: () => void;
-  onError: (message: string) => void;
-  bufferMinutes?: number;
-  slotInterval?: number; // 15 or 30 minutes
-  hostStripeAccountId?: string; // Optional for Stripe Connect payments
-  availability?: any; // Availability configuration from host
-  hostFiscalRegime?: string; // Host's fiscal regime to determine if invoice can be requested
-  timezone?: string;
-}
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
 
@@ -84,6 +36,44 @@ export interface BookingState {
   isReserving: boolean;
 }
 
+export interface TwoStepBookingFormProps {
+  // Config
+  spaceId: string;
+  pricePerDay: number;
+  pricePerHour: number;
+  confirmationType: string;
+  maxCapacity: number;
+  cancellationPolicy?: string;
+  rules?: string;
+  bufferMinutes?: number;
+  slotInterval?: number;
+  hostStripeAccountId?: string;
+  availability?: any;
+  hostFiscalRegime?: string;
+  timezone?: string;
+
+  // State
+  currentStep: BookingStep;
+  bookingState: BookingState;
+  acceptedPolicy: boolean;
+  requestInvoice: boolean;
+  coworkerFiscalData: CoworkerFiscalData;
+  fiscalErrors: Record<string, string>;
+  isReserving: boolean;
+  isCheckoutLoading: boolean;
+  fiscalDataPreFilled?: boolean;
+
+  // Handlers
+  onDateSelect: (date: Date) => void;
+  onRangeSelect: (range: SelectedTimeRange) => void;
+  onGuestsChange: (count: number) => void;
+  onStepChange: (step: BookingStep) => void;
+  onConfirm: () => void;
+  setAcceptedPolicy: (val: boolean) => void;
+  setRequestInvoice: (val: boolean) => void;
+  setCoworkerFiscalData: (data: CoworkerFiscalData) => void;
+}
+
 const STEP_CONFIG = [
   { key: 'DATE', label: 'Data', icon: Calendar },
   { key: 'TIME', label: 'Orario', icon: Clock },
@@ -91,483 +81,47 @@ const STEP_CONFIG = [
 ] as const;
 
 export function TwoStepBookingForm({ 
+  // Config
   spaceId, 
   pricePerDay, 
   pricePerHour,
   confirmationType,
   maxCapacity,
-  cancellationPolicy = 'moderate',
+  cancellationPolicy,
   rules,
-  onSuccess, 
-  onError,
   bufferMinutes = 0,
   slotInterval = 30,
   hostStripeAccountId,
   availability,
   hostFiscalRegime,
-  timezone
-}: TwoStepBookingFormProps) {
-  const [currentStep, setCurrentStep] = useState<BookingStep>('DATE');
-  const [bookingState, setBookingState] = useState<BookingState>({
-    selectedDate: null,
-    availableSlots: [],
-    selectedRange: null,
-    guestsCount: 1,
-    availableSpots: null,
-    isLoadingSlots: false,
-    isReserving: false
-  });
-  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   
-  const { info, error, debug } = useLogger({ context: 'TwoStepBookingForm' });
-  const { processCheckout, isLoading: isCheckoutLoading } = useCheckout();
-  
-  // Fiscal data hook - auto-loads saved data
-  const { fiscalData: savedFiscalData, isLoading: isLoadingFiscalData } = useCoworkerFiscalData();
-  
-  // Fiscal data state for coworker invoice request
-  const [requestInvoice, setRequestInvoice] = useState(false);
-  const [coworkerFiscalData, setCoworkerFiscalData] = useState<CoworkerFiscalData>({
-    tax_id: '',
-    is_business: false,
-    pec_email: '',
-    sdi_code: '',
-    billing_address: '',
-    billing_city: '',
-    billing_province: '',
-    billing_postal_code: '',
-  });
-  const [fiscalErrors, setFiscalErrors] = useState<Record<string, string>>({});
-  const [fiscalDataPreFilled, setFiscalDataPreFilled] = useState(false);
+  // State
+  currentStep,
+  bookingState,
+  acceptedPolicy,
+  requestInvoice,
+  coworkerFiscalData,
+  fiscalErrors,
+  isReserving,
+  isCheckoutLoading,
+  fiscalDataPreFilled = false,
 
-  // Pre-fill fiscal data when loaded
-  useEffect(() => {
-    if (savedFiscalData && !fiscalDataPreFilled) {
-      setCoworkerFiscalData(savedFiscalData);
-      setFiscalDataPreFilled(true);
-      
-      info('Fiscal data pre-filled from profile', {
-        action: 'fiscal_data_prefilled',
-        isBusiness: savedFiscalData.is_business,
-        hasAddress: !!savedFiscalData.billing_address
-      });
-    }
-  }, [savedFiscalData, fiscalDataPreFilled, info]);
+  // Handlers
+  onDateSelect,
+  onRangeSelect,
+  onGuestsChange,
+  onStepChange,
+  onConfirm,
+  setAcceptedPolicy,
+  setRequestInvoice,
+  setCoworkerFiscalData
+}: TwoStepBookingFormProps) {
 
   const progressValue = {
     'DATE': 33,
     'TIME': 66,
     'SUMMARY': 100
   }[currentStep];
-
-  // Get availability for a specific date
-  const getAvailabilityForDate = (date: Date): { enabled: boolean; intervals: { start: string; end: string }[] } => {
-    if (!availability) {
-      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] };
-    }
-
-    // Parse/normalize availability if needed
-    let parsedAvailability = availability;
-    try {
-      if (typeof availability === 'string') {
-        parsedAvailability = JSON.parse(availability);
-      }
-    } catch (e) {
-      console.warn('Failed to parse availability for date:', e);
-      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] }; // Fallback default
-    }
-
-    if (!parsedAvailability || typeof parsedAvailability !== 'object') {
-      return { enabled: true, intervals: [{ start: "09:00", end: "18:00" }] };
-    }
-
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayName = dayNames[date.getDay()];
-    
-    const dateString = format(date, 'yyyy-MM-dd');
-    const exception = parsedAvailability.exceptions?.find((ex: any) => ex.date === dateString);
-    
-    if (exception) {
-      // Support both 'enabled' and 'available' fields
-      const isEnabled = exception.enabled !== undefined ? exception.enabled : exception.available;
-      if (!isEnabled) {
-        return { enabled: false, intervals: [] };
-      }
-      // If exception has slots, use them as intervals
-      if (exception.slots && exception.slots.length > 0) {
-        return { enabled: true, intervals: exception.slots.map((s: any) => ({ start: s.start, end: s.end })) };
-      }
-    }
-    
-    const daySchedule = dayName ? parsedAvailability.recurring?.[dayName] : null;
-    if (!daySchedule || !daySchedule.enabled || !daySchedule.slots || daySchedule.slots.length === 0) {
-      return { enabled: false, intervals: [] };
-    }
-    
-    // Return all slots as intervals
-    return { enabled: true, intervals: daySchedule.slots.map((s: any) => ({ start: s.start, end: s.end })) };
-  };
-
-  const generateTimeSlots = (interval: number = 30, date?: Date): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-    
-    // Default intervals se non c'è availability
-    let intervals = [{ start: "08:00", end: "20:00" }];
-    
-    // Se c'è una data e availability, usiamo gli intervalli configurati
-    if (date && availability) {
-      const dayAvailability = getAvailabilityForDate(date);
-      if (!dayAvailability.enabled || dayAvailability.intervals.length === 0) {
-        return [];
-      }
-      intervals = dayAvailability.intervals;
-    }
-    
-    // Genera slot per ogni intervallo
-    for (const intervalConfig of intervals) {
-      const [startHour, startMinute] = parseHHMM(intervalConfig.start);
-      const [endHour, endMinute] = parseHHMM(intervalConfig.end);
-      
-      let currentTime = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
-      const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-      
-      while (currentTime < endTime) {
-        slots.push({ 
-          time: currentTime, 
-          available: true,
-          reserved: false,
-          selected: false
-        });
-        currentTime = addMinutesHHMM(currentTime, interval);
-      }
-    }
-    
-    return slots;
-  };
-
-  const fetchAvailableSlots = async (date: Date) => {
-    setBookingState(prev => ({ ...prev, isLoadingSlots: true }));
-    
-    try {
-      debug('Fetching available slots for date', { date: format(date, 'yyyy-MM-dd'), spaceId });
-      
-      const dateStr = format(date, 'yyyy-MM-dd');
-      
-      // Check if date is available according to host's availability
-      const dayAvailability = getAvailabilityForDate(date);
-      if (!dayAvailability.enabled) {
-        debug('Date not available per host configuration', { date: dateStr, availability: dayAvailability });
-        setBookingState(prev => ({ 
-          ...prev, 
-          availableSlots: [],
-          isLoadingSlots: false 
-        }));
-        return;
-      }
-
-      let existingBookings: any[] = [];
-      
-      try {
-        // Try to use optimized RPC first
-        existingBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
-      } catch (rpcError) {
-        // Fallback: Query bookings table directly
-        error('RPC failed, using fallback query', rpcError as Error, { spaceId, dateStr });
-        
-        const { data: bookings, error: bookingError } = await supabase
-          .from('bookings')
-          .select('id, start_time, end_time, status, user_id')
-          .eq('space_id', spaceId)
-          .eq('booking_date', dateStr)
-          .in('status', ['pending', 'confirmed']);
-        
-        if (bookingError) {
-          throw bookingError;
-        }
-        
-        // Format bookings to match RPC response
-        existingBookings = (bookings || []).map(b => ({
-          booking_id: b.id,
-          start_time: b.start_time ? b.start_time.toString().substring(0, 5) : '00:00', // Extract HH:MM
-          end_time: b.end_time ? b.end_time.toString().substring(0, 5) : '00:00',
-          status: b.status,
-          user_id: b.user_id
-        }));
-        
-        toast.info('Calendario caricato in modalità ridotta');
-      }
-      
-      // Create blocked intervals with buffer
-      const interval = slotInterval ?? 30;
-      const blocked = existingBookings.map((booking: any) => ({
-        start: addMinutesHHMM(booking.start_time, -bufferMinutes),
-        end: addMinutesHHMM(booking.end_time, bufferMinutes),
-      }));
-      
-      // Generate base time slots based on availability
-      const baseSlots = generateTimeSlots(interval, date);
-      
-      // Calculate current time in space's timezone (or strict device time fallback)
-      const now = new Date();
-      // If timezone is provided, use it. Otherwise assume space is in same zone as user (device time)
-      const targetTimezone = timezone || 'Europe/Rome';
-      let zonedNow: Date;
-      try {
-        zonedNow = toZonedTime(now, targetTimezone);
-      } catch (e) {
-        // Fallback if timezone string is invalid
-        console.warn('Invalid timezone', timezone, e);
-        zonedNow = now;
-      }
-
-      // Check if selected date is "Today" in the target timezone
-      // We compare YYYY-MM-DD of the selected date vs the zoned "now"
-      const isToday = format(date, 'yyyy-MM-dd') === format(zonedNow, 'yyyy-MM-dd');
-      const currentHH = zonedNow.getHours();
-      const currentMM = zonedNow.getMinutes();
-
-      // Mark unavailable slots based on blocked intervals (including buffer) AND strict time check
-      const updatedSlots = baseSlots.map(slot => {
-        const isBlocked = blocked.some((block: { start: string; end: string }) => slot.time >= block.start && slot.time < block.end);
-        
-        // Strict Time Validation for Today
-        let isPastTime = false;
-        if (isToday) {
-          const [slotHH, slotMM] = parseHHMM(slot.time);
-          // If slot start time is strictly before current time (or equal/less minutes in same hour)
-          // Actually requirement says "if it is 12:05, slots like 09:00-12:00 must be unselectable"
-          // AND "if current time is 12:05, the 12:00 slot must be disabled".
-          // So if slot_start <= current_time, disable it.
-          // 12:00 slot (starts 12:00) vs 12:05 current. 12:00 < 12:05. Disable.
-          // 12:30 slot (starts 12:30) vs 12:05 current. 12:30 > 12:05. Enable.
-          if (slotHH < currentHH || (slotHH === currentHH && slotMM <= currentMM)) {
-            isPastTime = true;
-          }
-        }
-
-        const isAvailable = !isBlocked && !isPastTime;
-
-        return {
-          ...slot,
-          available: isAvailable,
-          reserved: isBlocked // reserved implies "booked by someone else" usually, but here we just use it for "blocked" status logic if needed.
-          // Note: The UI usually renders "gray" for !available.
-        };
-      });
-      
-      info('Available slots fetched', { 
-        date: dateStr, 
-        totalSlots: updatedSlots.length,
-        availableSlots: updatedSlots.filter(s => s.available).length,
-        usedFallback: existingBookings.length > 0 && !existingBookings[0]?.start_time?.includes(':')
-      });
-      
-      setBookingState(prev => ({
-        ...prev,
-        availableSlots: updatedSlots,
-        isLoadingSlots: false
-      }));
-      
-    } catch (err) {
-      error('Failed to fetch available slots', err as Error, { spaceId, date });
-      toast.error('Errore nel caricamento degli slot disponibili');
-      setBookingState(prev => ({ ...prev, isLoadingSlots: false }));
-    }
-  };
-
-  const handleDateSelect = async (date: Date) => {
-    debug('Date selected', { date: format(date, 'yyyy-MM-dd') });
-    
-    setBookingState(prev => ({
-      ...prev,
-      selectedDate: date,
-      selectedRange: null, // Reset time selection
-      availableSlots: []
-    }));
-    
-    await fetchAvailableSlots(date);
-    setCurrentStep('TIME');
-  };
-
-  const handleTimeRangeSelect = async (range: SelectedTimeRange) => {
-    debug('Time range selected', range);
-    
-    setBookingState(prev => ({
-      ...prev,
-      selectedRange: range
-    }));
-
-    // Fetch available capacity for the selected time slot
-    if (bookingState.selectedDate) {
-      const capacity = await getAvailableCapacity(
-        spaceId,
-        format(bookingState.selectedDate, 'yyyy-MM-dd'),
-        range.startTime,
-        range.endTime
-      );
-      
-      setBookingState(prev => ({
-        ...prev,
-        availableSpots: capacity.availableSpots,
-        // Ensure guest count is at least 1, even if spots are 0 (which triggers validation error later)
-        guestsCount: Math.max(1, Math.min(prev.guestsCount, capacity.availableSpots))
-      }));
-
-      if (capacity.availableSpots === 0) {
-        toast.warning('Attenzione: questo slot è al completo');
-      }
-    }
-  };
-
-  const handleGuestsChange = (count: number) => {
-    // Hard minimum constraint of 1
-    const validCount = Math.max(1, count);
-
-    setBookingState(prev => ({
-      ...prev,
-      guestsCount: validCount
-    }));
-  };
-
-  const handleContinueToSummary = () => {
-    if (!bookingState.selectedRange) {
-      toast.error('Seleziona un orario per continuare');
-      return;
-    }
-    
-    setCurrentStep('SUMMARY');
-  };
-
-  const validateFiscalData = (): boolean => {
-    if (!requestInvoice) {
-      setFiscalErrors({});
-      return true;
-    }
-    
-    try {
-      coworkerFiscalSchema.parse({
-        request_invoice: requestInvoice,
-        fiscal_data: coworkerFiscalData,
-      });
-      setFiscalErrors({});
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          const path = err.path.join('.');
-          errors[path] = err.message;
-        });
-        setFiscalErrors(errors);
-        toast.error('Controlla i dati di fatturazione', {
-          description: 'Alcuni campi obbligatori sono mancanti o non validi'
-        });
-      }
-      return false;
-    }
-  };
-
-  const handleConfirmBooking = async () => {
-    // Check network connection
-    if (!navigator.onLine) {
-      toast.error('Nessuna connessione internet. Riprova quando sei online.');
-      return;
-    }
-
-    if (!bookingState.selectedDate || !bookingState.selectedRange) {
-      toast.error('Completa tutti i passaggi prima di confermare');
-      return;
-    }
-
-    if (!acceptedPolicy && (cancellationPolicy || rules)) {
-      toast.error('Devi accettare le policy e regole per continuare');
-      return;
-    }
-
-    // Validate fiscal data if invoice is requested
-    if (!validateFiscalData()) {
-      return;
-    }
-
-    setBookingState(prev => ({ ...prev, isReserving: true }));
-
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user) {
-        onError('Devi essere autenticato per prenotare');
-        return;
-      }
-
-      // Prepare fiscal data for payment session
-      const fiscalMetadata = requestInvoice ? {
-        request_invoice: true,
-        ...coworkerFiscalData
-      } : null;
-
-      // Calculate client-side price for validation
-      const durationHours = bookingState.selectedRange.duration;
-      const validationPricing = computePricing({
-        durationHours,
-        pricePerHour,
-        pricePerDay,
-        guestsCount: bookingState.guestsCount
-      });
-
-      const result = await processCheckout({
-        spaceId,
-        userId: user.user.id,
-        date: bookingState.selectedDate,
-        startTime: bookingState.selectedRange.startTime,
-        endTime: bookingState.selectedRange.endTime,
-        guestsCount: bookingState.guestsCount,
-        confirmationType: confirmationType as 'instant' | 'host_approval',
-        pricePerHour,
-        pricePerDay,
-        durationHours: bookingState.selectedRange.duration,
-        ...(hostStripeAccountId ? { hostStripeAccountId } : {}),
-        fiscalData: fiscalMetadata,
-        clientBasePrice: validationPricing.base
-      });
-
-      if (!result.success) {
-        console.error("Booking failed:", result.error);
-
-        // Show specific toast for DB errors
-        if (result.error?.includes('Insert failed')) {
-           toast.error('Errore Database', { description: result.error });
-        } else if (result.error?.includes('Posti insufficienti')) {
-           toast.error('Posti insufficienti');
-        } else if (result.error?.includes('conflict')) {
-           toast.error('Slot non più disponibile');
-        } else {
-           // Generic or propagated error
-           const errorMsg = result.error || 'Errore durante la prenotazione';
-           toast.error('Errore prenotazione', { description: errorMsg });
-           onError(errorMsg);
-        }
-        return;
-      }
-
-      // Success handling
-      if (confirmationType === 'host_approval') {
-        toast.success('Richiesta di prenotazione inviata!', {
-          description: 'L\'host riceverà la tua richiesta e ti risponderà entro le tempistiche previste.',
-          duration: 5000
-        });
-        
-        setTimeout(() => {
-          onSuccess();
-        }, 2000);
-      }
-      // Instant booking handles redirect in useCheckout
-
-    } catch (err) {
-      error('Unexpected error during booking', err as Error, { spaceId, bookingState });
-      onError('Errore imprevisto nella prenotazione');
-    } finally {
-      setBookingState(prev => ({ ...prev, isReserving: false }));
-    }
-  };
 
   const canGoBack = currentStep !== 'DATE';
   const canContinue = {
@@ -609,7 +163,7 @@ export function TwoStepBookingForm({
         {currentStep === 'DATE' && (
           <DateSelectionStep
             selectedDate={bookingState.selectedDate}
-            onDateSelect={handleDateSelect}
+            onDateSelect={onDateSelect}
             spaceId={spaceId}
             availability={availability}
           />
@@ -621,7 +175,7 @@ export function TwoStepBookingForm({
               selectedDate={bookingState.selectedDate!}
               availableSlots={bookingState.availableSlots}
               selectedRange={bookingState.selectedRange}
-              onRangeSelect={handleTimeRangeSelect}
+              onRangeSelect={onRangeSelect}
               isLoading={bookingState.isLoadingSlots}
               pricePerHour={pricePerHour}
               pricePerDay={pricePerDay}
@@ -633,7 +187,7 @@ export function TwoStepBookingForm({
               <GuestsSelector
                 guestsCount={bookingState.guestsCount}
                 maxCapacity={maxCapacity}
-                onGuestsChange={handleGuestsChange}
+                onGuestsChange={onGuestsChange}
                 availableSpots={bookingState.availableSpots ?? maxCapacity}
               />
             )}
@@ -709,9 +263,9 @@ export function TwoStepBookingForm({
                   'TIME': 'DATE',
                   'SUMMARY': 'TIME'
                 }[currentStep] as BookingStep;
-                setCurrentStep(prevStep);
+                onStepChange(prevStep);
               }}
-              disabled={bookingState.isReserving}
+              disabled={isReserving}
             >
               Indietro
             </Button>
@@ -724,7 +278,7 @@ export function TwoStepBookingForm({
               type="button"
               onClick={() => {
                 if (bookingState.selectedDate) {
-                  setCurrentStep('TIME');
+                  onStepChange('TIME');
                 }
               }}
               disabled={!canContinue}
@@ -737,7 +291,7 @@ export function TwoStepBookingForm({
           {currentStep === 'TIME' && (
             <Button
               type="button"
-              onClick={handleContinueToSummary}
+              onClick={() => onStepChange('SUMMARY')}
               disabled={!canContinue}
             >
               Continua
@@ -754,11 +308,11 @@ export function TwoStepBookingForm({
               )}
               <Button
                 type="button"
-                onClick={handleConfirmBooking}
-                disabled={bookingState.isReserving || isCheckoutLoading || (!hostStripeAccountId && confirmationType === 'instant')}
+                onClick={onConfirm}
+                disabled={isReserving || isCheckoutLoading || (!hostStripeAccountId && confirmationType === 'instant')}
                 className="min-w-32"
               >
-                {bookingState.isReserving || isCheckoutLoading ? (
+                {isReserving || isCheckoutLoading ? (
                   <>
                     <span data-testid="checkout-loading-spinner" className="sr-only">loading</span>
                     Prenotando...

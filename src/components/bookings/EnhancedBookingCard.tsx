@@ -2,7 +2,7 @@
 import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { it } from "date-fns/locale";
-import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-utils";
+import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-time";
 import { canCancelBooking } from "@/lib/booking-datetime-utils";
 import { BookingWithDetails } from "@/types/booking";
 import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check } from "lucide-react";
