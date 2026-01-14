@@ -11,6 +11,7 @@ interface CheckIn {
   user_id: string;
   workspace_id: string;
   checkin_time: string;
+  created_at?: string;
   profiles: {
     first_name: string;
     last_name: string;
@@ -36,6 +37,7 @@ export const WhosHereList = () => {
             user_id,
             workspace_id,
             checkin_time,
+            created_at,
             profiles:user_id (
               first_name,
               last_name,
@@ -57,7 +59,8 @@ export const WhosHereList = () => {
           const typedData = (data as any[]).map(item => ({
             user_id: item.user_id,
             workspace_id: item.workspace_id,
-            checkin_time: item.checkin_time,
+            checkin_time: item.checkin_time || item.created_at, // Fallback to created_at if checkin_time is missing
+            created_at: item.created_at,
             profiles: item.profiles,
             workspaces: item.workspaces
           }));

@@ -17,10 +17,9 @@ export const useRealtimeAdminData = () => {
     queryFn: async () => {
       try {
         const { count, error } = await supabase
-          .from('spaces')
+          .from('workspaces')
           .select('*', { count: 'exact', head: true })
-          .eq('pending_approval', true)
-          .eq('published', false);
+          .eq('pending_approval', true);
         
         if (error) throw error;
         return count || 0;

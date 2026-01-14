@@ -50,10 +50,12 @@ export const AdvancedFinancialMetrics: React.FC<FinancialMetricsProps> = ({
         revenueByCategory={revenueByCategory}
       />
 
+      {/* AI Insights disabled due to feature deprecation
       <FinancialMetricsInsights
         revenueGrowth={actualRevenueGrowth}
         occupancyRate={actualOccupancyRate}
       />
+      */}
     </div>
   );
 };

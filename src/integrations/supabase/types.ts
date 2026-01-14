@@ -681,6 +681,7 @@ export type Database = {
         Row: {
           checkin_time: string
           checkout_time: string | null
+          created_at: string
           id: string
           metadata: Json
           method: string | null
@@ -690,6 +691,7 @@ export type Database = {
         Insert: {
           checkin_time?: string
           checkout_time?: string | null
+          created_at?: string
           id?: string
           metadata?: Json
           method?: string | null
@@ -699,6 +701,7 @@ export type Database = {
         Update: {
           checkin_time?: string
           checkout_time?: string | null
+          created_at?: string
           id?: string
           metadata?: Json
           method?: string | null
