@@ -12,6 +12,17 @@ export interface ValidationParams {
   clientBasePrice?: number;
 }
 
+type ValidateAndReserveSlotParams = {
+  space_id_param: string;
+  date_param: string;
+  start_time_param: string;
+  end_time_param: string;
+  user_id_param: string;
+  guests_count_param: number;
+  confirmation_type_param: 'instant' | 'host_approval';
+  client_base_price_param?: number;
+};
+
 export function useBookingValidation() {
   const { debug, error: logError } = useLogger({ context: 'useBookingValidation' });
 
@@ -29,7 +40,7 @@ export function useBookingValidation() {
       clientBasePrice
     } = params;
 
-    const validationResult = await supabase.rpc('validate_and_reserve_slot', {
+    const rpcParams: ValidateAndReserveSlotParams = {
       space_id_param: spaceId,
       date_param: dateStr,
       start_time_param: startTime,
@@ -38,7 +49,9 @@ export function useBookingValidation() {
       guests_count_param: guestsCount,
       confirmation_type_param: confirmationType,
       client_base_price_param: clientBasePrice
-    } as any);
+    };
+
+    const validationResult = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
     if (validationResult.error) {
       logError('Validation RPC Error', validationResult.error);

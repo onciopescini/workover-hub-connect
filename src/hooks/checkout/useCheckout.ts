@@ -7,7 +7,7 @@ import { BookingInsert } from '@/types/booking';
 import { useNavigate } from 'react-router-dom';
 import { useBookingValidation } from './useBookingValidation';
 import { useBookingPayment } from './useBookingPayment';
-import { CoworkerFiscalData } from '@/components/booking/checkout/CheckoutFiscalFields';
+import type { CoworkerFiscalData } from '@/components/booking/checkout/CheckoutFiscalFields';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -21,7 +21,7 @@ export interface CheckoutParams {
   pricePerDay: number;
   durationHours: number;
   hostStripeAccountId?: string;
-  fiscalData?: CoworkerFiscalData | unknown;
+  fiscalData?: CoworkerFiscalData;
   clientBasePrice?: number;
 }
 
@@ -94,7 +94,7 @@ export function useCheckout() {
         payment_required: isInstant,
         slot_reserved_until: reservationDeadline.toISOString(),
         approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
-        fiscal_data: fiscalData as any // Casting as any for DB insertion compatibility if types mismatch slightly
+        fiscal_data: fiscalData ?? null
       };
 
       // 3. Insert Booking
@@ -138,13 +138,12 @@ export function useCheckout() {
       window.location.href = paymentUrl;
       return { success: true, bookingId }; // Browser redirects
 
-    } catch (err: any) {
-      logError('Checkout Flow Failed', err);
-      // Ensure specific message is propagated
-      const message = err instanceof Error ? err.message : 'Unknown error occurred';
+    } catch (err) {
+      const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
+      logError('Checkout Flow Failed', caughtError);
       return {
         success: false,
-        error: message
+        error: caughtError.message
       };
     } finally {
       setIsLoading(false);
