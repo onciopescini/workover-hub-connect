@@ -96,7 +96,7 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
         <div className="relative h-56 overflow-hidden">
           <OptimizedImage
             src={photos[currentImageIndex]}
-            alt={space.title}
+            alt={space.name || space.title || 'Space'}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onClick={onClick}
           />
@@ -168,7 +168,7 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
         <div className="p-4" onClick={onClick}>
           {/* Title and Verification */}
           <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-lg line-clamp-1 flex-1 mr-2">{space.title}</h3>
+            <h3 className="font-semibold text-lg line-clamp-1 flex-1 mr-2">{space.name || space.title}</h3>
             <div className="flex items-center gap-1">
               {isVerified && (
                 <Badge variant="outline" className="border-blue-200 text-blue-700 px-2 py-0">

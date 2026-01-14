@@ -43,8 +43,8 @@ export interface TwoStepBookingFormProps {
   pricePerHour: number;
   confirmationType: string;
   maxCapacity: number;
-  cancellationPolicy?: string;
-  rules?: string;
+  cancellationPolicy: string;
+  rules: string;
   bufferMinutes?: number;
   slotInterval?: number;
   hostStripeAccountId?: string;
@@ -222,7 +222,7 @@ export function TwoStepBookingForm({
             {(cancellationPolicy || rules) && (
               <div className="mt-6">
                 <PolicyDisplay 
-                  cancellationPolicy={cancellationPolicy}
+                  cancellationPolicy={cancellationPolicy || 'moderate'}
                   rules={rules || ''}
                 />
                 

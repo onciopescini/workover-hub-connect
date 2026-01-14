@@ -49,7 +49,7 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video relative overflow-hidden">
         {space.photos && space.photos.length > 0 ? (
-          <img src={space.photos[0]} alt={space.title} className="w-full h-full object-cover" />
+          <img src={space.photos[0]} alt={space.name || space.title || 'Space'} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gray-200 flex items-center justify-center">
             <span className="text-gray-400">Nessuna foto</span>
@@ -61,7 +61,7 @@ export const EnhancedSpaceManagementCard: React.FC<EnhancedSpaceManagementCardPr
       <CardContent className="p-4">
         <div className="space-y-3">
           <div>
-            <h3 className="font-semibold text-lg truncate">{space.title}</h3>
+            <h3 className="font-semibold text-lg truncate">{space.name || space.title}</h3>
             <div className="flex items-center text-sm text-gray-600 mt-1">
               <MapPin className="w-4 h-4 mr-1" />
               <span className="truncate">{space.address}</span>

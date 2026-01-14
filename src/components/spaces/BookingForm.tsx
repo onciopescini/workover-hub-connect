@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { useLogger } from "@/hooks/useLogger";
-import { useCheckout } from '@/hooks/useCheckout';
+import { useCheckout } from '@/hooks/checkout/useCheckout';
 import { useCoworkerFiscalData } from '@/hooks/useCoworkerFiscalData';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { getAvailableCapacity } from "@/lib/capacity-utils";
@@ -433,13 +433,13 @@ export function BookingForm({
       pricePerHour={pricePerHour}
       confirmationType={confirmationType}
       maxCapacity={maxCapacity}
-      cancellationPolicy={cancellationPolicy}
-      rules={rules}
+      cancellationPolicy={cancellationPolicy ?? 'moderate'}
+      rules={rules ?? ''}
       bufferMinutes={bufferMinutes}
       slotInterval={slotInterval}
-      hostStripeAccountId={hostStripeAccountId}
+      hostStripeAccountId={hostStripeAccountId ?? ''}
       availability={availability}
-      hostFiscalRegime={hostFiscalRegime}
+      hostFiscalRegime={hostFiscalRegime ?? ''}
       timezone={effectiveTimezone}
 
       // State

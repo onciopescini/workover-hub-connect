@@ -21,7 +21,8 @@ export const QRScanner = ({ isOpen, onClose }: QRScannerProps) => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const addLog = (msg: string) => {
-    setDebugLogs(prev => [...prev.slice(-19), `[${new Date().toISOString().split('T')[1].split('.')[0]}] ${msg}`]);
+    const timePart = new Date().toISOString().split('T')[1]?.split('.')[0] ?? '00:00:00';
+    setDebugLogs(prev => [...prev.slice(-19), `[${timePart}] ${msg}`]);
   };
 
   useEffect(() => {

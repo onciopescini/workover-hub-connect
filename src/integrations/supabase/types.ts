@@ -372,14 +372,14 @@ export type Database = {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -414,14 +414,14 @@ export type Database = {
             foreignKeyName: "availability_cache_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "availability_cache_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -548,7 +548,7 @@ export type Database = {
           service_completed_at: string | null
           service_completed_by: string | null
           slot_reserved_until: string | null
-          space_id: string
+          space_id: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
@@ -590,7 +590,7 @@ export type Database = {
           service_completed_at?: string | null
           service_completed_by?: string | null
           slot_reserved_until?: string | null
-          space_id: string
+          space_id?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id?: string | null
@@ -632,7 +632,7 @@ export type Database = {
           service_completed_at?: string | null
           service_completed_by?: string | null
           slot_reserved_until?: string | null
-          space_id?: string
+          space_id?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id?: string | null
@@ -677,6 +677,51 @@ export type Database = {
           },
         ]
       }
+      check_ins: {
+        Row: {
+          checkin_time: string
+          checkout_time: string | null
+          id: string
+          metadata: Json
+          method: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          checkin_time?: string
+          checkout_time?: string | null
+          id?: string
+          metadata?: Json
+          method?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          checkin_time?: string
+          checkout_time?: string | null
+          id?: string
+          metadata?: Json
+          method?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklists: {
         Row: {
           completed: boolean | null
@@ -704,14 +749,14 @@ export type Database = {
             foreignKeyName: "checklists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "checklists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1512,14 +1557,14 @@ export type Database = {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
           {
@@ -1599,14 +1644,14 @@ export type Database = {
             foreignKeyName: "favorites_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "favorites_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1813,14 +1858,14 @@ export type Database = {
             foreignKeyName: "image_processing_jobs_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "image_processing_jobs_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2927,6 +2972,7 @@ export type Database = {
           id: string
           identifier: string
           ip_address: unknown
+          metadata: Json | null
           user_agent: string | null
           window_start: string | null
         }
@@ -2938,6 +2984,7 @@ export type Database = {
           id?: string
           identifier: string
           ip_address?: unknown
+          metadata?: Json | null
           user_agent?: string | null
           window_start?: string | null
         }
@@ -2949,6 +2996,7 @@ export type Database = {
           id?: string
           identifier?: string
           ip_address?: unknown
+          metadata?: Json | null
           user_agent?: string | null
           window_start?: string | null
         }
@@ -3136,14 +3184,14 @@ export type Database = {
             foreignKeyName: "space_locations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: true
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "space_locations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: true
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -3182,7 +3230,22 @@ export type Database = {
           space_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "space_reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       space_tags: {
         Row: {
@@ -3208,14 +3271,14 @@ export type Database = {
             foreignKeyName: "space_tags_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "space_tags_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4095,14 +4158,14 @@ export type Database = {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
           {
@@ -4194,14 +4257,14 @@ export type Database = {
             foreignKeyName: "workspace_features_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "workspace_features_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_view"
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4774,6 +4837,10 @@ export type Database = {
           reason?: string
         }
         Returns: Json
+      }
+      check_host_guest_connection: {
+        Args: { target_profile_id: string }
+        Returns: boolean
       }
       check_payment_integrity: {
         Args: never
@@ -5410,7 +5477,7 @@ export type Database = {
           service_completed_at: string | null
           service_completed_by: string | null
           slot_reserved_until: string | null
-          space_id: string
+          space_id: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
@@ -5461,7 +5528,7 @@ export type Database = {
           service_completed_at: string | null
           service_completed_by: string | null
           slot_reserved_until: string | null
-          space_id: string
+          space_id: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
@@ -5568,6 +5635,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purge_unpublished_workspaces_cache: { Args: never; Returns: undefined }
       reactivate_user: {
         Args: { reactivated_by_admin: string; target_user_id: string }
         Returns: Json
@@ -6293,6 +6361,10 @@ export type Database = {
           status_param: string
         }
         Returns: boolean
+      }
+      update_space_rating_aggregate: {
+        Args: { p_space_id: string }
+        Returns: undefined
       }
       update_ticket_sla_status: { Args: never; Returns: undefined }
       updategeometrysrid: {

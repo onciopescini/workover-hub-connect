@@ -10,7 +10,8 @@ import {
   Twitter, 
   Facebook, 
   Youtube, 
-  Github
+  Github,
+  Briefcase
 } from "lucide-react";
 import { ProfileFormData } from "@/hooks/useProfileForm";
 
