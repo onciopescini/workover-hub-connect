@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, UserCheck, UserX, Home } from "lucide-react";
+import { Shield, UserCheck, UserX, Home, Ban } from "lucide-react";
 import { UserActions } from "./UserActions";
 import { UserDetailModal } from "./UserDetailModal";
 import { AdminUser } from '@/types/admin-user';
@@ -14,6 +14,8 @@ interface UserCardProps {
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;
   onDemoteFromAdmin: (userId: string) => void;
+  onBanUser?: (userId: string, reason: string) => void;
+  onUnbanUser?: (userId: string) => void;
 }
 
 export const UserCard: React.FC<UserCardProps> = ({
@@ -21,7 +23,9 @@ export const UserCard: React.FC<UserCardProps> = ({
   onActivateUser,
   onDeactivateUser,
   onPromoteToAdmin,
-  onDemoteFromAdmin
+  onDemoteFromAdmin,
+  onBanUser,
+  onUnbanUser
 }) => {
   const [showDetail, setShowDetail] = React.useState(false);
 
@@ -66,7 +70,10 @@ export const UserCard: React.FC<UserCardProps> = ({
 
   return (
     <>
-      <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={handleCardClick}>
+      <Card
+        className={`cursor-pointer hover:shadow-md transition-shadow ${user.banned_at ? 'bg-red-50 border-red-200' : ''}`}
+        onClick={handleCardClick}
+      >
         <CardContent className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-4">
           <Avatar>
@@ -74,7 +81,12 @@ export const UserCard: React.FC<UserCardProps> = ({
             <AvatarFallback>{getInitials(user.first_name, user.last_name)}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="text-sm font-medium">{user.first_name} {user.last_name}</div>
+            <div className="text-sm font-medium flex items-center gap-2">
+              {user.first_name} {user.last_name}
+              {user.banned_at && (
+                <Badge variant="destructive" className="h-5 text-[10px] px-1.5">BANNED</Badge>
+              )}
+            </div>
             <div className="text-xs text-gray-500">{user.profession || 'No profession'}</div>
           </div>
         </div>
@@ -82,7 +94,7 @@ export const UserCard: React.FC<UserCardProps> = ({
         <div className="flex items-center space-x-2">
           {renderRoleBadge()}
           
-          {user.is_suspended && (
+          {user.is_suspended && !user.banned_at && (
             <Badge variant="destructive">
               <UserX className="w-3 h-3 mr-1" />
               Sospeso
@@ -90,13 +102,17 @@ export const UserCard: React.FC<UserCardProps> = ({
           )}
         </div>
         
-        <UserActions
-          user={user}
-          onActivateUser={onActivateUser}
-          onDeactivateUser={onDeactivateUser}
-          onPromoteToAdmin={onPromoteToAdmin}
-          onDemoteFromAdmin={onDemoteFromAdmin}
-        />
+        {onBanUser && onUnbanUser && (
+          <UserActions
+            user={user}
+            onActivateUser={onActivateUser}
+            onDeactivateUser={onDeactivateUser}
+            onPromoteToAdmin={onPromoteToAdmin}
+            onDemoteFromAdmin={onDemoteFromAdmin}
+            onBanUser={onBanUser}
+            onUnbanUser={onUnbanUser}
+          />
+        )}
       </CardContent>
     </Card>
 

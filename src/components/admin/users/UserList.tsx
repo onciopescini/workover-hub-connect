@@ -9,6 +9,8 @@ interface UserListProps {
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;
   onDemoteFromAdmin: (userId: string) => void;
+  onBanUser?: (userId: string, reason: string) => void;
+  onUnbanUser?: (userId: string) => void;
 }
 
 export const UserList: React.FC<UserListProps> = ({
@@ -16,7 +18,9 @@ export const UserList: React.FC<UserListProps> = ({
   onActivateUser,
   onDeactivateUser,
   onPromoteToAdmin,
-  onDemoteFromAdmin
+  onDemoteFromAdmin,
+  onBanUser,
+  onUnbanUser
 }) => {
   if (users.length === 0) {
     return (
@@ -36,6 +40,8 @@ export const UserList: React.FC<UserListProps> = ({
           onDeactivateUser={onDeactivateUser}
           onPromoteToAdmin={onPromoteToAdmin}
           onDemoteFromAdmin={onDemoteFromAdmin}
+          onBanUser={onBanUser}
+          onUnbanUser={onUnbanUser}
         />
       ))}
     </div>

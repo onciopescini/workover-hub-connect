@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { getAllSpaces, moderateSpace } from "@/lib/admin-utils";
+import { getAllSpaces, moderateSpace, suspendSpace, unsuspendSpace } from "@/lib/admin-utils";
 import { AdminSpace } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, X, Search, Eye, MapPin, AlertTriangle } from "lucide-react";
+import { CheckCircle, X, Search, Eye, MapPin, AlertTriangle, Ban, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { AdminSpaceRevisionDialog } from "./AdminSpaceRevisionDialog";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -29,6 +29,10 @@ export function AdminSpaceManagement() {
   const [rejectionDialog, setRejectionDialog] = useState(false);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
   const [rejectionReason, setRejectionReason] = useState("");
+
+  // Suspension dialog state
+  const [suspensionDialog, setSuspensionDialog] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState("");
 
   // Space view dialog state
   const [viewDialog, setViewDialog] = useState(false);
@@ -136,6 +140,37 @@ export function AdminSpaceManagement() {
     } catch (error) {
       // Error handled by useErrorHandler
     }
+  };
+
+  const handleSuspendSpace = async () => {
+    if (!selectedSpaceId || !suspensionReason) {
+      toast.error("Inserisci il motivo della sospensione");
+      return;
+    }
+
+    try {
+      await suspendSpace(selectedSpaceId, suspensionReason);
+      await fetchSpaces();
+      setSuspensionDialog(false);
+      setSuspensionReason("");
+      setSelectedSpaceId("");
+    } catch (error) {
+      // Error handled by useErrorHandler
+    }
+  };
+
+  const handleUnsuspendSpace = async (spaceId: string) => {
+    try {
+      await unsuspendSpace(spaceId);
+      await fetchSpaces();
+    } catch (error) {
+      // Error handled by useErrorHandler
+    }
+  };
+
+  const openSuspensionDialog = (spaceId: string) => {
+    setSelectedSpaceId(spaceId);
+    setSuspensionDialog(true);
   };
 
   const handleViewSpace = (space: AdminSpace) => {
@@ -339,6 +374,15 @@ export function AdminSpaceManagement() {
                           <Eye className="w-4 h-4 mr-1" />
                           Visualizza
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnsuspendSpace(space.id)}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-1" />
+                          Riattiva
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -398,6 +442,18 @@ export function AdminSpaceManagement() {
                       Visualizza
                     </Button>
 
+                    {!space.is_suspended && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openSuspensionDialog(space.id)}
+                        className="text-orange-600 hover:text-orange-700"
+                      >
+                        <Ban className="w-4 h-4 mr-1" />
+                        Sospendi
+                      </Button>
+                    )}
+
                     {space.pending_approval && (
                       <>
                         <Button
@@ -456,6 +512,35 @@ export function AdminSpaceManagement() {
             </Card>
           ))}
       </div>
+
+      {/* Suspension Dialog */}
+      <Dialog open={suspensionDialog} onOpenChange={setSuspensionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sospendi Spazio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="suspension-reason">Motivo della sospensione</Label>
+              <Textarea
+                id="suspension-reason"
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                placeholder="Spiega perché questo spazio viene sospeso..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspensionDialog(false)}>
+              Annulla
+            </Button>
+            <Button variant="destructive" onClick={handleSuspendSpace}>
+              Sospendi Spazio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Space View Dialog */}
       <Dialog open={viewDialog} onOpenChange={setViewDialog}>

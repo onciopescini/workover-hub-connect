@@ -10,7 +10,10 @@ export const useUserFilters = (users: AdminUser[]) => {
     return users.filter(user => {
       const searchTerm = searchQuery.toLowerCase();
       const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-      const matchesSearch = fullName.includes(searchTerm);
+      // Include email in search if available
+      const email = user.email ? user.email.toLowerCase() : '';
+
+      const matchesSearch = fullName.includes(searchTerm) || email.includes(searchTerm);
 
       const matchesTab = 
         activeTab === 'all' ||

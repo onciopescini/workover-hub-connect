@@ -22,7 +22,9 @@ export const UserManagementContainer = () => {
     handleActivateUser,
     handleDeactivateUser,
     handlePromoteToAdmin,
-    handleDemoteFromAdmin
+    handleDemoteFromAdmin,
+    handleBanUser,
+    handleUnbanUser
   } = useUserActions(updateUser);
 
   if (isLoading) {
@@ -57,6 +59,8 @@ export const UserManagementContainer = () => {
           onDeactivateUser={handleDeactivateUser}
           onPromoteToAdmin={handlePromoteToAdmin}
           onDemoteFromAdmin={handleDemoteFromAdmin}
+          onBanUser={handleBanUser}
+          onUnbanUser={handleUnbanUser}
         />
       </CardContent>
     </Card>

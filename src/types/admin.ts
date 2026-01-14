@@ -33,6 +33,8 @@ export type AdminProfile = {
   profile_photo_url?: string;
   bio?: string;
   linkedin_url?: string;
+  banned_at?: string | null;
+  ban_reason?: string | null;
 };
 
 // Extended space type with admin fields
