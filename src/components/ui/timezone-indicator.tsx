@@ -1,7 +1,8 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Clock } from "lucide-react";
-import { formatUtcDateForDisplay, DEFAULT_TIMEZONE } from "@/lib/date-utils";
+import { DEFAULT_TIMEZONE } from "@/lib/date-time/calculations";
+import { formatUtcDateForDisplay } from "@/lib/date-time/formatting";
 
 interface TimezoneIndicatorProps {
   className?: string;

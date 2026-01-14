@@ -1,6 +1,5 @@
-import { format, parseISO, formatISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { it } from 'date-fns/locale';
 
 // Default timezone for the application (Italy)
 export const DEFAULT_TIMEZONE = 'Europe/Rome';
@@ -49,40 +48,6 @@ export function createDateFromLocalDateTime(
 ): Date {
   const localDateTime = parseISO(`${dateString}T${timeString}`);
   return localToUtc(localDateTime, timezone);
-}
-
-/**
- * Formats a UTC date for display in local timezone
- * @param utcDate UTC date string or Date object
- * @param formatPattern Format pattern for date-fns
- * @param timezone Target timezone (defaults to Europe/Rome)
- * @returns Formatted date string
- */
-export function formatUtcDateForDisplay(
-  utcDate: string | Date,
-  formatPattern: string = 'dd/MM/yyyy HH:mm',
-  timezone: string = DEFAULT_TIMEZONE
-): string {
-  const localDate = utcToLocal(utcDate, timezone);
-  return format(localDate, formatPattern, { locale: it });
-}
-
-/**
- * Formats a date for calendar/booking display
- * @param utcDate UTC date string or Date object
- * @param timezone Target timezone (defaults to Europe/Rome)
- * @returns Object with formatted date and time components
- */
-export function formatBookingDateTime(utcDate: string | Date, timezone: string = DEFAULT_TIMEZONE) {
-  const localDate = utcToLocal(utcDate, timezone);
-  
-  return {
-    date: format(localDate, 'dd/MM/yyyy', { locale: it }),
-    time: format(localDate, 'HH:mm', { locale: it }),
-    dayName: format(localDate, 'EEEE', { locale: it }),
-    shortDate: format(localDate, 'dd MMM', { locale: it }),
-    fullDateTime: format(localDate, 'EEEE dd MMMM yyyy - HH:mm', { locale: it })
-  };
 }
 
 /**

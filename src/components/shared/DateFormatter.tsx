@@ -1,5 +1,5 @@
 
-import { formatRelativeDate, formatAbsoluteDate } from '@/utils/dateUtils';
+import { formatRelativeDate, formatAbsoluteDate } from '@/lib/date-time/formatting';
 
 interface DateFormatterProps {
   date: string | Date;
