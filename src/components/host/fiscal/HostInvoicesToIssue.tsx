@@ -35,7 +35,9 @@ export const HostInvoicesToIssue = () => {
       if (error) throw error;
       
       // Fetch spaces separately and filter by host
-      const spaceIds = [...new Set(payments?.map(p => p.bookings?.space_id).filter(Boolean) || [])];
+      // Filter nulls and assert type string
+      const spaceIds = [...new Set(payments?.map(p => p.bookings?.space_id).filter((id): id is string => !!id) || [])];
+
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, title, host_id')

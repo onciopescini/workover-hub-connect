@@ -38,7 +38,7 @@ export const HostNonFiscalReceipts = () => {
       if (error) throw error;
       
       // Fetch spaces separately
-      const spaceIds = [...new Set(receiptsData?.map(r => r.bookings?.space_id).filter(Boolean) || [])];
+      const spaceIds = [...new Set(receiptsData?.map(r => r.bookings?.space_id).filter((id): id is string => !!id) || [])];
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, title')
