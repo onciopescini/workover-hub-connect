@@ -41,11 +41,11 @@ export const useAdminPrefetch = () => {
   }, [queryClient]);
 
   /**
-   * Prefetch lista spazi pending approval
+   * Prefetch lista ultimi spazi (Latest Spaces)
    */
   const prefetchSpaces = useCallback(() => {
     queryClient.prefetchQuery({
-      queryKey: queryKeys.admin.spaces({ pending_approval: true }),
+      queryKey: queryKeys.admin.latestSpaces(),
       queryFn: async () => {
         try {
           const { data, error } = await supabase
@@ -58,8 +58,6 @@ export const useAdminPrefetch = () => {
                 last_name
               )
             `)
-            .eq('pending_approval', true)
-            .eq('published', false)
             .order('created_at', { ascending: false })
             .limit(50);
           

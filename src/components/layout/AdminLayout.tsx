@@ -25,7 +25,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { authState, signOut } = useAuth();
   const { isAdmin, isModerator, canModerate, roles } = useModeratorCheck();
   const { prefetchUsers, prefetchSpaces, prefetchReports, prefetchSettings } = useAdminPrefetch();
-  const { pendingSpacesCount, openReportsCount, unresolvedTicketsCount } = useRealtimeAdminData();
+  const { openReportsCount, unresolvedTicketsCount } = useRealtimeAdminData();
   
   const userId = authState.user?.id;
 
@@ -45,20 +45,6 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         return data.map(r => r.role);
       },
       staleTime: 5 * 60 * 1000, // 5 minuti
-    });
-
-    // Prefetch pending spaces count (for badge)
-    queryClient.prefetchQuery({
-      queryKey: queryKeys.admin.pendingSpacesCount(),
-      queryFn: async () => {
-        const { count, error: queryError } = await supabase
-          .from('workspaces')
-          .select('*', { count: 'exact', head: true })
-          .eq('pending_approval', true);
-        if (queryError) throw queryError;
-        return count || 0;
-      },
-      staleTime: 2 * 60 * 1000, // 2 minuti
     });
 
     // Prefetch open reports count
@@ -209,11 +195,6 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
                   {item.icon}
                   {item.label}
                   {/* Show real-time counts as badges */}
-                  {item.path === '/admin/spaces' && pendingSpacesCount !== undefined && pendingSpacesCount > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs">
-                      {pendingSpacesCount}
-                    </Badge>
-                  )}
                   {item.path === '/admin/reports' && openReportsCount !== undefined && openReportsCount > 0 && (
                     <Badge variant="destructive" className="ml-1 text-xs">
                       {openReportsCount}

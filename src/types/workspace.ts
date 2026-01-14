@@ -19,6 +19,7 @@ export interface WorkspaceInsert {
   latitude?: number;
   longitude?: number;
   published?: boolean;
+  pending_approval?: boolean;
   // Keeping other likely fields that might be in formData, but strictly following the mapping instruction
   amenities?: string[];
   seating_types?: string[];

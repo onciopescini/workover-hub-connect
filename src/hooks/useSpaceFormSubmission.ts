@@ -93,6 +93,7 @@ export const useSpaceFormSubmission = ({
         latitude: formData.latitude || 0,
         longitude: formData.longitude || 0,
         published: Boolean(formData.published), // Ensure strict boolean
+        pending_approval: false, // STRATEGIC PIVOT: Post-Moderation (Always false on submission)
         amenities: formData.amenities || [],
         seating_types: formData.seating_types || [],
         work_environment: formData.work_environment!,
