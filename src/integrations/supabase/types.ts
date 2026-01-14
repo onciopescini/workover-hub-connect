@@ -1,3 +1,4 @@
+// Types manually updated for Admin Dashboard parity
 export type Json =
   | string
   | number
