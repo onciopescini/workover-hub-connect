@@ -2726,6 +2726,7 @@ export type Database = {
           iban: string | null
           id: string
           industries: string[] | null
+          industry: string | null
           instagram_url: string | null
           interests: string | null
           is_suspended: boolean | null
@@ -2744,6 +2745,7 @@ export type Database = {
           onboarding_completed: boolean | null
           pec_email: string | null
           phone: string | null
+          portfolio_url: string | null
           preferred_work_mode: string | null
           profession: string | null
           profile_photo_url: string | null
@@ -2795,6 +2797,7 @@ export type Database = {
           iban?: string | null
           id: string
           industries?: string[] | null
+          industry?: string | null
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
@@ -2813,6 +2816,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           pec_email?: string | null
           phone?: string | null
+          portfolio_url?: string | null
           preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null
@@ -2864,6 +2868,7 @@ export type Database = {
           iban?: string | null
           id?: string
           industries?: string[] | null
+          industry?: string | null
           instagram_url?: string | null
           interests?: string | null
           is_suspended?: boolean | null
@@ -2882,6 +2887,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           pec_email?: string | null
           phone?: string | null
+          portfolio_url?: string | null
           preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null

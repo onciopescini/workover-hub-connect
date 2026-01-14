@@ -53,6 +53,23 @@ export const SocialLinksTab: React.FC<SocialLinksTabProps> = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="portfolio_url" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Portfolio URL
+            </Label>
+            <Input
+              id="portfolio_url"
+              value={formData.portfolio_url}
+              onChange={(e) => handleInputChange('portfolio_url', e.target.value)}
+              placeholder="https://tuoportfolio.com"
+              className={errors['portfolio_url'] ? 'border-destructive' : ''}
+            />
+            {errors['portfolio_url'] && (
+              <p className="text-sm text-destructive">{errors['portfolio_url']}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="linkedin_url" className="flex items-center gap-2">
               <Linkedin className="h-4 w-4" />
               LinkedIn

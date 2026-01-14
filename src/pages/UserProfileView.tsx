@@ -166,6 +166,7 @@ const UserProfileView = () => {
 
     const socialLinks = [
       { url: profile['website'], icon: Globe, label: 'Website' },
+      { url: profile['portfolio_url'], icon: Briefcase, label: 'Portfolio' },
       { url: profile['linkedin_url'], icon: ExternalLink, label: 'LinkedIn' },
       { url: profile['twitter_url'], icon: ExternalLink, label: 'Twitter' },
       { url: profile['instagram_url'], icon: ExternalLink, label: 'Instagram' },
@@ -284,7 +285,7 @@ const UserProfileView = () => {
         </div>
 
         {/* Enhanced Action Buttons */}
-        <div className="mb-8 flex justify-start">
+        <div className="mb-8 flex justify-start gap-4">
           <Button 
             onClick={startPrivateChat}
             disabled={startingChat}
@@ -294,6 +295,24 @@ const UserProfileView = () => {
             <MessageSquare className="mr-2 h-5 w-5" />
             {startingChat ? 'Avvio chat...' : 'Invia Messaggio'}
           </Button>
+
+          {profile['portfolio_url'] && (
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="min-w-[200px] h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <a
+                href={String(profile['portfolio_url'])}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Briefcase className="mr-2 h-5 w-5" />
+                Vedi Portfolio
+              </a>
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

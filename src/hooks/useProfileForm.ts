@@ -25,6 +25,7 @@ export interface ProfileFormData {
   
   // Social Links
   website: string;
+  portfolio_url: string;
   linkedin_url: string;
   twitter_url: string;
   instagram_url: string;
@@ -67,6 +68,7 @@ export const useProfileForm = () => {
     
     // Social Links
     website: authState.profile?.website || '',
+    portfolio_url: authState.profile?.portfolio_url || '',
     linkedin_url: authState.profile?.linkedin_url || '',
     twitter_url: authState.profile?.twitter_url || '',
     instagram_url: authState.profile?.instagram_url || '',
