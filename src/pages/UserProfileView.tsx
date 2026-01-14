@@ -175,28 +175,43 @@ const UserProfileView = () => {
       { url: profile['github_url'], icon: ExternalLink, label: 'GitHub' },
     ].filter(link => link.url);
 
-    if (socialLinks.length === 0) return null;
-
     return (
       <div className="mb-4">
-        <h3 className="font-semibold mb-2">Collegamenti</h3>
-        <div className="space-y-2">
-          {socialLinks.map((link, index) => {
-            const IconComponent = link.icon;
-            return (
-              <a
-                key={index}
-                href={link.url as string}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
-              >
-                <IconComponent className="w-4 h-4" />
-                <span>{link.label}</span>
-              </a>
-            );
-          })}
-        </div>
+        {profile['portfolio_url'] && (
+          <div className="mb-4">
+             <Button
+                variant="outline"
+                className="w-full justify-start gap-2 border-primary/20 hover:bg-primary/5 text-primary"
+                onClick={() => window.open(profile['portfolio_url']!, '_blank')}
+             >
+                <Briefcase className="h-4 w-4" />
+                Visualizza Portfolio
+             </Button>
+          </div>
+        )}
+
+        {socialLinks.length > 0 && (
+          <>
+            <h3 className="font-semibold mb-2">Collegamenti</h3>
+            <div className="space-y-2">
+              {socialLinks.map((link, index) => {
+                const IconComponent = link.icon;
+                return (
+                  <a
+                    key={index}
+                    href={link.url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-800"
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span>{link.label}</span>
+                  </a>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
   };

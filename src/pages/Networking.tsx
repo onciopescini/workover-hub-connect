@@ -30,6 +30,9 @@ const Networking = () => {
     clearSearch
   } = useNetworking();
   
+  const { searchResults, isSearching, searchUsers } = useNetworkingSearch();
+  const navigate = useNavigate();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilters, setSearchFilters] = useState<any>({});
 
