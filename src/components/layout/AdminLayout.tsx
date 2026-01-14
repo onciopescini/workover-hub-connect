@@ -51,11 +51,10 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.admin.pendingSpacesCount(),
       queryFn: async () => {
-        // Pending spaces check - using published=false as proxy since pending_approval might not exist
         const { count, error: queryError } = await supabase
           .from('workspaces')
           .select('*', { count: 'exact', head: true })
-          .eq('published', false);
+          .eq('pending_approval', true);
         if (queryError) throw queryError;
         return count || 0;
       },
