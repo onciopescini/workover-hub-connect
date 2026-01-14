@@ -18,12 +18,13 @@ const SpaceRecap = () => {
   const [ratingFilter, setRatingFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('newest');
 
+  // Hooks must be called unconditionally at the top
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useSpaceMetrics(spaceId || '');
+  const { reviews, weightedRating, isLoading: reviewsLoading } = useSpaceReviewsWithRating(spaceId || '');
+
   if (!spaceId) {
     return <Navigate to="/host/spaces" replace />;
   }
-
-  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useSpaceMetrics(spaceId);
-  const { reviews, weightedRating, isLoading: reviewsLoading } = useSpaceReviewsWithRating(spaceId);
 
   const isLoading = metricsLoading || reviewsLoading;
 
