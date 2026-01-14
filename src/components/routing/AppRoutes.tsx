@@ -88,6 +88,7 @@ const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
 const AdminFiscalPage = lazy(() => import("@/pages/admin/AdminFiscalPage"));
 const AdminFiscalSettings = lazy(() => import("@/pages/admin/AdminFiscalSettings"));
 const AdminKYCReviewPage = lazy(() => import("@/pages/admin/AdminKYCReviewPage"));
+const DisputeManagement = lazy(() => import("@/pages/admin/DisputeManagement"));
 const SystemAlarmsPage = lazy(() => import("@/pages/admin/SystemAlarmsPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
 const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
@@ -528,6 +529,12 @@ export const AppRoutes = () => {
               <AdminKYCReviewPage />
             </LazyWrapper>
           </ModeratorRoute>
+        } />
+
+        <Route path="disputes" element={
+          <LazyWrapper>
+            <DisputeManagement />
+          </LazyWrapper>
         } />
         
         <Route path="system-alarms" element={
