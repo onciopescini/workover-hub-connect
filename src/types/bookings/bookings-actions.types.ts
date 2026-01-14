@@ -15,6 +15,6 @@ export interface BookingsActions {
 export interface BookingCardActions {
   onMessage: () => void;
   onCancel: () => void;
-  onApprove: () => void;
-  onReject: () => void;
+  onApprove?: () => void;
+  onReject?: () => void;
 }

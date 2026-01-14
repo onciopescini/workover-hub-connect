@@ -75,29 +75,31 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
 
   const heroSpaceData = {
     id: space.id,
-    title: space.title,
-    address: displayAddress,
+    title: space.name || space.title || 'Spazio',
+    address: displayAddress || '',
     photos: space.photos || ['/placeholder.svg'],
-    category: space.category,
+    category: space.category || 'home',
     rating: averageRating,
     reviewCount: reviews.length,
     isVerified: true,
     isSuperhost: false
   };
 
-  const infoSpaceData = {
-    max_capacity: space.max_capacity,
+  const infoSpaceData: { max_capacity: number; amenities: string[]; work_environment?: string; description: string } = {
+    max_capacity: space.max_capacity ?? 1,
     amenities: space.amenities || [],
-    work_environment: space.work_environment,
-    description: space.description
+    description: space.description || ''
   };
+  if (space.work_environment) {
+    infoSpaceData.work_environment = space.work_environment;
+  }
 
   const bookingSpaceData = {
     id: space.id,
     price_per_day: space.price_per_day,
     price_per_hour: space.price_per_hour,
-    max_capacity: space.max_capacity,
-    title: space.title,
+    max_capacity: space.max_capacity ?? 1,
+    title: space.name || space.title || 'Spazio',
     confirmation_type: space.confirmation_type || 'host_approval',
     host_stripe_account_id: space.host_stripe_account_id ?? '',
     host_stripe_connected: space.host_stripe_connected ?? false,
@@ -138,7 +140,7 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
           <WhoWorksHere spaceId={space.id} />
 
           {/* Reviews Section */}
-          <SpaceReviews spaceId={space.id} reviews={reviews} />
+          <SpaceReviews spaceId={space.id} reviews={reviews as any} />
         </div>
 
         {/* Right Column: Sticky Booking Card (1/3 width) */}

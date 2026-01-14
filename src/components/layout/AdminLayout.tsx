@@ -51,9 +51,12 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     queryClient.prefetchQuery({
       queryKey: queryKeys.admin.pendingSpacesCount(),
       queryFn: async () => {
-          // Pending spaces check disabled as pending_approval column missing in workspaces
-          const pendingSpaces = 0;
-        if (error) throw error;
+        // Pending spaces check - using published=false as proxy since pending_approval might not exist
+        const { count, error: queryError } = await supabase
+          .from('workspaces')
+          .select('*', { count: 'exact', head: true })
+          .eq('published', false);
+        if (queryError) throw queryError;
         return count || 0;
       },
       staleTime: 2 * 60 * 1000, // 2 minuti

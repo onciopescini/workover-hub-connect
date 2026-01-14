@@ -52,12 +52,12 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
         <div className="relative h-56 overflow-hidden">
           <ResponsiveImage
             src={getMainPhoto() || '/placeholder.svg'}
-            alt={space.title || 'Space image'}
+            alt={space.name || space.title || 'Space image'}
             aspectRatio="photo"
             objectFit="cover"
             enableWebP={true}
             priority={false}
-            onLoadComplete={() => frontendLogger.componentLoad(`Space card image: ${space.title}`, undefined, { component: 'SpaceCard' })}
+            onLoadComplete={() => frontendLogger.componentLoad(`Space card image: ${space.name || space.title}`, undefined, { component: 'SpaceCard' })}
             className="w-full h-full transform group-hover:scale-110 transition-transform duration-700"
           />
 
@@ -80,7 +80,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
         <div className="p-5">
           <div className="flex justify-between items-start mb-2 gap-2">
             <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-              {space.title}
+              {space.name || space.title}
             </h3>
             {reviewCount > 0 && (
               <div className="flex items-center gap-1 text-sm bg-gray-50 px-2 py-1 rounded-md shrink-0">
@@ -105,7 +105,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             <div className="flex items-center gap-4 text-gray-500">
                <div className="flex items-center gap-1.5" title="Capienza">
                 <Users className="h-4 w-4" />
-                <span className="text-sm font-medium">{space.max_capacity || space.capacity || 1}</span>
+                <span className="text-sm font-medium">{space.max_capacity ?? 1}</span>
               </div>
               {space.amenities?.includes('High-speed WiFi') && (
                 <div className="flex items-center gap-1.5" title="WiFi Veloce">

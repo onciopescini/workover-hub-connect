@@ -21,7 +21,7 @@ export interface CheckoutParams {
   pricePerDay: number;
   durationHours: number;
   hostStripeAccountId?: string;
-  fiscalData?: CoworkerFiscalData;
+  fiscalData?: CoworkerFiscalData | null;
   clientBasePrice?: number;
 }
 
@@ -64,7 +64,7 @@ export function useCheckout() {
         endTime,
         guestsCount,
         confirmationType,
-        clientBasePrice: params.clientBasePrice
+        clientBasePrice: params.clientBasePrice ?? 0
       });
 
       // 2. Prepare Payload
@@ -94,7 +94,7 @@ export function useCheckout() {
         payment_required: isInstant,
         slot_reserved_until: reservationDeadline.toISOString(),
         approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
-        fiscal_data: fiscalData ?? null
+        fiscal_data: fiscalData ? (fiscalData as unknown as import('@/integrations/supabase/types').Json) : null
       };
 
       // 3. Insert Booking

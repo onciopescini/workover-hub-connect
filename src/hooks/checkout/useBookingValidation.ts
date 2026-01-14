@@ -20,7 +20,7 @@ type ValidateAndReserveSlotParams = {
   user_id_param: string;
   guests_count_param: number;
   confirmation_type_param: 'instant' | 'host_approval';
-  client_base_price_param?: number;
+  client_base_price_param: number;
 };
 
 export function useBookingValidation() {
@@ -48,7 +48,7 @@ export function useBookingValidation() {
       user_id_param: userId,
       guests_count_param: guestsCount,
       confirmation_type_param: confirmationType,
-      client_base_price_param: clientBasePrice
+      client_base_price_param: clientBasePrice ?? 0
     };
 
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', rpcParams);
@@ -59,11 +59,12 @@ export function useBookingValidation() {
     }
 
     // Cast the response to unknown first to avoid TS errors, then to the expected shape
-    const validationData = data as unknown as { success?: boolean; error?: string };
+    const validationData = data as unknown as { success?: boolean; error?: string } | null;
 
     if (validationData && validationData.success === false) {
-      logError('Validation Data Error', validationData);
-      throw new Error(validationData.error || 'Slot validation returned false');
+      const errorMessage = validationData.error || 'Slot validation returned false';
+      logError('Validation Data Error', new Error(errorMessage));
+      throw new Error(errorMessage);
     }
 
     return validationData;

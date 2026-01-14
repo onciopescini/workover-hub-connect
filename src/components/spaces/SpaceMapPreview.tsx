@@ -39,7 +39,7 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
         <div className="relative h-32 overflow-hidden rounded-t-lg">
           <OptimizedImage
             src={getMainPhoto()}
-            alt={space.title}
+            alt={space.name || space.title || 'Space'}
             className="w-full h-full object-cover"
             enableWebP={true}
             enableResponsive={true}
@@ -62,7 +62,7 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
         {/* Content */}
         <div className="p-3">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-sm line-clamp-1">{space.title}</h3>
+            <h3 className="font-semibold text-sm line-clamp-1">{space.name || space.title}</h3>
             {reviews.length > 0 && (
               <div className="flex items-center gap-1 text-xs">
                 <Star className="h-3 w-3 text-yellow-400 fill-current" />
@@ -80,7 +80,7 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
           <div className="flex items-center gap-2 text-gray-500 mb-3">
             <div className="flex items-center gap-1">
               <Users className="h-3 w-3" />
-              <span className="text-xs">{space.max_capacity || space.capacity || 1}</span>
+              <span className="text-xs">{space.max_capacity ?? 1}</span>
             </div>
             {space.amenities?.includes('High-speed WiFi') && <span className="text-xs">📶</span>}
             {space.amenities?.includes('Coffee & Tea') && <span className="text-xs">☕</span>}

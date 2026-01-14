@@ -157,8 +157,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="wifi" className="flex items-center space-x-2">
                 <Checkbox
                   id="wifi"
-                  checked={Boolean(formData['features']?.includes("wifi"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "wifi", !!checked)}
+                  checked={Boolean((formData as any)['workspace_features']?.includes("wifi"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "wifi", !!checked)}
                 />
                 <span>WiFi</span>
               </Label>
@@ -167,8 +167,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="whiteboard" className="flex items-center space-x-2">
                 <Checkbox
                   id="whiteboard"
-                  checked={Boolean(formData['features']?.includes("whiteboard"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "whiteboard", !!checked)}
+                  checked={Boolean((formData as any)['workspace_features']?.includes("whiteboard"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "whiteboard", !!checked)}
                 />
                 <span>Whiteboard</span>
               </Label>
@@ -177,8 +177,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="monitor" className="flex items-center space-x-2">
                 <Checkbox
                   id="monitor"
-                  checked={Boolean(formData['features']?.includes("monitor"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "monitor", !!checked)}
+                  checked={Boolean((formData as any)['workspace_features']?.includes("monitor"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "monitor", !!checked)}
                 />
                 <span>Monitor</span>
               </Label>

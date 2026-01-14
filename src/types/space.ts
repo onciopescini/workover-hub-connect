@@ -19,6 +19,10 @@ export type Space = Database["public"]["Tables"]["workspaces"]["Row"] & {
   revision_notes?: string | null;
   revision_requested?: boolean | null;
   approximate_location?: unknown;
+  // UI Alias Properties - mapped from database fields for backwards compatibility
+  title?: string;        // Alias for 'name'
+  capacity?: number;     // Alias for 'max_capacity'
+  city_name?: string;    // Alias for 'city'
 };
 
 export type SpaceInsert = Database["public"]["Tables"]["workspaces"]["Insert"];

@@ -60,7 +60,7 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
         // Ordinamento per rating - necessita integrazione con sistema recensioni
         return sorted;
       case 'newest':
-        return sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return sorted.sort((a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime());
       case 'distance':
         // Mock distance sorting - implementare con coordinate reali
         return sorted;
