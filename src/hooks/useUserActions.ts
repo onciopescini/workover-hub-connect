@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminUserWithRoles } from '@/types/admin-user';
 import { sreLogger } from '@/lib/sre-logger';
+import { banUser, unbanUser } from '@/lib/admin-utils';
 
 export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUserWithRoles>) => void) => {
   const handleActivateUser = async (userId: string) => {
@@ -43,6 +44,24 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
     } catch (error) {
       sreLogger.error('Error deactivating user', { userId }, error as Error);
       toast.error('Failed to deactivate user');
+    }
+  };
+
+  const handleBanUser = async (userId: string, reason: string) => {
+    try {
+      await banUser(userId, reason);
+      updateUser(userId, { banned_at: new Date().toISOString(), ban_reason: reason });
+    } catch (error) {
+      sreLogger.error('Error banning user', { userId }, error as Error);
+    }
+  };
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await unbanUser(userId);
+      updateUser(userId, { banned_at: null, ban_reason: null });
+    } catch (error) {
+      sreLogger.error('Error unbanning user', { userId }, error as Error);
     }
   };
 
@@ -167,6 +186,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
   return {
     handleActivateUser,
     handleDeactivateUser,
+    handleBanUser,
+    handleUnbanUser,
     handlePromoteToAdmin,
     handleDemoteFromAdmin,
     handlePromoteToModerator,

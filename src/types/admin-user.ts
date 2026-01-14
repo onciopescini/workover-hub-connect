@@ -1,6 +1,7 @@
 
 export interface AdminUser {
   id: string;
+  email: string; // Added email
   first_name: string;
   last_name: string;
   role: string; // Business role: host | coworker
@@ -15,6 +16,8 @@ export interface AdminUser {
   industries: string[] | null;
   is_suspended: boolean;
   suspension_reason: string | null;
+  banned_at: string | null;
+  ban_reason: string | null;
 }
 
 // System roles (admin, moderator) stored in user_roles table

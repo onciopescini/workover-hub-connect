@@ -51,3 +51,53 @@ export const moderateSpace = async (spaceId: string, approve: boolean, rejection
     throw error;
   }
 };
+
+export const suspendSpace = async (spaceId: string, reason: string): Promise<void> => {
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser.user) throw new Error("Not authenticated");
+
+    const { error } = await supabase
+      .from('workspaces')
+      .update({
+        is_suspended: true,
+        suspension_reason: reason,
+        suspended_at: new Date().toISOString(),
+        suspended_by: currentUser.user.id
+      })
+      .eq('id', spaceId);
+
+    if (error) throw error;
+
+    toast.success("Spazio sospeso con successo");
+  } catch (error) {
+    sreLogger.error('Error suspending space', { spaceId, reason }, error as Error);
+    toast.error("Errore nella sospensione dello spazio");
+    throw error;
+  }
+};
+
+export const unsuspendSpace = async (spaceId: string): Promise<void> => {
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser.user) throw new Error("Not authenticated");
+
+    const { error } = await supabase
+      .from('workspaces')
+      .update({
+        is_suspended: false,
+        suspension_reason: null,
+        suspended_at: null,
+        suspended_by: null
+      })
+      .eq('id', spaceId);
+
+    if (error) throw error;
+
+    toast.success("Spazio riattivato con successo");
+  } catch (error) {
+    sreLogger.error('Error unsuspending space', { spaceId }, error as Error);
+    toast.error("Errore nella riattivazione dello spazio");
+    throw error;
+  }
+};

@@ -6,12 +6,16 @@ export {
   getAllUsers, 
   suspendUser, 
   reactivateUser,
+  banUser,
+  unbanUser,
   assignModeratorRole,
   removeModeratorRole
 } from "./admin/admin-user-utils";
 export { 
   getAllSpaces, 
-  moderateSpace 
+  moderateSpace,
+  suspendSpace,
+  unsuspendSpace
 } from "./admin/admin-space-utils";
 export { 
   createWarning, 
