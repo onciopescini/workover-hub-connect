@@ -1,9 +1,15 @@
-import { format, parseISO, formatISO } from 'date-fns';
+import { format, parseISO, formatDistanceToNow, Locale } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { it } from 'date-fns/locale';
 
 // Default timezone for the application (Italy)
 export const DEFAULT_TIMEZONE = 'Europe/Rome';
+
+export interface DateFormatOptions {
+  locale?: Locale;
+  addSuffix?: boolean;
+  includeTime?: boolean;
+}
 
 /**
  * Converts a UTC date to local timezone for display
@@ -182,4 +188,57 @@ export function parseBookingDateTime(
       error: error instanceof Error ? error.message : 'Unknown parsing error'
     };
   }
+}
+
+/**
+ * Formats a date relative to now (e.g., "2 hours ago")
+ * @param date Date string or object
+ * @param options Format options
+ * @returns Formatted string
+ */
+export function formatRelativeDate(
+  date: string | Date,
+  options: DateFormatOptions = {}
+): string {
+  const { locale = it, addSuffix = true } = options;
+
+  return formatDistanceToNow(typeof date === 'string' ? parseISO(date) : date, {
+    addSuffix,
+    locale
+  });
+}
+
+/**
+ * Formats a date absolutely (e.g., "dd/MM/yyyy")
+ * @param date Date string or object
+ * @param options Format options
+ * @returns Formatted string
+ */
+export function formatAbsoluteDate(
+  date: string | Date,
+  options: DateFormatOptions = {}
+): string {
+  const { locale = it, includeTime = false } = options;
+
+  const formatString = includeTime ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy';
+
+  return format(typeof date === 'string' ? parseISO(date) : date, formatString, { locale });
+}
+
+/**
+ * Formats a date for booking display (shorthand for formatAbsoluteDate without time)
+ * @param date Date string or object
+ * @returns Formatted string
+ */
+export function formatBookingDate(date: string | Date): string {
+  return formatAbsoluteDate(date, { includeTime: false });
+}
+
+/**
+ * Formats a time for message display (shorthand for formatRelativeDate)
+ * @param date Date string or object
+ * @returns Formatted string
+ */
+export function formatMessageTime(date: string | Date): string {
+  return formatRelativeDate(date, { addSuffix: true });
 }

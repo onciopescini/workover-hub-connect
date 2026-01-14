@@ -51,18 +51,18 @@ export function useBookingValidation() {
       client_base_price_param: clientBasePrice
     };
 
-    const validationResult = await supabase.rpc('validate_and_reserve_slot', rpcParams);
+    const { data, error } = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
-    if (validationResult.error) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logError('Validation RPC Error', validationResult.error as any);
-      throw new Error(`Validation failed: ${validationResult.error.message}`);
+    if (error) {
+      logError('Validation RPC Error', error);
+      throw new Error(`Validation failed: ${error.message}`);
     }
 
-    const validationData = validationResult.data as { success?: boolean; error?: string };
+    // Cast the response to unknown first to avoid TS errors, then to the expected shape
+    const validationData = data as unknown as { success?: boolean; error?: string };
+
     if (validationData && validationData.success === false) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logError('Validation Data Error', validationData as any);
+      logError('Validation Data Error', validationData);
       throw new Error(validationData.error || 'Slot validation returned false');
     }
 
