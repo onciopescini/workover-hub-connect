@@ -9,6 +9,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DollarSign } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RefundProcessorProps {
   paymentId: string;
@@ -20,6 +30,7 @@ export function RefundProcessor({ paymentId, bookingId, amount }: RefundProcesso
   const [refundAmount, setRefundAmount] = useState(amount.toString());
   const [refundReason, setRefundReason] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const refundMutation = useMutation({
@@ -78,20 +89,26 @@ export function RefundProcessor({ paymentId, bookingId, amount }: RefundProcesso
       return;
     }
 
+    setShowConfirmDialog(true);
+  };
+
+  const confirmRefund = () => {
     refundMutation.mutate();
+    setShowConfirmDialog(false);
   };
 
   return (
-    <Card className="border-2 border-primary/20">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Elabora Rimborso
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label>Importo Rimborso (€)</Label>
+    <>
+      <Card className="border-2 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Elabora Rimborso
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Importo Rimborso (€)</Label>
           <Input
             type="number"
             step="0.01"
@@ -140,5 +157,24 @@ export function RefundProcessor({ paymentId, bookingId, amount }: RefundProcesso
         </Button>
       </CardContent>
     </Card>
+
+    <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma Rimborso</AlertDialogTitle>
+            <AlertDialogDescription>
+              Attenzione: Stai per rimborsare €{refundAmount} al cliente.
+              Questa azione è irreversibile. Confermi?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRefund} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Conferma Rimborso
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
