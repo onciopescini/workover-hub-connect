@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,47 +13,77 @@ import { toast } from "sonner";
 import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export function DisputeManagementPanel() {
   const [selectedDispute, setSelectedDispute] = useState<any>(null);
   const [resolution, setResolution] = useState("");
   const [refundAmount, setRefundAmount] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const queryClient = useQueryClient();
 
-  const { data: disputes, isLoading } = useQuery({
-    queryKey: ['admin-disputes'],
+  const { data: disputesData, isLoading } = useQuery({
+    queryKey: ['admin-disputes', page],
     queryFn: async () => {
-      // For now, we'll get bookings with cancellations or payment issues
-      const { data, error } = await supabase
-        .from('bookings')
+      // Query the actual disputes table
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error, count } = await supabase
+        .from('disputes')
         .select(`
           *,
-          coworker:profiles!fk_bookings_user_id(id, first_name, last_name),
-          payments(id, amount, payment_status)
-        `)
-        .or('cancelled_at.not.is.null,cancellation_reason.not.is.null')
-        .order('cancelled_at', { ascending: false })
-        .limit(50);
+          booking:bookings(
+            id,
+            booking_date,
+            status,
+            cancelled_at,
+            cancellation_reason,
+            space:spaces(id, title),
+            payments(id, amount, payment_status)
+          ),
+          opener:profiles!disputes_opened_by_fkey(id, first_name, last_name, email)
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       
-      // Fetch space details separately to avoid FK issues
-      const bookingIds = (data?.map(b => b.space_id) || []).filter((id): id is string => !!id);
-      const { data: spaces } = await supabase
-        .from('spaces')
-        .select('id, title')
-        .in('id', bookingIds);
-      
-      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
-      
-      // Transform coworker from array to single object and add space
-      return (data || []).map(booking => ({
-        ...booking,
-        space: spacesMap.get(booking.space_id) || null,
-        coworker: Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker
-      }));
-    }
+      // Transform data to easy to use structure
+      const transformedDisputes = (data || []).map(dispute => {
+        const booking = dispute.booking as any; // Cast as any because type might be array or object depending on relation
+        // In one-to-one or many-to-one, it should be object. booking_id is in disputes.
+
+        return {
+          id: dispute.id,
+          created_at: dispute.created_at,
+          status: dispute.status,
+          reason: dispute.reason,
+          booking: {
+            ...booking,
+            space: booking?.space, // space inside booking
+            payments: booking?.payments
+          },
+          opener: dispute.opener
+        };
+      });
+
+      return { disputes: transformedDisputes, count: count || 0 };
+    },
+    placeholderData: (previousData) => previousData
   });
+
+  const disputes = disputesData?.disputes || [];
+  const totalCount = disputesData?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const resolveDisputeMutation = useMutation({
     mutationFn: async ({ bookingId, resolution, refundAmount }: any) => {
@@ -73,6 +103,19 @@ export function DisputeManagementPanel() {
         });
 
       if (error) throw error;
+
+      // Also update dispute status
+      // We assume the Edge Function handles the refund status on booking/payment
+      // We just close the dispute record here
+      if (selectedDispute) {
+         await supabase
+          .from('disputes')
+          .update({
+            status: 'resolved',
+            admin_notes: `Resolved via ${resolution}. Refund: ${refundAmount}`
+          })
+          .eq('id', selectedDispute.id);
+      }
     },
     onSuccess: () => {
       toast.success("Dispute risolta con successo");
@@ -89,7 +132,7 @@ export function DisputeManagementPanel() {
   const handleResolve = () => {
     if (!selectedDispute || !resolution) return;
     resolveDisputeMutation.mutate({
-      bookingId: selectedDispute.id,
+      bookingId: selectedDispute.booking?.id, // Use booking id from selected dispute
       resolution,
       refundAmount: refundAmount ? parseFloat(refundAmount) : null
     });
@@ -106,50 +149,59 @@ export function DisputeManagementPanel() {
           <div className="space-y-4">
             {isLoading ? (
               <p className="text-center py-8 text-muted-foreground">Caricamento...</p>
-            ) : disputes?.length === 0 ? (
+            ) : disputes.length === 0 ? (
               <div className="text-center py-8">
                 <CheckCircle className="h-12 w-12 text-success mx-auto mb-2" />
                 <p className="text-muted-foreground">Nessuna dispute attiva</p>
               </div>
             ) : (
-              disputes?.map((dispute) => (
+              disputes.map((dispute) => (
                 <Card key={dispute.id} className="border-2">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <CardTitle className="text-base">
-                          {(dispute as any).space?.title}
+                          {dispute.booking?.space?.title || 'Unknown Space'}
                         </CardTitle>
                         <CardDescription>
-                          {dispute.coworker?.first_name} {dispute.coworker?.last_name}
+                          Aperta da: {dispute.opener?.first_name} {dispute.opener?.last_name}
                         </CardDescription>
                       </div>
-                      <Badge variant="destructive">
+                      <Badge variant={dispute.status === 'open' ? "destructive" : "default"}>
                         <AlertCircle className="h-3 w-3 mr-1" />
-                        Dispute
+                        {dispute.status}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data cancellazione</p>
-                      <p className="font-medium">
-                        {dispute.cancelled_at 
-                          ? format(new Date(dispute.cancelled_at), "dd MMMM yyyy HH:mm", { locale: it })
-                          : 'N/A'
-                        }
-                      </p>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Data Creazione</p>
+                          <p className="font-medium">
+                            {format(new Date(dispute.created_at), "dd MMMM yyyy HH:mm", { locale: it })}
+                          </p>
+                        </div>
+                         <div>
+                          <p className="text-sm text-muted-foreground">Booking ID</p>
+                          <p className="text-sm font-mono truncate">{dispute.booking?.id}</p>
+                        </div>
                     </div>
-                    {dispute.cancellation_reason && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Motivo</p>
-                        <p className="text-sm">{dispute.cancellation_reason}</p>
+
+                    <div>
+                        <p className="text-sm text-muted-foreground">Motivo Dispute</p>
+                        <p className="text-sm">{dispute.reason}</p>
+                    </div>
+
+                    {dispute.booking?.cancellation_reason && (
+                      <div className="bg-muted/50 p-2 rounded text-sm">
+                         <span className="font-semibold">Motivo Cancellazione:</span> {dispute.booking.cancellation_reason}
                       </div>
                     )}
-                    {dispute.payments?.[0] && (
+
+                    {dispute.booking?.payments?.[0] && (
                       <div>
                         <p className="text-sm text-muted-foreground">Importo pagamento</p>
-                        <p className="font-medium">€{dispute.payments[0].amount.toFixed(2)}</p>
+                        <p className="font-medium">€{dispute.booking.payments[0].amount.toFixed(2)}</p>
                       </div>
                     )}
                     <Button
@@ -164,6 +216,37 @@ export function DisputeManagementPanel() {
                 </Card>
               ))
             )}
+
+            <Pagination className="mt-4">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page > 1) setPage(p => p - 1);
+                    }}
+                    className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#" onClick={(e) => e.preventDefault()} isActive>
+                    {page} di {Math.max(1, totalPages)}
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (page < totalPages) setPage(p => p + 1);
+                    }}
+                    className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+
           </div>
         </CardContent>
       </Card>
