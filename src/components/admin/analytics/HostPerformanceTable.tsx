@@ -36,63 +36,65 @@ export function HostPerformanceTable({ timeRange }: HostPerformanceTableProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Rank</TableHead>
-                <TableHead>Host</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
-                <TableHead className="text-right">Prenotazioni</TableHead>
-                <TableHead className="text-right">Response Time</TableHead>
-                <TableHead className="text-right">Accept Rate</TableHead>
-                <TableHead className="text-right">Rating</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hostPerformance?.map((host, index) => (
-                <TableRow key={host.hostId}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {index < 3 && (
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                      )}
-                      <span className="font-medium">#{index + 1}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{host.hostName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {host.spacesCount} spazi
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    €{host.totalRevenue.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {host.totalBookings}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={host.avgResponseTime < 60 ? "default" : "secondary"}>
-                      {host.avgResponseTime}m
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={host.acceptanceRate > 80 ? "default" : "secondary"}>
-                      {host.acceptanceRate}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{host.avgRating.toFixed(1)}</span>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rank</TableHead>
+                  <TableHead>Host</TableHead>
+                  <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Prenotazioni</TableHead>
+                  <TableHead className="text-right">Response Time</TableHead>
+                  <TableHead className="text-right">Accept Rate</TableHead>
+                  <TableHead className="text-right">Rating</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {hostPerformance?.map((host, index) => (
+                  <TableRow key={host.hostId}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {index < 3 && (
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                        )}
+                        <span className="font-medium">#{index + 1}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{host.hostName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {host.spacesCount} spazi
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      €{host.totalRevenue.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {host.totalBookings}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={host.avgResponseTime < 60 ? "default" : "secondary"}>
+                        {host.avgResponseTime}m
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={host.acceptanceRate > 80 ? "default" : "secondary"}>
+                        {host.acceptanceRate}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{host.avgRating.toFixed(1)}</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -6,6 +6,7 @@ import { FiscalStatusBadge } from "@/components/fiscal/FiscalStatusBadge";
 import { Eye, Download } from "lucide-react";
 import { DAC7ReportDetailsDialog } from "./DAC7ReportDetailsDialog";
 import { useDAC7Reports } from "@/hooks/fiscal/useDAC7Reports";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface DAC7ReportsTableProps {
   reports: DAC7Report[];
@@ -29,8 +30,12 @@ export const DAC7ReportsTable = ({ reports, isLoading }: DAC7ReportsTableProps) 
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        Caricamento report in corso...
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center space-x-4">
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -45,7 +50,7 @@ export const DAC7ReportsTable = ({ reports, isLoading }: DAC7ReportsTableProps) 
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

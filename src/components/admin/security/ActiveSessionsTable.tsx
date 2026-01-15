@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ActiveSession {
   id: string;
@@ -32,7 +33,20 @@ export const ActiveSessionsTable = () => {
   });
 
   if (isLoading) {
-    return <div>Loading active sessions...</div>;
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Sessions (Last 50)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+             {Array.from({ length: 5 }).map((_, i) => (
+               <Skeleton key={i} className="h-12 w-full" />
+             ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
@@ -41,38 +55,40 @@ export const ActiveSessionsTable = () => {
         <CardTitle>Active Sessions (Last 50)</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User ID</TableHead>
-              <TableHead>IP Address</TableHead>
-              <TableHead>User Agent</TableHead>
-              <TableHead>Last Activity</TableHead>
-              <TableHead>Expires At</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sessions?.map((session) => (
-              <TableRow key={session.id}>
-                <TableCell className="font-mono text-xs">
-                  {session.user_id.substring(0, 8)}...
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {session.ip_address || 'N/A'}
-                </TableCell>
-                <TableCell className="max-w-xs truncate text-sm">
-                  {session.user_agent || 'N/A'}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {format(new Date(session.last_activity), 'yyyy-MM-dd HH:mm:ss')}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {format(new Date(session.expires_at), 'yyyy-MM-dd HH:mm:ss')}
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User ID</TableHead>
+                <TableHead>IP Address</TableHead>
+                <TableHead>User Agent</TableHead>
+                <TableHead>Last Activity</TableHead>
+                <TableHead>Expires At</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sessions?.map((session) => (
+                <TableRow key={session.id}>
+                  <TableCell className="font-mono text-xs">
+                    {session.user_id.substring(0, 8)}...
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {session.ip_address || 'N/A'}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate text-sm">
+                    {session.user_agent || 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {format(new Date(session.last_activity), 'yyyy-MM-dd HH:mm:ss')}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {format(new Date(session.expires_at), 'yyyy-MM-dd HH:mm:ss')}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

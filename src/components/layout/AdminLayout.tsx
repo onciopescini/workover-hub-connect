@@ -4,14 +4,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale, Settings, Receipt, TestTube, CheckCircle, AlertTriangle, Code } from "lucide-react";
+import { Shield, Users, Building, Tags, Headphones, FileText, LogOut, Home, Flag, LayoutDashboard, Scale, Settings, Receipt, TestTube, ChevronDown } from "lucide-react";
 import { useLogger } from '@/hooks/useLogger';
 import { useModeratorCheck } from '@/hooks/admin/useModeratorCheck';
-import { canManageUsers, canManageSystemRoles, canManageSettings } from '@/lib/admin/moderator-permissions';
 import { queryKeys } from '@/lib/react-query-config';
 import { useAdminPrefetch } from '@/hooks/admin/useAdminPrefetch';
 import { useRealtimeAdminData } from '@/hooks/admin/useRealtimeAdminData';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AdminLayoutProps {
   children?: React.ReactNode;
@@ -23,7 +28,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { authState, signOut } = useAuth();
-  const { isAdmin, isModerator, canModerate, roles } = useModeratorCheck();
+  const { isAdmin, isModerator } = useModeratorCheck();
   const { prefetchUsers, prefetchSpaces, prefetchReports, prefetchSettings } = useAdminPrefetch();
   const { openReportsCount, unresolvedTicketsCount } = useRealtimeAdminData();
   
@@ -85,16 +90,19 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
   // Feature flag for developer tools (only in dev environment)
   const isDevelopment = import.meta.env.DEV || import.meta.env['VITE_SHOW_DEV_TOOLS'] === 'true';
 
-  // Define all nav items with role requirements
-  const allNavItems = [
+  // Define nav items with role requirements
+  const primaryNavItems = [
     { label: "Dashboard", path: "/admin", icon: <LayoutDashboard className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Utenti", path: "/admin/users", icon: <Users className="w-4 h-4" />, roles: ['admin'] },
-    { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" />, roles: ['admin'] },
     { label: "Spazi", path: "/admin/spaces", icon: <Building className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Gestione Dispute", path: "/admin/disputes", icon: <Scale className="w-4 h-4" />, roles: ['admin', 'moderator'] },
-    { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Segnalazioni", path: "/admin/reports", icon: <Flag className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "Supporto", path: "/admin/tickets", icon: <Headphones className="w-4 h-4" />, roles: ['admin', 'moderator'] },
+  ];
+
+  const secondaryNavItems = [
+    { label: "Ruoli di Sistema", path: "/admin/system-roles", icon: <Shield className="w-4 h-4" />, roles: ['admin'] },
+    { label: "Tag", path: "/admin/tags", icon: <Tags className="w-4 h-4" />, roles: ['admin', 'moderator'] },
     { label: "GDPR & Compliance", path: "/admin/gdpr", icon: <Scale className="w-4 h-4" />, roles: ['admin'] },
     { label: "Gestione Fiscale", path: "/admin/fiscal", icon: <Receipt className="w-4 h-4" />, roles: ['admin'] },
     { label: "Impostazioni", path: "/admin/settings", icon: <Settings className="w-4 h-4" />, roles: ['admin'] },
@@ -106,12 +114,57 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     { label: "Test Suite Index", path: "/admin/test-suite", icon: <TestTube className="w-4 h-4" />, roles: ['admin'] },
   ] : [];
 
-  // Filter nav items based on user's roles
-  const navItems = [...allNavItems, ...devToolsItems].filter(item => {
+  // Filter items helper
+  const filterItems = (items: any[]) => items.filter(item => {
     if (isAdmin) return true; // Admins see everything
     if (isModerator) return item.roles.includes('moderator');
     return false;
   });
+
+  const visiblePrimaryItems = filterItems(primaryNavItems);
+  const visibleSecondaryItems = filterItems([...secondaryNavItems, ...devToolsItems]);
+
+  const renderNavItem = (item: any) => {
+    // Setup hover prefetch based on route
+    const getPrefetchHandler = () => {
+      if (item.path === '/admin/users') return prefetchUsers;
+      if (item.path === '/admin/spaces') return prefetchSpaces;
+      if (item.path === '/admin/reports') return prefetchReports;
+      if (item.path === '/admin/settings') return prefetchSettings;
+      return undefined;
+    };
+
+    const prefetch = getPrefetchHandler();
+
+    return (
+      <Button
+        key={item.path}
+        variant={isActive(item.path) ? "default" : "ghost"}
+        size="sm"
+        className={`flex items-center gap-2 ${
+          isActive(item.path) ? "bg-indigo-600" : ""
+        }`}
+        onMouseEnter={prefetch ? () => prefetch() : undefined}
+        onClick={() => navigate(item.path)}
+      >
+        {item.icon}
+        {item.label}
+        {/* Show real-time counts as badges */}
+        {item.path === '/admin/reports' && openReportsCount !== undefined && openReportsCount > 0 && (
+          <Badge variant="destructive" className="ml-1 text-xs">
+            {openReportsCount}
+          </Badge>
+        )}
+        {item.path === '/admin/tickets' && unresolvedTicketsCount !== undefined && unresolvedTicketsCount > 0 && (
+          <Badge variant="destructive" className="ml-1 text-xs">
+            {unresolvedTicketsCount}
+          </Badge>
+        )}
+      </Button>
+    );
+  };
+
+  const isSecondaryActive = visibleSecondaryItems.some(item => isActive(item.path));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,45 +223,35 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
         {/* Navigation */}
         <div className="mb-6 bg-white p-2 rounded-lg border shadow-sm">
           <div className="flex flex-wrap gap-2">
-            {navItems.map((item) => {
-              // Setup hover prefetch based on route
-              const getPrefetchHandler = () => {
-                if (item.path === '/admin/users') return prefetchUsers;
-                if (item.path === '/admin/spaces') return prefetchSpaces;
-                if (item.path === '/admin/reports') return prefetchReports;
-                if (item.path === '/admin/settings') return prefetchSettings;
-                return undefined;
-              };
+            {visiblePrimaryItems.map(renderNavItem)}
 
-              const prefetch = getPrefetchHandler();
-
-              return (
-                <Button
-                  key={item.path}
-                  variant={isActive(item.path) ? "default" : "ghost"}
-                  size="sm"
-                  className={`flex items-center gap-2 ${
-                    isActive(item.path) ? "bg-indigo-600" : ""
-                  }`}
-                  onMouseEnter={prefetch ? () => prefetch() : undefined}
-                  onClick={() => navigate(item.path)}
-                >
-                  {item.icon}
-                  {item.label}
-                  {/* Show real-time counts as badges */}
-                  {item.path === '/admin/reports' && openReportsCount !== undefined && openReportsCount > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs">
-                      {openReportsCount}
-                    </Badge>
-                  )}
-                  {item.path === '/admin/tickets' && unresolvedTicketsCount !== undefined && unresolvedTicketsCount > 0 && (
-                    <Badge variant="destructive" className="ml-1 text-xs">
-                      {unresolvedTicketsCount}
-                    </Badge>
-                  )}
-                </Button>
-              );
-            })}
+            {visibleSecondaryItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={isSecondaryActive ? "default" : "ghost"}
+                    size="sm"
+                    className={`flex items-center gap-2 ${isSecondaryActive ? "bg-indigo-600" : ""}`}
+                  >
+                    Altro <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {visibleSecondaryItems.map((item) => (
+                    <DropdownMenuItem
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={isActive(item.path) ? "bg-gray-100" : ""}
+                    >
+                      <span className="flex items-center gap-2">
+                        {item.icon}
+                        {item.label}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 

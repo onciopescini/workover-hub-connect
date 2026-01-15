@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { AlertCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function PaymentMonitoringPanel() {
   const { payments, anomalies, isLoading } = useAdminPayments();
@@ -43,7 +44,7 @@ export function PaymentMonitoringPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {payments?.filter(p => p.payment_status === 'pending').length || 0}
+              {isLoading ? <Skeleton className="h-8 w-16" /> : (payments?.filter(p => p.payment_status === 'pending').length || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Transazioni da processare
@@ -58,7 +59,7 @@ export function PaymentMonitoringPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {payments?.filter(p => p.payment_status === 'failed').length || 0}
+              {isLoading ? <Skeleton className="h-8 w-16" /> : (payments?.filter(p => p.payment_status === 'failed').length || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Richiede attenzione
@@ -73,7 +74,7 @@ export function PaymentMonitoringPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {payments?.filter(p => p.payment_status === 'refund_pending').length || 0}
+              {isLoading ? <Skeleton className="h-8 w-16" /> : (payments?.filter(p => p.payment_status === 'refund_pending').length || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Da processare
@@ -89,7 +90,7 @@ export function PaymentMonitoringPanel() {
           <CardDescription>Ultimi pagamenti della piattaforma</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -104,11 +105,17 @@ export function PaymentMonitoringPanel() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Caricamento...
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    </TableRow>
+                  ))
                 ) : payments?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
