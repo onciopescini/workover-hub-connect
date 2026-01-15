@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,37 @@ import { it } from "date-fns/locale";
 import { BOOKING_STATUS_LABELS } from "@/types/booking";
 import { exportBookingsToCSV } from "@/lib/admin/admin-booking-utils";
 import { toast } from "sonner";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export function BookingsList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   
-  const { bookings, isLoading } = useAdminBookings({ 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, paymentFilter]);
+
+  const { bookings, totalCount, isLoading } = useAdminBookings({
     search, 
     statusFilter: statusFilter === "all" ? "" : statusFilter,
-    paymentFilter: paymentFilter === "all" ? "" : paymentFilter
+    paymentFilter: paymentFilter === "all" ? "" : paymentFilter,
+    page,
+    pageSize
   });
+
+  const totalPages = Math.ceil((totalCount || 0) / pageSize);
 
   const handleExport = () => {
     if (!bookings) return;
@@ -174,6 +193,36 @@ export function BookingsList() {
               </TableBody>
             </Table>
           </div>
+
+          <Pagination className="mt-4">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (page > 1) setPage(p => p - 1);
+                  }}
+                  className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink href="#" onClick={(e) => e.preventDefault()} isActive>
+                  {page} di {Math.max(1, totalPages)}
+                </PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (page < totalPages) setPage(p => p + 1);
+                  }}
+                  className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </CardContent>
       </Card>
 
