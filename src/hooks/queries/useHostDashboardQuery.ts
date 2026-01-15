@@ -186,7 +186,7 @@ const fetchHostMessages = async (hostId: string, bookings: BookingWithDetails[])
 // Query hooks
 export const useHostSpacesQuery = () => {
   const { authState } = useAuth();
-  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
+  const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.spaces(authState.user?.id || ''),
@@ -198,7 +198,7 @@ export const useHostSpacesQuery = () => {
 
 export const useHostBookingsQuery = () => {
   const { authState } = useAuth();
-  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
+  const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.bookings(authState.user?.id || ''),
@@ -210,7 +210,7 @@ export const useHostBookingsQuery = () => {
 
 export const useHostMessagesQuery = (bookings: BookingWithDetails[]) => {
   const { authState } = useAuth();
-  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
+  const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.messages(authState.user?.id || ''),
@@ -222,7 +222,7 @@ export const useHostMessagesQuery = (bookings: BookingWithDetails[]) => {
 
 export const useHostReviewsQuery = () => {
   const { authState } = useAuth();
-  const isHost = authState.roles.includes('host') || authState.roles.includes('admin');
+  const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
     queryKey: hostDashboardKeys.reviews(authState.user?.id || ''),

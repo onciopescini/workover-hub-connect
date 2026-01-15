@@ -89,7 +89,8 @@ export const useAdminUsers = ({
 
         // Merge profiles con system_roles
         const usersWithRoles = profilesData.map(profile => {
-          const userRoles = (rolesData as any)?.filter((r: any) => r.user_id === profile.id) || [];
+          // Defensive coding: Ensure rolesData is treated as an array and userRoles is always an array
+          const userRoles = (Array.isArray(rolesData) ? rolesData : []).filter((r: any) => r.user_id === profile.id) || [];
           const primaryRole = userRoles[0]?.role || 'coworker';
           
           return {

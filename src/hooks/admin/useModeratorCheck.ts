@@ -1,14 +1,17 @@
 import { useAuth } from "@/hooks/auth/useAuth";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 
-// MOCKED FOR VERIFICATION
 export const useModeratorCheck = () => {
+  const { authState } = useAuth();
+
+  const roles = authState.roles || [];
+  const isAdmin = roles.includes('admin');
+  const isModerator = roles.includes('moderator');
+
   return {
-    isAdmin: true,
-    isModerator: true,
-    canModerate: true,
-    isLoading: false,
-    roles: ['admin', 'moderator'],
+    isAdmin,
+    isModerator,
+    canModerate: isAdmin || isModerator,
+    isLoading: authState.isLoading,
+    roles
   };
 };

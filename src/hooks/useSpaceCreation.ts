@@ -43,7 +43,7 @@ const useSpaceCreation = () => {
 
   // Ensure only hosts can access
   useEffect(() => {
-    if (authState.profile && !authState.roles.includes('host')) {
+    if (authState.profile && !(authState.roles || []).includes('host')) {
       sreLogger.warn('Non-host trying to access space creation', { roles: authState.roles, userId: authState.user?.id });
       toast.error("Solo gli host possono creare spazi");
       navigate("/dashboard");
@@ -53,7 +53,7 @@ const useSpaceCreation = () => {
   return {
     authState,
     isLoading: authState.isLoading,
-    canAccess: authState.user && authState.roles.includes('host')
+    canAccess: authState.user && (authState.roles || []).includes('host')
   };
 };
 

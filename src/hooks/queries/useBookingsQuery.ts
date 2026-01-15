@@ -45,7 +45,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
 
   // Get user's spaces for host bookings
   let hostBookings: Array<Record<string, unknown>> = [];
-  const isHostOrAdmin = userRoles.includes("host") || userRoles.includes("admin");
+  const isHostOrAdmin = (userRoles || []).includes("host") || (userRoles || []).includes("admin");
   if (isHostOrAdmin) {
     const { data: hostBookingsRaw, error: hostError } = (await supabase
       .from("bookings")
