@@ -31,8 +31,8 @@ export const useHostBookings = (filters?: BookingFilter) => {
         return [];
       }
 
-      const isHost = userRoles.includes('host');
-      const isAdmin = userRoles.includes('admin');
+      const isHost = (userRoles || []).includes('host');
+      const isAdmin = (userRoles || []).includes('admin');
 
       if (!isHost && !isAdmin) {
         debug('User not authorized for host bookings', {
@@ -85,7 +85,7 @@ export const useHostBookings = (filters?: BookingFilter) => {
         return [];
       }
     },
-    enabled: !!authState.user?.id && (authState.roles.includes('host') || authState.roles.includes('admin')),
+    enabled: !!authState.user?.id && ((authState.roles || []).includes('host') || (authState.roles || []).includes('admin')),
     staleTime: 30000,
     refetchOnWindowFocus: false, // Reduced aggressive refetching
     retry: 1, // Reduced retry attempts

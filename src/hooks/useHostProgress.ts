@@ -106,7 +106,7 @@ export const useHostProgress = (options?: {
         taxDetailsComplete
       };
     },
-    enabled: !!userId && (authState.roles.includes('host') || authState.roles.includes('admin')),
+    enabled: !!userId && ((authState.roles || []).includes('host') || (authState.roles || []).includes('admin')),
     staleTime: options?.staleTime ?? TIME_CONSTANTS.CACHE_DURATION, // 5 minutes by default, configurable
     refetchOnWindowFocus: options?.refetchOnWindowFocus ?? false,
     // Aggiorna più frequentemente quando ci sono operazioni critiche in corso

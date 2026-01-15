@@ -37,7 +37,7 @@ export const useUnreadCount = () => {
 
       // Fetch unread booking requests (for hosts)
       let bookingsCount = 0;
-      if (authState.roles.includes('host')) {
+      if ((authState.roles || []).includes('host')) {
         const { count, error: bookingsError } = await supabase
           .from('bookings')
           .select('id', { count: 'exact' })
