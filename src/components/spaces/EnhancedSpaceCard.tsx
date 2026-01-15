@@ -186,15 +186,19 @@ export const EnhancedSpaceCard: React.FC<EnhancedSpaceCardProps> = ({ space, onC
           </div>
 
           {/* Rating and Reviews */}
-          {reviewCount > 0 && (
-            <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-2 min-h-[20px]">
+            {reviewCount > 0 ? (
               <div className="flex items-center gap-1">
                 {renderStars(rating)}
                 <span className="font-medium text-sm ml-1">{rating.toFixed(1)}</span>
                 <span className="text-gray-600 text-sm">({reviewCount})</span>
               </div>
-            </div>
-          )}
+            ) : (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                Nuovo
+              </Badge>
+            )}
+          </div>
 
           {/* Location */}
           <div className="flex items-center gap-1 text-gray-600 mb-3">

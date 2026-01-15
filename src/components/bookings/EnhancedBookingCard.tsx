@@ -298,29 +298,24 @@ export const EnhancedBookingCard = ({
             </TooltipProvider>
           )}
 
-          {/* Review button - only show for completed bookings */}
-          {booking.status === 'served' && (
-            userRole === 'host' ? (
-              // Host reviews coworker
-              otherParty.id && (
-                <ReviewButton
+          {/* Review button - shown for served OR ended bookings (logic inside ReviewButton) */}
+          {(userRole === 'coworker' && booking.space_id) && (
+              <ReviewButton
+                booking={booking}
+                reviewType="space"
+                targetId={booking.space_id}
+                targetName={booking.space?.title || "Spazio"}
+              />
+          )}
+
+          {/* For Hosts reviewing Guests (optional, not the main task but good to keep if present) */}
+          {(userRole === 'host' && otherParty.id && booking.status === 'served') && (
+              <ReviewButton
                   booking={booking}
                   reviewType="coworker"
                   targetId={otherParty.id}
                   targetName={otherParty.name}
                 />
-              )
-            ) : (
-              // Coworker reviews space
-              booking.space_id && (
-                <ReviewButton
-                  booking={booking}
-                  reviewType="space"
-                  targetId={booking.space_id}
-                  targetName={booking.space?.title || "Spazio"}
-                />
-              )
-            )
           )}
           
           {/* Pending Approval Actions - Host Only */}

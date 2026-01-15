@@ -82,11 +82,16 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick }) => {
             <h3 className="font-bold text-lg text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
               {space.name || space.title}
             </h3>
-            {reviewCount > 0 && (
+            {reviewCount > 0 ? (
               <div className="flex items-center gap-1 text-sm bg-gray-50 px-2 py-1 rounded-md shrink-0">
                 <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
                 <span className="font-bold text-gray-700">{rating.toFixed(1)}</span>
+                <span className="text-gray-400 text-xs">({reviewCount})</span>
               </div>
+            ) : (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 shrink-0">
+                Nuovo
+              </Badge>
             )}
           </div>
 

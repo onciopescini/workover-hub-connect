@@ -9,7 +9,7 @@ import { SpaceReviewForm } from "@/components/reviews/SpaceReviewForm";
 import { BookingWithDetails } from "@/types/booking";
 import { getBookingReviewStatus } from "@/lib/booking-review-utils";
 import { getSpaceReviewStatus } from "@/lib/space-review-service";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, isBefore, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -44,41 +44,36 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
       }
     };
 
-    checkReviewStatus();
+    if (booking.id) {
+        checkReviewStatus();
+    }
   }, [booking.id, targetId, reviewType]);
 
   const checkReviewEligibility = () => {
-    if (booking.status !== 'served') {
-      return { canReview: false, expired: false, daysUntilExpiry: 14 };
+    // 1. Check if "Served"
+    if (booking.status === 'served') {
+      return { canReview: true, expired: false, daysUntilExpiry: 14 }; // Approximate days until expiry since we don't track exact served date here
     }
 
-    let completedAt: Date;
-    
-    if (booking.service_completed_at) {
-      completedAt = new Date(booking.service_completed_at);
-    } else if (booking.end_time) {
-      // Fallback: usa booking_date + end_time
-      completedAt = new Date(`${booking.booking_date}T${booking.end_time}`);
-    } else {
-      // Nessun dato disponibile
-      return { canReview: false, expired: false, daysUntilExpiry: 14 };
+    // 2. Check if "Confirmed" or "Checked In" AND Ended
+    if (['confirmed', 'checked_in'].includes(booking.status || '')) {
+      let endTime: Date | null = null;
+      if (booking.service_completed_at) {
+        endTime = new Date(booking.service_completed_at);
+      } else if (booking.booking_date && booking.end_time) {
+        endTime = parseISO(`${booking.booking_date}T${booking.end_time}`);
+      }
+
+      if (endTime && isBefore(endTime, new Date())) {
+         return { canReview: true, expired: false, daysUntilExpiry: 14 };
+      }
     }
 
-    const now = new Date();
-    const daysSinceEnd = differenceInDays(now, completedAt);
-
-    // Removed 24h delay check - reviews are available immediately after 'served' status
-    const expired = daysSinceEnd > 14;
-    const canReview = !expired;
-
-    return {
-      canReview,
-      expired,
-      daysUntilExpiry: Math.max(0, 14 - daysSinceEnd)
-    };
+    // Default: Not eligible
+    return { canReview: false, expired: false, daysUntilExpiry: 0 };
   };
 
-  const { canReview, expired, daysUntilExpiry } = checkReviewEligibility();
+  const { canReview, expired } = checkReviewEligibility();
 
   if (loading) {
     return (
@@ -125,18 +120,26 @@ export const ReviewButton = ({ booking, reviewType, targetId, targetName, onRevi
       );
     }
 
-    // Default case for !canReview (e.g. status != served)
+    // Default case for !canReview (e.g. status != served and not ended)
+    // Only show "In attesa" if status is confirmed/checked_in but not ended, OR served/paid
+    // Actually, if we are here, it means it's not served AND (not confirmed/checked_in OR not ended).
+    // The requirement is to SHOW the button for confirmed/checked_in/served.
+    // If it is PENDING or CANCELLED, maybe we shouldn't even render the button?
+    // But the component is rendered inside EnhancedBookingCard which decides to show/hide it.
+    // Let's refine `EnhancedBookingCard` to only render this button if status is relevant.
+
+    // For now, if we are here, it means we rendered the button but it's disabled.
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" disabled className="flex items-center">
               <Clock className="w-4 h-4 mr-1" />
-              Servizio non completato
+              In attesa completamento
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Puoi recensire solo dopo che il servizio è stato completato</p>
+            <p>Puoi recensire dopo che il servizio è stato completato</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
