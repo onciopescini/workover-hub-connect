@@ -1,15 +1,14 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
 import { validateSettingValue } from "@/lib/admin/admin-settings-utils";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 const PaymentConfiguration = () => {
-  const { toast } = useToast();
   const { settings, isLoading, updateSetting } = useAdminSettings("payment");
   
   const [platformFee, setPlatformFee] = useState(settings?.["platform_fee_percentage"] || 5);
@@ -28,21 +27,13 @@ const PaymentConfiguration = () => {
     try {
       // Validate platform fee
       if (!validateSettingValue("platform_fee_percentage", Number(platformFee))) {
-        toast({
-          title: "Errore di validazione",
-          description: "La commissione piattaforma deve essere tra 0 e 100%",
-          variant: "destructive",
-        });
+        toast.error("Errore di validazione", { description: "La commissione piattaforma deve essere tra 0 e 100%" });
         return;
       }
 
       // Validate stripe fee
       if (!validateSettingValue("stripe_fee_percentage", Number(stripeFee))) {
-        toast({
-          title: "Errore di validazione",
-          description: "La commissione Stripe deve essere tra 0 e 100%",
-          variant: "destructive",
-        });
+        toast.error("Errore di validazione", { description: "La commissione Stripe deve essere tra 0 e 100%" });
         return;
       }
 
@@ -50,16 +41,9 @@ const PaymentConfiguration = () => {
       await updateSetting("stripe_fee_percentage", Number(stripeFee));
 
       setHasUnsavedChanges(false);
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le configurazioni di pagamento sono state aggiornate",
-      });
+      toast.success("Impostazioni salvate", { description: "Le configurazioni di pagamento sono state aggiornate" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 

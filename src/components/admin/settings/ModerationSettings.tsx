@@ -1,13 +1,12 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
 import { Loader2 } from "lucide-react";
 
 const ModerationSettings = () => {
-  const { toast } = useToast();
   const { settings, isLoading, updateSetting } = useAdminSettings("moderation");
   
   const [autoModeration, setAutoModeration] = useState(settings?.["enable_auto_moderation"] || false);
@@ -16,16 +15,9 @@ const ModerationSettings = () => {
     try {
       await updateSetting("enable_auto_moderation", autoModeration);
 
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le impostazioni di moderazione sono state aggiornate",
-      });
+      toast.success("Impostazioni salvate", { description: "Le impostazioni di moderazione sono state aggiornate" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 

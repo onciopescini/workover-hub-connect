@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 interface KYCUploadFormProps {
@@ -14,7 +14,6 @@ interface KYCUploadFormProps {
 }
 
 export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUploadFormProps = {}) => {
-  const { toast } = useToast();
   const [documentType, setDocumentType] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [expiresAt, setExpiresAt] = useState('');
@@ -34,21 +33,13 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
     // Validate file type
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(selectedFile.type)) {
-      toast({
-        title: "Formato non valido",
-        description: "Sono accettati solo file PDF, JPEG e PNG",
-        variant: "destructive",
-      });
+      toast.error("Formato non valido", { description: "Sono accettati solo file PDF, JPEG e PNG" });
       return;
     }
 
     // Validate file size (10MB)
     if (selectedFile.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File troppo grande",
-        description: "La dimensione massima è 10MB",
-        variant: "destructive",
-      });
+      toast.error("File troppo grande", { description: "La dimensione massima è 10MB" });
       return;
     }
 
@@ -59,11 +50,7 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
     e.preventDefault();
 
     if (!file || !documentType) {
-      toast({
-        title: "Campi mancanti",
-        description: "Seleziona un tipo di documento e carica un file",
-        variant: "destructive",
-      });
+      toast.error("Campi mancanti", { description: "Seleziona un tipo di documento e carica un file" });
       return;
     }
 
@@ -90,10 +77,7 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
         throw new Error(errorMessage);
       }
 
-      toast({
-        title: "✅ Documento caricato con successo",
-        description: "Il tuo documento è stato ricevuto ed è in verifica. Riceverai una notifica entro 24-48 ore.",
-      });
+      toast.success("✅ Documento caricato con successo", { description: "Il tuo documento è stato ricevuto ed è in verifica. Riceverai una notifica entro 24-48 ore." });
 
       // Reset form
       setFile(null);
@@ -125,11 +109,7 @@ export const KYCUploadForm = ({ onSuccess, showNavigationButtons = true }: KYCUp
         errorDescription = "Verifica la tua connessione internet e riprova.";
       }
       
-      toast({
-        title: errorTitle,
-        description: errorDescription,
-        variant: "destructive",
-      });
+      toast.error(errorTitle, { description: errorDescription });
     } finally {
       setIsUploading(false);
     }

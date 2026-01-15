@@ -1,14 +1,13 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
 import { Loader2 } from "lucide-react";
 
 const GDPRSettings = () => {
-  const { toast } = useToast();
   const { settings, isLoading, updateSetting } = useAdminSettings("gdpr");
   
   const [dataRetention, setDataRetention] = useState(settings?.["data_retention_months"] || 24);
@@ -19,16 +18,9 @@ const GDPRSettings = () => {
       await updateSetting("data_retention_months", Number(dataRetention));
       await updateSetting("cookie_consent_required", cookieConsent);
 
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le impostazioni GDPR sono state aggiornate",
-      });
+      toast.success("Impostazioni salvate", { description: "Le impostazioni GDPR sono state aggiornate" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 

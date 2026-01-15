@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +10,11 @@ import { useStripePayouts } from '@/hooks/useStripePayouts';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { useToast } from "@/hooks/use-toast";
-
 export const HostPaymentsDashboard = () => {
   const { data: payments, isLoading } = useHostPayments();
   const stats = useHostPaymentStats(payments);
   const [filter, setFilter] = useState<'all' | 'completed'>('completed');
   const [userId, setUserId] = useState<string | null>(null);
-  const { toast } = useToast();
   const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
@@ -33,11 +31,7 @@ export const HostPaymentsDashboard = () => {
         if (error) throw error;
         if (data.url) window.location.href = data.url;
       } catch (e: any) {
-        toast({
-            title: "Errore",
-            description: "Impossibile accedere alla dashboard Stripe: " + e.message,
-            variant: "destructive"
-        });
+        toast.error("Errore", { description: "Impossibile accedere alla dashboard Stripe: " });
         setIsRedirecting(false);
       }
   };

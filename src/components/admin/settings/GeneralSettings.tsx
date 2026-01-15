@@ -1,16 +1,15 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
 import { validateSettingValue } from "@/lib/admin/admin-settings-utils";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 const GeneralSettings = () => {
-  const { toast } = useToast();
   const { settings, isLoading, updateSetting } = useAdminSettings("general");
   
   const [platformName, setPlatformName] = useState(settings?.["platform_name"] || "CoWork Space");
@@ -39,11 +38,7 @@ const GeneralSettings = () => {
     try {
       // Validate all fields
       if (!platformName.trim()) {
-        toast({
-          title: "Errore di validazione",
-          description: "Il nome della piattaforma non può essere vuoto",
-          variant: "destructive",
-        });
+        toast.error("Errore di validazione", { description: "Il nome della piattaforma non può essere vuoto" });
         return;
       }
 
@@ -56,16 +51,9 @@ const GeneralSettings = () => {
       await updateSetting("enable_networking", enableNetworking);
 
       setHasUnsavedChanges(false);
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le impostazioni generali sono state aggiornate con successo",
-      });
+      toast.success("Impostazioni salvate", { description: "Le impostazioni generali sono state aggiornate con successo" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 

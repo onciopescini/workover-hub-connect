@@ -5,9 +5,9 @@
  * errors, and critical system events.
  */
 
+import { toast } from "sonner";
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { sreLogger } from '@/lib/sre-logger';
 
 export interface SystemAlert {
@@ -36,8 +36,6 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
   
   const [alerts, setAlerts] = useState<SystemAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
   // Fetch existing alerts
   const fetchAlerts = useCallback(async () => {
     try {
@@ -91,11 +89,7 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
 
     // Show toast for critical/warning alerts
     if (enableToasts && severityFilter.includes(newAlert.severity)) {
-      toast({
-        title: newAlert.title,
-        description: newAlert.message,
-        variant: newAlert.severity === 'critical' ? 'destructive' : 'default',
-      });
+      toast.success(newAlert.title, { description: newAlert.message });
     }
 
     // Log to Supabase (using auth.uid() for admin_id)

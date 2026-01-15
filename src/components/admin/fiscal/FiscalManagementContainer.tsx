@@ -11,7 +11,6 @@ import { FiscalStatusBadge } from "@/components/fiscal/FiscalStatusBadge";
 import { Euro, FileText, TrendingUp, Users, Download, FileSpreadsheet } from "lucide-react";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast as sonnerToast } from "sonner";
 
@@ -21,7 +20,6 @@ export const FiscalManagementContainer = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { fiscalStats, isLoadingStats } = useFiscalDashboard();
   const { reports, isLoading: isLoadingReports } = useDAC7Reports({ year: activeYear });
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const formatCurrency = (amount: number) => {
@@ -49,11 +47,7 @@ export const FiscalManagementContainer = () => {
       await queryClient.invalidateQueries({ queryKey: ['dac7-reports'] });
       await queryClient.invalidateQueries({ queryKey: ['fiscal-dashboard'] });
     } catch (error: any) {
-      toast({
-        title: "❌ Errore Generazione Report",
-        description: error.message || "Si è verificato un errore durante la generazione del report",
-        variant: "destructive",
-      });
+      toast.error("❌ Errore Generazione Report", { description: error.message });
     } finally {
       setIsGenerating(false);
     }

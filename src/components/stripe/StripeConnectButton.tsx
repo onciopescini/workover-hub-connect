@@ -1,15 +1,14 @@
+import { toast } from "sonner";
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants";
 import { useAuth } from '@/hooks/auth/useAuth';
 
 export const StripeConnectButton = () => {
-  const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
   const { authState } = useAuth();
   const user = authState.user;
@@ -39,18 +38,11 @@ export const StripeConnectButton = () => {
       // For better UX on mobile, redirecting might be better, but new tab preserves app state
       window.location.href = data.url;
 
-      toast({
-        title: "Reindirizzamento a Stripe",
-        description: "Completa la configurazione del tuo account Stripe per ricevere pagamenti.",
-      });
+      toast.success("Reindirizzamento a Stripe", { description: "Completa la configurazione del tuo account Stripe per ricevere pagamenti." });
 
     } catch (error: any) {
       console.error('Stripe Connect error:', error);
-      toast({
-        title: "Errore connessione Stripe",
-        description: error.message || "Si è verificato un errore. Riprova.",
-        variant: "destructive",
-      });
+      toast.error("Errore connessione Stripe", { description: error.message });
       setIsConnecting(false);
     }
   };
@@ -64,11 +56,7 @@ export const StripeConnectButton = () => {
          if (error) throw error;
          if (data.url) window.location.href = data.url;
      } catch(e: any) {
-         toast({
-             title: "Impossibile accedere alla dashboard",
-             description: e.message,
-             variant: "destructive"
-         });
+         toast.error("Impossibile accedere alla dashboard", { description: e.message });
      } finally {
          setIsConnecting(false);
      }
