@@ -91,6 +91,7 @@ const AdminKYCReviewPage = lazy(() => import("@/pages/admin/AdminKYCReviewPage")
 const DisputeManagement = lazy(() => import("@/pages/admin/DisputeManagement"));
 const SystemAlarmsPage = lazy(() => import("@/pages/admin/SystemAlarmsPage"));
 const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
+const AdminBookingDetail = lazy(() => import("@/pages/admin/AdminBookingDetail"));
 const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -438,6 +439,12 @@ export const AppRoutes = () => {
               <AdminUsersPage />
             </LazyWrapper>
           </ModeratorRoute>
+        } />
+
+        <Route path="bookings/:id" element={
+          <LazyWrapper>
+            <AdminBookingDetail />
+          </LazyWrapper>
         } />
         
         <Route path="system-roles" element={

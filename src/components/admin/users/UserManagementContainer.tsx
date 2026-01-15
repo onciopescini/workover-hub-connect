@@ -61,6 +61,7 @@ export const UserManagementContainer = () => {
           onDemoteFromAdmin={handleDemoteFromAdmin}
           onBanUser={handleBanUser}
           onUnbanUser={handleUnbanUser}
+          onRefresh={fetchUsers}
         />
       </CardContent>
     </Card>

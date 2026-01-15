@@ -16,6 +16,7 @@ interface UserCardProps {
   onDemoteFromAdmin: (userId: string) => void;
   onBanUser?: (userId: string, reason: string) => void;
   onUnbanUser?: (userId: string) => void;
+  onRefresh?: () => void;
 }
 
 export const UserCard: React.FC<UserCardProps> = ({
@@ -25,7 +26,8 @@ export const UserCard: React.FC<UserCardProps> = ({
   onPromoteToAdmin,
   onDemoteFromAdmin,
   onBanUser,
-  onUnbanUser
+  onUnbanUser,
+  onRefresh
 }) => {
   const [showDetail, setShowDetail] = React.useState(false);
 
@@ -120,7 +122,7 @@ export const UserCard: React.FC<UserCardProps> = ({
       user={user}
       open={showDetail}
       onOpenChange={setShowDetail}
-      onUserUpdate={() => {}}
+      onUserUpdate={onRefresh || (() => {})}
     />
     </>
   );
