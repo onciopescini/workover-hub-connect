@@ -3,24 +3,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, FileText, DollarSign, TrendingUp, Clock, CheckCircle, Wallet } from 'lucide-react';
+import { Download, FileText, DollarSign, TrendingUp, Clock, CheckCircle, Wallet, ExternalLink, Loader2 } from 'lucide-react';
 import { useHostPayments, useHostPaymentStats } from '@/hooks/useHostPayments';
 import { useStripePayouts } from '@/hooks/useStripePayouts';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useToast } from "@/hooks/use-toast";
 
 export const HostPaymentsDashboard = () => {
   const { data: payments, isLoading } = useHostPayments();
   const stats = useHostPaymentStats(payments);
   const [filter, setFilter] = useState<'all' | 'completed'>('completed');
   const [userId, setUserId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
   }, []);
   
   const { data: stripePayouts, isLoading: isLoadingPayouts } = useStripePayouts(userId || '');
+
+  const handleStripeDashboard = async () => {
+      setIsRedirecting(true);
+      try {
+        // Express Dashboard Link acts as login link
+        const { data, error } = await supabase.functions.invoke('create-connect-onboarding-link');
+        if (error) throw error;
+        if (data.url) window.location.href = data.url;
+      } catch (e: any) {
+        toast({
+            title: "Errore",
+            description: "Impossibile accedere alla dashboard Stripe: " + e.message,
+            variant: "destructive"
+        });
+        setIsRedirecting(false);
+      }
+  };
 
   const exportToCSV = () => {
     if (!payments || payments.length === 0) return;
@@ -117,20 +137,24 @@ export const HostPaymentsDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-indigo-100 bg-indigo-50/50 dark:bg-indigo-950/20 dark:border-indigo-900">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo Disponibile</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Saldo Disponibile (Stripe)</CardTitle>
+            <Wallet className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">
               €{stripePayouts?.available_balance.toFixed(2) || '0.00'}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {stripePayouts?.last_payout 
-                ? `Ultimo: ${format(new Date(stripePayouts.last_payout.arrival_date), 'dd/MM/yy')}`
-                : 'Nessun payout'}
-            </p>
+             <Button
+                variant="link"
+                className="p-0 h-auto text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1 mt-1"
+                onClick={handleStripeDashboard}
+                disabled={isRedirecting}
+             >
+                {isRedirecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+                Gestisci su Stripe
+             </Button>
           </CardContent>
         </Card>
       </div>
