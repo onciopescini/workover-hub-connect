@@ -49,6 +49,68 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          receiver_id: string | null
+          reviewer_id: string
+          space_id: string | null
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          receiver_id?: string | null
+          reviewer_id: string
+          space_id?: string | null
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          receiver_id?: string | null
+          reviewer_id?: string
+          space_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_threads: {
         Row: {
           assistant_id: string | null
@@ -2995,6 +3057,8 @@ export type Database = {
           website: string | null
           work_style: string | null
           youtube_url: string | null
+          rating_avg: number | null
+          num_reviews: number | null
         }
         Insert: {
           admin_notes?: string | null
@@ -3068,6 +3132,8 @@ export type Database = {
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
+          rating_avg?: number | null
+          num_reviews?: number | null
         }
         Update: {
           admin_notes?: string | null
@@ -3141,6 +3207,8 @@ export type Database = {
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
+          rating_avg?: number | null
+          num_reviews?: number | null
         }
         Relationships: []
       }
@@ -4485,6 +4553,8 @@ export type Database = {
           suspension_reason: string | null
           updated_at: string | null
           work_environment: string | null
+          rating_avg: number | null
+          num_reviews: number | null
         }
         Insert: {
           address?: string | null
@@ -4520,6 +4590,8 @@ export type Database = {
           suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
+          rating_avg?: number | null
+          num_reviews?: number | null
         }
         Update: {
           address?: string | null
@@ -4555,6 +4627,8 @@ export type Database = {
           suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
+          rating_avg?: number | null
+          num_reviews?: number | null
         }
         Relationships: [
           {
