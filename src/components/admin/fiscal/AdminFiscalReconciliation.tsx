@@ -7,6 +7,7 @@ import { AlertTriangle, Download, RefreshCw, FileText, CheckCircle, XCircle } fr
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useState } from 'react';
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +48,10 @@ export const AdminFiscalReconciliation = () => {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Caricamento statistiche...</p>
+          <div className="w-full space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -154,62 +158,66 @@ export const AdminFiscalReconciliation = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoadingPayments ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Caricamento pagamenti...</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Payment ID</TableHead>
-                    <TableHead>Booking ID</TableHead>
-                    <TableHead>Spazio</TableHead>
-                    <TableHead className="text-right">Importo</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Stato</TableHead>
-                    <TableHead className="text-right">Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paymentsWithoutInvoice.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-mono text-xs">
-                        {payment.id.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {payment.booking_id.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {payment.booking?.spaces?.title || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        €{Number(payment.amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(payment.created_at), 'dd MMM yyyy', { locale: it })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-success/10 text-success border-success">
-                          {payment.payment_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRegenerateClick(payment)}
-                          disabled={isRegenerating || !payment.booking?.spaces?.host_id}
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Genera Fattura
-                        </Button>
-                      </TableCell>
+            <div className="overflow-x-auto">
+              {isLoadingPayments ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Payment ID</TableHead>
+                      <TableHead>Booking ID</TableHead>
+                      <TableHead>Spazio</TableHead>
+                      <TableHead className="text-right">Importo</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Stato</TableHead>
+                      <TableHead className="text-right">Azioni</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                  </TableHeader>
+                  <TableBody>
+                    {paymentsWithoutInvoice.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="font-mono text-xs">
+                          {payment.id.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {payment.booking_id.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell>
+                          {payment.booking?.spaces?.title || 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          €{Number(payment.amount).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(payment.created_at), 'dd MMM yyyy', { locale: it })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-success/10 text-success border-success">
+                            {payment.payment_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRegenerateClick(payment)}
+                            disabled={isRegenerating || !payment.booking?.spaces?.host_id}
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Genera Fattura
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

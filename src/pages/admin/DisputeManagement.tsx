@@ -98,79 +98,81 @@ export default function DisputeManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">ID/Ref</TableHead>
-                <TableHead>Opened By</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {disputes && disputes.length > 0 ? (
-                disputes.map((dispute: any) => (
-                  <TableRow key={dispute.id}>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {dispute.id.slice(0, 8)}...
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {dispute.profiles?.first_name} {dispute.profiles?.last_name}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">ID/Ref</TableHead>
+                  <TableHead>Opened By</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {disputes && disputes.length > 0 ? (
+                  disputes.map((dispute: any) => (
+                    <TableRow key={dispute.id}>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {dispute.id.slice(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {dispute.profiles?.first_name} {dispute.profiles?.last_name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {dispute.profiles?.email}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[300px]">
+                        <span className="line-clamp-1 text-sm" title={dispute.reason}>
+                          {dispute.reason}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          {dispute.profiles?.email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[300px]">
-                      <span className="line-clamp-1 text-sm" title={dispute.reason}>
-                        {dispute.reason}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          dispute.status === 'resolved' ? 'default' :
-                          dispute.status === 'refunded' ? 'secondary' :
-                          'destructive'
-                        }
-                        className={dispute.status === 'resolved' ? 'bg-green-500 hover:bg-green-600' : ''}
-                      >
-                        {dispute.status.toUpperCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(dispute.created_at), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {dispute.amount > 0 ? `€${dispute.amount.toFixed(2)}` : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(dispute)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            dispute.status === 'resolved' ? 'default' :
+                            dispute.status === 'refunded' ? 'secondary' :
+                            'destructive'
+                          }
+                          className={dispute.status === 'resolved' ? 'bg-green-500 hover:bg-green-600' : ''}
+                        >
+                          {dispute.status.toUpperCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(dispute.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {dispute.amount > 0 ? `€${dispute.amount.toFixed(2)}` : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(dispute)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      No disputes found.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                    No disputes found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
