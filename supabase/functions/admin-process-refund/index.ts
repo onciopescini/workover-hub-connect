@@ -150,6 +150,17 @@ serve(async (req) => {
       console.error('Error updating payment status:', updatePaymentError);
     }
 
+    // Trigger Notification
+    try {
+      console.log('Invoking send-booking-notification (refund)...');
+      const { error: notifError } = await supabaseAdmin.functions.invoke('send-booking-notification', {
+        body: { booking_id: bookingId, type: 'refund' }
+      });
+      if (notifError) console.error('Notification Error:', notifError);
+    } catch (e) {
+      console.error('Notification Exception:', e);
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'Refund processed successfully' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
