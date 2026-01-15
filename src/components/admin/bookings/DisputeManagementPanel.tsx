@@ -50,7 +50,7 @@ export function DisputeManagementPanel() {
             space:spaces(id, title),
             payments(id, amount, payment_status)
           ),
-          opener:profiles!disputes_opened_by_fkey(id, first_name, last_name, email)
+          opener:profiles!disputes_opened_by_fkey(id, first_name, last_name)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +19,6 @@ import {
   Send
 } from "lucide-react";
 import { type AvailabilityData } from "@/types/availability";
-import { useToast } from "@/hooks/use-toast";
 import { sreLogger } from '@/lib/sre-logger';
 
 interface ConflictManagementSystemProps {
@@ -48,8 +48,6 @@ export const ConflictManagementSystem = ({
 }: ConflictManagementSystemProps) => {
   const [conflicts, setConflicts] = useState<ConflictInfo[]>([]);
   const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
-  const { toast } = useToast();
-
   // Detect conflicts when availability or bookings change
   useEffect(() => {
     detectConflicts();
@@ -101,17 +99,10 @@ export const ConflictManagementSystem = ({
       if (error) throw error;
 
       onConflictResolved(bookingId, 'cancel');
-      toast({
-        title: "Prenotazione cancellata",
-        description: "Prenotazione annullata e rimborso avviato automaticamente.",
-      });
+      toast.success("Prenotazione cancellata", { description: "Prenotazione annullata e rimborso avviato automaticamente." });
     } catch (error) {
       sreLogger.error('cancel_booking error', { bookingId }, error as Error);
-      toast({
-        title: "Errore",
-        description: "Impossibile cancellare la prenotazione.",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Impossibile cancellare la prenotazione." });
     } finally {
       setProcessingBookings(prev => {
         const newSet = new Set(prev);
@@ -143,17 +134,10 @@ export const ConflictManagementSystem = ({
       }
 
       onConflictResolved(bookingId, 'notify');
-      toast({
-        title: "Notifica inviata",
-        description: "L'ospite è stato informato del conflitto (se possibile).",
-      });
+      toast.success("Notifica inviata", { description: "L" });
     } catch (error) {
       sreLogger.error('notify error', { bookingId }, error as Error);
-      toast({
-        title: "Errore",
-        description: "Errore nell'invio della notifica",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Errore nell" });
     } finally {
       setProcessingBookings(prev => {
         const newSet = new Set(prev);

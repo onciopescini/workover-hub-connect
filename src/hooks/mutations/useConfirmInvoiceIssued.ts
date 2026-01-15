@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -33,20 +34,13 @@ export const useConfirmInvoiceIssued = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['host-pending-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['host-invoice-history'] });
-      toast({
-        title: isMockMode ? '🧪 [MOCK] Fattura Confermata' : 'Fattura Confermata',
-        description: 'La fattura è stata registrata. Il payout verrà elaborato a breve.',
-      });
+      toast.success(isMockMode, { description: "La fattura è stata registrata. Il payout verrà elaborato a breve." });
     },
     onError: (error: any) => {
       // Try RLS error handler first
       if (!handleError(error)) {
         // Fallback to generic error
-        toast({
-          title: 'Errore',
-          description: error.message || 'Impossibile confermare la fattura',
-          variant: 'destructive'
-        });
+        toast.error("Errore", { description: error.message });
       }
     }
   });

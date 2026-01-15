@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
@@ -64,11 +65,7 @@ export const StartChatButton = ({ targetUserId, onChatStarted }: StartChatButton
 
   const handleStartChat = async () => {
     if (!authState.user?.id) {
-      toast({
-        title: "Errore",
-        description: "Devi essere autenticato per inviare messaggi",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Devi essere autenticato per inviare messaggi" });
       return;
     }
 
@@ -78,18 +75,11 @@ export const StartChatButton = ({ targetUserId, onChatStarted }: StartChatButton
       const chat = await findOrCreatePrivateChat(authState.user.id, targetUserId);
       if (chat) {
         onChatStarted?.(chat); // findOrCreatePrivateChat returns the ID string directly
-        toast({
-          title: "Chat avviata",
-          description: "Ora puoi iniziare a messaggiare",
-        });
+        toast.success("Chat avviata", { description: "Ora puoi iniziare a messaggiare" });
       }
     } catch (error) {
       sreLogger.error('Error starting chat', { userId: authState.user?.id, targetUserId }, error as Error);
-      toast({
-        title: "Errore",
-        description: "Impossibile avviare la chat. Riprova più tardi.",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Impossibile avviare la chat. Riprova più tardi." });
     } finally {
       setIsLoading(false);
     }

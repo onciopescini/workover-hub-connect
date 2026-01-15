@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,8 +11,6 @@ import {
 } from "lucide-react";
 import { type AvailabilityData, type WeeklySchedule, type DaySchedule } from "@/types/availability";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-
 interface QuickActionsToolbarProps {
   availability: AvailabilityData;
   onAvailabilityChange: (availability: AvailabilityData) => void;
@@ -22,8 +21,6 @@ export const QuickActionsToolbar = ({
   onAvailabilityChange
 }: QuickActionsToolbarProps) => {
   const [isApplying, setIsApplying] = useState(false);
-  const { toast } = useToast();
-
   // Default working hours template
   const DEFAULT_WORK_SCHEDULE: DaySchedule = {
     enabled: true,
@@ -52,16 +49,9 @@ export const QuickActionsToolbar = ({
 
       onAvailabilityChange(newAvailability);
       
-      toast({
-        title: "Template applicato",
-        description: "Orari lavorativi Lun-Ven (9:00-17:00) applicati con successo"
-      });
+      toast.success("Template applicato", { description: "Orari lavorativi Lun-Ven (9:00-17:00) applicati con successo" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Errore nell'applicazione del template",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Errore nell" });
     } finally {
       setIsApplying(false);
     }
@@ -85,16 +75,9 @@ export const QuickActionsToolbar = ({
 
       onAvailabilityChange(newAvailability);
       
-      toast({
-        title: "Weekend bloccato",
-        description: "Sabato e Domenica sono stati disabilitati"
-      });
+      toast.success("Weekend bloccato", { description: "Sabato e Domenica sono stati disabilitati" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Errore nel bloccare i weekend",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Errore nel bloccare i weekend" });
     } finally {
       setIsApplying(false);
     }
@@ -125,16 +108,9 @@ export const QuickActionsToolbar = ({
 
       onAvailabilityChange(newAvailability);
       
-      toast({
-        title: "Calendario resettato",
-        description: "Tutti gli orari e blocchi sono stati rimossi"
-      });
+      toast.success("Calendario resettato", { description: "Tutti gli orari e blocchi sono stati rimossi" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Errore nel reset del calendario",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Errore nel reset del calendario" });
     } finally {
       setIsApplying(false);
     }
@@ -149,11 +125,7 @@ export const QuickActionsToolbar = ({
       const enabledDay = Object.entries(availability.recurring).find(([_, schedule]) => schedule.enabled);
       
       if (!enabledDay) {
-        toast({
-          title: "Nessun template",
-          description: "Imposta almeno un giorno prima di duplicare",
-          variant: "destructive"
-        });
+        toast.error("Nessun template", { description: "Imposta almeno un giorno prima di duplicare" });
         return;
       }
 
@@ -180,11 +152,7 @@ export const QuickActionsToolbar = ({
         description: `Orari di ${enabledDay[0]} applicati a tutti i giorni`
       });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Errore nella duplicazione del template",
-        variant: "destructive"
-      });
+      toast.error("Errore", { description: "Errore nella duplicazione del template" });
     } finally {
       setIsApplying(false);
     }

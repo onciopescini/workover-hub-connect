@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,11 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, Eye, Download, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function AdminKYCReviewPage() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -136,18 +135,11 @@ export default function AdminKYCReviewPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kyc-pending-docs'] });
       queryClient.invalidateQueries({ queryKey: ['kyc-verified-docs'] });
-      toast({
-        title: "Documento Approvato",
-        description: "Il documento è stato approvato con successo.",
-      });
+      toast.success("Documento Approvato", { description: "Il documento è stato approvato con successo." });
       setSelectedDoc(null);
     },
     onError: (error: any) => {
-      toast({
-        title: "Errore",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: error.message });
     }
   });
 
@@ -191,10 +183,7 @@ export default function AdminKYCReviewPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kyc-pending-docs'] });
-      toast({
-        title: "Documento Rifiutato",
-        description: "Il documento è stato rifiutato e l'utente è stato notificato.",
-      });
+      toast.success("Documento Rifiutato", { description: "Il documento è stato rifiutato e l" });
       setSelectedDoc(null);
       setRejectionReason("");
     }

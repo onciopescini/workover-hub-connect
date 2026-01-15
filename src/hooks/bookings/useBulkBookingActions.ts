@@ -1,7 +1,7 @@
 
+import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useRoleAccess } from '@/hooks/useRoleAccess';
 import { sreLogger } from '@/lib/sre-logger';
@@ -12,7 +12,6 @@ type BulkResult = {
 };
 
 export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfterAll?: () => void }) => {
-  const { toast } = useToast();
   const { hasAnyRole } = useRoleAccess();
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +21,7 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
 
   const confirmMultiple = async (bookingIds: string[]): Promise<BulkResult> => {
     if (!canActAsHost) {
-      toast({ title: "Azione non consentita", description: "Solo gli host possono confermare prenotazioni.", variant: "destructive" });
+      toast.error("Azione non consentita", { description: "Solo gli host possono confermare prenotazioni." });
       return { success: [], failed: bookingIds.map(id => ({ id, error: "not_allowed" })) };
     }
     setLoading(true);
@@ -83,7 +82,7 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
   const cancelMultiple = async (bookingIds: string[], reason: string): Promise<BulkResult> => {
     const { authState } = useAuth();
     if (!authState.user?.id) {
-      toast({ title: "Non autenticato", description: "Accedi per continuare.", variant: "destructive" });
+      toast.error("Non autenticato", { description: "Accedi per continuare." });
       return { success: [], failed: bookingIds.map(id => ({ id, error: "not_authenticated" })) };
     }
     setLoading(true);
@@ -170,11 +169,11 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
   const groupMessage = async (bookingIds: string[], content: string): Promise<BulkResult> => {
     const { authState } = useAuth();
     if (!authState.user?.id) {
-      toast({ title: "Non autenticato", description: "Accedi per continuare.", variant: "destructive" });
+      toast.error("Non autenticato", { description: "Accedi per continuare." });
       return { success: [], failed: bookingIds.map(id => ({ id, error: "not_authenticated" })) };
     }
     if (!content || content.trim().length === 0) {
-      toast({ title: "Messaggio vuoto", description: "Inserisci un contenuto per il messaggio.", variant: "destructive" });
+      toast.error("Messaggio vuoto", { description: "Inserisci un contenuto per il messaggio." });
       return { success: [], failed: bookingIds.map(id => ({ id, error: "empty_content" })) };
     }
 

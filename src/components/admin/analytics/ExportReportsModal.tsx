@@ -1,10 +1,10 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { exportAnalyticsToCSV, exportAnalyticsToPDF } from "@/lib/admin/admin-analytics-utils";
 import { useAdminAnalytics } from "@/hooks/admin/useAdminAnalytics";
@@ -25,7 +25,6 @@ export function ExportReportsModal({ open, onOpenChange, timeRange }: ExportRepo
     hosts: true,
   });
   const [isExporting, setIsExporting] = useState(false);
-  const { toast } = useToast();
   const analytics = useAdminAnalytics(timeRange);
 
   const handleExport = async () => {
@@ -53,11 +52,7 @@ export function ExportReportsModal({ open, onOpenChange, timeRange }: ExportRepo
       onOpenChange(false);
     } catch (error) {
       console.error('Export error:', error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante l'esportazione",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante l" });
     } finally {
       setIsExporting(false);
     }

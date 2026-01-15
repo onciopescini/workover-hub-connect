@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
 import { toast } from "@/hooks/use-toast";
@@ -168,11 +169,7 @@ export const sendBookingMessage = async (
       context: 'sendBookingMessage',
       bookingId 
     }, error as Error);
-    toast({
-      title: "Errore nell'invio del messaggio",
-      description: "Riprova più tardi",
-      variant: "destructive"
-    });
+    toast.error("Errore nell", { description: "Riprova più tardi" });
     return null;
   }
 };
@@ -217,11 +214,7 @@ export const uploadMessageAttachment = async (file: File): Promise<string | null
       context: 'uploadMessageAttachment',
       fileName: file.name 
     }, error as Error);
-    toast({
-      title: "Errore nell'upload del file",
-      description: "Riprova con un file più piccolo o formato diverso",
-      variant: "destructive"
-    });
+    toast.error("Errore nell", { description: "Riprova con un file più piccolo o formato diverso" });
     return null;
   }
 };

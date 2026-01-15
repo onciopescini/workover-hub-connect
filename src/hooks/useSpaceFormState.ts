@@ -298,6 +298,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         confirmation_type: data.confirmation_type,
         availability: data.availability || defaultAvailability,
         published: Boolean(data.published),
+        cancellation_policy: data.cancellation_policy as any,
         host_id: user.id,
       };
 

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,6 @@ const AVAILABLE_VARIABLES = [
 ];
 
 const EmailTemplateEditor = ({ template, open, onOpenChange }: EmailTemplateEditorProps) => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [templateKey, setTemplateKey] = useState("");
@@ -73,19 +72,12 @@ const EmailTemplateEditor = ({ template, open, onOpenChange }: EmailTemplateEdit
         if (error) throw error;
       }
 
-      toast({
-        title: "Template salvato",
-        description: "Il template email è stato salvato con successo",
-      });
+      toast.success("Template salvato", { description: "Il template email è stato salvato con successo" });
 
       queryClient.invalidateQueries({ queryKey: ["email-templates"] });
       onOpenChange(false);
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 

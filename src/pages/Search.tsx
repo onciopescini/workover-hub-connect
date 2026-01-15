@@ -5,14 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, MapPin } from 'lucide-react';
+import { Search as SearchIcon, MapPin, List, Map as MapIcon } from 'lucide-react';
 import { Space } from '@/types/space';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LazySpaceMap } from '@/components/spaces/LazySpaceMap';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // Initialize query from URL
   useEffect(() => {
@@ -106,8 +109,8 @@ const Search = () => {
         </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 sticky top-20 z-40">
+      {/* Search Bar & View Toggle */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-8 sticky top-20 z-40 space-y-4">
         <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -129,9 +132,24 @@ const Search = () => {
             )}
           </div>
         </form>
+
+        <div className="flex justify-end">
+           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')}>
+            <TabsList>
+              <TabsTrigger value="list" className="flex gap-2">
+                <List className="h-4 w-4" />
+                Elenco
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex gap-2">
+                <MapIcon className="h-4 w-4" />
+                Mappa
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
-      {/* Results Grid */}
+      {/* Results */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -154,15 +172,26 @@ const Search = () => {
           <p className="text-gray-600 mb-6 font-medium">
             Trovati {spaces.length} spazi {searchQuery && `per "${searchQuery}"`}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {spaces.map((space) => (
-              <SpaceCard
-                key={space.id}
-                space={space}
-                onClick={() => navigate(`/space/${space.id}`)}
+
+          {viewMode === 'list' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {spaces.map((space) => (
+                <SpaceCard
+                  key={space.id}
+                  space={space}
+                  onClick={() => navigate(`/space/${space.id}`)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+              <LazySpaceMap
+                spaces={spaces}
+                userLocation={null} // TODO: Get user location
+                onSpaceClick={(id: string) => navigate(`/space/${id}`)}
               />
-            ))}
-          </div>
+            </div>
+          )}
         </>
       ) : (
         /* Empty State */

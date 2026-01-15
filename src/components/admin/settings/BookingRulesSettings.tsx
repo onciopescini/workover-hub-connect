@@ -1,13 +1,12 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { useAdminSettings } from "@/hooks/admin/useAdminSettings";
 import { Loader2 } from "lucide-react";
 
 const BookingRulesSettings = () => {
-  const { toast } = useToast();
   const { settings, isLoading, updateSetting } = useAdminSettings("booking");
   
   const [minDuration, setMinDuration] = useState(settings?.["min_booking_duration"] || 60);
@@ -24,16 +23,9 @@ const BookingRulesSettings = () => {
       await updateSetting("payment_deadline_minutes", Number(paymentDeadline));
       await updateSetting("cancellation_fee_percentage", Number(cancellationFee));
 
-      toast({
-        title: "Impostazioni salvate",
-        description: "Le regole di prenotazione sono state aggiornate",
-      });
+      toast.success("Impostazioni salvate", { description: "Le regole di prenotazione sono state aggiornate" });
     } catch (error) {
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio",
-        variant: "destructive",
-      });
+      toast.error("Errore", { description: "Si è verificato un errore durante il salvataggio" });
     }
   };
 
