@@ -72,7 +72,7 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
       .from('waitlists')
       .select(`
         *,
-        spaces:space_id(title, host_id, profiles:host_id(first_name, last_name))
+        spaces:space_id(name, host_id, profiles:host_id(first_name, last_name))
       `)
       .eq('user_id', user.user.id)
       .order('created_at', { ascending: false });
@@ -82,8 +82,8 @@ export const getUserWaitlists = async (): Promise<WaitlistWithDetails[]> => {
     return (data || []).map(item => ({
       ...item,
       created_at: item.created_at ?? '',
-      space_title: item.spaces?.title ?? '',
-      host_name: (item.spaces?.profiles?.first_name + ' ' + item.spaces?.profiles?.last_name) || ''
+      space_title: (item.spaces as any)?.name ?? '',
+      host_name: ((item.spaces as any)?.profiles?.first_name + ' ' + (item.spaces as any)?.profiles?.last_name) || ''
     }));
   } catch (error) {
     sreLogger.error("Error fetching waitlists", { action: 'waitlist_fetch_error' }, error as Error);

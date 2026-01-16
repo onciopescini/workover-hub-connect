@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
-import { toast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
 import { sreLogger } from '@/lib/sre-logger';
 

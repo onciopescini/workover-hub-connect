@@ -29,8 +29,8 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
   // Single Unified List for UI: contains both 'blob:...' and 'https://...' URLs
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([]);
 
-  // Default availability data
-  const defaultAvailability = {
+  // Default availability data - with required slots array
+  const defaultAvailability: import('@/types/availability').AvailabilityData = {
     recurring: {
       monday: { enabled: false, slots: [] },
       tuesday: { enabled: false, slots: [] },
@@ -40,7 +40,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       saturday: { enabled: false, slots: [] },
       sunday: { enabled: false, slots: [] }
     },
-    exceptions: []
+    exceptions: [] // Empty array of AvailabilityException with required slots
   };
 
   const form = useForm<SpaceFormData>({

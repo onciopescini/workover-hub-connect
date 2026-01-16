@@ -9,7 +9,7 @@ export interface FavoriteSpace {
   created_at: string;
   space: {
     id: string;
-    title: string;
+    title: string; // Mapped from 'name' in workspaces table
     description: string;
     address: string;
     price_per_day: number;
@@ -26,9 +26,9 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       .from('favorites')
       .select(`
         *,
-        space:spaces (
+        space:workspaces (
           id,
-          title,
+          name,
           description,
           address,
           price_per_day,
@@ -48,10 +48,15 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       throw error;
     }
 
+    // Map 'name' to 'title' for backwards compatibility
     return (data || []).map(item => ({
       ...item,
-      created_at: item.created_at ?? ''
-    }));
+      created_at: item.created_at ?? '',
+      space: item.space ? {
+        ...(item.space as any),
+        title: (item.space as any).name || ''
+      } : null
+    })) as FavoriteSpace[];
   } catch (error) {
     sreLogger.error('Error in getFavoriteSpaces', { 
       context: 'getFavoriteSpaces',

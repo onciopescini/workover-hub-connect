@@ -52,14 +52,14 @@ export default function ChatThread() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Load conversation details
+        // Load conversation details - use workspaces instead of spaces
         const { data: convData, error: convError } = await supabase
           .from('conversations')
           .select(`
             *,
             host:profiles!conversations_host_id_fkey(id, first_name, last_name, profile_photo_url),
             coworker:profiles!conversations_coworker_id_fkey(id, first_name, last_name, profile_photo_url),
-            space:spaces(id, title),
+            space:workspaces(id, name),
             booking:bookings(id, booking_date)
           `)
           .eq('id', conversationId)
@@ -72,7 +72,16 @@ export default function ChatThread() {
           return;
         }
 
-        setConversation(convData as Conversation);
+        // Map space.name to title for backwards compatibility
+        const conversationWithMappedSpace = {
+          ...convData,
+          space: convData.space ? { 
+            ...convData.space, 
+            title: (convData.space as any).name 
+          } : null
+        };
+
+        setConversation(conversationWithMappedSpace as unknown as Conversation);
 
         // Load messages
         const messagesData = await fetchConversationMessages(conversationId);
@@ -161,7 +170,7 @@ export default function ChatThread() {
         content: trimmed,
         senderId: authState.user.id,
         bookingId: conversation?.booking_id || null,
-        recipientId
+        recipientId: recipientId || undefined
       });
       setText('');
     } catch (error) {

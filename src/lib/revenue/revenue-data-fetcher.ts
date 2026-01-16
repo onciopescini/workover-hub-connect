@@ -70,7 +70,7 @@ export const getHostRevenueData = async (
     amount: payment.host_amount || 0,
     date: payment.created_at || '',
     booking_id: payment.booking_id,
-    space_title: payment.bookings?.spaces?.title || 'N/A'
+    space_title: (payment.bookings?.spaces as any)?.title || (payment.bookings?.spaces as any)?.name || 'N/A'
   }));
 
   // Calculate monthly revenue for the year

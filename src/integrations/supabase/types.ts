@@ -14,192 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_messages: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          metadata: Json | null
-          role: "user" | "assistant" | "system"
-          thread_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          role: "user" | "assistant" | "system"
-          thread_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          role?: "user" | "assistant" | "system"
-          thread_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_messages_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "ai_threads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reviews: {
-        Row: {
-          booking_id: string
-          comment: string | null
-          created_at: string
-          id: string
-          rating: number
-          receiver_id: string | null
-          reviewer_id: string
-          space_id: string | null
-        }
-        Insert: {
-          booking_id: string
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating: number
-          receiver_id?: string | null
-          reviewer_id: string
-          space_id?: string | null
-        }
-        Update: {
-          booking_id?: string
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating?: number
-          receiver_id?: string | null
-          reviewer_id?: string
-          space_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ai_threads: {
-        Row: {
-          assistant_id: string | null
-          created_at: string
-          id: string
-          owner_id: string | null
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          assistant_id?: string | null
-          created_at?: string
-          id?: string
-          owner_id?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          assistant_id?: string | null
-          created_at?: string
-          id?: string
-          owner_id?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ai_threads_assistant_id_fkey"
-            columns: ["assistant_id"]
-            isOneToOne: false
-            referencedRelation: "assistant_configs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ai_threads_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      assistant_configs: {
-        Row: {
-          created_at: string
-          id: string
-          is_public: boolean | null
-          model: string
-          name: string
-          owner_id: string | null
-          system_prompt: string | null
-          temperature: number | null
-          tools: Json | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          model: string
-          name: string
-          owner_id?: string | null
-          system_prompt?: string | null
-          temperature?: number | null
-          tools?: Json | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_public?: boolean | null
-          model?: string
-          name?: string
-          owner_id?: string | null
-          system_prompt?: string | null
-          temperature?: number | null
-          tools?: Json | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assistant_configs_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       accessibility_audits: {
         Row: {
           audit_type: string
@@ -229,54 +43,6 @@ export type Database = {
           violations?: Json | null
         }
         Relationships: []
-      }
-      disputes: {
-        Row: {
-          admin_notes: string | null
-          booking_id: string
-          created_at: string
-          id: string
-          opened_by: string
-          reason: string
-          status: "open" | "resolved" | "refunded"
-          updated_at: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          booking_id: string
-          created_at?: string
-          id?: string
-          opened_by: string
-          reason: string
-          status?: "open" | "resolved" | "refunded"
-          updated_at?: string
-        }
-        Update: {
-          admin_notes?: string | null
-          booking_id?: string
-          created_at?: string
-          id?: string
-          opened_by?: string
-          reason?: string
-          status?: "open" | "resolved" | "refunded"
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "disputes_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       account_deletion_requests: {
         Row: {
@@ -509,6 +275,149 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_documents: {
+        Row: {
+          chunk_text: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          owner_id: string | null
+          source: string | null
+        }
+        Insert: {
+          chunk_text: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          owner_id?: string | null
+          source?: string | null
+        }
+        Update: {
+          chunk_text?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          owner_id?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: Database["public"]["Enums"]["ai_message_role"]
+          thread_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role: Database["public"]["Enums"]["ai_message_role"]
+          thread_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: Database["public"]["Enums"]["ai_message_role"]
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ai_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_threads: {
+        Row: {
+          assistant_id: string | null
+          created_at: string | null
+          id: string
+          owner_id: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assistant_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assistant_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_threads_assistant_id_fkey"
+            columns: ["assistant_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       application_logs: {
         Row: {
           component: string
@@ -570,6 +479,67 @@ export type Database = {
           {
             foreignKeyName: "application_logs_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_configs: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          model: string
+          name: string
+          owner_id: string | null
+          system_prompt: string | null
+          temperature: number | null
+          tools: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          model: string
+          name: string
+          owner_id?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          tools?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          model?: string
+          name?: string
+          owner_id?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          tools?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
@@ -915,9 +885,8 @@ export type Database = {
         Row: {
           checkin_time: string
           checkout_time: string | null
-          created_at: string
           id: string
-          metadata: Json | null
+          metadata: Json
           method: string | null
           user_id: string
           workspace_id: string
@@ -925,9 +894,8 @@ export type Database = {
         Insert: {
           checkin_time?: string
           checkout_time?: string | null
-          created_at?: string
           id?: string
-          metadata?: Json | null
+          metadata?: Json
           method?: string | null
           user_id: string
           workspace_id: string
@@ -935,9 +903,8 @@ export type Database = {
         Update: {
           checkin_time?: string
           checkout_time?: string | null
-          created_at?: string
           id?: string
-          metadata?: Json | null
+          metadata?: Json
           method?: string | null
           user_id?: string
           workspace_id?: string
@@ -1640,6 +1607,68 @@ export type Database = {
           waiting_connections?: number
         }
         Relationships: []
+      }
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          booking_id: string
+          created_at: string
+          id: string
+          opened_by: string
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          booking_id: string
+          created_at?: string
+          id?: string
+          opened_by: string
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          booking_id?: string
+          created_at?: string
+          id?: string
+          opened_by?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_templates: {
         Row: {
@@ -3026,6 +3055,7 @@ export type Database = {
           location: string | null
           networking_enabled: boolean | null
           nickname: string | null
+          num_reviews: number
           onboarding_completed: boolean | null
           pec_email: string | null
           phone: string | null
@@ -3033,6 +3063,7 @@ export type Database = {
           preferred_work_mode: string | null
           profession: string | null
           profile_photo_url: string | null
+          rating_avg: number | null
           restriction_reason: string | null
           return_url: string | null
           role: string | null
@@ -3057,8 +3088,6 @@ export type Database = {
           website: string | null
           work_style: string | null
           youtube_url: string | null
-          rating_avg: number | null
-          num_reviews: number | null
         }
         Insert: {
           admin_notes?: string | null
@@ -3101,6 +3130,7 @@ export type Database = {
           location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
+          num_reviews?: number
           onboarding_completed?: boolean | null
           pec_email?: string | null
           phone?: string | null
@@ -3108,6 +3138,7 @@ export type Database = {
           preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null
+          rating_avg?: number | null
           restriction_reason?: string | null
           return_url?: string | null
           role?: string | null
@@ -3132,8 +3163,6 @@ export type Database = {
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
-          rating_avg?: number | null
-          num_reviews?: number | null
         }
         Update: {
           admin_notes?: string | null
@@ -3176,6 +3205,7 @@ export type Database = {
           location?: string | null
           networking_enabled?: boolean | null
           nickname?: string | null
+          num_reviews?: number
           onboarding_completed?: boolean | null
           pec_email?: string | null
           phone?: string | null
@@ -3183,6 +3213,7 @@ export type Database = {
           preferred_work_mode?: string | null
           profession?: string | null
           profile_photo_url?: string | null
+          rating_avg?: number | null
           restriction_reason?: string | null
           return_url?: string | null
           role?: string | null
@@ -3207,8 +3238,6 @@ export type Database = {
           website?: string | null
           work_style?: string | null
           youtube_url?: string | null
-          rating_avg?: number | null
-          num_reviews?: number | null
         }
         Relationships: []
       }
@@ -3347,6 +3376,103 @@ export type Database = {
             columns: ["reporter_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          booking_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          receiver_id: string | null
+          reviewer_id: string
+          space_id: string | null
+        }
+        Insert: {
+          booking_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          receiver_id?: string | null
+          reviewer_id: string
+          space_id?: string | null
+        }
+        Update: {
+          booking_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          receiver_id?: string | null
+          reviewer_id?: string
+          space_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4541,20 +4667,20 @@ export type Database = {
           longitude: number | null
           max_capacity: number | null
           name: string
+          num_reviews: number
           pending_approval: boolean | null
           photos: string[] | null
           price_per_day: number | null
           price_per_hour: number | null
           price_per_month: number | null
           published: boolean | null
+          rating_avg: number
           rejection_reason: string | null
           rules: string | null
           seating_types: string[] | null
           suspension_reason: string | null
           updated_at: string | null
           work_environment: string | null
-          rating_avg: number | null
-          num_reviews: number | null
         }
         Insert: {
           address?: string | null
@@ -4578,20 +4704,20 @@ export type Database = {
           longitude?: number | null
           max_capacity?: number | null
           name: string
+          num_reviews?: number
           pending_approval?: boolean | null
           photos?: string[] | null
           price_per_day?: number | null
           price_per_hour?: number | null
           price_per_month?: number | null
           published?: boolean | null
+          rating_avg?: number
           rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
           suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
-          rating_avg?: number | null
-          num_reviews?: number | null
         }
         Update: {
           address?: string | null
@@ -4615,20 +4741,20 @@ export type Database = {
           longitude?: number | null
           max_capacity?: number | null
           name?: string
+          num_reviews?: number
           pending_approval?: boolean | null
           photos?: string[] | null
           price_per_day?: number | null
           price_per_hour?: number | null
           price_per_month?: number | null
           published?: boolean | null
+          rating_avg?: number
           rejection_reason?: string | null
           rules?: string | null
           seating_types?: string[] | null
           suspension_reason?: string | null
           updated_at?: string | null
           work_environment?: string | null
-          rating_avg?: number | null
-          num_reviews?: number | null
         }
         Relationships: [
           {
@@ -5705,7 +5831,9 @@ export type Database = {
         Args: { event_uuid: string }
         Returns: undefined
       }
-      is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean }
       is_moderator: { Args: { user_id: string }; Returns: boolean }
       lock_and_select_expired_bookings: {
         Args: { p_lock_duration_minutes?: number }
@@ -6691,6 +6819,7 @@ export type Database = {
           }
     }
     Enums: {
+      ai_message_role: "user" | "assistant" | "system"
       app_role: "admin" | "moderator" | "user" | "host" | "coworker"
       booking_status:
         | "pending"
@@ -6851,6 +6980,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_message_role: ["user", "assistant", "system"],
       app_role: ["admin", "moderator", "user", "host", "coworker"],
       booking_status: [
         "pending",

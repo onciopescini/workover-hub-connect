@@ -185,15 +185,15 @@ export const addSpaceReview = async (review: SpaceReviewInsert): Promise<boolean
     // Mapping SpaceReviewInsert fields to 'reviews' columns
     const { error } = await supabase
       .from('reviews')
-      .insert([{
+      .insert({
         booking_id: review.booking_id,
         space_id: review.space_id,
         reviewer_id: review.author_id,
         rating: review.rating,
-        comment: review.content,
+        comment: review.content || null,
         // receiver_id is optional, typically used for User reviews (Host/Guest).
         // For space reviews, space_id is sufficient.
-      }]);
+      });
 
     if (error) {
       sreLogger.error('Error adding space review', { error, review });

@@ -1,6 +1,5 @@
 import { useState } from "react";
-import type { SpaceInsert } from "@/types/space";
-import type { AvailabilityData } from "@/types/availability";
+import type { AvailabilityData, AvailabilityException } from "@/types/availability";
 
 interface UseSpaceFormValidationProps {
   formData: Record<string, any>;

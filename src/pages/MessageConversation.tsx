@@ -18,18 +18,18 @@ const MessageConversation = () => {
       if (!bookingId) return;
 
       try {
-        // Assuming you have a Supabase client set up
+        // Use workspaces instead of spaces
         const { data, error } = await supabase
           .from('bookings')
-          .select('spaces(title)')
+          .select('workspaces:space_id(name)')
           .eq('id', bookingId)
           .single();
 
         if (error) {
           sreLogger.error("Failed to fetch booking title", { bookingId }, error);
           setBookingTitle('Errore nel caricamento');
-        } else if (data?.spaces?.title) {
-          setBookingTitle(data.spaces.title);
+        } else if ((data as any)?.workspaces?.name) {
+          setBookingTitle((data as any).workspaces.name);
         } else {
           setBookingTitle('Titolo non trovato');
         }
