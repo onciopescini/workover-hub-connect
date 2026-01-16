@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { useFiscalMode } from '@/contexts/FiscalModeContext';
 import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 
@@ -34,7 +33,7 @@ export const useConfirmInvoiceIssued = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['host-pending-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['host-invoice-history'] });
-      toast.success(isMockMode, { description: "La fattura è stata registrata. Il payout verrà elaborato a breve." });
+      toast.success("Operazione completata", { description: "La fattura è stata registrata. Il payout verrà elaborato a breve." });
     },
     onError: (error: any) => {
       // Try RLS error handler first

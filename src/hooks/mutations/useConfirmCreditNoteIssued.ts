@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { useFiscalMode } from '@/contexts/FiscalModeContext';
 import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 
@@ -34,7 +33,7 @@ export const useConfirmCreditNoteIssued = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['host-pending-credit-notes'] });
       queryClient.invalidateQueries({ queryKey: ['host-invoice-history'] });
-      toast.success(isMockMode, { description: "La nota di credito è stata registrata. Il refund verrà elaborato per il coworker." });
+      toast.success("Operazione completata", { description: "La nota di credito è stata registrata. Il refund verrà elaborato per il coworker." });
     },
     onError: (error: any) => {
       // Try RLS error handler first

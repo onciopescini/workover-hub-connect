@@ -67,7 +67,7 @@ export const useFixBookingStatus = () => {
         await supabase
           .from('user_notifications')
           .insert({
-            user_id: booking.user_id,
+            user_id: booking.user_id!, // Non-null assertion added for Phase 3
             type: 'booking',
             title: 'Prenotazione confermata!',
             content: `La tua prenotazione presso "${space.title}" è stata confermata.`,

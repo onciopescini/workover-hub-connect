@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { findOrCreatePrivateChat } from "@/lib/private-messaging-utils";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
 

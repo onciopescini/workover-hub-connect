@@ -3,7 +3,7 @@ import type { SpaceInsert } from "@/types/space";
 import type { AvailabilityData } from "@/types/availability";
 
 interface UseSpaceFormValidationProps {
-  formData: Omit<Partial<SpaceInsert>, 'availability'>;
+  formData: Record<string, any>;
   availabilityData: AvailabilityData;
 }
 

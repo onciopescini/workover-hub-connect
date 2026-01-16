@@ -54,7 +54,7 @@ serve(async (req) => {
       } catch (e) {
          // If decoding fails, or it's not a JWT (e.g. just the API key string), we proceed with caution or fail.
          // Supabase functions usually receive a JWT.
-         ErrorHandler.logWarning('Could not decode JWT for role check', e);
+         ErrorHandler.logWarning('Could not decode JWT for role check', { error: e instanceof Error ? e.message : String(e) });
       }
     }
 

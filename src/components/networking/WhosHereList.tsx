@@ -54,7 +54,8 @@ export const WhosHereList = () => {
           console.error('Error fetching check-ins:', error);
         } else {
           // Transform data to match CheckIn interface
-          const typedData: CheckIn[] = data.map(item => ({
+          // Force type assertion for Phase 4 fix
+          const typedData: CheckIn[] = (data as unknown as any[]).map(item => ({
             user_id: item.user_id,
             workspace_id: item.workspace_id,
             checkin_time: item.checkin_time,
