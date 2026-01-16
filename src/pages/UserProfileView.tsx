@@ -248,7 +248,7 @@ const UserProfileView = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                 {String(profile['first_name'])} {String(profile['last_name'])}
               </h1>
-              {(typeof profile['collaboration_availability'] === 'string' && profile['collaboration_availability'] !== 'not_available') && (
+              {(String(profile['collaboration_availability']) !== 'not_available' && profile['collaboration_availability']) && (
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
                   profile['collaboration_availability'] === 'available' 
                     ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30' 
@@ -261,29 +261,29 @@ const UserProfileView = () => {
                     : profile['collaboration_availability'] === 'busy' ? 'bg-yellow-500'
                     : 'bg-red-500'
                   }`} />
-                  {profile['collaboration_availability'] === 'available' ? 'Disponibile' : 
-                   profile['collaboration_availability'] === 'busy' ? 'Occupato' : 'Non disponibile'}
+                  {String(profile['collaboration_availability']) === 'available' ? 'Disponibile' :
+                   String(profile['collaboration_availability']) === 'busy' ? 'Occupato' : 'Non disponibile'}
                 </div>
               )}
             </div>
             
             <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-              {(typeof profile['job_title'] === 'string' && profile['job_title']) && (
+              {profile['job_title'] && (
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
-                  <span className="font-medium">{profile['job_title']}</span>
+                  <span className="font-medium">{String(profile['job_title'])}</span>
                 </div>
               )}
-              {(typeof profile['profession'] === 'string' && profile['profession']) && (
+              {profile['profession'] && (
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
-                  <span className="font-medium">{profile['profession']}</span>
+                  <span className="font-medium">{String(profile['profession'])}</span>
                 </div>
               )}
-              {(typeof profile['location'] === 'string' && profile['location']) && (
+              {profile['location'] && (
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <span>{profile['location']}</span>
+                  <span>{String(profile['location'])}</span>
                 </div>
               )}
               {reviewCount > 0 && (
@@ -335,27 +335,27 @@ const UserProfileView = () => {
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-2 border-muted/50">
             <CardContent className="p-6">
-              {typeof profile['bio'] === 'string' && profile['bio'] && (
+              {profile['bio'] && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <User className="h-5 w-5 text-primary" />
                     Informazioni
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">{profile['bio']}</p>
+                  <p className="text-muted-foreground leading-relaxed">{String(profile['bio'])}</p>
                 </div>
               )}
 
               {/* Mostra dettagli aggiuntivi solo con accesso completo */}
               {canViewFullProfile && (
                 <>
-                  {typeof profile['skills'] === 'string' && profile['skills'] && (
+                  {profile['skills'] && (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                         <Lightbulb className="h-5 w-5 text-primary" />
                         Competenze
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile['skills'].split(',').map((skill, index) => (
+                        {String(profile['skills']).split(',').map((skill, index) => (
                           <span
                             key={index}
                             className="px-3 py-2 bg-gradient-to-r from-primary/20 to-primary/10 text-primary rounded-lg text-sm font-medium border border-primary/20 hover:border-primary/40 transition-all duration-200"
@@ -367,14 +367,14 @@ const UserProfileView = () => {
                     </div>
                   )}
 
-                  {typeof profile['interests'] === 'string' && profile['interests'] && (
+                  {profile['interests'] && (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                         <Heart className="h-5 w-5 text-destructive" />
                         Interessi
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile['interests'].split(',').map((interest, index) => (
+                        {String(profile['interests']).split(',').map((interest, index) => (
                           <span
                             key={index}
                             className="px-3 py-2 bg-gradient-to-r from-secondary/80 to-secondary/60 text-secondary-foreground rounded-full text-sm font-medium border border-secondary/30 hover:border-secondary/60 transition-all duration-200 hover:scale-105"
@@ -422,7 +422,7 @@ const UserProfileView = () => {
                   {renderSocialLinks()}
 
                   {/* Enhanced Collaboration Section */}
-                  {(profile['collaboration_availability'] && profile['collaboration_availability'] !== 'not_available') && (
+                  {(profile['collaboration_availability'] && String(profile['collaboration_availability']) !== 'not_available') && (
                     <div className="mb-6 p-4 bg-gradient-to-br from-background to-muted/20 rounded-xl border-2 border-muted/50">
                       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <Users className="h-5 w-5 text-primary" />
@@ -430,20 +430,20 @@ const UserProfileView = () => {
                       </h3>
                       <div className="space-y-4">
                         <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 ${
-                          profile['collaboration_availability'] === 'available' 
+                          String(profile['collaboration_availability']) === 'available'
                             ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30' 
-                            : profile['collaboration_availability'] === 'busy'
+                            : String(profile['collaboration_availability']) === 'busy'
                             ? 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30'
                             : 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30'
                         }`}>
                           <div className={`w-3 h-3 rounded-full ${
-                            profile['collaboration_availability'] === 'available' ? 'bg-green-500' 
-                            : profile['collaboration_availability'] === 'busy' ? 'bg-yellow-500'
+                            String(profile['collaboration_availability']) === 'available' ? 'bg-green-500'
+                            : String(profile['collaboration_availability']) === 'busy' ? 'bg-yellow-500'
                             : 'bg-red-500'
                           }`} />
                           <span className="font-bold text-sm">
-                            {profile['collaboration_availability'] === 'available' ? '🟢 Disponibile per nuovi progetti' :
-                             profile['collaboration_availability'] === 'busy' ? '🟡 Occupato ma valuto proposte' : '🔴 Non Disponibile'}
+                            {String(profile['collaboration_availability']) === 'available' ? '🟢 Disponibile per nuovi progetti' :
+                             String(profile['collaboration_availability']) === 'busy' ? '🟡 Occupato ma valuto proposte' : '🔴 Non Disponibile'}
                           </span>
                         </div>
                         
@@ -466,37 +466,37 @@ const UserProfileView = () => {
                           </div>
                         )}
                         
-                        {typeof profile['preferred_work_mode'] === 'string' && profile['preferred_work_mode'] && (
+                        {profile['preferred_work_mode'] && (
                           <div>
                             <p className="text-sm font-medium mb-2 flex items-center gap-2">
                               <Building className="h-4 w-4" />
                               Modalità preferita:
                             </p>
                             <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                              (profile['preferred_work_mode'] === 'remote' || profile['preferred_work_mode'] === 'remoto') ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30' :
-                              (profile['preferred_work_mode'] === 'hybrid' || profile['preferred_work_mode'] === 'ibrido') ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30' :
-                              (profile['preferred_work_mode'] === 'office' || profile['preferred_work_mode'] === 'presenza' || profile['preferred_work_mode'] === 'in_presenza') ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30' :
-                              (profile['preferred_work_mode'] === 'flessibile' || profile['preferred_work_mode'] === 'flexible') ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/30' :
+                              (String(profile['preferred_work_mode']) === 'remote' || String(profile['preferred_work_mode']) === 'remoto') ? 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30' :
+                              (String(profile['preferred_work_mode']) === 'hybrid' || String(profile['preferred_work_mode']) === 'ibrido') ? 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30' :
+                              (String(profile['preferred_work_mode']) === 'office' || String(profile['preferred_work_mode']) === 'presenza' || String(profile['preferred_work_mode']) === 'in_presenza') ? 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30' :
+                              (String(profile['preferred_work_mode']) === 'flessibile' || String(profile['preferred_work_mode']) === 'flexible') ? 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/30' :
                               'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30'
                             }`}>
                               <span className="font-medium text-sm">
-                                {(profile['preferred_work_mode'] === 'remote' || profile['preferred_work_mode'] === 'remoto') ? '🏠 Remoto' : 
-                                 (profile['preferred_work_mode'] === 'hybrid' || profile['preferred_work_mode'] === 'ibrido') ? '🔄 Ibrido' : 
-                                 (profile['preferred_work_mode'] === 'office' || profile['preferred_work_mode'] === 'presenza' || profile['preferred_work_mode'] === 'in_presenza') ? '🏢 In presenza' :
-                                 (profile['preferred_work_mode'] === 'flessibile' || profile['preferred_work_mode'] === 'flexible') ? '🧩 Flessibile' : String(profile['preferred_work_mode'])}
+                                {(String(profile['preferred_work_mode']) === 'remote' || String(profile['preferred_work_mode']) === 'remoto') ? '🏠 Remoto' :
+                                 (String(profile['preferred_work_mode']) === 'hybrid' || String(profile['preferred_work_mode']) === 'ibrido') ? '🔄 Ibrido' :
+                                 (String(profile['preferred_work_mode']) === 'office' || String(profile['preferred_work_mode']) === 'presenza' || String(profile['preferred_work_mode']) === 'in_presenza') ? '🏢 In presenza' :
+                                 (String(profile['preferred_work_mode']) === 'flessibile' || String(profile['preferred_work_mode']) === 'flexible') ? '🧩 Flessibile' : String(profile['preferred_work_mode'])}
                               </span>
                             </div>
                           </div>
                         )}
                         
-                        {typeof profile['collaboration_description'] === 'string' && profile['collaboration_description'] && (
+                        {profile['collaboration_description'] && (
                           <div>
                             <p className="text-sm font-medium mb-2 flex items-center gap-2">
                               <FileText className="h-4 w-4" />
                               Note:
                             </p>
                             <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg italic">
-                              "{profile['collaboration_description']}"
+                              "{String(profile['collaboration_description'])}"
                             </p>
                           </div>
                         )}

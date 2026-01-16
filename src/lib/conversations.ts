@@ -44,7 +44,7 @@ export async function sendMessageToConversation(params: {
   senderId: string;
   recipientId?: string | undefined; // Allow undefined explicitly
 }) {
-  const { conversationId, bookingId, content, senderId, recipientId } = params;
+  const { conversationId, bookingId, content, senderId, recipientId = "" } = params;
   
   sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
   

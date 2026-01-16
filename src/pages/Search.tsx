@@ -93,7 +93,16 @@ const Search = () => {
         updated_at: workspace.updated_at,
         published: workspace.published,
         availability: workspace.availability,
-        confirmation_type: workspace.confirmation_type || 'instant'
+        confirmation_type: workspace.confirmation_type || 'instant',
+        city: workspace.city || "",
+        cached_avg_rating: workspace.cached_avg_rating || 0,
+        num_reviews: workspace.cached_review_count || 0,
+        pending_approval: workspace.pending_approval,
+        is_suspended: workspace.is_suspended,
+        suspended_by: workspace.suspended_by,
+        suspended_at: workspace.suspended_at,
+        suspension_reason: workspace.suspension_reason,
+        deleted_at: workspace.deleted_at
       } as Space));
     }
   });
