@@ -26,6 +26,7 @@ export type SpaceReviewWithDetails = SpaceReview & {
   author_last_name: string;
   author_profile_photo_url: string | null;
   booking_date: string;
+  user_id?: string; // Explicitly added to satisfy consumers expecting user_id
 };
 
 export interface SpaceReviewStatus {

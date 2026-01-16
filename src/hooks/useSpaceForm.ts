@@ -74,7 +74,15 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
 
   // Enhanced availability change handler that clears errors
   const handleAvailabilityChangeWithErrorClear = (availability: import("@/types/availability").AvailabilityData) => {
-    handleAvailabilityChange(availability);
+    // Ensure slots is always an array
+    const sanitizedAvailability = {
+      ...availability,
+      exceptions: (availability.exceptions || []).map(ex => ({
+        ...ex,
+        slots: ex.slots || []
+      }))
+    };
+    handleAvailabilityChange(sanitizedAvailability);
     clearError('availability');
   };
 

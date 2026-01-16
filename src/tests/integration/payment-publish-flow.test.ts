@@ -99,9 +99,12 @@ describe('Payment-Publish Integration Tests', () => {
         const chain = createChainableMock();
         chain.update = jest.fn().mockReturnValue({
           ...chain,
-          eq: jest.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'Stripe account not connected' }
+          eq: jest.fn().mockReturnValue({ // .eq returns chain in real life, but we want the promise here? No, update().eq() returns a PromiseLike in Supabase usually?
+             // Actually, Supabase queries are Thenable.
+             // We need update() -> returns builder -> eq() -> returns builder.
+             // And awaiting builder triggers .then()
+             ...chain,
+             then: (resolve: any) => resolve({ data: null, error: { message: 'Stripe account not connected' } })
           })
         });
         return chain;

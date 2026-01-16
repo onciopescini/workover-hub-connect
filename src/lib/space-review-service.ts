@@ -44,6 +44,7 @@ export const getSpaceReviews = async (spaceId: string): Promise<SpaceReviewWithD
       booking_id: review.booking_id,
       space_id: review.space_id,
       author_id: review.reviewer_id,
+      user_id: review.reviewer_id, // Populate alias
       rating: review.rating,
       content: review.comment,
       is_visible: true, // Post-moderation: all reviews are visible by default

@@ -46,6 +46,10 @@ const mockSpace = {
   revision_notes: null,
   cached_avg_rating: 4.5,
   cached_review_count: 12,
+  city: 'Milano',
+  num_reviews: 12,
+  features: ['desk', 'monitor', 'ergonomic_chair'],
+  timezone: 'Europe/Rome'
 };
 
 const meta: Meta<typeof SpaceCard> = {

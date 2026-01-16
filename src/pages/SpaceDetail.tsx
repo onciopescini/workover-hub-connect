@@ -129,7 +129,7 @@ const SpaceDetail = () => {
           first_name: hostData.first_name,
           last_name: hostData.last_name,
           profile_photo_url: hostData.profile_photo_url,
-          bio: hostData.bio || undefined,
+          bio: hostData.bio || '',
           created_at: hostData.created_at
         } : {
           id: 'unknown',
