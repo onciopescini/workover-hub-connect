@@ -1,6 +1,9 @@
 {
+  "imports": {
+    "npm:resend@4.0.0": "npm:resend@4.0.0"
   "permissions": {
     "env": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "RESEND_API_KEY"],
     "net": ["esm.sh", "deno.land", "api.resend.com", "khtqwzvrxzsgfhsslwyz.supabase.co"]
   }
 }
+2

@@ -166,19 +166,14 @@ serve(async (req) => {
       // Step C: Notifications (Fire and forget, or awaited - keeping it simple/robust)
       // Notification failure should NOT trigger a refund of the money.
       try {
-        const workspaceData = workspace as any;
-        await supabaseAdmin.from("user_notifications").insert({
-            user_id: booking.user_id,
-            type: "booking",
-            title: "Prenotazione Confermata!",
-            content: `🎉 La tua prenotazione per "${workspaceData.title}" è stata confermata dall'host.`,
-            metadata: {
-                booking_id: booking.id,
-                space_title: workspaceData.title,
-                action_required: "none",
-                urgent: false,
-            },
+        console.log(`[HOST-APPROVE] Invoking send-booking-notification for confirmation...`);
+        const { error: invokeError } = await supabaseAdmin.functions.invoke('send-booking-notification', {
+          body: { booking_id: booking_id, type: 'confirmation' }
         });
+
+        if (invokeError) {
+          console.error("[HOST-APPROVE] Notification invocation failed:", invokeError);
+        }
       } catch (notifyError) {
           console.error("[HOST-APPROVE] Notification failed (non-critical):", notifyError);
       }
