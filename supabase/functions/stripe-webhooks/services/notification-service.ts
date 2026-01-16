@@ -37,6 +37,7 @@ export class NotificationService {
     refund: any
   ): Promise<void> {
     try {
+      // 1. Send In-App Notification
       const { error } = await supabaseAdmin
         .from('user_notifications')
         .insert({
@@ -57,6 +58,21 @@ export class NotificationService {
       } else {
         ErrorHandler.logSuccess('Refund notification sent', { userId, bookingId });
       }
+
+      // 2. Dispatch Email via send-booking-notification
+      await supabaseAdmin.functions.invoke('send-booking-notification', {
+        body: {
+          type: 'refund_processed',
+          booking_id: bookingId,
+          metadata: {
+            refund_amount: refund.amount / 100
+          }
+        }
+      }).then(({ error: emailError }: any) => {
+        if (emailError) ErrorHandler.logError('Failed to dispatch refund email', emailError);
+        else ErrorHandler.logSuccess('Refund email dispatched');
+      });
+
     } catch (error) {
       ErrorHandler.logError('Refund notification service error', error);
     }
@@ -69,6 +85,7 @@ export class NotificationService {
     // This method is kept for backward compatibility with existing code
     const confirmationType = booking.workspaces?.confirmation_type || 'instant';
     
+    // Send In-App & Email based on type
     if (confirmationType === 'instant') {
       await this.sendBookingNotification(
         supabaseAdmin,
@@ -81,6 +98,43 @@ export class NotificationService {
           confirmation_type: confirmationType
         }
       );
+
+      // Dispatch Email
+      await supabaseAdmin.functions.invoke('send-booking-notification', {
+        body: {
+          type: 'booking_confirmation',
+          booking_id: booking.id,
+          metadata: {
+            amount: booking.fiscal_data?.total_amount
+          }
+        }
+      }).then(({ error: emailError }: any) => {
+        if (emailError) ErrorHandler.logError('Failed to dispatch confirmation email', emailError);
+        else ErrorHandler.logSuccess('Confirmation email dispatched');
+      });
+
+    } else {
+      // For Request/Approval flow
+      await this.sendBookingNotification(
+        supabaseAdmin,
+        booking.user_id,
+        'Richiesta inviata',
+        `La richiesta per "${booking.workspaces.title}" è stata inviata all'host.`,
+        {
+          booking_id: booking.id,
+          space_title: booking.workspaces.title,
+          confirmation_type: confirmationType
+        }
+      );
+
+      await supabaseAdmin.functions.invoke('send-booking-notification', {
+        body: {
+          type: 'booking_pending',
+          booking_id: booking.id
+        }
+      }).then(({ error: emailError }: any) => {
+        if (emailError) ErrorHandler.logError('Failed to dispatch pending email', emailError);
+      });
     }
   }
 }

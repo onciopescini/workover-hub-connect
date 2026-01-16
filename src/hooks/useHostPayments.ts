@@ -90,7 +90,7 @@ export const useHostPayments = () => {
       }
 
       // Fetch spaces separately
-      const spaceIds = [...new Set(data?.map(p => p.bookings?.space_id).filter(Boolean) || [])];
+      const spaceIds = [...new Set(data?.map(p => p.bookings?.space_id).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
         .from('workspaces')
         .select('id, title:name, host_id')
@@ -100,7 +100,7 @@ export const useHostPayments = () => {
       const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
       
       // Fetch coworker profiles separately
-      const userIds = [...new Set(data?.map(p => p.bookings?.user_id).filter(Boolean) || [])];
+      const userIds = [...new Set(data?.map(p => p.bookings?.user_id).filter((id): id is string => id !== null) || [])];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')

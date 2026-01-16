@@ -45,7 +45,7 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
         }, error instanceof Error ? error : new Error(String(error)));
         bookingIds.forEach(id => failed.push({ id, error: error.message }));
       } else {
-        const confirmedIds = updatedBookings?.map(b => b.id) || [];
+        const confirmedIds = updatedBookings?.map(b => b.id).filter((id): id is string => id !== null) || [];
         success.push(...confirmedIds);
         
         // Mark failed bookings
@@ -67,12 +67,10 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
 
     setLoading(false);
     if (failed.length === 0) {
-      toast({ title: "Prenotazioni confermate", description: `Confermate ${success.length} prenotazioni.` });
+      toast.success("Prenotazioni confermate", { description: `Confermate ${success.length} prenotazioni.` });
     } else {
-      toast({
-        title: "Conferma parziale",
+      toast.error("Conferma parziale", {
         description: `Confermate ${success.length}, fallite ${failed.length}.`,
-        variant: "destructive",
       });
     }
     opts?.onAfterAll?.();
@@ -104,7 +102,7 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
       }
       
       // Fetch spaces separately to get host_id
-      const spaceIds = [...new Set(bookings.map(b => b.space_id))];
+      const spaceIds = [...new Set(bookings.map(b => b.space_id).filter((id): id is string => id !== null))];
       const { data: spaces } = await supabase
         .from("spaces")
         .select("id, host_id")
@@ -154,12 +152,10 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
 
     setLoading(false);
     if (failed.length === 0) {
-      toast({ title: "Prenotazioni annullate", description: `Annullate ${success.length} prenotazioni.` });
+      toast.success("Prenotazioni annullate", { description: `Annullate ${success.length} prenotazioni.` });
     } else {
-      toast({
-        title: "Annullamento parziale",
+      toast.error("Annullamento parziale", {
         description: `Annullate ${success.length}, fallite ${failed.length}.`,
-        variant: "destructive",
       });
     }
     opts?.onAfterAll?.();
@@ -199,12 +195,10 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
 
     setLoading(false);
     if (failed.length === 0) {
-      toast({ title: "Messaggi inviati", description: `Inviati ${success.length} messaggi.` });
+      toast.success("Messaggi inviati", { description: `Inviati ${success.length} messaggi.` });
     } else {
-      toast({
-        title: "Invio parziale",
+      toast.error("Invio parziale", {
         description: `Inviati ${success.length}, falliti ${failed.length}.`,
-        variant: "destructive",
       });
     }
     opts?.onAfterAll?.();
@@ -218,4 +212,3 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
     groupMessage,
   };
 };
-
