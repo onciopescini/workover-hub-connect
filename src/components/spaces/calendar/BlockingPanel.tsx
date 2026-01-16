@@ -69,7 +69,8 @@ export const BlockingPanel = ({
 
     const newException: AvailabilityException = {
       date: formData.date,
-      enabled: false // blocked
+      enabled: false, // blocked
+      slots: [] // Required empty array
     };
 
     // Store note in a custom way (extend the exception with note)

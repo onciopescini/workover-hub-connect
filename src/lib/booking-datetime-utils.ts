@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { createBookingDateTime, formatUtcDateForDisplay, nowUtc, parseBookingDateTime } from './date-utils';
+import { createBookingDateTime, formatUtcDateForDisplay, nowUtc, parseBookingDateTime } from './date-time';
 
 /**
  * Utility functions specifically for booking date/time operations

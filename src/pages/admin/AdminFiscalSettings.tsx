@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useFiscalMode } from '@/contexts/FiscalModeContext';
-import { toast } from '@/hooks/use-toast';
 
 const AdminFiscalSettings = () => {
   const { mode, setMode, isMockMode } = useFiscalMode();
@@ -14,8 +13,7 @@ const AdminFiscalSettings = () => {
   const handleToggle = (checked: boolean) => {
     const newMode = checked ? 'mock' : 'prod';
     setMode(newMode);
-    toast({
-      title: `Fiscal Mode: ${newMode.toUpperCase()}`,
+    toast.success(`Fiscal Mode: ${newMode.toUpperCase()}`, {
       description: checked 
         ? '🧪 Mock mode attivata. Tutti i dati fiscali useranno MSW handlers.'
         : '✅ Produzione attivata. Tutti i dati fiscali useranno Supabase reale.',

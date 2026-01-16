@@ -178,7 +178,7 @@ export const getHostCalendarStats = async (hostId: string): Promise<CalendarStat
       guest_name: booking.profiles?.first_name && booking.profiles?.last_name 
         ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
         : 'Guest',
-      space_name: booking.spaces?.title || 'Spazio',
+      space_name: (booking.spaces as any)?.title || (booking.spaces as any)?.name || 'Spazio',
       booking_date: booking.booking_date,
       start_time: booking.start_time,
       end_time: booking.end_time,

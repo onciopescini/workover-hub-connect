@@ -14,9 +14,9 @@ interface UserCardProps {
   onDeactivateUser: (userId: string) => void;
   onPromoteToAdmin: (userId: string) => void;
   onDemoteFromAdmin: (userId: string) => void;
-  onBanUser?: (userId: string, reason: string) => void;
-  onUnbanUser?: (userId: string) => void;
-  onRefresh?: () => void;
+  onBanUser?: ((userId: string, reason: string) => void) | undefined;
+  onUnbanUser?: ((userId: string) => void) | undefined;
+  onRefresh?: (() => void) | undefined;
 }
 
 export const UserCard: React.FC<UserCardProps> = ({

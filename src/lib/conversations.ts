@@ -24,9 +24,13 @@ export async function getOrCreateConversation(params: {
     p_booking_id: bookingId || null,
   });
   
-  if (error || !data) {
+  if (error) {
     sreLogger.error('getOrCreateConversation error', { params }, error as Error | undefined);
     throw new Error(error?.message || 'Unable to create conversation');
+  }
+  
+  if (!data) {
+    throw new Error('Unable to create conversation: no ID returned');
   }
   
   sreLogger.info('Created/found conversation', { conversationId: data });
@@ -38,7 +42,7 @@ export async function sendMessageToConversation(params: {
   bookingId?: string | null;
   content: string;
   senderId: string;
-  recipientId?: string; // New optional parameter for safe fallback
+  recipientId?: string | undefined; // Allow undefined explicitly
 }) {
   const { conversationId, bookingId, content, senderId, recipientId } = params;
   

@@ -113,7 +113,11 @@ export const useBulkBookingActions = (opts?: { onAfterEach?: () => void; onAfter
       // Process cancellations in parallel
       const results = await Promise.allSettled(
         bookings.map(async (booking) => {
-          const space = spacesMap.get(booking.space_id);
+          const spaceId = booking.space_id;
+          if (!spaceId) {
+            throw new Error('Booking has no associated space');
+          }
+          const space = spacesMap.get(spaceId);
           const payload = {
             booking_id: booking.id,
             cancelled_by_host: space?.host_id === authState.user?.id,

@@ -119,8 +119,8 @@ const Onboarding = () => {
       // 2. Immediate profile creation (to ensure subsequent logic works)
       // Extract metadata or use fallbacks
       const metadata = authState.user.user_metadata || {};
-      const firstName = metadata.first_name || metadata.full_name?.split(' ')[0] || '';
-      const lastName = metadata.last_name || metadata.full_name?.split(' ').slice(1).join(' ') || '';
+      const firstName = metadata['first_name'] || (metadata['full_name'] as string)?.split(' ')[0] || '';
+      const lastName = metadata['last_name'] || (metadata['full_name'] as string)?.split(' ').slice(1).join(' ') || '';
       const email = authState.user.email;
 
       // Upsert profile.

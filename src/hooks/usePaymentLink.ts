@@ -35,6 +35,13 @@ export const usePaymentLink = () => {
           return;
         }
 
+        // Guard against null space_id
+        if (!booking.space_id) {
+          toast.error('Prenotazione non valida');
+          navigate('/bookings', { replace: true });
+          return;
+        }
+
         // Fetch workspace and host details mainly for validation
         const { data: workspace, error: wsError } = await supabase
           .from('workspaces')

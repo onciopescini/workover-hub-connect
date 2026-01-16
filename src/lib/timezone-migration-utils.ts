@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { nowUtc, createUtcIsoString } from "./date-utils";
+import { nowUtc, createUtcIsoString } from "./date-time";
 
 /**
  * Simple timezone-aware utilities for UTC database operations  

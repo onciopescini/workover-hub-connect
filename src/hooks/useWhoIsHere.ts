@@ -77,13 +77,13 @@ export const useWhoIsHere = () => {
         if (coworkersError) {
           sreLogger.error("Error fetching coworkers", { bookingId: bookings.id }, coworkersError);
         } else {
-          setUsers((coworkers || []).map(c => ({
+          setUsers((coworkers || []).map((c: any) => ({
             id: c.id,
             first_name: c.first_name,
             last_name: c.last_name,
             avatar_url: c.avatar_url,
-            job_title: c.job_title,
-            city: c.city
+            job_title: c.job_title ?? null,
+            city: c.city ?? null
           })));
         }
 

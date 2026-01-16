@@ -62,7 +62,7 @@ export const calculateBookingDetails = (
   const hours = differenceInHours(endDateTime, startDateTime);
   
   // Enhanced price calculation using the new function
-  const pricing = calculateTwoStepBookingPrice(hours, space.price_per_hour, space.price_per_day || 0);
+  const pricing = calculateTwoStepBookingPrice(hours, space.price_per_hour, (space.price_per_day !== null ? space.price_per_day : 0));
 
   // Validation status
   const isValid = hours > 0 && 

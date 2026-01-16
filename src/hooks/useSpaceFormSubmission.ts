@@ -9,8 +9,31 @@ import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
 
+// Form data type that includes UI field names (title, workspace_features) mapped to DB columns
+interface SpaceFormDataInput {
+  title?: string;
+  description?: string;
+  category?: string;
+  work_environment?: string;
+  max_capacity?: number;
+  workspace_features?: string[];
+  amenities?: string[];
+  seating_types?: string[];
+  price_per_hour?: number;
+  price_per_day?: number;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  rules?: string | null | undefined;
+  cancellation_policy?: string | null | undefined;
+  ideal_guest_tags?: string[];
+  event_friendly_tags?: string[];
+  confirmation_type?: string;
+  published?: boolean;
+}
+
 interface UseSpaceFormSubmissionProps {
-  formData: Omit<Partial<SpaceInsert>, 'availability'>;
+  formData: SpaceFormDataInput;
   availabilityData: AvailabilityData;
   photoPreviewUrls: string[];
   validateForm: () => boolean;
@@ -76,15 +99,15 @@ export const useSpaceFormSubmission = ({
       
       // Refactor: Map fields to new workspace schema
       const workspaceData: WorkspaceInsert = {
-        name: formData.title!, // formData.title -> maps to DB column name
-        address: formData.address!, // formData.address -> maps to DB column address
+        name: formData.title || '', // formData.title -> maps to DB column name
+        address: formData.address || '', // formData.address -> maps to DB column address
         features: formData.workspace_features || [], // formData.workspace_features -> maps to DB column features (array)
-        price_per_day: formData.price_per_day!,
-        price_per_hour: formData.price_per_hour!,
-        max_capacity: formData.max_capacity!,
-        category: formData.category!,
+        price_per_day: formData.price_per_day || 0,
+        price_per_hour: formData.price_per_hour || 0,
+        max_capacity: formData.max_capacity || 1,
+        category: (formData.category as 'home' | 'outdoor' | 'professional') || 'home',
         rules: formData.rules || null,
-        cancellation_policy: formData.cancellation_policy || null,
+        cancellation_policy: (formData.cancellation_policy as 'flexible' | 'moderate' | 'strict' | null) || null,
         availability: availabilityData, // availabilityData should be saved as json in the availability column
         host_id: user.id,
         // Additional fields that are likely needed
@@ -96,10 +119,10 @@ export const useSpaceFormSubmission = ({
         pending_approval: false, // STRATEGIC PIVOT: Post-Moderation (Always false on submission)
         amenities: formData.amenities || [],
         seating_types: formData.seating_types || [],
-        work_environment: formData.work_environment!,
+        work_environment: (formData.work_environment as 'controlled' | 'dynamic' | 'silent') || 'silent',
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
-        confirmation_type: formData.confirmation_type!
+        confirmation_type: (formData.confirmation_type as 'host_approval' | 'instant') || 'host_approval'
       };
       
       if (isEdit && initialDataId) {

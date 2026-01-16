@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 const Networking = () => {
+  const navigate = useNavigate();
   const { authState } = useAuth();
   const { 
     connections, 
@@ -29,9 +31,6 @@ const Networking = () => {
     isSearching,
     clearSearch
   } = useNetworking();
-  
-  const { searchResults, isSearching, searchUsers } = useNetworkingSearch();
-  const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilters, setSearchFilters] = useState<any>({});

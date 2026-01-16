@@ -11,25 +11,33 @@ export interface Connection {
     id: string;
     first_name: string;
     last_name: string;
-    profile_photo_url?: string | null;
-    bio?: string | null;
+    profile_photo_url?: string | null | undefined;
+    bio?: string | null | undefined;
   };
   receiver?: {
     id: string;
     first_name: string;
     last_name: string;
-    profile_photo_url?: string | null;
-    bio?: string | null;
+    profile_photo_url?: string | null | undefined;
+    bio?: string | null | undefined;
   };
 }
 
 export interface ConnectionSuggestion {
+  id?: string; // Optional id for compatibility
   user_id: string;
   first_name: string;
   last_name: string;
   avatar_url: string | null;
   workspace_name: string;
   booking_date: string;
+  suggested_user?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    bio?: string | null;
+    avatar_url?: string | null;
+  };
 }
 
 export interface PrivateChat {

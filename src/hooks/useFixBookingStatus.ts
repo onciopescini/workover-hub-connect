@@ -24,6 +24,11 @@ export const useFixBookingStatus = () => {
         throw new Error('Booking not found');
       }
       
+      // Guard against null space_id
+      if (!booking.space_id) {
+        throw new Error('Booking has no associated space');
+      }
+
       // Fetch space details separately
       const { data: space, error: spaceError } = await supabase
         .from('spaces')
