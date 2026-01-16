@@ -104,7 +104,7 @@ export const UserCard: React.FC<UserCardProps> = ({
           )}
         </div>
         
-        {onBanUser && onUnbanUser && (
+        {onBanUser && onUnbanUser ? (
           <UserActions
             user={user}
             onActivateUser={onActivateUser}
@@ -114,7 +114,7 @@ export const UserCard: React.FC<UserCardProps> = ({
             onBanUser={onBanUser}
             onUnbanUser={onUnbanUser}
           />
-        )}
+        ) : null}
       </CardContent>
     </Card>
 

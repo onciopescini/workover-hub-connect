@@ -12,7 +12,7 @@ import { Euro, FileText, TrendingUp, Users, Download, FileSpreadsheet } from "lu
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast as sonnerToast } from "sonner";
+import { toast } from "sonner";
 
 export const FiscalManagementContainer = () => {
   const [activeYear, setActiveYear] = useState(new Date().getFullYear());
@@ -38,8 +38,7 @@ export const FiscalManagementContainer = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "✅ Report DAC7 Generato",
+      toast.success("✅ Report DAC7 Generato", {
         description: `Report per l'anno ${selectedYear} generato con successo. ${data?.summary?.reports_created || 0} report creati.`,
       });
 
@@ -56,7 +55,7 @@ export const FiscalManagementContainer = () => {
   const handleExportCSV = () => {
     try {
       if (!reports || reports.length === 0) {
-        sonnerToast.error('Nessun report da esportare');
+        toast.error('Nessun report da esportare');
         return;
       }
 
@@ -96,10 +95,10 @@ export const FiscalManagementContainer = () => {
       link.click();
       URL.revokeObjectURL(url);
       
-      sonnerToast.success('Export CSV completato');
+      toast.success('Export CSV completato');
     } catch (error) {
       console.error('Export CSV error:', error);
-      sonnerToast.error('Errore durante l\'export CSV');
+      toast.error('Errore durante l\'export CSV');
     }
   };
 

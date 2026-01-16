@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+// Explicitly use the Enum from Database types or string union
+type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
 interface UseAdminBookingsProps {
   page?: number;
@@ -72,7 +76,8 @@ export function useAdminBookings({
 
       // Apply Status Filter
       if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        // Cast statusFilter to BookingStatus to satisfy strict typing
+        query = query.eq('status', statusFilter as BookingStatus);
       }
 
       // Apply Payment Filter

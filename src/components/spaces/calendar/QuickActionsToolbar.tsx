@@ -51,7 +51,7 @@ export const QuickActionsToolbar = ({
       
       toast.success("Template applicato", { description: "Orari lavorativi Lun-Ven (9:00-17:00) applicati con successo" });
     } catch (error) {
-      toast.error("Errore", { description: "Errore nell" });
+      toast.error("Errore", { description: "Errore nell'applicazione del template" });
     } finally {
       setIsApplying(false);
     }
@@ -147,8 +147,7 @@ export const QuickActionsToolbar = ({
 
       onAvailabilityChange(newAvailability);
       
-      toast({
-        title: "Template duplicato",
+      toast.success("Template duplicato", {
         description: `Orari di ${enabledDay[0]} applicati a tutti i giorni`
       });
     } catch (error) {

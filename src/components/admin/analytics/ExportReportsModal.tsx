@@ -45,14 +45,13 @@ export function ExportReportsModal({ open, onOpenChange, timeRange }: ExportRepo
         exportAnalyticsToPDF(data);
       }
 
-      toast({
-        title: "Report esportato",
+      toast.success("Report esportato", {
         description: `Il report è stato scaricato in formato ${format.toUpperCase()}`,
       });
       onOpenChange(false);
     } catch (error) {
       console.error('Export error:', error);
-      toast.error("Errore", { description: "Si è verificato un errore durante l" });
+      toast.error("Errore", { description: "Si è verificato un errore durante l'esportazione" });
     } finally {
       setIsExporting(false);
     }

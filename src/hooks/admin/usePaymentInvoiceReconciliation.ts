@@ -51,7 +51,7 @@ export const usePaymentInvoiceReconciliation = () => {
       }
 
       // Fetch spaces separately to avoid FK relationship issues
-      const spaceIds = [...new Set(payments?.map(p => p.booking?.space_id).filter(Boolean) || [])];
+      const spaceIds = [...new Set(payments?.map(p => p.booking?.space_id).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, host_id, title')
