@@ -10,6 +10,7 @@ import { Space } from '@/types/space';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazySpaceMap } from '@/components/spaces/LazySpaceMap';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -182,25 +183,41 @@ const Search = () => {
             Trovati {spaces.length} spazi {searchQuery && `per "${searchQuery}"`}
           </p>
 
-          {viewMode === 'list' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {spaces.map((space) => (
-                <SpaceCard
-                  key={space.id}
-                  space={space}
-                  onClick={() => navigate(`/space/${space.id}`)}
+          <AnimatePresence mode="wait">
+            {viewMode === 'list' ? (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              >
+                {spaces.map((space) => (
+                  <SpaceCard
+                    key={space.id}
+                    space={space}
+                    onClick={() => navigate(`/space/${space.id}`)}
+                  />
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="map"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+              >
+                <LazySpaceMap
+                  spaces={spaces}
+                  userLocation={null} // TODO: Get user location
+                  onSpaceClick={(id: string) => navigate(`/space/${id}`)}
                 />
-              ))}
-            </div>
-          ) : (
-            <div className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-              <LazySpaceMap
-                spaces={spaces}
-                userLocation={null} // TODO: Get user location
-                onSpaceClick={(id: string) => navigate(`/space/${id}`)}
-              />
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       ) : (
         /* Empty State */
