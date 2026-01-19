@@ -46,14 +46,12 @@ const UnifiedMessages = lazy(() => import("@/components/messaging/UnifiedMessage
 const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
 const ChatThread = lazy(() => import("@/pages/ChatThread"));
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
-const NetworkingTestSuite = lazy(() => import("@/pages/NetworkingTestSuite"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const NetworkingSettings = lazy(() => import("@/pages/NetworkingSettings"));
 const SpaceDetail = lazy(() => import("@/pages/SpaceDetail"));
 const Reviews = lazy(() => import("@/pages/Reviews"));
 const Support = lazy(() => import("@/pages/Support"));
-const StrictModeFixer = lazy(() => import("@/pages/StrictModeFixer"));
 
 // Host pages
 const HostPaymentsPage = lazy(() => import("@/pages/host/HostPaymentsPage"));
@@ -259,14 +257,6 @@ export const AppRoutes = () => {
           </AuthProtected>
         } />
         
-        <Route path="networking-test-suite" element={
-          <AuthProtected>
-            <LazyWrapper>
-              <NetworkingTestSuite />
-            </LazyWrapper>
-          </AuthProtected>
-        } />
-        
         <Route path="notifications" element={
           <AuthProtected>
             <LazyWrapper>
@@ -314,13 +304,6 @@ export const AppRoutes = () => {
               <MyDocumentsPage />
             </LazyWrapper>
           </AuthProtected>
-        } />
-
-        {/* TypeScript Strict Mode Fixer - public tool */}
-        <Route path="strict-mode-fixer" element={
-          <LazyWrapper>
-            <StrictModeFixer />
-          </LazyWrapper>
         } />
 
         {/* QA Validation Dashboard */}
