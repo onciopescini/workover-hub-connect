@@ -7,19 +7,25 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { EnhancedMessageComposer } from "./EnhancedMessageComposer";
 import { EnhancedMessageBubble } from "./EnhancedMessageBubble";
 import { Search, MessageSquare, Users, ArrowLeft } from "lucide-react";
-import { ConversationItem } from "@/types/messaging";
+import { Conversation, Message } from "@/types/messaging";
+import { useUserPresence } from '@/hooks/useUserPresence';
 
 interface MessagesChatAreaProps {
-  selectedConversation?: ConversationItem | undefined;
-  messages: any[];
+  selectedConversation?: Conversation | undefined;
+  messages: Message[];
+  currentUserId: string | undefined;
+  currentUserProfilePhoto?: string;
   onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
 }
 
 export const MessagesChatArea = ({
   selectedConversation,
   messages,
+  currentUserId,
+  currentUserProfilePhoto,
   onSendMessage
 }: MessagesChatAreaProps) => {
+  const { isUserOnline } = useUserPresence();
   if (!selectedConversation) {
     return (
       <Card className="h-full flex flex-col overflow-hidden">
@@ -59,7 +65,7 @@ export const MessagesChatArea = ({
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-primary" />
               </div>
-              {selectedConversation.isOnline && (
+              {selectedConversation.other_user_id && isUserOnline(selectedConversation.other_user_id) && (
                 <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background" />
               )}
             </div>
@@ -69,7 +75,7 @@ export const MessagesChatArea = ({
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {selectedConversation.subtitle}
-                {selectedConversation.isOnline && (
+                {selectedConversation.other_user_id && isUserOnline(selectedConversation.other_user_id) && (
                   <span className="ml-2 text-green-600">• Online</span>
                 )}
               </p>
@@ -77,7 +83,7 @@ export const MessagesChatArea = ({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Badge variant="outline" className="text-xs">
-              {selectedConversation.type}
+              {selectedConversation.type === 'booking' ? 'Prenotazione' : 'Privato'}
             </Badge>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Search className="h-4 w-4" />
@@ -99,27 +105,33 @@ export const MessagesChatArea = ({
           ) : (
             <div className="p-4">
               <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <EnhancedMessageBubble
-                    key={(message['id'] as string) || `msg-${index}`}
-                    id={(message['id'] as string) || `msg-${index}`}
-                    content={message['content'] as string}
-                    senderName={message['senderName'] as string}
-                    senderAvatar={message['senderAvatar'] as string}
-                    timestamp={message['created_at'] as string}
-                    isCurrentUser={message['isCurrentUser'] as boolean}
-                    isRead={message['is_read'] as boolean}
-                    attachments={message['attachments'] as any[] || []}
-                    businessContext={
-                      selectedConversation.id.startsWith('booking-') ? {
-                        type: 'booking' as const,
-                        details: selectedConversation.subtitle
-                      } : {
-                        type: 'general' as const
+                {messages.map((message, index) => {
+                  const isCurrentUser = message.sender_id === currentUserId;
+                  const senderName = isCurrentUser ? "Tu" : selectedConversation.title;
+                  const senderAvatar = isCurrentUser ? (currentUserProfilePhoto || "") : (selectedConversation.avatar || "");
+
+                  return (
+                    <EnhancedMessageBubble
+                      key={message.id || `msg-${index}`}
+                      id={message.id}
+                      content={message.content}
+                      senderName={senderName}
+                      senderAvatar={senderAvatar}
+                      timestamp={message.created_at}
+                      isCurrentUser={isCurrentUser}
+                      isRead={message.is_read}
+                      attachments={message.attachments}
+                      businessContext={
+                        selectedConversation.type === 'booking' ? {
+                          type: 'booking' as const,
+                          details: selectedConversation.subtitle
+                        } : {
+                          type: 'general' as const
+                        }
                       }
-                    }
-                  />
-                ))}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
