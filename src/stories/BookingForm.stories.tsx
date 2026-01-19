@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import React from 'react';
-import { TwoStepBookingForm } from '@/components/booking/TwoStepBookingForm';
+import { TwoStepBookingForm, BookingStep, BookingState } from '@/components/booking-wizard/TwoStepBookingForm';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fn } from '@storybook/test';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -10,6 +11,25 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+const mockBookingState: BookingState = {
+  selectedDate: null,
+  availableSlots: [],
+  selectedRange: null,
+  guestsCount: 1,
+  availableSpots: 10,
+  isLoadingSlots: false,
+  isReserving: false,
+};
+
+const mockCoworkerFiscalData = {
+  billingName: '',
+  billingAddress: '',
+  vatNumber: '',
+  sdiCode: '',
+  pecEmail: '',
+  isCompany: false,
+};
 
 const meta: Meta<typeof TwoStepBookingForm> = {
   title: 'Booking/TwoStepBookingForm',
@@ -32,6 +52,36 @@ const meta: Meta<typeof TwoStepBookingForm> = {
     },
   },
   tags: ['autodocs'],
+  args: {
+    // Config
+    spaceId: 'mock-space-id',
+    pricePerHour: 15,
+    pricePerDay: 100,
+    maxCapacity: 10,
+    confirmationType: 'instant',
+    cancellationPolicy: 'moderate',
+    rules: 'No smoking, No pets',
+
+    // State
+    currentStep: 'DATE',
+    bookingState: mockBookingState,
+    acceptedPolicy: false,
+    requestInvoice: false,
+    coworkerFiscalData: mockCoworkerFiscalData,
+    fiscalErrors: {},
+    isReserving: false,
+    isCheckoutLoading: false,
+
+    // Handlers
+    onDateSelect: fn(),
+    onRangeSelect: fn(),
+    onGuestsChange: fn(),
+    onStepChange: fn(),
+    onConfirm: fn(),
+    setAcceptedPolicy: fn(),
+    setRequestInvoice: fn(),
+    setCoworkerFiscalData: fn(),
+  },
 };
 
 export default meta;
@@ -39,48 +89,34 @@ type Story = StoryObj<typeof TwoStepBookingForm>;
 
 export const Step1DateSelection: Story = {
   args: {
-    spaceId: 'mock-space-id',
-    pricePerHour: 15,
-    pricePerDay: 100,
-    maxCapacity: 10,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'First step of the booking form where users select date and time.',
-      },
-    },
+    currentStep: 'DATE',
   },
 };
 
-export const Step2GuestDetails: Story = {
+export const Step2TimeSelection: Story = {
   args: {
-    spaceId: 'mock-space-id',
-    pricePerHour: 15,
-    pricePerDay: 100,
-    maxCapacity: 10,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Second step where users enter guest count and special requests.',
-      },
-    },
+    currentStep: 'TIME',
+    bookingState: {
+      ...mockBookingState,
+      selectedDate: new Date(),
+      availableSlots: [
+        { start: '09:00', end: '09:30', available: true },
+        { start: '09:30', end: '10:00', available: true },
+        { start: '10:00', end: '10:30', available: true },
+      ]
+    }
   },
 };
 
-export const WithHighCapacity: Story = {
+export const Step3Summary: Story = {
   args: {
-    spaceId: 'mock-space-id',
-    pricePerHour: 25,
-    pricePerDay: 180,
-    maxCapacity: 50,
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: 'Booking form for a high-capacity space (50 people).',
-      },
-    },
+    currentStep: 'SUMMARY',
+    acceptedPolicy: true,
+    bookingState: {
+      ...mockBookingState,
+      selectedDate: new Date(),
+      selectedRange: { startTime: '09:00', endTime: '11:00', duration: 2 },
+      guestsCount: 2,
+    }
   },
 };

@@ -3,8 +3,8 @@ import { Database } from "@/integrations/supabase/types";
 export type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 export type BookingUpdate = Database["public"]["Tables"]["bookings"]["Update"];
+export type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
-// New types for multi-day booking system
 export interface BookingSlot {
   id: string;
   date: string;
@@ -20,6 +20,53 @@ export interface MultiDayBookingData {
   totalPrice: number;
   totalHours: number;
 }
+
+export interface CoworkerFiscalData {
+  tax_id: string;
+  is_business: boolean;
+  pec_email: string;
+  sdi_code: string;
+  billing_address: string;
+  billing_city: string;
+  billing_province: string;
+  billing_postal_code: string;
+}
+
+export interface SlotReservationResult {
+  success: boolean;
+  error?: string;
+  booking_id?: string;
+  reservation_token?: string;
+  reserved_until?: string;
+  space_title?: string;
+  confirmation_type?: string;
+}
+
+export const BOOKING_STATUS_COLORS: Record<BookingStatus, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  pending_approval: "bg-orange-100 text-orange-800",
+  pending_payment: "bg-blue-100 text-blue-800",
+  confirmed: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+  served: "bg-purple-100 text-purple-800",
+  refunded: "bg-cyan-100 text-cyan-800",
+  disputed: "bg-rose-100 text-rose-800",
+  frozen: "bg-gray-100 text-gray-800",
+  checked_in: "bg-emerald-100 text-emerald-800",
+};
+
+export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
+  pending: "In attesa",
+  pending_approval: "In attesa di approvazione",
+  pending_payment: "In attesa di pagamento",
+  confirmed: "Confermata",
+  cancelled: "Annullata",
+  served: "Servizio completato",
+  refunded: "Rimborsata",
+  disputed: "Contestata",
+  frozen: "Sospesa",
+  checked_in: "Check-in effettuato",
+};
 
 export type BookingWithDetails = {
   id: string;
@@ -92,17 +139,6 @@ export type RawBookingData = {
   fiscal_data?: any; // JSONB
 };
 
-// Reservation result type
-export interface SlotReservationResult {
-  success: boolean;
-  error?: string;
-  booking_id?: string;
-  reservation_token?: string;
-  reserved_until?: string;
-  space_title?: string;
-  confirmation_type?: string;
-}
-
 // Message type definition to match our database schema
 export type Message = {
   id: string;
@@ -126,29 +162,3 @@ export interface CancelBookingResponse {
   booking_id?: string;
   cancellation_fee?: number;
 }
-
-export const BOOKING_STATUS_COLORS = {
-  pending: "bg-yellow-100 text-yellow-800",
-  pending_approval: "bg-orange-100 text-orange-800",
-  pending_payment: "bg-blue-100 text-blue-800",
-  confirmed: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
-  served: "bg-purple-100 text-purple-800",
-  refunded: "bg-cyan-100 text-cyan-800",
-  disputed: "bg-rose-100 text-rose-800",
-  frozen: "bg-gray-100 text-gray-800",
-  checked_in: "bg-emerald-100 text-emerald-800",
-};
-
-export const BOOKING_STATUS_LABELS = {
-  pending: "In attesa",
-  pending_approval: "In attesa di approvazione",
-  pending_payment: "In attesa di pagamento",
-  confirmed: "Confermata", 
-  cancelled: "Annullata",
-  served: "Servizio completato",
-  refunded: "Rimborsata",
-  disputed: "Contestata",
-  frozen: "Sospesa",
-  checked_in: "Check-in effettuato",
-};
