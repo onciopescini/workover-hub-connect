@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, CreditCard, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, CreditCard, AlertTriangle, Loader2 } from "lucide-react";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { TimeSlotSelectionStep } from "./TimeSlotSelectionStep";
 import { BookingSummaryStep } from "./BookingSummaryStep";
@@ -178,6 +178,7 @@ export function TwoStepBookingForm({
               pricePerDay={pricePerDay}
               bufferMinutes={bufferMinutes}
               slotInterval={slotInterval}
+              onBack={() => onStepChange('DATE')}
             />
             
             {bookingState.selectedRange && (
@@ -307,12 +308,12 @@ export function TwoStepBookingForm({
                 type="button"
                 onClick={onConfirm}
                 disabled={isReserving || isCheckoutLoading || (!hostStripeAccountId && confirmationType === 'instant')}
-                className="min-w-32"
+                className="min-w-32 flex gap-2 items-center"
               >
                 {isReserving || isCheckoutLoading ? (
                   <>
-                    <span data-testid="checkout-loading-spinner" className="sr-only">loading</span>
-                    Prenotando...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span data-testid="checkout-loading-spinner">Prenotando...</span>
                   </>
                 ) : (
                   <>Conferma</>

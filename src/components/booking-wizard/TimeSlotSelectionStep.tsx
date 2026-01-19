@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Clock, AlertCircle, CheckCircle, CalendarX } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
@@ -35,6 +35,7 @@ interface TimeSlotSelectionStepProps {
   pricePerDay: number;
   bufferMinutes: number;
   slotInterval?: number;
+  onBack?: () => void;
 }
 
 export function TimeSlotSelectionStep({
@@ -46,7 +47,8 @@ export function TimeSlotSelectionStep({
   pricePerHour,
   pricePerDay,
   bufferMinutes,
-  slotInterval = 30
+  slotInterval = 30,
+  onBack
 }: TimeSlotSelectionStepProps) {
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<string | null>(null);
@@ -220,15 +222,24 @@ export function TimeSlotSelectionStep({
         </div>
         
         <div 
-          className="text-center p-8 bg-muted/50 rounded-lg"
+          className="flex flex-col items-center justify-center p-8 bg-muted/50 rounded-lg text-center"
           role="status"
           aria-live="polite"
         >
-          <AlertCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <CalendarX className="w-12 h-12 mb-3 text-muted-foreground" />
           <h4 className="font-medium mb-2">Nessuno slot disponibile</h4>
-          <p className="text-sm text-muted-foreground">
-            Lo spazio non è disponibile in questa data secondo il calendario dell'host. Seleziona un'altra data.
+          <p className="text-sm text-muted-foreground mb-4 max-w-xs">
+            Lo spazio non è disponibile in questa data.
           </p>
+          {onBack && (
+            <Button
+              variant="outline"
+              onClick={onBack}
+              className="mt-2"
+            >
+              Seleziona altra data
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -270,8 +281,7 @@ export function TimeSlotSelectionStep({
         </p>
         <div 
           ref={gridRef}
-          className="grid gap-3"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))' }}
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2"
           role="grid"
           aria-label="Griglia slot orari"
         >

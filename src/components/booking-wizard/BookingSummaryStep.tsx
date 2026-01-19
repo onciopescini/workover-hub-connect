@@ -6,6 +6,12 @@ import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info, Users } from "
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { computePricing } from "@/lib/pricing";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { SelectedTimeRange } from './TwoStepBookingForm';
 
 interface BookingSummaryStepProps {
@@ -127,7 +133,16 @@ export function BookingSummaryStep({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <span className="text-sm text-muted-foreground">Service fee</span>
-                <Info className="w-3 h-3 text-muted-foreground" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[200px]">
+                      <p>Include la protezione della piattaforma e il supporto clienti dedicato.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <span className="font-medium">€{pricing.serviceFee.toFixed(2)}</span>
             </div>
