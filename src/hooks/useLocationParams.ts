@@ -8,22 +8,55 @@ export const useLocationParams = () => {
   const cityParam = searchParams.get('city');
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
-  const radiusParam = searchParams.get('radius'); // NEW
+  const radiusParam = searchParams.get('radius');
   const dateParam = searchParams.get('date');
   const startTimeParam = searchParams.get('startTime');
   const endTimeParam = searchParams.get('endTime');
   
+  // New filters
+  const categoryParam = searchParams.get('category');
+  const minPriceParam = searchParams.get('minPrice');
+  const maxPriceParam = searchParams.get('maxPrice');
+  const workEnvParam = searchParams.get('workEnv');
+  const capacityParam = searchParams.get('minCapacity');
+  const amenitiesParam = searchParams.get('amenities');
+
   const initialCity = cityParam ? decodeURIComponent(cityParam) : '';
   const initialCoordinates = (latParam && lngParam) ? {
     lat: parseFloat(latParam),
     lng: parseFloat(lngParam)
   } : null;
-  const initialRadius = radiusParam ? parseInt(radiusParam) : 10; // NEW: Default 10km
+  const initialRadius = radiusParam ? parseInt(radiusParam) : 10;
   const initialDate = dateParam ? new Date(dateParam) : null;
   const initialStartTime = startTimeParam || null;
   const initialEndTime = endTimeParam || null;
 
-  const updateLocationParam = (city: string, coordinates?: { lat: number; lng: number }, radius?: number) => {
+  // New initial values
+  const initialCategory = categoryParam || '';
+  const initialPriceRange: [number, number] = [
+    minPriceParam ? parseInt(minPriceParam) : 0,
+    maxPriceParam ? parseInt(maxPriceParam) : 200
+  ];
+  const initialWorkEnvironment = workEnvParam || '';
+  const initialMinCapacity = capacityParam ? parseInt(capacityParam) : 1;
+  const initialAmenities = amenitiesParam ? amenitiesParam.split(',') : [];
+
+  const updateLocationParam = (
+    city?: string,
+    coordinates?: { lat: number; lng: number },
+    radius?: number,
+    filters?: {
+      category?: string;
+      priceRange?: [number, number];
+      workEnvironment?: string;
+      amenities?: string[];
+      minCapacity?: number;
+      date?: Date | null;
+      startTime?: string | null;
+      endTime?: string | null;
+    }
+  ) => {
+    // Location & Radius
     if (city) {
       searchParams.set('city', encodeURIComponent(city));
     } else {
@@ -38,12 +71,42 @@ export const useLocationParams = () => {
       searchParams.delete('lng');
     }
     
-    // NEW: Handle radius parameter
     if (radius) {
       searchParams.set('radius', radius.toString());
     } else if (!coordinates) {
-      // Remove radius if no coordinates
       searchParams.delete('radius');
+    }
+
+    // Filters
+    if (filters) {
+      if (filters.category) searchParams.set('category', filters.category);
+      else searchParams.delete('category');
+
+      if (filters.priceRange) {
+        if (filters.priceRange[0] > 0) searchParams.set('minPrice', filters.priceRange[0].toString());
+        else searchParams.delete('minPrice');
+
+        if (filters.priceRange[1] < 200) searchParams.set('maxPrice', filters.priceRange[1].toString());
+        else searchParams.delete('maxPrice');
+      }
+
+      if (filters.workEnvironment) searchParams.set('workEnv', filters.workEnvironment);
+      else searchParams.delete('workEnv');
+
+      if (filters.amenities && filters.amenities.length > 0) searchParams.set('amenities', filters.amenities.join(','));
+      else searchParams.delete('amenities');
+
+      if (filters.minCapacity && filters.minCapacity > 1) searchParams.set('minCapacity', filters.minCapacity.toString());
+      else searchParams.delete('minCapacity');
+
+      if (filters.date) searchParams.set('date', filters.date.toISOString());
+      else searchParams.delete('date');
+
+      if (filters.startTime) searchParams.set('startTime', filters.startTime);
+      else searchParams.delete('startTime');
+
+      if (filters.endTime) searchParams.set('endTime', filters.endTime);
+      else searchParams.delete('endTime');
     }
     
     setSearchParams(searchParams);
@@ -52,10 +115,15 @@ export const useLocationParams = () => {
   return {
     initialCity,
     initialCoordinates,
-    initialRadius, // NEW
+    initialRadius,
     initialDate,
     initialStartTime,
     initialEndTime,
+    initialCategory,
+    initialPriceRange,
+    initialWorkEnvironment,
+    initialMinCapacity,
+    initialAmenities,
     updateLocationParam
   };
 };

@@ -7,7 +7,8 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
 import { calculateTwoStepBookingPrice } from "@/lib/booking-calculator-utils";
-import type { TimeSlot, SelectedTimeRange } from './TwoStepBookingForm';
+import type { SelectedTimeRange } from './TwoStepBookingForm';
+import type { BookingTimeSlot } from "@/types/booking-slots";
 
 // Helper functions for safe HH:MM parsing
 function parseHHMM(time: string): [number, number] {
@@ -27,7 +28,7 @@ function addMinutesHHMM(time: string, minutes: number): string {
 
 interface TimeSlotSelectionStepProps {
   selectedDate: Date;
-  availableSlots: TimeSlot[];
+  availableSlots: BookingTimeSlot[];
   selectedRange: SelectedTimeRange | null;
   onRangeSelect: (range: SelectedTimeRange) => void;
   isLoading: boolean;

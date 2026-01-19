@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +11,7 @@ import {
   Star,
   Euro
 } from 'lucide-react';
-import { EnhancedSpaceCard } from './EnhancedSpaceCard';
+import { SpaceCard } from './SpaceCard';
 import { Space } from '@/types/space';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -193,8 +192,9 @@ export const EnhancedSpaceCardsGrid: React.FC<EnhancedSpaceCardsGridProps> = ({
                   : ''
               }`}
             >
-              <EnhancedSpaceCard
+              <SpaceCard
                 space={space}
+                variant="enhanced"
                 onClick={() => onSpaceClick(space.id)}
               />
             </div>

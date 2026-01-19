@@ -43,3 +43,5 @@ export interface Conversation {
     status: string;
   };
 }
+
+export type ConversationItem = Conversation;
