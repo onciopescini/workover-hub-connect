@@ -9,17 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Info, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { useFiscalValidation } from '@/hooks/useFiscalValidation';
 import { useDebouncedValue } from '@/hooks/useDebounce';
-
-export interface CoworkerFiscalData {
-  tax_id: string;
-  is_business: boolean;
-  pec_email: string;
-  sdi_code: string;
-  billing_address: string;
-  billing_city: string;
-  billing_province: string;
-  billing_postal_code: string;
-}
+import type { CoworkerFiscalData } from '@/types/booking';
 
 interface CheckoutFiscalFieldsProps {
   requestInvoice: boolean;

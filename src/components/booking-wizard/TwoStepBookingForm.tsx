@@ -2,23 +2,20 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Calendar, Clock, CreditCard, AlertTriangle, Loader2 } from "lucide-react";
+import { Calendar, Clock, CreditCard, AlertTriangle } from "lucide-react";
 import { DateSelectionStep } from "./DateSelectionStep";
 import { TimeSlotSelectionStep } from "./TimeSlotSelectionStep";
 import { BookingSummaryStep } from "./BookingSummaryStep";
 import { GuestsSelector } from './GuestsSelector';
 import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckoutFiscalFields, type CoworkerFiscalData } from './checkout/CheckoutFiscalFields';
+import { CheckoutFiscalFields } from './checkout/CheckoutFiscalFields';
+import type { CoworkerFiscalData } from '@/types/booking';
+import type { AvailabilityData, TimeSlot } from "@/types/availability";
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
 
-export interface TimeSlot {
-  time: string;
-  available: boolean;
-  reserved?: boolean;
-  selected?: boolean;
-}
+export type { TimeSlot } from "@/types/availability";
 
 export interface SelectedTimeRange {
   startTime: string;
@@ -48,7 +45,7 @@ export interface TwoStepBookingFormProps {
   bufferMinutes?: number;
   slotInterval?: number;
   hostStripeAccountId?: string;
-  availability?: any;
+  availability?: AvailabilityData | string;
   hostFiscalRegime?: string;
   timezone?: string;
 
@@ -169,10 +166,10 @@ export function TwoStepBookingForm({
           />
         )}
         
-        {currentStep === 'TIME' && (
+        {currentStep === 'TIME' && bookingState.selectedDate && (
           <div className="space-y-6">
             <TimeSlotSelectionStep
-              selectedDate={bookingState.selectedDate!}
+              selectedDate={bookingState.selectedDate}
               availableSlots={bookingState.availableSlots}
               selectedRange={bookingState.selectedRange}
               onRangeSelect={onRangeSelect}
@@ -194,11 +191,11 @@ export function TwoStepBookingForm({
           </div>
         )}
         
-        {currentStep === 'SUMMARY' && (
+        {currentStep === 'SUMMARY' && bookingState.selectedDate && bookingState.selectedRange && (
           <>
             <BookingSummaryStep
-              selectedDate={bookingState.selectedDate!}
-              selectedRange={bookingState.selectedRange!}
+              selectedDate={bookingState.selectedDate}
+              selectedRange={bookingState.selectedRange}
               pricePerHour={pricePerHour}
               pricePerDay={pricePerDay}
               confirmationType={confirmationType}

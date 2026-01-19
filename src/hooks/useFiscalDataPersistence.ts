@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { CoworkerFiscalData } from '@/components/booking/checkout/CheckoutFiscalFields';
+import type { CoworkerFiscalData } from '@/types/booking';
 
 const STORAGE_KEY = 'pending_fiscal_data_save';
 

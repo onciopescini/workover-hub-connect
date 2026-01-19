@@ -7,7 +7,8 @@ import { BookingInsert } from '@/types/booking';
 import { useNavigate } from 'react-router-dom';
 import { useBookingValidation } from './useBookingValidation';
 import { useBookingPayment } from './useBookingPayment';
-import type { CoworkerFiscalData } from '@/components/booking/checkout/CheckoutFiscalFields';
+import type { CoworkerFiscalData } from '@/types/booking';
+import { PostgrestError } from '@supabase/supabase-js';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -29,6 +30,7 @@ export interface CheckoutResult {
   success: boolean;
   bookingId?: string;
   error?: string;
+  errorCode?: string; // Add specific error code support
 }
 
 export function useCheckout() {
@@ -104,22 +106,31 @@ export function useCheckout() {
         .select('id')
         .single();
 
-      // Handle Insert Error: If the insert returns an error, STOP execution and show a toast error.
+      // Handle Insert Error: If the insert returns an error, STOP execution.
       if (insertError) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logError('Insert Error', insertError as any);
+        logError('Insert Error', undefined, { error: insertError }); // Fixed: Pass insertError in metadata or adapt logError to accept PostgrestError if possible, but useLogger signature expects Error object.
+
+        // Handle Exclusion Constraint Violation (23P01) - Double Booking
+        if (insertError.code === '23P01') {
+          return {
+            success: false,
+            error: "Slot already booked",
+            errorCode: 'CONFLICT'
+          };
+        }
+
         // Specifically handle Foreign Key Violation (Space not found)
         if (insertError.code === '23503') {
            toast.error("This space is no longer available or has been removed by the host.");
            navigate('/');
-           return { success: false, error: "Space not found" };
+           return { success: false, error: "Space not found", errorCode: 'SPACE_NOT_FOUND' };
         }
+
         throw new Error(`Insert failed: ${insertError.message} (Code: ${insertError.code})`);
       }
 
       if (!bookingData?.id) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        logError('Insert returned no ID', bookingData as any);
+        logError('Insert returned no ID', undefined, { bookingData });
         throw new Error('Database insert succeeded but returned no ID');
       }
 
@@ -142,11 +153,11 @@ export function useCheckout() {
 
     } catch (err) {
       const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logError('Checkout Flow Failed', caughtError as any);
+      logError('Checkout Flow Failed', caughtError);
       return {
         success: false,
-        error: caughtError.message
+        error: caughtError.message,
+        errorCode: 'UNKNOWN'
       };
     } finally {
       setIsLoading(false);
