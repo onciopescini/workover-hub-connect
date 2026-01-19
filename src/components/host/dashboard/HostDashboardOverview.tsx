@@ -3,11 +3,15 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { TrendingUp, AlertCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, Euro, CalendarClock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivityFeed } from '@/components/dashboard/RecentActivityFeed';
+import { TodayCheckinsCard } from '@/components/host/dashboard/TodayCheckinsCard';
 import type { HostDashboardMetrics, RecentActivity } from '@/hooks/queries/useEnhancedHostDashboard';
+import { useStripePayouts } from '@/hooks/useStripePayouts';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 interface HostDashboardOverviewProps {
   metrics: HostDashboardMetrics;
@@ -19,6 +23,8 @@ export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
   recentActivity
 }) => {
   const navigate = useNavigate();
+  const { authState } = useAuth();
+  const { data: payoutData } = useStripePayouts(authState.user?.id || '');
 
   // Check for bookings without payment (data integrity issue)
   const unpaidConfirmedBookings = metrics.confirmedBookings - metrics.totalBookings;
@@ -26,6 +32,52 @@ export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Today's Check-ins */}
+      <TodayCheckinsCard />
+
+      {/* Payout Visibility */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Euro className="w-5 h-5 text-primary" />
+            Payout
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Prossimo Payout</p>
+              {payoutData?.next_payout?.date ? (
+                <div>
+                  <div className="text-2xl font-bold">
+                    €{payoutData.next_payout.amount.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-green-600 flex items-center gap-1">
+                    <CalendarClock className="w-3 h-3" />
+                    In arrivo il {format(new Date(payoutData.next_payout.date), 'dd MMMM yyyy', { locale: it })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-lg font-medium text-gray-700">Nessun payout programmato</p>
+              )}
+            </div>
+            {payoutData?.pending_balance !== undefined && payoutData.pending_balance > 0 && (
+               <div className="text-right">
+                  <p className="text-xs text-gray-500">Saldo in sospeso</p>
+                  <p className="font-semibold text-gray-700">€{payoutData.pending_balance.toFixed(2)}</p>
+               </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/host/dashboard?tab=payments')}
+            >
+              Dettagli Pagamenti
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Alert for unpaid confirmed bookings */}
       {hasUnpaidBookings && (
         <Alert variant="destructive">
@@ -76,16 +128,10 @@ export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
         </Card>
       )}
 
-      {/* Quick Actions & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <QuickActions 
-          pendingBookings={metrics.pendingBookings}
-          unreadMessages={0}
-        />
-        <RecentActivityFeed 
-          activities={recentActivity}
-        />
-      </div>
+      {/* Recent Activity */}
+      <RecentActivityFeed
+        activities={recentActivity}
+      />
     </div>
   );
 };

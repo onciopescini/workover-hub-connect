@@ -10,6 +10,10 @@ export interface StripePayoutData {
     arrival_date: string;
     status: string;
   } | null;
+  next_payout: {
+    amount: number;
+    date: string;
+  } | null;
 }
 
 export const useStripePayouts = (hostId: string) => {

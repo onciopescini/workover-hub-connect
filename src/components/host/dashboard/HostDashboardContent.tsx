@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { API_ENDPOINTS } from "@/constants";
+import { useNavigate } from "react-router-dom";
 
 export const HostDashboardContent = ({
   firstName,
@@ -24,6 +25,7 @@ export const HostDashboardContent = ({
   const { authState } = useAuth();
   const stripeConnected = authState.profile?.stripe_connected;
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+  const navigate = useNavigate();
 
   const handleConnectStripe = async () => {
     try {
@@ -46,6 +48,8 @@ export const HostDashboardContent = ({
       setIsConnectingStripe(false);
     }
   };
+
+  const pendingBookings = metrics?.pendingBookings || 0;
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
@@ -76,6 +80,26 @@ export const HostDashboardContent = ({
               ) : (
                 "Collega Stripe Ora"
               )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Action Required Alert for Pending Bookings */}
+      {pendingBookings > 0 && (
+        <Alert className="bg-orange-50 border-orange-200 text-orange-900">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-800 font-semibold">Hai {pendingBookings} prenotazioni in sospeso</AlertTitle>
+          <AlertDescription className="text-orange-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+            <span>
+              Gestisci subito le richieste per non far attendere i tuoi ospiti.
+            </span>
+            <Button
+              size="sm"
+              className="bg-orange-600 hover:bg-orange-700 text-white border-none"
+              onClick={() => navigate('/bookings?status=pending_approval')}
+            >
+              Gestisci
             </Button>
           </AlertDescription>
         </Alert>
