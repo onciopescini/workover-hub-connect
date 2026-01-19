@@ -8,7 +8,8 @@ import { useCheckout } from '@/hooks/checkout/useCheckout';
 import { fetchOptimizedSpaceAvailability } from "@/lib/availability-rpc";
 import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { computePricing } from "@/lib/pricing";
-import { BookingState, SelectedTimeRange, TimeSlot, BookingStep } from "@/components/booking-wizard/TwoStepBookingForm";
+import { BookingState, SelectedTimeRange, BookingStep } from "@/components/booking-wizard/TwoStepBookingForm";
+import type { BookingTimeSlot } from "@/types/booking-slots";
 import type { AvailabilityData, TimeSlot as AvailTimeSlot } from "@/types/availability";
 import type { CoworkerFiscalData } from '@/types/booking';
 
@@ -147,8 +148,8 @@ export function useBookingFlow({
   }, [availability, logError]);
 
 
-  const generateTimeSlots = useCallback((interval: number, date?: Date): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
+  const generateTimeSlots = useCallback((interval: number, date?: Date): BookingTimeSlot[] => {
+    const slots: BookingTimeSlot[] = [];
     let intervals = [{ start: "08:00", end: "20:00" }];
 
     if (date) {

@@ -270,19 +270,39 @@ const DEFAULT_FILTERS: SpaceFilters = {
 };
 
 export const usePublicSpacesLogic = () => {
-  const { initialCity, initialCoordinates, initialRadius, initialDate, initialStartTime, initialEndTime, updateLocationParam } = useLocationParams();
+  const {
+    initialCity,
+    initialCoordinates,
+    initialRadius,
+    initialDate,
+    initialStartTime,
+    initialEndTime,
+    initialCategory,
+    initialPriceRange,
+    initialWorkEnvironment,
+    initialMinCapacity,
+    initialAmenities,
+    updateLocationParam
+  } = useLocationParams();
+
   const [filters, setFilters] = useState<SpaceFilters>(() => ({
     ...DEFAULT_FILTERS,
     location: initialCity || '',
     coordinates: initialCoordinates,
     startDate: initialDate,
     startTime: initialStartTime,
-    endTime: initialEndTime
+    endTime: initialEndTime,
+    category: initialCategory,
+    priceRange: initialPriceRange,
+    workEnvironment: initialWorkEnvironment,
+    amenities: initialAmenities,
+    capacity: [initialMinCapacity, 20]
   }));
-  const [radiusKm, setRadiusKm] = useState(initialRadius); // NEW: Raggio di ricerca
+
+  const [radiusKm, setRadiusKm] = useState(initialRadius);
   const [searchMode, setSearchMode] = useState<'text' | 'radius'>(
     initialCoordinates ? 'radius' : 'text'
-  ); // NEW: Modalità di ricerca
+  );
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(() => 
     initialCoordinates || { lat: 41.9028, lng: 12.4964 }
   );
@@ -295,21 +315,45 @@ export const usePublicSpacesLogic = () => {
 
   // Update filters when URL parameters change (from homepage navigation)
   useEffect(() => {
-    if (initialCity || initialDate || initialStartTime || initialEndTime) {
-      setFilters(prev => ({
-        ...prev,
-        location: initialCity || prev.location,
-        coordinates: initialCoordinates || prev.coordinates,
-        startDate: initialDate || prev.startDate,
-        startTime: initialStartTime || prev.startTime,
-        endTime: initialEndTime || prev.endTime
-      }));
-      
-      if (initialCoordinates) {
-        setUserLocation(initialCoordinates);
-      }
+    // Only update if URL params are present, to avoid resetting state on navigation without params if that's possible (though useLocationParams handles initial read)
+    // Actually, we want to sync state WITH URL.
+    setFilters(prev => ({
+      ...prev,
+      location: initialCity || prev.location,
+      coordinates: initialCoordinates || prev.coordinates,
+      startDate: initialDate || prev.startDate,
+      startTime: initialStartTime || prev.startTime,
+      endTime: initialEndTime || prev.endTime,
+      category: initialCategory || prev.category,
+      priceRange: initialPriceRange,
+      workEnvironment: initialWorkEnvironment || prev.workEnvironment,
+      amenities: initialAmenities.length > 0 ? initialAmenities : prev.amenities,
+      capacity: initialMinCapacity > 1 ? [initialMinCapacity, 20] : prev.capacity
+    }));
+
+    if (initialCoordinates) {
+      setUserLocation(initialCoordinates);
     }
-  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime]);
+  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, initialCategory, initialWorkEnvironment, initialMinCapacity]); // Dependencies updated
+
+  // Sync state changes to URL
+  const syncFiltersToUrl = (newFilters: SpaceFilters, radius: number) => {
+    updateLocationParam(
+      newFilters.location,
+      newFilters.coordinates || undefined,
+      radius,
+      {
+        category: newFilters.category,
+        priceRange: newFilters.priceRange,
+        workEnvironment: newFilters.workEnvironment,
+        amenities: newFilters.amenities,
+        minCapacity: newFilters.capacity[0],
+        date: newFilters.startDate,
+        startTime: newFilters.startTime,
+        endTime: newFilters.endTime
+      }
+    );
+  };
 
   // Memoized geocoding function to prevent re-renders
   const stableGeocodeAddress = useCallback(geocodeAddress, [geocodeAddress]);
@@ -327,7 +371,8 @@ export const usePublicSpacesLogic = () => {
     startDate: filters.startDate?.toISOString(),
     endDate: filters.endDate?.toISOString(),
     startTime: filters.startTime,
-    endTime: filters.endTime
+    endTime: filters.endTime,
+    amenities: filters.amenities
   });
 
   // Debounced geocoding for city search
@@ -350,20 +395,22 @@ export const usePublicSpacesLogic = () => {
           info('Geocoding successful', { city: filters.location, coordinates });
           
           // Update filters with coordinates
-          setFilters(prev => ({ ...prev, coordinates }));
+          setFilters(prev => {
+            const next = { ...prev, coordinates };
+             syncFiltersToUrl(next, radiusKm);
+            return next;
+          });
           
-          // Update URL with city and coordinates
-          updateLocationParam(filters.location, coordinates);
         }
       } catch (error) {
         warn('Geocoding failed', { city: filters.location, error });
         // If geocoding fails, still update URL with just the city name
-        updateLocationParam(filters.location);
+        syncFiltersToUrl(filters, radiusKm);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [filters.location, stableGeocodeAddress, updateLocationParam, info, warn]);
+  }, [filters.location, stableGeocodeAddress, info, warn]); // Removed updateLocationParam from dep to avoid loop
 
   // Spaces data fetching with React Query - optimized
   const spacesQuery = useQuery({
@@ -548,6 +595,7 @@ export const usePublicSpacesLogic = () => {
     info('Filters changed', { previousFilters: filters, newFilters });
     setFilters(newFilters);
     mapInteraction.clearSelection();
+    syncFiltersToUrl(newFilters, radiusKm);
   };
 
   const getUserLocation = async () => {
@@ -581,7 +629,11 @@ export const usePublicSpacesLogic = () => {
     if (locationResult) {
       info('User location obtained successfully');
       setUserLocation(locationResult);
-      setFilters(prev => ({ ...prev, coordinates: locationResult }));
+      setFilters(prev => {
+        const next = { ...prev, coordinates: locationResult };
+        syncFiltersToUrl(next, radiusKm);
+        return next;
+      });
     } else {
       warn('Geolocation failed, using default location (Rome)');
     }
@@ -594,7 +646,7 @@ export const usePublicSpacesLogic = () => {
     
     // Update URL parameter
     if (filters.coordinates) {
-      updateLocationParam(filters.location, filters.coordinates, newRadius);
+      syncFiltersToUrl(filters, newRadius);
     }
   };
 

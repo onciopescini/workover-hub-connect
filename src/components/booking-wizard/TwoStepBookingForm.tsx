@@ -11,11 +11,10 @@ import { PolicyDisplay } from '../spaces/PolicyDisplay';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckoutFiscalFields } from './checkout/CheckoutFiscalFields';
 import type { CoworkerFiscalData } from '@/types/booking';
-import type { AvailabilityData, TimeSlot } from "@/types/availability";
+import type { AvailabilityData } from "@/types/availability";
+import type { BookingTimeSlot } from "@/types/booking-slots";
 
 export type BookingStep = 'DATE' | 'TIME' | 'SUMMARY';
-
-export type { TimeSlot } from "@/types/availability";
 
 export interface SelectedTimeRange {
   startTime: string;
@@ -25,7 +24,7 @@ export interface SelectedTimeRange {
 
 export interface BookingState {
   selectedDate: Date | null;
-  availableSlots: TimeSlot[];
+  availableSlots: BookingTimeSlot[];
   selectedRange: SelectedTimeRange | null;
   guestsCount: number;
   availableSpots: number | null;
