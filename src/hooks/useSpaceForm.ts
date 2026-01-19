@@ -42,14 +42,23 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     stripeConnected
   });
 
+  // Ensure availabilityData strictly matches AvailabilityData type
+  const sanitizedAvailabilityData: import("@/types/availability").AvailabilityData = {
+    ...availabilityData,
+    exceptions: (availabilityData.exceptions || []).map(ex => ({
+      ...ex,
+      slots: ex.slots || []
+    }))
+  };
+
   const { errors, validateForm, clearError } = useSpaceFormValidation({
     formData,
-    availabilityData
+    availabilityData: sanitizedAvailabilityData
   });
 
   const { isSubmitting, handleSubmit } = useSpaceFormSubmission({
     formData,
-    availabilityData,
+    availabilityData: sanitizedAvailabilityData,
     photoPreviewUrls,
     validateForm,
     isEdit,

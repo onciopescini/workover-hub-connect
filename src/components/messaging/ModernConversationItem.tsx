@@ -83,7 +83,7 @@ export const ModernConversationItem = ({
             {getInitials(conversation.title)}
           </AvatarFallback>
         </Avatar>
-        {conversation.isOnline && (
+        {conversation.is_online && (
           <OnlineStatusIndicator 
             isOnline={true} 
             size="md"
@@ -97,14 +97,14 @@ export const ModernConversationItem = ({
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className={cn(
             "font-semibold text-sm truncate",
-            conversation.unreadCount ? "text-foreground" : "text-foreground/90"
+            conversation.unread_count ? "text-foreground" : "text-foreground/90"
           )}>
             {conversation.title}
           </h3>
-          {conversation.lastMessageTime && (
+          {conversation.last_message_at && (
             <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
               <Clock className="h-3 w-3" />
-              {formatTime(conversation.lastMessageTime)}
+              {formatTime(conversation.last_message_at)}
             </span>
           )}
         </div>
@@ -115,14 +115,14 @@ export const ModernConversationItem = ({
           </p>
         )}
 
-        {conversation.lastMessage && (
+        {conversation.last_message && (
           <p className={cn(
             "text-sm truncate mb-2",
-            conversation.unreadCount 
+            conversation.unread_count
               ? "text-foreground font-medium" 
               : "text-muted-foreground"
           )}>
-            {conversation.lastMessage}
+            {conversation.last_message}
           </p>
         )}
 
@@ -148,9 +148,9 @@ export const ModernConversationItem = ({
             </Badge>
           )}
 
-          {conversation.unreadCount && conversation.unreadCount > 0 && (
+          {conversation.unread_count && conversation.unread_count > 0 && (
             <Badge className="bg-primary text-primary-foreground text-xs">
-              {conversation.unreadCount}
+              {conversation.unread_count}
             </Badge>
           )}
         </div>
