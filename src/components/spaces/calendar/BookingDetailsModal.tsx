@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Calendar,
@@ -20,9 +19,12 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BookingDetailsModalProps {
   booking: any | null;
@@ -36,6 +38,7 @@ export const BookingDetailsModal = ({
   spaceId
 }: BookingDetailsModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   if (!booking) {
     return null;
@@ -82,20 +85,45 @@ export const BookingDetailsModal = ({
 
   const handleConfirmBooking = async () => {
     setIsLoading(true);
-    // TODO: Implement booking confirmation logic
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { error } = await supabase.functions.invoke('host-approve-booking', {
+        body: { booking_id: booking.id }
+      });
+
+      if (error) throw error;
+
+      toast.success("Prenotazione confermata con successo");
+      queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
       onClose();
-    }, 1000);
+    } catch (error) {
+      console.error('Error confirming booking:', error);
+      toast.error("Errore durante la conferma della prenotazione");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancelBooking = async () => {
     setIsLoading(true);
-    // TODO: Implement booking cancellation logic
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { error } = await supabase.functions.invoke('cancel-booking', {
+        body: {
+          booking_id: booking.id,
+          reason: "Cancelled by host"
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Prenotazione rifiutata");
+      queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
       onClose();
-    }, 1000);
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error("Errore durante la cancellazione della prenotazione");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -169,14 +197,16 @@ export const BookingDetailsModal = ({
                 <div>
                   <label className="text-sm text-muted-foreground">Email</label>
                   <div className="font-medium text-sm">
-                    guest@example.com
+                    {/* Assuming we don't have email in the basic object, using placeholder or checking if it exists */}
+                    {booking.guest_email || 'guest@example.com'}
                   </div>
                 </div>
                 
                 <div>
                   <label className="text-sm text-muted-foreground">Data prenotazione</label>
                   <div className="text-sm">
-                    {format(new Date(), 'dd/MM/yyyy HH:mm')}
+                    {/* Assuming created_at exists, otherwise current date is misleading */}
+                    {booking.created_at ? format(new Date(booking.created_at), 'dd/MM/yyyy HH:mm') : '-'}
                   </div>
                 </div>
               </div>
@@ -208,7 +238,8 @@ export const BookingDetailsModal = ({
                   <label className="text-sm text-muted-foreground">Prezzo</label>
                   <div className="font-medium flex items-center gap-1">
                     <Euro className="w-4 h-4" />
-                    {Math.floor(Math.random() * 100) + 20},00
+                    {/* Use real price if available */}
+                    {booking.total_price ? booking.total_price.toFixed(2) : '0.00'}
                   </div>
                 </div>
                 
@@ -216,7 +247,7 @@ export const BookingDetailsModal = ({
                   <label className="text-sm text-muted-foreground">Pagamento</label>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-green-600">
-                      Completato
+                      {booking.payment_status === 'completed' ? 'Completato' : 'In attesa'}
                     </Badge>
                   </div>
                 </div>
@@ -236,7 +267,7 @@ export const BookingDetailsModal = ({
                     disabled={isLoading}
                     className="flex items-center gap-2"
                   >
-                    <CheckCircle className="w-4 h-4" />
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                     Conferma Prenotazione
                   </Button>
                   
@@ -246,7 +277,7 @@ export const BookingDetailsModal = ({
                     disabled={isLoading}
                     className="flex items-center gap-2 text-red-600 hover:text-red-700"
                   >
-                    <XCircle className="w-4 h-4" />
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                     Rifiuta Prenotazione
                   </Button>
                   
