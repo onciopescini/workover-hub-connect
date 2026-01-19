@@ -9,13 +9,16 @@ import { EnhancedMessageBubble } from "./EnhancedMessageBubble";
 import { Search, MessageSquare, Users, ArrowLeft } from "lucide-react";
 import { Conversation, Message } from "@/types/messaging";
 import { useUserPresence } from '@/hooks/useUserPresence';
+import { useVirtualKeyboard } from '@/hooks/useVirtualKeyboard';
+import { MessageSkeleton } from './MessageSkeleton';
 
 interface MessagesChatAreaProps {
   selectedConversation?: Conversation | undefined;
   messages: Message[];
   currentUserId: string | undefined;
   currentUserProfilePhoto?: string;
-  onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
+  onSendMessage: (content: string, attachments?: File[], retryTempId?: string) => Promise<void>;
+  isLoading?: boolean;
 }
 
 export const MessagesChatArea = ({
@@ -23,9 +26,12 @@ export const MessagesChatArea = ({
   messages,
   currentUserId,
   currentUserProfilePhoto,
-  onSendMessage
+  onSendMessage,
+  isLoading
 }: MessagesChatAreaProps) => {
   const { isUserOnline } = useUserPresence();
+  const { keyboardHeight } = useVirtualKeyboard();
+
   if (!selectedConversation) {
     return (
       <Card className="h-full flex flex-col overflow-hidden">
@@ -55,8 +61,15 @@ export const MessagesChatArea = ({
     );
   }
 
+  if (isLoading) {
+    return <MessageSkeleton />;
+  }
+
   return (
-    <Card className="h-full max-h-full flex flex-col overflow-hidden">
+    <Card
+      className="h-full max-h-full flex flex-col overflow-hidden transition-all duration-200 ease-out"
+      style={{ paddingBottom: `${keyboardHeight}px` }}
+    >
       {/* Chat Header - Fixed height */}
       <CardHeader className="border-b flex-shrink-0 py-3 bg-card">
         <CardTitle className="flex items-center justify-between">
@@ -120,6 +133,8 @@ export const MessagesChatArea = ({
                       timestamp={message.created_at}
                       isCurrentUser={isCurrentUser}
                       isRead={message.is_read}
+                      isPending={message.status === 'pending'}
+                      isError={message.status === 'error'}
                       attachments={message.attachments}
                       businessContext={
                         selectedConversation.type === 'booking' ? {
@@ -129,6 +144,12 @@ export const MessagesChatArea = ({
                           type: 'general' as const
                         }
                       }
+                      onRetry={() => {
+                        if (message.status === 'error') {
+                           // Use the 3rd argument for retry ID
+                           onSendMessage(message.content, undefined, message.tempId || message.id);
+                        }
+                      }}
                     />
                   );
                 })}
