@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
+import { Conversation, Message, MessageAttachment } from '@/types/messaging';
 
 export async function getOrCreateConversation(params: {
   hostId: string;
@@ -43,7 +44,7 @@ export async function sendMessageToConversation(params: {
   content: string;
   senderId: string;
   recipientId?: string | undefined; // Allow undefined explicitly
-}) {
+}): Promise<Message> {
   const { conversationId, bookingId, content, senderId, recipientId = "" } = params;
   
   sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
@@ -100,10 +101,20 @@ export async function sendMessageToConversation(params: {
     }
   }
 
-  return data;
+  // Cast to Message type, ensuring compatibility
+  return {
+    id: data.id,
+    conversation_id: data.conversation_id || conversationId,
+    sender_id: data.sender_id,
+    content: data.content,
+    created_at: data.created_at || new Date().toISOString(),
+    is_read: data.is_read || false,
+    booking_id: data.booking_id,
+    attachments: (data.attachments as any[]) || []
+  };
 }
 
-export async function fetchConversations(userId: string) {
+export async function fetchConversations(userId: string): Promise<Conversation[]> {
   sreLogger.info('Fetching conversations', { userId });
   
   if (!userId) {
@@ -127,26 +138,45 @@ export async function fetchConversations(userId: string) {
     
   if (error) {
     sreLogger.error('fetchConversations error', { userId }, error as Error);
-    // Return empty array instead of throwing to prevent 406 UI crashes if it's a transient network issue
-    // though the user asked to fix the 406 specifically.
-    // The 406 is usually a header mismatch. Supabase client handles headers.
-    // If the error persists, it might be due to the shape of the return not matching the expectation?
-    // But .select() returns [] on no match.
-    // If it's a strictly 406 error, it's typically "Not Acceptable".
-    // We will throw if it's a real error, but we've added the userId guard which was a suspected cause.
     throw new Error(error.message);
   }
   
   sreLogger.info('Found conversations', { userId, count: data?.length || 0 });
-  return data || [];
+
+  // Map to new Conversation type
+  return (data || []).map((c: any) => {
+    // Determine the "other" person
+    const isHost = c.host_id === userId;
+    const otherPerson = isHost ? c.coworker : c.host;
+
+    return {
+      id: c.id,
+      type: c.booking_id ? 'booking' : 'private',
+      title: otherPerson ? `${otherPerson.first_name} ${otherPerson.last_name}` : 'Utente Sconosciuto',
+      subtitle: c.space?.name || (c.booking_id ? "Prenotazione" : "Networking"),
+      avatar: otherPerson?.profile_photo_url,
+      last_message: c.last_message || "",
+      last_message_at: c.last_message_at,
+      status: c.booking?.status as any,
+      host_id: c.host_id,
+      coworker_id: c.coworker_id,
+      other_user_id: otherPerson?.id,
+      booking_id: c.booking_id,
+      space: c.space ? { name: c.space.name } : undefined,
+      booking: c.booking ? {
+        booking_date: c.booking.booking_date,
+        status: c.booking.status
+      } : undefined
+    };
+  });
 }
 
-export async function fetchConversationMessages(conversationId: string) {
+export async function fetchConversationMessages(conversationId: string): Promise<Message[]> {
   sreLogger.info('Fetching conversation messages', { conversationId });
   
   const { data, error } = await supabase
     .from('messages')
-    .select('*')
+    .select('id, conversation_id, sender_id, content, created_at, is_read, booking_id, attachments')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
     
@@ -156,14 +186,24 @@ export async function fetchConversationMessages(conversationId: string) {
   }
   
   sreLogger.info('Found messages', { conversationId, count: data?.length || 0 });
-  return data || [];
+
+  return (data || []).map((m: any) => ({
+    id: m.id,
+    conversation_id: m.conversation_id,
+    sender_id: m.sender_id,
+    content: m.content,
+    created_at: m.created_at,
+    is_read: m.is_read || false,
+    booking_id: m.booking_id,
+    attachments: (m.attachments as MessageAttachment[]) || []
+  }));
 }
 
-export async function fetchUnreadCounts(userId: string) {
+export async function fetchUnreadCounts(userId: string): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from('messages')
     .select('conversation_id')
-    .eq('read', false)
+    .eq('is_read', false) // Using is_read
     .neq('sender_id', userId);
 
   if (error) {
@@ -183,17 +223,10 @@ export async function fetchUnreadCounts(userId: string) {
 }
 
 export async function markConversationAsRead(conversationId: string, userId: string) {
-  // Mark all messages in this conversation where receiver_id is userId as read
-  // We don't have receiver_id on all messages explicitly if we only look at conversation context,
-  // but messages usually have receiver_id.
-  // Alternatively, we mark messages where sender_id != userId.
-
-  const { error } = await supabase
-    .from('messages')
-    .update({ read: true })
-    .eq('conversation_id', conversationId)
-    .neq('sender_id', userId)
-    .eq('read', false);
+  // Use RPC for marking as read
+  const { error } = await supabase.rpc('mark_messages_read', {
+    p_conversation_id: conversationId
+  });
 
   if (error) {
     console.error("Error marking conversation as read:", error);

@@ -4,14 +4,15 @@ import { fetchConversations, fetchUnreadCounts, markConversationAsRead, fetchCon
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Conversation, Message } from '@/types/messaging';
 
 export const useUnifiedMessaging = () => {
   const { authState } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [activeMessages, setActiveMessages] = useState<any[]>([]);
+  const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const activeConversationId = searchParams.get('id');
@@ -21,17 +22,21 @@ export const useUnifiedMessaging = () => {
   const handleMarkAsRead = useCallback(async (conversationId: string) => {
     if (!authState.user?.id) return;
 
-    // Call backend to update DB
+    // Call backend to update DB via RPC
     // We catch errors here to prevent unhandled promise rejections
     try {
        await markConversationAsRead(conversationId, authState.user.id);
 
-       // Update local state immediately
+       // Update local state immediately (Optimistic Update)
        setUnreadCounts(prev => {
          const newCounts = { ...prev };
          delete newCounts[conversationId];
          return newCounts;
        });
+
+       // Also update messages in view to be read
+       setActiveMessages(prev => prev.map(m => ({ ...m, is_read: true })));
+
     } catch (e) {
        console.error("Failed to mark conversation as read", e);
     }
@@ -101,15 +106,28 @@ export const useUnifiedMessaging = () => {
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
-             const newMessage = payload.new as any;
-             const isMeSender = newMessage.sender_id === authState.user?.id;
+             const newMessageData = payload.new as any;
+             const isMeSender = newMessageData.sender_id === authState.user?.id;
+
+             // Construct a partial message to update UI before full fetch if needed
+             // But we are using strict types now.
+             const newMessage: Message = {
+                id: newMessageData.id,
+                conversation_id: newMessageData.conversation_id,
+                sender_id: newMessageData.sender_id,
+                content: newMessageData.content,
+                created_at: newMessageData.created_at,
+                is_read: newMessageData.is_read || false,
+                booking_id: newMessageData.booking_id,
+                attachments: newMessageData.attachments || []
+             };
 
              // Update conversations list order/content
              setConversations(prev => {
                 const safePrev = Array.isArray(prev) ? prev : [];
                 const existingIdx = safePrev.findIndex(c => c.id === newMessage.conversation_id);
                 if (existingIdx === -1) {
-                  // New conversation? Refresh entire list to get details
+                  // New conversation? Refresh entire list to get details (joined data)
                   refreshData();
                   return safePrev;
                 }
@@ -150,6 +168,16 @@ export const useUnifiedMessaging = () => {
                    toast.info("Nuovo messaggio ricevuto");
                 }
              }
+          } else if (payload.eventType === 'UPDATE') {
+              // Handle updates (e.g. read status changes from other devices)
+              const updatedMessageData = payload.new as any;
+
+              if (updatedMessageData.is_read) {
+                 // Update active messages if visible
+                 setActiveMessages(prev => prev.map(m =>
+                    m.id === updatedMessageData.id ? { ...m, is_read: true } : m
+                 ));
+              }
           }
         }
       )
