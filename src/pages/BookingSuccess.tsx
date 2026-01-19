@@ -4,6 +4,7 @@ import { usePaymentVerification } from '@/hooks/usePaymentVerification';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { mapStripeError } from '@/lib/stripe-error-mapper';
 
 const BookingSuccess: React.FC = () => {
   const { id: spaceId } = useParams<{ id: string }>();
@@ -128,9 +129,11 @@ const BookingSuccess: React.FC = () => {
         
         {error && !isLoading && (
           <div className="space-y-4">
-            <p className="text-destructive">
-              Si è verificato un errore durante la verifica del pagamento.
-            </p>
+            <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+              <p className="text-destructive font-medium">
+                {mapStripeError(error)}
+              </p>
+            </div>
             <Button onClick={handleBackToSpace} variant="outline" className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Torna al dettaglio spazio

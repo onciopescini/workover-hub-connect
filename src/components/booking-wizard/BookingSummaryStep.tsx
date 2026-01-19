@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info, Users } from "lucide-react";
+import { Calendar, Clock, Euro, CheckCircle, AlertTriangle, Info, Users, ShieldCheck, Lock, CreditCard } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { computePricing } from "@/lib/pricing";
@@ -118,6 +118,24 @@ export function BookingSummaryStep({
           </div>
         </CardContent>
       </Card>
+
+      {/* Trust Badges */}
+      <div className="flex items-center gap-3 sm:gap-6 py-3 px-2 justify-center bg-muted/30 rounded-lg border border-border/50">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+          <span>Pagamento Sicuro</span>
+        </div>
+        <div className="h-3 w-px bg-border" />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+          <Lock className="w-3.5 h-3.5 text-blue-600" />
+          <span>SSL Encrypted</span>
+        </div>
+        <div className="h-3 w-px bg-border" />
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+          <CreditCard className="w-3.5 h-3.5 text-violet-600" />
+          <span>Stripe</span>
+        </div>
+      </div>
 
       {/* Pricing Breakdown */}
       <Card>

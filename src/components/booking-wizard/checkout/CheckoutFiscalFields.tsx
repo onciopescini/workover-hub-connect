@@ -377,6 +377,7 @@ export const CheckoutFiscalFields: React.FC<CheckoutFiscalFieldsProps> = ({
                       billing_postal_code: e.target.value 
                     })}
                     maxLength={5}
+                    inputMode="numeric"
                     placeholder="20100"
                     className={!getFieldState('billing_postal_code').isValid && fiscalData.billing_postal_code ? 'border-destructive' : ''}
                   />
