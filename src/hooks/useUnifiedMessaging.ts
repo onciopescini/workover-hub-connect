@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { fetchConversations, fetchUnreadCounts, markConversationAsRead, fetchConversationMessages } from '@/lib/conversations';
+import { fetchConversations, fetchUnreadCounts, markConversationAsRead, fetchConversationMessages, sendMessageToConversation } from '@/lib/conversations';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -14,27 +14,23 @@ export const useUnifiedMessaging = () => {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
   const activeConversationId = searchParams.get('id');
 
   // Helper to mark read and update local state
-  // STABILIZED: depends only on user ID
   const handleMarkAsRead = useCallback(async (conversationId: string) => {
     if (!authState.user?.id) return;
 
-    // Call backend to update DB via RPC
-    // We catch errors here to prevent unhandled promise rejections
     try {
        await markConversationAsRead(conversationId, authState.user.id);
 
-       // Update local state immediately (Optimistic Update)
        setUnreadCounts(prev => {
          const newCounts = { ...prev };
          delete newCounts[conversationId];
          return newCounts;
        });
 
-       // Also update messages in view to be read
        setActiveMessages(prev => prev.map(m => ({ ...m, is_read: true })));
 
     } catch (e) {
@@ -42,19 +38,24 @@ export const useUnifiedMessaging = () => {
     }
   }, [authState.user?.id]);
 
-  // Load messages for active conversation and mark as read
-  // STABILIZED: This effect handles "View Change" only.
+  // Load messages for active conversation
   useEffect(() => {
     if (activeConversationId) {
-      // Fetch messages
+      setIsMessagesLoading(true);
       fetchConversationMessages(activeConversationId)
-        .then(setActiveMessages)
-        .catch(err => console.error("Error loading messages", err));
+        .then(messages => {
+          setActiveMessages(messages);
+          setIsMessagesLoading(false);
+        })
+        .catch(err => {
+          console.error("Error loading messages", err);
+          setIsMessagesLoading(false);
+        });
 
-      // Mark as read when opening conversation
       handleMarkAsRead(activeConversationId);
     } else {
       setActiveMessages([]);
+      setIsMessagesLoading(false);
     }
   }, [activeConversationId, handleMarkAsRead]);
 
@@ -66,7 +67,6 @@ export const useUnifiedMessaging = () => {
     }
   }, [setSearchParams]);
 
-  // STABILIZED: refreshData depends only on user ID.
   const refreshData = useCallback(async () => {
     if (!authState.user?.id) return;
     try {
@@ -74,8 +74,8 @@ export const useUnifiedMessaging = () => {
         fetchConversations(authState.user.id),
         fetchUnreadCounts(authState.user.id)
       ]);
-      setConversations(convs || []); // Ensure array
-      setUnreadCounts(unreads || {}); // Ensure object
+      setConversations(convs || []);
+      setUnreadCounts(unreads || {});
     } catch (error) {
       console.error("Error fetching messaging data:", error);
       toast.error("Impossibile caricare i messaggi");
@@ -84,14 +84,87 @@ export const useUnifiedMessaging = () => {
     }
   }, [authState.user?.id]);
 
-  // Initial Data Load
   useEffect(() => {
     refreshData();
   }, [refreshData]);
 
+  const sendMessage = useCallback(async (content: string, attachments?: File[], retryTempId?: string) => {
+    if (!activeConversationId || !authState.user?.id) return;
+
+    const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+    // Determine recipient
+    let recipientId = "";
+    if (activeConversation) {
+      if (authState.user.id === activeConversation.host_id) {
+        recipientId = activeConversation.coworker_id;
+      } else if (authState.user.id === activeConversation.coworker_id) {
+        recipientId = activeConversation.host_id;
+      } else {
+         recipientId = activeConversation.host_id; // Fallback
+      }
+    }
+
+    let tempId = retryTempId || crypto.randomUUID();
+
+    if (retryTempId) {
+       // Reset status to pending for existing message
+       setActiveMessages(prev => prev.map(m =>
+          (m.tempId === retryTempId || m.id === retryTempId)
+            ? { ...m, status: 'pending' as const, created_at: new Date().toISOString() }
+            : m
+       ));
+    } else {
+       // Create new optimistic message
+       const optimisticMessage: Message = {
+         id: tempId,
+         tempId: tempId,
+         conversation_id: activeConversationId,
+         sender_id: authState.user.id,
+         content: content,
+         created_at: new Date().toISOString(),
+         is_read: false,
+         booking_id: activeConversation?.booking_id,
+         attachments: [],
+         status: 'pending'
+       };
+
+       setActiveMessages(prev => [...prev, optimisticMessage]);
+
+       // Update conversation list preview optimistically
+       setConversations(prev => {
+          const idx = prev.findIndex(c => c.id === activeConversationId);
+          if (idx === -1) return prev;
+          const updated = { ...prev[idx], last_message: content, last_message_at: new Date().toISOString() };
+          const newArr = [...prev];
+          newArr.splice(idx, 1);
+          return [updated, ...newArr];
+       });
+    }
+
+    try {
+      await sendMessageToConversation({
+        conversationId: activeConversationId,
+        content: content,
+        senderId: authState.user.id,
+        bookingId: activeConversation?.booking_id,
+        recipientId: recipientId
+      });
+
+      setActiveMessages(prev => prev.map(m =>
+        (m.tempId === tempId || m.id === tempId) ? { ...m, status: 'sent' as const } : m
+      ));
+
+    } catch (error) {
+      console.error("Failed to send message", error);
+      setActiveMessages(prev => prev.map(m =>
+        (m.tempId === tempId || m.id === tempId) ? { ...m, status: 'error' as const } : m
+      ));
+      toast.error("Errore nell'invio. Riprova.");
+    }
+  }, [activeConversationId, authState.user?.id, conversations]);
+
   // Realtime Subscription
-  // STABILIZED: Removed `activeConversationId` from dependencies.
-  // The subscription is now global for the user and persistent across navigation within the component.
   useEffect(() => {
     if (!authState.user?.id) return;
 
@@ -99,18 +172,12 @@ export const useUnifiedMessaging = () => {
       .channel('unified-messaging')
       .on(
         'postgres_changes',
-        {
-          event: '*', // INSERT, UPDATE
-          schema: 'public',
-          table: 'messages'
-        },
+        { event: '*', schema: 'public', table: 'messages' },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
              const newMessageData = payload.new as any;
              const isMeSender = newMessageData.sender_id === authState.user?.id;
 
-             // Construct a partial message to update UI before full fetch if needed
-             // But we are using strict types now.
              const newMessage: Message = {
                 id: newMessageData.id,
                 conversation_id: newMessageData.conversation_id,
@@ -119,43 +186,53 @@ export const useUnifiedMessaging = () => {
                 created_at: newMessageData.created_at,
                 is_read: newMessageData.is_read || false,
                 booking_id: newMessageData.booking_id,
-                attachments: newMessageData.attachments || []
+                attachments: newMessageData.attachments || [],
+                status: 'sent'
              };
 
-             // Update conversations list order/content
              setConversations(prev => {
                 const safePrev = Array.isArray(prev) ? prev : [];
                 const existingIdx = safePrev.findIndex(c => c.id === newMessage.conversation_id);
                 if (existingIdx === -1) {
-                  // New conversation? Refresh entire list to get details (joined data)
                   refreshData();
                   return safePrev;
                 }
-
                 const updatedConv = {
                   ...safePrev[existingIdx],
                   last_message: newMessage.content,
                   last_message_at: newMessage.created_at
                 };
-
-                // Move to top
                 const newConvs = [...safePrev];
                 newConvs.splice(existingIdx, 1);
                 return [updatedConv, ...newConvs];
              });
 
-             // Check if the message belongs to the active conversation
              const currentParams = new URLSearchParams(window.location.search);
              const currentActiveId = currentParams.get('id');
 
              if (newMessage.conversation_id === currentActiveId) {
                  setActiveMessages(prev => {
-                     const safePrev = Array.isArray(prev) ? prev : [];
-                     if (safePrev.some(m => m.id === newMessage.id)) return safePrev;
-                     return [...safePrev, newMessage];
+                     // Check for duplicates via ID
+                     if (prev.some(m => m.id === newMessage.id)) return prev;
+
+                     if (isMeSender) {
+                        // Optimistic Deduplication
+                        const optimisticMatchIndex = prev.findIndex(m =>
+                           (m.status === 'pending' || m.status === 'sent') &&
+                           m.tempId &&
+                           m.content === newMessage.content
+                        );
+
+                        if (optimisticMatchIndex !== -1) {
+                           const newArr = [...prev];
+                           newArr[optimisticMatchIndex] = newMessage; // Replace with real one
+                           return newArr;
+                        }
+                     }
+
+                     return [...prev, newMessage];
                  });
 
-                 // If it's an incoming message, mark as read
                  if (!isMeSender) {
                    handleMarkAsRead(newMessage.conversation_id);
                  }
@@ -169,11 +246,8 @@ export const useUnifiedMessaging = () => {
                 }
              }
           } else if (payload.eventType === 'UPDATE') {
-              // Handle updates (e.g. read status changes from other devices)
               const updatedMessageData = payload.new as any;
-
               if (updatedMessageData.is_read) {
-                 // Update active messages if visible
                  setActiveMessages(prev => prev.map(m =>
                     m.id === updatedMessageData.id ? { ...m, is_read: true } : m
                  ));
@@ -183,21 +257,15 @@ export const useUnifiedMessaging = () => {
       )
       .on(
         'postgres_changes',
-        {
-           event: '*',
-           schema: 'public',
-           table: 'conversations'
-        },
-        () => {
-           refreshData();
-        }
+        { event: '*', schema: 'public', table: 'conversations' },
+        () => { refreshData(); }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authState.user?.id, refreshData, handleMarkAsRead]); // Removed activeConversationId
+  }, [authState.user?.id, refreshData, handleMarkAsRead]);
 
   return {
     conversations,
@@ -206,6 +274,8 @@ export const useUnifiedMessaging = () => {
     activeMessages,
     setActiveConversationId,
     isLoading,
-    refreshData
+    isMessagesLoading,
+    refreshData,
+    sendMessage
   };
 };

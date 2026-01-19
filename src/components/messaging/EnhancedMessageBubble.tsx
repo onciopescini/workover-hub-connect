@@ -26,6 +26,8 @@ interface EnhancedMessageBubbleProps {
   isRead?: boolean;
   isDelivered?: boolean;
   isPending?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   priority?: 'urgent' | 'high' | 'normal';
   businessContext?: {
     type: 'booking' | 'payment' | 'general';
@@ -43,6 +45,8 @@ export const EnhancedMessageBubble = ({
   isRead = false,
   isDelivered = false,
   isPending = false,
+  isError = false,
+  onRetry,
   priority = 'normal',
   businessContext
 }: EnhancedMessageBubbleProps) => {
@@ -51,6 +55,7 @@ export const EnhancedMessageBubble = ({
   };
 
   const getStatusIcon = () => {
+    if (isError) return <span className="text-red-500 text-xs font-bold cursor-pointer" onClick={onRetry}>Errore - Riprova</span>;
     if (isPending) return <Clock className="w-3 h-3 text-gray-400" />;
     if (isRead) return <CheckCheck className="w-3 h-3 text-blue-500" />;
     if (isDelivered) return <Check className="w-3 h-3 text-gray-500" />;

@@ -15,6 +15,8 @@ export interface Message {
   is_read: boolean;
   booking_id?: string;
   attachments?: MessageAttachment[];
+  status?: 'pending' | 'sent' | 'error';
+  tempId?: string;
 }
 
 export interface Conversation {
