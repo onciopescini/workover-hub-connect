@@ -63,7 +63,7 @@ export const UnifiedMessages = () => {
            selectedConversation={activeConversation}
            messages={activeMessages}
            currentUserId={authState.user?.id}
-           currentUserProfilePhoto={authState.user?.user_metadata?.avatar_url || authState.user?.user_metadata?.profile_photo_url}
+           currentUserProfilePhoto={authState.user?.user_metadata?.['avatar_url'] || authState.user?.user_metadata?.['profile_photo_url']}
            onSendMessage={sendMessage}
            isLoading={isMessagesLoading}
          />

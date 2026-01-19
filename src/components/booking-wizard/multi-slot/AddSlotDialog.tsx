@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 import { DateSelectionStep } from '../DateSelectionStep';
 import { TimeSlotSelectionStep } from '../TimeSlotSelectionStep';
 import type { BookingSlot } from '@/types/booking';
-import type { TimeSlot, SelectedTimeRange } from '../TwoStepBookingForm';
+import type { SelectedTimeRange } from '../TwoStepBookingForm';
+import type { BookingTimeSlot } from '@/types/booking-slots';
 import { fetchOptimizedSpaceAvailability } from '@/lib/availability-rpc';
 import { getAvailableCapacity } from '@/lib/capacity-utils';
 import { useOptimisticSlotLock } from '@/hooks/useOptimisticSlotLock';
@@ -51,7 +52,7 @@ export const AddSlotDialog: React.FC<AddSlotDialogProps> = ({
 }) => {
   const [step, setStep] = useState<Step>('DATE');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<BookingTimeSlot[]>([]);
   const [selectedRange, setSelectedRange] = useState<SelectedTimeRange | null>(null);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
@@ -92,7 +93,7 @@ export const AddSlotDialog: React.FC<AddSlotDialogProps> = ({
         );
 
         // Generate time slots (simplified - should match TimeSlotSelectionStep logic)
-        const slots: TimeSlot[] = [];
+        const slots: BookingTimeSlot[] = [];
         for (let hour = 0; hour < 24; hour++) {
           for (let minute = 0; minute < 60; minute += slotInterval) {
             const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
