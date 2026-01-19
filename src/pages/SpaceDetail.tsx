@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceDetail } from '@/hooks/useSpaceDetail';
+import { SpaceDetailSkeleton } from '@/components/spaces/SpaceDetailSkeleton';
 
 const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
 
@@ -18,12 +19,8 @@ const SpaceDetail = () => {
   if (isLoading) {
     sreLogger.debug('Loading space', { spaceId: id, component: 'SpaceDetail' });
     return (
-      <div className="container mx-auto py-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Caricamento spazio...</p>
-          {id && <p className="text-xs text-gray-400">ID: {id}</p>}
-        </div>
+      <div className={`container mx-auto ${isStitch ? 'bg-stitch-bg' : ''}`}>
+        <SpaceDetailSkeleton />
       </div>
     );
   }
