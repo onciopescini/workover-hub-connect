@@ -69,10 +69,7 @@ export const useWhoIsHere = () => {
 
         // 2. Fetch coworkers in this booking/space
         // The RPC get_coworkers returns people in the same booking context (likely same space/date)
-        const { data: coworkers, error: coworkersError } = await supabase.rpc('get_coworkers', {
-          booking_id: bookings.id,
-          current_user_id: authState.user.id
-        });
+        const { data: coworkers, error: coworkersError } = await supabase.rpc('get_coworkers');
 
         if (coworkersError) {
           sreLogger.error("Error fetching coworkers", { bookingId: bookings.id }, coworkersError);

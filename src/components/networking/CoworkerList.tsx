@@ -20,9 +20,7 @@ export const CoworkerList: React.FC<CoworkerListProps> = ({ bookingId }) => {
   useEffect(() => {
     const fetchCoworkers = async () => {
       try {
-      const { data, error } = await supabase.rpc('get_coworkers', {
-          booking_id: bookingId
-        } as any);
+        const { data, error } = await supabase.rpc('get_coworkers');
 
         if (error) {
           console.error('Error fetching coworkers:', error);
