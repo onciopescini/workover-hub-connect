@@ -36,8 +36,9 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
       if (!authState.user?.id) return [];
       const { data, error } = await supabase
         .from('host_daily_metrics' as any)
-        .select('host_id, booking_date, total_bookings, confirmed_bookings, daily_revenue')
-        .eq('host_id', authState.user.id);
+        .select('booking_date, daily_revenue, total_bookings, confirmed_bookings')
+        .eq('host_id', authState.user.id)
+        .order('booking_date', { ascending: true });
 
       if (error) throw error;
       return (data || []) as unknown as HostDailyMetric[];

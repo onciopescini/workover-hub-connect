@@ -23,7 +23,9 @@ export const useHostDashboardMetrics = () => {
         // 1. Fetch RPC Summary
         // Cast function name to any because it's not yet in the generated types
         const { data: summaryData, error: summaryError } = await supabase
-          .rpc('get_host_dashboard_summary' as any, { host_uuid: hostId });
+          .rpc('get_host_dashboard_summary' as any, {
+            host_uuid: authState.user.id
+          });
 
         if (summaryError) throw summaryError;
 
