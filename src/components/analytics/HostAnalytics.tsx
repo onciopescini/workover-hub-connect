@@ -4,11 +4,11 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MessageSquare, Users, Star, CreditCard, FileText } from "lucide-react";
-import { useHostDashboardMetrics } from "@/hooks/queries/useHostDashboardMetrics";
+import useEnhancedHostDashboard from "@/hooks/queries/useEnhancedHostDashboard";
 
 const HostAnalytics = () => {
   const { authState } = useAuth();
-  const { data: metrics, isLoading, error } = useHostDashboardMetrics();
+  const { metrics, isLoading, error } = useEnhancedHostDashboard();
 
   if (isLoading) {
     return (
@@ -21,7 +21,9 @@ const HostAnalytics = () => {
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    // Cast error to Error type to safely access message
+    const errorMessage = error instanceof Error ? error.message : "Si è verificato un errore";
+    return <div>Error: {errorMessage}</div>;
   }
 
   if (!metrics) {
