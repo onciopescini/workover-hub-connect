@@ -70,6 +70,8 @@ const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminRevenue = lazy(() => import("@/pages/admin/AdminRevenue"));
 
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -385,6 +387,16 @@ export const AppRoutes = () => {
         <Route index element={
           <LazyWrapper>
             <AdminDashboard />
+          </LazyWrapper>
+        } />
+        <Route path="users" element={
+          <LazyWrapper>
+            <AdminUsers />
+          </LazyWrapper>
+        } />
+        <Route path="revenue" element={
+          <LazyWrapper>
+            <AdminRevenue />
           </LazyWrapper>
         } />
       </Route>
