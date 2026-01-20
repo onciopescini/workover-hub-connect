@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { API_ENDPOINTS } from "@/constants";
 import { useNavigate } from "react-router-dom";
+import { TodayCheckinsCard } from "./TodayCheckinsCard";
 
 export const HostDashboardContent = ({
   firstName,
@@ -87,16 +88,18 @@ export const HostDashboardContent = ({
 
       {/* Action Required Alert for Pending Bookings */}
       {pendingBookings > 0 && (
-        <Alert className="bg-orange-50 border-orange-200 text-orange-900">
+        <Alert className="bg-orange-50 border-l-4 border-orange-500 text-orange-900 shadow-sm">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertTitle className="text-orange-800 font-semibold">Hai {pendingBookings} prenotazioni in sospeso</AlertTitle>
+          <AlertTitle className="text-orange-800 font-bold text-lg">
+            Hai {pendingBookings} prenotazioni in sospeso
+          </AlertTitle>
           <AlertDescription className="text-orange-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
-            <span>
+            <span className="font-medium">
               Gestisci subito le richieste per non far attendere i tuoi ospiti.
             </span>
             <Button
               size="sm"
-              className="bg-orange-600 hover:bg-orange-700 text-white border-none"
+              className="bg-orange-600 hover:bg-orange-700 text-white border-none shadow-sm"
               onClick={() => navigate('/bookings?status=pending_approval')}
             >
               Gestisci
@@ -104,6 +107,9 @@ export const HostDashboardContent = ({
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Today's Check-ins - High Priority */}
+      <TodayCheckinsCard />
 
       {/* Quick Actions Component - Includes Check-in Scanner */}
       <QuickActions />

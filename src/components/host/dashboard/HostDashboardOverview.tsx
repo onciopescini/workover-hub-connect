@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TrendingUp, AlertCircle, Euro, CalendarClock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RecentActivityFeed } from '@/components/dashboard/RecentActivityFeed';
-import { TodayCheckinsCard } from '@/components/host/dashboard/TodayCheckinsCard';
 import type { HostDashboardMetrics, RecentActivity } from '@/hooks/queries/useEnhancedHostDashboard';
 import { useStripePayouts } from '@/hooks/useStripePayouts';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -32,9 +31,6 @@ export const HostDashboardOverview: React.FC<HostDashboardOverviewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Today's Check-ins */}
-      <TodayCheckinsCard />
-
       {/* Payout Visibility */}
       <Card>
         <CardHeader className="pb-2">
