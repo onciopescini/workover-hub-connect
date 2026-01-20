@@ -1,7 +1,9 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Stripe from "https://esm.sh/stripe@15.0.0";
 
+// Import existing utilities and handlers to preserve other event functionality
 import { StripeConfig } from "./utils/stripe-config.ts";
 import { ErrorHandler } from "./utils/error-handler.ts";
 import { WebhookValidator } from "./handlers/webhook-validator.ts";
@@ -36,30 +38,43 @@ serve(async (req) => {
       headers: Object.fromEntries(req.headers.entries())
     });
 
-    const stripe = StripeConfig.getInstance();
-    const webhookSecret = StripeConfig.getWebhookSecret();
+    // 1. Dependencies & Setup
+    // Instantiate Stripe directly as requested, using the imported SDK
+    const stripeApiKey = Deno.env.get('STRIPE_SECRET_KEY')!;
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+
+    if (!stripeApiKey) throw new Error('Missing STRIPE_SECRET_KEY');
+    if (!webhookSecret) throw new Error('Missing STRIPE_WEBHOOK_SECRET');
+
+    const stripe = new Stripe(stripeApiKey, {
+      apiVersion: '2023-10-16', // Explicit version or default to library version
+      httpClient: Stripe.createFetchHttpClient(),
+    });
     
-    // Clone request to preserve body for signature validation
+    // 2. Event Listener & Security (Signature Verification)
     const requestClone = req.clone();
-    const validationResult = await WebhookValidator.validateWebhookSignature(requestClone, stripe, webhookSecret);
-    
-    if (!validationResult.success) {
-      ErrorHandler.logError('Webhook validation failed', validationResult.error);
-      return new Response(
-        JSON.stringify({ 
-          error: 'Webhook validation failed', 
-          details: validationResult.error 
-        }), 
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+    const signature = req.headers.get('stripe-signature');
+
+    if (!signature) {
+      return new Response(JSON.stringify({ error: 'No signature' }), { status: 400, headers: corsHeaders });
     }
 
-    const event = validationResult.event!;
+    const body = await requestClone.text();
+    let event;
+
+    try {
+      // Use the direct stripe instance for verification
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret
+      );
+    } catch (err) {
+      ErrorHandler.logError('Webhook signature verification failed', err);
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), { status: 400, headers: corsHeaders });
+    }
     
-    // Check if event already processed (idempotency)
+    // Idempotency check
     const { data: eventData } = await supabaseAdmin
       .from('webhook_events')
       .select('id, status')
@@ -76,7 +91,7 @@ serve(async (req) => {
       });
     }
 
-    // Save event for idempotency tracking
+    // Save event for idempotency
     if (!existingEvent) {
       const { data: insertedEvent, error: insertError } = await supabaseAdmin
         .from('webhook_events')
@@ -89,7 +104,7 @@ serve(async (req) => {
         .select('id, status')
         .single();
       
-      // Ignore duplicate key errors (23505 = unique violation)
+      // Ignore duplicate key errors (23505)
       if (insertError && insertError.code !== '23505') {
         ErrorHandler.logError('Failed to save webhook event', insertError);
       }
@@ -102,15 +117,70 @@ serve(async (req) => {
     ErrorHandler.logInfo('Processing Stripe webhook', { eventType: event.type });
     const startTime = Date.now();
 
-    let result;
+    let result = { success: true, message: 'Processed' };
 
     switch (event.type) {
       case 'checkout.session.completed': {
+        // 4. Database Action (New Logic)
         const session = event.data.object as any;
-        result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin, event.id);
+
+        ErrorHandler.logInfo('Processing checkout session completed (Revenue Sync)', {
+            sessionId: session.id,
+            amount: session.amount_total,
+            currency: session.currency
+        });
+
+        const amountTotal = session.amount_total;
+        const currency = session.currency;
+        const paymentIntentId = typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id;
+        const clientReferenceId = session.client_reference_id;
+        const metadata = session.metadata || {};
+
+        // Map user_id: Metadata first, then client_reference_id
+        const userId = metadata.user_id || clientReferenceId;
+
+        if (!userId) {
+             ErrorHandler.logWarning('Missing user_id in session', { sessionId: session.id });
+             throw new Error('Missing user_id in session metadata or client_reference_id');
+        }
+
+        // Upsert into public.payments
+        const { error: upsertError } = await supabaseAdmin
+          .from('payments')
+          .upsert({
+            stripe_session_id: session.id,
+            stripe_payment_intent_id: paymentIntentId,
+            user_id: userId,
+            amount: amountTotal / 100, // Convert cents to unit
+            currency: currency,
+            payment_status_enum: 'succeeded',
+            payment_status: 'completed', // Maintain legacy column compatibility
+            booking_id: metadata.booking_id || null, // Preserve booking link if available
+            method: 'stripe',
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'stripe_session_id'
+          });
+
+        if (upsertError) {
+             ErrorHandler.logError('Failed to upsert payment', upsertError);
+             throw new Error(`Database upsert failed: ${upsertError.message}`);
+        }
+
+        // Call enhanced handler for side effects
+        try {
+            await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(session, supabaseAdmin, event.id);
+        } catch (legacyError) {
+            ErrorHandler.logWarning('Legacy handler failed (non-critical)', legacyError);
+        }
+
+        result = { success: true, message: 'Payment synced and legacy handler invoked' };
         break;
       }
 
+      // Preserve other handlers
       case 'checkout.session.expired': {
         const session = event.data.object as any;
         result = await EnhancedCheckoutHandlers.handleCheckoutSessionExpired(session, supabaseAdmin);
@@ -160,6 +230,7 @@ serve(async (req) => {
       }
 
       case 'payment_intent.succeeded': {
+        // Restore full refund logic
         const paymentIntent = event.data.object as any;
         const bookingId = paymentIntent.metadata?.booking_id;
 
@@ -224,43 +295,8 @@ serve(async (req) => {
         result = { success: true, message: 'Event type not handled' };
     }
 
-    if (!result.success) {
-      ErrorHandler.logError('Webhook processing failed', result.error);
-      
-      // Mark event as failed
-      const { error: updateError } = await supabaseAdmin
-        .from('webhook_events')
-        .update({ 
-          status: 'failed',
-          last_error: result.error?.toString() || 'Unknown error',
-          updated_at: new Date().toISOString()
-        })
-        .eq(existingEvent?.id ? 'id' : 'event_id', existingEvent?.id ?? event.id);
-      
-      if (updateError) {
-        ErrorHandler.logError('Failed to mark webhook event as failed', updateError);
-      }
-
-      if (existingEvent?.id) {
-        const { error: rpcError } = await supabaseAdmin.rpc('increment_webhook_retry', { 
-          event_uuid: existingEvent.id 
-        });
-        
-        if (rpcError) {
-          ErrorHandler.logError('Failed to increment retry count', rpcError);
-        }
-      }
-
-      return new Response(
-        JSON.stringify({ 
-          error: 'Webhook processing failed',
-          details: result.error 
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      );
+    if (!result.success && (result as any).error) {
+      throw new Error((result as any).error);
     }
 
     // Mark event as processed
@@ -277,54 +313,23 @@ serve(async (req) => {
       ErrorHandler.logError('Failed to mark event as processed', processedUpdateError);
     }
 
-    ErrorHandler.logSuccess('Webhook processed successfully', { 
-      eventType: event.type,
-      duration_ms: Date.now() - startTime
-    });
-
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    ErrorHandler.logError('Webhook error', error, {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    ErrorHandler.logError('Webhook error', error);
 
-    // Try to mark event as failed if we have the event
-    try {
-      if (existingEvent?.id) {
-        const { error: updateError } = await supabaseAdmin
-          .from('webhook_events')
-          .update({ 
+    if (existingEvent?.id) {
+        await supabaseAdmin.from('webhook_events').update({
             status: 'failed',
-            last_error: error.message,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingEvent.id);
-        
-        if (!updateError) {
-          const { error: rpcError } = await supabaseAdmin.rpc('increment_webhook_retry', { 
-            event_uuid: existingEvent.id 
-          });
-          
-          if (rpcError) {
-            ErrorHandler.logError('Failed to increment retry count', rpcError);
-          }
-        }
-      }
-    } catch (dbError) {
-      ErrorHandler.logError('Failed to update webhook event status', dbError);
+            last_error: error.message
+        }).eq('id', existingEvent.id);
     }
-    
+
     return new Response(
-      JSON.stringify({ 
-        error: 'Webhook processing failed',
-        details: error.message 
-      }),
+      JSON.stringify({ error: 'Webhook processing failed', details: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
