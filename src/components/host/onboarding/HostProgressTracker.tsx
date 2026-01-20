@@ -7,7 +7,6 @@ import { CheckCircle, Circle, Star, Trophy, Target, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useHostProgress } from "@/hooks/useHostProgress";
-import { StripeStatusBadge } from "./StripeStatusBadge";
 
 interface ProgressStep {
   id: string;
@@ -33,8 +32,7 @@ interface Milestone {
 export const HostProgressTracker: React.FC = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
-  const profile = authState.profile;
-  const { data: progressData, isLoading, refetch } = useHostProgress({
+  const { data: progressData, isLoading } = useHostProgress({
     refetchOnWindowFocus: true,
     staleTime: 30 * 1000 // 30 seconds to ensure we get fresh data after webhook updates
   });
@@ -57,43 +55,6 @@ export const HostProgressTracker: React.FC = () => {
       actionLabel: 'Completa Profilo'
     },
     {
-      id: 'stripe',
-      title: 'Setup Pagamenti',
-      description: 'Configura Stripe per ricevere pagamenti',
-      completed: progressData?.stripeConnected ?? false,
-      required: true,
-      action: () => navigate('/host/dashboard'),
-      actionLabel: 'Configura Stripe'
-    },
-    // ✅ FASE 4: Nuovo step KYC
-    {
-      id: 'kyc_verification',
-      title: 'Verifica Identità',
-      description: authState.profile?.kyc_documents_verified === false 
-        ? '❌ Documenti rifiutati - Ricarica' 
-        : authState.profile?.kyc_documents_verified === null
-        ? '⏳ Documenti in verifica admin'
-        : '✅ Documenti verificati',
-      completed: progressData?.kycVerified ?? false,
-      required: true,
-      action: () => navigate('/host/onboarding?step=kyc'),
-      actionLabel: authState.profile?.kyc_documents_verified === false 
-        ? 'Ricarica Documenti' 
-        : authState.profile?.kyc_documents_verified === null
-        ? 'Attendi Verifica'
-        : 'Verificato'
-    },
-    // ✅ FASE 4: Nuovo step tax_details
-    {
-      id: 'tax_details',
-      title: 'Dati Fiscali Completi',
-      description: 'Indirizzo strutturato richiesto per pubblicare spazi',
-      completed: progressData?.taxDetailsComplete ?? false,
-      required: true,
-      action: () => navigate('/host/fiscal'),
-      actionLabel: 'Completa Dati Fiscali'
-    },
-    {
       id: 'first_space',
       title: 'Primo Spazio',
       description: 'Pubblica il tuo primo spazio',
@@ -103,22 +64,13 @@ export const HostProgressTracker: React.FC = () => {
       actionLabel: 'Crea Spazio'
     },
     {
-      id: 'photos',
-      title: 'Foto Professionali',
-      description: 'Aggiungi foto di qualità ai tuoi spazi',
-      completed: progressData?.hasPhotos ?? false,
-      required: false,
-      action: () => navigate('/host/spaces'),
-      actionLabel: 'Aggiungi Foto'
-    },
-    {
-      id: 'availability',
-      title: 'Disponibilità',
-      description: 'Imposta orari e disponibilità',
-      completed: (progressData?.publishedSpacesCount ?? 0) > 0,
-      required: false,
-      action: () => navigate('/host/spaces'),
-      actionLabel: 'Imposta Orari'
+      id: 'stripe',
+      title: 'Metodo di Accredito',
+      description: 'Collega il tuo conto per ricevere i pagamenti',
+      completed: progressData?.stripeConnected ?? false,
+      required: true,
+      action: () => navigate('/host/dashboard'),
+      actionLabel: 'Collega Conto'
     }
   ];
 
@@ -235,9 +187,6 @@ export const HostProgressTracker: React.FC = () => {
                       <h4 className="font-medium">{step.title}</h4>
                       {step.required && (
                         <Badge variant="outline" className="text-xs">Obbligatorio</Badge>
-                      )}
-                      {step.id === 'stripe' && (
-                        <StripeStatusBadge status={progressData?.stripeOnboardingStatus || 'none'} />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{step.description}</p>
