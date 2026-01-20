@@ -27,7 +27,6 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
 }) => {
   const { authState } = useAuth();
   const [selectedYear, setSelectedYear] = useState('2025');
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   // Fetch Host Daily Metrics for charts
   const { data: dailyMetrics } = useQuery({
