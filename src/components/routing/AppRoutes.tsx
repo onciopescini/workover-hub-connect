@@ -72,6 +72,7 @@ const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminRevenue = lazy(() => import("@/pages/admin/AdminRevenue"));
+const AdminBookings = lazy(() => import("@/pages/admin/AdminBookingsPage"));
 
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -392,6 +393,11 @@ export const AppRoutes = () => {
         <Route path="users" element={
           <LazyWrapper>
             <AdminUsers />
+          </LazyWrapper>
+        } />
+        <Route path="bookings" element={
+          <LazyWrapper>
+            <AdminBookings />
           </LazyWrapper>
         } />
         <Route path="revenue" element={
