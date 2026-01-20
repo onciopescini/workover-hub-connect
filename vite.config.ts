@@ -128,11 +128,7 @@ export default defineConfig(({ mode }) => ({
           
           // Admin panel bundle (lazy loaded only for admin users)
           'admin': [
-            './src/pages/AdminPanel',
-            './src/components/admin/AdminDashboard',
-            './src/hooks/admin/useAdminDashboard',
-            './src/hooks/admin/useAdminPrefetch',
-            './src/hooks/admin/useRealtimeAdminData',
+            './src/pages/admin/AdminDashboard',
           ],
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
