@@ -21,8 +21,9 @@ export const useHostDashboardMetrics = () => {
         const hostId = authState.user.id;
 
         // 1. Fetch RPC Summary
+        // Cast function name to any because it's not yet in the generated types
         const { data: summaryData, error: summaryError } = await supabase
-          .rpc('get_host_dashboard_summary', { host_uuid: hostId });
+          .rpc('get_host_dashboard_summary' as any, { host_uuid: hostId });
 
         if (summaryError) throw summaryError;
 
@@ -30,14 +31,15 @@ export const useHostDashboardMetrics = () => {
         const summary = summaryData as unknown as HostDashboardSummary;
 
         // 2. Fetch Host Daily Metrics (Materialized View)
+        // We use type assertion here because the view might not be in the generated types yet
         const { data: metricsData, error: metricsError } = await supabase
-          .from('host_daily_metrics' as any) // Casting as any since it's a new view
+          .from('host_daily_metrics' as any)
           .select('*')
           .eq('host_id', hostId);
 
         if (metricsError) throw metricsError;
 
-        const dailyMetrics = (metricsData || []) as HostDailyMetric[];
+        const dailyMetrics = (metricsData || []) as unknown as HostDailyMetric[];
 
         // 3. Calculate derived metrics
         const totalRevenue = dailyMetrics.reduce((sum, day) => sum + (day.daily_revenue || 0), 0);
@@ -61,7 +63,12 @@ export const useHostDashboardMetrics = () => {
         const lastMonthRevenue = dailyMetrics
           .filter(d => {
             // Parse YYYY-MM-DD manually to avoid timezone issues
-            const [year, month] = d.booking_date.split('-').map(Number);
+            const parts = d.booking_date.split('-').map(Number);
+            const year = parts[0];
+            const month = parts[1];
+
+            if (year === undefined || month === undefined) return false;
+
             // month is 1-based in string, convert to 0-based for comparison
             return (month - 1) === lastMonth && year === lastMonthYear;
           })
@@ -85,7 +92,12 @@ export const useHostDashboardMetrics = () => {
         const confirmedBookingsThisMonth = dailyMetrics
           .filter(d => {
              // Parse YYYY-MM-DD manually
-            const [year, month] = d.booking_date.split('-').map(Number);
+            const parts = d.booking_date.split('-').map(Number);
+            const year = parts[0];
+            const month = parts[1];
+
+            if (year === undefined || month === undefined) return false;
+
             return (month - 1) === currentMonth && year === currentYear;
           })
           .reduce((sum, d) => sum + (d.confirmed_bookings || 0), 0);

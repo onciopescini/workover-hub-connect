@@ -52,16 +52,16 @@ export function BookingForm({
   const bookingFlow = useBookingFlow({
     spaceId,
     pricePerDay,
-    pricePerHour: pricePerHourProp || undefined,
+    ...(pricePerHourProp !== undefined && { pricePerHour: pricePerHourProp }),
     confirmationType,
     maxCapacity,
-    hostStripeAccountId: hostStripeAccountId || undefined,
-    availability: availability || undefined,
-    timezone: timezone || undefined,
+    ...(hostStripeAccountId !== undefined && { hostStripeAccountId }),
+    ...(availability !== undefined && { availability }),
+    ...(timezone !== undefined && { timezone }),
     bufferMinutes: bufferMinutes,
     slotInterval: slotInterval,
-    cancellationPolicy: cancellationPolicy || undefined,
-    rules: rules || undefined,
+    ...(cancellationPolicy !== undefined && { cancellationPolicy }),
+    ...(rules !== undefined && { rules }),
     onSuccess: onSuccess,
     onError: onError
   });
@@ -146,10 +146,10 @@ export function BookingForm({
       rules={rules ?? ''}
       bufferMinutes={bufferMinutes}
       slotInterval={slotInterval}
-      hostStripeAccountId={hostStripeAccountId || undefined}
-      availability={availability || undefined}
-      hostFiscalRegime={hostFiscalRegime || undefined}
-      timezone={timezone || undefined}
+      {...(hostStripeAccountId !== undefined && { hostStripeAccountId })}
+      {...(availability !== undefined && { availability })}
+      {...(hostFiscalRegime !== undefined && { hostFiscalRegime })}
+      {...(timezone !== undefined && { timezone })}
 
       // State
       currentStep={currentStep}
@@ -160,7 +160,7 @@ export function BookingForm({
       fiscalErrors={fiscalErrors}
       isReserving={bookingState.isReserving}
       isCheckoutLoading={isCheckoutLoading}
-      fiscalDataPreFilled={fiscalDataPreFilled || undefined}
+      {...(fiscalDataPreFilled !== undefined && { fiscalDataPreFilled })}
 
       // Handlers
       onDateSelect={handleDateSelect}

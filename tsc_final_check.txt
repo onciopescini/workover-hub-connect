@@ -1,0 +1,104 @@
+src/components/messaging/MessagesChatArea.tsx(127,22): error TS2375: Type '{ key: string; id: string; content: string; senderName: string; senderAvatar: string; timestamp: string; isCurrentUser: boolean; isRead: boolean; isPending: boolean; isError: boolean; attachments: MessageAttachment[] | undefined; businessContext: { ...; } | { ...; }; onRetry: () => void; }' is not assignable to type 'EnhancedMessageBubbleProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'attachments' are incompatible.
+    Type 'MessageAttachment[] | undefined' is not assignable to type 'MessageAttachment[]'.
+      Type 'undefined' is not assignable to type 'MessageAttachment[]'.
+src/components/spaces/SpaceDetailContent.tsx(83,32): error TS18048: 'entry' is possibly 'undefined'.
+src/hooks/useSpaceDetail.ts(97,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/hooks/useUnifiedMessaging.ts(119,14): error TS2375: Type '{ id: string; tempId: string; conversation_id: string; sender_id: string; content: string; created_at: string; is_read: false; booking_id: string | undefined; attachments: never[]; status: "pending"; }' is not assignable to type 'Message' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'booking_id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/hooks/useUnifiedMessaging.ts(135,25): error TS2345: Argument of type '(prev: Conversation[]) => (Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; ... 11 more ...; booking?: { ...; }; })[]' is not assignable to parameter of type 'SetStateAction<Conversation[]>'.
+  Type '(prev: Conversation[]) => (Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; ... 11 more ...; booking?: { ...; }; })[]' is not assignable to type '(prevState: Conversation[]) => Conversation[]'.
+    Type '(Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; ... 8 more ...; booking?: { ...; }; })[]' is not assignable to type 'Conversation[]'.
+      Type 'Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; ... 8 more ...; booking?: { ...; }; }' is not assignable to type 'Conversation' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Type '{ last_message: string; last_message_at: string; id?: string; type?: "booking" | "private" | "group"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; is_online?: boolean; ... 7 more ...; booking?: { booking_date: string; status: string; }; }' is not assignable to type 'Conversation' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+          Property 'id' is optional in type '{ last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; is_online?: boolean; ... 7 more ...; booking?: { ...; }; }' but required in type 'Conversation'.
+src/hooks/useUnifiedMessaging.ts(146,39): error TS2379: Argument of type '{ conversationId: string; content: string; senderId: string; bookingId: string | undefined; recipientId: string; }' is not assignable to parameter of type '{ conversationId: string; bookingId?: string | null; content: string; senderId: string; recipientId?: string | undefined; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'bookingId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string | null'.
+      Type 'undefined' is not assignable to type 'string | null'.
+src/hooks/useUnifiedMessaging.ts(193,31): error TS2345: Argument of type '(prev: Conversation[]) => (Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; ... 11 more ...; booking?: { ...; }; })[]' is not assignable to parameter of type 'SetStateAction<Conversation[]>'.
+  Type '(prev: Conversation[]) => (Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; ... 11 more ...; booking?: { ...; }; })[]' is not assignable to type '(prevState: Conversation[]) => Conversation[]'.
+    Type '(Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; ... 8 more ...; booking?: { ...; }; })[]' is not assignable to type 'Conversation[]'.
+      Type 'Conversation | { last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; ... 8 more ...; booking?: { ...; }; }' is not assignable to type 'Conversation' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Type '{ last_message: string; last_message_at: string; id?: string; type?: "booking" | "private" | "group"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; is_online?: boolean; ... 7 more ...; booking?: { booking_date: string; status: string; }; }' is not assignable to type 'Conversation' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+          Property 'id' is optional in type '{ last_message: string; last_message_at: string; id?: string; type?: "group" | "booking" | "private"; title?: string; subtitle?: string; avatar?: string; unread_count?: number; is_online?: boolean; ... 7 more ...; booking?: { ...; }; }' but required in type 'Conversation'.
+src/lib/conversations.ts(24,5): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/lib/conversations.ts(25,5): error TS2322: Type 'string | null' is not assignable to type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/lib/conversations.ts(147,3): error TS2322: Type '{ id: any; type: "booking" | "private"; title: string; subtitle: any; avatar: any; last_message: any; last_message_at: any; status: any; host_id: any; coworker_id: any; other_user_id: any; booking_id: any; space: { ...; } | undefined; booking: { ...; } | undefined; }[]' is not assignable to type 'Conversation[]'.
+  Type '{ id: any; type: "booking" | "private"; title: string; subtitle: any; avatar: any; last_message: any; last_message_at: any; status: any; host_id: any; coworker_id: any; other_user_id: any; booking_id: any; space: { ...; } | undefined; booking: { ...; } | undefined; }' is not assignable to type 'Conversation' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'space' are incompatible.
+      Type '{ name: any; } | undefined' is not assignable to type '{ name: string; }'.
+        Type 'undefined' is not assignable to type '{ name: string; }'.
+src/lib/conversations.ts(227,40): error TS2345: Argument of type '"mark_messages_read"' is not assignable to parameter of type '"_postgis_deprecate" | "_postgis_index_extent" | "_postgis_pgsql_version" | "_postgis_scripts_pgsql_version" | "_postgis_selectivity" | "_postgis_stats" | "_st_3dintersects" | ... 308 more ... | "validate_booking_slot_with_lock"'.
+src/lib/stripe-error-mapper.ts(31,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/stripe-error-mapper.ts(34,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/stripe-error-mapper.ts(37,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/stripe-error-mapper.ts(40,5): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/BookingSuccess.tsx(18,13): error TS7030: Not all code paths return a value.
+src/pages/Search.tsx(75,52): error TS2352: Conversion of type '{ id: any; title: any; description: any; photos: any; address: any; latitude: any; longitude: any; price_per_day: any; price_per_hour: any; max_capacity: any; category: any; workspace_features: any; ... 17 more ...; deleted_at: any; }' to type 'Space' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ id: any; title: any; description: any; photos: any; address: any; latitude: any; longitude: any; price_per_day: any; price_per_hour: any; max_capacity: any; category: any; workspace_features: any; ... 17 more ...; deleted_at: any; }' is missing the following properties from type '{ address: string | null; amenities: string[] | null; availability: Json; cached_avg_rating: number | null; cached_review_count: number | null; cancellation_policy: string | null; ... 28 more ...; work_environment: string | null; }': cached_review_count, cancellation_policy, event_friendly_tags, features, and 7 more.
+src/pages/SpaceDetail.tsx(95,15): error TS2322: Type 'SpaceReviewWithDetails[]' is not assignable to type 'SpaceReview[]'.
+  Type 'SpaceReviewWithDetails' is not assignable to type 'SpaceReview'.
+    Types of property 'content' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+src/pages/SpaceDetail.tsx(103,11): error TS2322: Type 'SpaceReviewWithDetails[]' is not assignable to type 'SpaceReview[]'.
+  Type 'SpaceReviewWithDetails' is not assignable to type 'SpaceReview'.
+    Types of property 'content' are incompatible.
+      Type 'string | null' is not assignable to type 'string'.
+        Type 'null' is not assignable to type 'string'.
+src/pages/UserProfileView.tsx(180,9): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(185,44): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string | URL | undefined'.
+src/pages/UserProfileView.tsx(251,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(271,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(277,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(283,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(314,11): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(338,15): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(469,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/pages/UserProfileView.tsx(492,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+src/stories/BookingForm.stories.tsx(70,5): error TS2740: Type '{ billingName: string; billingAddress: string; vatNumber: string; sdiCode: string; pecEmail: string; isCompany: boolean; }' is missing the following properties from type 'CoworkerFiscalData': tax_id, is_business, pec_email, sdi_code, and 4 more.
+src/stories/BookingForm.stories.tsx(103,11): error TS2353: Object literal may only specify known properties, and 'start' does not exist in type 'BookingTimeSlot'.
+src/stories/BookingForm.stories.tsx(104,11): error TS2353: Object literal may only specify known properties, and 'start' does not exist in type 'BookingTimeSlot'.
+src/stories/BookingForm.stories.tsx(105,11): error TS2353: Object literal may only specify known properties, and 'start' does not exist in type 'BookingTimeSlot'.
+src/stories/SpaceCard.stories.tsx(83,5): error TS2322: Type '{ id: string; title: string; description: string; price_per_hour: number; price_per_day: number; category: "professional"; work_environment: "controlled"; max_capacity: number; address: string; ... 36 more ...; timezone: string; }' is not assignable to type 'Space'.
+  Type '{ id: string; title: string; description: string; price_per_hour: number; price_per_day: number; category: "professional"; work_environment: "controlled"; max_capacity: number; address: string; ... 36 more ...; timezone: string; }' is missing the following properties from type '{ address: string | null; amenities: string[] | null; availability: Json; cached_avg_rating: number | null; cached_review_count: number | null; cancellation_policy: string | null; ... 28 more ...; work_environment: string | null; }': name, price_per_month, rating_avg
+src/stories/SpaceCard.stories.tsx(89,5): error TS2322: Type '{ title: string; category: "professional"; work_environment: "dynamic"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; ... 36 more ...; timezone: string; }' is not assignable to type 'Space'.
+  Type '{ title: string; category: "professional"; work_environment: "dynamic"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; ... 36 more ...; timezone: string; }' is missing the following properties from type '{ address: string | null; amenities: string[] | null; availability: Json; cached_avg_rating: number | null; cached_review_count: number | null; cancellation_policy: string | null; ... 28 more ...; work_environment: string | null; }': name, price_per_month, rating_avg
+src/stories/SpaceCard.stories.tsx(104,5): error TS2322: Type '{ title: string; category: "professional"; work_environment: "silent"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; ... 36 more ...; timezone: string; }' is not assignable to type 'Space'.
+  Type '{ title: string; category: "professional"; work_environment: "silent"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; ... 36 more ...; timezone: string; }' is missing the following properties from type '{ address: string | null; amenities: string[] | null; availability: Json; cached_avg_rating: number | null; cached_review_count: number | null; cancellation_policy: string | null; ... 28 more ...; work_environment: string | null; }': name, price_per_month, rating_avg
+src/stories/SpaceCard.stories.tsx(119,5): error TS2322: Type '{ title: string; category: "outdoor"; work_environment: "dynamic"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; address: string; ... 35 more ...; timezone: string; }' is not assignable to type 'Space'.
+  Type '{ title: string; category: "outdoor"; work_environment: "dynamic"; price_per_hour: number; price_per_day: number; max_capacity: number; amenities: string[]; id: string; description: string; address: string; ... 35 more ...; timezone: string; }' is missing the following properties from type '{ address: string | null; amenities: string[] | null; availability: Json; cached_avg_rating: number | null; cached_review_count: number | null; cancellation_policy: string | null; ... 28 more ...; work_environment: string | null; }': name, price_per_month, rating_avg
+src/tests/integration/payment-publish-flow.test.ts(26,41): error TS2345: Argument of type '{ data: { id: string; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(27,46): error TS2345: Argument of type '{ data: { id: string; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(40,41): error TS2345: Argument of type '{ data: { user: { id: string; }; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(44,53): error TS2345: Argument of type '{ data: { user: { id: string; }; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(48,42): error TS2345: Argument of type '{ error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(49,42): error TS2345: Argument of type '{ data: { user: { id: string; }; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(53,45): error TS2345: Argument of type '{ data: { session: { access_token: string; }; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(60,41): error TS2345: Argument of type '{ data: {}; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(62,36): error TS2345: Argument of type '{ data: null; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(65,43): error TS2345: Argument of type '{ data: { path: string; }; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(92,64): error TS2345: Argument of type '{ data: {}; error: null; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(97,53): error TS2345: Argument of type '(table: string) => any' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'table' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+src/tests/integration/payment-publish-flow.test.ts(126,53): error TS2345: Argument of type '(table: string) => any' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'table' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+src/tests/integration/payment-publish-flow.test.ts(129,52): error TS2345: Argument of type '{ data: null; error: { message: string; }; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(141,53): error TS2345: Argument of type '{ data: null; error: { message: string; }; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(172,68): error TS2345: Argument of type '{ data: null; error: { message: string; }; }' is not assignable to parameter of type 'never'.
+src/tests/integration/payment-publish-flow.test.ts(189,53): error TS2345: Argument of type '(table: string) => any' is not assignable to parameter of type 'UnknownFunction'.
+  Types of parameters 'table' and 'args' are incompatible.
+    Type 'unknown' is not assignable to type 'string'.
+src/tests/integration/payment-publish-flow.test.ts(198,51): error TS2345: Argument of type '{ data: { severity: string; alarm_type: string; }[]; error: null; }' is not assignable to parameter of type 'never'.
