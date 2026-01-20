@@ -3,7 +3,7 @@ import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Euro, TrendingUp, Calendar, Users, PieChart, BarChart3 } from "lucide-react";
-import { AdvancedFinancialMetrics } from '@/components/dashboard/AdvancedFinancialMetrics';
+import { AdvancedRevenueAnalytics } from '@/components/host/revenue/AdvancedRevenueAnalytics';
 import { TabContentProps } from '../types/dashboard-tabs-types';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -178,12 +178,10 @@ export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'rece
           <PieChart className="w-5 h-5 mr-2" />
           <h3 className="text-xl font-semibold">Metriche Finanziarie Avanzate</h3>
         </div>
-        <AdvancedFinancialMetrics
+        <AdvancedRevenueAnalytics
           totalRevenue={metrics.totalRevenue}
           monthlyRevenue={metrics.monthlyRevenue}
           revenueGrowth={metrics.revenueGrowth}
-          averageBookingValue={metrics.averageBookingValue}
-          occupancyRate={metrics.occupancyRate}
         />
       </div>
     </TabsContent>
