@@ -20,36 +20,36 @@ export function QuickActions() {
             {/* Check-in Scanner Button - Primary Position */}
             <Button 
               onClick={() => setIsScannerOpen(true)}
-              className="bg-green-600 hover:bg-green-700 h-12"
+              className="bg-green-600 hover:bg-green-700 h-24 flex flex-col items-center justify-center gap-2"
             >
-              <QrCode className="w-4 h-4 mr-2" />
-              Scansiona Check-in
+              <QrCode className="w-6 h-6" />
+              <span>Scanner</span>
             </Button>
             
             <Button 
               onClick={() => navigate("/host/space/new")}
-              className="bg-[#4F46E5] hover:bg-[#4F46E5]/90 h-12"
+              className="bg-[#4F46E5] hover:bg-[#4F46E5]/90 h-24 flex flex-col items-center justify-center gap-2"
             >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Aggiungi Spazio
+              <PlusCircle className="w-6 h-6" />
+              <span>Aggiungi Spazio</span>
             </Button>
             
             <Button 
               variant="outline" 
-              className="h-12"
+              className="h-24 flex flex-col items-center justify-center gap-2"
               onClick={() => navigate("/host/spaces")}
             >
-              <Calendar className="w-4 h-4 mr-2" />
-              Gestisci Spazi
+              <Calendar className="w-6 h-6" />
+              <span>Gestisci Spazi</span>
             </Button>
             
             <Button 
               variant="outline" 
-              className="h-12"
+              className="h-24 flex flex-col items-center justify-center gap-2"
               onClick={() => navigate("/messages")}
             >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messaggi
+              <MessageSquare className="w-6 h-6" />
+              <span>Messaggi</span>
             </Button>
           </div>
         </CardContent>
