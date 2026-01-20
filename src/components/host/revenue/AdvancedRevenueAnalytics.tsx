@@ -40,7 +40,7 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
         .eq('host_id', authState.user.id);
 
       if (error) throw error;
-      return (data || []) as HostDailyMetric[];
+      return (data || []) as unknown as HostDailyMetric[];
     },
     enabled: !!authState.user?.id
   });
@@ -50,18 +50,6 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
     queryKey: ['host-payouts-table', authState.user?.id],
     queryFn: async () => {
       if (!authState.user?.id) return [];
-      // Assuming payouts table exists as per instructions.
-      // Falling back to payments if needed or using any cast.
-      // We join with bookings to get space title?
-      // Since specific schema wasn't given, and mock data implies booking details,
-      // I will query payments table which has booking_id, and join with bookings -> spaces.
-      // The prompt said "payouts table is created", but mock has "space_title".
-      // If payouts is a simple log, it might not have space_title.
-      // I'll stick to 'payments' table which I know exists and is used for revenue,
-      // to ensure "Real Data" that works with the existing UI expectations (booking_id, space_title).
-      // If payouts is strictly required, I would query it, but without schema I risk breaking.
-      // "Fetch history from host_daily_metrics view via Supabase Client" was for the chart.
-      // I will trust payments table for the detailed list as it's the source of truth for revenue details usually.
 
       const { data, error } = await supabase
         .from('payments')
@@ -72,8 +60,8 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
           created_at,
           booking_id,
           booking:bookings (
-            space:spaces (
-              title
+            space:workspaces (
+              name
             )
           )
         `)
@@ -88,7 +76,7 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
         amount: p.host_amount || p.amount, // Fallback if host_amount null
         date: p.created_at,
         booking_id: p.booking_id,
-        space_title: p.booking?.space?.title || 'Unknown Space'
+        space_title: p.booking?.space?.name || 'Unknown Space'
       }));
     },
     enabled: !!authState.user?.id
@@ -105,8 +93,11 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
     // Let's iterate through metrics.
     dailyMetrics.forEach(metric => {
       // Robust date parsing: split YYYY-MM-DD
-      const [year, month] = metric.booking_date.split('-').map(Number);
+      const parts = metric.booking_date.split('-').map(Number);
+      const year = parts[0];
+      const month = parts[1];
 
+      if (year === undefined || month === undefined) return;
       if (year.toString() !== selectedYear) return;
 
       // month is 1-based from split (01 = Jan), months array is 0-based

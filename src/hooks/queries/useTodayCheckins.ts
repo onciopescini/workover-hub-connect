@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { format } from "date-fns";
+import { Database } from "@/integrations/supabase/types";
 
 export const useTodayCheckins = () => {
   const { authState } = useAuth();
@@ -14,7 +15,7 @@ export const useTodayCheckins = () => {
 
       // Use local date instead of UTC
       const today = format(new Date(), 'yyyy-MM-dd');
-      const validStatuses = ['confirmed', 'pending_payment', 'checked_in'];
+      const validStatuses = ['confirmed', 'pending_payment', 'checked_in'] as Database["public"]["Enums"]["booking_status"][];
 
       const { data, error } = await supabase
         .from('bookings')
