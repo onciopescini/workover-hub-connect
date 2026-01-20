@@ -4,25 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, DollarSign, TrendingUp } from 'lucide-react';
 import LoadingScreen from '@/components/LoadingScreen';
-
-// Interfaces for the SQL Views
-interface AdminPlatformRevenue {
-  // Assuming a generic structure since schema is implicit
-  // If the view returns raw transaction rows, we sum them.
-  // If it returns pre-calculated aggregates, we use them.
-  // For MVP, we will treat it as an object with potential amount fields
-  // or just use 'any' if strict typing is blocked by lack of generation.
-  amount?: number;
-  total_amount?: number;
-  gross_volume?: number;
-  [key: string]: any;
-}
-
-interface AdminUsersView {
-  count?: number;
-  // potentially other fields
-  [key: string]: any;
-}
+import { AdminPlatformRevenue, AdminUserStats } from '@/types/admin';
 
 export const AdminDashboard = () => {
   // Fetch Platform Revenue
@@ -61,15 +43,23 @@ export const AdminDashboard = () => {
   const calculateGrossVolume = (data: AdminPlatformRevenue[] | null) => {
     if (!data || data.length === 0) return 0;
 
-    // Sum up amount/gross_volume fields found in the data
+    // Sum up gross_volume fields found in the data
     return data.reduce((acc, row) => {
-      const val = row.gross_volume || row.total_amount || row.amount || 0;
-      return acc + Number(val);
+      return acc + (row.gross_volume || 0);
+    }, 0);
+  };
+
+  const calculateEstimatedRevenue = (data: AdminPlatformRevenue[] | null) => {
+    if (!data || data.length === 0) return 0;
+
+    // Sum up estimated_revenue fields found in the data
+    return data.reduce((acc, row) => {
+      return acc + (row.estimated_revenue || 0);
     }, 0);
   };
 
   const grossVolume = calculateGrossVolume(revenueData || null);
-  const estimatedRevenue = grossVolume * 0.15; // 15% platform fee
+  const estimatedRevenue = calculateEstimatedRevenue(revenueData || null);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -131,7 +121,7 @@ export const AdminDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatCurrency(estimatedRevenue)}</div>
             <p className="text-xs text-gray-500 mt-1">
-              15% Platform Commission
+              Based on platform fees
             </p>
           </CardContent>
         </Card>

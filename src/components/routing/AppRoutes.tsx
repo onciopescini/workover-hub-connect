@@ -6,13 +6,11 @@ import QAValidationDashboard from "@/components/qa/QAValidationDashboard";
 
 // Layouts
 import { MainLayout } from "@/components/layout/MainLayout";
-import { MarketplaceLayout } from "@/components/layout/MarketplaceLayout";
 import { AdminLayout } from "@/layouts/AdminLayout";
 
 // Auth protection
 import AuthProtected from "@/components/auth/AuthProtected";
 import RoleProtected from "@/components/auth/RoleProtected";
-import { ModeratorRoute } from "@/components/admin/ModeratorRoute";
 
 // Public pages (eager loading per performance)
 import Index from "@/pages/Index";
@@ -72,25 +70,7 @@ const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
 
 // Admin pages
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
-const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
-const AdminSpacesPage = lazy(() => import("@/pages/admin/AdminSpacesPage"));
-const AdminTagsPage = lazy(() => import("@/pages/admin/AdminTagsPage"));
-const AdminReportsPage = lazy(() => import("@/pages/admin/AdminReportsPage"));
-const AdminTicketsPage = lazy(() => import("@/pages/admin/AdminTicketsPage"));
-const AdminAnalyticsPage = lazy(() => import("@/pages/admin/AdminAnalyticsPage"));
-const AdminLogsPage = lazy(() => import("@/pages/admin/AdminLogsPage"));
-const AdminMonitoringPage = lazy(() => import("@/pages/admin/AdminMonitoringPage"));
-const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
-const TestSuiteIndex = lazy(() => import("@/pages/admin/TestSuiteIndex"));
-const AdminGDPRPage = lazy(() => import("@/pages/admin/AdminGDPRPage"));
-const AdminFiscalPage = lazy(() => import("@/pages/admin/AdminFiscalPage"));
-const AdminFiscalSettings = lazy(() => import("@/pages/admin/AdminFiscalSettings"));
-const AdminKYCReviewPage = lazy(() => import("@/pages/admin/AdminKYCReviewPage"));
-const DisputeManagement = lazy(() => import("@/pages/admin/DisputeManagement"));
-const SystemAlarmsPage = lazy(() => import("@/pages/admin/SystemAlarmsPage"));
-const SystemRoles = lazy(() => import("@/pages/admin/SystemRoles"));
-const AdminBookingDetail = lazy(() => import("@/pages/admin/AdminBookingDetail"));
-const UnauthorizedPage = lazy(() => import("@/pages/admin/UnauthorizedPage"));
+
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
 
@@ -407,32 +387,7 @@ export const AppRoutes = () => {
             <AdminDashboard />
           </LazyWrapper>
         } />
-        
-        <Route path="users" element={
-          <LazyWrapper>
-            <AdminUsersPage />
-          </LazyWrapper>
-        } />
-
-        <Route path="bookings/:id" element={
-          <LazyWrapper>
-            <AdminBookingDetail />
-          </LazyWrapper>
-        } />
-        
-        {/* Retain other admin sub-routes if they are to be migrated, or keep them accessible here for now.
-            The user only specified Users, Bookings, Revenue in sidebar, but we should likely keep the route definitions active if pages exist.
-            However, the prompt focused on initializing the dashboard and layout.
-            I will include the explicit requested routes and leave the others available but potentially unreachable via sidebar for now to keep it clean as requested.
-        */}
       </Route>
-
-      {/* Unauthorized access page */}
-      <Route path="/unauthorized" element={
-        <LazyWrapper>
-          <UnauthorizedPage />
-        </LazyWrapper>
-      } />
 
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
