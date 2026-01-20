@@ -17,14 +17,20 @@ export const useHostDashboardMetrics = () => {
     queryFn: async (): Promise<HostDashboardMetrics> => {
       if (!authState.user?.id) throw new Error('No authenticated user');
       
-      try {
-        const hostId = authState.user.id;
+      const userId = authState.user.id;
 
+      try {
         // 1. Fetch RPC Summary
+        console.log('DEBUG RPC CALL:', {
+          function: 'get_host_dashboard_summary',
+          payload: { host_uuid: userId },
+          userIdType: typeof userId
+        });
+
         // Cast function name to any because it's not yet in the generated types
         const { data: summaryData, error: summaryError } = await supabase
           .rpc('get_host_dashboard_summary' as any, {
-            host_uuid: authState.user.id
+            host_uuid: userId
           });
 
         if (summaryError) throw summaryError;
@@ -36,8 +42,8 @@ export const useHostDashboardMetrics = () => {
         // We use type assertion here because the view might not be in the generated types yet
         const { data: metricsData, error: metricsError } = await supabase
           .from('host_daily_metrics' as any)
-          .select('host_id, booking_date, total_bookings, confirmed_bookings, daily_revenue')
-          .eq('host_id', hostId);
+          .select('booking_date, total_bookings, confirmed_bookings, daily_revenue')
+          .eq('host_id', userId);
 
         if (metricsError) throw metricsError;
 
@@ -88,7 +94,7 @@ export const useHostDashboardMetrics = () => {
         const { count: spaceCount } = await supabase
           .from('workspaces')
           .select('id', { count: 'exact', head: true })
-          .eq('host_id', hostId);
+          .eq('host_id', userId);
 
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
         const confirmedBookingsThisMonth = dailyMetrics
