@@ -34,7 +34,7 @@ export const useHostDashboardMetrics = () => {
         // We use type assertion here because the view might not be in the generated types yet
         const { data: metricsData, error: metricsError } = await supabase
           .from('host_daily_metrics' as any)
-          .select('*')
+          .select('host_id, booking_date, total_bookings, confirmed_bookings, daily_revenue')
           .eq('host_id', hostId);
 
         if (metricsError) throw metricsError;
