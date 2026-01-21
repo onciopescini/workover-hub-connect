@@ -28,10 +28,7 @@ export const AdminBookingsPage = () => {
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['admin_bookings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_bookings_view' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('admin_get_bookings');
 
       if (error) {
         throw error;
@@ -101,7 +98,7 @@ export const AdminBookingsPage = () => {
     // However, I should verifying if existing codebase divides by 100.
     // Looking at `src/types/payment.ts`, no explicit conversion helper is shown.
     // I'll assume standard Stripe cents for now. If the values look huge, I'll know.
-    // Actually, `admin_bookings_view` logic sums `amount`.
+    // Actually, `admin_get_bookings` logic sums `amount`.
     // If `payments.amount` is float (euros), then fine. If cents, need /100.
     // I will divide by 100 to be safe for Stripe defaults, consistent with other dashboards.
   };
