@@ -76,7 +76,7 @@ const AdminRevenue = () => {
                   <TableHead>Month</TableHead>
                   <TableHead className="text-right">Total Payments</TableHead>
                   <TableHead className="text-right">Gross Volume</TableHead>
-                  <TableHead className="text-right text-green-600">Estimated Revenue (15%)</TableHead>
+                  <TableHead className="text-right text-green-600">Net Revenue</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
