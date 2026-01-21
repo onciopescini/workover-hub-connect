@@ -32,7 +32,7 @@ const AvatarImage = React.forwardRef<
     enableWebP={enableWebP}
     enableResponsive={true}
     priority={priority}
-    fallbackSrc={fallbackSrc ?? '/images/placeholder.png'}
+    fallbackSrc={fallbackSrc ?? '/placeholder.svg'}
     quality={0.9}
     className={cn("aspect-square h-full w-full rounded-full", className)}
     onLoadComplete={() => {}} // Avatar load tracking removed for production
