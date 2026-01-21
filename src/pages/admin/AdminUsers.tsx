@@ -15,12 +15,15 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import LoadingScreen from '@/components/LoadingScreen';
-import { Search, UserX, UserCheck } from 'lucide-react';
+import { Search, UserX, UserCheck, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
 
-  const { data: users, isLoading, error } = useQuery({
+  const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: ['admin_users'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -31,6 +34,25 @@ const AdminUsers = () => {
       return data as AdminUser[];
     }
   });
+
+  const handleToggleStatus = async (userId: string, newStatus: 'active' | 'suspended') => {
+    setLoadingUserId(userId);
+    try {
+      const { error } = await supabase.rpc('admin_toggle_user_status', {
+        target_user_id: userId,
+        new_status: newStatus
+      });
+
+      if (error) throw error;
+
+      toast.success(newStatus === 'suspended' ? 'User suspended' : 'User activated');
+      refetch();
+    } catch (err: any) {
+      toast.error('Error updating status: ' + err.message);
+    } finally {
+      setLoadingUserId(null);
+    }
+  };
 
   const filteredUsers = users?.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,12 +108,13 @@ const AdminUsers = () => {
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Bookings</TableHead>
                   <TableHead className="text-right">Spaces</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={user.status === 'suspended' ? 'opacity-50' : ''}>
                       <TableCell className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
@@ -107,7 +130,7 @@ const AdminUsers = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {user.is_suspended ? (
+                        {user.status === 'suspended' ? (
                           <Badge variant="destructive" className="gap-1">
                             <UserX className="h-3 w-3" /> Suspended
                           </Badge>
@@ -126,11 +149,35 @@ const AdminUsers = () => {
                       <TableCell className="text-right font-medium">
                         {user.space_count}
                       </TableCell>
+                      <TableCell className="text-right">
+                        {user.status === 'active' ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleToggleStatus(user.id, 'suspended')}
+                            disabled={loadingUserId === user.id}
+                          >
+                            {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Suspend
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            className="border-green-600 text-green-600 hover:bg-green-50"
+                            size="sm"
+                            onClick={() => handleToggleStatus(user.id, 'active')}
+                            disabled={loadingUserId === user.id}
+                          >
+                            {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Activate
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       No users found.
                     </TableCell>
                   </TableRow>

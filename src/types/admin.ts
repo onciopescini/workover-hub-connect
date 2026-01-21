@@ -17,7 +17,7 @@ export interface AdminUser {
   first_name: string | null;
   last_name: string | null;
   created_at: string;
-  is_suspended: boolean;
+  status: 'active' | 'suspended';
   booking_count: number;
   space_count: number;
 }
