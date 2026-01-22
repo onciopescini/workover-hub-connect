@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { getOrCreateConversation } from '@/lib/conversations';
+import { getOrCreateConversation } from '@/lib/chat';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
@@ -61,7 +61,7 @@ export function MessagesButton({
         conversationId,
         bookingId: booking.id
       });
-      navigate(`/messages/conversation/${conversationId}`);
+      navigate(`/messages/${conversationId}`);
     } catch (e: any) {
       logError('Error opening messages', {
         component: 'MessagesButton',

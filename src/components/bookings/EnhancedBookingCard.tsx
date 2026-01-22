@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BOOKING_STATUS_COLORS, BOOKING_STATUS_LABELS } from "@/types/booking";
 import { ReviewButton } from "./ReviewButton";
-import { MessagesButton } from "@/components/messaging/MessagesButton";
+import { MessagesButton } from "@/components/chat/MessagesButton";
 import { CoworkerList } from "@/components/networking/CoworkerList";
 import { StarRating } from "@/components/ui/StarRating";
 import { BookingQRCode } from "./checkin/BookingQRCode";
