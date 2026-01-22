@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -29,6 +29,24 @@ function addMinutesHHMM(time: string, minutes: number): string {
   return `${newHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}`;
 }
 
+interface ExistingBookingEntry {
+  booking_id?: string;
+  start_time: string;
+  end_time: string;
+  status?: string;
+  user_id?: string;
+}
+
+const isExistingBookingEntry = (value: unknown): value is ExistingBookingEntry => {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return typeof record.start_time === 'string' && typeof record.end_time === 'string';
+};
+
 export interface UseBookingFlowProps {
   spaceId: string;
   pricePerDay: number;
@@ -46,6 +64,28 @@ export interface UseBookingFlowProps {
   onError?: (message: string) => void;
 }
 
+export interface UseBookingFlowResult {
+  currentStep: BookingStep;
+  setCurrentStep: Dispatch<SetStateAction<BookingStep>>;
+  bookingState: BookingState;
+  setBookingState: Dispatch<SetStateAction<BookingState>>;
+  acceptedPolicy: boolean;
+  setAcceptedPolicy: Dispatch<SetStateAction<boolean>>;
+  requestInvoice: boolean;
+  setRequestInvoice: Dispatch<SetStateAction<boolean>>;
+  coworkerFiscalData: CoworkerFiscalData;
+  setCoworkerFiscalData: Dispatch<SetStateAction<CoworkerFiscalData>>;
+  fiscalErrors: Record<string, string>;
+  setFiscalErrors: Dispatch<SetStateAction<Record<string, string>>>;
+  fiscalDataPreFilled: boolean;
+  setFiscalDataPreFilled: Dispatch<SetStateAction<boolean>>;
+  isCheckoutLoading: boolean;
+  handleDateSelect: (date: Date) => Promise<void>;
+  handleTimeRangeSelect: (range: SelectedTimeRange) => Promise<void>;
+  handleConfirmBooking: (validateFiscalData: () => boolean, user: { id: string } | null) => Promise<void>;
+  pricePerHour: number;
+}
+
 export function useBookingFlow({
   spaceId,
   pricePerDay,
@@ -60,7 +100,7 @@ export function useBookingFlow({
   rules,
   onSuccess,
   onError
-}: UseBookingFlowProps) {
+}: UseBookingFlowProps): UseBookingFlowResult {
   const pricePerHour = pricePerHourProp || pricePerDay / 8;
   const { info, error: logError, debug } = useLogger({ context: 'useBookingFlow' });
   const { processCheckout, isLoading: isCheckoutLoading } = useCheckout();
@@ -198,11 +238,13 @@ export function useBookingFlow({
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let existingBookings: any[] = [];
+      let existingBookings: ExistingBookingEntry[] = [];
 
       try {
-        existingBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+        const rpcBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+        existingBookings = Array.isArray(rpcBookings)
+          ? rpcBookings.filter(isExistingBookingEntry)
+          : [];
       } catch (rpcError) {
         logError('RPC failed, using fallback', rpcError as Error);
         const { data: bookings, error: bookingError } = await supabase
@@ -214,12 +256,12 @@ export function useBookingFlow({
 
         if (bookingError) throw bookingError;
 
-        existingBookings = (bookings || []).map(b => ({
-          booking_id: b.id,
-          start_time: b.start_time ? b.start_time.toString().substring(0, 5) : '00:00',
-          end_time: b.end_time ? b.end_time.toString().substring(0, 5) : '00:00',
-          status: b.status,
-          user_id: b.user_id
+        existingBookings = (bookings || []).map((booking) => ({
+          booking_id: booking.id,
+          start_time: booking.start_time ? booking.start_time.toString().substring(0, 5) : '00:00',
+          end_time: booking.end_time ? booking.end_time.toString().substring(0, 5) : '00:00',
+          status: booking.status,
+          user_id: booking.user_id
         }));
       }
 

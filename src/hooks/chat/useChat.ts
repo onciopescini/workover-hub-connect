@@ -21,7 +21,7 @@ interface ConversationQueryResult {
   }[];
 }
 
-interface UseChatResult {
+export interface UseChatResult {
   conversations: Conversation[];
   messages: Message[];
   isLoading: boolean;

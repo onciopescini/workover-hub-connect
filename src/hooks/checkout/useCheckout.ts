@@ -33,7 +33,12 @@ export interface CheckoutResult {
   errorCode?: string; // Add specific error code support
 }
 
-export function useCheckout() {
+export interface UseCheckoutResult {
+  processCheckout: (params: CheckoutParams) => Promise<CheckoutResult>;
+  isLoading: boolean;
+}
+
+export function useCheckout(): UseCheckoutResult {
   const [isLoading, setIsLoading] = useState(false);
   const { debug, error: logError } = useLogger({ context: 'useCheckout' });
   const navigate = useNavigate();

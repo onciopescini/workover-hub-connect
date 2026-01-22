@@ -4,7 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 
-export const useStripeStatus = () => {
+export interface UseStripeStatusResult {
+  isVerifying: boolean;
+  manualRefresh: () => Promise<void>;
+}
+
+export const useStripeStatus = (): UseStripeStatusResult => {
   const { authState, refreshProfile } = useAuth();
   const [isVerifying, setIsVerifying] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
