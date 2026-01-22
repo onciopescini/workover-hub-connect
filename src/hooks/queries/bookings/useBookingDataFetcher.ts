@@ -18,9 +18,9 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
       .from('bookings')
       .select(`
         *,
-        workspaces (
+        spaces (
           id,
-          name,
+          title,
           address,
           photos,
           host_id,
@@ -97,16 +97,16 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
   });
   
   try {
-    // Determine the host's workspaces first to filter bookings?
-    // Or simpler: join workspaces!inner to filter by host_id
+    // Determine the host's spaces first to filter bookings?
+    // Or simpler: join spaces!inner to filter by host_id
 
     let query = supabase
       .from('bookings')
       .select(`
         *,
-        workspaces!inner (
+        spaces!inner (
           id,
-          name,
+          title,
           address,
           photos,
           host_id,
@@ -126,7 +126,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
           created_at
         )
       `)
-      .eq('workspaces.host_id', userId);
+      .eq('spaces.host_id', userId);
 
     // Apply filters with validation
     if (filters?.status && ['pending', 'confirmed', 'cancelled'].includes(filters.status)) {

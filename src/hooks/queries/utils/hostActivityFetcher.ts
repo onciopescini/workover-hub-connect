@@ -7,18 +7,18 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
   const activities: RecentActivity[] = [];
 
   try {
-    // 1. Fetch Host Workspaces first
-    const { data: workspaces, error: wsError } = await (supabase
-      .from('workspaces' as any)
-      .select('id, name')
-      .eq('host_id', hostId)) as any;
+    // 1. Fetch Host Spaces first
+    const { data: spaces, error: wsError } = await supabase
+      .from('spaces')
+      .select('id, title')
+      .eq('host_id', hostId);
 
     if (wsError) throw wsError;
 
-    if (!workspaces || workspaces.length === 0) return [];
+    if (!spaces || spaces.length === 0) return [];
 
-    const workspaceIds = workspaces.map((ws: any) => ws.id);
-    const workspaceMap = new Map(workspaces.map((ws: any) => [ws.id, ws.name]));
+    const spaceIds = spaces.map((s: any) => s.id);
+    const spaceMap = new Map(spaces.map((s: any) => [s.id, s.title]));
 
     // 2. Fetch Recent Bookings
     const { data: recentBookings, error: bookingsError } = await supabase
@@ -32,16 +32,13 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
         user_id,
         profiles (first_name, last_name)
       `)
-      .in('space_id', workspaceIds)
+      .in('space_id', spaceIds)
       .order('created_at', { ascending: false })
       .limit(5);
 
     if (bookingsError) throw bookingsError;
 
     // 3. Fetch Recent Messages
-    // FIX: Disambiguate bookings join using specific foreign key
-    // messages has two FKs to bookings: fk_messages_booking_id and messages_booking_id_fkey
-    // We use messages_booking_id_fkey which is the standard one
     const { data: recentMessages, error: messagesError } = await supabase
       .from('messages')
       .select(`
@@ -55,7 +52,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
         ),
         profiles (first_name, last_name)
       `)
-      .in('bookings.space_id', workspaceIds) // Filter messages where related booking is in host's workspaces
+      .in('bookings.space_id', spaceIds) // Filter messages where related booking is in host's spaces
       .neq('sender_id', hostId) // Don't show messages sent by host
       .order('created_at', { ascending: false })
       .limit(3);
@@ -67,7 +64,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
       // Type assertion for profiles array/object returned by Supabase
       const guestProfile = Array.isArray(booking.profiles) ? booking.profiles[0] : booking.profiles;
       const guestName = guestProfile ? `${guestProfile.first_name || ''} ${guestProfile.last_name || ''}`.trim() : 'Ospite';
-      const spaceTitle = workspaceMap.get(booking.space_id) || 'Spazio';
+      const spaceTitle = spaceMap.get(booking.space_id) || 'Spazio';
 
       activities.push({
         id: booking.id,
@@ -86,7 +83,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
       // Get space title from booking info
       // @ts-ignore - Supabase types might not infer the deep joined booking structure perfectly here
       const bookingSpaceId = message.bookings?.space_id;
-      const spaceTitle = bookingSpaceId ? (workspaceMap.get(bookingSpaceId) || 'Spazio') : 'Spazio';
+      const spaceTitle = bookingSpaceId ? (spaceMap.get(bookingSpaceId) || 'Spazio') : 'Spazio';
 
       activities.push({
         id: message.id,

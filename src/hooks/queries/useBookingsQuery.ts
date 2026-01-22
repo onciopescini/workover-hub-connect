@@ -26,9 +26,9 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
     .from("bookings")
     .select(`
       *,
-      space:workspaces!inner (
+      space:spaces!inner (
         id,
-        title:name,
+        title,
         address,
         photos,
         host_id,
@@ -51,9 +51,9 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       .from("bookings")
       .select(`
         *,
-        space:workspaces!inner (
+        space:spaces!inner (
           id,
-          title:name,
+          title,
           address,
           photos,
           host_id,
@@ -98,7 +98,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       service_completed_at: bookingData.service_completed_at as string | null,
       space: {
         id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string, // Access via alias
+        title: bookingData.space?.title as string,
         address: bookingData.space?.address as string,
         photos: bookingData.space?.photos as string[],
         image_url: (bookingData.space?.photos as string[])?.[0] || '',
@@ -130,7 +130,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       service_completed_at: bookingData.service_completed_at as string | null,
       space: {
         id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string, // Access via alias
+        title: bookingData.space?.title as string,
         address: bookingData.space?.address as string,
         photos: bookingData.space?.photos as string[],
         image_url: (bookingData.space?.photos as string[])?.[0] || '',

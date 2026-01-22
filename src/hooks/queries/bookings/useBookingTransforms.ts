@@ -2,9 +2,9 @@
 import { BookingWithDetails } from "@/types/booking";
 import { logger } from "@/lib/logger";
 
-interface RawWorkspace {
+interface RawSpace {
   id: string;
-  name: string;
+  title: string;
   address: string;
   photos: string[] | null;
   host_id: string;
@@ -32,8 +32,8 @@ interface RawBookingData {
   reservation_token?: string | null;
   service_completed_at?: string | null;
 
-  // The fetcher returns 'workspaces' (joined table)
-  workspaces?: RawWorkspace | RawWorkspace[] | null;
+  // The fetcher returns 'spaces' (joined table)
+  spaces?: RawSpace | RawSpace[] | null;
 
   // Legacy or alternative field structure
   space?: {
@@ -61,21 +61,21 @@ interface RawBookingData {
   payments?: unknown[];
 }
 
-const getWorkspaceData = (booking: RawBookingData) => {
-  // Priority 1: Check 'workspaces' returned by Supabase join
-  if (booking.workspaces) {
-    const ws = Array.isArray(booking.workspaces) ? booking.workspaces[0] : booking.workspaces;
-    if (ws) {
+const getSpaceData = (booking: RawBookingData) => {
+  // Priority 1: Check 'spaces' returned by Supabase join
+  if (booking.spaces) {
+    const s = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
+    if (s) {
       return {
-        id: ws.id,
-        title: ws.name, // Map 'name' from DB to 'title' for UI
-        address: ws.address,
-        image_url: (ws.photos && ws.photos.length > 0) ? ws.photos[0] : '', // Map first photo to image_url
-        photos: ws.photos || [], // Keep photos array for gallery if needed
+        id: s.id,
+        title: s.title,
+        address: s.address,
+        image_url: (s.photos && s.photos.length > 0) ? s.photos[0] : '', // Map first photo to image_url
+        photos: s.photos || [], // Keep photos array for gallery if needed
         type: 'workspace', // Default type as it's not currently fetched
-        host_id: ws.host_id, // CRITICAL: Ensure host_id is mapped
-        price_per_day: ws.price_per_day,
-        confirmation_type: ws.confirmation_type
+        host_id: s.host_id, // CRITICAL: Ensure host_id is mapped
+        price_per_day: s.price_per_day,
+        confirmation_type: s.confirmation_type
       };
     }
   }
@@ -141,7 +141,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
         service_completed_at: booking.service_completed_at || null,
-        space: getWorkspaceData(booking),
+        space: getSpaceData(booking),
         coworker: null, // For coworker bookings, user is the coworker
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };
@@ -189,7 +189,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
         service_completed_at: booking.service_completed_at || null,
-        space: getWorkspaceData(booking),
+        space: getSpaceData(booking),
         coworker: booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null,
         payments: Array.isArray(booking.payments) ? booking.payments : []
       };

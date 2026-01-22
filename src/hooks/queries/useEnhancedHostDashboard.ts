@@ -20,7 +20,7 @@ const useEnhancedHostDashboard = () => {
     queryFn: async () => {
         if (!authState.user?.id) return 0;
         const { count } = await supabase
-          .from('workspaces')
+          .from('spaces')
           .select('id', { count: 'exact', head: true })
           .eq('host_id', authState.user.id);
         return count || 0;
