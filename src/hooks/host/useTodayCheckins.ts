@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
+import type { Database } from "@/integrations/supabase/types";
 
 export interface TodayCheckin {
   id: string;
@@ -12,6 +13,21 @@ export interface TodayCheckin {
   end_time: string;
   status: string;
 }
+
+type TodayCheckinRow = {
+  id: Database["public"]["Tables"]["bookings"]["Row"]["id"];
+  start_time: Database["public"]["Tables"]["bookings"]["Row"]["start_time"];
+  end_time: Database["public"]["Tables"]["bookings"]["Row"]["end_time"];
+  status: Database["public"]["Tables"]["bookings"]["Row"]["status"];
+  profiles: Pick<
+    Database["public"]["Tables"]["profiles"]["Row"],
+    "first_name" | "last_name" | "profile_photo_url"
+  > | null;
+  spaces: Pick<
+    Database["public"]["Tables"]["spaces"]["Row"],
+    "title" | "host_id"
+  > | null;
+};
 
 export const useTodayCheckins = () => {
   const { authState } = useAuth();
@@ -37,7 +53,7 @@ export const useTodayCheckins = () => {
           profiles:user_id (
             first_name,
             last_name,
-            avatar_url
+            profile_photo_url
           ),
           spaces!inner (
             title,
@@ -55,15 +71,15 @@ export const useTodayCheckins = () => {
         throw error;
       }
 
-      return (data || []).map((booking: any) => ({
+      return (data ?? []).map((booking: TodayCheckinRow) => ({
         id: booking.id,
         guest_name: `${booking.profiles?.first_name || ''} ${booking.profiles?.last_name || ''}`.trim() || 'Ospite',
-        guest_avatar: booking.profiles?.avatar_url,
+        guest_avatar: booking.profiles?.profile_photo_url ?? undefined,
         space_name: booking.spaces?.title || 'Spazio',
         start_time: booking.start_time,
         end_time: booking.end_time,
         status: booking.status
-      })) as TodayCheckin[];
+      }));
     },
     enabled: !!userId,
   });
