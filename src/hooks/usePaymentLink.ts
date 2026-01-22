@@ -42,15 +42,15 @@ export const usePaymentLink = () => {
           return;
         }
 
-        // Fetch workspace and host details mainly for validation
-        const { data: workspace, error: wsError } = await supabase
+        // Fetch space and host details mainly for validation
+        const { data: space, error: spaceError } = await supabase
           .from('spaces')
           .select('host_id')
           .eq('id', booking.space_id)
           .single();
 
-        if (wsError || !workspace) {
-          console.error('Workspace fetch error:', wsError);
+        if (spaceError || !space) {
+          console.error('Space fetch error:', spaceError);
           toast.error('Spazio non trovato');
           navigate('/bookings', { replace: true });
           return;
@@ -60,7 +60,7 @@ export const usePaymentLink = () => {
         const { data: hostProfile, error: profileError } = await supabase
           .from('profiles')
           .select('stripe_account_id')
-          .eq('id', workspace.host_id ?? '')
+          .eq('id', space.host_id ?? '')
           .single();
 
         if (profileError || !hostProfile?.stripe_account_id) {
