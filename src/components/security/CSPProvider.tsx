@@ -6,9 +6,11 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     // Only set CSP meta tag for dynamic content security
     // Other security headers are handled by nginx in production
     const setCSPForDynamicContent = () => {
-      // Remove existing CSP meta tags to avoid conflicts
-      const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-      existingCSP.forEach(el => el.remove());
+      // Prefer server/index.html CSP when present to avoid weakening policy
+      const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+      if (existingCSP) {
+        return;
+      }
 
       // Only set essential CSP for dynamic content
       const cspMeta = document.createElement('meta');
@@ -54,7 +56,7 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         object-src 'none';
         base-uri 'self';
         form-action 'self' https://khtqwzvrxzsgfhsslwyz.supabase.co;
-        manifest-src 'self';
+        manifest-src 'self' https://lovable.dev;
         upgrade-insecure-requests;
       `.replace(/\s+/g, ' ').trim();
       
