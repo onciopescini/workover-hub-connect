@@ -6,16 +6,7 @@ import { BookingReviewWithDetails } from "@/types/review";
 import { Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
 import { Json } from "@/integrations/supabase/types";
-
-// Query Keys
-export const hostDashboardKeys = {
-  all: ['hostDashboard'] as const,
-  stats: (hostId: string) => [...hostDashboardKeys.all, 'stats', hostId] as const,
-  bookings: (hostId: string) => [...hostDashboardKeys.all, 'bookings', hostId] as const,
-  messages: (hostId: string) => [...hostDashboardKeys.all, 'messages', hostId] as const,
-  reviews: (hostId: string) => [...hostDashboardKeys.all, 'reviews', hostId] as const,
-  spaces: (hostId: string) => [...hostDashboardKeys.all, 'spaces', hostId] as const,
-};
+import { queryKeys } from "@/lib/react-query-config";
 
 // Helper function to safely convert Json array to string array
 const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
@@ -183,7 +174,7 @@ export const useHostSpacesQuery = (): UseQueryResult<number, Error> => {
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
-    queryKey: hostDashboardKeys.spaces(authState.user?.id || ''),
+    queryKey: queryKeys.hostDashboard.spaces(authState.user?.id || ''),
     queryFn: () => fetchSpacesCount(authState.user?.id || ''),
     enabled: !!authState.user?.id && isHost,
     staleTime: 60000, // 1 minute
@@ -195,7 +186,7 @@ export const useHostBookingsQuery = (): UseQueryResult<BookingWithDetails[], Err
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
-    queryKey: hostDashboardKeys.bookings(authState.user?.id || ''),
+    queryKey: queryKeys.hostDashboard.bookings(authState.user?.id || ''),
     queryFn: () => fetchHostBookings(authState.user?.id || ''),
     enabled: !!authState.user?.id && isHost,
     staleTime: 30000, // 30 seconds
@@ -207,7 +198,7 @@ export const useHostMessagesQuery = (bookings: BookingWithDetails[]): UseQueryRe
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
-    queryKey: hostDashboardKeys.messages(authState.user?.id || ''),
+    queryKey: queryKeys.hostDashboard.messages(authState.user?.id || ''),
     queryFn: () => fetchHostMessages(authState.user?.id || '', bookings),
     enabled: !!authState.user?.id && isHost && bookings.length > 0,
     staleTime: 30000, // 30 seconds
@@ -219,7 +210,7 @@ export const useHostReviewsQuery = (): UseQueryResult<{ reviews: BookingReviewWi
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
   return useQuery({
-    queryKey: hostDashboardKeys.reviews(authState.user?.id || ''),
+    queryKey: queryKeys.hostDashboard.reviews(authState.user?.id || ''),
     queryFn: async () => {
       if (!authState.user?.id) return { reviews: [], averageRating: null };
       

@@ -6,13 +6,14 @@ import { BookingWithDetails } from "@/types/booking";
 import { BookingFilter } from "./useBookingFilters";
 import { fetchCoworkerBookings } from "./useBookingDataFetcher";
 import { transformCoworkerBookings, applySearchFilter } from "./useBookingTransforms";
+import { queryKeys } from "@/lib/react-query-config";
 
 export const useCoworkerBookings = (filters?: BookingFilter) => {
   const { authState } = useAuth();
   const { debug, error } = useLogger({ context: 'useCoworkerBookings' });
   
   return useQuery({
-    queryKey: ['coworker-bookings', authState.user?.id, filters],
+    queryKey: queryKeys.coworkerBookings.list(authState.user?.id, filters),
     queryFn: async (): Promise<BookingWithDetails[]> => {
       const userId = authState.user?.id;
       

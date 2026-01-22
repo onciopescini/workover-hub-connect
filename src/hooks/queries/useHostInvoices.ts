@@ -8,6 +8,7 @@ import {
   createMockCoworkerFiscalData,
   createMockSpaceForm
 } from '../../../tests/factories/mockData';
+import { queryKeys } from "@/lib/react-query-config";
 
 // Mock data generators
 const generateMockPendingInvoices = () => {
@@ -72,7 +73,7 @@ export const useHostPendingInvoices = (hostId: string) => {
   const { isMockMode } = useFiscalMode();
   
   return useQuery({
-    queryKey: ['host-pending-invoices', hostId, isMockMode],
+    queryKey: queryKeys.hostInvoices.pending(hostId, isMockMode),
     queryFn: async () => {
       if (isMockMode) {
         if (import.meta.env.DEV) {
@@ -119,7 +120,7 @@ export const useHostPendingCreditNotes = (hostId: string) => {
   const { isMockMode } = useFiscalMode();
   
   return useQuery({
-    queryKey: ['host-pending-credit-notes', hostId, isMockMode],
+    queryKey: queryKeys.hostInvoices.creditNotes(hostId, isMockMode),
     queryFn: async () => {
       if (isMockMode) {
         if (import.meta.env.DEV) {
@@ -165,7 +166,7 @@ export const useHostInvoiceHistory = (hostId: string, year?: number) => {
   const { isMockMode } = useFiscalMode();
   
   return useQuery({
-    queryKey: ['host-invoice-history', hostId, year, isMockMode],
+    queryKey: queryKeys.hostInvoices.history(hostId, year, isMockMode),
     queryFn: async () => {
       if (isMockMode) {
         if (import.meta.env.DEV) {

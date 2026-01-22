@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { TIME_CONSTANTS } from '@/constants';
+import { queryKeys } from "@/lib/react-query-config";
 
 export interface SpaceLocation {
   space_id: string;
@@ -23,7 +24,7 @@ export interface SpaceLocation {
  */
 export const useSpaceLocation = (spaceId: string | undefined, enabled: boolean = true) => {
   return useQuery({
-    queryKey: ['space-location', spaceId],
+    queryKey: queryKeys.spaceLocation.detail(spaceId),
     queryFn: async () => {
       if (!spaceId) {
         throw new Error('Space ID is required');
@@ -63,7 +64,7 @@ export const useSpaceLocation = (spaceId: string | undefined, enabled: boolean =
  */
 export const useHasConfirmedBooking = (spaceId: string | undefined) => {
   return useQuery({
-    queryKey: ['has-confirmed-booking', spaceId],
+    queryKey: queryKeys.spaceAccess.confirmedBooking(spaceId),
     queryFn: async () => {
       if (!spaceId) return false;
 
