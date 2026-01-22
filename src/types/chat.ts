@@ -4,7 +4,6 @@ export interface ChatParticipant {
   last_name: string | null;
   profile_photo_url: string | null;
   avatar_url: string | null;
-  email?: string | null;
 }
 
 export interface Conversation {

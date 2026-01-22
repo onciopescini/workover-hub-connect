@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { BookingWithDetails } from "@/types/booking";
@@ -178,7 +178,7 @@ const fetchHostMessages = async (hostId: string, bookings: BookingWithDetails[])
 };
 
 // Query hooks
-export const useHostSpacesQuery = () => {
+export const useHostSpacesQuery = (): UseQueryResult<number, Error> => {
   const { authState } = useAuth();
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
@@ -190,7 +190,7 @@ export const useHostSpacesQuery = () => {
   });
 };
 
-export const useHostBookingsQuery = () => {
+export const useHostBookingsQuery = (): UseQueryResult<BookingWithDetails[], Error> => {
   const { authState } = useAuth();
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
@@ -202,7 +202,7 @@ export const useHostBookingsQuery = () => {
   });
 };
 
-export const useHostMessagesQuery = (bookings: BookingWithDetails[]) => {
+export const useHostMessagesQuery = (bookings: BookingWithDetails[]): UseQueryResult<Message[], Error> => {
   const { authState } = useAuth();
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
@@ -214,7 +214,7 @@ export const useHostMessagesQuery = (bookings: BookingWithDetails[]) => {
   });
 };
 
-export const useHostReviewsQuery = () => {
+export const useHostReviewsQuery = (): UseQueryResult<{ reviews: BookingReviewWithDetails[]; averageRating: number | null }, Error> => {
   const { authState } = useAuth();
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   

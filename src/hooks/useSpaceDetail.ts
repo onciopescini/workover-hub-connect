@@ -1,17 +1,60 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useSpaceReviewsQuery } from '@/hooks/queries/useSpaceReviewsQuery';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 import { Space } from '@/types/space';
+import type { Database, Json } from '@/integrations/supabase/types';
 
-export const useSpaceDetail = (id: string | undefined) => {
+type AvailabilitySlot = {
+  enabled?: boolean;
+  slots?: Json[];
+};
+
+type AvailabilityPayload = {
+  recurring?: Record<string, AvailabilitySlot>;
+  exceptions?: Json[];
+};
+
+type SpaceHostProfile = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  'id' | 'first_name' | 'last_name' | 'profile_photo_url' | 'bio' | 'created_at' | 'stripe_account_id' | 'stripe_connected'
+>;
+
+type SpaceDetail = Space & {
+  host?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    profile_photo_url: string | null;
+    bio?: string;
+    created_at: string;
+  };
+  host_total_spaces: number;
+  host_stripe_account_id: string;
+  host_stripe_connected: boolean;
+};
+
+interface UseSpaceDetailResult {
+  space: SpaceDetail | null | undefined;
+  isLoading: boolean;
+  error: Error | null;
+  reviews: ReturnType<typeof useSpaceReviewsQuery>['data'];
+  cachedRating: number;
+}
+
+const isAvailabilityPayload = (value: unknown): value is AvailabilityPayload => {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+};
+
+export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => {
   const queryClient = useQueryClient();
 
-  const { data: space, isLoading: spaceLoading, error: spaceError } = useQuery({
+  const { data: space, isLoading: spaceLoading, error: spaceError } = useQuery<SpaceDetail | null, Error>({
     queryKey: ['space', id],
-    queryFn: async () => {
+    queryFn: async (): Promise<SpaceDetail | null> => {
       if (!id) {
         throw new Error('Space ID not provided');
       }
@@ -42,17 +85,17 @@ export const useSpaceDetail = (id: string | undefined) => {
         sreLogger.warn('Error fetching host info', { hostId: workspaceData.host_id }, hostError);
       }
 
-      let availabilityData = workspaceData.availability;
+      let availabilityData: Json | null = workspaceData.availability;
 
       // Normalize availability
-      let normalizedAvailability = null;
+      let normalizedAvailability: AvailabilityPayload | null = null;
       try {
         if (typeof availabilityData === 'string') {
           availabilityData = JSON.parse(availabilityData);
         }
 
-        if (availabilityData && typeof availabilityData === 'object') {
-          const availObj = availabilityData as any;
+        if (isAvailabilityPayload(availabilityData)) {
+          const availObj = availabilityData;
           const defaultDay = { enabled: false, slots: [] };
           normalizedAvailability = {
             recurring: {
@@ -72,19 +115,7 @@ export const useSpaceDetail = (id: string | undefined) => {
         normalizedAvailability = null;
       }
 
-      const spaceObj: Space & {
-        host?: {
-          id: string;
-          first_name: string;
-          last_name: string;
-          profile_photo_url: string | null;
-          bio?: string;
-          created_at: string;
-        };
-        host_total_spaces: number;
-        host_stripe_account_id: string;
-        host_stripe_connected: boolean;
-      } = {
+      const spaceObj: SpaceDetail = {
         ...workspaceData,
         availability: normalizedAvailability,
         photos: workspaceData.photos || [],
@@ -163,11 +194,11 @@ export const useSpaceDetail = (id: string | undefined) => {
           table: 'profiles',
           filter: `id=eq.${space.host_id}`
         },
-        (payload: any) => {
+        (payload: RealtimePostgresChangesPayload<SpaceHostProfile>) => {
           const newStripeConnected = payload.new.stripe_connected;
           const newStripeAccountId = payload.new.stripe_account_id;
 
-          queryClient.setQueryData(['space', id], (oldData: any) => {
+          queryClient.setQueryData(['space', id], (oldData: SpaceDetail | null | undefined) => {
             if (!oldData) return oldData;
 
             return {
