@@ -42,7 +42,7 @@ export const useUnreadCount = () => {
           .from('bookings')
           .select('id', { count: 'exact' })
           .eq('status', 'pending')
-          // This is a simplified check. Ideally we join with workspaces where host_id = user.id
+          // This is a simplified check. Ideally we join with spaces where host_id = user.id
           // But for now, we rely on RLS or specific RPCs if available.
           // Let's try to filter by spaces owned by user if possible, or use the 'host_id' logic if RLS allows.
           // Assuming RLS filters bookings for the host correctly:

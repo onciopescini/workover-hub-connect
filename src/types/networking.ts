@@ -29,7 +29,7 @@ export interface ConnectionSuggestion {
   first_name: string;
   last_name: string;
   avatar_url: string | null;
-  workspace_name: string;
+  space_name: string;
   booking_date: string;
   suggested_user?: {
     id: string;

@@ -4,7 +4,7 @@
  * Extracted from PublicSpaces.tsx to separate concerns and improve maintainability.
  * Handles filters, location, and data fetching logic.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLocationParams } from '@/hooks/useLocationParams';
@@ -13,17 +13,27 @@ import { useMapboxGeocoding } from '@/hooks/useMapboxGeocoding';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useLogger } from '@/hooks/useLogger';
 import { TIME_CONSTANTS } from "@/constants";
+import { resolveSpaceFeatures } from "@/lib/space-mappers";
 
-// Field selection for direct workspaces query (simulating the view structure)
-const WORKSPACES_SELECT = [
+type PointObject = { x: number; y: number };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isPointObject = (value: unknown): value is PointObject =>
+  isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number';
+
+
+// Field selection for direct spaces query (simulating the view structure)
+const SPACES_SELECT = [
   'id',
-  'name', // Will be mapped to title
+  'title',
   'description',
   'category',
   'work_environment',
   'max_capacity',
   'confirmation_type',
-  'features', // Will be mapped to workspace_features
+  'features',
   'amenities',
   'seating_types',
   'ideal_guest_tags',
@@ -63,11 +73,8 @@ function parsePoint(p: unknown): { lat?: number; lng?: number } {
   }
   
   // Object format: {x: lng, y: lat}
-  if (typeof p === 'object' && p !== null) {
-    const { x, y } = p as any;
-    if (typeof x === 'number' && typeof y === 'number') {
-      return { lng: x, lat: y };
-    }
+  if (isPointObject(p)) {
+    return { lng: p.x, lat: p.y };
   }
   
   return {};
@@ -79,10 +86,31 @@ function parsePoint(p: unknown): { lat?: number; lng?: number } {
  * - Constructs address from city_name + country_code
  * - Converts arrays to singular for backward compatibility
  */
-function normalizePublicSpace(raw: any): any {
-  // Handle both raw workspaces data (with lat/lng) and view data (with approximate_location)
-  let lat = raw.latitude;
-  let lng = raw.longitude;
+type NormalizedSpace = Record<string, unknown> & {
+  id?: string;
+  title?: string;
+  name?: string;
+  category?: string;
+  work_environment?: string;
+  max_capacity?: number | null;
+  price_per_day?: number | null;
+  price_per_hour?: number | null;
+  city_name?: string;
+  country_code?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string;
+  features?: string[];
+  seating_types?: string[] | null;
+  ideal_guest_tags?: string[] | null;
+  seating_type?: string | null;
+  ideal_guest?: string | null;
+};
+
+function normalizePublicSpace(raw: Record<string, unknown>): NormalizedSpace {
+  // Handle both raw spaces data (with lat/lng) and view data (with approximate_location)
+  let lat = typeof raw.latitude === 'number' ? raw.latitude : undefined;
+  let lng = typeof raw.longitude === 'number' ? raw.longitude : undefined;
 
   if (raw.approximate_location && (lat === undefined || lng === undefined)) {
     const point = parsePoint(raw.approximate_location);
@@ -90,23 +118,27 @@ function normalizePublicSpace(raw: any): any {
     lng = point.lng;
   }
   
-  // Mapping 'workspaces' columns to expected UI props
-  const title = raw.title || raw.name;
-  const workspace_features = raw.workspace_features || raw.features;
-  const city_name = raw.city_name || raw.city;
-  const country_code = raw.country_code || 'IT'; // Default to IT as per migration logic
+  const title = typeof raw.title === 'string' ? raw.title : undefined;
+  const name = typeof raw.name === 'string' ? raw.name : undefined;
+  const features = resolveSpaceFeatures(raw);
+  const cityName = typeof raw.city_name === 'string' ? raw.city_name : undefined;
+  const city = typeof raw.city === 'string' ? raw.city : undefined;
+  const countryCode = typeof raw.country_code === 'string' ? raw.country_code : 'IT';
 
   return {
     ...raw,
-    title,
-    workspace_features,
-    city_name,
-    country_code,
+    title: title ?? name,
+    features,
+    city_name: cityName ?? city,
+    country_code: countryCode,
 
     // Derived fields for UI compatibility
     latitude: lat ?? null,
     longitude: lng ?? null,
-    address: raw.address || [city_name, country_code].filter(Boolean).join(', ') || '',
+    address:
+      (typeof raw.address === 'string' && raw.address) ||
+      [cityName ?? city, countryCode].filter(Boolean).join(', ') ||
+      '',
     
     // Backward compatibility: singular from array
     seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
@@ -125,6 +157,18 @@ function normalizePublicSpace(raw: any): any {
 const BATCH_SIZE = 50;
 const MAX_RETRIES = 2;
 
+type AvailabilityItem = {
+  space_id: string;
+  available_capacity: number;
+  max_capacity: number;
+};
+
+const isAvailabilityItem = (value: unknown): value is AvailabilityItem =>
+  isRecord(value) &&
+  typeof value.space_id === 'string' &&
+  typeof value.available_capacity === 'number' &&
+  typeof value.max_capacity === 'number';
+
 const checkSpacesAvailabilityBatch = async (
   spaceIds: string[],
   date: Date,
@@ -138,9 +182,9 @@ const checkSpacesAvailabilityBatch = async (
   }
   
   const { info, warn, error } = { 
-    info: (msg: string, ctx?: any) => { if (import.meta.env.DEV) console.log(msg, ctx) },
-    warn: (msg: string, ctx?: any) => console.warn(msg, ctx),
-    error: (msg: string, ctx?: any) => console.error(msg, ctx)
+    info: (msg: string, ctx?: Record<string, unknown>) => { if (import.meta.env.DEV) console.log(msg, ctx) },
+    warn: (msg: string, ctx?: Record<string, unknown>) => console.warn(msg, ctx),
+    error: (msg: string, ctx?: Record<string, unknown>) => console.error(msg, ctx)
   };
   
   info('Batch availability check started', {
@@ -157,16 +201,16 @@ const checkSpacesAvailabilityBatch = async (
     
     while (retries <= MAX_RETRIES) {
       try {
-        const startTime = performance.now();
+        const performanceStart = performance.now();
         
         const { data, error: rpcError } = await supabase.rpc('get_spaces_availability_batch', {
           space_ids: chunk,
           check_date: dateStr,
-          check_start_time: startTime as any, // Type coercion needed due to function signature
-          check_end_time: endTime as any
+          check_start_time: startTime,
+          check_end_time: endTime
         });
         
-        const duration = performance.now() - startTime;
+        const duration = performance.now() - performanceStart;
         
         if (rpcError) throw rpcError;
         
@@ -207,7 +251,12 @@ const checkSpacesAvailabilityBatch = async (
   
   results.forEach((result, index) => {
     if (result.status === 'fulfilled' && result.value) {
-      result.value.forEach((item: any) => {
+      const items = Array.isArray(result.value) ? result.value : [];
+      items.forEach((item) => {
+        if (!isAvailabilityItem(item)) {
+          return;
+        }
+
         availabilityMap[item.space_id] = {
           isAvailable: item.available_capacity > 0,
           availableSpots: item.available_capacity,
@@ -269,7 +318,24 @@ const DEFAULT_FILTERS: SpaceFilters = {
   endTime: null
 };
 
-export const usePublicSpacesLogic = () => {
+type MapInteractionState = ReturnType<typeof useMapCardInteraction>;
+
+interface UsePublicSpacesLogicResult extends MapInteractionState {
+  filters: SpaceFilters;
+  userLocation: { lat: number; lng: number } | null;
+  mapCenter: { lat: number; lng: number } | null;
+  radiusKm: number;
+  searchMode: 'text' | 'radius';
+  spaces: NormalizedSpace[] | undefined;
+  isLoading: boolean;
+  error: unknown;
+  handleFiltersChange: (newFilters: SpaceFilters) => void;
+  handleRadiusChange: (newRadius: number) => void;
+  setSearchMode: Dispatch<SetStateAction<'text' | 'radius'>>;
+  getUserLocation: () => Promise<void>;
+}
+
+export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
   const {
     initialCity,
     initialCoordinates,
@@ -413,7 +479,7 @@ export const usePublicSpacesLogic = () => {
   }, [filters.location, stableGeocodeAddress, info, warn]); // Removed updateLocationParam from dep to avoid loop
 
   // Spaces data fetching with React Query - optimized
-  const spacesQuery = useQuery({
+  const spacesQuery = useQuery<NormalizedSpace[], Error>({
     queryKey: ['public-spaces', filterKey, searchMode, radiusKm],
     queryFn: async () => {
       info('Fetching public spaces with filters', { filters, searchMode, radiusKm });
@@ -426,7 +492,18 @@ export const usePublicSpacesLogic = () => {
             radius: radiusKm 
           });
           
-          const params: any = {
+          const params: {
+            p_lat: number;
+            p_lng: number;
+            p_radius_km: number;
+            p_limit: number;
+            p_category?: string;
+            p_work_environment?: string;
+            p_min_price?: number;
+            p_max_price?: number;
+            p_amenities?: string[];
+            p_min_capacity?: number;
+          } = {
             p_lat: filters.coordinates.lat,
             p_lng: filters.coordinates.lng,
             p_radius_km: radiusKm,
@@ -479,7 +556,16 @@ export const usePublicSpacesLogic = () => {
       if (filters.location) {
         info('Using text search by location', { location: filters.location });
         
-        const params: any = {
+        const params: {
+          p_search_text: string;
+          p_limit: number;
+          p_category?: string;
+          p_work_environment?: string;
+          p_min_price?: number;
+          p_max_price?: number;
+          p_amenities?: string[];
+          p_min_capacity?: number;
+        } = {
           p_search_text: filters.location,
           p_limit: 100
         };
@@ -504,59 +590,61 @@ export const usePublicSpacesLogic = () => {
         return Array.isArray(data) ? data : [];
       }
       
-      // Fallback: Use standard query (fetch all from workspaces + client-side filtering)
-      info('Using standard query with client-side filtering (direct to workspaces)');
+      // Fallback: Use standard query (fetch all from spaces + client-side filtering)
+      info('Using standard query with client-side filtering (direct to spaces)');
       
       const { data: spacesData, error: spacesError } = await supabase
-        .from('spaces') // Explicit cast as generic
-        .select(WORKSPACES_SELECT)
+        .from('spaces')
+        .select(SPACES_SELECT)
         .eq('published', true);
       
       if (spacesError) {
-        info('Failed to fetch workspaces', { error: spacesError });
+        info('Failed to fetch spaces', { error: spacesError });
         throw spacesError;
       }
 
       // Normalize data: derive lat/lng, address, and singular fields
       const normalizedSpaces = Array.isArray(spacesData) 
-        ? spacesData.map(normalizePublicSpace) 
+        ? spacesData
+            .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
+            .filter((space): space is NormalizedSpace => space !== null)
         : [];
-      let filteredSpaces = normalizedSpaces;
+      let filteredSpaces: NormalizedSpace[] = normalizedSpaces;
 
       // Apply filters to the fetched data (client-side filtering)
       if (filters.category) {
-        filteredSpaces = filteredSpaces.filter((space: any) => space && space.category === filters.category);
+        filteredSpaces = filteredSpaces.filter((space) => space.category === filters.category);
       }
       if (filters.workEnvironment) {
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.work_environment === filters.workEnvironment
+        filteredSpaces = filteredSpaces.filter((space) => 
+          space.work_environment === filters.workEnvironment
         );
       }
       if (filters.priceRange[1] < 200) {
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.price_per_day <= filters.priceRange[1]
+        filteredSpaces = filteredSpaces.filter((space) => 
+          typeof space.price_per_day === 'number' && space.price_per_day <= filters.priceRange[1]
         );
       }
       if (filters.priceRange[0] > 0) {
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.price_per_day >= filters.priceRange[0]
+        filteredSpaces = filteredSpaces.filter((space) => 
+          typeof space.price_per_day === 'number' && space.price_per_day >= filters.priceRange[0]
         );
       }
       if (filters.capacity[1] < 20) {
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.max_capacity <= filters.capacity[1]
+        filteredSpaces = filteredSpaces.filter((space) => 
+          typeof space.max_capacity === 'number' && space.max_capacity <= filters.capacity[1]
         );
       }
       if (filters.capacity[0] > 1) {
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && space.max_capacity >= filters.capacity[0]
+        filteredSpaces = filteredSpaces.filter((space) => 
+          typeof space.max_capacity === 'number' && space.max_capacity >= filters.capacity[0]
         );
       }
       if (filters.location) {
         // Flexible city search: search in city_name, country_code AND derived address
         const searchTerm = filters.location.trim().toLowerCase();
-        filteredSpaces = filteredSpaces.filter((space: any) => 
-          space && (
+        filteredSpaces = filteredSpaces.filter((space) => 
+          (
             (space.city_name || '').toLowerCase().includes(searchTerm) ||
             (space.country_code || '').toLowerCase().includes(searchTerm) ||
             (space.address || '').toLowerCase().includes(searchTerm)
@@ -566,7 +654,7 @@ export const usePublicSpacesLogic = () => {
 
       // Filter by availability (date/time range) with capacity check
       if (filters.startDate && filters.startTime && filters.endTime) {
-        const spaceIds = filteredSpaces.map((space: any) => space.id);
+        const spaceIds = filteredSpaces.map((space) => space.id).filter((id): id is string => typeof id === 'string');
         
         // Use batch RPC for efficient availability check
         const availabilityMap = await checkSpacesAvailabilityBatch(
@@ -577,7 +665,10 @@ export const usePublicSpacesLogic = () => {
         );
         
         // Filter spaces with available capacity
-        filteredSpaces = filteredSpaces.filter((space: any) => {
+        filteredSpaces = filteredSpaces.filter((space) => {
+          if (!space.id) {
+            return false;
+          }
           const availability = availabilityMap[space.id];
           return availability && availability.isAvailable;
         });

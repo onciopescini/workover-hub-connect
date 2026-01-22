@@ -1,10 +1,9 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-// Exteding the auto-generated Space type to include optional fields that might be missing or added via views/migrations
-// This helps avoid 'as any' casting for known fields like timezone
-// Database types might still reference 'workspaces' but we alias it
-export type Space = Database["public"]["Tables"]["workspaces"]["Row"] & {
+// Extending the auto-generated Space type to include optional fields that might be missing or added via views/migrations
+// This helps avoid unsafe casting for known fields like timezone
+export type Space = Omit<Database["public"]["Tables"]["spaces"]["Row"], "workspace_features"> & {
   timezone?: string;
   city?: string;
   country_code?: string;
@@ -20,21 +19,28 @@ export type Space = Database["public"]["Tables"]["workspaces"]["Row"] & {
   revision_notes?: string | null;
   revision_requested?: boolean | null;
   approximate_location?: unknown;
+  features: string[];
+  name?: string;
+  distance_km?: number;
   // UI Alias Properties - mapped from database fields for backwards compatibility
-  title?: string;        // Alias for 'name'
+  title?: string;        // Alias for 'title'
   capacity?: number;     // Alias for 'max_capacity'
   city_name?: string;    // Alias for 'city'
 };
 
-export type SpaceInsert = Database["public"]["Tables"]["workspaces"]["Insert"];
-export type SpaceUpdate = Database["public"]["Tables"]["workspaces"]["Update"];
+export type SpaceInsert = Omit<Database["public"]["Tables"]["spaces"]["Insert"], "workspace_features"> & {
+  features?: string[];
+};
+export type SpaceUpdate = Omit<Database["public"]["Tables"]["spaces"]["Update"], "workspace_features"> & {
+  features?: string[];
+};
 
-export const WORKSPACE_FEATURES_OPTIONS = [
+export const SPACE_FEATURES_OPTIONS = [
   "Dedicated desk",
   "Shared table",
   "Standing desk",
   "Lounge area",
-  "Outdoor workspace",
+  "Outdoor space",
   "Private office",
   "Meeting room",
   "Phone booth"

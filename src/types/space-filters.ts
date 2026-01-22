@@ -38,7 +38,7 @@ export interface Space {
   max_capacity: number;
   photos: string[];
   amenities: string[];
-  workspace_features: string[];
+  features: string[];
   seating_types: string[];
   address: string;
   host_id: string;

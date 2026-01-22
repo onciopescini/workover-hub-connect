@@ -12,13 +12,13 @@ interface SpaceDetailsProps {
   workEnvironment: string;
   maxCapacity: number;
   confirmationType: string;
-  workspaceFeatures: string[];
+  features: string[];
   amenities: string[];
   seatingTypes: string[];
   idealGuestTags: string[];
   eventFriendlyTags: string[];
   rules: string;
-  onInputChange: (field: string, value: any) => void;
+  onInputChange: (field: string, value: string | number | boolean | string[] | null) => void;
   onCheckboxArrayChange: (field: string, value: string, checked: boolean) => void;
   errors: Record<string, string>;
   isSubmitting: boolean;
@@ -28,7 +28,7 @@ export const SpaceDetails = ({
   workEnvironment,
   maxCapacity,
   confirmationType,
-  workspaceFeatures,
+  features,
   amenities,
   seatingTypes,
   idealGuestTags,
@@ -63,7 +63,7 @@ export const SpaceDetails = ({
         <Separator />
 
         <FeaturesSection
-          workspaceFeatures={workspaceFeatures}
+          features={features}
           amenities={amenities}
           seatingTypes={seatingTypes}
           onCheckboxArrayChange={onCheckboxArrayChange}

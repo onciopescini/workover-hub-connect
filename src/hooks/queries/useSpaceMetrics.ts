@@ -69,7 +69,7 @@ export const useSpaceMetrics = (spaceId: string) => {
         if (!spaceData) throw new Error('Space not found');
 
         // Fetch bookings for this space to calculate basic metrics
-        // Assuming bookings link to space_id (which matches workspace id)
+        // Assuming bookings link to space_id (which matches the space id)
         const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('status, booking_date, created_at, cancelled_at') // Add other needed fields if we had payment amount

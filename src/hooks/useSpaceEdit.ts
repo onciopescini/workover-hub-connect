@@ -6,6 +6,7 @@ import { Space } from "@/types/space";
 import { sreLogger } from '@/lib/sre-logger';
 import { useAuth } from '@/hooks/auth/useAuth';
 import type { Database } from '@/integrations/supabase/types';
+import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 
 type SpaceRow = Database['public']['Tables']['spaces']['Row'];
 
@@ -53,17 +54,7 @@ export const useSpaceEdit = (id: string | undefined) => {
         const spaceRow = data as SpaceRow | null;
 
         if (spaceRow) {
-          // Map workspace data to Space type
-          // We map 'name' -> 'title', 'features' -> 'workspace_features', etc.
-          // This ensures the form receives data in the shape it expects.
-          const mappedSpace: Space = {
-            ...spaceRow,
-            name: spaceRow.title,
-            title: spaceRow.title,
-            features: spaceRow.workspace_features,
-            capacity: spaceRow.max_capacity,
-          };
-
+          const mappedSpace: Space = mapSpaceRowToSpace(spaceRow);
           setSpace(mappedSpace);
         } else {
            toast.error("Space not found or permission denied");

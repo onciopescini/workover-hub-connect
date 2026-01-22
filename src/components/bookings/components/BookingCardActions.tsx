@@ -19,6 +19,8 @@ interface BookingCardActionsProps {
 
 export const BookingCardActions = ({ booking, displayData, actions, userRole = 'coworker' }: BookingCardActionsProps) => {
   const { canCancel, showReviewButton, otherParty } = displayData;
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
 
   // Show Pay button for pending_payment or pending with slot reservation
   const showPayButton = booking.status === 'pending_payment' || 
@@ -27,8 +29,6 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
   const handlePayNow = async () => {
     try {
       // Validate host connection status
-      // Explicitly querying 'workspaces' table as source of truth
-      // Type assertion needed as Supabase types are stale for 'workspaces' table
       const { data: spaceData, error: spaceError } = await supabase
         .from('spaces')
         .select('profiles(stripe_connected)')
@@ -37,10 +37,10 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
       
       // Strict validation: check for explicit true on stripe_connected
       // Handle profiles as potential array (Supabase relation)
-      const profiles = (spaceData as any)?.profiles;
-      const stripeConnected = Array.isArray(profiles) 
-        ? profiles[0]?.stripe_connected 
-        : profiles?.stripe_connected;
+      const profilesValue = isRecord(spaceData) ? spaceData.profiles : undefined;
+      const stripeConnected = Array.isArray(profilesValue)
+        ? isRecord(profilesValue[0]) && profilesValue[0].stripe_connected === true
+        : isRecord(profilesValue) && profilesValue.stripe_connected === true;
       if (spaceError || !stripeConnected) {
         toast.error('Host non collegato a Stripe');
         return;

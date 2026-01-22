@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Connection, ConnectionSuggestion, Coworker } from "@/types/networking";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { sreLogger } from '@/lib/sre-logger';
+import { mapConnectionSuggestion } from "@/lib/networking-mappers";
 
 interface UseNetworkingProps {
   initialSuggestions?: ConnectionSuggestion[];
@@ -56,9 +57,10 @@ export const useNetworking = ({ initialSuggestions = [], initialConnections = []
         setError(error.message);
         toast.error("Failed to load connection suggestions.");
       } else {
-        // Data is already in the correct format thanks to TypeScript interface update
-        // but we might need to cast or validate
-        setSuggestions((data as unknown as ConnectionSuggestion[]) || []);
+        const mappedSuggestions = (data || [])
+          .map((item) => mapConnectionSuggestion(item))
+          .filter((item): item is ConnectionSuggestion => item !== null);
+        setSuggestions(mappedSuggestions);
       }
     } catch (err: unknown) {
       sreLogger.error('Unexpected error fetching connection suggestions', {}, err as Error);

@@ -32,7 +32,7 @@ export interface AdminBooking {
   coworker_name: string;
   coworker_email: string;
   coworker_avatar_url: string | null;
-  workspace_name: string;
+  space_name: string;
   host_name: string;
   host_email: string;
 }
@@ -42,7 +42,7 @@ export interface AdminActionLog {
   admin_id: string;
   action: string;
   target_id?: string;
-  details?: any;
+  details?: unknown;
   created_at: string;
   admin_email?: string;
 }

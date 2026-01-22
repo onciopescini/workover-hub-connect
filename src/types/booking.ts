@@ -102,7 +102,9 @@ export type BookingWithDetails = {
     type?: string;
     host_id: string;
     price_per_day?: number;
+    price_per_hour?: number;
     confirmation_type?: string;
+    cancellation_policy?: string | null;
   };
   coworker?: {
     id: string;
@@ -136,7 +138,7 @@ export type RawBookingData = {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
-  fiscal_data?: any; // JSONB
+  fiscal_data?: unknown; // JSONB
 };
 
 // Message type definition to match our database schema

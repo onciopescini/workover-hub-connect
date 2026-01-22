@@ -12,6 +12,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { AdminBooking } from '@/types/admin';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { mapAdminBookingRecord } from '@/lib/admin-mappers';
 import {
   Table,
   TableBody,
@@ -34,7 +35,9 @@ export const AdminBookingsPage = () => {
         throw error;
       }
 
-      return data as AdminBooking[];
+      return (data || [])
+        .map((item) => mapAdminBookingRecord(item))
+        .filter((item): item is AdminBooking => item !== null);
     },
   });
 
@@ -59,7 +62,7 @@ export const AdminBookingsPage = () => {
     const matchesSearch =
       (booking.coworker_name?.toLowerCase() || '').includes(searchLower) ||
       (booking.coworker_email?.toLowerCase() || '').includes(searchLower) ||
-      (booking.workspace_name?.toLowerCase() || '').includes(searchLower) ||
+      (booking.space_name?.toLowerCase() || '').includes(searchLower) ||
       (booking.host_name?.toLowerCase() || '').includes(searchLower) ||
       booking.booking_id.toLowerCase().includes(searchLower);
 
@@ -122,7 +125,7 @@ export const AdminBookingsPage = () => {
             <div className="relative flex-1 w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by name, email, workspace..."
+                placeholder="Search by name, email, space..."
                 className="pl-9"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -195,7 +198,7 @@ export const AdminBookingsPage = () => {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900 line-clamp-1">
-                            {booking.workspace_name}
+                            {booking.space_name}
                           </span>
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <MapPin className="h-3 w-3" />

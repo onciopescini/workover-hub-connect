@@ -9,7 +9,7 @@ export interface ValidationResult {
 }
 
 // Generic form field change handler
-export interface GenericFormHandler<T = any> {
+export interface GenericFormHandler<T = unknown> {
   (field: string, value: T): void;
 }
 
@@ -28,7 +28,7 @@ export interface SpaceFormData {
   max_capacity: number;
   address: string;
   amenities: string[];
-  workspace_features: string[];
+  features: string[];
   seating_types: string[];
   photos: string[];
   availability: Record<string, unknown>;
@@ -40,7 +40,7 @@ export interface SearchFilters {
   category?: string;
   location?: string;
   priceRange?: [number, number];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Networking types

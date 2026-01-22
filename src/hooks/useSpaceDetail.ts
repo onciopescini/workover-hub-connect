@@ -7,6 +7,7 @@ import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceLocation, useHasConfirmedBooking } from '@/hooks/queries/useSpaceLocation';
 import { Space } from '@/types/space';
 import type { Database, Json } from '@/integrations/supabase/types';
+import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 
 type AvailabilitySlot = {
   enabled?: boolean;
@@ -59,18 +60,17 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
         throw new Error('Space ID not provided');
       }
 
-      // Query 'workspaces' table directly
-      const { data: workspaceData, error: workspaceError } = await supabase
+      const { data: spaceData, error: spaceError } = await supabase
         .from('spaces')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
-      if (workspaceError) {
-        throw workspaceError;
+      if (spaceError) {
+        throw spaceError;
       }
 
-      if (!workspaceData) {
+      if (!spaceData) {
         return null;
       }
 
@@ -78,14 +78,14 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
       const { data: hostData, error: hostError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, profile_photo_url, bio, created_at, stripe_account_id, stripe_connected')
-        .eq('id', workspaceData.host_id || '')
+        .eq('id', spaceData.host_id || '')
         .single();
 
       if (hostError) {
-        sreLogger.warn('Error fetching host info', { hostId: workspaceData.host_id }, hostError);
+        sreLogger.warn('Error fetching host info', { hostId: spaceData.host_id }, hostError);
       }
 
-      let availabilityData: Json | null = workspaceData.availability;
+      let availabilityData: Json | null = spaceData.availability;
 
       // Normalize availability
       let normalizedAvailability: AvailabilityPayload | null = null;
@@ -115,17 +115,19 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
         normalizedAvailability = null;
       }
 
+      const mappedSpace = mapSpaceRowToSpace(spaceData);
+
       const spaceObj: SpaceDetail = {
-        ...workspaceData,
+        ...mappedSpace,
         availability: normalizedAvailability,
-        photos: workspaceData.photos || [],
-        amenities: workspaceData.amenities || [],
-        seating_types: workspaceData.seating_types || [],
-        features: workspaceData.features || [],
-        event_friendly_tags: workspaceData.event_friendly_tags || [],
-        ideal_guest_tags: workspaceData.ideal_guest_tags || [],
+        photos: mappedSpace.photos || [],
+        amenities: mappedSpace.amenities || [],
+        seating_types: mappedSpace.seating_types || [],
+        features: mappedSpace.features || [],
+        event_friendly_tags: mappedSpace.event_friendly_tags || [],
+        ideal_guest_tags: mappedSpace.ideal_guest_tags || [],
         timezone: undefined,
-        city: workspaceData.city || undefined,
+        city: mappedSpace.city || undefined,
         country_code: undefined,
         host: hostData ? {
           id: hostData.id,

@@ -7,15 +7,17 @@ import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
 import type { Database } from "@/integrations/supabase/types";
+import type { SpaceInsert } from "@/types/space";
+import { toSpaceInsertPayload, toSpaceUpdatePayload } from "@/lib/space-mappers";
 
-// Form data type that includes UI field names (title, workspace_features) mapped to DB columns
+// Form data type that includes UI field names mapped to DB columns
 interface SpaceFormDataInput {
   title?: string;
   description?: string;
   category?: string;
   work_environment?: string;
   max_capacity?: number;
-  workspace_features?: string[];
+  features?: string[];
   amenities?: string[];
   seating_types?: string[];
   price_per_hour?: number;
@@ -96,10 +98,10 @@ export const useSpaceFormSubmission = ({
 
       const photoUrls = photoPreviewUrls;
       
-      const spaceData: Database["public"]["Tables"]["spaces"]["Insert"] = {
+      const spaceData: SpaceInsert = {
         title: formData.title || '',
         address: formData.address || '',
-        workspace_features: formData.workspace_features || [],
+        features: formData.features || [],
         price_per_day: formData.price_per_day || 0,
         price_per_hour: formData.price_per_hour || 0,
         max_capacity: formData.max_capacity || 1,
@@ -124,7 +126,7 @@ export const useSpaceFormSubmission = ({
       };
       
       if (isEdit && initialDataId) {
-        const spaceUpdate: Database["public"]["Tables"]["spaces"]["Update"] = spaceData;
+        const spaceUpdate = toSpaceUpdatePayload(spaceData);
         const { error } = await supabase
           .from("spaces")
           .update(spaceUpdate)
@@ -142,9 +144,10 @@ export const useSpaceFormSubmission = ({
         
         toast.success("Space updated successfully!");
       } else {
+        const insertPayload = toSpaceInsertPayload(spaceData);
         const { error } = await supabase
           .from("spaces")
-          .insert(spaceData)
+          .insert(insertPayload)
           .select("id")
           .single();
           

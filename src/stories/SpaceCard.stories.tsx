@@ -15,7 +15,7 @@ const mockSpace = {
   address: 'Via Roma 123, Milano',
   photos: ['/placeholder.svg'],
   amenities: ['wifi', 'coffee', 'parking'],
-  workspace_features: ['desk', 'monitor', 'ergonomic_chair'],
+  features: ['desk', 'monitor', 'ergonomic_chair'],
   seating_types: ['desk', 'lounge'],
   published: true,
   is_suspended: false,

@@ -3,20 +3,20 @@ import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  WORKSPACE_FEATURES_OPTIONS,
+  SPACE_FEATURES_OPTIONS,
   AMENITIES_OPTIONS,
   SEATING_TYPES_OPTIONS,
 } from "@/types/space";
 
 interface FeaturesSectionProps {
-  workspaceFeatures: string[];
+  features: string[];
   amenities: string[];
   seatingTypes: string[];
   onCheckboxArrayChange: (field: string, value: string, checked: boolean) => void;
 }
 
 export const FeaturesSection = ({
-  workspaceFeatures,
+  features,
   amenities,
   seatingTypes,
   onCheckboxArrayChange
@@ -26,13 +26,13 @@ export const FeaturesSection = ({
       <div>
         <h3 className="font-medium mb-2">Space Features</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
+          {SPACE_FEATURES_OPTIONS.map((feature) => (
             <div key={feature} className="flex items-center space-x-2">
               <Checkbox
                 id={`feature-${feature}`}
-                checked={(workspaceFeatures || []).includes(feature)}
+                checked={(features || []).includes(feature)}
                 onCheckedChange={(checked) => 
-                  onCheckboxArrayChange("workspace_features", feature, checked === true)
+                  onCheckboxArrayChange("features", feature, checked === true)
                 }
               />
               <Label htmlFor={`feature-${feature}`} className="cursor-pointer">

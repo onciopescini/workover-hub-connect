@@ -42,7 +42,7 @@ export interface DAC7Report {
   total_transactions: number;
   reporting_threshold_met: boolean;
   report_status: 'draft' | 'final' | 'submitted' | 'error';
-  report_json_data?: any;
+  report_json_data?: unknown;
   report_file_url?: string | null;
   submission_reference?: string | null;
   generated_by?: string | null;
@@ -50,7 +50,7 @@ export interface DAC7Report {
   host_acknowledged_at?: string | null;
   created_at: string;
   updated_at: string;
-  error_details?: any;
+  error_details?: unknown;
 }
 
 export interface DAC7ReportFilters {

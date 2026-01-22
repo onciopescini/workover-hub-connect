@@ -1,5 +1,8 @@
 
 import type { Space } from "@/types/space";
+import type { SpaceFormData } from "@/schemas/spaceSchema";
+import type { AvailabilityData } from "@/types/availability";
+import type { Dispatch, SetStateAction, FormEvent } from "react";
 import { useSpaceFormState } from "./useSpaceFormState";
 import { useSpaceFormValidation } from "./useSpaceFormValidation";
 import { useSpaceFormSubmission } from "./useSpaceFormSubmission";
@@ -10,7 +13,37 @@ interface UseSpaceFormProps {
   isEdit?: boolean;
 }
 
-export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpaceFormProps) => {
+interface UseSpaceFormResult {
+  formData: SpaceFormData;
+  availabilityData: AvailabilityData;
+  errors: Record<string, string>;
+  photoFiles: File[];
+  photoPreviewUrls: string[];
+  isSubmitting: boolean;
+  uploadingPhotos: boolean;
+  processingJobs: string[];
+  stripeOnboardingStatus: 'none' | 'pending' | 'completed' | 'restricted';
+  stripeConnected: boolean;
+  setUploadingPhotos: Dispatch<SetStateAction<boolean>>;
+  setProcessingJobs: Dispatch<SetStateAction<string[]>>;
+  setPhotoFiles: Dispatch<SetStateAction<File[]>>;
+  setPhotoPreviewUrls: Dispatch<SetStateAction<string[]>>;
+  handleInputChange: <K extends keyof SpaceFormData>(field: K, value: SpaceFormData[K]) => void;
+  handleAddressChange: (address: string, coordinates?: { lat: number; lng: number }) => void;
+  handleAvailabilityChange: (availability: AvailabilityData) => void;
+  handleCheckboxArrayChange: (field: SpaceFormArrayKey, value: string, checked: boolean) => void;
+  handleSubmit: (event: FormEvent) => Promise<void>;
+  validateForm: () => boolean;
+}
+
+type SpaceFormArrayKey = {
+  [K in keyof SpaceFormData]: SpaceFormData[K] extends string[] ? K : never
+}[keyof SpaceFormData];
+
+export const useSpaceForm = ({
+  initialData = undefined,
+  isEdit = false
+}: UseSpaceFormProps): UseSpaceFormResult => {
   // Get host progress data including stripe verification status
   // Moved up to be passed to useSpaceFormState
   const { data: hostProgressData } = useHostProgress({
@@ -37,7 +70,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
     handleAvailabilityChange,
     handleCheckboxArrayChange
   } = useSpaceFormState({
-    initialData: initialData as any,
+    initialData,
     stripeOnboardingStatus, // Pass the status here
     stripeConnected
   });
@@ -68,7 +101,10 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
   });
 
   // Enhanced input change handler that clears errors
-  const handleInputChangeWithErrorClear = (field: string, value: string | number | boolean | string[]) => {
+  const handleInputChangeWithErrorClear = <K extends keyof SpaceFormData>(
+    field: K,
+    value: SpaceFormData[K]
+  ) => {
     handleInputChange(field, value);
     clearError(field);
   };
@@ -82,7 +118,7 @@ export const useSpaceForm = ({ initialData = undefined, isEdit = false }: UseSpa
   };
 
   // Enhanced availability change handler that clears errors
-  const handleAvailabilityChangeWithErrorClear = (availability: import("@/types/availability").AvailabilityData) => {
+  const handleAvailabilityChangeWithErrorClear = (availability: AvailabilityData) => {
     // Ensure slots is always an array
     const sanitizedAvailability = {
       ...availability,

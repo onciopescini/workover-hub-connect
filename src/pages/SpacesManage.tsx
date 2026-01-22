@@ -11,7 +11,7 @@ import { SpaceManagementHeader } from "@/components/spaces/SpaceManagementHeader
 import { EnhancedSpaceManagementCard } from "@/components/spaces/EnhancedSpaceManagementCard";
 import { sreLogger } from "@/lib/sre-logger";
 import { useModeratorCheck } from "@/hooks/admin/useModeratorCheck";
-import { WorkspaceInsert } from "@/types/workspace";
+import { mapSpaceRowToSpace } from "@/lib/space-mappers";
 
 const SpacesManage = () => {
   const { authState } = useAuth();
@@ -47,13 +47,12 @@ const SpacesManage = () => {
 
       const { supabase } = await import("@/integrations/supabase/client");
 
-      // Use workspaces table instead of spaces
-      let query = (supabase.from("spaces") as any).select("*").eq("host_id", authState.user.id);
+      let query = supabase.from("spaces").select("*").eq("host_id", authState.user.id);
 
       // Filter by deletion status based on admin toggle
       if (isAdmin && showDeleted) {
         // Admin viewing deleted spaces only
-        // Workspaces table might not have deleted_at yet, assuming it does or skipping for now
+        // Table might not have deleted_at yet, assuming it does or skipping for now
         // query = query.not("deleted_at", "is", null);
       } else if (isAdmin && !showDeleted) {
         // Admin viewing non-deleted spaces only
@@ -63,7 +62,7 @@ const SpacesManage = () => {
         // query = query.is("deleted_at", null);
       }
 
-      // Workspaces likely has created_at
+      // Order by created_at
       query = query.order("created_at", { ascending: false });
 
       const { data: spacesData, error } = await query;
@@ -85,50 +84,7 @@ const SpacesManage = () => {
       });
 
       // Map Space data to Space interface
-      const mappedSpaces: Space[] = (spacesData || []).map((space: any) => ({
-        id: space.id,
-        title: space.name, // Map name to title
-        description: space.description || "",
-        photos: space.photos || [],
-        address: space.address,
-        latitude: space.latitude || 0,
-        longitude: space.longitude || 0,
-        price_per_day: space.price_per_day,
-        price_per_hour: space.price_per_hour,
-        max_capacity: space.max_capacity,
-        capacity: space.max_capacity, // Assuming capacity maps to max_capacity if strictly needed or null
-        category: space.category,
-        workspace_features: space.features || [], // Map features to workspace_features
-        amenities: space.amenities || [],
-        seating_types: space.seating_types || [],
-        work_environment: space.work_environment || "controlled", // Default
-        rules: space.rules,
-        host_id: space.host_id,
-        published: space.published || false,
-        created_at: space.created_at || new Date().toISOString(),
-        updated_at: space.updated_at || new Date().toISOString(),
-        deleted_at: space.deleted_at || null,
-        is_suspended: space.is_suspended || false,
-        suspension_reason: space.suspension_reason || null,
-        suspended_at: space.suspended_at || null,
-        suspended_by: space.suspended_by || null,
-        availability: space.availability,
-        cancellation_policy: space.cancellation_policy,
-        confirmation_type: space.confirmation_type || "instant",
-        approved_at: null,
-        approved_by: null,
-        approximate_location: null,
-        cached_avg_rating: null,
-        cached_review_count: null,
-        city_name: null,
-        country_code: null,
-        event_friendly_tags: space.event_friendly_tags || [],
-        ideal_guest_tags: space.ideal_guest_tags || [],
-        pending_approval: false,
-        rejection_reason: null,
-        revision_notes: null,
-        revision_requested: false
-      }));
+      const mappedSpaces: Space[] = (spacesData || []).map((space) => mapSpaceRowToSpace(space));
 
       sreLogger.debug("Mapped spaces details", {
         spaces: mappedSpaces.map((space) => ({
@@ -190,8 +146,8 @@ const SpacesManage = () => {
       const { supabase } = await import("@/integrations/supabase/client");
 
       // Use soft delete instead of hard delete
-      const { error } = await (supabase
-        .from("spaces") as any)
+      const { error } = await supabase
+        .from("spaces")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", spaceId)
         .eq("host_id", authState.user?.id ?? "");
@@ -259,8 +215,7 @@ const SpacesManage = () => {
         const { supabase } = await import("@/integrations/supabase/client");
         
         // Get host bookings (simpler approach - count bookings only)
-        // Bookings table might still link to spaces table (if not migrated) or workspaces.
-        // Assuming bookings link via space_id which matches workspace.id
+        // Assuming bookings link via space_id which matches the space id
         const { data: bookings, error } = await supabase
           .from('bookings')
           .select('id, space_id, status')

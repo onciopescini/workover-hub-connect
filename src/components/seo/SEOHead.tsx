@@ -15,14 +15,14 @@ interface SEOHeadProps {
   tags?: string[];
   noIndex?: boolean;
   canonical?: string;
-  structuredData?: any;
+  structuredData?: Record<string, unknown>;
   locale?: string;
 }
 
 const DEFAULT_CONFIG = {
   title: 'Workover - Piattaforma Coworking Professionale',
   description: 'La piattaforma leader per spazi coworking, networking professionale ed eventi. Connettiti con professionisti e scopri spazi produttivi in tutta Italia.',
-  keywords: ['coworking', 'spazi lavoro', 'networking', 'uffici condivisi', 'workspace', 'meeting room', 'eventi professionali', 'business center'],
+  keywords: ['coworking', 'spazi lavoro', 'networking', 'uffici condivisi', 'spazio di lavoro', 'meeting room', 'eventi professionali', 'business center'],
   image: 'https://workover.app/og-image.jpg',
   url: 'https://workover.app',
   type: 'website' as const,

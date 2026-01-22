@@ -7,7 +7,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { Checkbox } from "@/components/ui/checkbox";
 import { SpaceFormData } from "@/schemas/spaceSchema";
 import { 
-  WORKSPACE_FEATURES_OPTIONS, 
+  SPACE_FEATURES_OPTIONS, 
   AMENITIES_OPTIONS, 
   SEATING_TYPES_OPTIONS,
   IDEAL_GUEST_OPTIONS,
@@ -112,16 +112,16 @@ export const RefactoredSpaceDetails = () => {
 
         <FormField
           control={form.control}
-          name="workspace_features"
+          name="features"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Space Features</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
+                {SPACE_FEATURES_OPTIONS.map((feature) => (
                   <FormField
                     key={feature}
                     control={form.control}
-                    name="workspace_features"
+                    name="features"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>

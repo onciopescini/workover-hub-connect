@@ -14,6 +14,7 @@ import { AvailabilityEditor } from "@/components/ui/AvailabilityEditor";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
 import type { Space } from "@/types/space";
 import { CancellationPolicySection } from './CancellationPolicySection';
+import type { AvailabilityData } from "@/types/availability";
 
 interface SpaceFormProps {
   initialData?: Space | undefined;
@@ -41,6 +42,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
     handleCheckboxArrayChange,
     handleSubmit,
   } = useSpaceForm({ initialData, isEdit: !!initialData });
+
+  const availabilityDataTyped: AvailabilityData = availabilityData;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -157,8 +160,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="wifi" className="flex items-center space-x-2">
                 <Checkbox
                   id="wifi"
-                  checked={Boolean((formData as any)['workspace_features']?.includes("wifi"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "wifi", !!checked)}
+                  checked={Boolean(formData.features?.includes("wifi"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "wifi", !!checked)}
                 />
                 <span>WiFi</span>
               </Label>
@@ -167,8 +170,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="whiteboard" className="flex items-center space-x-2">
                 <Checkbox
                   id="whiteboard"
-                  checked={Boolean((formData as any)['workspace_features']?.includes("whiteboard"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "whiteboard", !!checked)}
+                  checked={Boolean(formData.features?.includes("whiteboard"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "whiteboard", !!checked)}
                 />
                 <span>Whiteboard</span>
               </Label>
@@ -177,8 +180,8 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
               <Label htmlFor="monitor" className="flex items-center space-x-2">
                 <Checkbox
                   id="monitor"
-                  checked={Boolean((formData as any)['workspace_features']?.includes("monitor"))}
-                  onCheckedChange={(checked) => handleCheckboxArrayChange("workspace_features", "monitor", !!checked)}
+                  checked={Boolean(formData.features?.includes("monitor"))}
+                  onCheckedChange={(checked) => handleCheckboxArrayChange("features", "monitor", !!checked)}
                 />
                 <span>Monitor</span>
               </Label>
@@ -215,7 +218,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
         </CardHeader>
         <CardContent className="grid gap-4">
           <AvailabilityEditor
-            availabilityData={availabilityData as any}
+            availabilityData={availabilityDataTyped}
             onAvailabilityChange={handleAvailabilityChange}
           />
           {errors['availability'] && <p className="text-red-500 text-sm">{errors['availability']}</p>}

@@ -7,7 +7,18 @@ import { InteractiveCard } from '@/components/ui/InteractiveCard';
 import { ParallaxSection } from '@/components/ui/ParallaxSection';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Wifi, Coffee, Users, Monitor, Car, Armchair, Zap } from 'lucide-react';
-import { API_ENDPOINTS } from "@/constants";
+import { mapSpaceRowToSpace } from '@/lib/space-mappers';
+
+interface LandingSpaceCard {
+  id: string;
+  image: string | null;
+  title: string;
+  category: string;
+  location: string;
+  price: string;
+  features: string[];
+  amenities: React.ComponentType<{ className?: string }>[]; 
+}
 
 // Helper to map feature strings to Lucide icons
 const getFeatureIcon = (feature: string) => {
@@ -26,10 +37,9 @@ export function SpacesGallerySection() {
   const [activeCategory, setActiveCategory] = useState('all');
 
   // Fetch real spaces from Supabase
-  const { data: spaces = [], isLoading, error } = useQuery({
+  const { data: spaces = [], isLoading, error } = useQuery<LandingSpaceCard[]>({
     queryKey: ['landing-spaces'],
     queryFn: async () => {
-      // Use explicit casting as per instructions for 'workspaces' table
       const { data, error } = await supabase
         .from('spaces')
         .select('*')
@@ -42,16 +52,22 @@ export function SpacesGallerySection() {
         throw error;
       }
 
-      return (data || []).map((space: any) => ({
-        id: space.id,
-        image: (space.photos && space.photos[0]) || (space.images && space.images[0]) || null,
-        title: space.name,
-        category: space.category || 'professional',
-        location: space.city || space.address || 'Italia',
-        price: space.price_per_hour ? `${space.price_per_hour}€/ora` : `${space.price_per_day}€/giorno`,
-        features: (space.features || []).slice(0, 3), // Show top 3 features
-        amenities: (space.features || []).slice(0, 3).map((f: string) => getFeatureIcon(f))
-      }));
+      return (data || []).map((space) => {
+        const mappedSpace = mapSpaceRowToSpace(space);
+        const features = mappedSpace.features || [];
+        return {
+          id: mappedSpace.id,
+          image: mappedSpace.photos?.[0] || null,
+          title: mappedSpace.title || '',
+          category: mappedSpace.category || 'professional',
+          location: mappedSpace.city || mappedSpace.address || 'Italia',
+          price: mappedSpace.price_per_hour
+            ? `${mappedSpace.price_per_hour}€/ora`
+            : `${mappedSpace.price_per_day}€/giorno`,
+          features: features.slice(0, 3),
+          amenities: features.slice(0, 3).map((feature) => getFeatureIcon(feature))
+        };
+      });
     }
   });
 
@@ -65,7 +81,7 @@ export function SpacesGallerySection() {
 
   const filteredSpaces = activeCategory === 'all' 
     ? spaces
-    : spaces.filter((space: any) => space.category === activeCategory);
+    : spaces.filter((space) => space.category === activeCategory);
 
   // Loading State
   if (isLoading) {
@@ -170,7 +186,7 @@ export function SpacesGallerySection() {
 
         {/* Spaces Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredSpaces.map((space: any, index: number) => (
+          {filteredSpaces.map((space, index) => (
             <ParallaxSection key={space.id} speed={0.1 * (index % 3)}>
               <div onClick={() => navigate(`/spaces/${space.id}`)} className="cursor-pointer h-full">
                 <InteractiveCard
@@ -220,7 +236,7 @@ export function SpacesGallerySection() {
 
                       {/* Amenities */}
                       <div className="flex items-center gap-4 mb-4 h-6">
-                        {space.amenities.map((Icon: any, iconIndex: number) => (
+                        {space.amenities.map((Icon, iconIndex) => (
                           <div key={iconIndex} className="flex items-center gap-1 text-gray-600">
                             <Icon className="w-4 h-4" />
                           </div>
