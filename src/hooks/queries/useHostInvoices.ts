@@ -95,9 +95,9 @@ export const useHostPendingInvoices = (hostId: string) => {
               last_name,
               email
             ),
-            space:workspaces!inner(
+            space:spaces!inner(
               id,
-              title:name,
+              title,
               host_id
             )
           )
@@ -137,9 +137,9 @@ export const useHostPendingCreditNotes = (hostId: string) => {
             booking_date,
             cancelled_at,
             cancellation_reason,
-            space:workspaces!inner(
+            space:spaces!inner(
               id,
-              title:name,
+              title,
               host_id
             ),
             coworker:profiles!bookings_user_id_fkey(
@@ -189,7 +189,7 @@ export const useHostInvoiceHistory = (hostId: string, year?: number) => {
           *,
           booking:bookings!inner(
             booking_date,
-            space:workspaces!inner(
+            space:spaces!inner(
               host_id
             ),
             coworker:profiles!bookings_user_id_fkey(

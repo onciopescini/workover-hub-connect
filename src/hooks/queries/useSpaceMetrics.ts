@@ -56,19 +56,16 @@ export const useSpaceMetrics = (spaceId: string) => {
     queryFn: async () => {
       if (!spaceId) throw new Error('Space ID is required');
       
-      // Attempt to use RPC first, but fallback to manual calculation if it fails (likely due to old table reference)
-      // Actually, since we know RPC is outdated, let's just fetch manually from workspaces
-
       try {
-        const { data: workspaceData, error: workspaceError } = await (supabase
-          .from('workspaces' as any) as any)
-          .select('id, name')
+        const { data: spaceData, error: spaceError } = await supabase
+          .from('spaces')
+          .select('id, title')
           .eq('id', spaceId)
           .single();
 
-        if (workspaceError) throw workspaceError;
+        if (spaceError) throw spaceError;
 
-        if (!workspaceData) throw new Error('Space not found');
+        if (!spaceData) throw new Error('Space not found');
 
         // Fetch bookings for this space to calculate basic metrics
         // Assuming bookings link to space_id (which matches workspace id)
@@ -89,7 +86,7 @@ export const useSpaceMetrics = (spaceId: string) => {
         // For now, return basic structure to unblock View/Recap
 
         const metrics: SpaceMetrics = {
-          space_title: workspaceData.name,
+          space_title: spaceData.title,
           total_bookings: totalBookings,
           monthly_bookings: 0, // Would need date filtering
           confirmed_bookings: confirmedBookings,
@@ -116,9 +113,6 @@ export const useSpaceMetrics = (spaceId: string) => {
 
       } catch (error) {
         sreLogger.error('Error fetching space metrics manually', { spaceId }, error as Error);
-
-        // Fallback to RPC just in case (though likely to fail if table gone)
-        // Or rethrow
         throw error;
       }
     },

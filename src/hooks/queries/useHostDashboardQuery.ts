@@ -28,9 +28,9 @@ const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
 
 // Fetch spaces count
 const fetchSpacesCount = async (hostId: string): Promise<number> => {
-  // Use workspaces instead of spaces
-  const { data, error } = await (supabase
-    .from("workspaces" as any) as any)
+  // Use spaces instead of workspaces
+  const { data, error } = await supabase
+    .from("spaces")
     .select("id", { count: 'exact' })
     .eq("host_id", hostId);
 
@@ -41,24 +41,18 @@ const fetchSpacesCount = async (hostId: string): Promise<number> => {
 // Fetch host bookings with details
 const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> => {
   // Get host's spaces
-  // Use workspaces instead of spaces
-  const { data: workspacesData, error: spacesError } = await (supabase
-    .from("workspaces" as any) as any)
+  // Use spaces instead of workspaces
+  const { data: spacesData, error: spacesError } = await supabase
+    .from("spaces")
     .select("id")
     .eq("host_id", hostId);
 
   if (spacesError) throw spacesError;
 
-  const spaceIds = workspacesData?.map((s: any) => s.id) || [];
+  const spaceIds = spacesData?.map((s: any) => s.id) || [];
   if (spaceIds.length === 0) return [];
 
   // Fetch bookings for host spaces
-  // Assuming bookings table still references 'spaces' via space_id which matches workspace.id
-  // Note: We might encounter issues joining with 'spaces' table if it's deprecated.
-  // The original code was joining `spaces!inner`. If we can't join `workspaces`, we might need to fetch workspace details separately or remove the inner join if the data is critical from it.
-  // Ideally, bookings should link to workspaces. If not, and we need workspace details (title, address, etc.), we can manual fetch.
-  // For now, let's assume we can fetch bookings by space_id, and manually fetch workspace details to populate the booking object.
-
   const { data: rawBookings, error: bookingsError } = await supabase
     .from("bookings")
     .select(`*`)
@@ -69,13 +63,13 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
 
   if (!rawBookings || rawBookings.length === 0) return [];
 
-  // Fetch workspace details for these bookings
-  const { data: workspacesDetails, error: workspaceDetailsError } = await (supabase
-    .from("workspaces" as any) as any)
-    .select("id, name, address, photos, host_id, price_per_day")
-    .in("id", spaceIds); // Fetch all relevant workspaces
+  // Fetch space details for these bookings
+  const { data: spacesDetails, error: spaceDetailsError } = await supabase
+    .from("spaces")
+    .select("id, title, address, photos, host_id, price_per_day")
+    .in("id", spaceIds); // Fetch all relevant spaces
 
-  if (workspaceDetailsError) throw workspaceDetailsError;
+  if (spaceDetailsError) throw spaceDetailsError;
 
   // Fetch coworker profiles
   const userIds = [...new Set(rawBookings.map(b => b.user_id))];
@@ -91,7 +85,7 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
     .filter(booking => booking.space_id !== null) // Filter out bookings with null space_id
     .map(booking => {
     const coworkerProfile = coworkerProfiles?.find(p => p.id === booking.user_id);
-    const workspace = workspacesDetails?.find((w: any) => w.id === booking.space_id);
+    const space = spacesDetails?.find((s: any) => s.id === booking.space_id);
     
     return {
       id: booking.id,
@@ -107,15 +101,15 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
       cancellation_fee: booking.cancellation_fee,
       cancelled_by_host: booking.cancelled_by_host,
       cancellation_reason: booking.cancellation_reason,
-      space: workspace ? {
-        id: workspace.id,
-        title: workspace.name, // Map name to title
-        address: workspace.address,
-        photos: workspace.photos || [],
-        image_url: workspace.photos?.[0] || '',
+      space: space ? {
+        id: space.id,
+        title: space.title,
+        address: space.address,
+        photos: space.photos || [],
+        image_url: space.photos?.[0] || '',
         type: 'workspace',
-        host_id: workspace.host_id,
-        price_per_day: workspace.price_per_day
+        host_id: space.host_id,
+        price_per_day: space.price_per_day
       } : {
         id: 'unknown',
         title: 'Unknown Space',

@@ -26,7 +26,7 @@ export const useTodayCheckins = () => {
       const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
-      // Using !inner on workspaces to ensure we filter bookings where the related workspace has this owner_id
+      // Using !inner on spaces to ensure we filter bookings where the related space has this host_id
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -39,12 +39,12 @@ export const useTodayCheckins = () => {
             last_name,
             avatar_url
           ),
-          workspaces!inner (
+          spaces!inner (
             title,
-            owner_id
+            host_id
           )
         `)
-        .eq('workspaces.owner_id', userId)
+        .eq('spaces.host_id', userId)
         .gte('start_time', startOfDay)
         .lte('start_time', endOfDay)
         .eq('status', 'confirmed')
@@ -59,7 +59,7 @@ export const useTodayCheckins = () => {
         id: booking.id,
         guest_name: `${booking.profiles?.first_name || ''} ${booking.profiles?.last_name || ''}`.trim() || 'Ospite',
         guest_avatar: booking.profiles?.avatar_url,
-        space_name: booking.workspaces?.title || 'Spazio',
+        space_name: booking.spaces?.title || 'Spazio',
         start_time: booking.start_time,
         end_time: booking.end_time,
         status: booking.status

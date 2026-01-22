@@ -78,8 +78,8 @@ export const useCoworkerReceipts = (coworkerId: string, year?: number) => {
           *,
           booking:bookings!inner(
             booking_date,
-            space:workspaces!inner(
-              title:name
+            space:spaces!inner(
+              title
             )
           ),
           host:profiles!non_fiscal_receipts_host_id_fkey(
@@ -130,9 +130,9 @@ export const useCoworkerInvoices = (coworkerId: string, year?: number) => {
           *,
           booking:bookings!inner(
             booking_date,
-            space:workspaces!inner(
-              title:name,
-              host:profiles!workspaces_owner_id_fkey(
+            space:spaces!inner(
+              title,
+              host:profiles!spaces_host_id_fkey(
                 first_name,
                 last_name,
                 business_name,
