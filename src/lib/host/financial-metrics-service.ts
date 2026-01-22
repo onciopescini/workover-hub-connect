@@ -23,6 +23,12 @@ export interface FinancialMetrics {
   revenueByCategory: RevenueByCategory[];
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined;
+
 export const getHostFinancialMetrics = async (hostId: string, year: number = new Date().getFullYear()): Promise<FinancialMetrics> => {
   try {
     // Usa la funzione database sicura per le metriche di base
@@ -38,7 +44,7 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
       throw metricsError;
     }
 
-    const metrics = hostMetrics as any;
+    const metrics = isRecord(hostMetrics) ? hostMetrics : {};
     
     // Crea dati mensili semplificati (solo mese corrente con dati reali)
     const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -46,12 +52,12 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     
     const monthlyData: MonthlyData[] = monthNames.map((month, index) => ({
       month,
-      revenue: index === currentMonth ? Math.round(metrics?.monthlyRevenue || 0) : 0,
-      bookings: index === currentMonth ? Math.max(1, Math.floor((metrics?.confirmedBookings || 0))) : 0
+      revenue: index === currentMonth ? Math.round(getNumber(metrics.monthlyRevenue) || 0) : 0,
+      bookings: index === currentMonth ? Math.max(1, Math.floor(getNumber(metrics.confirmedBookings) || 0)) : 0
     }));
 
     // Categoria di revenue semplificata (non espone dettagli sensibili)
-    const revenueByCategory: RevenueByCategory[] = metrics?.topPerformingSpace ? [
+    const revenueByCategory: RevenueByCategory[] = metrics.topPerformingSpace ? [
       {
         name: 'Spazi Coworking',
         value: 100, // Percentuale (100% dato che è l'unica categoria mostrata)
@@ -60,11 +66,11 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     ] : [];
 
     return {
-      totalRevenue: Math.round(metrics?.totalRevenue || 0),
-      monthlyRevenue: Math.round(metrics?.monthlyRevenue || 0),
-      revenueGrowth: Math.round((metrics?.revenueGrowth || 0) * 100) / 100,
-      averageBookingValue: Math.round(metrics?.averageBookingValue || 0),
-      occupancyRate: Math.min(Math.round(metrics?.occupancyRate || 0), 100),
+      totalRevenue: Math.round(getNumber(metrics.totalRevenue) || 0),
+      monthlyRevenue: Math.round(getNumber(metrics.monthlyRevenue) || 0),
+      revenueGrowth: Math.round((getNumber(metrics.revenueGrowth) || 0) * 100) / 100,
+      averageBookingValue: Math.round(getNumber(metrics.averageBookingValue) || 0),
+      occupancyRate: Math.min(Math.round(getNumber(metrics.occupancyRate) || 0), 100),
       monthlyData,
       revenueByCategory
     };

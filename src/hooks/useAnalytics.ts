@@ -34,6 +34,14 @@ interface UserProperties {
   properties?: Record<string, any>;
 }
 
+type PlausibleFn = (event: string, options?: { props?: Record<string, unknown>; u?: string }) => void;
+
+const getPlausible = (): PlausibleFn | null => {
+  if (typeof window === 'undefined') return null;
+  const plausible = (window as Window & { plausible?: PlausibleFn }).plausible;
+  return typeof plausible === 'function' ? plausible : null;
+};
+
 /**
  * Custom hook for analytics tracking with GDPR compliance
  * 
@@ -62,8 +70,9 @@ export const useAnalytics = () => {
       }
 
       // Plausible tracking for custom events
-      if (typeof window !== 'undefined' && 'plausible' in window) {
-        (window as any).plausible(eventName, { props: properties });
+      const plausible = getPlausible();
+      if (plausible) {
+        plausible(eventName, { props: properties });
       }
     } catch (error) {
       Sentry.captureException(error);
@@ -93,8 +102,9 @@ export const useAnalytics = () => {
       }
 
       // Plausible pageview
-      if (typeof window !== 'undefined' && 'plausible' in window) {
-        (window as any).plausible('pageview', { u: page });
+      const plausible = getPlausible();
+      if (plausible) {
+        plausible('pageview', { u: page });
       }
     } catch (error) {
       Sentry.captureException(error);

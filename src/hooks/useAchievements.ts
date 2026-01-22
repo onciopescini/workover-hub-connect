@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { toast } from 'sonner';
+import type { RealtimePayload } from '@/types/realtime';
+import type { UserAchievementRow } from '@/types/supabase-joins';
 
 export interface Achievement {
   id: string;
@@ -18,6 +20,11 @@ export interface Achievement {
 export const useAchievements = (userId?: string) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const getRecordId = (record: unknown): string | null => {
+    if (!record || typeof record !== 'object') return null;
+    const idValue = (record as Record<string, unknown>).id;
+    return typeof idValue === 'string' ? idValue : null;
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -38,21 +45,27 @@ export const useAchievements = (userId?: string) => {
           table: 'user_achievements',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: RealtimePayload<UserAchievementRow>) => {
           sreLogger.debug('Achievement realtime event', { payload });
           
           if (payload.eventType === 'INSERT') {
-            const newAchievement = payload.new as Achievement;
-            setAchievements(prev => [...prev, newAchievement]);
-            toast.success(`🎉 Achievement unlocked: ${newAchievement.title}`);
+            if (payload.new) {
+              const newAchievement = payload.new as Achievement;
+              setAchievements(prev => [...prev, newAchievement]);
+              toast.success(`🎉 Achievement unlocked: ${newAchievement.title}`);
+            }
           } else if (payload.eventType === 'UPDATE') {
-            const newId = (payload.new as any)['id'];
-            setAchievements(prev =>
-              prev.map(a => a.id === newId ? payload.new as Achievement : a)
-            );
+            const newId = getRecordId(payload.new);
+            if (newId && payload.new) {
+              setAchievements(prev =>
+                prev.map(a => a.id === newId ? payload.new as Achievement : a)
+              );
+            }
           } else if (payload.eventType === 'DELETE') {
-            const oldId = (payload.old as any)['id'];
-            setAchievements(prev => prev.filter(a => a.id !== oldId));
+            const oldId = getRecordId(payload.old);
+            if (oldId) {
+              setAchievements(prev => prev.filter(a => a.id !== oldId));
+            }
           }
         }
       )
@@ -72,11 +85,12 @@ export const useAchievements = (userId?: string) => {
         .from('user_achievements')
         .select('*')
         .eq('user_id', userId)
-        .order('unlocked_at', { ascending: false });
+        .order('unlocked_at', { ascending: false })
+        .overrideTypes<Achievement[]>();
 
       if (error) throw error;
 
-      setAchievements((data || []) as Achievement[]);
+      setAchievements(data || []);
     } catch (error) {
       sreLogger.error('Failed to fetch achievements', { userId }, error as Error);
       toast.error('Failed to load achievements');

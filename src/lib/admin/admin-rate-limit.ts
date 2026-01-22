@@ -20,6 +20,18 @@ const RATE_LIMITS: Record<AdminAction, RateLimitConfig> = {
   space_suspension: { maxRequests: 20, windowMs: 3600000 } // 20/hour
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isRateLimitResult = (data: unknown): data is { allowed: boolean; remaining: number; reset_ms: number; message?: string } => {
+  if (!isRecord(data)) return false;
+  return (
+    typeof data.allowed === 'boolean' &&
+    typeof data.remaining === 'number' &&
+    typeof data.reset_ms === 'number'
+  );
+};
+
 export async function checkAdminRateLimit(
   adminId: string,
   action: AdminAction
@@ -48,13 +60,15 @@ export async function checkAdminRateLimit(
       throw new Error('No data returned from rate limit check');
     }
 
-    const result = data as any;
+    if (!isRateLimitResult(data)) {
+      throw new Error('Invalid rate limit response');
+    }
 
     return {
-      allowed: result.allowed as boolean,
-      remaining: result.remaining as number,
-      resetMs: result.reset_ms as number,
-      message: result.message as string
+      allowed: data.allowed,
+      remaining: data.remaining,
+      resetMs: data.reset_ms,
+      message: typeof data.message === 'string' ? data.message : undefined
     };
   } catch (error) {
     console.error('[checkAdminRateLimit] Exception:', error);

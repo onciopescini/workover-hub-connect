@@ -8,11 +8,14 @@ export interface ProfileAccessResult {
   message: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 // Type guard per validare la struttura della risposta RPC
 function isValidProfileAccessResponse(data: unknown): data is ProfileAccessResult {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  
-  const obj = data as any;
+  if (!isRecord(data) || Array.isArray(data)) return false;
+
+  const obj = data;
   return (
     'has_access' in obj &&
     'access_reason' in obj &&

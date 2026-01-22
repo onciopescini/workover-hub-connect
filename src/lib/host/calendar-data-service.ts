@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
+import type { BookingWithSpaceAndProfileJoin } from "@/types/supabase-joins";
 
 export interface CalendarMetrics {
   todayBookings: number;
@@ -168,22 +169,23 @@ export const getHostCalendarStats = async (hostId: string): Promise<CalendarStat
       `)
       .eq('spaces.host_id', hostId)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(10)
+      .overrideTypes<BookingWithSpaceAndProfileJoin[]>();
 
     if (error) throw error;
 
-    const formattedBookings = recentBookings?.map(booking => ({
+    const formattedBookings = (recentBookings || []).map(booking => ({
       id: booking.id,
       host_id: hostId,
       guest_name: booking.profiles?.first_name && booking.profiles?.last_name 
         ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
         : 'Guest',
-      space_name: (booking.spaces as any)?.title || (booking.spaces as any)?.name || 'Spazio',
+      space_name: booking.spaces?.title || 'Spazio',
       booking_date: booking.booking_date,
       start_time: booking.start_time,
       end_time: booking.end_time,
       status: booking.status || 'pending'
-    })) || [];
+    }));
 
     return {
       metrics,

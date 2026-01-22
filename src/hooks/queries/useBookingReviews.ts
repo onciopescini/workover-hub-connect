@@ -4,6 +4,7 @@ import { BookingReviewWithDetails } from '@/types/review';
 import { sreLogger } from '@/lib/sre-logger';
 import { TIME_CONSTANTS } from "@/constants";
 import { queryKeys } from "@/lib/react-query-config";
+import type { BookingReviewJoin } from "@/types/supabase-joins";
 
 // Fetcher functions
 const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWithDetails[]> => {
@@ -33,7 +34,8 @@ const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWith
         )
       `)
       .eq('target_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .overrideTypes<BookingReviewJoin[]>();
 
     if (error) throw error;
 
@@ -50,14 +52,14 @@ const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWith
         booking: review.booking ? {
           ...review.booking,
           space: spaceObj ? {
-            title: (spaceObj as any).title || 'Unknown Space',
+            title: spaceObj.title || 'Unknown Space',
             address: spaceObj.address
           } : { title: 'Unknown', address: '' }
         } : null
       };
     });
 
-    return transformedData as BookingReviewWithDetails[];
+    return transformedData;
   } catch (error) {
     sreLogger.error('Failed to fetch received reviews', { userId }, error as Error);
     throw error;
@@ -91,7 +93,8 @@ const getUserGivenReviews = async (userId: string): Promise<BookingReviewWithDet
         )
       `)
       .eq('author_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .overrideTypes<BookingReviewJoin[]>();
 
     if (error) throw error;
 
@@ -105,14 +108,14 @@ const getUserGivenReviews = async (userId: string): Promise<BookingReviewWithDet
         booking: review.booking ? {
           ...review.booking,
           space: spaceObj ? {
-            title: (spaceObj as any).title || 'Unknown Space',
+            title: spaceObj.title || 'Unknown Space',
             address: spaceObj.address
           } : { title: 'Unknown', address: '' }
         } : null
       };
     });
 
-    return transformedData as BookingReviewWithDetails[];
+    return transformedData;
   } catch (error) {
     sreLogger.error('Failed to fetch given reviews', { userId }, error as Error);
     throw error;

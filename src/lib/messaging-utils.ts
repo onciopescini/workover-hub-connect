@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Message } from "@/types/booking";
+import type { Database } from "@/integrations/supabase/types";
+import type { BookingWithSpaceHostJoin, MessageWithSenderJoin } from "@/types/supabase-joins";
 
 export async function fetchMessages(bookingId: string): Promise<Message[]> {
   const { data, error } = await supabase
@@ -10,23 +12,26 @@ export async function fetchMessages(bookingId: string): Promise<Message[]> {
       sender:profiles(first_name, last_name, profile_photo_url)
     `)
     .eq('booking_id', bookingId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .overrideTypes<MessageWithSenderJoin[]>();
 
   if (error) {
     throw new Error(error.message);
   }
 
   // Transform data to match Message type
-  return (data || []).map((msg: any) => ({
+  const messages = data || [];
+
+  return messages.map((msg) => ({
     id: msg.id,
     booking_id: msg.booking_id,
     sender_id: msg.sender_id,
     content: msg.content,
-    attachments: msg.attachments || [], // Assuming column exists or is handled
+    attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
     is_read: msg.is_read || false,
     created_at: msg.created_at,
     sender: msg.sender // PostgREST result
-  })) as Message[];
+  }));
 }
 
 export async function sendMessage(bookingId: string, content: string): Promise<void> {
@@ -40,16 +45,18 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
     .from('bookings')
     .select('user_id, spaces(host_id)')
     .eq('id', bookingId)
-    .single();
+    .single()
+    .overrideTypes<BookingWithSpaceHostJoin>();
 
   if (booking) {
+    const bookingData = booking;
     // If current user is the booking creator (coworker), recipient is host
     // If current user is the host, recipient is the booking creator
-    const hostId = (booking.spaces as any)?.host_id || (booking as any).workspaces?.host_id;
-    if (user.id === booking.user_id) {
+    const hostId = bookingData.spaces?.host_id || null;
+    if (user.id === bookingData.user_id) {
        recipientId = hostId;
-    } else if (user.id === hostId) {
-       recipientId = booking.user_id;
+    } else if (user.id === hostId && bookingData.user_id) {
+       recipientId = bookingData.user_id;
     }
   }
 
@@ -71,7 +78,11 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
      .eq('booking_id', bookingId)
      .single();
 
-  const payload: any = {
+  type MessageInsertInput = Database['public']['Tables']['messages']['Insert'] & {
+    conversation_id?: string | null;
+  };
+
+  const payload: MessageInsertInput = {
     booking_id: bookingId,
     content: content,
     sender_id: user.id,

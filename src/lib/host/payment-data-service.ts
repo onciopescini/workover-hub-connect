@@ -30,6 +30,15 @@ export interface TransactionData {
   paymentMethod: 'card' | 'bank_transfer';
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const getNumber = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined;
+
+const getString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined;
+
 // Mapping Transaction to TransactionData format
 export const mapTransactionToTransactionData = (transaction: Transaction): TransactionData => ({
   id: transaction.id,
@@ -63,11 +72,11 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
       throw metricsError;
     }
 
-    const metrics = hostMetrics as any;
+    const metrics = isRecord(hostMetrics) ? hostMetrics : {};
     
     // Calcoli basati sulle metriche sicure
-    const totalRevenue = metrics?.totalRevenue || 0;
-    const monthlyRevenue = metrics?.monthlyRevenue || 0;
+    const totalRevenue = getNumber(metrics.totalRevenue) || 0;
+    const monthlyRevenue = getNumber(metrics.monthlyRevenue) || 0;
     
     // Mock calculations per saldo e payouts (in un'app reale verrebbero da Stripe)
     const availableBalance = totalRevenue * 0.3; // 30% disponibile
@@ -112,21 +121,27 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
     if (!data) return [];
 
     // Transform RPC result to Transaction format
-    const transactions: Transaction[] = data.map((row: any) => {
+    const transactions: Transaction[] = Array.isArray(data)
+      ? data.map((row: unknown) => {
+      if (!isRecord(row)) {
+        return null;
+      }
       // Per pagamenti legacy con host_amount null, calcola come amount / 1.05 (rimuove il 5% fee del buyer)
-      const hostAmount = row.host_amount ?? (row.amount / 1.05);
+      const hostAmount = getNumber(row.host_amount) ?? (getNumber(row.amount) ?? 0) / 1.05;
+      const createdAt = getString(row.created_at) || new Date().toISOString();
       
       return {
-        id: row.id,
+        id: getString(row.id) || '',
         type: 'earning' as const,
-        description: `Prenotazione ${row.space_title || 'Spazio'}`,
+        description: `Prenotazione ${getString(row.space_title) || 'Spazio'}`,
         amount: hostAmount,
-        date: row.created_at.split('T')[0] as string,
+        date: createdAt.split('T')[0],
         status: 'completed', // RPC returns only completed payments
-        customer: row.customer_name || 'Guest sconosciuto',
-        booking_id: row.booking_id
+        customer: getString(row.customer_name) || 'Guest sconosciuto',
+        booking_id: getString(row.booking_id)
       };
-    });
+    }).filter((row): row is Transaction => row !== null)
+      : [];
 
     return transactions;
 

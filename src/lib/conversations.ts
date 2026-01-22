@@ -1,6 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { Conversation, Message, MessageAttachment } from '@/types/messaging';
+import type { Database } from '@/integrations/supabase/types';
+import type { ConversationJoin, MessageWithSenderJoin } from '@/types/supabase-joins';
 
 export async function getOrCreateConversation(params: {
   hostId: string;
@@ -49,7 +51,11 @@ export async function sendMessageToConversation(params: {
   
   sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
   
-  const messageData: any = {
+  type MessageInsertInput = Database['public']['Tables']['messages']['Insert'] & {
+    booking_id?: string;
+  };
+
+  const messageData: MessageInsertInput = {
     conversation_id: conversationId,
     content,
     sender_id: senderId,
@@ -102,6 +108,8 @@ export async function sendMessageToConversation(params: {
   }
 
   // Cast to Message type, ensuring compatibility
+  const attachments = Array.isArray(data.attachments) ? (data.attachments as MessageAttachment[]) : [];
+
   return {
     id: data.id,
     conversation_id: data.conversation_id || conversationId,
@@ -110,7 +118,7 @@ export async function sendMessageToConversation(params: {
     created_at: data.created_at || new Date().toISOString(),
     is_read: data.is_read || false,
     booking_id: data.booking_id,
-    attachments: (data.attachments as any[]) || []
+    attachments
   };
 }
 
@@ -129,12 +137,13 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
       *,
       host:profiles!conversations_host_id_fkey(id, first_name, last_name, profile_photo_url),
       coworker:profiles!conversations_coworker_id_fkey(id, first_name, last_name, profile_photo_url),
-      space:spaces(id, name, address, city, price_per_hour, photos),
+      space:spaces(id, title, address, city_name, price_per_hour, photos),
       booking:bookings(id, booking_date, status, start_time, end_time)
     `)
     .or(`host_id.eq.${userId},coworker_id.eq.${userId}`)
     .order('last_message_at', { ascending: false, nullsFirst: false })
-    .limit(50);
+    .limit(50)
+    .overrideTypes<ConversationJoin[]>();
     
   if (error) {
     sreLogger.error('fetchConversations error', { userId }, error as Error);
@@ -144,25 +153,31 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   sreLogger.info('Found conversations', { userId, count: data?.length || 0 });
 
   // Map to new Conversation type
-  return (data || []).map((c: any) => {
+  const conversations = data || [];
+  const validStatuses = new Set<Conversation['status']>(['confirmed', 'pending', 'cancelled', 'active']);
+
+  return conversations.map((c) => {
     // Determine the "other" person
     const isHost = c.host_id === userId;
     const otherPerson = isHost ? c.coworker : c.host;
+    const bookingStatus = c.booking?.status && validStatuses.has(c.booking.status as Conversation['status'])
+      ? (c.booking.status as Conversation['status'])
+      : undefined;
 
     return {
       id: c.id,
       type: c.booking_id ? 'booking' : 'private',
       title: otherPerson ? `${otherPerson.first_name} ${otherPerson.last_name}` : 'Utente Sconosciuto',
-      subtitle: c.space?.name || (c.booking_id ? "Prenotazione" : "Networking"),
+      subtitle: c.space?.title || (c.booking_id ? "Prenotazione" : "Networking"),
       avatar: otherPerson?.profile_photo_url,
       last_message: c.last_message || "",
       last_message_at: c.last_message_at,
-      status: c.booking?.status as any,
+      status: bookingStatus,
       host_id: c.host_id,
       coworker_id: c.coworker_id,
       other_user_id: otherPerson?.id,
       booking_id: c.booking_id,
-      space: c.space ? { name: c.space.name } : undefined,
+      space: c.space ? { name: c.space.title } : undefined,
       booking: c.booking ? {
         booking_date: c.booking.booking_date,
         status: c.booking.status
@@ -178,7 +193,8 @@ export async function fetchConversationMessages(conversationId: string): Promise
     .from('messages')
     .select('id, conversation_id, sender_id, content, created_at, is_read, booking_id, attachments')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .overrideTypes<MessageWithSenderJoin[]>();
     
   if (error) {
     sreLogger.error('fetchConversationMessages error', { conversationId }, error as Error);
@@ -187,7 +203,9 @@ export async function fetchConversationMessages(conversationId: string): Promise
   
   sreLogger.info('Found messages', { conversationId, count: data?.length || 0 });
 
-  return (data || []).map((m: any) => ({
+  const messages = data || [];
+
+  return messages.map((m) => ({
     id: m.id,
     conversation_id: m.conversation_id,
     sender_id: m.sender_id,
@@ -195,7 +213,7 @@ export async function fetchConversationMessages(conversationId: string): Promise
     created_at: m.created_at,
     is_read: m.is_read || false,
     booking_id: m.booking_id,
-    attachments: (m.attachments as MessageAttachment[]) || []
+    attachments: Array.isArray(m.attachments) ? (m.attachments as MessageAttachment[]) : []
   }));
 }
 

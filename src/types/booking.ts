@@ -5,6 +5,15 @@ export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 export type BookingUpdate = Database["public"]["Tables"]["bookings"]["Update"];
 export type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
+export interface BookingSummary {
+  id: string;
+  booking_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  status?: BookingStatus | null;
+  space_id?: string | null;
+}
+
 export interface BookingSlot {
   id: string;
   date: string;

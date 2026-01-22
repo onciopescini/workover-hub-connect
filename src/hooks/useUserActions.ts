@@ -3,8 +3,19 @@ import { toast } from "sonner";
 import { AdminUserWithRoles } from '@/types/admin-user';
 import { sreLogger } from '@/lib/sre-logger';
 import { banUser, unbanUser } from '@/lib/admin-utils';
+import type { Database } from "@/integrations/supabase/types";
+import type { PostgrestError } from "@supabase/supabase-js";
 
 export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUserWithRoles>) => void) => {
+  type RoleRpcResult = { success: boolean; error?: string };
+
+  const callRoleRpc = async (fn: string, args: Record<string, string>) => {
+    return supabase.rpc(fn as unknown as keyof Database["public"]["Functions"], args) as {
+      data: RoleRpcResult | null;
+      error: PostgrestError | null;
+    };
+  };
+
   const handleActivateUser = async (userId: string) => {
     try {
       const { error } = await supabase
@@ -73,7 +84,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const { data, error } = await supabase.rpc('assign_admin_role' as any, {
+      const { data, error } = await callRoleRpc('assign_admin_role', {
         target_user_id: userId,
         assigned_by: user.user.id
       });
@@ -84,9 +95,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) {
-        toast.error(result.error || 'Errore nella promozione ad admin');
+      if (!data?.success) {
+        toast.error(data?.error || 'Errore nella promozione ad admin');
         return;
       }
 
@@ -100,7 +110,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
 
   const handleDemoteFromAdmin = async (userId: string) => {
     try {
-      const { data, error } = await supabase.rpc('remove_admin_role' as any, {
+      const { data, error } = await callRoleRpc('remove_admin_role', {
         target_user_id: userId
       });
 
@@ -110,9 +120,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) {
-        toast.error(result.error || 'Errore nella rimozione del ruolo admin');
+      if (!data?.success) {
+        toast.error(data?.error || 'Errore nella rimozione del ruolo admin');
         return;
       }
 
@@ -132,9 +141,9 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const { data, error } = await supabase.rpc('assign_moderator_role' as any, {
+      const { data, error } = await callRoleRpc('assign_moderator_role', {
         target_user_id: userId,
-        assigned_by: user.user.id
+        assigned_by_admin: user.user.id
       });
 
       if (error) {
@@ -143,9 +152,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) {
-        toast.error(result.error || 'Errore nella promozione a moderator');
+      if (!data?.success) {
+        toast.error(data?.error || 'Errore nella promozione a moderator');
         return;
       }
 
@@ -159,7 +167,7 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
 
   const handleDemoteFromModerator = async (userId: string) => {
     try {
-      const { data, error } = await supabase.rpc('remove_moderator_role' as any, {
+      const { data, error } = await callRoleRpc('remove_moderator_role', {
         target_user_id: userId
       });
 
@@ -169,9 +177,8 @@ export const useUserActions = (updateUser: (userId: string, updates: Partial<Adm
         return;
       }
 
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) {
-        toast.error(result.error || 'Errore nella rimozione del ruolo moderator');
+      if (!data?.success) {
+        toast.error(data?.error || 'Errore nella rimozione del ruolo moderator');
         return;
       }
 

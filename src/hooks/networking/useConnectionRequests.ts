@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { toast } from 'sonner';
+import type { RealtimePayload } from '@/types/realtime';
+import type { ConnectionRow, ConnectionWithSenderJoin } from '@/types/supabase-joins';
 
 interface ConnectionRequest {
   id: string;
@@ -20,6 +22,17 @@ interface ConnectionRequest {
 export const useConnectionRequests = (userId?: string) => {
   const [pendingRequests, setPendingRequests] = useState<ConnectionRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const getRecordId = (record: unknown): string | null => {
+    if (!record || typeof record !== 'object') return null;
+    const idValue = (record as Record<string, unknown>).id;
+    return typeof idValue === 'string' ? idValue : null;
+  };
+
+  const getRecordStatus = (record: unknown): string | null => {
+    if (!record || typeof record !== 'object') return null;
+    const statusValue = (record as Record<string, unknown>).status;
+    return typeof statusValue === 'string' ? statusValue : null;
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -40,11 +53,14 @@ export const useConnectionRequests = (userId?: string) => {
           table: 'connections',
           filter: `receiver_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: RealtimePayload<ConnectionRow>) => {
           sreLogger.debug('New connection request received', { payload });
           
           // Fetch sender details and add to pending requests
-          const newId = (payload.new as any)['id'];
+          const newId = getRecordId(payload.new);
+          if (!newId) {
+            return;
+          }
           fetchSenderDetails(newId).then(request => {
             if (request) {
               setPendingRequests(prev => [request, ...prev]);
@@ -61,13 +77,13 @@ export const useConnectionRequests = (userId?: string) => {
           table: 'connections',
           filter: `receiver_id=eq.${userId}`
         },
-        (payload) => {
+        (payload: RealtimePayload<ConnectionRow>) => {
           sreLogger.debug('Connection request updated', { payload });
           
           // Remove from pending if accepted/rejected
-          const newStatus = (payload.new as any)['status'];
-          const newId = (payload.new as any)['id'];
-          if (newStatus !== 'pending') {
+          const newStatus = getRecordStatus(payload.new);
+          const newId = getRecordId(payload.new);
+          if (newStatus !== 'pending' && newId) {
             setPendingRequests(prev => prev.filter(r => r.id !== newId));
           }
         }
@@ -96,11 +112,12 @@ export const useConnectionRequests = (userId?: string) => {
         `)
         .eq('receiver_id', userId)
         .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .overrideTypes<ConnectionWithSenderJoin[]>();
 
       if (error) throw error;
 
-      setPendingRequests((data || []) as ConnectionRequest[]);
+      setPendingRequests(data || []);
     } catch (error) {
       sreLogger.error('Failed to fetch pending connection requests', { userId }, error as Error);
       toast.error('Failed to load connection requests');
@@ -122,11 +139,12 @@ export const useConnectionRequests = (userId?: string) => {
           sender:profiles!connections_sender_id_fkey(first_name, last_name, profile_photo_url)
         `)
         .eq('id', requestId)
-        .single();
+        .single()
+        .overrideTypes<ConnectionWithSenderJoin>();
 
       if (error) throw error;
 
-      return data as ConnectionRequest;
+      return data;
     } catch (error) {
       sreLogger.error('Failed to fetch sender details', { requestId }, error as Error);
       return null;

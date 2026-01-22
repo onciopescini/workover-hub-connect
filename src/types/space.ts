@@ -35,6 +35,18 @@ export type SpaceUpdate = Omit<Database["public"]["Tables"]["spaces"]["Update"],
   features?: string[];
 };
 
+export interface SpaceSummary {
+  id: string;
+  title: string;
+  address?: string;
+  photos?: string[];
+  host_id?: string;
+  price_per_day?: number;
+  price_per_hour?: number;
+  confirmation_type?: string;
+  city_name?: string | null;
+}
+
 export const SPACE_FEATURES_OPTIONS = [
   "Dedicated desk",
   "Shared table",

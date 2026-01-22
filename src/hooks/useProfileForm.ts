@@ -127,7 +127,7 @@ export const useProfileForm = () => {
       // Converti undefined in null per compatibilità con il database
       const dataToSubmit = Object.fromEntries(
         Object.entries(validatedData).map(([key, value]) => [key, value === undefined ? null : value])
-      ) as any;
+      ) as Partial<ProfileFormData>;
       
       await updateProfile(dataToSubmit);
       toast.success("Profilo aggiornato con successo");
