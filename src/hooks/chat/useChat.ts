@@ -4,8 +4,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { Conversation, Message, ChatParticipant } from "@/types/chat";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
+import type { User } from "@supabase/supabase-js";
 
-export const useChat = (activeConversationId?: string) => {
+interface ConversationQueryResult {
+  id: string;
+  updated_at: string;
+  last_message: string | null;
+  last_message_at: string | null;
+  conversation_participants: {
+    profiles: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      profile_photo_url: string | null;
+    };
+  }[];
+}
+
+interface UseChatResult {
+  conversations: Conversation[];
+  messages: Message[];
+  isLoading: boolean;
+  sendMessage: (content: string) => void;
+  isSending: boolean;
+  currentUser: User | null;
+}
+
+export const useChat = (activeConversationId?: string): UseChatResult => {
   const { authState } = useAuth();
   const user = authState.user;
   const queryClient = useQueryClient();
@@ -13,7 +38,7 @@ export const useChat = (activeConversationId?: string) => {
   // Fetch Conversations (Optimized)
   const { data: conversations, isLoading: isLoadingConversations } = useQuery({
     queryKey: ["conversations", user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Conversation[]> => {
       if (!user?.id) return [];
 
       const { data, error } = await supabase
@@ -40,17 +65,18 @@ export const useChat = (activeConversationId?: string) => {
         return [];
       }
 
-      return data.map((conv: any) => ({
+      const conversationRows = (data ?? []) as ConversationQueryResult[];
+
+      return conversationRows.map((conv) => ({
         id: conv.id,
         updated_at: conv.updated_at,
-        participants: conv.conversation_participants.map((cp: any) => ({
+        participants: conv.conversation_participants.map((cp) => ({
           id: cp.profiles.id,
           first_name: cp.profiles.first_name,
           last_name: cp.profiles.last_name,
           profile_photo_url: cp.profiles.profile_photo_url,
-          avatar_url: cp.profiles.profile_photo_url || null,
-          email: null
-        })),
+          avatar_url: cp.profiles.profile_photo_url || null // Email not exposed publicly
+        })) as ChatParticipant[],
         last_message: conv.last_message
           ? {
               content: conv.last_message,
@@ -65,7 +91,7 @@ export const useChat = (activeConversationId?: string) => {
   // Fetch Messages for active conversation
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
     queryKey: ["messages", activeConversationId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Message[]> => {
       if (!activeConversationId) return [];
 
       const { data, error } = await supabase
@@ -79,7 +105,7 @@ export const useChat = (activeConversationId?: string) => {
         throw error;
       }
 
-      return data as Message[];
+      return (data ?? []) as Message[];
     },
     enabled: !!activeConversationId,
   });
