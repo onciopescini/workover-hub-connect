@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Message, ChatParticipant, Conversation } from '@/types/chat';
+import {
+  ArchiveConversationPayload,
+  ChatParticipant,
+  Conversation,
+  DeleteMessagePayload,
+  MarkConversationUnreadPayload,
+  Message
+} from '@/types/chat';
 import { User } from '@supabase/supabase-js';
 import { MessageBubble } from './MessageBubble';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Archive, Mail, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +20,9 @@ interface ChatWindowProps {
   currentUser: User | null;
   isLoading: boolean;
   onSendMessage: (content: string) => void;
+  onDeleteMessage: (payload: DeleteMessagePayload) => void;
+  onArchiveConversation: (payload: ArchiveConversationPayload) => void;
+  onMarkConversationUnread: (payload: MarkConversationUnreadPayload) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   activeConversation?: Conversation;
 }
@@ -22,6 +32,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   currentUser,
   isLoading,
   onSendMessage,
+  onDeleteMessage,
+  onArchiveConversation,
+  onMarkConversationUnread,
   messagesEndRef,
   activeConversation
 }) => {
@@ -73,6 +86,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="font-semibold text-sm">
           {displayName}
         </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onMarkConversationUnread({ conversationId: activeConversation.id })}
+            title="Segna come non letto"
+          >
+            <Mail className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onArchiveConversation({ conversationId: activeConversation.id })}
+            title="Archivia conversazione"
+          >
+            <Archive className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Messages Area */}
@@ -93,6 +124,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 key={msg.id}
                 message={msg}
                 isMe={msg.sender_id === currentUser?.id}
+                onDelete={(messageId) =>
+                  onDeleteMessage({ messageId, conversationId: activeConversation.id })
+                }
+                deleteIcon={Trash2}
               />
             ))}
             <div ref={messagesEndRef} />

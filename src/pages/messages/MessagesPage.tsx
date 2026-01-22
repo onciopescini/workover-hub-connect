@@ -16,7 +16,10 @@ const MessagesPage: React.FC = () => {
     isLoading,
     isMessagesLoading,
     sendMessage,
-    messagesEndRef
+    messagesEndRef,
+    deleteMessage,
+    archiveConversation,
+    markConversationUnread
   } = useChat(id);
 
   const activeConversation = conversations.find(c => c.id === id);
@@ -39,6 +42,9 @@ const MessagesPage: React.FC = () => {
           currentUser={currentUser}
           isLoading={isMessagesLoading}
           onSendMessage={sendMessage}
+          onDeleteMessage={deleteMessage}
+          onArchiveConversation={archiveConversation}
+          onMarkConversationUnread={markConversationUnread}
           messagesEndRef={messagesEndRef}
           activeConversation={activeConversation}
         />

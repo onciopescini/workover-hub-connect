@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, Archive, Mail, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -46,6 +46,9 @@ export default function ChatThread() {
   const [text, setText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isMarkingUnread, setIsMarkingUnread] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Load conversation details and messages
@@ -191,6 +194,77 @@ export default function ChatThread() {
     }
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!authState.user?.id || deletingMessageId) return;
+    const messageToDelete = messages.find((message) => message.id === messageId);
+    if (!messageToDelete || messageToDelete.sender_id !== authState.user.id) {
+      toast.error('Non puoi eliminare questo messaggio');
+      return;
+    }
+
+    setDeletingMessageId(messageId);
+    try {
+      const { error } = await supabase.from('messages').delete().eq('id', messageId);
+      if (error) {
+        throw error;
+      }
+      setMessages((prev) => prev.filter((message) => message.id !== messageId));
+    } catch (error) {
+      sreLogger.error('Error deleting message', { conversationId, component: 'ChatThread' }, error as Error);
+      toast.error('Errore nell\'eliminazione del messaggio');
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
+  const handleArchiveConversation = async () => {
+    if (!conversationId || !authState.user?.id || isArchiving) return;
+    setIsArchiving(true);
+    try {
+      const { error } = await supabase
+        .from('conversation_participants')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', authState.user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Conversazione archiviata');
+      navigate('/messages');
+    } catch (error) {
+      sreLogger.error('Error archiving conversation', { conversationId, component: 'ChatThread' }, error as Error);
+      toast.error('Errore nell\'archiviazione della conversazione');
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
+  const handleMarkUnread = async () => {
+    if (!conversationId || !authState.user?.id || isMarkingUnread) return;
+    setIsMarkingUnread(true);
+    try {
+      const { error } = await supabase
+        .from('conversation_participants')
+        .update({ last_read_at: null })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', authState.user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Conversazione contrassegnata come non letta');
+      navigate('/messages');
+    } catch (error) {
+      sreLogger.error('Error marking conversation unread', { conversationId, component: 'ChatThread' }, error as Error);
+      toast.error('Errore nel contrassegnare come non letto');
+    } finally {
+      setIsMarkingUnread(false);
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -245,6 +319,26 @@ export default function ChatThread() {
                 </p>
               )}
             </div>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleMarkUnread}
+                disabled={isMarkingUnread}
+                title="Segna come non letto"
+              >
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleArchiveConversation}
+                disabled={isArchiving}
+                title="Archivia conversazione"
+              >
+                <Archive className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -262,12 +356,12 @@ export default function ChatThread() {
               return (
                 <div 
                   key={message.id} 
-                  className={`flex ${isMyMessage ? 'justify-end' : 'justify-start'}`}
+                  className={`flex group ${isMyMessage ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div 
-                    className={`max-w-[70%] p-3 rounded-lg ${
-                      isMyMessage 
-                        ? 'bg-primary text-primary-foreground' 
+                  <div
+                    className={`relative max-w-[70%] p-3 rounded-lg ${
+                      isMyMessage
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}
                   >
@@ -280,6 +374,18 @@ export default function ChatThread() {
                         minute: '2-digit'
                       })}
                     </div>
+                    {isMyMessage && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteMessage(message.id)}
+                        disabled={deletingMessageId === message.id}
+                        title="Elimina messaggio"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
