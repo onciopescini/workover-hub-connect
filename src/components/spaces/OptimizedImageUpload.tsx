@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { X, Image, Loader2, Check, AlertCircle } from 'lucide-react';
 import { OptimizedImage } from "@/components/ui/OptimizedImage";
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,53 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
   spaceId
 }) => {
   const [imageStates, setImageStates] = useState<Map<string, ImageUploadState>>(new Map());
+  const unsubscribeByPreviewUrlRef = useRef<Map<string, () => void>>(new Map());
+
+  useEffect(() => {
+    return () => {
+      unsubscribeByPreviewUrlRef.current.forEach((unsubscribe) => unsubscribe());
+      unsubscribeByPreviewUrlRef.current.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const currentUrls = new Set(photoPreviewUrls);
+    unsubscribeByPreviewUrlRef.current.forEach((unsubscribe, previewUrl) => {
+      if (!currentUrls.has(previewUrl)) {
+        unsubscribe();
+        unsubscribeByPreviewUrlRef.current.delete(previewUrl);
+      }
+    });
+
+    setImageStates(prev => {
+      let didChange = false;
+      const next = new Map(prev);
+      prev.forEach((_state, previewUrl) => {
+        if (!currentUrls.has(previewUrl)) {
+          next.delete(previewUrl);
+          didChange = true;
+        }
+      });
+      return didChange ? next : prev;
+    });
+  }, [photoPreviewUrls]);
+
+  const handleRemovePhoto = useCallback((index: number, previewUrl: string) => {
+    const unsubscribe = unsubscribeByPreviewUrlRef.current.get(previewUrl);
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribeByPreviewUrlRef.current.delete(previewUrl);
+    }
+    setImageStates(prev => {
+      if (!prev.has(previewUrl)) {
+        return prev;
+      }
+      const next = new Map(prev);
+      next.delete(previewUrl);
+      return next;
+    });
+    onRemovePhoto(index);
+  }, [onRemovePhoto]);
 
   const getImageStatus = (previewUrl: string): 'uploading' | 'processing' | 'optimized' | 'error' | 'completed' => {
     const state = imageStates.get(previewUrl);
@@ -143,6 +190,11 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
           return newMap;
         });
       });
+      const existingUnsubscribe = unsubscribeByPreviewUrlRef.current.get(previewUrl);
+      if (existingUnsubscribe) {
+        existingUnsubscribe();
+      }
+      unsubscribeByPreviewUrlRef.current.set(previewUrl, unsubscribe);
 
       // Get initial job state
       const initialJob = await getImageProcessingJob(jobId);
@@ -209,7 +261,7 @@ export const OptimizedImageUpload: React.FC<OptimizedImageUploadProps> = ({
               {/* Remove Button */}
               <button
                 type="button"
-                onClick={() => onRemovePhoto(index)}
+                onClick={() => handleRemovePhoto(index, url)}
                 className="absolute top-1 right-1 bg-black bg-opacity-50 rounded-full p-1
                           text-white hover:bg-opacity-70 transition-opacity"
                 disabled={isSubmitting}
