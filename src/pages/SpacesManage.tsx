@@ -66,7 +66,7 @@ const SpacesManage = () => {
       // Workspaces likely has created_at
       query = query.order("created_at", { ascending: false });
 
-      const { data: workspacesData, error } = await query;
+      const { data: spacesData, error } = await query;
 
       if (error) {
         sreLogger.error(
@@ -79,42 +79,42 @@ const SpacesManage = () => {
       }
 
       sreLogger.debug("Spaces fetched successfully", {
-        count: workspacesData?.length || 0,
+        count: spacesData?.length || 0,
         userId: authState.user.id,
         component: "SpacesManage",
       });
 
-      // Map Workspace data to Space interface
-      const mappedSpaces: Space[] = (workspacesData || []).map((workspace: any) => ({
-        id: workspace.id,
-        title: workspace.name, // Map name to title
-        description: workspace.description || "",
-        photos: workspace.photos || [],
-        address: workspace.address,
-        latitude: workspace.latitude || 0,
-        longitude: workspace.longitude || 0,
-        price_per_day: workspace.price_per_day,
-        price_per_hour: workspace.price_per_hour,
-        max_capacity: workspace.max_capacity,
-        capacity: workspace.max_capacity, // Assuming capacity maps to max_capacity if strictly needed or null
-        category: workspace.category,
-        workspace_features: workspace.features || [], // Map features to workspace_features
-        amenities: workspace.amenities || [],
-        seating_types: workspace.seating_types || [],
-        work_environment: workspace.work_environment || "controlled", // Default
-        rules: workspace.rules,
-        host_id: workspace.host_id,
-        published: workspace.published || false,
-        created_at: workspace.created_at || new Date().toISOString(),
-        updated_at: workspace.updated_at || new Date().toISOString(),
-        deleted_at: workspace.deleted_at || null,
-        is_suspended: workspace.is_suspended || false,
-        suspension_reason: workspace.suspension_reason || null,
-        suspended_at: workspace.suspended_at || null,
-        suspended_by: workspace.suspended_by || null,
-        availability: workspace.availability,
-        cancellation_policy: workspace.cancellation_policy,
-        confirmation_type: workspace.confirmation_type || "instant",
+      // Map Space data to Space interface
+      const mappedSpaces: Space[] = (spacesData || []).map((space: any) => ({
+        id: space.id,
+        title: space.name, // Map name to title
+        description: space.description || "",
+        photos: space.photos || [],
+        address: space.address,
+        latitude: space.latitude || 0,
+        longitude: space.longitude || 0,
+        price_per_day: space.price_per_day,
+        price_per_hour: space.price_per_hour,
+        max_capacity: space.max_capacity,
+        capacity: space.max_capacity, // Assuming capacity maps to max_capacity if strictly needed or null
+        category: space.category,
+        workspace_features: space.features || [], // Map features to workspace_features
+        amenities: space.amenities || [],
+        seating_types: space.seating_types || [],
+        work_environment: space.work_environment || "controlled", // Default
+        rules: space.rules,
+        host_id: space.host_id,
+        published: space.published || false,
+        created_at: space.created_at || new Date().toISOString(),
+        updated_at: space.updated_at || new Date().toISOString(),
+        deleted_at: space.deleted_at || null,
+        is_suspended: space.is_suspended || false,
+        suspension_reason: space.suspension_reason || null,
+        suspended_at: space.suspended_at || null,
+        suspended_by: space.suspended_by || null,
+        availability: space.availability,
+        cancellation_policy: space.cancellation_policy,
+        confirmation_type: space.confirmation_type || "instant",
         approved_at: null,
         approved_by: null,
         approximate_location: null,
@@ -122,8 +122,8 @@ const SpacesManage = () => {
         cached_review_count: null,
         city_name: null,
         country_code: null,
-        event_friendly_tags: workspace.event_friendly_tags || [],
-        ideal_guest_tags: workspace.ideal_guest_tags || [],
+        event_friendly_tags: space.event_friendly_tags || [],
+        ideal_guest_tags: space.ideal_guest_tags || [],
         pending_approval: false,
         rejection_reason: null,
         revision_notes: null,

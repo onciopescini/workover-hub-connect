@@ -66,7 +66,7 @@ export const WhosHereList = () => {
               profession: item.profiles?.profession || null
             },
             workspaces: {
-              name: item.spaces?.name || item.workspaces?.name || 'Workspace',
+              name: item.spaces?.name || item.workspaces?.name || 'Space',
               city: item.spaces?.city || item.workspaces?.city || null
             }
           }));

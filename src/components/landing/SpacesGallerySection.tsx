@@ -42,15 +42,15 @@ export function SpacesGallerySection() {
         throw error;
       }
 
-      return (data || []).map((workspace: any) => ({
-        id: workspace.id,
-        image: (workspace.photos && workspace.photos[0]) || (workspace.images && workspace.images[0]) || null,
-        title: workspace.name,
-        category: workspace.category || 'professional',
-        location: workspace.city || workspace.address || 'Italia',
-        price: workspace.price_per_hour ? `${workspace.price_per_hour}€/ora` : `${workspace.price_per_day}€/giorno`,
-        features: (workspace.features || []).slice(0, 3), // Show top 3 features
-        amenities: (workspace.features || []).slice(0, 3).map((f: string) => getFeatureIcon(f))
+      return (data || []).map((space: any) => ({
+        id: space.id,
+        image: (space.photos && space.photos[0]) || (space.images && space.images[0]) || null,
+        title: space.name,
+        category: space.category || 'professional',
+        location: space.city || space.address || 'Italia',
+        price: space.price_per_hour ? `${space.price_per_hour}€/ora` : `${space.price_per_day}€/giorno`,
+        features: (space.features || []).slice(0, 3), // Show top 3 features
+        amenities: (space.features || []).slice(0, 3).map((f: string) => getFeatureIcon(f))
       }));
     }
   });

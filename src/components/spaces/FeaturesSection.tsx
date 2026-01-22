@@ -24,7 +24,7 @@ export const FeaturesSection = ({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-medium mb-2">Workspace Features</h3>
+        <h3 className="font-medium mb-2">Space Features</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
             <div key={feature} className="flex items-center space-x-2">

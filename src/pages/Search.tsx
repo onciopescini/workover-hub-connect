@@ -71,39 +71,39 @@ const Search = () => {
         throw error;
       }
 
-      // Map workspace data to Space type
-      return (data || []).map((workspace: any) => ({
-        id: workspace.id,
-        title: workspace.name,
-        description: workspace.description || "",
-        photos: workspace.photos || workspace.images || [],
-        address: workspace.address,
-        latitude: workspace.latitude || 0,
-        longitude: workspace.longitude || 0,
-        price_per_day: workspace.price_per_day,
-        price_per_hour: workspace.price_per_hour,
-        max_capacity: workspace.max_capacity,
-        category: workspace.category,
-        workspace_features: workspace.features || workspace.workspace_features || [],
-        amenities: workspace.amenities || [],
-        work_environment: workspace.work_environment,
+      // Map space data to Space type
+      return (data || []).map((space: any) => ({
+        id: space.id,
+        title: space.name,
+        description: space.description || "",
+        photos: space.photos || space.images || [],
+        address: space.address,
+        latitude: space.latitude || 0,
+        longitude: space.longitude || 0,
+        price_per_day: space.price_per_day,
+        price_per_hour: space.price_per_hour,
+        max_capacity: space.max_capacity,
+        category: space.category,
+        workspace_features: space.features || space.workspace_features || [],
+        amenities: space.amenities || [],
+        work_environment: space.work_environment,
         // Default/Fallback values for required fields
-        capacity: workspace.max_capacity,
-        host_id: workspace.host_id,
-        created_at: workspace.created_at,
-        updated_at: workspace.updated_at,
-        published: workspace.published,
-        availability: workspace.availability,
-        confirmation_type: workspace.confirmation_type || 'instant',
-        city: workspace.city || "",
-        cached_avg_rating: workspace.cached_avg_rating || 0,
-        num_reviews: workspace.cached_review_count || 0,
-        pending_approval: workspace.pending_approval,
-        is_suspended: workspace.is_suspended,
-        suspended_by: workspace.suspended_by,
-        suspended_at: workspace.suspended_at,
-        suspension_reason: workspace.suspension_reason,
-        deleted_at: workspace.deleted_at
+        capacity: space.max_capacity,
+        host_id: space.host_id,
+        created_at: space.created_at,
+        updated_at: space.updated_at,
+        published: space.published,
+        availability: space.availability,
+        confirmation_type: space.confirmation_type || 'instant',
+        city: space.city || "",
+        cached_avg_rating: space.cached_avg_rating || 0,
+        num_reviews: space.cached_review_count || 0,
+        pending_approval: space.pending_approval,
+        is_suspended: space.is_suspended,
+        suspended_by: space.suspended_by,
+        suspended_at: space.suspended_at,
+        suspension_reason: space.suspension_reason,
+        deleted_at: space.deleted_at
       } as Space));
     }
   });
