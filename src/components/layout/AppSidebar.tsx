@@ -1,4 +1,4 @@
-import { Home, Building2, Calendar, MessageSquare, Users, LayoutDashboard, Shield, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, Building2, Calendar, MessageSquare, Users, LayoutDashboard, Shield, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import {
@@ -55,6 +55,7 @@ export function AppSidebar() {
   
   if (hasAnyRole(authState.roles, ['host', 'admin'])) {
     roleItems.push({ title: "Dashboard Host", url: "/host/dashboard", icon: LayoutDashboard });
+    roleItems.push({ title: "Wallet", url: "/host/wallet", icon: Wallet });
   }
   
   if (authState.roles.includes('admin')) {

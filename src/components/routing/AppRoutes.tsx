@@ -64,6 +64,7 @@ const HostCalendar = lazy(() => import("@/pages/host/HostCalendar"));
 const HostFiscalPage = lazy(() => import("@/pages/host/HostFiscalPage"));
 const HostInvoicesPage = lazy(() => import("@/pages/host/HostInvoicesPage"));
 const KYCVerificationPage = lazy(() => import("@/pages/host/KYCVerificationPage"));
+const HostWalletPage = lazy(() => import("@/pages/host/HostWalletPage"));
 
 // Coworker pages
 const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
@@ -367,6 +368,11 @@ export const AppRoutes = () => {
         <Route path="kyc" element={
           <LazyWrapper>
             <KYCVerificationPage />
+          </LazyWrapper>
+        } />
+        <Route path="wallet" element={
+          <LazyWrapper>
+            <HostWalletPage />
           </LazyWrapper>
         } />
         
