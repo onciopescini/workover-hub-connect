@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { format } from 'date-fns';
 import { sreLogger } from '@/lib/sre-logger';
+import type { Database } from '@/integrations/supabase/types';
+
+type SpaceRow = Database['public']['Tables']['spaces']['Row'];
+type BookingWithSpace = Database['public']['Tables']['bookings']['Row'] & {
+  spaces: Pick<SpaceRow, 'id' | 'title'> | null;
+};
 
 export interface WhoIsHereUser {
   id: string;
@@ -29,14 +35,14 @@ export const useWhoIsHere = () => {
 
         // 1. Find my active check-in
         // We cast the response because spaces is a joined relation
-        const { data: bookings, error: bookingError } = await supabase
+        const { data: booking, error: bookingError } = await supabase
           .from('bookings')
           .select(`
             id,
             space_id,
             spaces (
               id,
-              name
+              title
             )
           `)
           .eq('user_id', authState.user.id)
@@ -50,7 +56,9 @@ export const useWhoIsHere = () => {
           return;
         }
 
-        if (!bookings) {
+        const bookingData = booking as BookingWithSpace | null;
+
+        if (!bookingData) {
           setUsers([]);
           setCurrentSpace(null);
           setIsLoading(false);
@@ -58,12 +66,11 @@ export const useWhoIsHere = () => {
         }
 
         // Set current space info
-        // Using any cast to handle the joined relation access safely
-        const spaceData = (bookings as any).spaces || (bookings as any).workspaces;
+        const spaceData = bookingData.spaces;
         if (spaceData) {
             setCurrentSpace({
                 id: spaceData.id,
-                name: spaceData.name
+                name: spaceData.title
             });
         }
 
@@ -72,7 +79,7 @@ export const useWhoIsHere = () => {
         const { data: coworkers, error: coworkersError } = await supabase.rpc('get_coworkers');
 
         if (coworkersError) {
-          sreLogger.error("Error fetching coworkers", { bookingId: bookings.id }, coworkersError);
+          sreLogger.error("Error fetching coworkers", { bookingId: bookingData.id }, coworkersError);
         } else {
           setUsers((coworkers || []).map((c: any) => ({
             id: c.id,

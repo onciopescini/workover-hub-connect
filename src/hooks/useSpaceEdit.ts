@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Space } from "@/types/space";
 import { sreLogger } from '@/lib/sre-logger';
 import { useAuth } from '@/hooks/auth/useAuth';
+import type { Database } from '@/integrations/supabase/types';
+
+type SpaceRow = Database['public']['Tables']['spaces']['Row'];
 
 export const useSpaceEdit = (id: string | undefined) => {
   const navigate = useNavigate();
@@ -33,10 +36,9 @@ export const useSpaceEdit = (id: string | undefined) => {
 
       setIsLoading(true);
       try {
-        // Fetch from 'workspaces' table (new schema)
-        // using explicit casting to bypass type check for now
-        const { data, error } = await (supabase
-          .from('spaces') as any)
+        // Fetch from the spaces table
+        const { data, error } = await supabase
+          .from('spaces')
           .select('*')
           .eq('id', id)
           .eq('host_id', authState.user.id) // Security check
@@ -48,40 +50,21 @@ export const useSpaceEdit = (id: string | undefined) => {
           return;
         }
 
-        if (data) {
+        const spaceRow = data as SpaceRow | null;
+
+        if (spaceRow) {
           // Map workspace data to Space type
           // We map 'name' -> 'title', 'features' -> 'workspace_features', etc.
           // This ensures the form receives data in the shape it expects.
-          const mappedSpace: any = {
-            id: data.id,
-            title: data.name,
-            description: data.description || "",
-            photos: data.photos || [],
-            address: data.address,
-            latitude: data.latitude || 0,
-            longitude: data.longitude || 0,
-            price_per_day: data.price_per_day,
-            price_per_hour: data.price_per_hour,
-            max_capacity: data.max_capacity,
-            capacity: data.max_capacity,
-            category: data.category,
-            workspace_features: data.features || [],
-            amenities: data.amenities || [],
-            seating_types: data.seating_types || [],
-            work_environment: data.work_environment || "controlled",
-            rules: data.rules,
-            host_id: data.host_id,
-            published: data.published || false,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-            availability: data.availability,
-            cancellation_policy: data.cancellation_policy,
-            confirmation_type: data.confirmation_type || "instant",
-            event_friendly_tags: data.event_friendly_tags || [],
-            ideal_guest_tags: data.ideal_guest_tags || [],
+          const mappedSpace: Space = {
+            ...spaceRow,
+            name: spaceRow.title,
+            title: spaceRow.title,
+            features: spaceRow.workspace_features,
+            capacity: spaceRow.max_capacity,
           };
 
-          setSpace(mappedSpace as Space);
+          setSpace(mappedSpace);
         } else {
            toast.error("Space not found or permission denied");
            navigate('/host/spaces');
@@ -105,9 +88,9 @@ export const useSpaceEdit = (id: string | undefined) => {
     try {
       setIsLoading(true);
 
-      // Delete from workspaces table
-      const { error } = await (supabase
-        .from('spaces') as any)
+      // Delete from spaces table
+      const { error } = await supabase
+        .from('spaces')
         .delete()
         .eq('id', id);
 
