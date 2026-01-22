@@ -4,6 +4,7 @@ export interface ChatParticipant {
   last_name: string | null;
   profile_photo_url: string | null;
   avatar_url: string | null;
+  email?: string | null;
 }
 
 export interface Conversation {
@@ -11,6 +12,8 @@ export interface Conversation {
   updated_at: string;
   participants: ChatParticipant[];
   last_message?: { content: string; created_at: string } | null;
+  archived_at?: string | null;
+  last_read_at?: string | null;
 }
 
 export interface Message {
@@ -20,4 +23,17 @@ export interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
+}
+
+export interface DeleteMessagePayload {
+  messageId: string;
+  conversationId: string;
+}
+
+export interface ArchiveConversationPayload {
+  conversationId: string;
+}
+
+export interface MarkConversationUnreadPayload {
+  conversationId: string;
 }
