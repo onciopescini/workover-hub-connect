@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from 'react';
+import { queryKeys } from '@/lib/react-query-config';
 
 export interface HostPayment {
   id: string;
@@ -36,7 +37,7 @@ export interface HostPayment {
   }[] | null;
 }
 
-export const useHostPayments = () => {
+export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,8 +46,8 @@ export const useHostPayments = () => {
     });
   }, []);
 
-  return useQuery({
-    queryKey: ['host-payments', userId],
+  return useQuery<HostPayment[], Error>({
+    queryKey: queryKeys.hostPayments.list(userId ?? undefined),
     queryFn: async () => {
       if (!userId) throw new Error('User not authenticated');
 
@@ -109,7 +110,7 @@ export const useHostPayments = () => {
       const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
       // Transform data to match HostPayment interface, filtering by host's spaces
-      return (data || [])
+      const payments = (data || [])
         .filter(payment => payment.bookings?.space_id && spacesMap.has(payment.bookings.space_id))
         .map(payment => {
           const space = payment.bookings?.space_id ? spacesMap.get(payment.bookings.space_id) : null;
@@ -136,7 +137,9 @@ export const useHostPayments = () => {
             invoice: payment.invoices || null,
             non_fiscal_receipt: payment.non_fiscal_receipts || null
           };
-        }) as HostPayment[];
+        });
+
+      return payments;
     },
     enabled: !!userId
   });

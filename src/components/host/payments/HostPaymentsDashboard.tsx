@@ -7,13 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Download, FileText, DollarSign, TrendingUp, Clock, CheckCircle, Wallet, ExternalLink, Loader2 } from 'lucide-react';
 import { useHostPayments, useHostPaymentStats } from '@/hooks/useHostPayments';
 import { useStripePayouts } from '@/hooks/useStripePayouts';
+import { useHostPayoutEvents } from '@/hooks/useHostPayoutEvents';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 export const HostPaymentsDashboard = () => {
   const { data: payments, isLoading } = useHostPayments();
   const stats = useHostPaymentStats(payments);
-  const [filter, setFilter] = useState<'all' | 'completed'>('completed');
   const [userId, setUserId] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   
@@ -21,7 +21,8 @@ export const HostPaymentsDashboard = () => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
   }, []);
   
-  const { data: stripePayouts, isLoading: isLoadingPayouts } = useStripePayouts(userId || '');
+  const { data: stripePayouts } = useStripePayouts(userId || '');
+  const { data: payoutEvents, isLoading: isLoadingPayoutEvents } = useHostPayoutEvents(userId);
 
   const handleStripeDashboard = async () => {
       setIsRedirecting(true);
@@ -30,7 +31,7 @@ export const HostPaymentsDashboard = () => {
         const { data, error } = await supabase.functions.invoke('create-connect-onboarding-link');
         if (error) throw error;
         if (data.url) window.location.href = data.url;
-      } catch (e: any) {
+      } catch (e: unknown) {
         toast.error("Errore", { description: "Impossibile accedere alla dashboard Stripe: " });
         setIsRedirecting(false);
       }
@@ -227,6 +228,69 @@ export const HostPaymentsDashboard = () => {
               )}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Payout Events */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Eventi Payout</CardTitle>
+              <CardDescription>Monitoraggio dei payout programmati e completati</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingPayoutEvents ? (
+            <div className="flex items-center justify-center h-24">
+              <Clock className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data evento</TableHead>
+                  <TableHead>Spazio</TableHead>
+                  <TableHead>Stato</TableHead>
+                  <TableHead>Transfer ID</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {payoutEvents && payoutEvents.length > 0 ? (
+                  payoutEvents.map((event) => (
+                    <TableRow key={`${event.id}-${event.status}`}>
+                      <TableCell className="font-medium">
+                        {format(new Date(event.eventDate), 'dd MMM yyyy, HH:mm', { locale: it })}
+                      </TableCell>
+                      <TableCell>{event.spaceTitle}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            event.status === 'completed'
+                              ? 'border-green-200 text-green-700 bg-green-50'
+                              : 'border-amber-200 text-amber-700 bg-amber-50'
+                          }
+                        >
+                          {event.status === 'completed' ? 'Completato' : 'Programmato'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {event.payoutTransferId ?? 'In attesa'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                      Nessun payout schedulato
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

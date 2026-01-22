@@ -222,6 +222,15 @@ export const queryKeys = {
   hostSpaceCount: {
     detail: (hostId?: string) => ['host-space-count', hostId] as const,
   },
+  hostPayments: {
+    list: (hostId?: string) => ['host-payments', hostId] as const,
+  },
+  hostPayoutEvents: {
+    list: (hostId?: string) => ['host-payout-events', hostId] as const,
+  },
+  stripePayouts: {
+    detail: (hostId?: string) => ['stripe-payouts', hostId] as const,
+  },
 
   // Coworker documents
   coworkerDocuments: {
