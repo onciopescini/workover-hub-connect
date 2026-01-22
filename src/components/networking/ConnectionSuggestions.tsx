@@ -70,7 +70,7 @@ export const ConnectionSuggestions = () => {
             const hasRequest = hasConnectionRequest(suggestion.user_id);
             
             return (
-              <Card key={`${suggestion.user_id}-${suggestion.workspace_name}`} className="hover:shadow-md transition-shadow">
+              <Card key={`${suggestion.user_id}-${suggestion.space_name}`} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
@@ -97,7 +97,7 @@ export const ConnectionSuggestions = () => {
                         <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
                            <div className="flex items-center gap-1">
                              <MapPin className="w-4 h-4" />
-                             {suggestion.workspace_name}
+                             {suggestion.space_name}
                            </div>
                            <div className="flex items-center gap-1">
                              <Calendar className="w-4 h-4" />

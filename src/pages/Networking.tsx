@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, UserPlus, MessageCircle, TrendingUp } from "lucide-react";
-import { useNetworking } from "@/hooks/useNetworking";
+import { useNetworking, type SearchFilters } from "@/hooks/useNetworking";
 import { NetworkingDashboard } from "@/components/networking/NetworkingDashboard";
 import { EnhancedConnectionCard } from "@/components/networking/EnhancedConnectionCard";
 import { EnhancedSuggestionCard } from "@/components/networking/EnhancedSuggestionCard";
@@ -13,7 +13,6 @@ import { NetworkingSearch } from "@/components/networking/NetworkingSearch";
 import { ConnectionRequestCard } from "@/components/networking/ConnectionRequestCard";
 import { WhosHereList } from "@/components/networking/WhosHereList";
 import { EnhancedConnectionCard as SearchResultCard } from "@/components/networking/EnhancedConnectionCard"; // Reusing card for results, or create CoworkerCard
-import { Coworker } from "@/types/networking";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
@@ -33,7 +32,7 @@ const Networking = () => {
   } = useNetworking();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchFilters, setSearchFilters] = useState<any>({});
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
 
   // Mock data for dashboard stats
   const dashboardStats = {
@@ -50,7 +49,7 @@ const Networking = () => {
     "Digital Marketing Roma"
   ];
 
-  const handleSearch = (query: string, filters: any) => {
+  const handleSearch = (query: string, filters: SearchFilters) => {
     setSearchQuery(query);
     setSearchFilters(filters);
 
@@ -241,7 +240,7 @@ const Networking = () => {
                 ) : (
                   filteredSuggestions.map((suggestion) => (
                     <EnhancedSuggestionCard
-                      key={`${suggestion.user_id}-${suggestion.workspace_name}`}
+                      key={`${suggestion.user_id}-${suggestion.space_name}`}
                       suggestion={suggestion}
                     />
                   ))

@@ -5,7 +5,7 @@ export interface UserNotification {
   type: "message" | "booking" | "event" | "review" | "system" | "ticket" | "connection";
   title: string;
   content?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   is_read: boolean;
   created_at: string;
 }

@@ -84,7 +84,7 @@ export function useCheckout() {
       }
 
       // STRICT SEQUENCE: Prepare payload mapping form data to bookings table schema
-      // IMPORTANT: Use space_id (not workspace_id)
+      // IMPORTANT: Use space_id (not legacy id)
       const bookingInsertData: BookingInsert = {
         space_id: spaceId,
         user_id: userId,

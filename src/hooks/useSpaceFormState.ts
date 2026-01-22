@@ -1,30 +1,58 @@
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useEffect, type Dispatch, type SetStateAction, type ChangeEvent } from 'react';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { SpaceFormSchema, SpaceFormData } from '@/schemas/spaceSchema';
-import { Space } from '@/types/space';
-import { WorkspaceInsert } from '@/types/workspace';
-import { startImageOptimization } from '@/lib/image-optimization';
+import { Space, SpaceInsert } from '@/types/space';
 import { useLogger } from '@/hooks/useLogger';
 import { sreLogger } from '@/lib/sre-logger';
 import type { Database } from '@/integrations/supabase/types';
+import type { AvailabilityData } from '@/types/availability';
+import { toSpaceInsertPayload, toSpaceUpdatePayload } from '@/lib/space-mappers';
 
-type SpaceRow = Database['public']['Tables']['spaces']['Row'];
-type SpaceFormInitialData = Space | WorkspaceInsert | SpaceRow;
+type SpaceFormArrayKey = {
+  [K in keyof SpaceFormData]: SpaceFormData[K] extends string[] ? K : never
+}[keyof SpaceFormData];
 
 interface UseSpaceFormStateProps {
-  initialData?: Space | WorkspaceInsert | undefined;
+  initialData?: Space | undefined;
   isEdit?: boolean;
   stripeOnboardingStatus?: 'none' | 'pending' | 'completed' | 'restricted';
   stripeConnected?: boolean;
 }
 
-export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardingStatus = 'none', stripeConnected = false }: UseSpaceFormStateProps) => {
+interface UseSpaceFormStateResult {
+  form: UseFormReturn<SpaceFormData>;
+  formData: SpaceFormData;
+  availabilityData: AvailabilityData;
+  handleInputChange: <K extends keyof SpaceFormData>(field: K, value: SpaceFormData[K]) => void;
+  handleAddressChange: (address: string, coordinates?: { lat: number; lng: number }) => void;
+  handleAvailabilityChange: (data: AvailabilityData) => void;
+  handleCheckboxArrayChange: (field: SpaceFormArrayKey, value: string, checked: boolean) => void;
+  submitSpace: (data: SpaceFormData) => Promise<void>;
+  handlePhotoChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  removePhoto: (index: number) => void;
+  photoPreviewUrls: string[];
+  isSubmitting: boolean;
+  uploadingPhotos: boolean;
+  processingJobs: string[];
+  setUploadingPhotos: Dispatch<SetStateAction<boolean>>;
+  setProcessingJobs: Dispatch<SetStateAction<string[]>>;
+  setPhotoFiles: Dispatch<SetStateAction<File[]>>;
+  setPhotoPreviewUrls: Dispatch<SetStateAction<string[]>>;
+  photoFiles: File[];
+}
+
+export const useSpaceFormState = ({
+  initialData,
+  isEdit = false,
+  stripeOnboardingStatus = 'none',
+  stripeConnected = false
+}: UseSpaceFormStateProps): UseSpaceFormStateResult => {
   const navigate = useNavigate();
-  const { info, warn, error } = useLogger({ context: 'useSpaceFormState' });
+  const { error } = useLogger({ context: 'useSpaceFormState' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [processingJobs, setProcessingJobs] = useState<string[]>([]);
@@ -34,7 +62,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<string[]>([]);
 
   // Default availability data - with required slots array
-  const defaultAvailability: import('@/types/availability').AvailabilityData = {
+  const defaultAvailability: AvailabilityData = {
     recurring: {
       monday: { enabled: false, slots: [] },
       tuesday: { enabled: false, slots: [] },
@@ -54,7 +82,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       description: "",
       category: "home",
       max_capacity: 1,
-      workspace_features: [],
+      features: [],
       work_environment: "silent",
       amenities: [],
       seating_types: [],
@@ -78,8 +106,8 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
   const availabilityData = formData.availability;
 
   // Helper Wrappers to expose to consumers
-  const handleInputChange = (field: string, value: any) => {
-    form.setValue(field as any, value, { shouldValidate: true, shouldDirty: true });
+  const handleInputChange = <K extends keyof SpaceFormData>(field: K, value: SpaceFormData[K]) => {
+    form.setValue(field, value, { shouldValidate: true, shouldDirty: true });
   };
 
   const handleAddressChange = (address: string, coordinates?: { lat: number; lng: number }) => {
@@ -90,26 +118,26 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
     }
   };
 
-  const handleAvailabilityChange = (data: any) => {
+  const handleAvailabilityChange = (data: AvailabilityData) => {
     form.setValue('availability', data, { shouldValidate: true });
   };
 
-  const handleCheckboxArrayChange = (field: string, value: string, checked: boolean) => {
-    const current = form.getValues(field as any) || [];
+  const handleCheckboxArrayChange = (field: SpaceFormArrayKey, value: string, checked: boolean) => {
+    const current = form.getValues(field) || [];
     const updated = checked
       ? [...current, value]
-      : current.filter((item: string) => item !== value);
-    form.setValue(field as any, updated, { shouldValidate: true });
+      : current.filter((item) => item !== value);
+    form.setValue(field, updated, { shouldValidate: true });
   };
 
   // Initialization Logic
   useEffect(() => {
     if (initialData) {
-      const dbData: SpaceFormInitialData = initialData;
+      const dbData: Space = initialData;
       const dbDataAvailability = 'availability' in dbData ? dbData.availability : null;
       const dbDataTitle = 'title' in dbData ? dbData.title : undefined;
       const dbDataName = 'name' in dbData ? dbData.name : undefined;
-      const dbDataFeatures = 'workspace_features' in dbData ? dbData.workspace_features : ('features' in dbData ? dbData.features : undefined);
+      const dbDataFeatures = 'features' in dbData ? dbData.features : undefined;
       const dbDataPhotos = 'photos' in dbData ? dbData.photos : undefined;
 
       // Parse availability
@@ -137,7 +165,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         description: dbData.description || "",
         category: dbData.category || "home",
         max_capacity: dbData.max_capacity || 1,
-        workspace_features: dbDataFeatures || [],
+        features: dbDataFeatures || [],
         work_environment: dbData.work_environment || "silent",
         amenities: dbData.amenities || [],
         seating_types: dbData.seating_types || [],
@@ -286,12 +314,12 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       // FAILSAFE: Filter out blob URLs
       const cleanPhotos = data.photos.filter(url => !url.startsWith('blob:'));
 
-      const spaceData: WorkspaceInsert = {
-        name: data.title,
+      const spaceData: SpaceInsert = {
+        title: data.title,
         description: data.description || "",
         category: data.category,
         max_capacity: data.max_capacity,
-        features: data.workspace_features || [],
+        features: data.features || [],
         work_environment: data.work_environment,
         amenities: data.amenities || [],
         seating_types: data.seating_types || [],
@@ -307,22 +335,24 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         confirmation_type: data.confirmation_type,
         availability: data.availability || defaultAvailability,
         published: Boolean(data.published),
-        cancellation_policy: data.cancellation_policy as any,
+        cancellation_policy: data.cancellation_policy as Database["public"]["Enums"]["cancellation_policy"] | undefined,
         host_id: user.id,
       };
 
       if (isEdit && initialData?.id) {
+        const payload = toSpaceUpdatePayload(spaceData);
         const { error } = await (supabase
-          .from("spaces") as any)
-          .update(spaceData)
+          .from("spaces"))
+          .update(payload)
           .eq("id", initialData.id);
 
         if (error) throw error;
         toast.success("Space updated successfully!");
       } else {
+        const payload = toSpaceInsertPayload(spaceData);
         const { error } = await (supabase
-          .from("spaces") as any)
-          .insert(spaceData);
+          .from("spaces"))
+          .insert(payload);
 
         if (error) throw error;
         toast.success("Space created successfully!");

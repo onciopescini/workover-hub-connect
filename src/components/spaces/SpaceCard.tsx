@@ -31,7 +31,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick, variant = 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
 
-  // OPTIMIZATION: Use cached values from workspace record instead of separate fetches
+  // OPTIMIZATION: Use cached values from the space record instead of separate fetches
   const reviewCount = space.cached_review_count || 0;
   const rating = space.cached_avg_rating || 0;
 
@@ -143,9 +143,9 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick, variant = 
             <div className="flex items-center gap-1.5 text-gray-500 mb-4 text-sm">
               <MapPin className="h-4 w-4 shrink-0 text-indigo-500" />
               <span className="line-clamp-1">{space.address}</span>
-              {(space as any).distance_km && (
+              {space.distance_km && (
                 <Badge variant="outline" className="ml-auto text-xs shrink-0 border-gray-200">
-                  {(space as any).distance_km} km
+                  {space.distance_km} km
                 </Badge>
               )}
             </div>

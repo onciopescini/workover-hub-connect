@@ -72,7 +72,7 @@ const getSpaceData = (booking: RawBookingData) => {
         address: s.address,
         image_url: (s.photos && s.photos.length > 0) ? s.photos[0] : '', // Map first photo to image_url
         photos: s.photos || [], // Keep photos array for gallery if needed
-        type: 'workspace', // Default type as it's not currently fetched
+        type: 'space', // Default type as it's not currently fetched
         host_id: s.host_id, // CRITICAL: Ensure host_id is mapped
         price_per_day: s.price_per_day,
         confirmation_type: s.confirmation_type
@@ -88,7 +88,7 @@ const getSpaceData = (booking: RawBookingData) => {
       address: booking.space.address || 'Indirizzo non disponibile',
       image_url: (booking.space.photos && booking.space.photos.length > 0) ? booking.space.photos[0] : '',
       photos: booking.space.photos || [],
-      type: 'workspace',
+      type: 'space',
       host_id: booking.space.host_id || '',
       price_per_day: booking.space.price_per_day || 0,
       confirmation_type: booking.space.confirmation_type || 'host_approval'
@@ -102,7 +102,7 @@ const getSpaceData = (booking: RawBookingData) => {
     address: '',
     image_url: '',
     photos: [],
-    type: 'workspace',
+    type: 'space',
     host_id: '',
     price_per_day: 0,
     confirmation_type: 'host_approval'

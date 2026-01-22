@@ -56,7 +56,7 @@ export const SpaceFormSchema = z.object({
   confirmation_type: z.enum(['instant', 'host_approval'], {
     errorMap: () => ({ message: "Seleziona un tipo di conferma valido" })
   }),
-  workspace_features: z.array(z.string()).default([]),
+  features: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
   seating_types: z.array(z.string()).default([]),
   ideal_guest_tags: z.array(z.string()).default([]),

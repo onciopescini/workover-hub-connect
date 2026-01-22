@@ -10,6 +10,9 @@ import { ArrowLeft, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 interface Message {
   id: string;
   content: string;
@@ -52,14 +55,14 @@ export default function ChatThread() {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Load conversation details - use workspaces instead of spaces
+        // Load conversation details
         const { data: convData, error: convError } = await supabase
           .from('conversations')
           .select(`
             *,
             host:profiles!conversations_host_id_fkey(id, first_name, last_name, profile_photo_url),
             coworker:profiles!conversations_coworker_id_fkey(id, first_name, last_name, profile_photo_url),
-            space:spaces(id, name),
+            space:spaces(id, title),
             booking:bookings(id, booking_date)
           `)
           .eq('id', conversationId)
@@ -72,16 +75,19 @@ export default function ChatThread() {
           return;
         }
 
-        // Map space.name to title for backwards compatibility
-        const conversationWithMappedSpace = {
+        const conversationWithMappedSpace: Conversation = {
           ...convData,
-          space: convData.space ? { 
-            ...convData.space, 
-            title: (convData.space as any).name 
-          } : null
+          space: convData.space
+            ? {
+                title:
+                  isRecord(convData.space) && typeof convData.space.title === 'string'
+                    ? convData.space.title
+                    : '',
+              }
+            : null
         };
 
-        setConversation(conversationWithMappedSpace as unknown as Conversation);
+        setConversation(conversationWithMappedSpace);
 
         // Load messages
         const messagesData = await fetchConversationMessages(conversationId);
@@ -113,15 +119,19 @@ export default function ChatThread() {
       }, async (payload) => {
         sreLogger.debug('New message received', { 
           conversationId, 
-          messageId: (payload.new as any).id,
+          messageId: isRecord(payload.new) ? payload.new.id : undefined,
           component: 'ChatThread'
         });
         
         // Fetch sender details for the new message
+        const senderId = isRecord(payload.new) ? payload.new.sender_id : undefined;
+        if (typeof senderId !== 'string') {
+          return;
+        }
         const { data: senderData } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, profile_photo_url')
-          .eq('id', (payload.new as any).sender_id)
+          .eq('id', senderId)
           .single();
 
         const newMessage = {

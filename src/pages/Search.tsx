@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search as SearchIcon, MapPin, List, Map as MapIcon } from 'lucide-react';
 import { Space } from '@/types/space';
+import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazySpaceMap } from '@/components/spaces/LazySpaceMap';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,7 +61,7 @@ const Search = () => {
         const sanitizedQuery = searchQuery.replace(/,/g, ' ').trim();
 
         if (sanitizedQuery) {
-          query = query.or(`name.ilike.%${sanitizedQuery}%, city.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
+          query = query.or(`title.ilike.%${sanitizedQuery}%, city.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
         }
       }
 
@@ -72,39 +73,9 @@ const Search = () => {
       }
 
       // Map space data to Space type
-      return (data || []).map((space: any) => ({
-        id: space.id,
-        title: space.name,
-        description: space.description || "",
-        photos: space.photos || space.images || [],
-        address: space.address,
-        latitude: space.latitude || 0,
-        longitude: space.longitude || 0,
-        price_per_day: space.price_per_day,
-        price_per_hour: space.price_per_hour,
-        max_capacity: space.max_capacity,
-        category: space.category,
-        workspace_features: space.features || space.workspace_features || [],
-        amenities: space.amenities || [],
-        work_environment: space.work_environment,
-        // Default/Fallback values for required fields
-        capacity: space.max_capacity,
-        host_id: space.host_id,
-        created_at: space.created_at,
-        updated_at: space.updated_at,
-        published: space.published,
-        availability: space.availability,
-        confirmation_type: space.confirmation_type || 'instant',
-        city: space.city || "",
-        cached_avg_rating: space.cached_avg_rating || 0,
-        num_reviews: space.cached_review_count || 0,
-        pending_approval: space.pending_approval,
-        is_suspended: space.is_suspended,
-        suspended_by: space.suspended_by,
-        suspended_at: space.suspended_at,
-        suspension_reason: space.suspension_reason,
-        deleted_at: space.deleted_at
-      } as Space));
+      return (data || [])
+        .map((space) => (space ? mapSpaceRowToSpace(space) : null))
+        .filter((space): space is Space => space !== null);
     }
   });
 

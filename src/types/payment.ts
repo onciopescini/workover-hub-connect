@@ -44,6 +44,10 @@ export interface PaymentWithDetails {
   } | null;
 }
 
+export type PaymentWithBooking = Payment & {
+  booking: Record<string, unknown> | null;
+};
+
 export const PAYMENT_STATUS = {
   pending: "In attesa",
   completed: "Completato", 

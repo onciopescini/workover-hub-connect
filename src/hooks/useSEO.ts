@@ -16,13 +16,13 @@ interface SEOConfig {
   siteName?: string;
   noIndex?: boolean;
   canonical?: string;
-  structuredData?: any;
+  structuredData?: Record<string, unknown>;
 }
 
 const DEFAULT_CONFIG: Required<Omit<SEOConfig, 'structuredData' | 'publishedTime' | 'modifiedTime' | 'author' | 'section' | 'tags' | 'canonical'>> = {
   title: 'Workover - Piattaforma Coworking Professionale',
   description: 'La piattaforma leader per spazi coworking, networking professionale ed eventi. Connettiti con professionisti e scopri spazi produttivi in tutta Italia.',
-  keywords: ['coworking', 'spazi lavoro', 'networking', 'uffici condivisi', 'workspace', 'meeting room', 'eventi professionali', 'business center'],
+  keywords: ['coworking', 'spazi lavoro', 'networking', 'uffici condivisi', 'spazio di lavoro', 'meeting room', 'eventi professionali', 'business center'],
   image: 'https://workover.app/og-image.jpg',
   url: 'https://workover.app',
   type: 'website',
@@ -134,7 +134,7 @@ const updateCanonical = (url: string) => {
   element.href = url;
 };
 
-const updateStructuredData = (data: any) => {
+const updateStructuredData = (data: Record<string, unknown>) => {
   // Remove existing structured data
   const existingScript = document.querySelector('script[type="application/ld+json"]');
   if (existingScript) {
@@ -149,11 +149,48 @@ const updateStructuredData = (data: any) => {
 };
 
 // SEO helper functions
-export const generateSpaceSEO = (space: any): SEOConfig => {
+interface SpaceSEOData {
+  id: string;
+  title: string;
+  location?: string;
+  description?: string;
+  amenities?: string[];
+  photos?: string[];
+  price_per_day?: number;
+  average_rating?: number;
+}
+
+interface ProfileSEOData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  job_title?: string | null;
+  bio?: string | null;
+  profession?: string | null;
+  city?: string | null;
+  profile_photo_url?: string | null;
+  company?: string | null;
+  linkedin_url?: string | null;
+  website?: string | null;
+  twitter_url?: string | null;
+}
+
+interface EventSEOData {
+  id: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  cover_image_url?: string | null;
+  event_type?: string | null;
+}
+
+export const generateSpaceSEO = (space: SpaceSEOData): SEOConfig => {
   return {
-    title: `${space.title} - Spazio Coworking a ${space.location} | Workover`,
-    description: `Prenota ${space.title} a ${space.location}. ${space.description?.substring(0, 120)}... Spazio coworking professionale con ${space.amenities?.join(', ')}.`,
-    keywords: ['coworking', space.location, 'spazio lavoro', ...(space.amenities || [])],
+    title: `${space.title} - Spazio Coworking a ${space.location || ''} | Workover`,
+    description: `Prenota ${space.title} a ${space.location || ''}. ${space.description?.substring(0, 120)}... Spazio coworking professionale con ${space.amenities?.join(', ')}.`,
+    keywords: ['coworking', space.location || '', 'spazio lavoro', ...(space.amenities || [])],
     image: space.photos?.[0] || DEFAULT_CONFIG.image,
     url: `https://workover.app/spaces/${space.id}`,
     type: 'place',
@@ -168,7 +205,7 @@ export const generateSpaceSEO = (space: any): SEOConfig => {
         "addressCountry": "IT"
       },
       "priceRange": `€${space.price_per_day}`,
-      "amenityFeature": space.amenities?.map((amenity: string) => ({
+      "amenityFeature": space.amenities?.map((amenity) => ({
         "@type": "LocationFeatureSpecification",
         "name": amenity
       })),
@@ -183,7 +220,7 @@ export const generateSpaceSEO = (space: any): SEOConfig => {
   };
 };
 
-export const generateProfileSEO = (profile: any): SEOConfig => {
+export const generateProfileSEO = (profile: ProfileSEOData): SEOConfig => {
   return {
     title: `${profile.first_name} ${profile.last_name} - Profilo Professionale | Workover`,
     description: `Connettiti con ${profile.first_name} ${profile.last_name}${profile.job_title ? `, ${profile.job_title}` : ''} su Workover. ${profile.bio?.substring(0, 120)}...`,
@@ -215,7 +252,7 @@ export const generateProfileSEO = (profile: any): SEOConfig => {
   };
 };
 
-export const generateEventSEO = (event: any): SEOConfig => {
+export const generateEventSEO = (event: EventSEOData): SEOConfig => {
   return {
     title: `${event.title} - Evento Networking | Workover`,
     description: `Partecipa a ${event.title} il ${new Date(event.date).toLocaleDateString('it-IT')}. ${event.description?.substring(0, 120)}...`,

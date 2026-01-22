@@ -7,20 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { useConfirmCreditNoteIssued } from '@/hooks/mutations/useConfirmCreditNoteIssued';
+import { resolveBookingCoworker, resolveBookingSpace } from '@/lib/booking-mappers';
+import type { PaymentWithBooking } from '@/types/payment';
 
 interface CreditNoteCardProps {
-  payment: any;
+  payment: PaymentWithBooking;
 }
 
 export function CreditNoteCard({ payment }: CreditNoteCardProps) {
   const { mutate: confirmIssued, isPending } = useConfirmCreditNoteIssued();
   
   const booking = payment.booking;
-  const coworker = Array.isArray(booking?.coworker) ? booking.coworker[0] : booking?.coworker;
-
-  // Handle space/workspaces property mismatch
-  const workspaceData = (booking as any).spaces || (booking as any).workspaces || (booking as any).space;
-  const space = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
+  const bookingRecord = booking && typeof booking === 'object' ? booking : null;
+  const coworker = bookingRecord ? resolveBookingCoworker(bookingRecord) : null;
+  const space = bookingRecord ? resolveBookingSpace(bookingRecord) : null;
 
   const deadline = payment.credit_note_deadline ? new Date(payment.credit_note_deadline) : null;
   const daysRemaining = deadline ? differenceInDays(deadline, new Date()) : 0;

@@ -34,15 +34,9 @@ export function CancelBookingDialog({
   const [reason, setReason] = useState("");
   
   // Calculate cancellation details on render (safe as it's cheap)
-  // Use booking's policy snapshot if available, otherwise fallback to space policy
-  // Default to 'moderate' if both are missing (though space policy should be there)
-  // We cast to string because booking.space might not have cancellation_policy in strict types yet
-  // but we know it should be there or we default.
-  // Actually, BookingWithDetails.space doesn't have cancellation_policy in the type definition I saw earlier?
-  // Let's check: "space: { ... confirmation_type?: string; }"
-  // The user said: "If strictly null, fallback to the workspace policy".
-  // I might need to access it as `(booking.space as any).cancellation_policy`.
-  const policy = booking.cancellation_policy || (booking.space as any).cancellation_policy || 'moderate';
+  // Use booking's policy snapshot if available, otherwise fall back to the space policy
+  // Default to 'moderate' if both are missing
+  const policy = booking.cancellation_policy || booking.space?.cancellation_policy || 'moderate';
 
   // Determine amount
   // "Use booking.payments[0].amount if available. Fallback: booking.space.price_per_hour * duration"
@@ -63,7 +57,7 @@ export function CancelBookingDialog({
     // But if it's a daily booking?
     // The prompt: "Fallback: If no payment record exists, calculate it: booking.space.price_per_hour * duration."
     // I will stick to this instructions strictly.
-    const pricePerHour = (booking.space as any).price_per_hour || 0;
+    const pricePerHour = booking.space?.price_per_hour || 0;
     originalPrice = pricePerHour * durationHours;
   }
 
