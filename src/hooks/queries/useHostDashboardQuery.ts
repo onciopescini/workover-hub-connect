@@ -5,8 +5,14 @@ import { BookingWithDetails } from "@/types/booking";
 import { BookingReviewWithDetails } from "@/types/review";
 import { Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
-import { Json } from "@/integrations/supabase/types";
+import { type Database, Json } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/react-query-config";
+
+type HostSpaceIdRow = Pick<Database["public"]["Tables"]["spaces"]["Row"], "id">;
+type HostSpaceDetailsRow = Pick<
+  Database["public"]["Tables"]["spaces"]["Row"],
+  "id" | "title" | "address" | "photos" | "host_id" | "price_per_day"
+>;
 
 // Helper function to safely convert Json array to string array
 const jsonArrayToStringArray = (jsonArray: Json[] | Json | null): string[] => {
@@ -40,7 +46,7 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
 
   if (spacesError) throw spacesError;
 
-  const spaceIds = spacesData?.map((s: any) => s.id) || [];
+  const spaceIds = (spacesData ?? []).map((space: HostSpaceIdRow) => space.id);
   if (spaceIds.length === 0) return [];
 
   // Fetch bookings for host spaces
@@ -76,7 +82,9 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
     .filter(booking => booking.space_id !== null) // Filter out bookings with null space_id
     .map(booking => {
     const coworkerProfile = coworkerProfiles?.find(p => p.id === booking.user_id);
-    const space = spacesDetails?.find((s: any) => s.id === booking.space_id);
+    const space = spacesDetails?.find(
+      (spaceDetails: HostSpaceDetailsRow) => spaceDetails.id === booking.space_id
+    );
     
     return {
       id: booking.id,
