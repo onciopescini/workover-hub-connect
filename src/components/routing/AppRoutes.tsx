@@ -40,9 +40,10 @@ const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
 const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 import Bookings from "@/pages/Bookings";
 const Search = lazy(() => import("@/pages/Search"));
-const UnifiedMessages = lazy(() => import("@/components/messaging/UnifiedMessages"));
-const MessageConversation = lazy(() => import("@/pages/MessageConversation"));
-const ChatThread = lazy(() => import("@/pages/ChatThread"));
+
+// Replaced Messaging Modules
+const MessagesPage = lazy(() => import("@/pages/messages/MessagesPage"));
+
 const Networking = lazy(() => import("@/pages/NetworkingAdvanced"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Settings = lazy(() => import("@/pages/Settings"));
@@ -204,26 +205,21 @@ export const AppRoutes = () => {
         <Route path="messages" element={
           <AuthProtected>
             <LazyWrapper>
-              <UnifiedMessages />
+              <MessagesPage />
             </LazyWrapper>
           </AuthProtected>
         } />
         
-        <Route path="messages/conversation/:conversationId" element={
+        <Route path="messages/:id" element={
           <AuthProtected>
             <LazyWrapper>
-              <ChatThread />
+              <MessagesPage />
             </LazyWrapper>
           </AuthProtected>
         } />
         
-        <Route path="messages/:bookingId" element={
-          <AuthProtected>
-            <LazyWrapper>
-              <MessageConversation />
-            </LazyWrapper>
-          </AuthProtected>
-        } />
+        {/* Redirect Legacy Message Routes to New One */}
+        <Route path="messages/conversation/:conversationId" element={<Navigate to="/messages" replace />} />
         
         <Route path="networking" element={
           <AuthProtected>
