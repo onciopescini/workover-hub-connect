@@ -8,6 +8,45 @@ import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
 import { queryKeys } from "@/lib/react-query-config";
 
+type SpaceSummary = {
+  id: string;
+  title: string;
+  address: string;
+  photos: string[] | null;
+  host_id: string;
+  price_per_day: number | null;
+};
+
+type CoworkerBookingRow = {
+  id: string;
+  space_id: string;
+  user_id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  cancelled_at: string | null;
+  cancellation_fee: number | null;
+  cancelled_by_host: boolean | null;
+  cancellation_reason: string | null;
+  service_completed_at: string | null;
+  space: SpaceSummary | null;
+};
+
+type HostBookingRow = CoworkerBookingRow & {
+  profiles: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    profile_photo_url: string | null;
+  } | null;
+};
+
+const toString = (value: unknown): string => (typeof value === "string" ? value : "");
+const toNumber = (value: unknown): number => (typeof value === "number" ? value : 0);
+
 // Fetch function for bookings
 const fetchBookings = async (userId: string, userRoles: string[]): Promise<BookingWithDetails[]> => {
   logger.debug('Fetching bookings for user', { component: 'useBookingsQuery', userId });
@@ -28,7 +67,10 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       )
     `)
     .eq("user_id", userId)
-    .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
+    .order("booking_date", { ascending: false })) as unknown as {
+    data: CoworkerBookingRow[] | null;
+    error: unknown;
+  };
 
   if (coworkerError) {
     sreLogger.error('Coworker bookings error', { userId }, coworkerError);
@@ -36,7 +78,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   }
 
   // Get user's spaces for host bookings
-  let hostBookings: Array<Record<string, unknown>> = [];
+  let hostBookings: HostBookingRow[] = [];
   const isHostOrAdmin = (userRoles || []).includes("host") || (userRoles || []).includes("admin");
   if (isHostOrAdmin) {
     const { data: hostBookingsRaw, error: hostError } = (await supabase
@@ -60,7 +102,10 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       `)
       .eq("space.host_id", userId)
       .neq("user_id", userId)
-      .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
+      .order("booking_date", { ascending: false })) as unknown as {
+      data: HostBookingRow[] | null;
+      error: unknown;
+    };
 
     if (!hostError && hostBookingsRaw) {
       hostBookings = hostBookingsRaw;
@@ -70,71 +115,67 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   }
 
   // Transform bookings to match BookingWithDetails interface
-  const transformCoworkerBookings = (coworkerBookingsRaw || []).map(booking => {
-    // Safe cast of known structure from Supabase query
-    const bookingData = booking as any;
+  const transformCoworkerBookings = (coworkerBookingsRaw || []).map((booking) => {
     return {
-      id: bookingData.id as string,
-      space_id: bookingData.space_id as string,
-      user_id: bookingData.user_id as string,
-      booking_date: bookingData.booking_date as string,
-      start_time: bookingData.start_time as string,
-      end_time: bookingData.end_time as string,
-      status: bookingData.status,
-      created_at: bookingData.created_at as string,
-      updated_at: bookingData.updated_at as string,
-      cancelled_at: bookingData.cancelled_at as string,
-      cancellation_fee: bookingData.cancellation_fee as number,
-      cancelled_by_host: bookingData.cancelled_by_host as boolean,
-      cancellation_reason: bookingData.cancellation_reason as string,
-      service_completed_at: bookingData.service_completed_at as string | null,
+      id: toString(booking.id),
+      space_id: toString(booking.space_id),
+      user_id: toString(booking.user_id),
+      booking_date: toString(booking.booking_date),
+      start_time: toString(booking.start_time),
+      end_time: toString(booking.end_time),
+      status: toString(booking.status),
+      created_at: toString(booking.created_at),
+      updated_at: toString(booking.updated_at),
+      cancelled_at: booking.cancelled_at ?? "",
+      cancellation_fee: toNumber(booking.cancellation_fee),
+      cancelled_by_host: Boolean(booking.cancelled_by_host),
+      cancellation_reason: booking.cancellation_reason ?? "",
+      service_completed_at: booking.service_completed_at,
       space: {
-        id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string,
-        address: bookingData.space?.address as string,
-        photos: bookingData.space?.photos as string[],
-        image_url: (bookingData.space?.photos as string[])?.[0] || '',
+        id: toString(booking.space?.id),
+        title: toString(booking.space?.title),
+        address: toString(booking.space?.address),
+        photos: booking.space?.photos ?? [],
+        image_url: booking.space?.photos?.[0] || '',
         type: 'workspace',
-        host_id: bookingData.space?.host_id as string,
-        price_per_day: bookingData.space?.price_per_day as number
+        host_id: toString(booking.space?.host_id),
+        price_per_day: toNumber(booking.space?.price_per_day)
       },
       coworker: null
     };
   });
 
-  const transformHostBookings = hostBookings.map(booking => {
-    // Safe cast of known structure from Supabase query
-    const bookingData = booking as any;
+  const transformHostBookings = hostBookings.map((booking) => {
     return {
-      id: bookingData.id as string,
-      space_id: bookingData.space_id as string,
-      user_id: bookingData.user_id as string,
-      booking_date: bookingData.booking_date as string,
-      start_time: bookingData.start_time as string,
-      end_time: bookingData.end_time as string,
-      status: bookingData.status,
-      created_at: bookingData.created_at as string,
-      updated_at: bookingData.updated_at as string,
-      cancelled_at: bookingData.cancelled_at as string,
-      cancellation_fee: bookingData.cancellation_fee as number,
-      cancelled_by_host: bookingData.cancelled_by_host as boolean,
-      cancellation_reason: bookingData.cancellation_reason as string,
-      service_completed_at: bookingData.service_completed_at as string | null,
+      id: toString(booking.id),
+      space_id: toString(booking.space_id),
+      user_id: toString(booking.user_id),
+      booking_date: toString(booking.booking_date),
+      start_time: toString(booking.start_time),
+      end_time: toString(booking.end_time),
+      status: toString(booking.status),
+      created_at: toString(booking.created_at),
+      updated_at: toString(booking.updated_at),
+      cancelled_at: booking.cancelled_at ?? "",
+      cancellation_fee: toNumber(booking.cancellation_fee),
+      cancelled_by_host: Boolean(booking.cancelled_by_host),
+      cancellation_reason: booking.cancellation_reason ?? "",
+      service_completed_at: booking.service_completed_at,
       space: {
-        id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string,
-        address: bookingData.space?.address as string,
-        photos: bookingData.space?.photos as string[],
-        image_url: (bookingData.space?.photos as string[])?.[0] || '',
+        id: toString(booking.space?.id),
+        title: toString(booking.space?.title),
+        address: toString(booking.space?.address),
+        photos: booking.space?.photos ?? [],
+        image_url: booking.space?.photos?.[0] || '',
         type: 'workspace',
-        host_id: bookingData.space?.host_id as string,
-        price_per_day: bookingData.space?.price_per_day as number
+        host_id: toString(booking.space?.host_id),
+        price_per_day: toNumber(booking.space?.price_per_day)
       },
       coworker: {
-        id: bookingData.profiles?.id as string,
-        first_name: bookingData.profiles?.first_name as string,
-        last_name: bookingData.profiles?.last_name as string,
-        profile_photo_url: bookingData.profiles?.profile_photo_url as string
+        id: toString(booking.profiles?.id),
+        first_name: booking.profiles?.first_name ?? "",
+        last_name: booking.profiles?.last_name ?? "",
+        profile_photo_url: booking.profiles?.profile_photo_url ?? ""
       }
     };
   });
