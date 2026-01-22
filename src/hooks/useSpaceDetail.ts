@@ -18,7 +18,7 @@ export const useSpaceDetail = (id: string | undefined) => {
 
       // Query 'workspaces' table directly
       const { data: workspaceData, error: workspaceError } = await supabase
-        .from('workspaces')
+        .from('spaces')
         .select('*')
         .eq('id', id)
         .maybeSingle();

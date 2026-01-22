@@ -30,7 +30,7 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
       // Explicitly querying 'workspaces' table as source of truth
       // Type assertion needed as Supabase types are stale for 'workspaces' table
       const { data: spaceData, error: spaceError } = await supabase
-        .from('workspaces' as any)
+        .from('spaces')
         .select('profiles(stripe_connected)')
         .eq('id', booking.space_id)
         .single();

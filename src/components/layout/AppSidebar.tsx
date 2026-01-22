@@ -28,7 +28,7 @@ export function AppSidebar() {
     queryKey: ['admin-pending-spaces'],
     queryFn: async () => {
        const { count, error } = await supabase
-         .from("workspaces")
+         .from("spaces")
          .select("id", { count: "exact", head: true })
          .eq("pending_approval", true);
        if (error) throw error;

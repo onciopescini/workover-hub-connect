@@ -181,7 +181,7 @@ export const getPublicSpaces = async (): Promise<any[]> => {
   try {
     // 1) Use secure view that doesn't expose host_id or precise location
     let { data, error } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select('id, name, description, category, work_environment, max_capacity, confirmation_type, features, amenities, seating_types, ideal_guest_tags, event_friendly_tags, price_per_hour, price_per_day, photos, rules, availability, cancellation_policy, city, address, latitude, longitude, published, created_at, updated_at');
 
     if (!error && Array.isArray(data)) {
@@ -197,7 +197,7 @@ export const getPublicSpaces = async (): Promise<any[]> => {
     // 2) Fallback to secure public view (excludes host_id, precise GPS, full address)
     // Note: spaces_public_safe is deprecated, using workspaces directly
     const { data: viewData, error: viewError } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select('id, name, description, category, work_environment, max_capacity, confirmation_type, features, amenities, seating_types, ideal_guest_tags, event_friendly_tags, price_per_hour, price_per_day, photos, rules, availability, cancellation_policy, city, address, latitude, longitude, published, created_at, updated_at')
       .eq('published', true)
       .order('created_at', { ascending: false })
@@ -331,10 +331,10 @@ export const getSpaceWithHostInfo = async (spaceId: string): Promise<SpaceWithHo
     
     // Fallback to direct query
     const { data: fallbackData, error: fallbackError } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select(`
         *,
-        profiles!workspaces_owner_id_fkey (
+        profiles!spaces_owner_id_fkey (
           first_name,
           last_name,
           profile_photo_url,

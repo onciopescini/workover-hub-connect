@@ -12,7 +12,7 @@ export function useAdminPayments() {
           booking:bookings(
             id,
             booking_date,
-            space:workspaces(id, title:name),
+            space:spaces(id, title:name),
             coworker:profiles!bookings_user_id_fkey(id, first_name, last_name)
           )
         `)

@@ -3,6 +3,7 @@ import { Database } from "@/integrations/supabase/types";
 
 // Exteding the auto-generated Space type to include optional fields that might be missing or added via views/migrations
 // This helps avoid 'as any' casting for known fields like timezone
+// Database types might still reference 'workspaces' but we alias it
 export type Space = Database["public"]["Tables"]["workspaces"]["Row"] & {
   timezone?: string;
   city?: string;

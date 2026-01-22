@@ -6,7 +6,8 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 
 export const useChat = (activeConversationId?: string) => {
-  const { user } = useAuth();
+  const { authState } = useAuth();
+  const user = authState.user;
   const queryClient = useQueryClient();
 
   // Fetch Conversations (Optimized)
@@ -167,5 +168,6 @@ export const useChat = (activeConversationId?: string) => {
     isLoading: isLoadingConversations || isLoadingMessages,
     sendMessage: sendMessage.mutate,
     isSending: sendMessage.isPending,
+    currentUser: user,
   };
 };

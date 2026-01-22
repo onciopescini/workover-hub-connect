@@ -8,7 +8,7 @@ import { sreLogger } from '@/lib/sre-logger';
 export const getAllSpaces = async (): Promise<AdminSpace[]> => {
   try {
     const { data, error } = await supabase
-      .from("workspaces")
+      .from("spaces")
       .select("*, title:name, workspace_features:features")
       .order("created_at", { ascending: false });
 
@@ -58,7 +58,7 @@ export const suspendSpace = async (spaceId: string, reason: string): Promise<voi
     if (!currentUser.user) throw new Error("Not authenticated");
 
     const { error } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .update({
         is_suspended: true,
         suspension_reason: reason,
@@ -83,7 +83,7 @@ export const unsuspendSpace = async (spaceId: string): Promise<void> => {
     if (!currentUser.user) throw new Error("Not authenticated");
 
     const { error } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .update({
         is_suspended: false,
         suspension_reason: null,

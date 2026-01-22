@@ -48,7 +48,7 @@ const SpacesManage = () => {
       const { supabase } = await import("@/integrations/supabase/client");
 
       // Use workspaces table instead of spaces
-      let query = (supabase.from("workspaces" as any) as any).select("*").eq("host_id", authState.user.id);
+      let query = (supabase.from("spaces") as any).select("*").eq("host_id", authState.user.id);
 
       // Filter by deletion status based on admin toggle
       if (isAdmin && showDeleted) {
@@ -191,7 +191,7 @@ const SpacesManage = () => {
 
       // Use soft delete instead of hard delete
       const { error } = await (supabase
-        .from("workspaces" as any) as any)
+        .from("spaces") as any)
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", spaceId)
         .eq("host_id", authState.user?.id ?? "");

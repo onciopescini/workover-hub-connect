@@ -44,7 +44,7 @@ export const usePaymentLink = () => {
 
         // Fetch workspace and host details mainly for validation
         const { data: workspace, error: wsError } = await supabase
-          .from('workspaces')
+          .from('spaces')
           .select('host_id')
           .eq('id', booking.space_id)
           .single();

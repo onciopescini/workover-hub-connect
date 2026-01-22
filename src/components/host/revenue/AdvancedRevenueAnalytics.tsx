@@ -60,7 +60,7 @@ export const AdvancedRevenueAnalytics: React.FC<AdvancedRevenueAnalyticsProps> =
           created_at,
           booking_id,
           booking:bookings (
-            space:workspaces (
+            space:spaces (
               name
             )
           )

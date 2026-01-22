@@ -29,7 +29,7 @@ const fetchHourlyAvailability = async (
 ): Promise<HourlyAvailabilityResult> => {
   // Get space max capacity
   const { data: space, error: spaceError } = await supabase
-    .from('workspaces')
+    .from('spaces')
     .select('max_capacity')
     .eq('id', spaceId)
     .single();

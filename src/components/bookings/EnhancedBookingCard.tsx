@@ -22,7 +22,7 @@ import { BookingQRCode } from "./checkin/BookingQRCode";
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
   userRole: "host" | "coworker";
-  onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
+  onOpenMessageDialog?: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
   // Approval workflow props - Required for Host Dashboard
   onApproveBooking?: (bookingId: string) => Promise<void>;

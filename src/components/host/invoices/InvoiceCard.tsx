@@ -29,7 +29,7 @@ export function InvoiceCard({ payment }: InvoiceCardProps) {
   const coworker = Array.isArray(booking?.coworker) ? booking.coworker[0] : booking?.coworker;
 
   // Handle space/workspaces property mismatch
-  const workspaceData = (booking as any).workspaces || (booking as any).space;
+  const workspaceData = (booking as any).spaces || (booking as any).workspaces || (booking as any).space;
   const space = Array.isArray(workspaceData) ? workspaceData[0] : workspaceData;
 
   // Fiscal data would come from booking metadata when available

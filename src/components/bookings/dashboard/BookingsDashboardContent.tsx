@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, AlertTriangle } from 'lucide-react';
 import { EnhancedBookingCard } from '../EnhancedBookingCard';
-import { MessageDialog } from '../../messaging/MessageDialog';
 import { CancelBookingDialog } from '../CancelBookingDialog';
 import { RejectBookingDialog } from '../RejectBookingDialog';
 import { BookingWithDetails } from '@/types/booking';
@@ -15,12 +14,7 @@ interface BookingsDashboardContentProps {
   searchTerm: string;
   getUserRole: (booking: BookingWithDetails) => "host" | "coworker";
   isChatEnabled: (booking: BookingWithDetails) => boolean;
-  onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
-  messageDialogOpen: boolean;
-  setMessageDialogOpen: (open: boolean) => void;
-  messageBookingId: string;
-  messageSpaceTitle: string;
   cancelDialogOpen: boolean;
   setCancelDialogOpen: (open: boolean) => void;
   selectedBooking: BookingWithDetails | null;
@@ -42,12 +36,7 @@ export const BookingsDashboardContent = ({
   searchTerm,
   getUserRole,
   isChatEnabled,
-  onOpenMessageDialog,
   onOpenCancelDialog,
-  messageDialogOpen,
-  setMessageDialogOpen,
-  messageBookingId,
-  messageSpaceTitle,
   cancelDialogOpen,
   setCancelDialogOpen,
   selectedBooking,
@@ -110,7 +99,6 @@ export const BookingsDashboardContent = ({
             key={booking.id}
             booking={booking}
             userRole={getUserRole(booking)}
-            onOpenMessageDialog={onOpenMessageDialog}
             onOpenCancelDialog={onOpenCancelDialog}
             isChatEnabled={isChatEnabled(booking)}
             onApproveBooking={onApproveBooking}
@@ -120,13 +108,6 @@ export const BookingsDashboardContent = ({
       </div>
 
       {/* Dialogs */}
-      <MessageDialog
-        open={messageDialogOpen}
-        onOpenChange={setMessageDialogOpen}
-        bookingId={messageBookingId}
-        bookingTitle={messageSpaceTitle}
-      />
-
       {selectedBooking && (
         <CancelBookingDialog
           open={cancelDialogOpen}

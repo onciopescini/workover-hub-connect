@@ -31,7 +31,7 @@ export function SpacesGallerySection() {
     queryFn: async () => {
       // Use explicit casting as per instructions for 'workspaces' table
       const { data, error } = await supabase
-        .from('workspaces' as any)
+        .from('spaces')
         .select('*')
         .eq('published', true)
         .order('created_at', { ascending: false })

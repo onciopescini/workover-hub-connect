@@ -49,7 +49,7 @@ const Search = () => {
     queryKey: ['search-spaces', searchQuery],
     queryFn: async () => {
       let query = supabase
-        .from('workspaces' as any)
+        .from('spaces')
         .select('*');
 
       // Filter only published spaces
