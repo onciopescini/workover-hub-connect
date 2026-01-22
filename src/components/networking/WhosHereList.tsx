@@ -82,9 +82,9 @@ export const WhosHereList = () => {
                 profile_photo_url: row.profiles?.profile_photo_url || null,
                 profession: row.profiles?.profession || null
             },
-              spaces: {
-                title: row.spaces?.title || 'Space',
-                city_name: row.spaces?.city_name || null
+            workspaces: {
+              name: item.spaces?.name || item.workspaces?.name || 'Space',
+              city: item.spaces?.city || item.workspaces?.city || null
             }
             };
           });

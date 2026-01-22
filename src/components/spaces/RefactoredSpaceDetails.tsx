@@ -115,7 +115,7 @@ export const RefactoredSpaceDetails = () => {
           name="workspace_features"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Workspace Features</FormLabel>
+              <FormLabel>Space Features</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {WORKSPACE_FEATURES_OPTIONS.map((feature) => (
                   <FormField

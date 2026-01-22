@@ -14,7 +14,7 @@ const HostWalletPage = () => {
   const handleConnectStripe = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('connect-stripe', {
+      const { data, error } = await supabase.functions.invoke('stripe-connect', {
         body: {
           return_url: window.location.href, // User comes back here after success
           refresh_url: window.location.href, // User comes back here if they cancel/fail
@@ -28,9 +28,13 @@ const HostWalletPage = () => {
       } else {
         throw new Error('No redirection URL returned from Stripe');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting to Stripe:', error);
-      toast.error('Si è verificato un errore durante la connessione a Stripe. Riprova più tardi.');
+      if (error instanceof TypeError && error.message.includes('Load failed')) {
+         toast.error('Errore di connessione. Controlla la tua rete o riprova più tardi.');
+      } else {
+         toast.error(error.message || 'Si è verificato un errore durante la connessione a Stripe. Riprova più tardi.');
+      }
     } finally {
       setIsLoading(false);
     }
