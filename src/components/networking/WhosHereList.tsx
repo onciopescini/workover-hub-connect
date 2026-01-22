@@ -24,7 +24,10 @@ interface CheckIn {
   };
 }
 
-type CheckInQueryRow = Database["public"]["Tables"]["check_ins"]["Row"] & {
+type CheckInQueryRow = {
+  user_id: Database["public"]["Tables"]["check_ins"]["Row"]["user_id"];
+  space_id: Database["public"]["Tables"]["check_ins"]["Row"]["space_id"];
+  checkin_time: Database["public"]["Tables"]["check_ins"]["Row"]["checkin_time"];
   profiles: {
     first_name: string | null;
     last_name: string | null;
@@ -32,7 +35,7 @@ type CheckInQueryRow = Database["public"]["Tables"]["check_ins"]["Row"] & {
     profession: string | null;
   } | null;
   spaces: {
-    title: string;
+    title: string | null;
     city_name: string | null;
   } | null;
 };
@@ -67,8 +70,6 @@ export const WhosHereList = () => {
         if (error) {
           console.error('Error fetching check-ins:', error);
         } else {
-          // Transform data to match CheckIn interface
-          // Force type assertion for Phase 4 fix
           const typedData: CheckIn[] = (data ?? []).map((item) => {
             const row = item as CheckInQueryRow;
 
@@ -76,16 +77,16 @@ export const WhosHereList = () => {
               user_id: row.user_id,
               space_id: row.space_id,
               checkin_time: row.checkin_time,
-            profiles: {
+              profiles: {
                 first_name: row.profiles?.first_name || '',
                 last_name: row.profiles?.last_name || '',
                 profile_photo_url: row.profiles?.profile_photo_url || null,
                 profession: row.profiles?.profession || null
-            },
-            workspaces: {
-              name: item.spaces?.name || item.workspaces?.name || 'Space',
-              city: item.spaces?.city || item.workspaces?.city || null
-            }
+              },
+              spaces: {
+                title: row.spaces?.title || 'Space',
+                city_name: row.spaces?.city_name || null
+              }
             };
           });
           setCheckIns(typedData);
