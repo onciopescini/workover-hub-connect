@@ -3,11 +3,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { SpaceInsert } from "@/types/space";
-import type { WorkspaceInsert } from "@/types/workspace";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
+import type { Database } from "@/integrations/supabase/types";
 
 // Form data type that includes UI field names (title, workspace_features) mapped to DB columns
 interface SpaceFormDataInput {
@@ -97,39 +96,38 @@ export const useSpaceFormSubmission = ({
 
       const photoUrls = photoPreviewUrls;
       
-      // Refactor: Map fields to new workspace schema
-      const workspaceData: WorkspaceInsert = {
-        name: formData.title || '', // formData.title -> maps to DB column name
-        address: formData.address || '', // formData.address -> maps to DB column address
-        features: formData.workspace_features || [], // formData.workspace_features -> maps to DB column features (array)
+      const spaceData: Database["public"]["Tables"]["spaces"]["Insert"] = {
+        title: formData.title || '',
+        address: formData.address || '',
+        workspace_features: formData.workspace_features || [],
         price_per_day: formData.price_per_day || 0,
         price_per_hour: formData.price_per_hour || 0,
         max_capacity: formData.max_capacity || 1,
-        category: (formData.category as 'home' | 'outdoor' | 'professional') || 'home',
+        capacity: formData.max_capacity || 1,
+        category: (formData.category as Database["public"]["Enums"]["space_category"]) || 'home',
         rules: formData.rules || null,
-        cancellation_policy: (formData.cancellation_policy as 'flexible' | 'moderate' | 'strict' | null) || null,
-        availability: availabilityData, // availabilityData should be saved as json in the availability column
+        cancellation_policy: (formData.cancellation_policy as Database["public"]["Enums"]["cancellation_policy"] | null) || null,
+        availability: availabilityData,
         host_id: user.id,
-        // Additional fields that are likely needed
         description: formData.description || "",
         photos: photoUrls,
         latitude: formData.latitude || 0,
         longitude: formData.longitude || 0,
-        published: Boolean(formData.published), // Ensure strict boolean
-        pending_approval: false, // STRATEGIC PIVOT: Post-Moderation (Always false on submission)
+        published: Boolean(formData.published),
+        pending_approval: false,
         amenities: formData.amenities || [],
         seating_types: formData.seating_types || [],
-        work_environment: (formData.work_environment as 'controlled' | 'dynamic' | 'silent') || 'silent',
+        work_environment: (formData.work_environment as Database["public"]["Enums"]["work_environment"]) || 'silent',
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
-        confirmation_type: (formData.confirmation_type as 'host_approval' | 'instant') || 'host_approval'
+        confirmation_type: (formData.confirmation_type as Database["public"]["Enums"]["confirmation_type"]) || 'host_approval'
       };
       
       if (isEdit && initialDataId) {
-        // Refactor: Insert/update into 'workspaces' table
-        const { error } = await (supabase
-          .from("spaces") as any)
-          .update(workspaceData)
+        const spaceUpdate: Database["public"]["Tables"]["spaces"]["Update"] = spaceData;
+        const { error } = await supabase
+          .from("spaces")
+          .update(spaceUpdate)
           .eq("id", initialDataId);
           
         if (error) {
@@ -144,10 +142,9 @@ export const useSpaceFormSubmission = ({
         
         toast.success("Space updated successfully!");
       } else {
-        // Refactor: Insert/update into 'workspaces' table
-        const { error } = await (supabase
-          .from("spaces") as any)
-          .insert(workspaceData)
+        const { error } = await supabase
+          .from("spaces")
+          .insert(spaceData)
           .select("id")
           .single();
           

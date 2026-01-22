@@ -6,10 +6,11 @@ import { MapPin } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import type { Database } from "@/integrations/supabase/types";
 
 interface CheckIn {
   user_id: string;
-  workspace_id: string;
+  space_id: string;
   checkin_time: string;
   profiles: {
     first_name: string;
@@ -17,11 +18,24 @@ interface CheckIn {
     profile_photo_url: string | null;
     profession: string | null;
   };
-  workspaces: {
-    name: string;
-    city: string | null;
+  spaces: {
+    title: string;
+    city_name: string | null;
   };
 }
+
+type CheckInQueryRow = Database["public"]["Tables"]["check_ins"]["Row"] & {
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+    profile_photo_url: string | null;
+    profession: string | null;
+  } | null;
+  spaces: {
+    title: string;
+    city_name: string | null;
+  } | null;
+};
 
 export const WhosHereList = () => {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
@@ -34,7 +48,7 @@ export const WhosHereList = () => {
           .from('check_ins')
           .select(`
             user_id,
-            workspace_id,
+            space_id,
             checkin_time,
             profiles:user_id (
               first_name,
@@ -43,8 +57,8 @@ export const WhosHereList = () => {
               profession
             ),
             spaces:space_id (
-              name,
-              city
+              title,
+              city_name
             )
           `)
           .is('checkout_time', null)
@@ -55,21 +69,25 @@ export const WhosHereList = () => {
         } else {
           // Transform data to match CheckIn interface
           // Force type assertion for Phase 4 fix
-          const typedData: CheckIn[] = (data as unknown as any[]).map(item => ({
-            user_id: item.user_id,
-            workspace_id: item.workspace_id || item.space_id,
-            checkin_time: item.checkin_time,
+          const typedData: CheckIn[] = (data ?? []).map((item) => {
+            const row = item as CheckInQueryRow;
+
+            return {
+              user_id: row.user_id,
+              space_id: row.space_id,
+              checkin_time: row.checkin_time,
             profiles: {
-              first_name: item.profiles?.first_name || '',
-              last_name: item.profiles?.last_name || '',
-              profile_photo_url: item.profiles?.profile_photo_url || null,
-              profession: item.profiles?.profession || null
+                first_name: row.profiles?.first_name || '',
+                last_name: row.profiles?.last_name || '',
+                profile_photo_url: row.profiles?.profile_photo_url || null,
+                profession: row.profiles?.profession || null
             },
             workspaces: {
               name: item.spaces?.name || item.workspaces?.name || 'Space',
               city: item.spaces?.city || item.workspaces?.city || null
             }
-          }));
+            };
+          });
           setCheckIns(typedData);
         }
       } catch (error) {
@@ -159,8 +177,8 @@ export const WhosHereList = () => {
                   <div className="flex items-center text-xs text-gray-500">
                     <MapPin className="w-3 h-3 mr-1 text-gray-400" />
                     <span className="truncate">
-                      {checkIn.workspaces.name}
-                      {checkIn.workspaces.city && `, ${checkIn.workspaces.city}`}
+                      {checkIn.spaces.title}
+                      {checkIn.spaces.city_name && `, ${checkIn.spaces.city_name}`}
                     </span>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">

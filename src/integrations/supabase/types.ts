@@ -888,8 +888,8 @@ export type Database = {
           id: string
           metadata: Json
           method: string | null
+          space_id: string
           user_id: string
-          workspace_id: string
         }
         Insert: {
           checkin_time?: string
@@ -897,8 +897,8 @@ export type Database = {
           id?: string
           metadata?: Json
           method?: string | null
+          space_id: string
           user_id: string
-          workspace_id: string
         }
         Update: {
           checkin_time?: string
@@ -906,22 +906,22 @@ export type Database = {
           id?: string
           metadata?: Json
           method?: string | null
+          space_id?: string
           user_id?: string
-          workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "check_ins_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: "check_ins_space_id_fkey"
+            columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "check_ins_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: "check_ins_space_id_fkey"
+            columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
