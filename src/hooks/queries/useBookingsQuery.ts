@@ -1,11 +1,38 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { PostgrestError } from "@supabase/supabase-js";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { BookingWithDetails } from "@/types/booking";
+import type { Booking, BookingWithDetails } from "@/types/booking";
 import { cancelBooking } from "@/lib/booking-utils";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
+
+type SpaceSummary = {
+  id: string | null;
+  title: string | null;
+  address: string | null;
+  photos: string[] | null;
+  host_id: string | null;
+  price_per_day: number | null;
+};
+
+type CoworkerBookingRow = Booking & {
+  space: SpaceSummary | null;
+};
+
+type HostBookingRow = Booking & {
+  space: SpaceSummary | null;
+  profiles: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    profile_photo_url: string | null;
+  } | null;
+};
+
+const toString = (value: string | null | undefined) => value ?? '';
+const toNumber = (value: number | null | undefined) => value ?? 0;
 
 // Query Keys
 export const bookingKeys = {
@@ -36,7 +63,10 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       )
     `)
     .eq("user_id", userId)
-    .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
+    .order("booking_date", { ascending: false })) as unknown as {
+      data: CoworkerBookingRow[] | null;
+      error: PostgrestError | null;
+    };
 
   if (coworkerError) {
     sreLogger.error('Coworker bookings error', { userId }, coworkerError);
@@ -44,7 +74,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   }
 
   // Get user's spaces for host bookings
-  let hostBookings: Array<Record<string, unknown>> = [];
+  let hostBookings: HostBookingRow[] = [];
   const isHostOrAdmin = (userRoles || []).includes("host") || (userRoles || []).includes("admin");
   if (isHostOrAdmin) {
     const { data: hostBookingsRaw, error: hostError } = (await supabase
@@ -68,7 +98,10 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       `)
       .eq("space.host_id", userId)
       .neq("user_id", userId)
-      .order("booking_date", { ascending: false })) as unknown as { data: any[], error: any };
+      .order("booking_date", { ascending: false })) as unknown as {
+        data: HostBookingRow[] | null;
+        error: PostgrestError | null;
+      };
 
     if (!hostError && hostBookingsRaw) {
       hostBookings = hostBookingsRaw;
@@ -80,31 +113,32 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   // Transform bookings to match BookingWithDetails interface
   const transformCoworkerBookings = (coworkerBookingsRaw || []).map(booking => {
     // Safe cast of known structure from Supabase query
-    const bookingData = booking as any;
+    const bookingData = booking;
+    const space = bookingData.space;
     return {
-      id: bookingData.id as string,
-      space_id: bookingData.space_id as string,
-      user_id: bookingData.user_id as string,
-      booking_date: bookingData.booking_date as string,
-      start_time: bookingData.start_time as string,
-      end_time: bookingData.end_time as string,
-      status: bookingData.status,
-      created_at: bookingData.created_at as string,
-      updated_at: bookingData.updated_at as string,
-      cancelled_at: bookingData.cancelled_at as string,
-      cancellation_fee: bookingData.cancellation_fee as number,
-      cancelled_by_host: bookingData.cancelled_by_host as boolean,
-      cancellation_reason: bookingData.cancellation_reason as string,
-      service_completed_at: bookingData.service_completed_at as string | null,
+      id: toString(bookingData.id),
+      space_id: toString(bookingData.space_id),
+      user_id: toString(bookingData.user_id),
+      booking_date: toString(bookingData.booking_date),
+      start_time: toString(bookingData.start_time),
+      end_time: toString(bookingData.end_time),
+      status: bookingData.status ?? 'pending',
+      created_at: toString(bookingData.created_at),
+      updated_at: toString(bookingData.updated_at),
+      cancelled_at: bookingData.cancelled_at ?? null,
+      cancellation_fee: bookingData.cancellation_fee ?? null,
+      cancelled_by_host: bookingData.cancelled_by_host ?? null,
+      cancellation_reason: bookingData.cancellation_reason ?? null,
+      service_completed_at: bookingData.service_completed_at ?? null,
       space: {
-        id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string,
-        address: bookingData.space?.address as string,
-        photos: bookingData.space?.photos as string[],
-        image_url: (bookingData.space?.photos as string[])?.[0] || '',
+        id: toString(space?.id),
+        title: toString(space?.title),
+        address: toString(space?.address),
+        photos: space?.photos ?? [],
+        image_url: space?.photos?.[0] || '',
         type: 'space',
-        host_id: bookingData.space?.host_id as string,
-        price_per_day: bookingData.space?.price_per_day as number
+        host_id: toString(space?.host_id),
+        price_per_day: toNumber(space?.price_per_day)
       },
       coworker: null
     };
@@ -112,37 +146,38 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
 
   const transformHostBookings = hostBookings.map(booking => {
     // Safe cast of known structure from Supabase query
-    const bookingData = booking as any;
+    const bookingData = booking;
+    const space = bookingData.space;
     return {
-      id: bookingData.id as string,
-      space_id: bookingData.space_id as string,
-      user_id: bookingData.user_id as string,
-      booking_date: bookingData.booking_date as string,
-      start_time: bookingData.start_time as string,
-      end_time: bookingData.end_time as string,
-      status: bookingData.status,
-      created_at: bookingData.created_at as string,
-      updated_at: bookingData.updated_at as string,
-      cancelled_at: bookingData.cancelled_at as string,
-      cancellation_fee: bookingData.cancellation_fee as number,
-      cancelled_by_host: bookingData.cancelled_by_host as boolean,
-      cancellation_reason: bookingData.cancellation_reason as string,
-      service_completed_at: bookingData.service_completed_at as string | null,
+      id: toString(bookingData.id),
+      space_id: toString(bookingData.space_id),
+      user_id: toString(bookingData.user_id),
+      booking_date: toString(bookingData.booking_date),
+      start_time: toString(bookingData.start_time),
+      end_time: toString(bookingData.end_time),
+      status: bookingData.status ?? 'pending',
+      created_at: toString(bookingData.created_at),
+      updated_at: toString(bookingData.updated_at),
+      cancelled_at: bookingData.cancelled_at ?? null,
+      cancellation_fee: bookingData.cancellation_fee ?? null,
+      cancelled_by_host: bookingData.cancelled_by_host ?? null,
+      cancellation_reason: bookingData.cancellation_reason ?? null,
+      service_completed_at: bookingData.service_completed_at ?? null,
       space: {
-        id: bookingData.space?.id as string,
-        title: bookingData.space?.title as string,
-        address: bookingData.space?.address as string,
-        photos: bookingData.space?.photos as string[],
-        image_url: (bookingData.space?.photos as string[])?.[0] || '',
+        id: toString(space?.id),
+        title: toString(space?.title),
+        address: toString(space?.address),
+        photos: space?.photos ?? [],
+        image_url: space?.photos?.[0] || '',
         type: 'space',
-        host_id: bookingData.space?.host_id as string,
-        price_per_day: bookingData.space?.price_per_day as number
+        host_id: toString(space?.host_id),
+        price_per_day: toNumber(space?.price_per_day)
       },
       coworker: {
-        id: bookingData.profiles?.id as string,
-        first_name: bookingData.profiles?.first_name as string,
-        last_name: bookingData.profiles?.last_name as string,
-        profile_photo_url: bookingData.profiles?.profile_photo_url as string
+        id: toString(bookingData.profiles?.id),
+        first_name: toString(bookingData.profiles?.first_name),
+        last_name: toString(bookingData.profiles?.last_name),
+        profile_photo_url: bookingData.profiles?.profile_photo_url ?? null
       }
     };
   });

@@ -7,6 +7,19 @@ import { Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
 import { Json } from "@/integrations/supabase/types";
 
+type HostSpaceIdRow = {
+  id: string;
+};
+
+type HostSpaceDetailsRow = {
+  id: string;
+  title: string | null;
+  address: string | null;
+  photos: string[] | null;
+  host_id: string | null;
+  price_per_day: number | null;
+};
+
 // Query Keys
 export const hostDashboardKeys = {
   all: ['hostDashboard'] as const,
@@ -49,7 +62,7 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
 
   if (spacesError) throw spacesError;
 
-  const spaceIds = spacesData?.map((s: any) => s.id) || [];
+  const spaceIds = (spacesData as HostSpaceIdRow[] | null)?.map((space) => space.id) || [];
   if (spaceIds.length === 0) return [];
 
   // Fetch bookings for host spaces
@@ -85,7 +98,9 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
     .filter(booking => booking.space_id !== null) // Filter out bookings with null space_id
     .map(booking => {
     const coworkerProfile = coworkerProfiles?.find(p => p.id === booking.user_id);
-    const space = spacesDetails?.find((s: any) => s.id === booking.space_id);
+    const space = (spacesDetails as HostSpaceDetailsRow[] | null)?.find(
+      (item) => item.id === booking.space_id
+    );
     
     return {
       id: booking.id,
@@ -103,13 +118,13 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
       cancellation_reason: booking.cancellation_reason,
       space: space ? {
         id: space.id,
-        title: space.title,
-        address: space.address,
-        photos: space.photos || [],
+        title: space.title ?? '',
+        address: space.address ?? '',
+        photos: space.photos ?? [],
         image_url: space.photos?.[0] || '',
         type: 'space',
-        host_id: space.host_id,
-        price_per_day: space.price_per_day
+        host_id: space.host_id ?? hostId,
+        price_per_day: space.price_per_day ?? 0
       } : {
         id: 'unknown',
         title: 'Unknown Space',
