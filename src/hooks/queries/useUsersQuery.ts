@@ -5,14 +5,7 @@ import { AdminProfile, AdminWarning } from "@/types/admin";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
-
-// Query Keys
-export const userKeys = {
-  all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
-  list: (filters?: UserFilters) => [...userKeys.lists(), filters] as const,
-  warnings: (userId: string) => [...userKeys.all, 'warnings', userId] as const,
-};
+import { queryKeys } from "@/lib/react-query-config";
 
 export interface UserFilters {
   searchTerm?: string;
@@ -36,7 +29,7 @@ const fetchUserWarnings = async (userId: string): Promise<AdminWarning[]> => {
 // Main users query hook
 export const useUsersQuery = () => {
   return useQuery({
-    queryKey: userKeys.list(),
+    queryKey: queryKeys.users.list(),
     queryFn: fetchUsers,
     staleTime: 60000, // 1 minute
     refetchOnWindowFocus: false,
@@ -46,7 +39,7 @@ export const useUsersQuery = () => {
 // User warnings query hook
 export const useUserWarningsQuery = (userId: string) => {
   return useQuery({
-    queryKey: userKeys.warnings(userId),
+    queryKey: queryKeys.users.warnings(userId),
     queryFn: () => fetchUserWarnings(userId),
     enabled: !!userId,
     staleTime: 30000, // 30 seconds
@@ -62,7 +55,7 @@ export const useSuspendUserMutation = () => {
       await suspendUser(userId, reason);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       toast.success("Utente sospeso con successo");
     },
     onError: (error) => {
@@ -81,7 +74,7 @@ export const useReactivateUserMutation = () => {
       await reactivateUser(userId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       toast.success("Utente riattivato con successo");
     },
     onError: (error) => {
@@ -108,7 +101,7 @@ export const useCreateWarningMutation = () => {
       await createWarning(warningData);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: userKeys.warnings(variables.user_id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.warnings(variables.user_id) });
       toast.success("Warning inviato con successo");
     },
     onError: (error) => {

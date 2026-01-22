@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthLogic } from '@/hooks/auth/useAuthLogic';
+import { queryKeys } from "@/lib/react-query-config";
 
 export const useHostDashboardMetrics = () => {
   const { authState } = useAuthLogic();
   const TIME_CONSTANTS = { CACHE_DURATION: 1000 * 60 * 5 }; // 5 minutes
 
   return useQuery({
-    queryKey: ['host-dashboard-metrics', authState.user?.id],
+    queryKey: queryKeys.hostDashboardMetrics.detail(authState.user?.id),
     queryFn: async () => {
       const userId = authState.user?.id;
       if (!userId) throw new Error('User ID not found');

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSpaceReviews, getSpaceWeightedRating } from '@/lib/space-review-service';
 import { TIME_CONSTANTS } from "@/constants";
+import { queryKeys } from "@/lib/react-query-config";
 
 export const useSpaceReviewsQuery = (spaceId: string) => {
   return useQuery({
-    queryKey: ['space-reviews', spaceId],
+    queryKey: queryKeys.spaceReviews.list(spaceId),
     queryFn: () => getSpaceReviews(spaceId),
     enabled: !!spaceId,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,
@@ -13,7 +14,7 @@ export const useSpaceReviewsQuery = (spaceId: string) => {
 
 export const useSpaceWeightedRatingQuery = (spaceId: string) => {
   return useQuery({
-    queryKey: ['space-weighted-rating', spaceId],
+    queryKey: queryKeys.spaceReviews.weightedRating(spaceId),
     queryFn: () => getSpaceWeightedRating(spaceId),
     enabled: !!spaceId,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,

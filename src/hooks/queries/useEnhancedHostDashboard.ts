@@ -4,6 +4,7 @@ import { useHostRecentActivity } from "./useHostRecentActivity";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { queryKeys } from "@/lib/react-query-config";
 
 // Re-export types for backward compatibility
 export type { HostDashboardMetrics, RecentActivity } from "./types/hostDashboardTypes";
@@ -16,7 +17,7 @@ const useEnhancedHostDashboard = () => {
 
   // Fetch space count for occupancy rate
   const { data: spaceCountData } = useQuery({
-    queryKey: ['host-space-count', authState.user?.id],
+    queryKey: queryKeys.hostSpaceCount.detail(authState.user?.id),
     queryFn: async () => {
         if (!authState.user?.id) return 0;
         const { count } = await supabase

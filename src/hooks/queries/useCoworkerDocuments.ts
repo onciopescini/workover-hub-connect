@@ -7,6 +7,7 @@ import {
   createMockSpaceForm,
   createMockHostFiscalProfile
 } from "../../../tests/factories/mockData";
+import { queryKeys } from "@/lib/react-query-config";
 
 // Mock data generators
 const generateMockReceipts = (year: number) => {
@@ -63,7 +64,7 @@ export const useCoworkerReceipts = (coworkerId: string, year?: number) => {
   const currentYear = year || new Date().getFullYear();
   
   return useQuery({
-    queryKey: ["coworker-receipts", coworkerId, year, isMockMode],
+    queryKey: queryKeys.coworkerDocuments.receipts(coworkerId, year, isMockMode),
     queryFn: async () => {
       if (isMockMode) {
         if (import.meta.env.DEV) {
@@ -115,7 +116,7 @@ export const useCoworkerInvoices = (coworkerId: string, year?: number) => {
   const currentYear = year || new Date().getFullYear();
   
   return useQuery({
-    queryKey: ["coworker-invoices", coworkerId, year, isMockMode],
+    queryKey: queryKeys.coworkerDocuments.invoices(coworkerId, year, isMockMode),
     queryFn: async () => {
       if (isMockMode) {
         if (import.meta.env.DEV) {

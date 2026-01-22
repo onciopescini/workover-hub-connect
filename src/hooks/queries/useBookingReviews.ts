@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BookingReviewWithDetails } from '@/types/review';
 import { sreLogger } from '@/lib/sre-logger';
 import { TIME_CONSTANTS } from "@/constants";
+import { queryKeys } from "@/lib/react-query-config";
 
 // Fetcher functions
 const getUserReceivedReviews = async (userId: string): Promise<BookingReviewWithDetails[]> => {
@@ -123,14 +124,14 @@ export const useBookingReviews = (userId?: string) => {
   const enabled = !!userId;
 
   const receivedQuery = useQuery({
-    queryKey: ['booking-reviews-received', userId],
+    queryKey: queryKeys.bookingReviews.received(userId),
     queryFn: () => getUserReceivedReviews(userId!),
     enabled,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,
   });
 
   const givenQuery = useQuery({
-    queryKey: ['booking-reviews-given', userId],
+    queryKey: queryKeys.bookingReviews.given(userId),
     queryFn: () => getUserGivenReviews(userId!),
     enabled,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,

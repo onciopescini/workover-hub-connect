@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { format } from "date-fns";
 import { Database } from "@/integrations/supabase/types";
+import { queryKeys } from "@/lib/react-query-config";
 
 export const useTodayCheckins = () => {
   const { authState } = useAuth();
 
   return useQuery({
-    queryKey: ['today-checkins', authState.user?.id],
+    queryKey: queryKeys.todayCheckins.list(authState.user?.id),
     queryFn: async () => {
       if (!authState.user?.id) return [];
 

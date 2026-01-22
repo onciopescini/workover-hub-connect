@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { TIME_CONSTANTS } from "@/constants";
+import { queryKeys } from "@/lib/react-query-config";
 
 export interface ProfessionalBreakdown {
   profession: string;
@@ -52,7 +53,7 @@ export interface SpaceMetrics {
 
 export const useSpaceMetrics = (spaceId: string) => {
   return useQuery({
-    queryKey: ['space-metrics', spaceId],
+    queryKey: queryKeys.spaceMetrics.detail(spaceId),
     queryFn: async () => {
       if (!spaceId) throw new Error('Space ID is required');
       

@@ -6,15 +6,7 @@ import { BookingWithDetails } from "@/types/booking";
 import { cancelBooking } from "@/lib/booking-utils";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
-
-// Query Keys
-export const bookingKeys = {
-  all: ['bookings'] as const,
-  lists: () => [...bookingKeys.all, 'list'] as const,
-  list: (userId: string) => [...bookingKeys.lists(), userId] as const,
-  details: () => [...bookingKeys.all, 'detail'] as const,
-  detail: (id: string) => [...bookingKeys.details(), id] as const,
-};
+import { queryKeys } from "@/lib/react-query-config";
 
 // Fetch function for bookings
 const fetchBookings = async (userId: string, userRoles: string[]): Promise<BookingWithDetails[]> => {
@@ -161,7 +153,7 @@ export const useBookingsQuery = () => {
   const { authState } = useAuth();
   
   return useQuery({
-    queryKey: bookingKeys.list(authState.user?.id || ''),
+    queryKey: queryKeys.bookings.list(authState.user?.id || ''),
     queryFn: () => fetchBookings(authState.user?.id || '', authState.roles),
     enabled: !!authState.user?.id,
     staleTime: 30000, // 30 seconds
@@ -192,7 +184,7 @@ export const useCancelBookingMutation = () => {
     },
     onSuccess: () => {
       // Invalidate bookings queries
-      queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
       toast.success("Prenotazione cancellata con successo");
     },
     onError: (error) => {

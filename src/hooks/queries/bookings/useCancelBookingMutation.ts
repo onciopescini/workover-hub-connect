@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 import { API_ENDPOINTS } from '@/constants';
+import { queryKeys } from "@/lib/react-query-config";
 
 export const useCancelBookingMutation = () => {
   const queryClient = useQueryClient();
@@ -48,8 +49,8 @@ export const useCancelBookingMutation = () => {
     },
     onSuccess: () => {
       // Invalidate to ensure server state is correct and UI updates based on real data
-      queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['host-dashboard-metrics'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.enhancedBookings.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.hostDashboardMetrics.all });
       toast.success("Prenotazione cancellata con successo");
     },
     onError: (error: unknown) => {

@@ -111,6 +111,12 @@ export const optimizedQueryClient = new QueryClient({
  * Query keys factory per consistency
  */
 export const queryKeys = {
+  // Today checkins
+  todayCheckins: {
+    all: ['today-checkins'] as const,
+    list: (userId?: string) => [...queryKeys.todayCheckins.all, userId] as const,
+  },
+
   // Auth
   auth: {
     user: ['auth', 'user'] as const,
@@ -126,15 +132,53 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.spaces.details(), id] as const,
     search: (query: string) => [...queryKeys.spaces.all, 'search', query] as const,
   },
+
+  // Space location/access
+  spaceLocation: {
+    detail: (spaceId: string | undefined) => ['space-location', spaceId] as const,
+  },
+  spaceAccess: {
+    confirmedBooking: (spaceId: string | undefined) => ['has-confirmed-booking', spaceId] as const,
+  },
+
+  // Space metrics/reviews
+  spaceMetrics: {
+    detail: (spaceId: string) => ['space-metrics', spaceId] as const,
+  },
+  spaceReviews: {
+    list: (spaceId: string) => ['space-reviews', spaceId] as const,
+    weightedRating: (spaceId: string) => ['space-weighted-rating', spaceId] as const,
+  },
   
   // Bookings
   bookings: {
     all: ['bookings'] as const,
     lists: () => [...queryKeys.bookings.all, 'list'] as const,
-    list: (filters: Record<string, any>) => [...queryKeys.bookings.lists(), filters] as const,
+    list: (filters: Record<string, any> | string) => [...queryKeys.bookings.lists(), filters] as const,
     details: () => [...queryKeys.bookings.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.bookings.details(), id] as const,
     userBookings: (userId: string) => [...queryKeys.bookings.all, 'user', userId] as const,
+  },
+
+  // Host/coworker booking lists
+  hostBookings: {
+    list: (userId?: string, roles?: string[] | null, filters?: Record<string, any>) =>
+      ['host-bookings', userId, roles, filters] as const,
+  },
+  coworkerBookings: {
+    list: (userId?: string, filters?: Record<string, any>) =>
+      ['coworker-bookings', userId, filters] as const,
+  },
+  enhancedBookings: {
+    all: ['enhanced-bookings'] as const,
+    list: (userId?: string, roles?: string[] | null, filters?: Record<string, any>) =>
+      [...queryKeys.enhancedBookings.all, userId, roles, filters] as const,
+  },
+
+  // Booking reviews
+  bookingReviews: {
+    received: (userId?: string) => ['booking-reviews-received', userId] as const,
+    given: (userId?: string) => ['booking-reviews-given', userId] as const,
   },
   
   // Profile
@@ -157,6 +201,52 @@ export const queryKeys = {
     all: ['reviews'] as const,
     forSpace: (spaceId: string) => [...queryKeys.reviews.all, 'space', spaceId] as const,
     forUser: (userId: string) => [...queryKeys.reviews.all, 'user', userId] as const,
+  },
+
+  // Host dashboard
+  hostDashboard: {
+    all: ['hostDashboard'] as const,
+    stats: (hostId: string) => [...queryKeys.hostDashboard.all, 'stats', hostId] as const,
+    bookings: (hostId: string) => [...queryKeys.hostDashboard.all, 'bookings', hostId] as const,
+    messages: (hostId: string) => [...queryKeys.hostDashboard.all, 'messages', hostId] as const,
+    reviews: (hostId: string) => [...queryKeys.hostDashboard.all, 'reviews', hostId] as const,
+    spaces: (hostId: string) => [...queryKeys.hostDashboard.all, 'spaces', hostId] as const,
+  },
+  hostDashboardMetrics: {
+    all: ['host-dashboard-metrics'] as const,
+    detail: (hostId?: string) => [...queryKeys.hostDashboardMetrics.all, hostId] as const,
+  },
+  hostRecentActivity: {
+    detail: (hostId?: string) => ['host-recent-activity', hostId] as const,
+  },
+  hostSpaceCount: {
+    detail: (hostId?: string) => ['host-space-count', hostId] as const,
+  },
+
+  // Coworker documents
+  coworkerDocuments: {
+    receipts: (coworkerId: string, year?: number, isMockMode?: boolean) =>
+      ['coworker-receipts', coworkerId, year, isMockMode] as const,
+    invoices: (coworkerId: string, year?: number, isMockMode?: boolean) =>
+      ['coworker-invoices', coworkerId, year, isMockMode] as const,
+  },
+
+  // Host invoices
+  hostInvoices: {
+    pending: (hostId: string, isMockMode?: boolean) =>
+      ['host-pending-invoices', hostId, isMockMode] as const,
+    creditNotes: (hostId: string, isMockMode?: boolean) =>
+      ['host-pending-credit-notes', hostId, isMockMode] as const,
+    history: (hostId: string, year?: number, isMockMode?: boolean) =>
+      ['host-invoice-history', hostId, year, isMockMode] as const,
+  },
+
+  // Users
+  users: {
+    all: ['users'] as const,
+    lists: () => [...queryKeys.users.all, 'list'] as const,
+    list: (filters?: Record<string, any>) => [...queryKeys.users.lists(), filters] as const,
+    warnings: (userId: string) => [...queryKeys.users.all, 'warnings', userId] as const,
   },
   
   // Admin

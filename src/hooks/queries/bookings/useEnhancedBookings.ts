@@ -13,6 +13,7 @@ import {
 } from "./useBookingTransforms";
 import { handleRLSError } from '@/lib/rls-error-handler';
 import { toast } from 'sonner';
+import { queryKeys } from "@/lib/react-query-config";
 
 // Main enhanced bookings query hook
 export const useEnhancedBookings = (filters?: BookingFilter) => {
@@ -20,7 +21,7 @@ export const useEnhancedBookings = (filters?: BookingFilter) => {
   const { debug, error } = useLogger({ context: 'useEnhancedBookings' });
   
   return useQuery({
-    queryKey: ['enhanced-bookings', authState.user?.id, authState.roles, filters],
+    queryKey: queryKeys.enhancedBookings.list(authState.user?.id, authState.roles, filters),
     queryFn: async (): Promise<BookingWithDetails[]> => {
       const userId = authState.user?.id;
       const userRoles = authState.roles;
