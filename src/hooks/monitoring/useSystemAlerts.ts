@@ -17,7 +17,7 @@ export interface SystemAlert {
   title: string;
   message: string;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   acknowledged?: boolean;
 }
 
@@ -53,17 +53,19 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
 
       // Transform logs to alerts
       const systemAlerts: SystemAlert[] = (errorLogs || []).map(log => {
-        const metadata = log.metadata as any;
+        const metadata = typeof log.metadata === 'object' && log.metadata !== null
+          ? (log.metadata as Record<string, unknown>)
+          : undefined;
         return {
           id: log.id,
           type: log.action_type.includes('security') ? 'security' : 
                 log.action_type.includes('performance') ? 'performance' : 'error',
           severity: determineSeverity(metadata),
           title: log.description,
-          message: metadata?.message || log.description,
+          message: typeof metadata?.message === 'string' ? metadata.message : log.description,
           timestamp: new Date(log.created_at || Date.now()),
           metadata: metadata || undefined,
-          acknowledged: metadata?.acknowledged || false,
+          acknowledged: typeof metadata?.acknowledged === 'boolean' ? metadata.acknowledged : false,
         };
       });
 
@@ -169,10 +171,11 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
 };
 
 // Helper to determine severity from metadata
-function determineSeverity(metadata?: any): SystemAlert['severity'] {
+function determineSeverity(metadata?: Record<string, unknown>): SystemAlert['severity'] {
   if (!metadata) return 'info';
   
-  const severity = metadata.severity || metadata.level;
+  const levelValue = typeof metadata.level === 'string' ? metadata.level : undefined;
+  const severity = typeof metadata.severity === 'string' ? metadata.severity : levelValue;
   if (severity === 'critical' || severity === 'error') return 'critical';
   if (severity === 'warning' || severity === 'warn') return 'warning';
   return 'info';

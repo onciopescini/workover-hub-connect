@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logError, logInfo } from '@/lib/sre-logger';
+import type { Database } from '@/integrations/supabase/types';
 
 interface SessionStateOptions {
   ttlHours?: number;
@@ -98,14 +99,17 @@ export function useSessionState<T>(
       expiresAt.setHours(expiresAt.getHours() + ttlHours);
 
       try {
+        type SessionStateInsert = Database['public']['Tables']['user_session_state']['Insert'];
+        const payload: SessionStateInsert = {
+          user_id: userId,
+          session_key: key,
+          session_data: updatedValue as unknown,
+          expires_at: expiresAt.toISOString()
+        };
+
         const { error } = await supabase
           .from('user_session_state')
-          .upsert({
-            user_id: userId,
-            session_key: key,
-            session_data: updatedValue as any,
-            expires_at: expiresAt.toISOString()
-          }, {
+          .upsert(payload, {
             onConflict: 'user_id,session_key'
           });
 

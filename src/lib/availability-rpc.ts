@@ -16,17 +16,23 @@ export interface ValidationResult {
   message: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 // Type guard per ValidationResult
 function isValidationResult(data: unknown): data is ValidationResult {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  const valid = data.valid;
+  const conflicts = data.conflicts;
+  const message = data.message;
+
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    'valid' in data &&
-    'conflicts' in data &&
-    'message' in data &&
-    typeof (data as any).valid === 'boolean' &&
-    Array.isArray((data as any).conflicts) &&
-    typeof (data as any).message === 'string'
+    typeof valid === 'boolean' &&
+    Array.isArray(conflicts) &&
+    typeof message === 'string'
   );
 }
 

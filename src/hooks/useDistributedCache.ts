@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logError, logInfo } from '@/lib/sre-logger';
+import type { Database } from '@/integrations/supabase/types';
 
 interface CacheOptions {
   ttlMinutes?: number;
   spaceId?: string;
 }
 
-export function useDistributedCache<T = any>() {
+export function useDistributedCache<T = unknown>() {
   const [loading, setLoading] = useState(false);
 
   const get = useCallback(async (key: string): Promise<T | null> => {
@@ -44,14 +45,17 @@ export function useDistributedCache<T = any>() {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + ttlMinutes);
 
+      type CacheInsert = Database['public']['Tables']['availability_cache']['Insert'];
+      const payload: CacheInsert = {
+        cache_key: key,
+        data: value as unknown,
+        expires_at: expiresAt.toISOString(),
+        space_id: spaceId ?? null
+      };
+
       const { error } = await supabase
         .from('availability_cache')
-        .upsert([{
-          cache_key: key,
-          data: value as any,
-          expires_at: expiresAt.toISOString(),
-          space_id: spaceId ?? null
-        }], {
+        .upsert([payload], {
           onConflict: 'cache_key'
         });
 

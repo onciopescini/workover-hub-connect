@@ -6,11 +6,14 @@ import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 // Type guard per validare SlotReservationResult
 function isSlotReservationResult(data: unknown): data is SlotReservationResult {
-  if (typeof data !== 'object' || data === null) return false;
-  
-  const obj = data as any;
+  if (!isRecord(data)) return false;
+
+  const obj = data;
   return (
     'success' in obj &&
     typeof obj.success === 'boolean' &&
@@ -70,7 +73,7 @@ export const reserveBookingSlot = async (
       guests_count_param: guestsCount,
       confirmation_type_param: confirmationType,
       client_base_price_param: clientBasePrice // Pass client-calculated price for validation
-    } as any);
+    });
 
     if (error) {
       sreLogger.error('RPC error during slot reservation', {
@@ -310,7 +313,7 @@ export const reserveMultipleSlots = async (
       guests_count_param: guestsCount,
       confirmation_type_param: confirmationType,
       client_total_price_param: clientTotalPrice
-    } as any);
+    });
 
     if (error) {
       sreLogger.error('RPC error during multi-slot reservation', {
@@ -334,7 +337,7 @@ export const reserveMultipleSlots = async (
       return null;
     }
 
-    if (!data || typeof data !== 'object') {
+    if (!isRecord(data)) {
       sreLogger.error('Invalid response from multi-slot RPC', {
         component: 'booking-reservation-utils',
         action: 'response_validation'
@@ -343,7 +346,13 @@ export const reserveMultipleSlots = async (
       return null;
     }
 
-    const result = data as any;
+    const result = data as {
+      success?: boolean;
+      error?: string;
+      booking_ids?: string[];
+      reservation_token?: string;
+      total_slots?: number;
+    };
     
     if (!result.success) {
       sreLogger.warn('Multi-slot reservation failed', {
@@ -392,7 +401,7 @@ export const getSpacesWithConnectedHosts = async () => {
         )
       `)
       .eq('published', true)
-      // .eq('is_suspended', false) // is_suspended not in workspaces, rely on published
+      // .eq('is_suspended', false) // rely on published to filter suspended spaces
       .eq('profiles.stripe_connected', true);
 
     if (error) {

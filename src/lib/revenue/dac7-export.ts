@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
+import type { PaymentWithBookingSpaceJoin } from "@/types/supabase-joins";
 
 export const exportDAC7Report = async (hostId: string, year: number): Promise<string> => {
   // Get host profile
@@ -36,7 +37,8 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     .eq('payment_status', 'completed')
     .gte('created_at', `${year}-01-01`)
     .lte('created_at', `${year}-12-31`)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .overrideTypes<PaymentWithBookingSpaceJoin[]>();
 
   if (paymentsError) {
     sreLogger.error('Error fetching payments for export', { error: paymentsError, hostId, year });
@@ -52,6 +54,7 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     'ID Transazione'
   ];
 
+  const paymentsData = payments || [];
   const csvRows = [
     headers.join(','),
     `# Report DAC7 per ${profile?.first_name} ${profile?.last_name}`,
@@ -60,18 +63,18 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
     `# Paese: ${profile?.tax_country || 'N/A'}`,
     `# Generato il: ${new Date().toLocaleDateString('it-IT')}`,
     '',
-    ...((payments || []).map(payment => [
+    ...(paymentsData.map(payment => [
       new Date(payment.created_at || new Date()).toLocaleDateString('it-IT'),
       (payment.host_amount || 0).toFixed(2),
-      `"${(payment.bookings?.spaces as any)?.title || (payment.bookings?.spaces as any)?.name || 'N/A'}"`,
+      `"${payment.bookings?.spaces?.title || 'N/A'}"`,
       new Date(payment.bookings?.booking_date || new Date()).toLocaleDateString('it-IT'),
       payment.id
     ].join(',')))
   ];
 
   // Add summary
-  const totalIncome = (payments || []).reduce((sum, p) => sum + (p.host_amount || 0), 0);
-  const totalTransactions = (payments || []).length;
+  const totalIncome = paymentsData.reduce((sum, p) => sum + (p.host_amount || 0), 0);
+  const totalTransactions = paymentsData.length;
   
   csvRows.push('');
   csvRows.push('# RIEPILOGO');

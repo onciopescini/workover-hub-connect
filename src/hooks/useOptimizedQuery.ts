@@ -53,7 +53,8 @@ export function useOptimizedMutation<TData = unknown, TError = Error, TVariables
       if (invalidateKeys) {
         for (const keyArray of invalidateKeys) {
           const keyString = keyArray.join('_');
-          const invalidateFn = (invalidateUtils as any)[keyString];
+          const invalidateMap = invalidateUtils as Record<string, () => Promise<void> | void>;
+          const invalidateFn = invalidateMap[keyString];
           if (typeof invalidateFn === 'function') {
             await invalidateFn();
           }
@@ -98,9 +99,9 @@ export function useParallelQueries<T extends Record<string, UseQueryOptions>>(
   [K in keyof T]: ReturnType<typeof useQuery>;
 } {
   const results = Object.entries(queries).reduce((acc, [key, queryOptions]) => {
-    acc[key] = useQuery(queryOptions as UseQueryOptions);
+    acc[key as keyof T] = useQuery(queryOptions as UseQueryOptions);
     return acc;
-  }, {} as any);
+  }, {} as { [K in keyof T]: ReturnType<typeof useQuery> });
 
   return results;
 }

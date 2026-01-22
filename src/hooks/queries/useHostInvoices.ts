@@ -9,6 +9,7 @@ import {
   createMockSpaceForm
 } from '../../../tests/factories/mockData';
 import { queryKeys } from "@/lib/react-query-config";
+import type { PaymentWithHistoryBookingJoin, PaymentWithInvoiceBookingJoin } from "@/types/supabase-joins";
 
 // Mock data generators
 const generateMockPendingInvoices = () => {
@@ -106,10 +107,11 @@ export const useHostPendingInvoices = (hostId: string) => {
         .eq('host_invoice_required', true)
         .eq('booking.space.host_id', hostId)
         .eq('host_invoice_reminder_sent', false)
-        .order('host_invoice_deadline', { ascending: true });
+        .order('host_invoice_deadline', { ascending: true })
+        .overrideTypes<PaymentWithInvoiceBookingJoin[]>();
       
       if (error) throw error;
-      return data as any[];
+      return data || [];
     },
     enabled: !!hostId,
     refetchInterval: isMockMode ? false : 30000
@@ -152,10 +154,11 @@ export const useHostPendingCreditNotes = (hostId: string) => {
         .eq('credit_note_required', true)
         .eq('booking.space.host_id', hostId)
         .eq('credit_note_issued_by_host', false)
-        .order('credit_note_deadline', { ascending: true });
+        .order('credit_note_deadline', { ascending: true })
+        .overrideTypes<PaymentWithInvoiceBookingJoin[]>();
       
       if (error) throw error;
-      return data as any[];
+      return data || [];
     },
     enabled: !!hostId,
     refetchInterval: isMockMode ? false : 30000
@@ -209,9 +212,9 @@ export const useHostInvoiceHistory = (hostId: string, year?: number) => {
           .lt('created_at', `${year + 1}-01-01`);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.overrideTypes<PaymentWithHistoryBookingJoin[]>();
       if (error) throw error;
-      return data as any[];
+      return data || [];
     },
     enabled: !!hostId
   });

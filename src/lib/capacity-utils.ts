@@ -16,9 +16,9 @@ export async function getAvailableCapacity(
 }> {
   try {
     // Get space max capacity
-    // Use workspaces table and maybeSingle to handle missing/hidden spaces gracefully
-    const { data: space, error: spaceError } = await (supabase
-      .from('spaces') as any)
+    // Use spaces table and maybeSingle to handle missing/hidden spaces gracefully
+    const { data: space, error: spaceError } = await supabase
+      .from('spaces')
       .select('max_capacity')
       .eq('id', spaceId)
       .maybeSingle();

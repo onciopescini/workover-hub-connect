@@ -10,7 +10,7 @@ import { getAvailableCapacity } from "@/lib/capacity-utils";
 import { computePricing } from "@/lib/pricing";
 import { BookingState, SelectedTimeRange, BookingStep } from "@/components/booking-wizard/TwoStepBookingForm";
 import type { BookingTimeSlot } from "@/types/booking-slots";
-import type { AvailabilityData, TimeSlot as AvailTimeSlot } from "@/types/availability";
+import type { AvailabilityData, AvailabilityException, TimeSlot as AvailTimeSlot } from "@/types/availability";
 import type { CoworkerFiscalData } from '@/types/booking';
 
 // Helper functions (could be moved to utils)
@@ -125,10 +125,11 @@ export function useBookingFlow({
     const exception = parsedAvailability.exceptions?.find((ex) => ex.date === dateString);
 
     if (exception) {
-      // Legacy support: some data might use 'available' instead of 'enabled' (though types say enabled)
-      // Casting to any to be safe with raw data from DB if types don't match 100% legacy
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const isEnabled = (exception as any).enabled !== undefined ? (exception as any).enabled : (exception as any).available;
+      type AvailabilityExceptionLegacy = AvailabilityException & { available?: boolean };
+      const legacyException = exception as AvailabilityExceptionLegacy;
+      const isEnabled = typeof legacyException.enabled === 'boolean'
+        ? legacyException.enabled
+        : legacyException.available ?? true;
 
       if (!isEnabled) {
         return { enabled: false, intervals: [] };

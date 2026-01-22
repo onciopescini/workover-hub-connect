@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
+import type { FavoriteSpaceJoin } from "@/types/supabase-joins";
 
 export interface FavoriteSpace {
   id: string;
@@ -9,7 +10,7 @@ export interface FavoriteSpace {
   created_at: string;
   space: {
     id: string;
-    title: string; // Mapped from 'name' in workspaces table
+    title: string; // Mapped from spaces.title for UI compatibility
     description: string;
     address: string;
     price_per_day: number;
@@ -17,7 +18,7 @@ export interface FavoriteSpace {
     category: string;
     work_environment: string;
     host_id: string;
-  };
+  } | null;
 }
 
 export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]> => {
@@ -28,7 +29,7 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
         *,
         space:spaces (
           id,
-          name,
+          title,
           description,
           address,
           price_per_day,
@@ -38,7 +39,8 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
           host_id
         )
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .overrideTypes<FavoriteSpaceJoin[]>();
 
     if (error) {
       sreLogger.error('Error fetching favorite spaces', { 
@@ -48,15 +50,14 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       throw error;
     }
 
-    // Map 'name' to 'title' for backwards compatibility
     return (data || []).map(item => ({
       ...item,
       created_at: item.created_at ?? '',
       space: item.space ? {
-        ...(item.space as any),
-        title: (item.space as any).name || ''
+        ...item.space,
+        title: item.space.title || ''
       } : null
-    })) as FavoriteSpace[];
+    }));
   } catch (error) {
     sreLogger.error('Error in getFavoriteSpaces', { 
       context: 'getFavoriteSpaces',

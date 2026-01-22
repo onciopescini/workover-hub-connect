@@ -14,6 +14,16 @@ const useEnhancedHostDashboard = () => {
   const { data, isLoading: metricsLoading, error: metricsError } = useHostDashboardMetrics();
   const { data: recentActivityFeed, isLoading: activityLoading, error: activityError } = useHostRecentActivity();
   const { authState } = useAuth();
+  type HostDashboardSummary = {
+    current_month_revenue?: number | null;
+    pending_bookings?: number | null;
+  };
+  type HostDailyMetric = {
+    booking_date: string;
+    total_bookings?: number | null;
+    confirmed_bookings?: number | null;
+    daily_revenue?: number | null;
+  };
 
   // Fetch space count for occupancy rate
   const { data: spaceCountData } = useQuery({
@@ -36,8 +46,8 @@ const useEnhancedHostDashboard = () => {
 
   if (data) {
     // Cast strict types from the new hook
-    const summary = data.summary as any;
-    const dailyMetrics = data.recentActivity as any[];
+    const summary = data.summary as HostDashboardSummary | null;
+    const dailyMetrics = (data.recentActivity as HostDailyMetric[] | null) ?? [];
 
     // Calculate derived metrics (Logic restored from original hook)
     const totalRevenue = dailyMetrics.reduce((sum, day) => sum + (day.daily_revenue || 0), 0);

@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { RevenueData } from "../types/host-revenue-types";
 import { sreLogger } from '@/lib/sre-logger';
+import type { PaymentWithBookingSpaceJoin } from "@/types/supabase-joins";
 
 export const getHostRevenueData = async (
   hostId: string,
@@ -44,7 +45,8 @@ export const getHostRevenueData = async (
     .eq('payment_status', 'completed')
     .gte('created_at', yearStart)
     .lte('created_at', yearEnd)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .overrideTypes<PaymentWithBookingSpaceJoin[]>();
 
   if (paymentsError) {
     sreLogger.error('Error fetching payments', { error: paymentsError, hostId, year, month });
@@ -52,7 +54,8 @@ export const getHostRevenueData = async (
   }
 
   // Filter by month if specified
-  let filteredPayments = payments || [];
+  const allPayments = payments || [];
+  let filteredPayments = allPayments;
   if (month !== "all") {
     filteredPayments = filteredPayments.filter(payment => {
       const paymentMonth = new Date(payment.created_at || new Date()).getMonth() + 1;
@@ -70,13 +73,13 @@ export const getHostRevenueData = async (
     amount: payment.host_amount || 0,
     date: payment.created_at || '',
     booking_id: payment.booking_id,
-    space_title: (payment.bookings?.spaces as any)?.title || (payment.bookings?.spaces as any)?.name || 'N/A'
+    space_title: payment.bookings?.spaces?.title || 'N/A'
   }));
 
   // Calculate monthly revenue for the year
   const monthlyRevenue = [];
   for (let m = 1; m <= 12; m++) {
-    const monthPayments = (payments || []).filter(payment => {
+    const monthPayments = allPayments.filter(payment => {
       const paymentMonth = new Date(payment.created_at || new Date()).getMonth() + 1;
       return paymentMonth === m;
     });

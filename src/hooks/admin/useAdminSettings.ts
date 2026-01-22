@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 type SettingCategory = "general" | "payment" | "booking" | "moderation" | "gdpr" | "integration";
 
 export const useAdminSettings = (category?: SettingCategory) => {
   const queryClient = useQueryClient();
+  type SystemSettingRow = Database["public"]["Tables"]["system_settings"]["Row"];
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["admin-settings", category],
@@ -20,17 +22,17 @@ export const useAdminSettings = (category?: SettingCategory) => {
       if (error) throw error;
       
       // Convert array to object for easier access
-      return data?.reduce((acc: Record<string, any>, setting: any) => {
-        const jsonValue = setting.value as any;
+      return (data || []).reduce((acc: Record<string, unknown>, setting: SystemSettingRow) => {
+        const jsonValue = setting.value;
         // Parse JSON values if they're strings
         acc[setting.key] = typeof jsonValue === "string" ? JSON.parse(jsonValue) : jsonValue;
         return acc;
-      }, {} as Record<string, any>);
+      }, {});
     },
   });
 
   const updateSettingMutation = useMutation({
-    mutationFn: async ({ settingKey, value }: { settingKey: string; value: any }) => {
+    mutationFn: async ({ settingKey, value }: { settingKey: string; value: unknown }) => {
       // First get the existing setting to check if we need category
       const { data: existing } = await supabase
         .from("system_settings")
@@ -53,7 +55,7 @@ export const useAdminSettings = (category?: SettingCategory) => {
     },
   });
 
-  const updateSetting = async (settingKey: string, value: any) => {
+  const updateSetting = async (settingKey: string, value: unknown) => {
     return updateSettingMutation.mutateAsync({ settingKey, value });
   };
 

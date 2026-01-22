@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import { BookingFilter } from "./useBookingFilters";
+import type { BookingWithSpacePaymentsJoin, BookingWithSpacePaymentsAndCoworkerJoin } from "@/types/supabase-joins";
 
 export const fetchCoworkerBookings = async (userId: string, filters?: BookingFilter) => {
   logger.debug('Fetching coworker bookings', {
@@ -47,7 +48,9 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
         .lte('booking_date', filters.dateRange.end);
     }
 
-    const { data: bookings, error: queryError } = await query.order('created_at', { ascending: false });
+    const { data: bookings, error: queryError } = await query
+      .order('created_at', { ascending: false })
+      .overrideTypes<BookingWithSpacePaymentsJoin[]>();
 
     if (queryError) {
       logger.error('Error fetching coworker bookings from database', {
@@ -70,7 +73,7 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
     });
     
     // Explicitly cast or validate if needed, but the structure now matches BookingWithDetails (mostly)
-    return bookings as any[];
+    return bookings || [];
 
   } catch (fetchError) {
     logger.error('Exception in fetchCoworkerBookings', {
@@ -139,7 +142,9 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
         .lte('booking_date', filters.dateRange.end);
     }
 
-    const { data: bookings, error: bookingsError } = await query.order('created_at', { ascending: false });
+    const { data: bookings, error: bookingsError } = await query
+      .order('created_at', { ascending: false })
+      .overrideTypes<BookingWithSpacePaymentsAndCoworkerJoin[]>();
 
     if (bookingsError) {
       logger.error('Error fetching host bookings from database', {
@@ -163,7 +168,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
       role: userRole
     });
     
-    return bookings as any[];
+    return bookings || [];
 
   } catch (fetchError) {
     logger.error('Exception in fetchHostBookings', {

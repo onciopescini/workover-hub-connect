@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminUserWithRoles } from '@/types/admin-user';
 import { sreLogger } from '@/lib/sre-logger';
+import type { Database } from "@/integrations/supabase/types";
 
 export interface UseAdminUsersProps {
   page?: number;
@@ -22,6 +23,7 @@ export const useAdminUsers = ({
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const { authState } = useAuth();
+  type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 
   const fetchUsers = async () => {
     try {
@@ -79,7 +81,7 @@ export const useAdminUsers = ({
         // Fetch roles ONLY for these users
         const userIds = profilesData.map(p => p.id);
         const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles' as any)
+          .from('user_roles')
           .select('*')
           .in('user_id', userIds);
 
@@ -88,15 +90,16 @@ export const useAdminUsers = ({
         }
 
         // Merge profiles con system_roles
-        const usersWithRoles = profilesData.map(profile => {
+        const usersWithRoles: AdminUserWithRoles[] = profilesData.map(profile => {
           // Defensive coding: Ensure rolesData is treated as an array and userRoles is always an array
-          const userRoles = (Array.isArray(rolesData) ? rolesData : [])
-            .filter((r: any) => r.user_id === profile.id)
-            .map((r: any) => ({
-              ...r,
-              role: r.role as 'admin' | 'moderator'
+          const roles = Array.isArray(rolesData) ? rolesData : [];
+          const userRoles = roles
+            .filter((role): role is UserRoleRow => role.user_id === profile.id)
+            .map((role) => ({
+              ...role,
+              role: role.role as 'admin' | 'moderator'
             }))
-            .filter((r: any) => ['admin', 'moderator'].includes(r.role));
+            .filter((role) => role.role === 'admin' || role.role === 'moderator');
 
           const primaryRole = userRoles.length > 0 ? 'admin' : 'coworker';
           
@@ -108,7 +111,7 @@ export const useAdminUsers = ({
             industries: profile.industries ? (Array.isArray(profile.industries) ? profile.industries : JSON.parse(profile.industries as unknown as string)) : [],
             system_roles: userRoles
           };
-        }) as AdminUserWithRoles[];
+        });
         
         setUsers(usersWithRoles);
       } else {

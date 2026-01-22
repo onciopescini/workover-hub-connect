@@ -45,3 +45,13 @@ export interface Conversation {
 }
 
 export type ConversationItem = Conversation;
+
+export interface ConversationSummary {
+  id: string;
+  host_id: string;
+  coworker_id: string;
+  booking_id?: string | null;
+  space_id?: string | null;
+  last_message?: string | null;
+  last_message_at?: string | null;
+}
