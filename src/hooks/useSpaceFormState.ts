@@ -10,6 +10,10 @@ import { WorkspaceInsert } from '@/types/workspace';
 import { startImageOptimization } from '@/lib/image-optimization';
 import { useLogger } from '@/hooks/useLogger';
 import { sreLogger } from '@/lib/sre-logger';
+import type { Database } from '@/integrations/supabase/types';
+
+type SpaceRow = Database['public']['Tables']['spaces']['Row'];
+type SpaceFormInitialData = Space | WorkspaceInsert | SpaceRow;
 
 interface UseSpaceFormStateProps {
   initialData?: Space | WorkspaceInsert | undefined;
@@ -101,15 +105,20 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
   // Initialization Logic
   useEffect(() => {
     if (initialData) {
-      const dbData = initialData as any;
+      const dbData: SpaceFormInitialData = initialData;
+      const dbDataAvailability = 'availability' in dbData ? dbData.availability : null;
+      const dbDataTitle = 'title' in dbData ? dbData.title : undefined;
+      const dbDataName = 'name' in dbData ? dbData.name : undefined;
+      const dbDataFeatures = 'workspace_features' in dbData ? dbData.workspace_features : ('features' in dbData ? dbData.features : undefined);
+      const dbDataPhotos = 'photos' in dbData ? dbData.photos : undefined;
 
       // Parse availability
       let parsedAvailability = defaultAvailability;
-      if (dbData.availability) {
+      if (dbDataAvailability) {
         try {
-          const availabilityJson = typeof dbData.availability === 'string'
-            ? JSON.parse(dbData.availability)
-            : dbData.availability;
+          const availabilityJson = typeof dbDataAvailability === 'string'
+            ? JSON.parse(dbDataAvailability)
+            : dbDataAvailability;
 
           if (availabilityJson && typeof availabilityJson === 'object' && availabilityJson.recurring) {
             parsedAvailability = availabilityJson;
@@ -117,18 +126,18 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         } catch (parseError) {
           error("Error parsing availability", parseError as Error, {
             spaceId: initialData.id,
-            availabilityData: dbData.availability
+            availabilityData: dbDataAvailability
           });
         }
       }
 
       // Reset form
       form.reset({
-        title: dbData.title || dbData.name || "",
+        title: dbDataTitle || dbDataName || "",
         description: dbData.description || "",
         category: dbData.category || "home",
         max_capacity: dbData.max_capacity || 1,
-        workspace_features: dbData.workspace_features || dbData.features || [],
+        workspace_features: dbDataFeatures || [],
         work_environment: dbData.work_environment || "silent",
         amenities: dbData.amenities || [],
         seating_types: dbData.seating_types || [],
@@ -137,7 +146,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         address: dbData.address || "",
         latitude: dbData.latitude || 0,
         longitude: dbData.longitude || 0,
-        photos: dbData.photos || dbData.images || [],
+        photos: dbDataPhotos || [],
         rules: dbData.rules || "",
         ideal_guest_tags: dbData.ideal_guest_tags || [],
         event_friendly_tags: dbData.event_friendly_tags || [],
@@ -148,9 +157,9 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
       });
 
       // Handle Photos
-      const existingPhotos = dbData.photos || dbData.images;
+      const existingPhotos = dbDataPhotos;
       if (existingPhotos && Array.isArray(existingPhotos) && existingPhotos.length > 0) {
-        const validPhotos = existingPhotos.filter((url: any) =>
+        const validPhotos = existingPhotos.filter((url) =>
           typeof url === 'string' && !url.startsWith('blob:')
         );
         setPhotoPreviewUrls(validPhotos);
