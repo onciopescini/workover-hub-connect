@@ -13,6 +13,11 @@ import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '@/lib/conversations';
 import { toast } from 'sonner';
 import { calculateRefund } from '@/lib/policy-calculator';
+import type { Database } from '@/integrations/supabase/types';
+
+type SpaceRow = Database['public']['Tables']['spaces']['Row'];
+type BookingSpaceDetails = BookingWithDetails['space'] &
+  Partial<Pick<SpaceRow, 'price_per_hour' | 'cancellation_policy'>>;
 
 export const useBookingsDashboardState = () => {
   const { hasAnyRole } = useRoleAccess();
@@ -99,12 +104,14 @@ export const useBookingsDashboardState = () => {
                    const start = new Date(`${b.booking_date}T${b.start_time}`);
                    const end = new Date(`${b.booking_date}T${b.end_time}`);
                    const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-                   const pricePerHour = (b.space as any).price_per_hour || 0;
+                   const spaceDetails = b.space as BookingSpaceDetails | null | undefined;
+                   const pricePerHour = spaceDetails?.price_per_hour || 0;
                    originalPrice = pricePerHour * durationHours;
                 }
 
                 // Determine policy
-                const policy = b.cancellation_policy || (b.space as any).cancellation_policy || 'moderate';
+                const spaceDetails = b.space as BookingSpaceDetails | null | undefined;
+                const policy = b.cancellation_policy || spaceDetails?.cancellation_policy || 'moderate';
                 const bookingStart = new Date(`${b.booking_date}T${b.start_time}`);
                 // Use cancellation time if available, otherwise assume late cancellation (now) or use booking start
                 const cancelTime = b.cancelled_at ? new Date(b.cancelled_at) : new Date();
