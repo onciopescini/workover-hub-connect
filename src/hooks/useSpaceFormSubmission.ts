@@ -128,7 +128,7 @@ export const useSpaceFormSubmission = ({
       if (isEdit && initialDataId) {
         // Refactor: Insert/update into 'workspaces' table
         const { error } = await (supabase
-          .from("workspaces" as any) as any)
+          .from("spaces") as any)
           .update(workspaceData)
           .eq("id", initialDataId);
           
@@ -146,7 +146,7 @@ export const useSpaceFormSubmission = ({
       } else {
         // Refactor: Insert/update into 'workspaces' table
         const { error } = await (supabase
-          .from("workspaces" as any) as any)
+          .from("spaces") as any)
           .insert(workspaceData)
           .select("id")
           .single();

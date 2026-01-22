@@ -42,7 +42,7 @@ export const WhosHereList = () => {
               profile_photo_url,
               profession
             ),
-            workspaces:workspace_id (
+            spaces:space_id (
               name,
               city
             )
@@ -57,7 +57,7 @@ export const WhosHereList = () => {
           // Force type assertion for Phase 4 fix
           const typedData: CheckIn[] = (data as unknown as any[]).map(item => ({
             user_id: item.user_id,
-            workspace_id: item.workspace_id,
+            workspace_id: item.workspace_id || item.space_id,
             checkin_time: item.checkin_time,
             profiles: {
               first_name: item.profiles?.first_name || '',
@@ -66,8 +66,8 @@ export const WhosHereList = () => {
               profession: item.profiles?.profession || null
             },
             workspaces: {
-              name: item.workspaces?.name || 'Workspace',
-              city: item.workspaces?.city || null
+              name: item.spaces?.name || item.workspaces?.name || 'Workspace',
+              city: item.spaces?.city || item.workspaces?.city || null
             }
           }));
           setCheckIns(typedData);

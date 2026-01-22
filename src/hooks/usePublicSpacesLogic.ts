@@ -508,7 +508,7 @@ export const usePublicSpacesLogic = () => {
       info('Using standard query with client-side filtering (direct to workspaces)');
       
       const { data: spacesData, error: spacesError } = await supabase
-        .from('workspaces' as any) // Explicit cast as generic
+        .from('spaces') // Explicit cast as generic
         .select(WORKSPACES_SELECT)
         .eq('published', true);
       

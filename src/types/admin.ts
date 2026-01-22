@@ -36,3 +36,30 @@ export interface AdminBooking {
   host_name: string;
   host_email: string;
 }
+
+export interface AdminActionLog {
+  id: string;
+  admin_id: string;
+  action: string;
+  target_id?: string;
+  details?: any;
+  created_at: string;
+  admin_email?: string;
+}
+
+export interface AdminStats {
+  total_users: number;
+  total_hosts: number;
+  total_bookings: number;
+  total_revenue: number;
+  active_listings: number;
+}
+
+export interface AdminProfile {
+  id: string;
+  email: string;
+  role: 'super_admin' | 'admin' | 'moderator';
+  permissions: string[];
+  created_at: string;
+  last_login?: string;
+}

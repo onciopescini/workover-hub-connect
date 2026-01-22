@@ -381,11 +381,11 @@ export const reserveMultipleSlots = async (
 export const getSpacesWithConnectedHosts = async () => {
   try {
     const { data, error } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select(`
         *,
         title:name,
-        profiles!workspaces_owner_id_fkey (
+        profiles!spaces_owner_id_fkey (
           stripe_connected,
           first_name,
           last_name

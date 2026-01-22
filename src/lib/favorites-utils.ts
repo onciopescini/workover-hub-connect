@@ -26,7 +26,7 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       .from('favorites')
       .select(`
         *,
-        space:workspaces (
+        space:spaces (
           id,
           name,
           description,

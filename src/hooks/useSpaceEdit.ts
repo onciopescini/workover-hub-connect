@@ -36,7 +36,7 @@ export const useSpaceEdit = (id: string | undefined) => {
         // Fetch from 'workspaces' table (new schema)
         // using explicit casting to bypass type check for now
         const { data, error } = await (supabase
-          .from('workspaces' as any) as any)
+          .from('spaces') as any)
           .select('*')
           .eq('id', id)
           .eq('host_id', authState.user.id) // Security check
@@ -107,7 +107,7 @@ export const useSpaceEdit = (id: string | undefined) => {
 
       // Delete from workspaces table
       const { error } = await (supabase
-        .from('workspaces' as any) as any)
+        .from('spaces') as any)
         .delete()
         .eq('id', id);
 

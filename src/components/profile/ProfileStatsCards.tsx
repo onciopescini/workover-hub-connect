@@ -44,10 +44,10 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
               id, 
               status, 
               created_at,
-              workspaces!inner(host_id),
+              spaces!inner(host_id),
               payments(host_amount, payment_status)
             `)
-            .eq('workspaces.host_id', profile.id);
+            .eq('spaces.host_id', profile.id);
 
           if (hostError) {
             sreLogger.error('Error fetching host stats', {

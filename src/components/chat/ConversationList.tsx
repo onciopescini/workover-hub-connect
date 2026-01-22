@@ -65,7 +65,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({ conversation
                 )}
               </div>
               <p className={cn("text-xs truncate", isActive ? "text-foreground" : "text-muted-foreground")}>
-                {convo.last_message}
+                {convo.last_message?.content || ''}
               </p>
             </div>
           </div>

@@ -28,13 +28,13 @@ export const useWhoIsHere = () => {
         const today = format(new Date(), 'yyyy-MM-dd');
 
         // 1. Find my active check-in
-        // We cast the response because workspaces is a joined relation
+        // We cast the response because spaces is a joined relation
         const { data: bookings, error: bookingError } = await supabase
           .from('bookings')
           .select(`
             id,
             space_id,
-            workspaces (
+            spaces (
               id,
               name
             )
@@ -59,7 +59,7 @@ export const useWhoIsHere = () => {
 
         // Set current space info
         // Using any cast to handle the joined relation access safely
-        const spaceData = (bookings as any).workspaces;
+        const spaceData = (bookings as any).spaces || (bookings as any).workspaces;
         if (spaceData) {
             setCurrentSpace({
                 id: spaceData.id,

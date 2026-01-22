@@ -6,7 +6,7 @@ export const getHostSpaces = async (hostId: string) => {
   
   try {
     const { data, error } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select('*, title:name') // Alias name to title for backward compatibility within this function if needed, but best to use updated types
       .eq('host_id', hostId)
       .order('created_at', { ascending: false });
@@ -42,7 +42,7 @@ export const getHostBookings = async (hostId: string) => {
   try {
     // First get host's spaces
     const { data: spaces, error: spacesError } = await supabase
-      .from('workspaces')
+      .from('spaces')
       .select('id')
       .eq('host_id', hostId);
 
@@ -63,7 +63,7 @@ export const getHostBookings = async (hostId: string) => {
       .from('bookings')
       .select(`
         *,
-        space:workspaces!inner (
+        space:spaces!inner (
           id,
           title:name,
           address,

@@ -3,7 +3,7 @@ import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostSpaces = async (hostId: string) => {
   const { data, error } = await supabase
-    .from('workspaces')
+    .from('spaces')
     .select('id, title:name, address, max_capacity')
     .eq('host_id', hostId)
     .eq('published', true)

@@ -59,7 +59,7 @@ export default function ChatThread() {
             *,
             host:profiles!conversations_host_id_fkey(id, first_name, last_name, profile_photo_url),
             coworker:profiles!conversations_coworker_id_fkey(id, first_name, last_name, profile_photo_url),
-            space:workspaces(id, name),
+            space:spaces(id, name),
             booking:bookings(id, booking_date)
           `)
           .eq('id', conversationId)

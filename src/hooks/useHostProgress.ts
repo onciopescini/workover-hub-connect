@@ -38,7 +38,7 @@ export const useHostProgress = (options?: {
 
       // Get spaces data
       const { data: spaces } = await supabase
-        .from('workspaces')
+        .from('spaces')
         .select('id, published, photos')
         .eq('host_id', userId);
 

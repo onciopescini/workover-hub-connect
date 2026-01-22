@@ -92,7 +92,7 @@ export const useHostPayments = () => {
       // Fetch spaces separately
       const spaceIds = [...new Set(data?.map(p => p.bookings?.space_id).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
-        .from('workspaces')
+        .from('spaces')
         .select('id, title:name, host_id')
         .in('id', spaceIds)
         .eq('host_id', userId);

@@ -304,7 +304,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
 
       if (isEdit && initialData?.id) {
         const { error } = await (supabase
-          .from("workspaces" as any) as any)
+          .from("spaces") as any)
           .update(spaceData)
           .eq("id", initialData.id);
 
@@ -312,7 +312,7 @@ export const useSpaceFormState = ({ initialData, isEdit = false, stripeOnboardin
         toast.success("Space updated successfully!");
       } else {
         const { error } = await (supabase
-          .from("workspaces" as any) as any)
+          .from("spaces") as any)
           .insert(spaceData);
 
         if (error) throw error;

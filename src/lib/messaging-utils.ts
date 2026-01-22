@@ -38,14 +38,14 @@ export async function sendMessage(bookingId: string, content: string): Promise<v
   let recipientId: string | null = null;
   const { data: booking } = await supabase
     .from('bookings')
-    .select('user_id, workspaces(host_id)')
+    .select('user_id, spaces(host_id)')
     .eq('id', bookingId)
     .single();
 
   if (booking) {
     // If current user is the booking creator (coworker), recipient is host
     // If current user is the host, recipient is the booking creator
-    const hostId = (booking.workspaces as any)?.host_id;
+    const hostId = (booking.spaces as any)?.host_id || (booking as any).workspaces?.host_id;
     if (user.id === booking.user_id) {
        recipientId = hostId;
     } else if (user.id === hostId) {

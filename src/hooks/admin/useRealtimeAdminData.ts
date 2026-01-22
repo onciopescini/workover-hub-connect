@@ -18,7 +18,7 @@ export const useRealtimeAdminData = () => {
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from('workspaces')
+          .from('spaces')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(50);

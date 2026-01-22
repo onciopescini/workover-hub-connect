@@ -23,12 +23,12 @@ export const getAdminStats = async (): Promise<AdminStats> => {
 
     // Get space counts
     const { count: totalSpaces } = await supabase
-      .from("workspaces")
+      .from("spaces")
       .select("id", { count: "exact", head: true });
 
     // Get pending spaces count
     const { count: pendingSpaces } = await supabase
-      .from("workspaces")
+      .from("spaces")
       .select("id", { count: "exact", head: true })
       .eq("pending_approval", true);
 
