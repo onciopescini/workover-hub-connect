@@ -20,8 +20,6 @@ const filesToUpdate = [
   'src/components/layout/AdminLayout.tsx',
   'src/components/layout/AppLayout.tsx',
   'src/components/layout/OptimizedUnifiedHeader.tsx',
-  'src/components/messaging/MessageList.tsx',
-  'src/components/messaging/PrivateMessageList.tsx',
   'src/components/networking/ConnectionCard.tsx',
   'src/components/networking/ConnectionRequestCard.tsx',
   'src/components/networking/EnhancedConnectionCard.tsx',
