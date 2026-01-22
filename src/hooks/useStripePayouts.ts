@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { queryKeys } from '@/lib/react-query-config';
 
 export interface StripePayoutData {
   available_balance: number;
@@ -16,9 +17,9 @@ export interface StripePayoutData {
   } | null;
 }
 
-export const useStripePayouts = (hostId: string) => {
-  return useQuery<StripePayoutData>({
-    queryKey: ['stripe-payouts', hostId],
+export const useStripePayouts = (hostId: string): UseQueryResult<StripePayoutData, Error> => {
+  return useQuery<StripePayoutData, Error>({
+    queryKey: queryKeys.stripePayouts.detail(hostId),
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('get-stripe-payouts', {
         body: { host_id: hostId }
