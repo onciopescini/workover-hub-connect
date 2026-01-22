@@ -107,7 +107,7 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
         address: space.address,
         photos: space.photos || [],
         image_url: space.photos?.[0] || '',
-        type: 'workspace',
+        type: 'space',
         host_id: space.host_id,
         price_per_day: space.price_per_day
       } : {
@@ -116,7 +116,7 @@ const fetchHostBookings = async (hostId: string): Promise<BookingWithDetails[]> 
         address: '',
         photos: [],
         image_url: '',
-        type: 'workspace',
+        type: 'space',
         host_id: hostId,
         price_per_day: 0
       },
