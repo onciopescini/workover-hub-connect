@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { sreLogger } from '@/lib/sre-logger';
+import { createBookingDateTime } from '@/lib/date-time';
 
 /**
  * Get available capacity for a specific time slot
@@ -41,6 +42,10 @@ export async function getAvailableCapacity(
     
     const maxCapacity = space.max_capacity ?? 1;
 
+    // Construct full ISO dates for comparison with timestamptz columns
+    const startDateTimeIso = createBookingDateTime(date, startTime).toISOString();
+    const endDateTimeIso = createBookingDateTime(date, endTime).toISOString();
+
     // Get total guests booked for overlapping time slots
     // A booking overlaps if:
     // 1. It starts before our endTime AND ends after our startTime
@@ -50,8 +55,8 @@ export async function getAvailableCapacity(
       .eq('space_id', spaceId)
       .eq('booking_date', date)
       .in('status', ['pending', 'confirmed'])
-      .lt('start_time', endTime)
-      .gt('end_time', startTime);
+      .lt('start_time', endDateTimeIso)
+      .gt('end_time', startDateTimeIso);
 
     if (bookingsError) {
       sreLogger.error('Error fetching bookings', { 
