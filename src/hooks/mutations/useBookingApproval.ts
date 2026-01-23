@@ -36,7 +36,7 @@ export const useRejectBooking = () => {
   return useMutation({
     mutationFn: async ({ bookingId, reason }: { bookingId: string; reason: string }) => {
       // Use Edge Function to handle Stripe Release + DB Update Atomically
-      const { data, error } = await supabase.functions.invoke('cancel-booking', {
+      const { data, error } = await supabase.functions.invoke('host-reject-booking', {
         body: {
           booking_id: bookingId,
           reason: reason || "Rifiutata dall'host"
