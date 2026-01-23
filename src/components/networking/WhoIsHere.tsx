@@ -3,12 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Briefcase, UserPlus } from "lucide-react";
-import { useWhoIsHere } from "@/hooks/useWhoIsHere";
+import { MapPin, Briefcase, UserPlus, Shield } from "lucide-react";
+import { useWhoIsHere, WhoIsHereUser } from "@/hooks/useWhoIsHere";
 import { useNavigate } from "react-router-dom";
 
-export const WhoIsHere = () => {
-  const { users, isLoading, currentSpace } = useWhoIsHere();
+export interface WhoIsHereState {
+  users: WhoIsHereUser[];
+  isLoading: boolean;
+  currentSpace: { id: string; name: string } | null;
+  isNetworkingEnabled: boolean;
+}
+
+interface WhoIsHereProps {
+  overrideState?: WhoIsHereState;
+}
+
+export const WhoIsHere = ({ overrideState }: WhoIsHereProps = {}) => {
+  const hookState = useWhoIsHere();
+  const { users, isLoading, currentSpace, isNetworkingEnabled } = overrideState || hookState;
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -19,6 +31,31 @@ export const WhoIsHere = () => {
         </CardHeader>
         <CardContent>
           <div className="h-20 bg-gray-100 rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isNetworkingEnabled) {
+    return (
+      <Card className="mb-6 bg-gray-50 border-gray-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2 text-gray-700">
+            <Shield className="h-5 w-5" />
+            Networking Disabilitato
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 mb-4">
+            Il networking è disabilitato. Abilitalo nelle impostazioni per vedere chi altro sta lavorando qui e per connetterti.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/settings')}
+          >
+            Gestisci Preferenze
+          </Button>
         </CardContent>
       </Card>
     );
