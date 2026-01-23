@@ -87,12 +87,12 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
           updated_at,
           last_message,
           last_message_at,
-          participant_status:conversation_participants!conversation_participants_conversation_id_fkey!inner (
+          participant_status:conversation_participants!inner (
             user_id,
             archived_at,
             last_read_at
           ),
-          conversation_participants:conversation_participants!conversation_participants_conversation_id_fkey (
+          conversation_participants:conversation_participants (
             user_id,
             archived_at,
             last_read_at,
