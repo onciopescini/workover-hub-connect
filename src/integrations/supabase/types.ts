@@ -275,6 +275,24 @@ export type Database = {
         }
         Relationships: []
       }
+      admins: {
+        Row: {
+          created_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_documents: {
         Row: {
           chunk_text: string
@@ -304,6 +322,13 @@ export type Database = {
           source?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_documents_owner_id_fkey"
             columns: ["owner_id"]
@@ -399,6 +424,13 @@ export type Database = {
             foreignKeyName: "ai_threads_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -466,6 +498,13 @@ export type Database = {
             foreignKeyName: "application_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -527,6 +566,13 @@ export type Database = {
             foreignKeyName: "assistant_configs_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -576,14 +622,14 @@ export type Database = {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -618,14 +664,14 @@ export type Database = {
             foreignKeyName: "availability_cache_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "availability_cache_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -669,6 +715,13 @@ export type Database = {
             foreignKeyName: "booking_reviews_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -690,7 +743,21 @@ export type Database = {
             foreignKeyName: "booking_reviews_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -848,14 +915,21 @@ export type Database = {
             foreignKeyName: "bookings_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "bookings_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -914,14 +988,14 @@ export type Database = {
             foreignKeyName: "check_ins_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "check_ins_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -953,14 +1027,14 @@ export type Database = {
             foreignKeyName: "checklists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "checklists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -998,6 +1072,13 @@ export type Database = {
             foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
             columns: ["suggested_user_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1013,6 +1094,13 @@ export type Database = {
             columns: ["suggested_user_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1071,6 +1159,13 @@ export type Database = {
             foreignKeyName: "connections_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1092,6 +1187,13 @@ export type Database = {
             foreignKeyName: "connections_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1105,6 +1207,63 @@ export type Database = {
           {
             foreignKeyName: "connections_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_participants: {
+        Row: {
+          conversation_id: string
+          joined_at: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          joined_at?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          joined_at?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_profile_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
@@ -1150,6 +1309,13 @@ export type Database = {
             foreignKeyName: "conversations_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -1157,6 +1323,13 @@ export type Database = {
             foreignKeyName: "conversations_coworker_id_fkey"
             columns: ["coworker_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1172,6 +1345,13 @@ export type Database = {
             columns: ["coworker_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1199,14 +1379,14 @@ export type Database = {
             foreignKeyName: "conversations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "conversations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1372,6 +1552,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "dac7_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dac7_reports_generated_by_fkey"
             columns: ["generated_by"]
@@ -1644,7 +1831,21 @@ export type Database = {
             foreignKeyName: "disputes_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1709,6 +1910,13 @@ export type Database = {
             foreignKeyName: "email_templates_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1750,6 +1958,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_participants_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1823,14 +2038,21 @@ export type Database = {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_events_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1910,14 +2132,14 @@ export type Database = {
             foreignKeyName: "favorites_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "favorites_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2051,6 +2273,13 @@ export type Database = {
             foreignKeyName: "host_report_subscriptions_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: true
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_report_subscriptions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2124,14 +2353,14 @@ export type Database = {
             foreignKeyName: "image_processing_jobs_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "image_processing_jobs_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2230,6 +2459,13 @@ export type Database = {
             foreignKeyName: "invoices_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -2238,6 +2474,13 @@ export type Database = {
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -2389,6 +2632,13 @@ export type Database = {
             foreignKeyName: "message_templates_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2417,7 +2667,6 @@ export type Database = {
           created_at: string | null
           id: string
           is_read: boolean | null
-          read: boolean | null
           sender_id: string
         }
         Insert: {
@@ -2428,7 +2677,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          read?: boolean | null
           sender_id: string
         }
         Update: {
@@ -2439,10 +2687,16 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
-          read?: boolean | null
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_messages_sender_id"
             columns: ["sender_id"]
@@ -2462,6 +2716,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
             referencedColumns: ["id"]
           },
           {
@@ -2534,7 +2795,21 @@ export type Database = {
             foreignKeyName: "non_fiscal_receipts_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -2556,6 +2831,13 @@ export type Database = {
             columns: ["coworker_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -2617,6 +2899,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_preferences_user_id_fkey"
             columns: ["user_id"]
@@ -2685,6 +2974,9 @@ export type Database = {
           method: string | null
           payment_session_id: string | null
           payment_status: string
+          payment_status_enum:
+            | Database["public"]["Enums"]["payment_status"]
+            | null
           platform_fee: number | null
           receipt_url: string | null
           status: string | null
@@ -2693,6 +2985,7 @@ export type Database = {
           stripe_payment_intent_id: string | null
           stripe_session_id: string | null
           stripe_transfer_id: string | null
+          updated_at: string
           user_id: string
           workover_invoice_id: string | null
           workover_invoice_pdf_url: string | null
@@ -2715,6 +3008,9 @@ export type Database = {
           method?: string | null
           payment_session_id?: string | null
           payment_status?: string
+          payment_status_enum?:
+            | Database["public"]["Enums"]["payment_status"]
+            | null
           platform_fee?: number | null
           receipt_url?: string | null
           status?: string | null
@@ -2723,6 +3019,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
+          updated_at?: string
           user_id: string
           workover_invoice_id?: string | null
           workover_invoice_pdf_url?: string | null
@@ -2745,6 +3042,9 @@ export type Database = {
           method?: string | null
           payment_session_id?: string | null
           payment_status?: string
+          payment_status_enum?:
+            | Database["public"]["Enums"]["payment_status"]
+            | null
           platform_fee?: number | null
           receipt_url?: string | null
           status?: string | null
@@ -2753,6 +3053,7 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           stripe_session_id?: string | null
           stripe_transfer_id?: string | null
+          updated_at?: string
           user_id?: string
           workover_invoice_id?: string | null
           workover_invoice_pdf_url?: string | null
@@ -2763,7 +3064,106 @@ export type Database = {
             foreignKeyName: "payments_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount_cents: number
+          created_at: string | null
+          currency: string | null
+          host_id: string
+          id: string
+          period_end: string | null
+          period_start: string | null
+          processed_at: string | null
+          status: string | null
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string | null
+          currency?: string | null
+          host_id: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          processed_at?: string | null
+          status?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string | null
+          currency?: string | null
+          host_id?: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          processed_at?: string | null
+          status?: string | null
+          stripe_transfer_id?: string | null
+        }
+        Relationships: []
+      }
+      payouts_items: {
+        Row: {
+          amount_cents: number
+          booking_id: string
+          created_at: string | null
+          payment_id: string
+          payout_id: string
+        }
+        Insert: {
+          amount_cents: number
+          booking_id: string
+          created_at?: string | null
+          payment_id: string
+          payout_id: string
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string
+          created_at?: string | null
+          payment_id?: string
+          payout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_items_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_items_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
             referencedColumns: ["id"]
           },
         ]
@@ -2794,6 +3194,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "performance_metrics_user_id_fkey"
             columns: ["user_id"]
@@ -2844,6 +3251,13 @@ export type Database = {
             foreignKeyName: "private_chats_participant_1_id_fkey"
             columns: ["participant_1_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_1_id_fkey"
+            columns: ["participant_1_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2859,6 +3273,13 @@ export type Database = {
             columns: ["participant_1_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_2_id_fkey"
+            columns: ["participant_2_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -2924,6 +3345,13 @@ export type Database = {
             foreignKeyName: "private_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2973,6 +3401,13 @@ export type Database = {
             foreignKeyName: "profile_views_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2988,6 +3423,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -3070,8 +3512,10 @@ export type Database = {
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
+          status: string
           stripe_account_id: string | null
           stripe_connected: boolean | null
+          stripe_onboarding_complete: boolean | null
           stripe_onboarding_status:
             | Database["public"]["Enums"]["stripe_onboarding_state"]
             | null
@@ -3145,8 +3589,10 @@ export type Database = {
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
+          status?: string
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
+          stripe_onboarding_complete?: boolean | null
           stripe_onboarding_status?:
             | Database["public"]["Enums"]["stripe_onboarding_state"]
             | null
@@ -3220,8 +3666,10 @@ export type Database = {
           sdi_code?: string | null
           skills?: string | null
           space_creation_restricted?: boolean | null
+          status?: string
           stripe_account_id?: string | null
           stripe_connected?: boolean | null
+          stripe_onboarding_complete?: boolean | null
           stripe_onboarding_status?:
             | Database["public"]["Enums"]["stripe_onboarding_state"]
             | null
@@ -3361,6 +3809,13 @@ export type Database = {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3416,6 +3871,13 @@ export type Database = {
             foreignKeyName: "reviews_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
@@ -3423,6 +3885,13 @@ export type Database = {
             foreignKeyName: "reviews_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3438,6 +3907,13 @@ export type Database = {
             columns: ["receiver_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -3465,14 +3941,14 @@ export type Database = {
             foreignKeyName: "reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3506,6 +3982,13 @@ export type Database = {
           setting_key?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "settings_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "settings_audit_log_admin_id_fkey"
             columns: ["admin_id"]
@@ -3559,14 +4042,14 @@ export type Database = {
             foreignKeyName: "space_locations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: true
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "space_locations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: true
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3610,14 +4093,14 @@ export type Database = {
             foreignKeyName: "space_reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "space_reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3646,14 +4129,14 @@ export type Database = {
             foreignKeyName: "space_tags_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "space_tags_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3801,6 +4284,13 @@ export type Database = {
           workspace_features?: string[]
         }
         Relationships: [
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "spaces_host_id_fkey"
             columns: ["host_id"]
@@ -4112,6 +4602,13 @@ export type Database = {
             foreignKeyName: "system_settings_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4200,6 +4697,13 @@ export type Database = {
             foreignKeyName: "tax_details_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4215,6 +4719,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -4278,6 +4789,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_achievements_user_id_fkey"
             columns: ["user_id"]
@@ -4364,6 +4882,13 @@ export type Database = {
             foreignKeyName: "user_notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4406,6 +4931,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_roles_assigned_by_fkey"
             columns: ["assigned_by"]
@@ -4459,6 +4991,13 @@ export type Database = {
             foreignKeyName: "user_session_state_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4505,6 +5044,13 @@ export type Database = {
             foreignKeyName: "fk_waitlists_user_id"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_waitlists_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4533,14 +5079,21 @@ export type Database = {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -4632,19 +5185,19 @@ export type Database = {
             foreignKeyName: "workspace_features_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "spaces_public_safe"
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "workspace_features_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
-            referencedRelation: "workspaces"
+            referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
         ]
       }
-      workspaces: {
+      workspaces_deprecated: {
         Row: {
           address: string | null
           amenities: string[] | null
@@ -4659,11 +5212,13 @@ export type Database = {
           description: string | null
           event_friendly_tags: string[] | null
           features: string[] | null
-          host_id: string | null
+          fts: unknown
+          host_id: string
           id: string
           ideal_guest_tags: string[] | null
           is_suspended: boolean | null
           latitude: number | null
+          location_point: unknown
           longitude: number | null
           max_capacity: number | null
           name: string
@@ -4696,11 +5251,13 @@ export type Database = {
           description?: string | null
           event_friendly_tags?: string[] | null
           features?: string[] | null
-          host_id?: string | null
+          fts?: unknown
+          host_id: string
           id?: string
           ideal_guest_tags?: string[] | null
           is_suspended?: boolean | null
           latitude?: number | null
+          location_point?: unknown
           longitude?: number | null
           max_capacity?: number | null
           name: string
@@ -4733,11 +5290,13 @@ export type Database = {
           description?: string | null
           event_friendly_tags?: string[] | null
           features?: string[] | null
-          host_id?: string | null
+          fts?: unknown
+          host_id?: string
           id?: string
           ideal_guest_tags?: string[] | null
           is_suspended?: boolean | null
           latitude?: number | null
+          location_point?: unknown
           longitude?: number | null
           max_capacity?: number | null
           name?: string
@@ -4757,6 +5316,13 @@ export type Database = {
           work_environment?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["host_id"]
@@ -4782,6 +5348,119 @@ export type Database = {
       }
     }
     Views: {
+      admin_bookings_view: {
+        Row: {
+          booking_date: string | null
+          created_at: string | null
+          end_time: string | null
+          guests_count: number | null
+          id: string | null
+          payment_required: boolean | null
+          payment_session_id: string | null
+          space_id: string | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["booking_status"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          booking_date?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          guests_count?: number | null
+          id?: string | null
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          booking_date?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          guests_count?: number | null
+          id?: string | null
+          payment_required?: boolean | null
+          payment_session_id?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_platform_revenue: {
+        Row: {
+          estimated_revenue: number | null
+          gross_volume: number | null
+          month: string | null
+          net_payout: number | null
+          take_rate: number | null
+          total_payments: number | null
+        }
+        Relationships: []
+      }
+      admin_users_view: {
+        Row: {
+          booking_count: number | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          is_suspended: boolean | null
+          last_name: string | null
+          space_count: number | null
+          status: string | null
+        }
+        Relationships: []
+      }
       compliance_monitoring_metrics: {
         Row: {
           active_admins_7d: number | null
@@ -4837,6 +5516,45 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      host_daily_metrics: {
+        Row: {
+          booking_date: string | null
+          confirmed_bookings: number | null
+          daily_revenue: number | null
+          host_id: string | null
+          total_bookings: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles_public_safe: {
         Row: {
@@ -5193,10 +5911,30 @@ export type Database = {
             }
             Returns: string
           }
+      admin_get_bookings: {
+        Args: never
+        Returns: {
+          booking_id: string
+          check_in_date: string
+          check_out_date: string
+          coworker_email: string
+          coworker_name: string
+          created_at: string
+          host_email: string
+          status: string
+          total_price: number
+          workspace_name: string
+        }[]
+      }
+      admin_toggle_user_status: {
+        Args: { new_status: string; target_user_id: string }
+        Returns: undefined
+      }
       approve_tag: {
         Args: { approver_id: string; tag_id: string }
         Returns: Json
       }
+      assert_profiles_stripe_fields_unchanged: { Args: never; Returns: boolean }
       assign_moderator_role: {
         Args: { assigned_by_admin?: string; target_user_id: string }
         Returns: Json
@@ -5223,6 +5961,15 @@ export type Database = {
         Returns: number
       }
       can_moderate_content: { Args: { user_id: string }; Returns: boolean }
+      can_update_message_columns: {
+        Args: {
+          p_id: string
+          p_new_content: string
+          p_new_is_read: boolean
+          p_uid: string
+        }
+        Returns: boolean
+      }
       cancel_booking: {
         Args: {
           booking_id: string
@@ -5490,24 +6237,31 @@ export type Database = {
         | {
             Args: never
             Returns: {
-              avatar_url: string
-              email: string
+              bio: string
               first_name: string
               id: string
               last_name: string
+              linkedin_url: string
+              nickname: string
+              profession: string
+              profile_photo_url: string
+              role: string
+              skills: string
             }[]
           }
         | {
-            Args: { booking_id?: string; current_user_id?: string }
+            Args: { booking_id: string }
             Returns: {
               avatar_url: string
-              city: string
+              bio: string
               first_name: string
               id: string
-              job_title: string
               last_name: string
+              linkedin_url: string
               nickname: string
+              profession: string
               role: string
+              skills: string[]
             }[]
           }
       get_cron_job_runs: {
@@ -5539,10 +6293,12 @@ export type Database = {
           username: string
         }[]
       }
+      get_email_by_id: { Args: { user_id: string }; Returns: string }
       get_fiscal_stats_optimized: {
         Args: { year_param?: number }
         Returns: Json
       }
+      get_host_dashboard_summary: { Args: { host_uuid: string }; Returns: Json }
       get_host_metrics: { Args: { host_id_param: string }; Returns: Json }
       get_host_transactions_optimized: {
         Args: { host_id_param: string; limit_param?: number }
@@ -5834,6 +6590,7 @@ export type Database = {
       is_admin:
         | { Args: never; Returns: boolean }
         | { Args: { user_id: string }; Returns: boolean }
+      is_admin_new: { Args: { uid: string }; Returns: boolean }
       is_moderator: { Args: { user_id: string }; Returns: boolean }
       lock_and_select_expired_bookings: {
         Args: { p_lock_duration_minutes?: number }
@@ -5968,6 +6725,10 @@ export type Database = {
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
       mark_all_notifications_as_read: { Args: never; Returns: boolean }
+      mark_messages_read: {
+        Args: { p_conversation_id: string }
+        Returns: number
+      }
       mark_notification_as_read: {
         Args: { notification_id: string }
         Returns: boolean
@@ -6151,6 +6912,8 @@ export type Database = {
         Args: { p_notification_type: string; p_user_id: string }
         Returns: boolean
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -6744,6 +7507,8 @@ export type Database = {
         }
         Returns: Json
       }
+      unaccent: { Args: { "": string }; Returns: string }
+      unaccent_text: { Args: { "": string }; Returns: string }
       unlock_bookings: { Args: { booking_ids: string[] }; Returns: undefined }
       unlockrows: { Args: { "": string }; Returns: number }
       update_image_processing_job: {
@@ -6835,6 +7600,13 @@ export type Database = {
       cancellation_policy: "flexible" | "moderate" | "strict"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
+      payment_status:
+        | "pending"
+        | "requires_action"
+        | "succeeded"
+        | "failed"
+        | "refunded"
+        | "canceled"
       setting_category:
         | "general"
         | "payment"
@@ -7000,6 +7772,14 @@ export const Constants = {
         "confirmation",
         "reminder",
         "cancellation_notice",
+      ],
+      payment_status: [
+        "pending",
+        "requires_action",
+        "succeeded",
+        "failed",
+        "refunded",
+        "canceled",
       ],
       setting_category: [
         "general",
