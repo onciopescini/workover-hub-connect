@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Wifi, Coffee, Users, Monitor, Car, Armchair, Zap } from 'lucide-react';
 import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 
+type AmenityIcon = React.ElementType<{ className?: string }>;
+
 interface LandingSpaceCard {
   id: string;
   image: string | null;
@@ -17,11 +19,11 @@ interface LandingSpaceCard {
   location: string;
   price: string;
   features: string[];
-  amenities: React.ComponentType<{ className?: string }>[]; 
+  amenities: AmenityIcon[]; 
 }
 
 // Helper to map feature strings to Lucide icons
-const getFeatureIcon = (feature: string) => {
+const getFeatureIcon = (feature: string): AmenityIcon => {
   const lower = feature.toLowerCase();
   if (lower.includes('wifi') || lower.includes('internet')) return Wifi;
   if (lower.includes('caffè') || lower.includes('coffee') || lower.includes('tea')) return Coffee;

@@ -73,7 +73,7 @@ export const TodayCheckinsCard = () => {
                 </p>
                 <div className="flex items-center text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">
                   <Clock className="w-3 h-3 mr-1" />
-                  {format(new Date(checkin.start_time), 'HH:mm')}
+                  {checkin.start_time ? format(new Date(checkin.start_time), 'HH:mm') : '--:--'}
                 </div>
               </div>
 

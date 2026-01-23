@@ -20,6 +20,16 @@ interface CoworkerFiscalData {
   billing_postal_code: string;
 }
 
+interface InvoiceBooking {
+  id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  cancellation_reason?: string;
+  cancelled_at?: string;
+  stripe_connected?: boolean;
+}
+
 interface InvoiceCardProps {
   payment: PaymentWithBooking;
 }
@@ -27,8 +37,10 @@ interface InvoiceCardProps {
 export function InvoiceCard({ payment }: InvoiceCardProps) {
   const { mutate: confirmIssued, isPending } = useConfirmInvoiceIssued();
   
-  const booking = payment.booking;
-  const bookingRecord = booking && typeof booking === 'object' ? booking : null;
+  const booking = payment.booking as InvoiceBooking | null;
+  const bookingRecord = payment.booking && typeof payment.booking === 'object'
+    ? (payment.booking as Record<string, unknown>)
+    : null;
   const coworker = bookingRecord ? resolveBookingCoworker(bookingRecord) : null;
   const space = bookingRecord ? resolveBookingSpace(bookingRecord) : null;
 

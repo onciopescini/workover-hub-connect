@@ -14,6 +14,7 @@ interface BookingsDashboardContentProps {
   searchTerm: string;
   getUserRole: (booking: BookingWithDetails) => "host" | "coworker";
   isChatEnabled: (booking: BookingWithDetails) => boolean;
+  onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
   cancelDialogOpen: boolean;
   setCancelDialogOpen: (open: boolean) => void;
@@ -36,6 +37,7 @@ export const BookingsDashboardContent = ({
   searchTerm,
   getUserRole,
   isChatEnabled,
+  onOpenMessageDialog,
   onOpenCancelDialog,
   cancelDialogOpen,
   setCancelDialogOpen,
@@ -100,6 +102,7 @@ export const BookingsDashboardContent = ({
             booking={booking}
             userRole={getUserRole(booking)}
             onOpenCancelDialog={onOpenCancelDialog}
+            onOpenMessageDialog={onOpenMessageDialog}
             isChatEnabled={isChatEnabled(booking)}
             onApproveBooking={onApproveBooking}
             onOpenRejectDialog={onOpenRejectDialog}
