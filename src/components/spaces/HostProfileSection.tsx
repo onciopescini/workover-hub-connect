@@ -14,7 +14,6 @@ import {
   Languages,
   Calendar
 } from "lucide-react";
-import { ContactHostButton } from '@/components/chat/ContactHostButton';
 
 interface HostProfileSectionProps {
   host: {
@@ -63,7 +62,6 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
             <Shield className="w-5 h-5" />
             Il Tuo Host
           </CardTitle>
-          <ContactHostButton hostId={host.id} spaceId="" variant="outline" size="sm" />
         </div>
       </CardHeader>
       <CardContent>
