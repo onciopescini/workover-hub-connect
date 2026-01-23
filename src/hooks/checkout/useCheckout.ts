@@ -118,7 +118,7 @@ export function useCheckout(): UseCheckoutResult {
 
       // Handle Insert Error: If the insert returns an error, STOP execution.
       if (insertError) {
-        logError('Insert Error', undefined, { error: insertError }); // Fixed: Pass insertError in metadata or adapt logError to accept PostgrestError if possible, but useLogger signature expects Error object.
+        logError('Insert Error', undefined, { error: insertError });
 
         // Handle Exclusion Constraint Violation (23P01) - Double Booking
         if (insertError.code === '23P01') {
@@ -158,6 +158,7 @@ export function useCheckout(): UseCheckoutResult {
         hostStripeAccountId
       });
 
+      debug('Redirecting to Stripe', { paymentUrl });
       window.location.href = paymentUrl;
       return { success: true, bookingId }; // Browser redirects
 

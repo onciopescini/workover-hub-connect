@@ -24,6 +24,7 @@ export const useWhoIsHere = () => {
   const [users, setUsers] = useState<WhoIsHereUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSpace, setCurrentSpace] = useState<{ id: string; name: string } | null>(null);
+  const [isNetworkingEnabled, setIsNetworkingEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchWhoIsHere = async () => {
@@ -31,10 +32,31 @@ export const useWhoIsHere = () => {
 
       setIsLoading(true);
       try {
+        // 0. Check Privacy Settings first
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('networking_enabled')
+          .eq('id', authState.user.id)
+          .single();
+
+        if (profileError) {
+          sreLogger.error("Error fetching profile settings", { userId: authState.user.id }, profileError);
+        }
+
+        const enabled = profile?.networking_enabled ?? true;
+        setIsNetworkingEnabled(enabled);
+
+        // If networking is disabled, we don't fetch anything else (Reciprocity)
+        if (!enabled) {
+          setUsers([]);
+          setCurrentSpace(null);
+          setIsLoading(false);
+          return;
+        }
+
         const today = format(new Date(), 'yyyy-MM-dd');
 
         // 1. Find my active check-in
-        // We cast the response because spaces is a joined relation
         const { data: booking, error: bookingError } = await supabase
           .from('bookings')
           .select(`
@@ -75,7 +97,6 @@ export const useWhoIsHere = () => {
         }
 
         // 2. Fetch coworkers in this booking/space
-        // The RPC get_coworkers returns people in the same booking context (likely same space/date)
         const { data: coworkers, error: coworkersError } = await supabase.rpc('get_coworkers');
 
         if (coworkersError) {
@@ -101,5 +122,5 @@ export const useWhoIsHere = () => {
     fetchWhoIsHere();
   }, [authState.user]);
 
-  return { users, isLoading, currentSpace };
+  return { users, isLoading, currentSpace, isNetworkingEnabled };
 };
