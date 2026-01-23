@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export const useLocationParams = () => {
@@ -22,10 +23,17 @@ export const useLocationParams = () => {
   const amenitiesParam = searchParams.get('amenities');
 
   const initialCity = cityParam ? decodeURIComponent(cityParam) : '';
-  const initialCoordinates = (latParam && lngParam) ? {
-    lat: parseFloat(latParam),
-    lng: parseFloat(lngParam)
-  } : null;
+  
+  // Memoize coordinates to prevent unstable object references causing infinite loops
+  const initialCoordinates = useMemo(() => {
+    if (latParam && lngParam) {
+      return {
+        lat: parseFloat(latParam),
+        lng: parseFloat(lngParam)
+      };
+    }
+    return null;
+  }, [latParam, lngParam]);
   const initialRadius = radiusParam ? parseInt(radiusParam) : 10;
   const initialDate = dateParam ? new Date(dateParam) : null;
   const initialStartTime = startTimeParam || null;

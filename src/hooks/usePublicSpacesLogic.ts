@@ -23,6 +23,19 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isPointObject = (value: unknown): value is PointObject =>
   isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number';
 
+/**
+ * Helper to compare coordinates by value, not reference.
+ * Prevents infinite loops from new object references with identical values.
+ */
+const areCoordinatesEqual = (
+  a: { lat: number; lng: number } | null,
+  b: { lat: number; lng: number } | null
+): boolean => {
+  if (a === null && b === null) return true;
+  if (a === null || b === null) return false;
+  return a.lat === b.lat && a.lng === b.lng;
+};
+
 
 // Field selection for direct spaces query (simulating the view structure)
 const SPACES_SELECT = [
@@ -380,30 +393,44 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
   const mapInteraction = useMapCardInteraction();
 
   // Update filters when URL parameters change (from homepage navigation)
+  // Uses coordinate equality check to prevent infinite loops
   useEffect(() => {
-    // Only update if URL params are present, to avoid resetting state on navigation without params if that's possible (though useLocationParams handles initial read)
-    // Actually, we want to sync state WITH URL.
-    setFilters(prev => ({
-      ...prev,
-      location: initialCity || prev.location,
-      coordinates: initialCoordinates || prev.coordinates,
-      startDate: initialDate || prev.startDate,
-      startTime: initialStartTime || prev.startTime,
-      endTime: initialEndTime || prev.endTime,
-      category: initialCategory || prev.category,
-      priceRange: initialPriceRange,
-      workEnvironment: initialWorkEnvironment || prev.workEnvironment,
-      amenities: initialAmenities.length > 0 ? initialAmenities : prev.amenities,
-      capacity: initialMinCapacity > 1 ? [initialMinCapacity, 20] : prev.capacity
-    }));
+    setFilters(prev => {
+      // Check if coordinates actually changed by value
+      const shouldUpdateCoords = !areCoordinatesEqual(initialCoordinates, prev.coordinates);
+      
+      // Skip update entirely if nothing changed
+      const cityChanged = (initialCity || '') !== prev.location && initialCity !== '';
+      const dateChanged = initialDate !== prev.startDate;
+      const categoryChanged = initialCategory !== '' && initialCategory !== prev.category;
+      
+      if (!shouldUpdateCoords && !cityChanged && !dateChanged && !categoryChanged) {
+        return prev; // Return previous state to prevent re-render
+      }
+      
+      return {
+        ...prev,
+        location: initialCity || prev.location,
+        coordinates: shouldUpdateCoords ? initialCoordinates : prev.coordinates,
+        startDate: initialDate || prev.startDate,
+        startTime: initialStartTime || prev.startTime,
+        endTime: initialEndTime || prev.endTime,
+        category: initialCategory || prev.category,
+        priceRange: initialPriceRange,
+        workEnvironment: initialWorkEnvironment || prev.workEnvironment,
+        amenities: initialAmenities.length > 0 ? initialAmenities : prev.amenities,
+        capacity: initialMinCapacity > 1 ? [initialMinCapacity, 20] : prev.capacity
+      };
+    });
 
-    if (initialCoordinates) {
+    // Only update userLocation if coordinates actually changed
+    if (initialCoordinates && !areCoordinatesEqual(initialCoordinates, userLocation)) {
       setUserLocation(initialCoordinates);
     }
-  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, initialCategory, initialWorkEnvironment, initialMinCapacity]); // Dependencies updated
+  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, initialCategory, initialWorkEnvironment, initialMinCapacity, userLocation]);
 
-  // Sync state changes to URL
-  const syncFiltersToUrl = (newFilters: SpaceFilters, radius: number) => {
+  // Sync state changes to URL - wrapped in useCallback for stability
+  const syncFiltersToUrl = useCallback((newFilters: SpaceFilters, radius: number) => {
     updateLocationParam(
       newFilters.location,
       newFilters.coordinates || undefined,
@@ -419,7 +446,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
         endTime: newFilters.endTime
       }
     );
-  };
+  }, [updateLocationParam]);
 
   // Memoized geocoding function to prevent re-renders
   const stableGeocodeAddress = useCallback(geocodeAddress, [geocodeAddress]);
@@ -719,12 +746,20 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
 
     if (locationResult) {
       info('User location obtained successfully');
-      setUserLocation(locationResult);
-      setFilters(prev => {
-        const next = { ...prev, coordinates: locationResult };
-        syncFiltersToUrl(next, radiusKm);
-        return next;
-      });
+      
+      // Only update if coordinates actually changed - prevents infinite loops
+      if (!areCoordinatesEqual(locationResult, userLocation)) {
+        setUserLocation(locationResult);
+        setFilters(prev => {
+          // Double-check: don't update if already equal
+          if (areCoordinatesEqual(locationResult, prev.coordinates)) {
+            return prev;
+          }
+          const next = { ...prev, coordinates: locationResult };
+          syncFiltersToUrl(next, radiusKm);
+          return next;
+        });
+      }
     } else {
       warn('Geolocation failed, using default location (Rome)');
     }
