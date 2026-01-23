@@ -29,7 +29,6 @@ interface ConversationQueryResult {
       first_name: string | null;
       last_name: string | null;
       profile_photo_url: string | null;
-      email?: string | null;
     };
   }[];
   participant_status?: {
@@ -100,8 +99,7 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
               id,
               first_name,
               last_name,
-              profile_photo_url,
-              email
+              profile_photo_url
             )
           )
         `)
@@ -126,7 +124,6 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
           last_name: cp.profiles.last_name,
           profile_photo_url: cp.profiles.profile_photo_url,
           avatar_url: cp.profiles.profile_photo_url || null,
-          email: cp.profiles.email ?? null
         })),
         last_message: conv.last_message
           ? {
