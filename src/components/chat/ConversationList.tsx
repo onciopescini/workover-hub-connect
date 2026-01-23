@@ -39,7 +39,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({ conversation
 
         // Safety check for display name
         const displayName = otherPerson
-          ? `${otherPerson.first_name || ''} ${otherPerson.last_name || ''}`.trim() || otherPerson.email || 'Utente'
+          ? `${otherPerson.first_name || ''} ${otherPerson.last_name || ''}`.trim() || 'Utente'
           : 'Utente Sconosciuto';
 
         return (

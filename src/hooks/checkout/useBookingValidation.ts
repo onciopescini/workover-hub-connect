@@ -14,13 +14,13 @@ export interface ValidationParams {
 }
 
 type ValidateAndReserveSlotParams = {
-  space_id: string;
-  user_id: string;
-  start_time: string;
-  end_time: string;
-  guests_count: number;
-  confirmation_type: 'instant' | 'host_approval';
-  client_base_price: number;
+  p_space_id: string;
+  p_user_id: string;
+  p_start_time: string;
+  p_end_time: string;
+  p_guests_count: number;
+  p_confirmation_type: 'instant' | 'host_approval';
+  p_client_base_price: number;
 };
 
 export function useBookingValidation() {
@@ -45,13 +45,13 @@ export function useBookingValidation() {
     const endIso = createBookingDateTime(dateStr, endTime).toISOString();
 
     const rpcParams: ValidateAndReserveSlotParams = {
-      space_id: spaceId,
-      user_id: userId,
-      start_time: startIso,
-      end_time: endIso,
-      guests_count: guestsCount,
-      confirmation_type: confirmationType,
-      client_base_price: clientBasePrice ?? 0
+      p_space_id: spaceId,
+      p_user_id: userId,
+      p_start_time: startIso,
+      p_end_time: endIso,
+      p_guests_count: guestsCount,
+      p_confirmation_type: confirmationType,
+      p_client_base_price: clientBasePrice ?? 0
     };
 
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', rpcParams);

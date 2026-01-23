@@ -69,13 +69,13 @@ export const reserveBookingSlot = async (
     const endIso = createBookingDateTime(date, endTime).toISOString();
 
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', {
-      space_id: spaceId,
-      user_id: user.user.id,
-      start_time: startIso,
-      end_time: endIso,
-      guests_count: guestsCount,
-      confirmation_type: confirmationType,
-      client_base_price: clientBasePrice // Pass client-calculated price for validation
+      p_space_id: spaceId,
+      p_user_id: user.user.id,
+      p_start_time: startIso,
+      p_end_time: endIso,
+      p_guests_count: guestsCount,
+      p_confirmation_type: confirmationType,
+      p_client_base_price: clientBasePrice // Pass client-calculated price for validation
     });
 
     if (error) {

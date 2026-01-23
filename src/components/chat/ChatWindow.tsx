@@ -63,7 +63,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const otherPerson = getOtherParticipant(activeConversation.participants);
   const displayName = otherPerson
-      ? `${otherPerson.first_name || ''} ${otherPerson.last_name || ''}`.trim() || otherPerson.email || 'Utente'
+      ? `${otherPerson.first_name || ''} ${otherPerson.last_name || ''}`.trim() || 'Utente'
       : 'Utente';
 
   return (
