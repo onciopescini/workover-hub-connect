@@ -33,7 +33,6 @@ const SPACES_SELECT = [
   'work_environment',
   'max_capacity',
   'confirmation_type',
-  'workspace_features',
   'amenities',
   'seating_types',
   'ideal_guest_tags',
@@ -44,7 +43,8 @@ const SPACES_SELECT = [
   'rules',
   'availability',
   'cancellation_policy',
-  'city', // Will be mapped to city_name
+  'city_name',
+  'city:city_name',
   // 'country_code', // Default to 'IT'
   'latitude',
   'longitude',
