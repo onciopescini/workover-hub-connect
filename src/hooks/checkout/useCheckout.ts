@@ -9,6 +9,7 @@ import { useBookingValidation } from './useBookingValidation';
 import { useBookingPayment } from './useBookingPayment';
 import type { CoworkerFiscalData } from '@/types/booking';
 import { PostgrestError } from '@supabase/supabase-js';
+import { createBookingDateTime } from '@/lib/date-time';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -88,14 +89,18 @@ export function useCheckout(): UseCheckoutResult {
         approvalDeadline = addHours(now, 24);
       }
 
+      // Calculate ISO timestamps for database
+      const startIso = createBookingDateTime(dateStr, startTime).toISOString();
+      const endIso = createBookingDateTime(dateStr, endTime).toISOString();
+
       // STRICT SEQUENCE: Prepare payload mapping form data to bookings table schema
       // IMPORTANT: Use space_id (not legacy id)
       const bookingInsertData: BookingInsert = {
         space_id: spaceId,
         user_id: userId,
         booking_date: dateStr,
-        start_time: startTime,
-        end_time: endTime,
+        start_time: startIso,
+        end_time: endIso,
         guests_count: guestsCount,
         status: isInstant ? 'pending_payment' : 'pending_approval',
         payment_required: isInstant,
