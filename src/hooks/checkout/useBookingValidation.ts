@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useLogger } from '@/hooks/useLogger';
+import { createBookingDateTime } from '@/lib/date-time';
 
 export interface ValidationParams {
   spaceId: string;
@@ -13,14 +14,13 @@ export interface ValidationParams {
 }
 
 type ValidateAndReserveSlotParams = {
-  space_id_param: string;
-  date_param: string;
-  start_time_param: string;
-  end_time_param: string;
-  user_id_param: string;
-  guests_count_param: number;
-  confirmation_type_param: 'instant' | 'host_approval';
-  client_base_price_param: number;
+  space_id: string;
+  user_id: string;
+  start_time: string;
+  end_time: string;
+  guests_count: number;
+  confirmation_type: 'instant' | 'host_approval';
+  client_base_price: number;
 };
 
 export function useBookingValidation() {
@@ -40,15 +40,18 @@ export function useBookingValidation() {
       clientBasePrice
     } = params;
 
+    // Convert to ISO strings (TIMESTAMPTZ)
+    const startIso = createBookingDateTime(dateStr, startTime).toISOString();
+    const endIso = createBookingDateTime(dateStr, endTime).toISOString();
+
     const rpcParams: ValidateAndReserveSlotParams = {
-      space_id_param: spaceId,
-      date_param: dateStr,
-      start_time_param: startTime,
-      end_time_param: endTime,
-      user_id_param: userId,
-      guests_count_param: guestsCount,
-      confirmation_type_param: confirmationType,
-      client_base_price_param: clientBasePrice ?? 0
+      space_id: spaceId,
+      user_id: userId,
+      start_time: startIso,
+      end_time: endIso,
+      guests_count: guestsCount,
+      confirmation_type: confirmationType,
+      client_base_price: clientBasePrice ?? 0
     };
 
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', rpcParams);

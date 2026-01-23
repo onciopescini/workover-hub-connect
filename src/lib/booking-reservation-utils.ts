@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { createUtcIsoString, nowUtc } from "@/lib/date-time";
+import { createUtcIsoString, nowUtc, createBookingDateTime } from "@/lib/date-time";
 import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
@@ -64,15 +64,18 @@ export const reserveBookingSlot = async (
       spaceId
     });
 
+    // Convert to ISO strings (TIMESTAMPTZ)
+    const startIso = createBookingDateTime(date, startTime).toISOString();
+    const endIso = createBookingDateTime(date, endTime).toISOString();
+
     const { data, error } = await supabase.rpc('validate_and_reserve_slot', {
-      space_id_param: spaceId,
-      date_param: date,
-      start_time_param: startTime,
-      end_time_param: endTime,
-      user_id_param: user.user.id,
-      guests_count_param: guestsCount,
-      confirmation_type_param: confirmationType,
-      client_base_price_param: clientBasePrice // Pass client-calculated price for validation
+      space_id: spaceId,
+      user_id: user.user.id,
+      start_time: startIso,
+      end_time: endIso,
+      guests_count: guestsCount,
+      confirmation_type: confirmationType,
+      client_base_price: clientBasePrice // Pass client-calculated price for validation
     });
 
     if (error) {
