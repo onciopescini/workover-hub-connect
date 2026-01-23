@@ -240,30 +240,10 @@ export function useBookingFlow({
 
       let existingBookings: ExistingBookingEntry[] = [];
 
-      try {
-        const rpcBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
-        existingBookings = Array.isArray(rpcBookings)
-          ? rpcBookings.filter(isExistingBookingEntry)
-          : [];
-      } catch (rpcError) {
-        logError('RPC failed, using fallback', rpcError as Error);
-        const { data: bookings, error: bookingError } = await supabase
-          .from('bookings')
-          .select('id, start_time, end_time, status, user_id')
-          .eq('space_id', spaceId)
-          .eq('booking_date', dateStr)
-          .in('status', ['pending', 'confirmed']);
-
-        if (bookingError) throw bookingError;
-
-        existingBookings = (bookings || []).map((booking) => ({
-          booking_id: booking.id,
-          start_time: booking.start_time ? booking.start_time.toString().substring(0, 5) : '00:00',
-          end_time: booking.end_time ? booking.end_time.toString().substring(0, 5) : '00:00',
-          status: booking.status,
-          user_id: booking.user_id
-        }));
-      }
+      const rpcBookings = await fetchOptimizedSpaceAvailability(spaceId, dateStr, dateStr);
+      existingBookings = Array.isArray(rpcBookings)
+        ? rpcBookings.filter(isExistingBookingEntry)
+        : [];
 
       // Explicit type for existing bookings to be safe
       const blocked = existingBookings.map((booking) => ({
