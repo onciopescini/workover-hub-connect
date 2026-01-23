@@ -41,6 +41,7 @@ export interface Space {
   features: string[];
   seating_types: string[];
   address: string;
+  city_name: string | null;
   host_id: string;
   created_at: string;
   updated_at: string;

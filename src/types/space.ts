@@ -25,7 +25,7 @@ export type Space = Omit<Database["public"]["Tables"]["spaces"]["Row"], "workspa
   // UI Alias Properties - mapped from database fields for backwards compatibility
   title?: string;        // Alias for 'title'
   capacity?: number;     // Alias for 'max_capacity'
-  city_name?: string;    // Alias for 'city'
+  city_name?: string | null;    // Alias for 'city'
 };
 
 export type SpaceInsert = Omit<Database["public"]["Tables"]["spaces"]["Insert"], "workspace_features"> & {
