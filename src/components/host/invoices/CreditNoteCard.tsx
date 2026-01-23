@@ -14,11 +14,23 @@ interface CreditNoteCardProps {
   payment: PaymentWithBooking;
 }
 
+interface CreditNoteBooking {
+  id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  cancellation_reason?: string;
+  cancelled_at?: string;
+  stripe_connected?: boolean;
+}
+
 export function CreditNoteCard({ payment }: CreditNoteCardProps) {
   const { mutate: confirmIssued, isPending } = useConfirmCreditNoteIssued();
   
-  const booking = payment.booking;
-  const bookingRecord = booking && typeof booking === 'object' ? booking : null;
+  const booking = payment.booking as CreditNoteBooking | null;
+  const bookingRecord = payment.booking && typeof payment.booking === 'object'
+    ? (payment.booking as Record<string, unknown>)
+    : null;
   const coworker = bookingRecord ? resolveBookingCoworker(bookingRecord) : null;
   const space = bookingRecord ? resolveBookingSpace(bookingRecord) : null;
 

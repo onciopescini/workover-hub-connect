@@ -57,7 +57,9 @@ export function RecentMessages() {
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs text-muted-foreground line-clamp-1">
-                      {conversation.last_message || 'Nessun messaggio'}
+                      {typeof conversation.last_message === 'string'
+                        ? conversation.last_message
+                        : conversation.last_message?.content || 'Nessun messaggio'}
                     </p>
                   </div>
                   {conversation.updated_at && (
