@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
-import { format } from "date-fns";
+import { endOfDay, startOfDay } from "date-fns";
 import { Database } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/react-query-config";
 
@@ -38,9 +38,10 @@ export const useTodayCheckins = () => {
     queryFn: async (): Promise<TodayCheckinEntry[]> => {
       if (!authState.user?.id) return [];
 
-      // Use local date instead of UTC
-      const today = format(new Date(), 'yyyy-MM-dd');
       const validStatuses = ['confirmed', 'pending_payment', 'checked_in'] as Database["public"]["Enums"]["booking_status"][];
+      const now = new Date();
+      const startTime = startOfDay(now).toISOString();
+      const endTime = endOfDay(now).toISOString();
 
       const { data, error } = await supabase
         .from('bookings')
@@ -53,7 +54,8 @@ export const useTodayCheckins = () => {
           space:spaces(title, address),
           guest:profiles!fk_bookings_user_id(first_name, last_name, profile_photo_url)
         `)
-        .eq('booking_date', today)
+        .gte('start_time', startTime)
+        .lte('start_time', endTime)
         .in('status', validStatuses)
         .order('start_time', { ascending: true })
         .overrideTypes<TodayCheckinRow[]>();
