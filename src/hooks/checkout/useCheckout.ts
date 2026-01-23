@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLogger } from '@/hooks/useLogger';
-import { toast } from 'sonner';
-import { addHours, format } from 'date-fns';
-import { BookingInsert } from '@/types/booking';
-import { useNavigate } from 'react-router-dom';
-import { useBookingValidation } from './useBookingValidation';
-import { useBookingPayment } from './useBookingPayment';
-import type { CoworkerFiscalData } from '@/types/booking';
-import { PostgrestError } from '@supabase/supabase-js';
+import { format } from 'date-fns';
 import { createBookingDateTime } from '@/lib/date-time';
+import type { CoworkerFiscalData } from '@/types/booking';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -42,9 +36,6 @@ export interface UseCheckoutResult {
 export function useCheckout(): UseCheckoutResult {
   const [isLoading, setIsLoading] = useState(false);
   const { debug, error: logError } = useLogger({ context: 'useCheckout' });
-  const navigate = useNavigate();
-  const { validateBooking } = useBookingValidation();
-  const { initializePayment } = useBookingPayment();
 
   const processCheckout = async (params: CheckoutParams): Promise<CheckoutResult> => {
     setIsLoading(true);
@@ -56,110 +47,77 @@ export function useCheckout(): UseCheckoutResult {
       endTime,
       guestsCount,
       confirmationType,
-      hostStripeAccountId,
-      fiscalData
+      clientBasePrice
     } = params;
 
     const dateStr = format(date, 'yyyy-MM-dd');
 
     try {
-      // 1. Validate Availability via RPC
-      await validateBooking({
-        spaceId,
-        userId,
-        dateStr,
-        startTime,
-        endTime,
-        guestsCount,
-        confirmationType,
-        clientBasePrice: params.clientBasePrice ?? 0
-      });
-
-      // 2. Prepare Payload
-      const isInstant = confirmationType === 'instant';
-      const now = new Date();
-
-      let reservationDeadline: Date;
-      let approvalDeadline: Date | null = null;
-
-      if (isInstant) {
-        reservationDeadline = addHours(now, 2);
-      } else {
-        reservationDeadline = addHours(now, 24);
-        approvalDeadline = addHours(now, 24);
-      }
-
-      // Calculate ISO timestamps for database
+      // 1. Prepare Parameters for RPC
+      // Calculate ISO timestamps for database (TIMESTAMPTZ)
       const startIso = createBookingDateTime(dateStr, startTime).toISOString();
       const endIso = createBookingDateTime(dateStr, endTime).toISOString();
 
-      // STRICT SEQUENCE: Prepare payload mapping form data to bookings table schema
-      // IMPORTANT: Use space_id (not legacy id)
-      const bookingInsertData: BookingInsert = {
-        space_id: spaceId,
-        user_id: userId,
-        booking_date: dateStr,
-        start_time: startIso,
-        end_time: endIso,
-        guests_count: guestsCount,
-        status: isInstant ? 'pending_payment' : 'pending_approval',
-        payment_required: isInstant,
-        slot_reserved_until: reservationDeadline.toISOString(),
-        approval_deadline: approvalDeadline ? approvalDeadline.toISOString() : null,
-        fiscal_data: fiscalData ? (fiscalData as unknown as import('@/integrations/supabase/types').Json) : null
+      const rpcParams = {
+        p_space_id: spaceId,
+        p_user_id: userId,
+        p_start_time: startIso,
+        p_end_time: endIso,
+        p_guests_count: guestsCount,
+        p_confirmation_type: confirmationType,
+        p_client_base_price: clientBasePrice ?? 0
       };
 
-      // 3. Insert Booking
-      const { data: bookingData, error: insertError } = await supabase
-        .from('bookings')
-        .insert(bookingInsertData)
-        .select('id')
-        .single();
+      debug('Calling validate_and_reserve_slot', rpcParams);
 
-      // Handle Insert Error: If the insert returns an error, STOP execution.
-      if (insertError) {
-        logError('Insert Error', undefined, { error: insertError });
+      // 2. Create Booking (RPC) -> returns bookingId
+      // The RPC handles validation, collision checks, and insertion.
+      const { data: rpcData, error: rpcError } = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
-        // Handle Exclusion Constraint Violation (23P01) - Double Booking
-        if (insertError.code === '23P01') {
-          return {
-            success: false,
-            error: "Slot already booked",
-            errorCode: 'CONFLICT'
-          };
+      if (rpcError) {
+        logError('RPC Error', rpcError);
+        // Map common errors if possible
+        if (rpcError.code === '23P01' || rpcError.message?.includes('overlap')) {
+             return { success: false, error: "Slot already booked", errorCode: 'CONFLICT' };
         }
+        throw new Error(`Booking creation failed: ${rpcError.message}`);
+      }
 
-        // Specifically handle Foreign Key Violation (Space not found)
-        if (insertError.code === '23503') {
-           toast.error("This space is no longer available or has been removed by the host.");
-           navigate('/');
-           return { success: false, error: "Space not found", errorCode: 'SPACE_NOT_FOUND' };
+      // 3. Extract Booking ID
+      // The RPC returns JSON. We expect { booking_id: "...", status: "..." }
+      const result = rpcData as { booking_id: string; status: string } | null;
+
+      if (!result?.booking_id) {
+         logError('RPC returned invalid data', undefined, { rpcData });
+         throw new Error("Booking creation succeeded but returned no ID");
+      }
+
+      const bookingId = result.booking_id;
+
+      // 4. Call Edge Function for Payment Session
+      // Now required for BOTH Instant and Request types
+      debug('Invoking create-checkout-v3', { bookingId });
+
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-v3', {
+        body: {
+          booking_id: bookingId,
+          return_url: `${window.location.origin}/messages` // User goes to chat after paying
         }
-
-        throw new Error(`Insert failed: ${insertError.message} (Code: ${insertError.code})`);
-      }
-
-      if (!bookingData?.id) {
-        logError('Insert returned no ID', undefined, { bookingData });
-        throw new Error('Database insert succeeded but returned no ID');
-      }
-
-      const bookingId = bookingData.id;
-
-      // 4. Payment (Now required for BOTH Instant and Request types)
-      // Instant -> Capture Automatic
-      // Request -> Capture Manual (Auth Only)
-      if (!hostStripeAccountId) {
-          throw new Error('Host Stripe account ID is missing');
-      }
-
-      const paymentUrl = await initializePayment({
-        bookingId,
-        hostStripeAccountId
       });
 
-      debug('Redirecting to Stripe', { paymentUrl });
-      window.location.href = paymentUrl;
+      if (checkoutError) {
+        logError('Checkout Function Error', checkoutError);
+        throw checkoutError;
+      }
+
+      if (!checkoutData?.url) {
+        throw new Error("No checkout URL returned from payment service");
+      }
+
+      // 5. Redirect to Stripe
+      debug('Redirecting to Stripe', { url: checkoutData.url });
+      window.location.href = checkoutData.url;
+
       return { success: true, bookingId }; // Browser redirects
 
     } catch (err) {
