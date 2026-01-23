@@ -34,7 +34,7 @@ export const fetchHostRecentActivity = async (hostId: string): Promise<RecentAct
       `)
       .in('space_id', spaceIds)
       .order('created_at', { ascending: false })
-      .limit(5);
+      .limit(10);
 
     if (bookingsError) throw bookingsError;
 
