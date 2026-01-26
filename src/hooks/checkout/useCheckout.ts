@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLogger } from '@/hooks/useLogger';
 import { format } from 'date-fns';
 import { createBookingDateTime } from '@/lib/date-time';
-import type { CoworkerFiscalData } from '@/types/booking';
+import type { CoworkerFiscalData, SlotReservationResult } from '@/types/booking';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -84,11 +84,27 @@ export function useCheckout(): UseCheckoutResult {
       }
 
       // 3. Extract Booking ID
-      // The RPC returns JSON. We expect { booking_id: "...", status: "..." }
-      const result = rpcData as { booking_id: string; status: string } | null;
+      // The RPC returns JSON matching SlotReservationResult
+      const result = rpcData as SlotReservationResult | null;
 
-      if (!result?.booking_id) {
-         logError('RPC returned invalid data', undefined, { rpcData });
+      if (!result) {
+         logError('RPC returned no data', undefined, { rpcData });
+         throw new Error("Reservation failed: No response from server");
+      }
+
+      // Check explicitly for false to handle potential legacy responses where success might be undefined but booking_id exists
+      if (result.success === false || result.error) {
+          logError('Reservation failed', undefined, { error: result.error });
+          // Stop execution immediately and return error
+          return {
+              success: false,
+              error: result.error || "Reservation failed",
+              errorCode: 'RESERVATION_FAILED'
+          };
+      }
+
+      if (!result.booking_id) {
+         logError('RPC returned success but no booking_id', undefined, { rpcData });
          throw new Error("Booking creation succeeded but returned no ID");
       }
 
