@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { coworkerFiscalSchema } from '@/lib/validation/checkoutFiscalSchema';
 import { TwoStepBookingForm } from "@/components/booking-wizard/TwoStepBookingForm";
 import { useBookingFlow } from '@/hooks/booking/useBookingFlow';
+import { useAuth } from '@/hooks/auth/useAuth';
 import type { AvailabilityData } from '@/types/availability';
 
 interface BookingFormProps {
@@ -48,10 +49,12 @@ export function BookingForm({
 }: BookingFormProps) {
   const { info } = useLogger({ context: 'BookingForm' });
   const { fiscalData: savedFiscalData } = useCoworkerFiscalData();
+  const { authState } = useAuth();
 
   const bookingFlow = useBookingFlow({
     spaceId,
     pricePerDay,
+    userId: authState.user?.id,
     ...(pricePerHourProp !== undefined && { pricePerHour: pricePerHourProp }),
     confirmationType,
     maxCapacity,

@@ -62,6 +62,7 @@ export interface UseBookingFlowProps {
   rules?: string;
   onSuccess?: () => void;
   onError?: (message: string) => void;
+  userId?: string;
 }
 
 export interface UseBookingFlowResult {
@@ -99,7 +100,8 @@ export function useBookingFlow({
   cancellationPolicy,
   rules,
   onSuccess,
-  onError
+  onError,
+  userId
 }: UseBookingFlowProps): UseBookingFlowResult {
   const pricePerHour = pricePerHourProp || pricePerDay / 8;
   const { info, error: logError, debug } = useLogger({ context: 'useBookingFlow' });
@@ -245,6 +247,59 @@ export function useBookingFlow({
         ? rpcBookings.filter(isExistingBookingEntry)
         : [];
 
+      // Filter user's existing bookings to prevent double booking
+      if (userId) {
+        try {
+          const { data: userBookings, error: userBookingsError } = await supabase
+            .from('bookings')
+            .select('start_time, end_time, status')
+            .eq('space_id', spaceId)
+            .eq('user_id', userId)
+            .eq('booking_date', dateStr)
+            .in('status', ['confirmed', 'pending_approval', 'pending_payment']);
+
+          if (userBookingsError) {
+            logError('Failed to fetch user bookings', userBookingsError);
+          } else if (userBookings && userBookings.length > 0) {
+            // Add user bookings to existing bookings to block them
+            const formattedUserBookings: ExistingBookingEntry[] = userBookings
+              .map(b => {
+                if (!b.start_time || !b.end_time) return null;
+
+                // Convert ISO timestamp to HH:mm in the space's timezone
+                // Because existingBookings expects time strings, not ISO dates
+                const startD = new Date(b.start_time);
+                const endD = new Date(b.end_time);
+
+                // Use date-fns-tz to handle timezone correctly
+                // If timezone is invalid, toZonedTime might throw or fallback?
+                // We wrap in try-catch or assume timezone is valid (it defaults to Rome)
+                let zonedStart = startD;
+                let zonedEnd = endD;
+
+                try {
+                   zonedStart = toZonedTime(startD, timezone);
+                   zonedEnd = toZonedTime(endD, timezone);
+                } catch (e) {
+                   console.error("Timezone conversion error", e);
+                }
+
+                return {
+                  start_time: format(zonedStart, 'HH:mm'),
+                  end_time: format(zonedEnd, 'HH:mm'),
+                  status: b.status || undefined,
+                  user_id: userId
+                };
+              })
+              .filter((b): b is ExistingBookingEntry => b !== null);
+
+            existingBookings.push(...formattedUserBookings);
+          }
+        } catch (err) {
+          logError('Error fetching user bookings', err as Error);
+        }
+      }
+
       // Explicit type for existing bookings to be safe
       const blocked = existingBookings.map((booking) => ({
         start: addMinutesHHMM(booking.start_time.toString().substring(0, 5), -bufferMinutes),
@@ -295,7 +350,7 @@ export function useBookingFlow({
       toast.error('Errore nel caricamento degli slot');
       setBookingState(prev => ({ ...prev, isLoadingSlots: false }));
     }
-  }, [spaceId, getAvailabilityForDate, generateTimeSlots, slotInterval, bufferMinutes, timezone, debug, logError]);
+  }, [spaceId, getAvailabilityForDate, generateTimeSlots, slotInterval, bufferMinutes, timezone, debug, logError, userId]);
 
 
   const handleDateSelect = async (date: Date) => {
