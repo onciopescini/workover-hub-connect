@@ -109,13 +109,24 @@ export function useCheckout(): UseCheckoutResult {
       });
 
       if (checkoutError) {
+        console.error("RAW ERROR OBJECT:", checkoutError);
         let serverMessage = checkoutError.message;
 
-        // Attempt to extract JSON body from FunctionsHttpError
-        if (checkoutError && typeof checkoutError === 'object' && 'context' in checkoutError) {
-          const httpError = checkoutError as { context: Response };
+        // Attempt to extract JSON body from FunctionsHttpError (if context exists and has json method)
+        // We do not assume 'context' exists or that it has .json()
+        const hasJsonContext =
+          checkoutError &&
+          typeof checkoutError === 'object' &&
+          'context' in checkoutError &&
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (checkoutError as any).context &&
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          typeof (checkoutError as any).context.json === 'function';
+
+        if (hasJsonContext) {
           try {
-            const errorBody = await httpError.context.json();
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const errorBody = await (checkoutError as any).context.json();
             console.error("SERVER ERROR DETAILS:", errorBody);
 
             // Extract meaningful message from body
@@ -127,6 +138,9 @@ export function useCheckout(): UseCheckoutResult {
           } catch (parseErr) {
             console.error("Failed to parse error response body", parseErr);
           }
+        } else if (checkoutError instanceof Error) {
+            console.error("ERROR MESSAGE:", checkoutError.message);
+            console.error("ERROR STACK:", checkoutError.stack);
         }
 
         logError('Checkout Function Error', checkoutError);
