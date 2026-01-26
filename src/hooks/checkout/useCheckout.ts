@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLogger } from '@/hooks/useLogger';
 import { format } from 'date-fns';
 import { createBookingDateTime } from '@/lib/date-time';
-import type { CoworkerFiscalData, SlotReservationResult } from '@/types/booking';
+import type { CoworkerFiscalData } from '@/types/booking';
 
 export interface CheckoutParams {
   spaceId: string;
@@ -72,6 +72,7 @@ export function useCheckout(): UseCheckoutResult {
 
       // 2. Create Booking (RPC) -> returns bookingId
       // The RPC handles validation, collision checks, and insertion.
+      // It throws a hard error on failure, and returns JSON on success.
       const { data: rpcData, error: rpcError } = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
       if (rpcError) {
@@ -83,32 +84,25 @@ export function useCheckout(): UseCheckoutResult {
         throw new Error(`Booking creation failed: ${rpcError.message}`);
       }
 
-      // 3. Extract Booking ID
-      // The RPC returns JSON matching SlotReservationResult
-      const result = rpcData as SlotReservationResult | null;
-
-      if (!result) {
+      if (!rpcData) {
          logError('RPC returned no data', undefined, { rpcData });
          throw new Error("Reservation failed: No response from server");
       }
 
-      // Check explicitly for false to handle potential legacy responses where success might be undefined but booking_id exists
-      if (result.success === false || result.error) {
-          logError('Reservation failed', undefined, { error: result.error });
-          // Stop execution immediately and return error
-          return {
-              success: false,
-              error: result.error || "Reservation failed",
-              errorCode: 'RESERVATION_FAILED'
-          };
-      }
+      // 3. Extract Booking ID
+      // HANDLE JSON RESPONSE
+      // The RPC returns { booking_id: "...", status: "..." }
+      // We handle cases where it might return the object directly or as a property
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dataObj = rpcData as any;
+      const bookingId = dataObj.booking_id || dataObj;
 
-      if (!result.booking_id) {
-         logError('RPC returned success but no booking_id', undefined, { rpcData });
-         throw new Error("Booking creation succeeded but returned no ID");
-      }
+      console.log("RESERVED SLOT ID:", bookingId); // Debug log
 
-      const bookingId = result.booking_id;
+      if (typeof bookingId !== 'string') {
+          console.error("Invalid Booking ID format:", rpcData);
+          throw new Error("Invalid Booking ID received from server");
+      }
 
       // 4. Call Edge Function for Payment Session
       // Now required for BOTH Instant and Request types
