@@ -158,4 +158,40 @@ describe('useCheckout', () => {
 
       consoleLogSpy.mockRestore();
   });
+
+  it('should handle FunctionsFetchError (network error) safely without crashing', async () => {
+    // Setup RPC success
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: { booking_id: 'booking-123', status: 'pending' },
+      error: null
+    });
+
+    // Setup Network Error (No context, no json)
+    const mockNetworkError = new Error('Network request failed');
+    // @ts-ignore
+    mockNetworkError.context = undefined; // Explicitly ensure no context
+
+    (supabase.functions.invoke as jest.Mock).mockResolvedValue({
+      data: null,
+      error: mockNetworkError
+    });
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useCheckout());
+
+    await act(async () => {
+      const outcome = await result.current.processCheckout(mockParams);
+
+      expect(outcome.success).toBe(false);
+      expect(outcome.error).toBe('Network request failed');
+    });
+
+    // Should verify it logged the raw error and didn't crash
+    expect(consoleErrorSpy).toHaveBeenCalledWith("RAW ERROR OBJECT:", mockNetworkError);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("ERROR MESSAGE:", "Network request failed");
+    expect(consoleErrorSpy).toHaveBeenCalledWith("CRITICAL FAILURE:", "Network request failed");
+
+    consoleErrorSpy.mockRestore();
+  });
 });
