@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 jest.mock('@/integrations/supabase/client', () => ({
   supabase: {
     rpc: jest.fn(),
+    auth: {
+      getSession: jest.fn()
+    },
     functions: {
       invoke: jest.fn()
     }
@@ -34,8 +37,24 @@ afterAll(() => {
 });
 
 describe('useCheckout', () => {
+  const originalFetch = global.fetch;
+  const mockFetch = jest.fn();
+
+  beforeAll(() => {
+    global.fetch = mockFetch;
+  });
+
+  afterAll(() => {
+    global.fetch = originalFetch;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default auth success
+    (supabase.auth.getSession as jest.Mock).mockResolvedValue({
+      data: { session: { access_token: 'mock-token' } },
+      error: null
+    });
   });
 
   const mockParams = {
@@ -51,65 +70,18 @@ describe('useCheckout', () => {
     durationHours: 1
   };
 
-  it('should handle FunctionsHttpError with body correctly', async () => {
+  it('should handle native fetch error correctly', async () => {
     // Setup RPC success
     (supabase.rpc as jest.Mock).mockResolvedValue({
       data: { booking_id: 'booking-123', status: 'pending' },
       error: null
     });
 
-    // Setup Edge Function Error with context
-    const mockErrorBody = { error: 'Specific Backend Error' };
-    const mockResponse = {
-      json: jest.fn().mockResolvedValue(mockErrorBody)
-    };
-    const mockFunctionsError = {
-      message: 'Function invocation failed',
-      context: mockResponse
-    };
-
-    (supabase.functions.invoke as jest.Mock).mockResolvedValue({
-      data: null,
-      error: mockFunctionsError
-    });
-
-    // Spy on console.error
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    const { result } = renderHook(() => useCheckout());
-
-    await act(async () => {
-      const outcome = await result.current.processCheckout(mockParams);
-
-      expect(outcome.success).toBe(false);
-      expect(outcome.error).toBe('Specific Backend Error');
-    });
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith("SERVER ERROR DETAILS:", mockErrorBody);
-    expect(consoleErrorSpy).toHaveBeenCalledWith("CRITICAL FAILURE:", "Specific Backend Error");
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('should handle FunctionsHttpError without body correctly', async () => {
-    // Setup RPC success
-    (supabase.rpc as jest.Mock).mockResolvedValue({
-      data: { booking_id: 'booking-123', status: 'pending' },
-      error: null
-    });
-
-    // Setup Edge Function Error with context but json fails
-    const mockResponse = {
-      json: jest.fn().mockRejectedValue(new Error('Parse error'))
-    };
-    const mockFunctionsError = {
-      message: 'Original Error Message',
-      context: mockResponse
-    };
-
-    (supabase.functions.invoke as jest.Mock).mockResolvedValue({
-      data: null,
-      error: mockFunctionsError
+    // Setup Fetch Failure
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: jest.fn().mockResolvedValue('Internal Server Error Details')
     });
 
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -120,26 +92,25 @@ describe('useCheckout', () => {
       const outcome = await result.current.processCheckout(mockParams);
 
       expect(outcome.success).toBe(false);
-      expect(outcome.error).toBe('Original Error Message');
+      expect(outcome.error).toBe('Server responded with 500: Internal Server Error Details');
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to parse error response body", expect.any(Error));
-    expect(consoleErrorSpy).toHaveBeenCalledWith("CRITICAL FAILURE:", "Original Error Message");
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Checkout Network Error: 500", "Internal Server Error Details");
 
     consoleErrorSpy.mockRestore();
   });
 
-  it('should log payload before invoke', async () => {
+  it('should log payload before fetch and call fetch with correct args', async () => {
      // Setup RPC success
      (supabase.rpc as jest.Mock).mockResolvedValue({
         data: { booking_id: 'booking-123', status: 'pending' },
         error: null
       });
 
-      // Setup Invoke success
-      (supabase.functions.invoke as jest.Mock).mockResolvedValue({
-        data: { url: 'http://stripe.com' },
-        error: null
+      // Setup Fetch Success
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ url: 'http://stripe.com' })
       });
 
       const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -156,25 +127,31 @@ describe('useCheckout', () => {
           return_url: expect.stringContaining('/messages')
       }));
 
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/functions/v1/create-checkout-v3'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer mock-token',
+            'Content-Type': 'application/json'
+          }),
+          body: expect.stringContaining('"booking_id":"booking-123"')
+        })
+      );
+
       consoleLogSpy.mockRestore();
   });
 
-  it('should handle FunctionsFetchError (network error) safely without crashing', async () => {
+  it('should handle network crash (fetch throws) safely', async () => {
     // Setup RPC success
     (supabase.rpc as jest.Mock).mockResolvedValue({
       data: { booking_id: 'booking-123', status: 'pending' },
       error: null
     });
 
-    // Setup Network Error (No context, no json)
+    // Setup Network Error
     const mockNetworkError = new Error('Network request failed');
-    // @ts-ignore
-    mockNetworkError.context = undefined; // Explicitly ensure no context
-
-    (supabase.functions.invoke as jest.Mock).mockResolvedValue({
-      data: null,
-      error: mockNetworkError
-    });
+    mockFetch.mockRejectedValue(mockNetworkError);
 
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -187,9 +164,6 @@ describe('useCheckout', () => {
       expect(outcome.error).toBe('Network request failed');
     });
 
-    // Should verify it logged the raw error and didn't crash
-    expect(consoleErrorSpy).toHaveBeenCalledWith("RAW ERROR OBJECT:", mockNetworkError);
-    expect(consoleErrorSpy).toHaveBeenCalledWith("ERROR MESSAGE:", "Network request failed");
     expect(consoleErrorSpy).toHaveBeenCalledWith("CRITICAL FAILURE:", "Network request failed");
 
     consoleErrorSpy.mockRestore();
