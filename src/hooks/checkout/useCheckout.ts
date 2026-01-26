@@ -112,52 +112,40 @@ export function useCheckout(): UseCheckoutResult {
       };
 
       console.log("CHECKOUT PAYLOAD:", payload);
-      debug('Invoking create-checkout-v3', { bookingId });
+      debug('Invoking create-checkout-v3 (Native Fetch)', { bookingId });
 
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-v3', {
-        body: payload
+      // 1. Get Token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("No active session token found");
+
+      console.log("Starting Native Checkout Fetch...");
+
+      // 2. Direct Fetch (Bypassing Supabase Client)
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-v3`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          // Explicitly accepting JSON can sometimes help avoid default browser behaviors
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload)
       });
 
-      if (checkoutError) {
-        console.error("RAW ERROR OBJECT:", checkoutError);
-        let serverMessage = checkoutError.message;
-
-        // Attempt to extract JSON body from FunctionsHttpError (if context exists and has json method)
-        // We do not assume 'context' exists or that it has .json()
-        const hasJsonContext =
-          checkoutError &&
-          typeof checkoutError === 'object' &&
-          'context' in checkoutError &&
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (checkoutError as any).context &&
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          typeof (checkoutError as any).context.json === 'function';
-
-        if (hasJsonContext) {
-          try {
-             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorBody = await (checkoutError as any).context.json();
-            console.error("SERVER ERROR DETAILS:", errorBody);
-
-            // Extract meaningful message from body
-            if (errorBody?.error) {
-              serverMessage = errorBody.error;
-            } else if (errorBody?.message) {
-              serverMessage = errorBody.message;
-            }
-          } catch (parseErr) {
-            console.error("Failed to parse error response body", parseErr);
-          }
-        } else if (checkoutError instanceof Error) {
-            console.error("ERROR MESSAGE:", checkoutError.message);
-            console.error("ERROR STACK:", checkoutError.stack);
-        }
-
-        logError('Checkout Function Error', checkoutError);
-        throw new Error(serverMessage);
+      // 3. Detailed Error Handling
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Checkout Network Error: ${response.status}`, errorText);
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
       }
 
-      if (!checkoutData?.url) {
+      const checkoutData = await response.json();
+      console.log("Checkout URL received:", checkoutData.url);
+
+      if (!checkoutData.url) {
         throw new Error("No checkout URL returned from payment service");
       }
 
