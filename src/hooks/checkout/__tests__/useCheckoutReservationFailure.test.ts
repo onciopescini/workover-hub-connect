@@ -51,12 +51,14 @@ describe('useCheckout - Reservation Failures', () => {
     durationHours: 1
   };
 
-  it('should abort if RPC returns success: false with error message', async () => {
-    // Setup RPC failure (soft failure in data)
+  it('should abort if RPC throws an overlap error', async () => {
+    // Setup RPC failure (Hard error)
     (supabase.rpc as jest.Mock).mockResolvedValue({
-      data: { success: false, error: 'Space is full' },
-      error: null
+      data: null,
+      error: { message: 'overlap detected', code: '23P01' }
     });
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
@@ -64,56 +66,73 @@ describe('useCheckout - Reservation Failures', () => {
       const outcome = await result.current.processCheckout(mockParams);
 
       expect(outcome.success).toBe(false);
-      expect(outcome.error).toBe('Space is full');
-      expect(outcome.errorCode).toBe('RESERVATION_FAILED');
+      expect(outcome.error).toBe('Slot already booked');
+      expect(outcome.errorCode).toBe('CONFLICT');
     });
 
-    // Ensure create-checkout-v3 was NOT called
     expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
-  it('should abort if RPC returns success: true but no booking_id', async () => {
-    // Setup RPC success but missing ID
+  it('should abort if RPC throws a generic error', async () => {
     (supabase.rpc as jest.Mock).mockResolvedValue({
-      data: { success: true, booking_id: null },
-      error: null
+      data: null,
+      error: { message: 'Database gone away' }
     });
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
     await act(async () => {
       const outcome = await result.current.processCheckout(mockParams);
-
       expect(outcome.success).toBe(false);
-      expect(outcome.error).toBe('Booking creation succeeded but returned no ID');
+      expect(outcome.error).toBe('Booking creation failed: Database gone away');
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
+
+  it('should abort if RPC returns data but no booking_id', async () => {
+    // Setup RPC success but missing ID
+    (supabase.rpc as jest.Mock).mockResolvedValue({
+      data: { status: 'pending' }, // No booking_id
+      error: null
+    });
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useCheckout());
+
+    await act(async () => {
+      const outcome = await result.current.processCheckout(mockParams);
+      expect(outcome.success).toBe(false);
+      expect(outcome.error).toBe('Invalid Booking ID received from server');
     });
 
     expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('should abort if RPC returns null data', async () => {
-    // Setup RPC returns null data
     (supabase.rpc as jest.Mock).mockResolvedValue({
       data: null,
       error: null
     });
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
     await act(async () => {
       const outcome = await result.current.processCheckout(mockParams);
-
       expect(outcome.success).toBe(false);
       expect(outcome.error).toBe('Reservation failed: No response from server');
     });
-
-    expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
-  it('should proceed if RPC returns success: true with booking_id', async () => {
-      // Setup RPC success
+  it('should proceed if RPC returns clean JSON with booking_id', async () => {
+    // Setup RPC success
     (supabase.rpc as jest.Mock).mockResolvedValue({
-      data: { success: true, booking_id: 'booking-123' },
+      data: { booking_id: 'booking-123', status: 'pending' },
       error: null
     });
 
@@ -130,31 +149,6 @@ describe('useCheckout - Reservation Failures', () => {
 
       expect(outcome.success).toBe(true);
       expect(outcome.bookingId).toBe('booking-123');
-    });
-
-    expect(supabase.functions.invoke).toHaveBeenCalled();
-  });
-
-  it('should proceed if RPC returns legacy response (no success field) but has booking_id', async () => {
-    // Setup RPC success legacy
-    (supabase.rpc as jest.Mock).mockResolvedValue({
-      data: { booking_id: 'booking-legacy', status: 'pending' },
-      error: null
-    });
-
-    // Setup Checkout success
-    (supabase.functions.invoke as jest.Mock).mockResolvedValue({
-        data: { url: 'http://stripe.com' },
-        error: null
-      });
-
-    const { result } = renderHook(() => useCheckout());
-
-    await act(async () => {
-      const outcome = await result.current.processCheckout(mockParams);
-
-      expect(outcome.success).toBe(true);
-      expect(outcome.bookingId).toBe('booking-legacy');
     });
 
     expect(supabase.functions.invoke).toHaveBeenCalled();

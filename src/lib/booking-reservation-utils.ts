@@ -9,20 +9,13 @@ import { sreLogger } from '@/lib/sre-logger';
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
-// Type guard per validare SlotReservationResult
-function isSlotReservationResult(data: unknown): data is SlotReservationResult {
+// New validator for the clean RPC JSON response
+function isValidRpcResponse(data: unknown): data is { booking_id: string } & Record<string, unknown> {
   if (!isRecord(data)) return false;
 
   const obj = data;
   return (
-    'success' in obj &&
-    typeof obj.success === 'boolean' &&
-    (!('error' in obj) || obj.error === undefined || typeof obj.error === 'string') &&
-    (!('booking_id' in obj) || obj.booking_id === undefined || typeof obj.booking_id === 'string') &&
-    (!('reservation_token' in obj) || obj.reservation_token === undefined || typeof obj.reservation_token === 'string') &&
-    (!('reserved_until' in obj) || obj.reserved_until === undefined || typeof obj.reserved_until === 'string') &&
-    (!('space_title' in obj) || obj.space_title === undefined || typeof obj.space_title === 'string') &&
-    (!('confirmation_type' in obj) || obj.confirmation_type === undefined || typeof obj.confirmation_type === 'string')
+    'booking_id' in obj && typeof obj.booking_id === 'string'
   );
 }
 
@@ -106,33 +99,34 @@ export const reserveBookingSlot = async (
       hasData: !!data
     });
 
-    // Valida la struttura della risposta con il type guard
-    if (!isSlotReservationResult(data)) {
+    // Validate the response structure (Must contain booking_id)
+    if (!isValidRpcResponse(data)) {
       sreLogger.error('Invalid response structure from RPC', {
         component: 'booking-reservation-utils',
         action: 'response_validation',
         dataType: typeof data
-      }, new Error('Invalid RPC response structure'));
+      }, new Error('Invalid RPC response structure: missing booking_id'));
       toast.error("Errore nel formato della risposta del server");
       return null;
     }
 
-    if (!data.success) {
-      sreLogger.warn('Reservation failed', {
-        component: 'booking-reservation-utils',
-        action: 'reservation_failed',
-        error: data.error
-      });
-      toast.error(data.error || "Errore nella prenotazione");
-      return null;
-    }
+    // Since RPC now throws on error, if we are here, it is a success.
+    // Construct the result object expected by the caller.
+    const result: SlotReservationResult = {
+        success: true,
+        booking_id: data.booking_id,
+        // Map other optional fields if present in the data object
+        reservation_token: typeof data.reservation_token === 'string' ? data.reservation_token : undefined,
+        reserved_until: typeof data.reserved_until === 'string' ? data.reserved_until : undefined,
+    };
 
     sreLogger.info('Reservation successful', {
       component: 'booking-reservation-utils',
       action: 'reservation_success',
       bookingId: data.booking_id
     });
-    return data;
+
+    return result;
 
   } catch (error) {
     sreLogger.error('Unexpected error during reservation', {
