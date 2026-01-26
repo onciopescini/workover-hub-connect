@@ -96,18 +96,41 @@ export function useCheckout(): UseCheckoutResult {
 
       // 4. Call Edge Function for Payment Session
       // Now required for BOTH Instant and Request types
+      const payload = {
+        booking_id: bookingId,
+        return_url: `${window.location.origin}/messages` // User goes to chat after paying
+      };
+
+      console.log("CHECKOUT PAYLOAD:", payload);
       debug('Invoking create-checkout-v3', { bookingId });
 
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-v3', {
-        body: {
-          booking_id: bookingId,
-          return_url: `${window.location.origin}/messages` // User goes to chat after paying
-        }
+        body: payload
       });
 
       if (checkoutError) {
+        let serverMessage = checkoutError.message;
+
+        // Attempt to extract JSON body from FunctionsHttpError
+        if (checkoutError && typeof checkoutError === 'object' && 'context' in checkoutError) {
+          const httpError = checkoutError as { context: Response };
+          try {
+            const errorBody = await httpError.context.json();
+            console.error("SERVER ERROR DETAILS:", errorBody);
+
+            // Extract meaningful message from body
+            if (errorBody?.error) {
+              serverMessage = errorBody.error;
+            } else if (errorBody?.message) {
+              serverMessage = errorBody.message;
+            }
+          } catch (parseErr) {
+            console.error("Failed to parse error response body", parseErr);
+          }
+        }
+
         logError('Checkout Function Error', checkoutError);
-        throw checkoutError;
+        throw new Error(serverMessage);
       }
 
       if (!checkoutData?.url) {
@@ -122,6 +145,7 @@ export function useCheckout(): UseCheckoutResult {
 
     } catch (err) {
       const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
+      console.error("CRITICAL FAILURE:", caughtError.message);
       logError('Checkout Flow Failed', caughtError);
       return {
         success: false,
