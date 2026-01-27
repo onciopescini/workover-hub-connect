@@ -306,7 +306,21 @@ Deno.serve(async (req) => {
     });
     if ("error" in stripe) return err(stripe.error!, 400, stripe);
 
-    // 4) Upsert payment with pricing breakdown
+    // 4) Store payment_intent_id on booking for later capture (Request to Book flow)
+    if (stripe.session!.payment_intent_id) {
+      const { error: bookingUpdateError } = await supabase
+        .from("bookings")
+        .update({ stripe_payment_intent_id: stripe.session!.payment_intent_id })
+        .eq("id", payload.booking_id);
+        
+      if (bookingUpdateError) {
+        console.warn(`[CHECKOUT] Failed to store PI on booking: ${bookingUpdateError.message}`);
+      } else {
+        console.log(`[CHECKOUT] Stored PI ${stripe.session!.payment_intent_id} on booking ${payload.booking_id}`);
+      }
+    }
+
+    // 5) Upsert payment with pricing breakdown
     const upsert = await upsertPayment({
       booking_id: payload.booking_id,
       user_id: user.id,
