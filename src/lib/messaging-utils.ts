@@ -27,9 +27,11 @@ export async function fetchMessages(bookingId: string): Promise<Message[]> {
     booking_id: msg.booking_id,
     sender_id: msg.sender_id,
     content: msg.content,
-    attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
+    attachments: Array.isArray(msg.attachments) 
+      ? (msg.attachments as unknown[]).filter((a): a is string => typeof a === 'string')
+      : [],
     is_read: msg.is_read || false,
-    created_at: msg.created_at,
+    created_at: msg.created_at || '',
     sender: msg.sender // PostgREST result
   }));
 }

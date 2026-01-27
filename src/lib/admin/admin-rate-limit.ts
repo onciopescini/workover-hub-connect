@@ -26,9 +26,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isRateLimitResult = (data: unknown): data is { allowed: boolean; remaining: number; reset_ms: number; message?: string } => {
   if (!isRecord(data)) return false;
   return (
-    typeof data.allowed === 'boolean' &&
-    typeof data.remaining === 'number' &&
-    typeof data.reset_ms === 'number'
+    typeof data['allowed'] === 'boolean' &&
+    typeof data['remaining'] === 'number' &&
+    typeof data['reset_ms'] === 'number'
   );
 };
 
@@ -64,12 +64,18 @@ export async function checkAdminRateLimit(
       throw new Error('Invalid rate limit response');
     }
 
-    return {
-      allowed: data.allowed,
-      remaining: data.remaining,
-      resetMs: data.reset_ms,
-      message: typeof data.message === 'string' ? data.message : undefined
+    // Use conditional spread to avoid setting message when undefined
+    const baseResult = {
+      allowed: data['allowed'] as boolean,
+      remaining: data['remaining'] as number,
+      resetMs: data['reset_ms'] as number
     };
+    
+    const messageValue = data['message'];
+    if (typeof messageValue === 'string') {
+      return { ...baseResult, message: messageValue };
+    }
+    return baseResult;
   } catch (error) {
     console.error('[checkAdminRateLimit] Exception:', error);
     // Fail open in case of rate limit errors

@@ -29,14 +29,29 @@ export async function getOrCreateConversation(params: {
   // If no booking_id or not found, we create a new one.
   // Note: ideally we should avoid duplicates by checking participants, but RLS/security might limit us.
   // Let's create a new conversation.
+  
+  // Build insert data with required fields
+  const insertData: {
+    host_id: string;
+    coworker_id: string;
+    booking_id?: string | null;
+    space_id?: string | null;
+  } = {
+    host_id: hostId,
+    coworker_id: coworkerId
+  };
+  
+  // Only add optional fields if they are provided
+  if (bookingId) {
+    insertData.booking_id = bookingId;
+  }
+  if (spaceId) {
+    insertData.space_id = spaceId;
+  }
 
   const { data: newConv, error: createError } = await supabase
     .from('conversations')
-    .insert({
-      booking_id: bookingId,
-      // We don't have space_id on conversation table typically, or host_id/coworker_id are deprecated.
-      // We rely on participants table.
-    })
+    .insert(insertData)
     .select()
     .single();
 

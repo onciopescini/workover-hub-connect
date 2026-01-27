@@ -86,19 +86,11 @@ export const getAdminStats = async (): Promise<AdminStats> => {
     });
 
     return {
-      totalUsers: totalUsers || 0,
-      totalHosts: totalHosts || 0,
-      totalSpaces: totalSpaces || 0,
-      pendingSpaces: pendingSpaces || 0,
-      suspendedUsers: suspendedUsers || 0,
-      totalBookings: totalBookings || 0,
-      activeBookings: activeBookings || 0,
-      totalRevenue,
-      openReports: openReports || 0,
-      unresolvedTickets: unresolvedTickets || 0,
-      pendingGdprRequests: pendingGdprRequests || 0,
-      activeUsers: activeUsers || 0,
-      userGrowthTrend: 0
+      total_users: totalUsers || 0,
+      total_hosts: totalHosts || 0,
+      total_bookings: totalBookings || 0,
+      total_revenue: totalRevenue,
+      active_listings: totalSpaces || 0
     };
   } catch (error) {
     sreLogger.error('Error fetching admin stats', {}, error as Error);

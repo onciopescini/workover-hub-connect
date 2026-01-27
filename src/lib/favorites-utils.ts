@@ -50,14 +50,30 @@ export const getFavoriteSpaces = async (userId: string): Promise<FavoriteSpace[]
       throw error;
     }
 
-    return (data || []).map(item => ({
-      ...item,
-      created_at: item.created_at ?? '',
-      space: item.space ? {
-        ...item.space,
-        title: item.space.title || ''
-      } : null
-    }));
+    return (data || []).map((item): FavoriteSpace => {
+      const photos = item.space?.photos;
+      const photoArray: string[] = Array.isArray(photos) 
+        ? (photos as unknown[]).filter((p): p is string => typeof p === 'string')
+        : [];
+        
+      return {
+        id: item.id,
+        user_id: item.user_id,
+        space_id: item.space_id,
+        created_at: item.created_at ?? '',
+        space: item.space ? {
+          id: item.space.id,
+          title: item.space.title || '',
+          description: item.space.description || '',
+          address: item.space.address || '',
+          price_per_day: item.space.price_per_day || 0,
+          photos: photoArray,
+          category: item.space.category || '',
+          work_environment: item.space.work_environment || '',
+          host_id: item.space.host_id || ''
+        } : null
+      };
+    });
   } catch (error) {
     sreLogger.error('Error in getFavoriteSpaces', { 
       context: 'getFavoriteSpaces',

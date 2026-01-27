@@ -85,3 +85,24 @@ export interface AdminProfile {
   created_at: string;
   last_login?: string;
 }
+
+export interface GlobalTag {
+  id: string;
+  name: string;
+  created_at: string;
+  approved: boolean;
+  approved_by: string | null;
+}
+
+export interface AdminWarning {
+  id: string;
+  user_id: string;
+  admin_id: string;
+  warning_type: string;
+  title: string;
+  message: string;
+  severity: 'low' | 'medium' | 'high';
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}

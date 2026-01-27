@@ -5,6 +5,7 @@ import { SlotReservationResult } from "@/types/booking";
 import { createPaymentSession } from "@/lib/payment-utils";
 import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
+import type { Database, Json } from "@/integrations/supabase/types";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -15,7 +16,7 @@ function isValidRpcResponse(data: unknown): data is { booking_id: string } & Rec
 
   const obj = data;
   return (
-    'booking_id' in obj && typeof obj.booking_id === 'string'
+    'booking_id' in obj && typeof obj['booking_id'] === 'string'
   );
 }
 
@@ -112,13 +113,23 @@ export const reserveBookingSlot = async (
 
     // Since RPC now throws on error, if we are here, it is a success.
     // Construct the result object expected by the caller.
+    // Use bracket notation for index signature properties
+    const bookingId = data['booking_id'] as string;
+    const reservationToken = data['reservation_token'];
+    const reservedUntil = data['reserved_until'];
+    
     const result: SlotReservationResult = {
         success: true,
-        booking_id: data.booking_id,
-        // Map other optional fields if present in the data object
-        reservation_token: typeof data.reservation_token === 'string' ? data.reservation_token : undefined,
-        reserved_until: typeof data.reserved_until === 'string' ? data.reserved_until : undefined,
+        booking_id: bookingId
     };
+    
+    // Only add optional fields if they are strings (not undefined)
+    if (typeof reservationToken === 'string') {
+        result.reservation_token = reservationToken;
+    }
+    if (typeof reservedUntil === 'string') {
+        result.reserved_until = reservedUntil;
+    }
 
     sreLogger.info('Reservation successful', {
       component: 'booking-reservation-utils',
@@ -305,11 +316,11 @@ export const reserveMultipleSlots = async (
 
     const { data, error } = await supabase.rpc('validate_and_reserve_multi_slots', {
       space_id_param: spaceId,
-      slots_param: slotsParam,
+      slots_param: slotsParam as unknown as Database['public']['Functions']['validate_and_reserve_multi_slots']['Args']['slots_param'],
       user_id_param: user.user.id,
       guests_count_param: guestsCount,
       confirmation_type_param: confirmationType,
-      client_total_price_param: clientTotalPrice
+      client_total_price_param: clientTotalPrice ?? 0 // Default to 0 if undefined
     });
 
     if (error) {
@@ -358,7 +369,12 @@ export const reserveMultipleSlots = async (
         error: result.error
       });
       toast.error(result.error || "Errore nella prenotazione multi-slot");
-      return { success: false, error: result.error };
+      // Only include error if it's defined as a string
+      const errorResult: { success: boolean; error?: string } = { success: false };
+      if (typeof result.error === 'string') {
+        errorResult.error = result.error;
+      }
+      return errorResult;
     }
 
     sreLogger.info('Multi-slot reservation successful', {
@@ -368,11 +384,17 @@ export const reserveMultipleSlots = async (
       totalSlots: result.total_slots
     });
 
-    return {
-      success: true,
-      bookingIds: result.booking_ids,
-      reservationToken: result.reservation_token
+    // Build return object conditionally to avoid undefined values
+    const successResult: { success: boolean; bookingIds?: string[]; reservationToken?: string } = {
+      success: true
     };
+    if (Array.isArray(result.booking_ids)) {
+      successResult.bookingIds = result.booking_ids;
+    }
+    if (typeof result.reservation_token === 'string') {
+      successResult.reservationToken = result.reservation_token;
+    }
+    return successResult;
 
   } catch (error) {
     sreLogger.error('Unexpected error during multi-slot reservation', {

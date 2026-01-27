@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from './useRLSErrorHandler';
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import type { SpaceInsert } from "@/types/space";
 import { toSpaceInsertPayload, toSpaceUpdatePayload } from "@/lib/space-mappers";
 
@@ -98,7 +98,16 @@ export const useSpaceFormSubmission = ({
 
       const photoUrls = photoPreviewUrls;
       
-      const spaceData: SpaceInsert = {
+      // Normalize availability - ensure slots is always an array
+      const normalizedAvailability = {
+        ...availabilityData,
+        exceptions: availabilityData.exceptions.map(ex => ({
+          ...ex,
+          slots: ex.slots || []
+        }))
+      };
+
+      const spaceData = {
         title: formData.title || '',
         address: formData.address || '',
         features: formData.features || [],
@@ -109,8 +118,7 @@ export const useSpaceFormSubmission = ({
         category: (formData.category as Database["public"]["Enums"]["space_category"]) || 'home',
         rules: formData.rules || null,
         cancellation_policy: (formData.cancellation_policy as Database["public"]["Enums"]["cancellation_policy"] | null) || null,
-        // Cast availability to Json type for database compatibility
-        availability: availabilityData as unknown as Database['public']['Tables']['spaces']['Insert']['availability'],
+        availability: normalizedAvailability as unknown as Json,
         host_id: user.id,
         description: formData.description || "",
         photos: photoUrls,
@@ -124,7 +132,7 @@ export const useSpaceFormSubmission = ({
         ideal_guest_tags: formData.ideal_guest_tags || [],
         event_friendly_tags: formData.event_friendly_tags || [],
         confirmation_type: (formData.confirmation_type as Database["public"]["Enums"]["confirmation_type"]) || 'host_approval'
-      };
+      } as SpaceInsert;
       
       if (isEdit && initialDataId) {
         const spaceUpdate = toSpaceUpdatePayload(spaceData);
