@@ -1,212 +1,337 @@
 
-# Principal Architect Audit Report: Workover Hub Connect
-## From Prototype to Production - Gold Standard Refactoring Plan
+# Day 2: Utility Consolidation - Implementation Plan
+
+## Overview
+
+This task creates a centralized formatting library (`src/lib/format.ts`) and migrates all duplicate implementations across the codebase. This is a critical DRY (Don't Repeat Yourself) refactoring that will prevent future copy-paste programming and ensure consistent formatting across the entire application.
 
 ---
 
-## Executive Summary
+## Current State Analysis
 
-After an extensive audit of the entire codebase, I've identified **significant technical debt** that must be addressed before production release. The application has grown organically with multiple development iterations, leaving behind zombie code, architectural violations, and inconsistent patterns.
+### Duplicate `formatCurrency` Implementations Found: 10+
 
-**Current State**: Functional prototype with scattered patterns
-**Target State**: Production-ready Gold Standard architecture
+| File | Implementation Type | Issue |
+|------|---------------------|-------|
+| `src/pages/admin/AdminRevenue.tsx:31-36` | `Intl.NumberFormat('it-IT')` | Local function |
+| `src/pages/admin/AdminDashboard.tsx:65-70` | `Intl.NumberFormat('it-IT')` | Local function |
+| `src/pages/admin/AdminBookingsPage.tsx:92-96` | `Intl.NumberFormat` + `/100` | Assumes cents |
+| `src/components/host/fiscal/DAC7ReportCard.tsx:19-24` | `Intl.NumberFormat('it-IT')` | Local function |
+| `src/pages/SpaceRecap.tsx:83-88` | `Intl.NumberFormat('it-IT')` | Local function |
+| `src/components/payments/PaymentListItem.tsx:31` | Template literal `€${amount.toFixed(2)}` | Inconsistent format |
+| `src/components/payments/PaymentStats.tsx:19` | Template literal `€${amount.toFixed(2)}` | Inconsistent format |
+| `src/components/host/fiscal/FiscalDashboardContainer.tsx:60` | `€${value.toLocaleString('it-IT')}` | Manual prefix |
+| `src/components/host/fiscal/HostInvoicesReceived.tsx:97-99` | `€${Number(val).toFixed(2)}` | Manual prefix |
+| `src/components/host/fiscal/HostNonFiscalReceipts.tsx:106-110` | `€${Number(val).toFixed(2)}` | Manual prefix |
 
----
-
-## 🔴 KILL LIST (Delete Immediately)
-
-### Deprecated Components (Safe to Remove)
-
-| File | Reason | Risk |
-|------|--------|------|
-| `src/components/payments/PaymentButton.tsx` | Explicitly deprecated - shows error toast "usa TwoStepBookingForm" | None |
-| `src/components/layout/NotificationButton.tsx` | Explicitly deprecated - "notifications integrated in UnifiedHeader" | None |
-| `src/lib/booking-calculator-utils.ts` lines 88-91 | Duplicate `cn` function - already exists in `src/lib/utils.ts` | None |
-
-### Zombie Hooks (Verify Usage Before Removal)
+### Duplicate `cn` Function
 
 | File | Issue |
 |------|-------|
-| `src/hooks/useMapboxGeocodingCached.ts` | Check if `useMapboxGeocoding.ts` supersedes this |
-| `src/hooks/useOptimisticSlotLock.ts` vs `src/lib/optimistic-slot-lock.ts` | Potential duplication |
-| `src/hooks/useLoadingState.ts` vs `src/hooks/useLoading.ts` vs `src/hooks/useUnifiedLoading.ts` | Three loading hooks - consolidate |
+| `src/lib/utils.ts:4-6` | Original, using `clsx` + `twMerge` |
+| `src/lib/booking-calculator-utils.ts:88-91` | Duplicate, simplified version |
 
-### Dead Logic to Remove
+### Existing Date Formatting
 
-| Location | Code Pattern |
-|----------|--------------|
-| `src/pages/host/StripeReturn.tsx:18` | Empty catch block `{ /* no-op */ }` - add proper error handling or remove |
-| Multiple components | Console.error statements that bypass `sreLogger` |
+The codebase already has a robust `src/lib/date-time/index.ts` with:
+- `formatUtcDateForDisplay()`
+- `formatBookingDateTime()`
+- `formatRelativeDate()`
+- `formatAbsoluteDate()`
+
+The new `formatDate()` in `format.ts` will be a thin wrapper for simpler use cases.
 
 ---
 
-## 🟡 REFACTOR LIST (Technical Debt)
+## Implementation Steps
 
-### Priority 1: Service Layer Migration (Critical)
+### Step 1: Create `src/lib/format.ts`
 
-**57 files** contain direct `supabase.rpc` or `supabase.functions.invoke` calls that should move to the Service Layer:
+Create the centralized formatting library:
 
-| Domain | Files to Migrate | New Service |
-|--------|-----------------|-------------|
-| **Stripe/Payments** | `StripeConnectButton.tsx`, `HostStripeStatus.tsx`, `HostDashboardContent.tsx`, `HostOnboardingWizard.tsx`, `useStripeStatus.ts`, `useStripePayouts.ts` | `stripeService.ts` |
-| **Bookings** | `BookingCardActions.tsx`, `BookingDetailsModal.tsx`, `useCancelBookingMutation.ts`, `useBookingApproval.ts` | Extend `bookingService.ts` |
-| **Mapbox** | `AddressAutocomplete.tsx`, `useMapboxGeocoding.ts`, `MapboxTokenContext.tsx` | `mapboxService.ts` |
-| **Admin** | `AdminBookingsPage.tsx`, `AdminUsers.tsx`, `useAdminSettings.ts` | `adminService.ts` |
-| **GDPR/Privacy** | `useGDPRRequests.ts`, `PrivacyExportRequest.tsx`, `PrivacyDeletionRequest.tsx` | `privacyService.ts` |
-| **Fiscal** | `HostFiscalDataForm.tsx`, `useFiscalDashboard.ts`, `DAC7ReportCard.tsx` | `fiscalService.ts` |
-
-### Priority 2: Type Safety Violations
-
-**~30 instances** of `as unknown as` and `any` types detected:
-
-| File | Issue | Fix |
-|------|-------|-----|
-| `src/hooks/queries/useBookingsQuery.ts:70,105` | Query results cast to unknown | Create proper return types in Supabase types |
-| `src/lib/admin/admin-space-utils.ts:16` | `as unknown as AdminSpace[]` | Define RPC return type |
-| `src/hooks/useAdminUsers.ts:110-111` | JSON.parse with unknown cast | Validate JSON structure before parsing |
-| `src/components/host/revenue/AdvancedRevenueAnalytics.tsx:37` | `'host_daily_metrics' as any` | Add view to Supabase types |
-| `src/hooks/useUserActions.ts:13` | Dynamic RPC function name | Create typed wrapper functions |
-
-### Priority 3: Duplicate Utility Functions
-
-**7+ implementations** of `formatCurrency` scattered across:
-- `src/pages/admin/AdminRevenue.tsx:31-36`
-- `src/pages/admin/AdminDashboard.tsx:65-70`
-- `src/pages/admin/AdminBookingsPage.tsx:92-96`
-- `src/components/payments/PaymentListItem.tsx:31`
-- `src/components/payments/PaymentStats.tsx:19`
-- `src/pages/SpaceRecap.tsx:83-88`
-- `src/components/host/fiscal/DAC7ReportCard.tsx:19-24`
-
-**Action**: Create `src/lib/format.ts` with:
 ```typescript
-export const formatCurrency = (amount: number, options?: { cents?: boolean }) => 
-  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' })
-    .format(options?.cents ? amount / 100 : amount);
+/**
+ * Centralized formatting utilities for Workover Hub Connect
+ * 
+ * USAGE:
+ * import { formatCurrency, formatDate, formatPercentage } from '@/lib/format';
+ * 
+ * formatCurrency(1234.56)           // → "€ 1.234,56"
+ * formatCurrency(12345, { cents: true }) // → "€ 123,45" (Stripe cents)
+ * formatDate('2024-01-15')          // → "15/01/2024"
+ * formatDate('2024-01-15', 'MMMM yyyy') // → "gennaio 2024"
+ */
 
-export const formatDate = (date: string | Date, format?: string) => { ... };
+import { format, parseISO } from 'date-fns';
+import { it } from 'date-fns/locale';
+
+/**
+ * Formats a number as EUR currency using Italian locale.
+ * @param amount - The amount to format.
+ * @param options.cents - If true, divides amount by 100 (for Stripe cents). Default: false.
+ * @returns Formatted currency string (e.g., "€ 1.234,56")
+ */
+export const formatCurrency = (
+  amount: number | null | undefined,
+  options?: { cents?: boolean }
+): string => {
+  if (amount === null || amount === undefined) return '€ 0,00';
+  
+  const value = options?.cents ? amount / 100 : amount;
+  
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
+/**
+ * Formats a date string or Date object.
+ * @param date - The date to format (ISO string, Date object, null, or undefined).
+ * @param formatStr - Optional format string (default: 'dd/MM/yyyy').
+ * @returns Formatted date string, or '-' if date is invalid/null.
+ */
+export const formatDate = (
+  date: string | Date | null | undefined,
+  formatStr: string = 'dd/MM/yyyy'
+): string => {
+  if (!date) return '-';
+  
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, formatStr, { locale: it });
+  } catch {
+    return '-';
+  }
+};
+
+/**
+ * Formats a number as percentage.
+ * @param value - The value to format (0.15 → "15%", 15 → "15%").
+ * @param options.decimal - If true, treats value as decimal (0.15 → 15%). Default: false.
+ * @returns Formatted percentage string.
+ */
+export const formatPercentage = (
+  value: number | null | undefined,
+  options?: { decimal?: boolean }
+): string => {
+  if (value === null || value === undefined) return '0%';
+  
+  const percentage = options?.decimal ? value * 100 : value;
+  
+  return new Intl.NumberFormat('it-IT', {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  }).format(percentage / 100);
+};
+
+/**
+ * Formats a number with thousands separator (Italian locale).
+ * @param value - The number to format.
+ * @returns Formatted number string (e.g., "1.234.567").
+ */
+export const formatNumber = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return '0';
+  
+  return new Intl.NumberFormat('it-IT').format(value);
+};
 ```
 
-### Priority 4: Status Configuration Inconsistency
+---
 
-`src/utils/statusUtils.ts` provides centralized status configs, but ignored by:
-- `src/components/bookings/EnhancedBookingCard.tsx:84-161` - inline status definitions
-- `src/pages/admin/AdminBookingsPage.tsx:75-90` - local `getStatusBadgeColor`
+### Step 2: Migrate Admin Pages
 
-### Priority 5: Hardcoded Values
+**File: `src/pages/admin/AdminRevenue.tsx`**
 
-| Location | Issue | Fix |
-|----------|-------|-----|
-| `src/services/api/bookingService.ts:11-12` | Hardcoded Supabase URL and anon key | Import from `@/integrations/supabase/client` |
-| `src/components/payments/PaymentButton.tsx:66` | Hardcoded "5%" fee string | Use `PricingEngine.GUEST_FEE_PERCENT` |
-| `supabase/functions/create-stripe-connect-account/index.ts:111` | Fallback `localhost:3000` | Use origin header only |
+| Line | Before | After |
+|------|--------|-------|
+| 31-36 | Local `formatCurrency` function | Delete function |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+| All usages | `formatCurrency(row.gross_volume)` | (unchanged - same signature) |
+
+**File: `src/pages/admin/AdminDashboard.tsx`**
+
+| Line | Before | After |
+|------|--------|-------|
+| 65-70 | Local `formatCurrency` function | Delete function |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+
+**File: `src/pages/admin/AdminBookingsPage.tsx`**
+
+| Line | Before | After |
+|------|--------|-------|
+| 92-103 | Complex local function with `/100` and comments | Delete function |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+| Usages | `formatCurrency(payment.amount)` | `formatCurrency(payment.amount, { cents: true })` |
 
 ---
 
-## 🟢 GREEN LIGHT (Production Ready)
+### Step 3: Migrate Payment Components
 
-### Excellent Architecture
+**File: `src/components/payments/PaymentListItem.tsx`**
 
-| Area | Files | Why It's Good |
-|------|-------|---------------|
-| **New Service Layer** | `src/services/api/bookingService.ts` | Clean separation, typed interfaces, proper error codes |
-| **Pricing Engine** | `src/lib/pricing-engine.ts` | Centralized business logic, testable, documented |
-| **Status Utils** | `src/utils/statusUtils.ts` | Centralized config pattern (just needs adoption) |
-| **SRE Logger** | `src/lib/sre-logger.ts` | Proper structured logging with context |
-| **Error Boundary** | `src/components/ErrorBoundaryWrapper.tsx` | Global error handling |
-| **Auth System** | `src/contexts/AuthContext.tsx`, `src/hooks/auth/*` | Well-structured auth flow |
-| **Booking Wizard** | `src/components/booking-wizard/TwoStepBookingForm.tsx` | Modern two-step flow |
-| **Payment Success/Cancel** | `src/pages/BookingSuccess.tsx`, `src/pages/BookingCancelled.tsx` | Proper post-payment UX |
+| Line | Before | After |
+|------|--------|-------|
+| 31 | `const formatCurrency = (amount: number) => \`€${amount.toFixed(2)}\`;` | Delete line |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
 
-### Well-Documented
+**File: `src/components/payments/PaymentStats.tsx`**
 
-| Document | Purpose |
-|----------|---------|
-| `docs/DEVELOPER_GUIDE.md` | Onboarding guide |
-| `docs/ARCHITECTURE.md` | System architecture |
-| `docs/code-bloat-audit-report.md` | Previous optimization work |
+| Line | Before | After |
+|------|--------|-------|
+| 19 | `const formatCurrency = (amount: number) => \`€${amount.toFixed(2)}\`;` | Delete line |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
 
 ---
 
-## 🔵 ROADMAP TO PRODUCTION
+### Step 4: Migrate Fiscal Components
 
-### Phase 1: Critical Bug Fixes (1-2 days)
+**File: `src/components/host/fiscal/DAC7ReportCard.tsx`**
 
-Fix the **12 TypeScript build errors** currently blocking deployment:
+| Line | Before | After |
+|------|--------|-------|
+| 19-24 | Local `formatCurrency` function | Delete function |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
 
-| Error | File | Fix |
-|-------|------|-----|
-| `messageDialogOpen` prop mismatch | `RefactoredBookingsDashboardContent.tsx:68` | Remove unused prop from interface or add to component |
-| `stripe_connected` index signature | `BookingCardActions.tsx:42` | Use `['stripe_connected']` bracket notation |
-| `email` missing on ChatParticipant | `RecentMessages.tsx:44` | Add email to ChatParticipant type |
-| AmenityIcon type incompatibility | `SpacesGallerySection.tsx:28-34` | Use `LucideIcon` type from lucide-react |
-| Missing `API_ENDPOINTS` | `SpacesGallerySection.tsx:205` | Import from `@/constants` |
-| `profiles` relation error | `WhosHereList.tsx:74` | Fix Supabase join query |
-| ReactNode type errors | `NotificationCenter.tsx:235-239` | Type metadata values properly |
+**File: `src/components/host/fiscal/FiscalDashboardContainer.tsx`**
 
-### Phase 2: Service Layer Completion (3-5 days)
+| Line | Before | After |
+|------|--------|-------|
+| 60 | `€{thresholdQuery.data.total_income.toLocaleString('it-IT')}` | `{formatCurrency(thresholdQuery.data.total_income)}` |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
 
-Create missing services following the `bookingService.ts` pattern:
+**File: `src/components/host/fiscal/HostInvoicesReceived.tsx`**
 
-```text
-src/services/api/
-├── bookingService.ts    ✅ EXISTS
-├── stripeService.ts     🔵 CREATE
-├── mapboxService.ts     🔵 CREATE
-├── adminService.ts      🔵 CREATE
-├── privacyService.ts    🔵 CREATE
-├── fiscalService.ts     🔵 CREATE
-└── index.ts             ✅ EXISTS
+| Lines | Before | After |
+|-------|--------|-------|
+| 97 | `Imponibile: €${Number(invoice.base_amount).toFixed(2)}` | `Imponibile: {formatCurrency(invoice.base_amount)}` |
+| 98 | `IVA: €${Number(invoice.vat_amount).toFixed(2)}` | `IVA: {formatCurrency(invoice.vat_amount)}` |
+| 99 | `Totale: €${Number(invoice.total_amount).toFixed(2)}` | `Totale: {formatCurrency(invoice.total_amount)}` |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+
+**File: `src/components/host/fiscal/HostNonFiscalReceipts.tsx`**
+
+| Lines | Before | After |
+|-------|--------|-------|
+| 106-110 | Manual `€${Number(val).toFixed(2)}` | `{formatCurrency(val)}` |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+
+---
+
+### Step 5: Migrate SpaceRecap Page
+
+**File: `src/pages/SpaceRecap.tsx`**
+
+| Line | Before | After |
+|------|--------|-------|
+| 83-88 | Local `formatCurrency` function | Delete function |
+| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
+
+---
+
+### Step 6: Remove Duplicate `cn` Function
+
+**File: `src/lib/booking-calculator-utils.ts`**
+
+| Line | Action |
+|------|--------|
+| 88-91 | Delete the duplicate `cn` function |
+| 1 | Add `import { cn } from '@/lib/utils';` |
+
+Verify any internal usages in this file still work with the imported version.
+
+---
+
+### Step 7: Update Barrel Export
+
+**File: `src/lib/index.ts`** (create if not exists)
+
+```typescript
+// Re-export commonly used utilities
+export { cn } from './utils';
+export { formatCurrency, formatDate, formatPercentage, formatNumber } from './format';
 ```
 
-### Phase 3: Utility Consolidation (1-2 days)
+---
 
-1. Create `src/lib/format.ts` with `formatCurrency`, `formatDate`
-2. Migrate all 7+ inline implementations
-3. Migrate components to use `statusUtils.ts`
-4. Remove duplicate `cn` function from `booking-calculator-utils.ts`
+## Files to Create
 
-### Phase 4: Error Handling Standardization (1-2 days)
+| File | Description |
+|------|-------------|
+| `src/lib/format.ts` | Centralized formatting utilities |
 
-1. Replace all `console.error` with `sreLogger.error`
-2. Replace empty catch blocks with proper error handling
-3. Add `Loader2` spinners to all async buttons
-4. Standardize on `LoadingSpinner` component
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/admin/AdminRevenue.tsx` | Remove local formatCurrency, import from @/lib/format |
+| `src/pages/admin/AdminDashboard.tsx` | Remove local formatCurrency, import from @/lib/format |
+| `src/pages/admin/AdminBookingsPage.tsx` | Remove local function, use `{ cents: true }` option |
+| `src/components/payments/PaymentListItem.tsx` | Remove local function, import from @/lib/format |
+| `src/components/payments/PaymentStats.tsx` | Remove local function, import from @/lib/format |
+| `src/components/host/fiscal/DAC7ReportCard.tsx` | Remove local function, import from @/lib/format |
+| `src/components/host/fiscal/FiscalDashboardContainer.tsx` | Replace inline formatting |
+| `src/components/host/fiscal/HostInvoicesReceived.tsx` | Replace inline formatting |
+| `src/components/host/fiscal/HostNonFiscalReceipts.tsx` | Replace inline formatting |
+| `src/pages/SpaceRecap.tsx` | Remove local function, import from @/lib/format |
+| `src/lib/booking-calculator-utils.ts` | Remove duplicate `cn`, import from utils |
 
 ---
 
-## Security & Stability Gaps Summary
+## Technical Notes
 
-| Category | Issue Count | Priority |
-|----------|-------------|----------|
-| Empty catch blocks | 3 | High |
-| `console.error` instead of sreLogger | 8+ | Medium |
-| Missing loading spinners | 4 | Medium |
-| Client-only validation (no server match) | Review needed | High |
-| Hardcoded credentials in service | 1 | Critical |
+### Why `options.cents`?
+
+Stripe stores amounts in the smallest currency unit (cents for EUR). The `{ cents: true }` option handles this conversion cleanly:
+
+```typescript
+// Stripe payment amount (in cents)
+formatCurrency(12345, { cents: true }) // → "€ 123,45"
+
+// Database amount (in euros)
+formatCurrency(123.45) // → "€ 123,45"
+```
+
+### Null/Undefined Handling
+
+The new functions handle edge cases gracefully:
+
+```typescript
+formatCurrency(null)      // → "€ 0,00"
+formatCurrency(undefined) // → "€ 0,00"
+formatDate(null)          // → "-"
+formatDate(undefined)     // → "-"
+```
+
+### Locale Consistency
+
+All functions use `it-IT` locale for:
+- Number formatting: `1.234,56` (dot for thousands, comma for decimals)
+- Currency symbol: `€` with proper spacing
+- Date formatting: Italian month/day names
 
 ---
 
-## Metrics Target
+## Verification Checklist
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| TypeScript errors | 12 | 0 |
-| Direct Supabase calls in components | 57 | 0 |
-| Duplicate utility functions | 15+ | 0 |
-| `any` type usage | 30+ | <5 |
-| Empty catch blocks | 3 | 0 |
+After implementation, verify:
+
+1. All admin pages display currency correctly
+2. Payment components show proper EUR formatting
+3. Fiscal reports maintain Italian locale
+4. No TypeScript errors related to formatting
+5. Build completes successfully
 
 ---
 
-## Recommended Execution Order
+## Expected Outcome
 
-1. **Day 1**: Fix 12 build errors (blocking)
-2. **Day 2-3**: Create `stripeService.ts` and migrate Stripe calls
-3. **Day 4**: Create `src/lib/format.ts` and consolidate utilities
-4. **Day 5**: Error handling standardization
-5. **Day 6-7**: Complete remaining service migrations
-6. **Day 8**: Delete zombie code from KILL LIST
-7. **Day 9-10**: Integration testing and verification
-
-**Total Estimated Effort**: 10 working days for full Gold Standard compliance
+| Metric | Before | After |
+|--------|--------|-------|
+| `formatCurrency` implementations | 10+ | 1 |
+| Duplicate `cn` functions | 2 | 1 |
+| Lines of duplicate code | ~50 | 0 |
+| Consistency | Mixed formats | Uniform `it-IT` |
