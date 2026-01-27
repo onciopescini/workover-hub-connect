@@ -138,7 +138,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Footer / Input */}
       <div className="p-4 bg-background border-t">
         <form onSubmit={handleSend} className="flex gap-2">
+          <label htmlFor="chat-input" className="sr-only">
+            Scrivi un messaggio
+          </label>
           <Input
+            id="chat-input"
+            aria-label="Scrivi un messaggio"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Scrivi un messaggio..."

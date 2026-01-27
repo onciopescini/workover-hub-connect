@@ -4,6 +4,7 @@ import { SpaceDetailContent } from '@/components/spaces/SpaceDetailContent';
 import { sreLogger } from '@/lib/sre-logger';
 import { useSpaceDetail } from '@/hooks/useSpaceDetail';
 import { SpaceDetailSkeleton } from '@/components/spaces/SpaceDetailSkeleton';
+import { useSEO, generateSpaceSEO } from '@/hooks/useSEO';
 
 const SpaceHeroStitch = lazy(() => import('@/feature/spaces/SpaceHeroStitch'));
 
@@ -14,6 +15,18 @@ const SpaceDetail = () => {
   sreLogger.debug('SpaceDetail - ID from URL', { spaceId: id, component: 'SpaceDetail' });
   
   const { space, isLoading, error, reviews, cachedRating } = useSpaceDetail(id);
+
+  // Wire dynamic SEO - unique meta tags for each space (WhatsApp/Facebook/Google)
+  useSEO(space ? generateSpaceSEO({
+    id: space.id,
+    title: (space as any).name || space.title || 'Spazio Coworking',
+    description: space.description,
+    location: (space as any).city_name || (space as any).city || space.address,
+    photos: space.photos,
+    amenities: space.amenities,
+    price_per_day: space.price_per_day,
+    average_rating: cachedRating
+  }) : {});
 
   // Loading state
   if (isLoading) {

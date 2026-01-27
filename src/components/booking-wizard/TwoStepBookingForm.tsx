@@ -235,26 +235,27 @@ export function TwoStepBookingForm({
                   rules={rules || ''}
                 />
                 
-                {/* Policy Acceptance */}
+                {/* Policy Acceptance - Large tap target for mobile */}
                 <div className="mt-4 p-4 border rounded-lg bg-muted/50">
-                  <div className="flex items-start space-x-3">
+                  <label 
+                    htmlFor="accept-policy" 
+                    className="flex items-start space-x-3 cursor-pointer"
+                  >
                     <Checkbox
                       id="accept-policy"
                       checked={acceptedPolicy}
                       onCheckedChange={(checked: boolean) => setAcceptedPolicy(checked)}
+                      className="mt-0.5"
                     />
                     <div className="flex-1">
-                      <label
-                        htmlFor="accept-policy"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                      >
+                      <span className="text-sm font-medium leading-none">
                         Accetto le policy di cancellazione e le regole della casa
-                      </label>
+                      </span>
                       <p className="text-xs text-muted-foreground mt-1">
                         Confermo di aver letto e accettato le condizioni di prenotazione
                       </p>
                     </div>
-                  </div>
+                  </label>
                 </div>
               </div>
             )}
