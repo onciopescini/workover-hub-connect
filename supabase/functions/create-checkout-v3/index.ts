@@ -2,7 +2,10 @@
 // Deno.serve + CORS + Idempotency + Stripe via fetch + robust error handling
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
-type CreateCheckoutBody = { booking_id: string; /* UUID */ };
+type CreateCheckoutBody = { 
+  booking_id: string; /* UUID */
+  origin?: string;    // Frontend origin for redirect URLs
+};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -41,7 +44,7 @@ async function getUserFromAuth(req: Request) {
 async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, user_id, status, total_price")
+    .select("id, user_id, status, total_price, space_id")
     .eq("id", booking_id)
     .single();
 
@@ -51,7 +54,7 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
 
   const amountCents = Math.max(0, Math.round(Number(data.total_price) * 100));
   const currency = "eur";
-  return { booking: data, amountCents, currency };
+  return { booking: data, amountCents, currency, spaceId: data.space_id };
 }
 
 async function findPaymentByIdempotencyKey(key: string) {
@@ -102,7 +105,12 @@ async function createStripeCheckoutSession(params: {
   currency: string;
   idempotencyKey: string;
   booking_id: string;
+  origin: string;
+  space_id: string;
 }) {
+  // Fallback to production URL if origin not provided
+  const frontendOrigin = params.origin || 'https://workover-hub-connect.lovable.app';
+  
   const body = new URLSearchParams({
     mode: "payment",
     "payment_method_types[]": "card",
@@ -110,8 +118,8 @@ async function createStripeCheckoutSession(params: {
     "line_items[0][price_data][currency]": params.currency,
     "line_items[0][price_data][unit_amount]": String(params.amountCents),
     "line_items[0][price_data][product_data][name]": `Booking ${params.booking_id}`,
-    success_url: `${SUPABASE_URL}/functions/v1/validate-payment?booking_id=${params.booking_id}&status=success`,
-    cancel_url: `${SUPABASE_URL}/functions/v1/validate-payment?booking_id=${params.booking_id}&status=cancel`,
+    success_url: `${frontendOrigin}/spaces/${params.space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendOrigin}/bookings?canceled=true&booking_id=${params.booking_id}`,
     "metadata[booking_id]": params.booking_id,
   });
 
@@ -197,12 +205,17 @@ Deno.serve(async (req) => {
     const bookingRes = await fetchBookingAndPrice(payload.booking_id, user.id);
     if ("error" in bookingRes) return err(bookingRes.error!, 400);
 
+    // Get origin from request for redirect URLs
+    const origin = req.headers.get('origin') || payload.origin || 'https://workover-hub-connect.lovable.app';
+
     // 3) Stripe session with Idempotency-Key
     const stripe = await createStripeCheckoutSession({
       amountCents: bookingRes.amountCents!,
       currency: bookingRes.currency!,
       idempotencyKey,
       booking_id: payload.booking_id,
+      origin,
+      space_id: bookingRes.spaceId!,
     });
     if ("error" in stripe) return err(stripe.error!, 400, stripe);
 
