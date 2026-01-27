@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { checkAccountStatus } from '@/services/api/stripeService';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 
@@ -43,24 +43,20 @@ export const useStripeStatus = (): UseStripeStatusResult => {
           isReturningFromStripe 
         });
 
-        const { data, error } = await supabase.functions.invoke('check-stripe-status');
-
-        if (error) {
-          throw error;
-        }
+        const statusResult = await checkAccountStatus();
 
         sreLogger.info('Stripe status verification complete', { 
           userId: authState.user.id, 
-          connected: data?.connected,
-          updated: data?.updated
+          connected: statusResult.connected,
+          updated: statusResult.updated
         });
 
         // Force complete profile refresh with cache invalidation
-        if (data?.updated || isReturningFromStripe) {
+        if (statusResult.updated || isReturningFromStripe) {
           // Wait for profile refresh to complete
           await refreshProfile();
           
-          if (data?.connected) {
+          if (statusResult.connected) {
             toast.success('Account Stripe collegato con successo!');
           }
         }
@@ -91,11 +87,9 @@ export const useStripeStatus = (): UseStripeStatusResult => {
 
     try {
       setIsVerifying(true);
-      const { data, error } = await supabase.functions.invoke('check-stripe-status');
+      const statusResult = await checkAccountStatus();
 
-      if (error) throw error;
-
-      if (data?.updated) {
+      if (statusResult.updated) {
         await refreshProfile();
         toast.success('Status Stripe aggiornato');
       } else {

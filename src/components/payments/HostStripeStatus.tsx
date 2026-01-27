@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { StripeStatusPill } from "@/components/host/StripeStatusPill";
 import { CreditCard, RefreshCw } from "lucide-react";
 import { sreLogger } from '@/lib/sre-logger';
 import { useStripeStatus } from "@/hooks/useStripeStatus";
-import { API_ENDPOINTS } from "@/constants";
+import { createOnboardingLink } from "@/services/api/stripeService";
 
 type Props = {
   className?: string;
@@ -33,19 +32,19 @@ export default function HostStripeStatus({ className = "" }: Props) {
   const connect = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.STRIPE_CONNECT, {
-        body: { return_url: window.location.origin + '/host/dashboard?stripe_setup=success' }
-      });
+      const result = await createOnboardingLink();
 
-      if (error) throw error;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create onboarding link');
+      }
 
-      if (data?.url) {
-        window.location.href = data.url;
+      if (result.url) {
+        window.location.href = result.url;
       } else {
         throw new Error('No redirect URL returned');
       }
     } catch (error) {
-      console.error('Stripe connect error:', error);
+      sreLogger.error('Stripe connect error', { component: 'HostStripeStatus' }, error as Error);
       toast.error("Si è verificato un errore durante la connessione a Stripe");
     } finally {
       setLoading(false);
