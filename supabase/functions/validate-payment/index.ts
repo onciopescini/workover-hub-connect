@@ -105,6 +105,7 @@ serve(async (req) => {
             amount: totalAmount,
             currency: (session.currency || 'eur').toUpperCase(),
             payment_status: 'completed',
+            payment_status_enum: 'succeeded',
             stripe_session_id: session_id,
             receipt_url: session.receipt_url,
             host_amount: hostAmount,
@@ -127,6 +128,7 @@ serve(async (req) => {
           .from('payments')
           .update({
             payment_status: 'completed',
+            payment_status_enum: 'succeeded',
             receipt_url: session.receipt_url
           })
           .eq('id', existingPayment.id);
