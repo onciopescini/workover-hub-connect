@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -12,9 +11,10 @@ import { EnhancedSuggestionCard } from "@/components/networking/EnhancedSuggesti
 import { NetworkingSearch } from "@/components/networking/NetworkingSearch";
 import { ConnectionRequestCard } from "@/components/networking/ConnectionRequestCard";
 import { WhosHereList } from "@/components/networking/WhosHereList";
-import { EnhancedConnectionCard as SearchResultCard } from "@/components/networking/EnhancedConnectionCard"; // Reusing card for results, or create CoworkerCard
+import { EnhancedConnectionCard as SearchResultCard } from "@/components/networking/EnhancedConnectionCard";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useNetworkingStats } from "@/hooks/useNetworkingStats";
 
 const Networking = () => {
   const navigate = useNavigate();
@@ -34,13 +34,16 @@ const Networking = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
 
-  // Mock data for dashboard stats
+  // Fetch real networking stats from RPC
+  const { data: networkingStats } = useNetworkingStats();
+
+  // Real data for dashboard stats (no more mock data!)
   const dashboardStats = {
     totalConnections: getActiveConnections().length,
     pendingRequests: getReceivedRequests().length,
-    messagesThisWeek: 24,
-    profileViews: 89,
-    connectionRate: 78
+    messagesThisWeek: networkingStats?.messagesThisWeek ?? 0,
+    profileViews: networkingStats?.profileViews ?? 0,
+    connectionRate: networkingStats?.connectionRate ?? 0
   };
 
   const savedSearches = [

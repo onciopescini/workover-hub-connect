@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArchiveConversationPayload,
-  ChatParticipant,
   Conversation,
   DeleteMessagePayload,
   MarkConversationUnreadPayload,
@@ -14,29 +13,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { queryKeys } from "@/lib/react-query-config";
-
-interface ConversationQueryResult {
-  id: string;
-  updated_at: string;
-  last_message: string | null;
-  last_message_at: string | null;
-  conversation_participants: {
-    user_id?: string | null;
-    archived_at?: string | null;
-    last_read_at?: string | null;
-    profiles: {
-      id: string;
-      first_name: string | null;
-      last_name: string | null;
-      profile_photo_url: string | null;
-    };
-  }[];
-  participant_status?: {
-    user_id: string;
-    archived_at: string | null;
-    last_read_at: string | null;
-  }[];
-}
+import * as chatService from "@/services/api/chatService";
 
 export interface UseChatResult {
   conversations: Conversation[];
@@ -73,140 +50,60 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     [activeConversationId]
   );
 
-  // Fetch Conversations (Optimized)
+  // Fetch Conversations using chatService
   const { data: conversations, isLoading: isLoadingConversations } = useQuery({
     queryKey: conversationsQueryKey,
     queryFn: async (): Promise<Conversation[]> => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
-        .from("conversations")
-        .select(`
-          id,
-          updated_at,
-          last_message,
-          last_message_at,
-          participant_status:conversation_participants!inner (
-            user_id,
-            archived_at,
-            last_read_at
-          ),
-          conversation_participants:conversation_participants (
-            user_id,
-            archived_at,
-            last_read_at,
-            profiles (
-              id,
-              first_name,
-              last_name,
-              profile_photo_url
-            )
-          )
-        `)
-        .eq("participant_status.user_id", user.id)
-        .is("participant_status.archived_at", null)
-        .order("updated_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching conversations:", error);
+      const result = await chatService.fetchConversations(user.id);
+      if (!result.success) {
         toast.error("Impossibile caricare le conversazioni");
         return [];
       }
-
-      const conversationRows: ConversationQueryResult[] = data ?? [];
-
-      return conversationRows.map((conv) => ({
-        id: conv.id,
-        updated_at: conv.updated_at,
-        participants: conv.conversation_participants.map((cp): ChatParticipant => ({
-          id: cp.profiles.id,
-          first_name: cp.profiles.first_name,
-          last_name: cp.profiles.last_name,
-          profile_photo_url: cp.profiles.profile_photo_url,
-          avatar_url: cp.profiles.profile_photo_url || null,
-        })),
-        last_message: conv.last_message
-          ? {
-              content: conv.last_message,
-              created_at: conv.last_message_at || conv.updated_at,
-            }
-          : null,
-        archived_at: conv.participant_status?.[0]?.archived_at ?? null,
-        last_read_at: conv.participant_status?.[0]?.last_read_at ?? null,
-      }));
+      return result.conversations || [];
     },
     enabled: !!user?.id,
   });
 
-  // Fetch Messages for active conversation
+  // Fetch Messages using chatService
   const { data: messages, isLoading: isLoadingMessages } = useQuery({
     queryKey: messagesQueryKey,
     queryFn: async (): Promise<Message[]> => {
       if (!activeConversationId) return [];
 
-      const { data, error } = await supabase
-        .from("messages")
-        .select("id, conversation_id, sender_id, content, created_at, is_read")
-        .eq("conversation_id", activeConversationId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching messages:", error);
-        throw error;
+      const result = await chatService.fetchMessages(activeConversationId);
+      if (!result.success) {
+        throw new Error(result.error);
       }
-
-      return (data ?? []) as Message[];
+      return result.messages || [];
     },
     enabled: !!activeConversationId,
   });
 
-  // Send Message Mutation
+  // Send Message Mutation using chatService
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-        if (!activeConversationId || !user?.id) throw new Error("Missing conversation or user");
+      if (!activeConversationId || !user?.id) throw new Error("Missing conversation or user");
 
-        // First, get the booking_id associated with this conversation
-        const { data: conversationData, error: convError } = await supabase
-            .from("conversations")
-            .select("booking_id")
-            .eq("id", activeConversationId)
-            .single();
+      // Use chatService - NO FALLBACK UUID, booking_id can be null
+      const result = await chatService.sendMessage({
+        conversationId: activeConversationId,
+        senderId: user.id,
+        content
+      });
 
-        if (convError || !conversationData) {
-             throw new Error("Could not find conversation details");
-        }
-
-        const bookingId = conversationData.booking_id;
-        const effectiveBookingId = bookingId || "00000000-0000-0000-0000-000000000000"; // Fallback to avoid crash
-
-        const { error } = await supabase
-            .from("messages")
-            .insert({
-                conversation_id: activeConversationId,
-                sender_id: user.id,
-                content,
-                booking_id: effectiveBookingId
-            });
-
-        if (error) throw error;
-
-        // Update conversation updated_at
-        await supabase
-            .from("conversations")
-            .update({
-                updated_at: new Date().toISOString(),
-                last_message: content,
-                last_message_at: new Date().toISOString()
-            })
-            .eq("id", activeConversationId);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
     },
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: messagesQueryKey });
-        queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
+      queryClient.invalidateQueries({ queryKey: messagesQueryKey });
+      queryClient.invalidateQueries({ queryKey: conversationsQueryKey });
     },
     onError: (error) => {
-        toast.error("Errore nell'invio del messaggio");
-        console.error(error);
+      toast.error("Errore nell'invio del messaggio");
+      console.error(error);
     }
   });
 

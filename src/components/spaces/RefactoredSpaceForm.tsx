@@ -47,7 +47,7 @@ const RefactoredSpaceForm = ({ initialData, isEdit = false }: RefactoredSpaceFor
         <RefactoredBasicInformation />
         <RefactoredSpaceDetails />
         <RefactoredLocationPricing />
-        <RefactoredAvailabilityScheduler />
+        <RefactoredAvailabilityScheduler spaceId={initialData?.id} />
         <RefactoredPhotos 
           photoPreviewUrls={photoPreviewUrls}
           onPhotoChange={handlePhotoChange}

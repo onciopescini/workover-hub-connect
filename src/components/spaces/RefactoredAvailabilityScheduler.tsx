@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +11,7 @@ import { SpaceFormData } from "@/schemas/spaceSchema";
 import { type AvailabilityData, type DaySchedule, type WeeklySchedule, type TimeSlot } from "@/types/availability";
 import { Calendar, Settings, AlertTriangle } from "lucide-react";
 import { sreLogger } from '@/lib/sre-logger';
+import { getBookingsForSpace } from "@/services/api/bookingService";
 
 // Robust normalization function that ensures strict AvailabilityData compliance
 const normalizeAvailabilityData = (data: any): AvailabilityData => {
@@ -55,9 +57,37 @@ const normalizeAvailabilityData = (data: any): AvailabilityData => {
   };
 };
 
-export const RefactoredAvailabilityScheduler = () => {
+interface RefactoredAvailabilitySchedulerProps {
+  spaceId?: string | undefined; // Optional - undefined for new spaces
+}
+
+export const RefactoredAvailabilityScheduler = ({ spaceId }: RefactoredAvailabilitySchedulerProps) => {
   const form = useFormContext<SpaceFormData>();
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
+
+  // Fetch real bookings for the space (only in edit mode with advanced view)
+  const { data: bookingsData } = useQuery({
+    queryKey: ['space-bookings-scheduler', spaceId],
+    queryFn: async () => {
+      if (!spaceId) return [];
+      const result = await getBookingsForSpace(spaceId);
+      if (!result.success || !result.bookings) return [];
+      
+      // Transform to match the expected interface for conflict detection
+      return result.bookings.map(b => ({
+        id: b.id,
+        booking_date: b.booking_date,
+        start_time: b.start_time || '00:00',
+        end_time: b.end_time || '23:59',
+        status: b.status || 'pending',
+        user_id: b.user_id || ''
+      }));
+    },
+    enabled: !!spaceId && viewMode === 'advanced',
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  const spaceBookings = bookingsData || [];
 
   // Check if at least one day is enabled with time slots
   const hasAtLeastOneDay = useMemo(() => {
@@ -130,7 +160,7 @@ export const RefactoredAvailabilityScheduler = () => {
                 <div className="space-y-6">
                   <ConflictManagementSystem
                     availability={normalizeAvailabilityData(field.value)}
-                    bookings={[]} // TODO: Pass real bookings
+                    bookings={spaceBookings}
                     onConflictResolved={(bookingId, action) => {
                       sreLogger.info('Conflict resolved', { 
                         context: 'RefactoredAvailabilityScheduler',
@@ -146,8 +176,8 @@ export const RefactoredAvailabilityScheduler = () => {
                       const normalizedAvailability = normalizeAvailabilityData(availability);
                       field.onChange(normalizedAvailability);
                     }}
-                    spaceId="calendar-space"
-                    bookings={[]} // TODO: Pass real bookings
+                    spaceId={spaceId || 'new-space'}
+                    bookings={spaceBookings}
                   />
                 </div>
               )}

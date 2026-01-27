@@ -39,6 +39,22 @@ export interface CreateCheckoutSessionResult {
   errorCode?: 'UNAUTHORIZED' | 'INVALID_REQUEST' | 'NETWORK' | 'SERVER_ERROR';
 }
 
+export interface SpaceBooking {
+  id: string;
+  booking_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  status: string | null;
+  guests_count: number;
+  user_id?: string;
+}
+
+export interface GetSpaceBookingsResult {
+  success: boolean;
+  bookings?: SpaceBooking[];
+  error?: string;
+}
+
 // ============= RESERVE SLOT =============
 
 /**
@@ -230,5 +246,43 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
       error: 'Connection failed, please check your internet',
       errorCode: 'NETWORK'
     };
+  }
+}
+
+// ============= GET BOOKINGS FOR SPACE =============
+
+/**
+ * Fetches all active bookings for a specific space.
+ * Used by the availability scheduler to detect conflicts.
+ * 
+ * @param spaceId - The space ID to fetch bookings for
+ * @returns Result with bookings on success, or error details on failure
+ */
+export async function getBookingsForSpace(spaceId: string): Promise<GetSpaceBookingsResult> {
+  if (!spaceId) {
+    return { success: false, error: 'Space ID is required' };
+  }
+
+  sreLogger.info('Fetching bookings for space', { component: 'bookingService', spaceId });
+
+  try {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, booking_date, start_time, end_time, status, guests_count, user_id')
+      .eq('space_id', spaceId)
+      .in('status', ['pending', 'confirmed'])
+      .is('deleted_at', null)
+      .gte('booking_date', new Date().toISOString().split('T')[0]) // Only future bookings
+      .order('booking_date', { ascending: true });
+
+    if (error) {
+      sreLogger.error('Error fetching space bookings', { component: 'bookingService' }, error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, bookings: (data || []) as SpaceBooking[] };
+  } catch (err) {
+    sreLogger.error('Exception fetching space bookings', { component: 'bookingService' }, err as Error);
+    return { success: false, error: 'Failed to fetch bookings' };
   }
 }
