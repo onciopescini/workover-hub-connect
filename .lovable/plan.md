@@ -1,243 +1,218 @@
 
-# Implementation Plan: Dual Fee Model & Backend Stabilization
+
+# HOTFIX: Dual Fee Architecture & Stability (Gold Standard)
 
 ## Executive Summary
 
-We need to implement the agreed Dual Fee pricing model and fix the validation crash. The current checkout flow has **three critical issues**:
-
-1. **No Pricing Engine Integration** - `create-checkout-v3` uses raw `total_price` without fees
-2. **Missing Stripe Metadata** - Webhook expects `base_amount` but checkout doesn't set it
-3. **No Stripe Connect** - No `application_fee_amount` or `transfer_data` for host payouts
+This plan addresses **two critical issues**:
+1. **Pricing Engine Mismatch** - Current logic differs from the user's specified formula
+2. **500 Error Root Cause** - The `validate-payment` function sets `payment_status = 'completed'` but the database trigger checks for `payment_status_enum = 'succeeded'`
 
 ---
 
-## Transaction Simulation Table (€100 Base Price)
+## Transaction Simulation Tables
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    DUAL FEE MODEL BREAKDOWN                      │
-├─────────────────────────────────────────────────────────────────┤
-│ Base Price (Host Sets)                           €100.00        │
-├─────────────────────────────────────────────────────────────────┤
-│ COWORKER SIDE:                                                  │
-│   Guest Fee (5% of Base)                         +€5.00         │
-│   VAT on Guest Fee (22%)                         +€1.10         │
-│   ─────────────────────────────────────────────────────         │
-│   TOTAL COWORKER PAYS                           €106.10         │
-├─────────────────────────────────────────────────────────────────┤
-│ HOST SIDE:                                                      │
-│   Base Price                                     €100.00        │
-│   Host Fee (5% of Base)                          -€5.00         │
-│   ─────────────────────────────────────────────────────         │
-│   HOST RECEIVES (Stripe Transfer)                €95.00         │
-├─────────────────────────────────────────────────────────────────┤
-│ PLATFORM REVENUE:                                               │
-│   Guest Fee                                       €5.00         │
-│   Guest VAT                                       €1.10         │
-│   Host Fee                                        €5.00         │
-│   ─────────────────────────────────────────────────────         │
-│   PLATFORM GETS (Application Fee)               €11.10         │
-├─────────────────────────────────────────────────────────────────┤
-│ VERIFICATION: €106.10 = €95.00 + €11.10          ✓ BALANCED    │
-└─────────────────────────────────────────────────────────────────┘
-```
+### CURRENT IMPLEMENTATION (€100 Base Price)
+
+| Component | Formula | Value (€) |
+|:----------|:--------|----------:|
+| **Base Price** | Input | €100.00 |
+| Guest Fee | 100 × 5% | €5.00 |
+| Guest VAT | 5 × 22% | €1.10 |
+| **User Pays** | 100 + 5 + 1.10 | **€106.10** |
+| Host Fee | 100 × 5% | €5.00 |
+| **Host Receives** | 100 - 5 | **€95.00** |
+| **Platform Net** | 106.10 - 95.00 | **€11.10** |
+
+### USER'S REQUIRED IMPLEMENTATION (€100 Base Price)
+
+| Component | Formula | Value (€) |
+|:----------|:--------|----------:|
+| **Base Price** | Input | €100.00 |
+| Coworker Fee | 100 × 5% | €5.00 |
+| Coworker VAT | 5 × 22% | €1.10 |
+| **User Pays** | 100 + 5 + 1.10 | **€106.10** |
+| Host Fee | 100 × 5% | €5.00 |
+| Host VAT | 5 × 22% | €1.10 |
+| **Host Receives** | 100 - 5 - 1.10 | **€93.90** |
+| **Platform Net** | 106.10 - 93.90 | **€12.20** |
 
 ---
 
-## Technical Implementation
+## Critical Decision Required
 
-### Phase 1: Update `create-checkout-v3` (Critical)
+The user's task specifies that **Host VAT should be deducted from the Host Payout**:
 
-**File:** `supabase/functions/create-checkout-v3/index.ts`
-
-**Changes Required:**
-
-1. **Import the Pricing Engine:**
-```typescript
-import { PricingEngine } from "../_shared/pricing-engine.ts";
+```
+Host Payout = X - (X * 0.05) - (X * 0.05 * 0.22)
+Example (€100): 100 - 5 - 1.10 = €93.90
 ```
 
-2. **Fetch Host's Stripe Account ID:**
+However, the current `PricingEngine` does NOT apply VAT to the host side:
+
 ```typescript
-async function fetchBookingAndPrice(booking_id: string, user_id: string) {
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(`
-      id, user_id, status, total_price, space_id,
-      spaces!inner (
-        host_id,
-        profiles!inner (stripe_account_id)
-      )
-    `)
-    .eq("id", booking_id)
-    .single();
-  // ... return hostStripeAccountId
+// Current (line 41 of _shared/pricing-engine.ts)
+const hostPayout = round(basePrice - hostFee);  // €95.00
+
+// User's Requirement
+const hostPayout = round(basePrice - hostFee - hostVat);  // €93.90
+```
+
+**This is a business decision** - we can either:
+- **Option A**: Keep current logic (€95 to host, €11.10 to platform)
+- **Option B**: Implement user's specified formula (€93.90 to host, €12.20 to platform)
+
+---
+
+## Technical Root Cause: 500 Error
+
+The Edge Function logs reveal the exact error:
+
+```
+Error updating booking: {
+  code: "P0001",
+  message: "Cannot confirm booking without a succeeded payment."
 }
 ```
 
-3. **Calculate Pricing Breakdown:**
-```typescript
-const basePrice = bookingRes.booking.total_price; // This is the BASE price
-const pricing = PricingEngine.calculatePricing(basePrice);
+### The Bug
 
-// Convert to cents for Stripe
-const totalChargeCents = Math.round(pricing.totalGuestPay * 100);
-const applicationFeeCents = Math.round(pricing.applicationFee * 100);
-const hostPayoutCents = Math.round(pricing.hostPayout * 100);
-```
+1. **Database Trigger** (`guard_confirm_without_success`):
+   ```sql
+   IF NOT EXISTS (
+     SELECT 1 FROM public.payments p
+     WHERE p.booking_id = NEW.id
+       AND p.payment_status_enum = 'succeeded'  -- ← Checks THIS column
+   ) THEN
+     RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.';
+   END IF;
+   ```
 
-4. **Configure Stripe Checkout with Connect:**
-```typescript
-const body = new URLSearchParams({
-  mode: "payment",
-  "payment_method_types[]": "card",
-  "line_items[0][quantity]": "1",
-  "line_items[0][price_data][currency]": "eur",
-  "line_items[0][price_data][unit_amount]": String(totalChargeCents),
-  "line_items[0][price_data][product_data][name]": `Prenotazione ${params.booking_id}`,
-  
-  // STRIPE CONNECT: Route payment to Host
-  "payment_intent_data[application_fee_amount]": String(applicationFeeCents),
-  "payment_intent_data[transfer_data][destination]": params.hostStripeAccountId,
-  
-  // METADATA: Required for webhook processing
-  "metadata[booking_id]": params.booking_id,
-  "metadata[base_amount]": String(basePrice),
-  "metadata[user_id]": params.user_id,
-  "metadata[host_net_payout]": String(pricing.hostPayout),
-  "metadata[total_platform_fee]": String(pricing.applicationFee),
-  
-  success_url: `${frontendOrigin}/spaces/${params.space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: `${frontendOrigin}/bookings?canceled=true&booking_id=${params.booking_id}`,
-});
-```
+2. **validate-payment Function** (line 107):
+   ```typescript
+   payment_status: 'completed',  // ← Sets the WRONG column (text field)
+   // Missing: payment_status_enum: 'succeeded'
+   ```
+
+3. **Result**: The trigger checks `payment_status_enum` (which is never set to 'succeeded'), so booking confirmation always fails.
 
 ---
 
-### Phase 2: Database Update for `total_price` Storage
+## Implementation Plan
 
-**Issue:** Currently `total_price` in bookings stores the **base price** (€100), not the total charged. We need to clarify this semantic.
-
-**Decision:** Keep `total_price` as BASE PRICE (what host set). The Pricing Engine calculates the rest dynamically.
-
-**Add New Migration** to ensure booking has `base_price` column (or rename for clarity):
-```sql
--- Add comment to clarify semantics
-COMMENT ON COLUMN public.bookings.total_price IS 
-  'Base price set by host (before fees). Guest pays more, Host receives less.';
-```
-
----
-
-### Phase 3: Fix `validate-payment` Function
+### Phase 1: Fix validate-payment (Critical - Stops 500 Errors)
 
 **File:** `supabase/functions/validate-payment/index.ts`
 
-**Current Issues:**
-1. ✅ Import is correct (`../_shared/error-handler.ts`)
-2. ✅ No `workspaces` references
-3. ⚠️ Missing `base_amount` handling from metadata
+**Changes:**
+1. Set `payment_status_enum: 'succeeded'` when inserting/updating payment
+2. Use consistent status values across both columns
 
-**Add Fallback for `base_amount`:**
 ```typescript
-// If metadata missing base_amount, calculate from session amount
-let baseAmount: number;
-if (session.metadata?.base_amount) {
-  baseAmount = parseFloat(session.metadata.base_amount);
-} else {
-  // Reverse-engineer from amount_total (not ideal but prevents crash)
-  // totalGuestPay = basePrice * 1.061 (5% fee + 22% VAT on fee)
-  baseAmount = (session.amount_total || 0) / 100 / 1.061;
-}
+// Line ~102-113: INSERT case
+const { error: insertError } = await supabaseAdmin
+  .from('payments')
+  .insert({
+    booking_id: session.metadata.booking_id,
+    user_id: session.metadata.user_id,
+    amount: totalAmount,
+    currency: (session.currency || 'eur').toUpperCase(),
+    payment_status: 'completed',
+    payment_status_enum: 'succeeded',  // ADD THIS LINE
+    stripe_session_id: session_id,
+    receipt_url: session.receipt_url,
+    host_amount: hostAmount,
+    platform_fee: platformFee,
+    method: 'stripe'
+  });
+
+// Line ~126-131: UPDATE case
+const { error: updateError } = await supabaseAdmin
+  .from('payments')
+  .update({
+    payment_status: 'completed',
+    payment_status_enum: 'succeeded',  // ADD THIS LINE
+    receipt_url: session.receipt_url
+  })
+  .eq('id', existingPayment.id);
 ```
 
----
+### Phase 2: Fix Pricing Engine (If Option B Chosen)
 
-### Phase 4: Update `upsertPayment` Function
+**File:** `supabase/functions/_shared/pricing-engine.ts`
 
-Store the breakdown in the payments table:
-
+**Changes** (only if user confirms Option B):
 ```typescript
-async function upsertPayment(params: {
-  booking_id: string;
-  user_id: string;
-  amount: number;        // Total charged (cents)
-  currency: string;
-  host_amount: number;   // Host payout (euros)
-  platform_fee: number;  // Platform revenue (euros)
-  // ... other fields
-}) {
-  const insert = {
-    booking_id: params.booking_id,
-    user_id: params.user_id,
-    amount: params.amount / 100,  // Convert to euros
-    currency: params.currency,
-    host_amount: params.host_amount,
-    platform_fee: params.platform_fee,
-    // ... 
+calculatePricing: (basePrice: number) => {
+  const round = (num: number) => Math.round(num * 100) / 100;
+
+  // Guest side (unchanged)
+  const rawGuestFee = basePrice * PricingEngine.GUEST_FEE_PERCENT;
+  const guestFee = round(Math.max(rawGuestFee, PricingEngine.MIN_GUEST_FEE));
+  const guestVat = round(guestFee * PricingEngine.VAT_RATE);
+  const totalGuestPay = round(basePrice + guestFee + guestVat);
+
+  // Host side (UPDATED per user requirement)
+  const hostFee = round(basePrice * PricingEngine.HOST_FEE_PERCENT);
+  const hostVat = round(hostFee * PricingEngine.VAT_RATE);  // NEW LINE
+  const hostPayout = round(basePrice - hostFee - hostVat);  // CHANGED
+
+  // Platform revenue recalculated
+  const applicationFee = round(totalGuestPay - hostPayout);
+
+  return {
+    basePrice: round(basePrice),
+    guestFee,
+    guestVat,
+    totalGuestPay,
+    hostFee,
+    hostVat,     // NEW FIELD
+    hostPayout,
+    applicationFee
   };
 }
 ```
+
+**Also update:** `src/lib/pricing-engine.ts` (frontend copy for UI display)
+
+### Phase 3: Sync Frontend Pricing Engine
+
+If Phase 2 is implemented, the frontend `src/lib/pricing-engine.ts` must be updated to match.
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/create-checkout-v3/index.ts` | Import PricingEngine, add Stripe Connect params, add metadata |
-| `supabase/functions/validate-payment/index.ts` | Add fallback for missing base_amount |
-| `supabase/migrations/XXXXXX_clarify_total_price.sql` | Add column comment for clarity |
+| File | Changes | Priority |
+|------|---------|----------|
+| `supabase/functions/validate-payment/index.ts` | Add `payment_status_enum: 'succeeded'` | **CRITICAL** |
+| `supabase/functions/_shared/pricing-engine.ts` | Add hostVat calculation (if Option B) | Medium |
+| `src/lib/pricing-engine.ts` | Mirror backend changes (if Option B) | Medium |
 
 ---
 
-## Stripe Connect Requirements
+## Deployment Steps
 
-**Prerequisites for this to work:**
-1. Hosts must have a connected Stripe account (`stripe_account_id` in profiles)
-2. The platform Stripe account must be in "destination charges" mode
-3. `STRIPE_SECRET_KEY` must be the platform's secret key
-
-**Current State Check:**
-- Hosts DO have `stripe_account_id` stored ✓
-- `stripe_connected` flag exists ✓
-- We need to use `payment_intent_data.transfer_data.destination` for split payments
+1. Deploy `validate-payment` first (stops 500 errors immediately)
+2. If pricing change approved, deploy pricing engine updates
+3. Test a complete payment flow end-to-end
 
 ---
 
-## Verification Steps
+## Verification Checklist
 
 After implementation:
-1. Create a test booking for €100
-2. Verify Stripe Checkout shows €106.10 as total
-3. Complete payment
-4. Check Stripe Dashboard:
-   - Payment: €106.10
-   - Application Fee: €11.10
-   - Transfer to Host: €95.00
-5. Check `payments` table:
-   - `amount`: 106.10
-   - `host_amount`: 95.00
-   - `platform_fee`: 11.10
-
----
-
-## Edge Cases Handled
-
-| Scenario | Handling |
-|----------|----------|
-| Low value booking (€5) | Guest Fee floor of €0.50 applies |
-| Host Stripe not connected | RPC already blocks booking creation |
-| Missing base_amount in webhook | Fallback calculation from total |
-| Duplicate webhook events | Existing idempotency check via `stripe_event_id` |
+- [ ] Payment completes without 500 error
+- [ ] Booking status changes to 'confirmed' 
+- [ ] `payments.payment_status_enum` is 'succeeded'
+- [ ] Stripe Dashboard shows correct application fee
 
 ---
 
 ## Summary
 
-This implementation:
-1. **Activates the Pricing Engine** in checkout
-2. **Enables Stripe Connect** for automatic payment splits
-3. **Fixes metadata** for webhook processing
-4. **Adds resilience** with fallback calculations
-5. **Generates €11.10 platform revenue** per €100 booking (vs. €0 currently)
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| **500 Error** | Trigger checks `payment_status_enum` but code sets `payment_status` | Add `payment_status_enum: 'succeeded'` |
+| **Pricing Discrepancy** | Current: Host gets €95; Required: Host gets €93.90 | Update PricingEngine (pending confirmation) |
+
