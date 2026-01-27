@@ -592,6 +592,71 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          booking_id: string | null
+          check_in_time: string
+          check_out_time: string | null
+          created_at: string
+          id: string
+          method: string | null
+          space_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          check_in_time?: string
+          check_out_time?: string | null
+          created_at?: string
+          id?: string
+          method?: string | null
+          space_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          check_in_time?: string
+          check_out_time?: string | null
+          created_at?: string
+          id?: string
+          method?: string | null
+          space_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability: {
         Row: {
           created_at: string | null
@@ -823,6 +888,7 @@ export type Database = {
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
+          total_price: number | null
           updated_at: string | null
           user_id: string
         }
@@ -865,6 +931,7 @@ export type Database = {
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id?: string | null
+          total_price?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -907,6 +974,7 @@ export type Database = {
           start_time?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id?: string | null
+          total_price?: number | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1215,20 +1283,26 @@ export type Database = {
       }
       conversation_participants: {
         Row: {
+          archived_at: string | null
           conversation_id: string
           joined_at: string
+          last_read_at: string | null
           role: string | null
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           conversation_id: string
           joined_at?: string
+          last_read_at?: string | null
           role?: string | null
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           conversation_id?: string
           joined_at?: string
+          last_read_at?: string | null
           role?: string | null
           user_id?: string
         }
@@ -2960,6 +3034,7 @@ export type Database = {
         Row: {
           amount: number
           booking_id: string
+          capture_status: Database["public"]["Enums"]["capture_status_enum"]
           created_at: string | null
           credit_note_deadline: string | null
           credit_note_issued_by_host: boolean | null
@@ -2994,6 +3069,7 @@ export type Database = {
         Insert: {
           amount: number
           booking_id: string
+          capture_status?: Database["public"]["Enums"]["capture_status_enum"]
           created_at?: string | null
           credit_note_deadline?: string | null
           credit_note_issued_by_host?: boolean | null
@@ -3028,6 +3104,7 @@ export type Database = {
         Update: {
           amount?: number
           booking_id?: string
+          capture_status?: Database["public"]["Enums"]["capture_status_enum"]
           created_at?: string | null
           credit_note_deadline?: string | null
           credit_note_issued_by_host?: boolean | null
@@ -3474,6 +3551,7 @@ export type Database = {
           dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
           email_verification_blocked_actions: string[] | null
+          face_data_ref: string | null
           facebook_url: string | null
           first_name: string
           fiscal_regime: string | null
@@ -3551,6 +3629,7 @@ export type Database = {
           dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
           email_verification_blocked_actions?: string[] | null
+          face_data_ref?: string | null
           facebook_url?: string | null
           first_name: string
           fiscal_regime?: string | null
@@ -3628,6 +3707,7 @@ export type Database = {
           dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
           email_verification_blocked_actions?: string[] | null
+          face_data_ref?: string | null
           facebook_url?: string | null
           first_name?: string
           fiscal_regime?: string | null
@@ -6264,6 +6344,16 @@ export type Database = {
               skills: string[]
             }[]
           }
+      get_coworkers_in_space: {
+        Args: { p_space_id: string }
+        Returns: {
+          avatar_url: string
+          first_name: string
+          job_title: string
+          last_name: string
+          user_id: string
+        }[]
+      }
       get_cron_job_runs: {
         Args: { limit_count?: number }
         Returns: {
@@ -6591,6 +6681,10 @@ export type Database = {
         | { Args: never; Returns: boolean }
         | { Args: { user_id: string }; Returns: boolean }
       is_admin_new: { Args: { uid: string }; Returns: boolean }
+      is_host_of_space: {
+        Args: { p_space: string; p_user: string }
+        Returns: boolean
+      }
       is_moderator: { Args: { user_id: string }; Returns: boolean }
       lock_and_select_expired_bookings: {
         Args: { p_lock_duration_minutes?: number }
@@ -6633,6 +6727,7 @@ export type Database = {
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
+          total_price: number | null
           updated_at: string | null
           user_id: string
         }[]
@@ -6684,6 +6779,7 @@ export type Database = {
           start_time: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           stripe_payment_intent_id: string | null
+          total_price: number | null
           updated_at: string | null
           user_id: string
         }[]
@@ -7548,18 +7644,29 @@ export type Database = {
         }
         Returns: Json
       }
-      validate_and_reserve_slot: {
-        Args: {
-          client_base_price?: number
-          confirmation_type?: string
-          end_time: string
-          guests_count?: number
-          space_id: string
-          start_time: string
-          user_id?: string
-        }
-        Returns: Json
-      }
+      validate_and_reserve_slot:
+        | {
+            Args: {
+              p_end_time: string
+              p_guests_count?: number
+              p_space_id: string
+              p_start_time: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_client_base_price?: number
+              p_confirmation_type?: string
+              p_end_time: string
+              p_guests_count: number
+              p_space_id: string
+              p_start_time: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       validate_booking_slot_with_lock:
         | {
             Args: {
@@ -7597,6 +7704,7 @@ export type Database = {
         | "frozen"
         | "checked_in"
       cancellation_policy: "flexible" | "moderate" | "strict"
+      capture_status_enum: "uncaptured" | "authorized" | "captured" | "canceled"
       confirmation_type: "instant" | "host_approval"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
       payment_status:
@@ -7766,6 +7874,7 @@ export const Constants = {
         "checked_in",
       ],
       cancellation_policy: ["flexible", "moderate", "strict"],
+      capture_status_enum: ["uncaptured", "authorized", "captured", "canceled"],
       confirmation_type: ["instant", "host_approval"],
       message_template_type: [
         "confirmation",
