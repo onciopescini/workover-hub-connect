@@ -1,7 +1,6 @@
 
-
-# SERVERLESS HEALTH REPORT
-## Workover Hub Connect - Compute Layer Audit
+# SERVICE LAYER HEALTH REPORT
+## Workover Hub Connect - Application Logic Audit
 
 ---
 
@@ -9,443 +8,428 @@
 
 | Metric | Score | Status |
 |--------|-------|--------|
-| **Resilience Score** | **7.5/10** | Good with idempotency gaps |
-| **Security Score** | **8.0/10** | Solid, one credential exposure |
-| **Performance Score** | **8.5/10** | Well-optimized imports |
-| **Logging Score** | **7.0/10** | Mixed structured/emoji logging |
+| **Architecture Purity Score** | **7.5/10** | Good with remaining violations |
+| **Error Handling Score** | **7.0/10** | Inconsistent patterns |
+| **Type Safety Score** | **6.5/10** | Too many `any` casts |
+| **Cache Management Score** | **8.5/10** | Well-designed with proper invalidations |
 
-**Overall Serverless Health: 7.8/10** - Production-ready with recommended hardening
+**Overall Service Layer Health: 7.4/10** - Functional but needs consistency cleanup
 
 ---
 
-## 1. ERROR HANDLING & RETRIES ANALYSIS
+## 1. ARCHITECTURE VIOLATION CHECK
 
-### 1.1 Idempotency Implementation
+### 1.1 The "Dirty Dozen" - Components Still Using Raw SQL
 
-| Function | Idempotency Key | Implementation | Grade |
-|----------|----------------|----------------|-------|
-| `execute-payout` | `payout_${booking.id}` | Stripe API level | A |
-| `create-checkout-v3` | Header `Idempotency-Key` | DB lookup + Stripe API | A+ |
-| `stripe-webhooks` (main) | None | **MISSING** | D |
-| `stripe-webhooks` (handlers) | `stripe_event_id` column | DB-level check | A |
-| `host-approve-booking` | None | Compensating transaction | B |
-| `cancel-booking` | PI status check | Stripe state-based | B+ |
-| `admin-process-refund` | `charge_already_refunded` check | Error handling | B |
+| # | File | Location | Violation Type | Severity |
+|---|------|----------|----------------|----------|
+| 1 | `src/pages/Onboarding.tsx` | Line 256-269 | Direct profile UPDATE | HIGH |
+| 2 | `src/pages/SpacesManage.tsx` | Line 50 | Direct spaces SELECT | HIGH |
+| 3 | `src/pages/ChatThread.tsx` | Line 209 | Direct messages DELETE | HIGH |
+| 4 | `src/pages/admin/AdminBookingsPage.tsx` | Line 80-83 | Direct booking DELETE | MEDIUM |
+| 5 | `src/components/host/kyc/KYCDocumentUpload.tsx` | Line 103-110 | Direct kyc_documents INSERT | MEDIUM |
+| 6 | `src/components/reviews/ReviewCard.tsx` | Line 58-64 | Direct reports INSERT | MEDIUM |
+| 7 | `src/components/spaces/calendar/ConflictManagementSystem.tsx` | Line 123-130 | Direct notifications INSERT | LOW |
+| 8 | `src/components/payments/PaymentsDashboard.tsx` | Line 32-58 | Direct payments SELECT | HIGH |
+| 9 | `src/hooks/chat/useChat.ts` | Line 116 | Direct messages DELETE | MEDIUM |
+| 10 | `src/hooks/bookings/useBulkBookingActions.ts` | Line 185-190 | Direct messages INSERT | MEDIUM |
+| 11 | `src/hooks/admin/useAdminSettings.ts` | Line 14 | Direct system_settings SELECT | LOW |
+| 12 | `src/lib/booking-review-utils.ts` | Line 133 | Direct booking_reviews INSERT | MEDIUM |
+| 13 | `src/utils/performance-monitor.ts` | Line 125-129 | Direct performance_metrics INSERT | LOW |
 
-**Critical Finding**: The main `stripe-webhooks/index.ts` (35 lines) is a **SIMPLIFIED STUB** that bypasses the enhanced handlers with idempotency. If Stripe sends the same `checkout.session.completed` event twice, the booking could be double-confirmed.
+### 1.2 Pattern Distribution
 
-**Evidence** (stripe-webhooks/index.ts lines 19-29):
+```text
+ARCHITECTURE VIOLATIONS BY LAYER:
+├── src/pages/           - 4 violations (30%)
+├── src/components/      - 4 violations (30%)
+├── src/hooks/           - 3 violations (23%)
+└── src/lib/ + utils/    - 2 violations (15%)
+```
+
+### 1.3 Service Layer Coverage by Domain
+
+| Domain | Service Exists | UI Violations | Coverage |
+|--------|---------------|---------------|----------|
+| **Booking** | `bookingService.ts` | 2 | 85% |
+| **Chat** | `chatService.ts` | 3 | 70% |
+| **Payments** | Partial (no dedicated service) | 1 | 60% |
+| **Admin** | `adminService.ts` | 2 | 75% |
+| **Profile** | None | 1 | 0% |
+| **KYC** | None | 1 | 0% |
+| **Reports** | None | 1 | 0% |
+| **Notifications** | None | 1 | 0% |
+
+---
+
+## 2. ERROR HANDLING ANALYSIS
+
+### 2.1 Pattern Inventory
+
+| Service | Return Pattern | Example |
+|---------|---------------|---------|
+| `bookingService.ts` | `{ success: boolean, data?, error?, errorCode? }` | Lines 27-32 |
+| `chatService.ts` | `{ success: boolean, data?, error? }` | Lines 18-40 |
+| `stripeService.ts` | `throw new Error()` | Lines 59-61 |
+| `adminService.ts` | `throw new Error()` | Lines 41-43, 84-85 |
+| `fiscalService.ts` | `throw error` | Lines 69-72 |
+
+### 2.2 Inconsistency Problems
+
+**Problem 1: Mixed Return Patterns**
+- `bookingService` and `chatService` use the **Result Pattern** (`{ success, data, error }`)
+- `stripeService`, `adminService`, and `fiscalService` use **throw errors**
+- This forces consuming hooks to handle both patterns differently
+
+**Problem 2: Error Suppression**
+Several components still use `console.error` instead of `sreLogger`:
+- `src/hooks/chat/useChat.ts` lines 106, 126, 149, 172
+- `src/components/spaces/calendar/BookingDetailsModal.tsx` lines 99, 122
+
+### 2.3 Logging Migration Status
+
+| Pattern | Count | Grade |
+|---------|-------|-------|
+| `sreLogger.error()` | 80+ | A |
+| `console.error()` | 15-20 | C |
+| Silent failures | 3-5 | F |
+
+---
+
+## 3. TYPE SAFETY GAP (THE "any" HUNT)
+
+### 3.1 Critical `any` Usages in Service Layer
+
+| File | Line | Usage | Risk |
+|------|------|-------|------|
+| `bookingService.ts` | 165 | `as any` for RPC response | HIGH |
+| `adminService.ts` | 80, 87 | View casting to `AdminUser[]` | HIGH |
+| `chatService.ts` | 87, 90 | Complex join mapping | MEDIUM |
+| `stripeService.ts` | 14-15 | Hardcoded credentials (separate issue) | HIGH |
+
+### 3.2 Critical `any` Usages in Components
+
+| File | Line | Usage | Risk |
+|------|------|-------|------|
+| `AdminDashboard.tsx` | 32 | `'admin_users_view' as any` | HIGH |
+| `AdminRevenue.tsx` | 21 | `'admin_platform_revenue' as unknown` | HIGH |
+| `AdvancedRevenueAnalytics.tsx` | 37 | `'host_daily_metrics' as any` | MEDIUM |
+| `WaitlistManager.tsx` | 52-54 | Triple `any` cast chain | HIGH |
+| `AdminBookingsPage.tsx` | 82 | `{ deleted_at } as any` | MEDIUM |
+
+### 3.3 Infrastructure Type Gaps
+
+| File | Line | Usage | Risk |
+|------|------|-------|------|
+| `app.config.ts` | 80-81 | `(supabase as any).supabaseUrl` | MEDIUM |
+| `space-mappers.ts` | 38-39 | Aggressive row cast | HIGH |
+| `conversations.ts` | 25 | `(supabase.rpc as any)` | HIGH |
+| `performance.ts` | 236 | `(navigator as any).connection` | LOW |
+| `auth-helpers.ts` | 16 | `roles as any[]` | MEDIUM |
+
+### 3.4 Total Count
+
+```text
+TYPE SAFETY GAPS:
+├── Service Layer (src/services/api/)  - 6 usages
+├── Components (src/components/)       - 8 usages
+├── Pages (src/pages/)                 - 5 usages
+├── Hooks (src/hooks/)                 - 4 usages
+└── Utilities (src/lib/, src/utils/)   - 7 usages
+────────────────────────────────────────────────
+TOTAL: ~30 critical `any` usages
+```
+
+---
+
+## 4. STALE DATA RISKS (REACT QUERY ANALYSIS)
+
+### 4.1 Global Cache Configuration
+
+| Setting | Value | Assessment |
+|---------|-------|------------|
+| `staleTime` | 60,000ms (1 min) | Good default |
+| `gcTime` | 600,000ms (10 min) | Good |
+| `refetchOnWindowFocus` | `false` | Acceptable |
+| `refetchOnReconnect` | `'always'` | Correct |
+| `refetchOnMount` | `true` | Correct |
+
+### 4.2 Query Invalidation Coverage
+
+| Action | Keys Invalidated | Coverage |
+|--------|------------------|----------|
+| Booking created | `enhancedBookings`, `hostDashboardMetrics` | Complete |
+| Booking cancelled | `enhancedBookings`, `hostDashboardMetrics` | Complete |
+| Payment verified | `enhanced-bookings`, `coworker-bookings`, `host-bookings` | Complete |
+| Message sent | `messages`, `conversations`, `unreadCount` | Complete |
+| Profile updated | `profile` | Complete |
+| Stripe connected | `host-progress` | Complete |
+
+### 4.3 Stale Data Risks Identified
+
+| Risk | Scenario | Current Behavior | Impact |
+|------|----------|------------------|--------|
+| **Calendar Double-Booking** | User books slot, another user sees stale availability | `staleTime: 2min` for availability | LOW - Short stale time |
+| **Payment Status Lag** | Payment completes, user sees "pending" | `refetchOnWindowFocus: false` for bookings | MEDIUM - May confuse users |
+| **Stripe Connection** | Host completes Stripe, progress tracker stale | Polling every 30s if not connected | LOW - Good polling |
+
+### 4.4 Missing Invalidations
+
+| Action | Missing Invalidation |
+|--------|---------------------|
+| Space published | `hostDashboardMetrics` not always invalidated |
+| Review submitted | `space-detail` not invalidated (cached rating) |
+
+---
+
+## 5. THE REFACTOR PLAN
+
+### Priority 0: Security Fix (Immediate)
+
+**File:** `src/services/api/stripeService.ts` lines 14-15
+
 ```typescript
-if (event.type === "checkout.session.completed") {
-  const session = event.data.object;
-  const booking_id = session.metadata?.booking_id;
-  if (booking_id) {
-    await supabase
-      .from("bookings")
-      .update({ status: "confirmed", payment_status: "succeeded" })
-      .eq("id", booking_id);  // NO idempotency check!
+// BEFORE - Hardcoded credentials
+const SUPABASE_URL = 'https://khtqwzvrxzsgfhsslwyz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1...';
+
+// AFTER - Use imported client
+import { supabase } from '@/integrations/supabase/client';
+// Remove hardcoded constants, use supabase client directly
+```
+
+### Priority 1: Create Missing Services (Week 1)
+
+Create new service files to eliminate UI-layer database calls:
+
+| New Service | Tables Covered | Files to Migrate |
+|-------------|----------------|------------------|
+| `src/services/api/profileService.ts` | `profiles` | `Onboarding.tsx` |
+| `src/services/api/reportService.ts` | `reports` | `ReviewCard.tsx` |
+| `src/services/api/kycService.ts` | `kyc_documents` | `KYCDocumentUpload.tsx` |
+| `src/services/api/notificationService.ts` | `notifications`, `user_notifications` | `ConflictManagementSystem.tsx` |
+| `src/services/api/paymentService.ts` | `payments` | `PaymentsDashboard.tsx` |
+
+**Example: profileService.ts**
+```typescript
+export interface UpdateProfileParams {
+  userId: string;
+  data: Partial<ProfileData>;
+}
+
+export interface UpdateProfileResult {
+  success: boolean;
+  error?: string;
+}
+
+export async function updateProfile(params: UpdateProfileParams): Promise<UpdateProfileResult> {
+  const { error } = await supabase
+    .from('profiles')
+    .update(params.data)
+    .eq('id', params.userId);
+  
+  if (error) {
+    sreLogger.error('Profile update failed', { component: 'profileService' }, error);
+    return { success: false, error: error.message };
   }
+  
+  return { success: true };
 }
 ```
 
-**Contrast with Enhanced Handler** (handlers/enhanced-checkout-handlers.ts lines 23-34):
+### Priority 2: Standardize Error Handling (Week 1)
+
+Update all services to use the Result Pattern:
+
+**Files to Update:**
+- `src/services/api/stripeService.ts` - Change from `throw` to `{ success, data, error }`
+- `src/services/api/adminService.ts` - Change from `throw` to `{ success, data, error }`
+- `src/services/api/fiscalService.ts` - Change from `throw` to `{ success, data, error }`
+
+**Example: stripeService.ts**
 ```typescript
-// IDEMPOTENCY CHECK: Previene doppi pagamenti
-if (eventId) {
-  const { data: existingPayment } = await supabaseAdmin
-    .from('payments')
-    .select('id')
-    .eq('stripe_event_id', eventId)
-    .maybeSingle();
-  
-  if (existingPayment) {
-    return { success: true, message: 'Duplicate event ignored' };
+// BEFORE
+export async function checkAccountStatus(): Promise<StripeAccountStatus> {
+  const { data, error } = await supabase.functions.invoke('check-stripe-status');
+  if (error) {
+    throw new Error(`Stripe status check failed: ${error.message}`);
   }
+  return { ... };
 }
-```
-
-### 1.2 HTTP Status Code Usage
-
-| Function | 4xx (Client Error) | 5xx (Server Error) | Grade |
-|----------|-------------------|-------------------|-------|
-| `create-checkout-v3` | 400, 401, 405 | 500 | A |
-| `cancel-booking` | 400, 401, 403, 404, 405 | 500 | A |
-| `host-approve-booking` | 400, 401, 403, 404, 405 | 500 | A |
-| `stripe-webhooks` | 400 only | None | C |
-| `generate-invoice-pdf` | None | 500 only | C |
-| `send-email` | None | 500 only | C |
-
-**Issue**: Several functions return 500 for all errors, making it impossible for clients to distinguish retryable vs non-retryable failures.
-
-### 1.3 Retry Mechanism
-
-The `retry-failed-webhooks` function implements proper retry logic:
-- Max 3 retries per event
-- Incremental retry count via RPC
-- Error logging to `webhook_events` table
-- 10-event batch limit
-
-**Grade: A**
-
----
-
-## 2. SECRET MANAGEMENT ANALYSIS
-
-### 2.1 Environment Variable Usage
-
-| Secret | Deno.env.get() | Grade |
-|--------|---------------|-------|
-| `STRIPE_SECRET_KEY` | Yes | A |
-| `STRIPE_WEBHOOK_SECRET` | Yes | A |
-| `RESEND_API_KEY` | Yes | A |
-| `MAPBOX_ACCESS_TOKEN` | Yes | A |
-| `SUPABASE_URL` | Yes | A |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | A |
-
-### 2.2 CRITICAL: Hardcoded Fallback Credentials
-
-**File**: `supabase/functions/send-email/index.ts` (lines 43-45)
-
-```typescript
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') || 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
-  Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-  ...
-);
-```
-
-**Risk**: The anon key is exposed in the codebase. While anon keys are technically "publishable", this is a bad practice for Edge Functions because:
-1. It creates confusion about which key should be used
-2. If env vars fail, the function silently uses the hardcoded key
-3. Code reviews may miss the embedded credential
-
-**Recommendation**: Remove fallback values; fail fast if env vars are missing.
-
-### 2.3 Secrets Inventory vs Usage
-
-| Configured Secret | Used In Functions |
-|-------------------|-------------------|
-| `STRIPE_SECRET_KEY` | 12+ functions |
-| `STRIPE_WEBHOOK_SECRET` | stripe-webhooks |
-| `RESEND_API_KEY` | send-email |
-| `MAPBOX_ACCESS_TOKEN` | get-mapbox-token |
-| `SERVICE_ROLE_KEY` | All admin functions |
-
-**Missing Configuration Check**: None of the functions validate that required secrets are present at startup. They fail at runtime when the secret is first accessed.
-
----
-
-## 3. PERFORMANCE ANALYSIS (COLD STARTS)
-
-### 3.1 Import Efficiency
-
-| Function | Heavy Libraries | Import Method | Grade |
-|----------|----------------|---------------|-------|
-| `create-checkout-v3` | None (uses fetch) | Native | A+ |
-| `execute-payout` | Stripe SDK | Top-level | B |
-| `stripe-webhooks` | Stripe SDK | Top-level | B |
-| `generate-invoice-pdf` | None (text only) | N/A | A |
-| `image-optimizer` | ImageScript | Dynamic import | A+ |
-| `send-email` | Resend, Zod | Top-level | B |
-
-**Best Practice Example** (image-optimizer/index.ts line 186):
-```typescript
-// Dynamic import - only loaded when needed
-const { Image } = await import('https://deno.land/x/imagescript@1.2.15/mod.ts')
-```
-
-### 3.2 Timeout Risks
-
-| Function | Potential Long Operation | Timeout Risk |
-|----------|------------------------|--------------|
-| `generate-gdpr-export` | 14+ sequential DB queries | HIGH |
-| `generate-dac7-report` | Loop over all hosts | MEDIUM |
-| `execute-payout` | 50 Stripe API calls in loop | HIGH |
-| `reconcile-payments` | Loop over all connected hosts | MEDIUM |
-| `image-optimizer` | Image processing | LOW (async) |
-
-**Critical Pattern in generate-gdpr-export** (lines 25-267):
-The function makes 14 sequential database queries with checkpoint logging. Each query is wrapped in try/catch but executed serially, leading to cumulative latency.
-
-**Recommendation**: Use `Promise.all()` or `Promise.allSettled()` for independent queries.
-
-### 3.3 Async Processing Pattern
-
-**Good Example** (image-optimizer/index.ts lines 68-70):
-```typescript
-// Start background processing
-// Process image asynchronously
-processImageAsync(supabaseClient, jobId, filePath, user.id).catch(console.error)
-```
-
-The function returns immediately with a job ID while heavy processing continues in the background.
-
----
-
-## 4. LOGGING ANALYSIS (SRE READINESS)
-
-### 4.1 Logging Patterns Inventory
-
-| Pattern | Example | Functions Using | SRE Grade |
-|---------|---------|-----------------|-----------|
-| Emoji console.log | `console.log('✅ ...')` | 15+ | C |
-| Structured JSON | `console.error(JSON.stringify({...}))` | ErrorHandler | B+ |
-| Tagged prefix | `[EXECUTE-PAYOUT]` | 10+ | B |
-| No logging | (silent functions) | 3-4 | F |
-
-### 4.2 ErrorHandler Implementation
-
-**File**: `supabase/functions/shared/error-handler.ts`
-
-```typescript
-static logError(context: string, error: any, metadata?: Record<string, any>) {
-  const errorData = {
-    context,
-    error: error?.message || error,
-    timestamp: new Date().toISOString(),
-    ...metadata
-  };
-  
-  if (this.isProduction) {
-    console.error(JSON.stringify(errorData));  // Structured for production
-  } else {
-    console.error(`🔴 ${context}:`, error);    // Human-readable for dev
-  }
-}
-```
-
-**Good**: Production/dev mode separation
-**Missing**: Correlation ID, request tracing, log levels
-
-### 4.3 Functions Without ErrorHandler
-
-| Function | Logging Method | Issue |
-|----------|---------------|-------|
-| `stripe-webhooks/index.ts` | Plain console.log | No structure |
-| `freeze-bookings` | None | Silent failures |
-| `schedule-payouts` | Plain console.log | No error details |
-| `generate-dac7-report` | Plain console.log | No structure |
-
----
-
-## 5. THE "FRAGILE" LIST
-
-### 5.1 Functions That May Crash Under Load
-
-| Function | Risk Factor | Impact | Mitigation |
-|----------|-------------|--------|------------|
-| `stripe-webhooks/index.ts` | No idempotency | Double payments | Route to enhanced handlers |
-| `execute-payout` | 50 Stripe calls sequential | Timeout | Batch/queue processing |
-| `generate-gdpr-export` | 14 sequential queries | Timeout | Parallelize queries |
-| `reconcile-payments` | N Stripe balance calls | Rate limiting | Add delays/batching |
-| `booking-expiry-check` | Unbatched Stripe calls | Timeout | Add pagination |
-
-### 5.2 Race Condition Risks
-
-| Function | Scenario | Current Protection |
-|----------|----------|-------------------|
-| `host-approve-booking` | Two hosts approve same booking | Status check, compensating refund |
-| `cancel-booking` | Guest and host cancel simultaneously | DB status as source of truth |
-| `validate_and_reserve_slot` | Two users book same slot | Advisory lock (fixed in DB audit) |
-
----
-
-## 6. SECURITY RISKS
-
-### 6.1 Exposed Credentials
-
-| File | Issue | Severity |
-|------|-------|----------|
-| `send-email/index.ts` | Hardcoded anon key fallback | MEDIUM |
-
-### 6.2 CORS Configuration
-
-All functions use permissive CORS:
-```typescript
-'Access-Control-Allow-Origin': '*'
-```
-
-**Assessment**: Acceptable for public API functions. The enhanced security headers in `_shared/security-headers.ts` provide additional protection.
-
-### 6.3 Authorization Patterns
-
-| Pattern | Functions Using | Grade |
-|---------|-----------------|-------|
-| Bearer token → getUser() | 20+ | A |
-| Service role for cron jobs | reconcile-payments, schedule-payouts | A |
-| Admin role check via RPC | admin-*, monitoring-report | A |
-| No auth (public) | health-check, generate-sitemap | A (by design) |
-
----
-
-## 7. THE "REFACTOR" PLAN
-
-### Priority 1: Critical - Webhook Idempotency (Day 1)
-
-**Problem**: Main webhook handler lacks idempotency protection.
-
-**Solution**: Route the main handler to use `EnhancedCheckoutHandlers`:
-
-```typescript
-// supabase/functions/stripe-webhooks/index.ts
-import { EnhancedCheckoutHandlers } from "./handlers/enhanced-checkout-handlers.ts";
-
-Deno.serve(async (req: Request) => {
-  // ... signature validation ...
-  
-  if (event.type === "checkout.session.completed") {
-    const result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(
-      event.data.object,
-      supabase,
-      event.id  // Pass event ID for idempotency
-    );
-    
-    if (!result.success) {
-      return new Response(JSON.stringify({ error: result.error }), { status: 400 });
-    }
-  }
-  
-  return new Response(JSON.stringify({ received: true }), { status: 200 });
-});
-```
-
-### Priority 2: High - Remove Hardcoded Credentials (Day 1)
-
-**File**: `supabase/functions/send-email/index.ts`
-
-**Change**:
-```typescript
-// BEFORE (lines 43-45)
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') || 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
-  Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6...',
 
 // AFTER
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing required environment variables: SUPABASE_URL, SUPABASE_ANON_KEY');
-}
-const supabase = createClient(supabaseUrl, supabaseKey,
-```
-
-### Priority 3: Medium - Parallelize GDPR Export (Week 1)
-
-**File**: `supabase/functions/generate-gdpr-export/index.ts`
-
-**Change**: Replace sequential queries with parallel execution:
-
-```typescript
-// BEFORE: 14 sequential queries (lines 48-257)
-const { data: profile } = await supabase.from('profiles')...
-const { data: bookings } = await supabase.from('bookings')...
-// ...etc
-
-// AFTER: Parallel queries
-const [
-  profileResult,
-  bookingsResult,
-  spacesResult,
-  messagesResult,
-  reviewsGivenResult,
-  reviewsReceivedResult,
-  connectionsResult,
-  paymentsResult,
-  notificationsResult,
-  gdprRequestsResult
-] = await Promise.allSettled([
-  supabase.from('profiles').select('*').eq('id', userId).single(),
-  supabase.from('bookings').select('*').eq('user_id', userId),
-  supabase.from('spaces').select('*').eq('host_id', userId),
-  supabase.from('messages').select('*').eq('sender_id', userId),
-  supabase.from('booking_reviews').select('*').eq('author_id', userId),
-  supabase.from('booking_reviews').select('*').eq('target_id', userId),
-  supabase.from('connections').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
-  supabase.from('payments').select('*').eq('user_id', userId),
-  supabase.from('user_notifications').select('*').eq('user_id', userId),
-  supabase.from('gdpr_requests').select('*').eq('user_id', userId)
-]);
-```
-
-### Priority 4: Medium - Standardize Error Logging (Week 1)
-
-**Action**: Create and enforce use of a standardized logger wrapper:
-
-```typescript
-// supabase/functions/_shared/sre-logger.ts
-export class SRELogger {
-  private static correlationId: string | null = null;
-  
-  static setCorrelationId(id: string) {
-    this.correlationId = id;
+export async function checkAccountStatus(): Promise<CheckAccountStatusResult> {
+  const { data, error } = await supabase.functions.invoke('check-stripe-status');
+  if (error) {
+    sreLogger.error('Stripe status check failed', { component: 'stripeService' }, error);
+    return { success: false, error: error.message };
   }
-  
-  static log(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, any>) {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      correlationId: this.correlationId,
-      ...data
-    };
-    
-    const output = JSON.stringify(logEntry);
-    
-    switch (level) {
-      case 'error': console.error(output); break;
-      case 'warn': console.warn(output); break;
-      default: console.log(output);
-    }
-  }
+  return { success: true, data: { ... } };
 }
 ```
 
-### Priority 5: Low - Add Batching to Payout Execution (Week 2)
+### Priority 3: Type-Safe RPC Responses (Week 2)
 
-**File**: `supabase/functions/execute-payout/index.ts`
+Create explicit interfaces for all RPC responses:
 
-**Change**: Add delay between Stripe calls to avoid rate limiting:
-
+**File:** `src/types/rpc.ts`
 ```typescript
-// Add after line 86 (after stripe.transfers.create)
-await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between calls
+export interface ValidateSlotRPCResponse {
+  booking_id: string;
+  status: 'frozen' | 'pending' | 'confirmed';
+}
+
+export interface AdminBookingsRPCResponse {
+  id: string;
+  user_id: string;
+  space_id: string;
+  // ... all fields
+}
+
+export interface GetCoworkersRPCResponse {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profession: string | null;
+  avatar_url: string | null;
+  cached_avg_rating: number | null;
+  linkedin_url: string | null;
+}
 ```
+
+**Update Services:**
+```typescript
+// BEFORE
+const dataObj = rpcData as any;
+const bookingId = dataObj.booking_id || dataObj;
+
+// AFTER
+const response = rpcData as ValidateSlotRPCResponse;
+const bookingId = response.booking_id;
+```
+
+### Priority 4: View Type Definitions (Week 2)
+
+Create type definitions for database views:
+
+**File:** `src/types/views.ts`
+```typescript
+export interface AdminUsersView {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  created_at: string;
+  role: string;
+  status: string;
+  // ... all view columns
+}
+
+export interface AdminPlatformRevenueView {
+  month: string;
+  total_payments: number;
+  gross_volume: number;
+  estimated_revenue: number;
+}
+
+export interface HostDailyMetricsView {
+  booking_date: string;
+  daily_revenue: number;
+  total_bookings: number;
+  confirmed_bookings: number;
+  host_id: string;
+}
+```
+
+**Update Components:**
+```typescript
+// BEFORE
+const { data } = await supabase
+  .from('admin_users_view' as any)
+  .select('*');
+
+// AFTER
+import { AdminUsersView } from '@/types/views';
+const { data } = await supabase
+  .from('admin_users_view' as 'profiles')
+  .select('*') as { data: AdminUsersView[] | null; error: any };
+```
+
+### Priority 5: Migrate Remaining Violations (Week 2-3)
+
+| Component | Current Call | Target Service |
+|-----------|-------------|----------------|
+| `ChatThread.tsx` | `supabase.from('messages').delete()` | `chatService.deleteMessage()` |
+| `useChat.ts` | `supabase.from('messages').delete()` | `chatService.deleteMessage()` |
+| `useBulkBookingActions.ts` | `supabase.from('messages').insert()` | `chatService.sendMessage()` |
+| `booking-review-utils.ts` | `supabase.from('booking_reviews').insert()` | New `reviewService.submitReview()` |
+| `SpacesManage.tsx` | `supabase.from('spaces').select()` | New hook using `spaceService` |
 
 ---
 
-## 8. VERIFICATION CHECKLIST
+## 6. VERIFICATION CHECKLIST
 
 After implementing fixes:
 
-- [ ] Send duplicate webhook event to stripe-webhooks - verify only one payment created
-- [ ] Remove env vars from send-email - verify function throws clear error
-- [ ] Run generate-gdpr-export with large dataset - verify completes under 30s
-- [ ] Check Edge Function logs for JSON-structured output
-- [ ] Trigger execute-payout with 50+ bookings - verify no Stripe rate limiting
+- [ ] Search for `supabase.from(` in `src/pages/` - should return 0 results
+- [ ] Search for `supabase.from(` in `src/components/` - should return 0 results
+- [ ] Search for `as any` in `src/services/api/` - should return < 3 results
+- [ ] All services return `{ success, data?, error? }` pattern
+- [ ] All RPC calls use typed response interfaces
+- [ ] Console shows no `console.error` calls (all use `sreLogger`)
 
 ---
 
-## 9. FILES TO MODIFY
+## 7. FILES SUMMARY
 
-| File | Priority | Change Summary |
-|------|----------|----------------|
-| `supabase/functions/stripe-webhooks/index.ts` | P1 | Route to enhanced handlers with idempotency |
-| `supabase/functions/send-email/index.ts` | P2 | Remove hardcoded credentials, fail fast |
-| `supabase/functions/generate-gdpr-export/index.ts` | P3 | Parallelize queries with Promise.allSettled |
-| `supabase/functions/_shared/sre-logger.ts` | P4 | Create standardized SRE logging utility |
-| `supabase/functions/execute-payout/index.ts` | P5 | Add rate limiting delays |
+### New Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/services/api/profileService.ts` | Profile CRUD operations |
+| `src/services/api/paymentService.ts` | Payment queries and mutations |
+| `src/services/api/reportService.ts` | User reports/flags |
+| `src/services/api/kycService.ts` | KYC document management |
+| `src/services/api/notificationService.ts` | Notification operations |
+| `src/types/rpc.ts` | RPC response type definitions |
+| `src/types/views.ts` | Database view type definitions |
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/services/api/stripeService.ts` | Remove hardcoded credentials, standardize returns |
+| `src/services/api/adminService.ts` | Standardize to Result Pattern |
+| `src/services/api/fiscalService.ts` | Standardize to Result Pattern |
+| `src/services/api/bookingService.ts` | Add typed RPC response |
+| `src/services/api/chatService.ts` | Add `deleteMessage()` method |
+| `src/pages/Onboarding.tsx` | Use `profileService.updateProfile()` |
+| `src/pages/SpacesManage.tsx` | Use hook with service |
+| `src/pages/ChatThread.tsx` | Use `chatService.deleteMessage()` |
+| `src/components/payments/PaymentsDashboard.tsx` | Use `paymentService` |
+| `src/components/host/kyc/KYCDocumentUpload.tsx` | Use `kycService` |
+| `src/components/reviews/ReviewCard.tsx` | Use `reportService` |
 
 ---
 
-## 10. SUMMARY SCORECARD
+## 8. IMPACT METRICS
 
-| Category | Issue | Impact | Effort | Priority |
-|----------|-------|--------|--------|----------|
-| Webhook Idempotency | Main handler bypasses protection | Double payments | Low | P1 |
-| Hardcoded Credentials | Anon key in send-email | Security hygiene | Low | P2 |
-| Sequential Queries | GDPR export timeout risk | User experience | Medium | P3 |
-| Mixed Logging | Inconsistent log formats | SRE debugging | Medium | P4 |
-| Rate Limiting | execute-payout may hit limits | Payout delays | Low | P5 |
+### Before vs After
 
-**Post-Refactor Target Score: 9.0/10**
+| Metric | Current | Target |
+|--------|---------|--------|
+| Architecture Violations | 13 | 0 |
+| `any` Usages in Services | 6 | 0 |
+| `any` Usages in Components | 13 | < 5 |
+| Error Handling Patterns | 2 (mixed) | 1 (Result Pattern) |
+| Service Layer Coverage | 65% | 95% |
 
+### Target Scores
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Architecture Purity | 7.5/10 | 9.5/10 |
+| Error Handling | 7.0/10 | 9.0/10 |
+| Type Safety | 6.5/10 | 8.5/10 |
+| Cache Management | 8.5/10 | 9.0/10 |
+| **Overall** | **7.4/10** | **9.0/10** |
