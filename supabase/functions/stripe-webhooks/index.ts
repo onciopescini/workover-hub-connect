@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const event = stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET);
+    const event = await stripe.webhooks.constructEventAsync(body, sig, STRIPE_WEBHOOK_SECRET);
     
     SRELogger.info("Webhook event received", { 
       eventType: event.type, 

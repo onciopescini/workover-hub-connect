@@ -124,10 +124,57 @@ serve(async (req) => {
     // 7. ATOMIC TRANSACTION (Capture -> DB Update -> Compensating Refund)
     const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
     let capturePerformed = false;
-    const paymentIntentId = booking.stripe_payment_intent_id;
+    let paymentIntentId = booking.stripe_payment_intent_id;
 
     try {
-      // Step A: Capture Payment (if exists)
+      // Step A: Get Payment Intent ID (with self-healing fallback)
+      if (!paymentIntentId) {
+        console.log(`[HOST-APPROVE] PI ID missing on booking, attempting fallback via payments table...`);
+        
+        // Get the session ID from payments table
+        const { data: payment } = await supabaseAdmin
+          .from("payments")
+          .select("stripe_session_id")
+          .eq("booking_id", booking_id)
+          .single();
+        
+        if (payment?.stripe_session_id) {
+          console.log(`[HOST-APPROVE] Found session ID: ${payment.stripe_session_id}, retrieving from Stripe...`);
+          
+          // Retrieve the checkout session from Stripe to get the PI ID
+          const session = await stripe.checkout.sessions.retrieve(payment.stripe_session_id);
+          
+          if (session.payment_intent) {
+            paymentIntentId = typeof session.payment_intent === 'string' 
+              ? session.payment_intent 
+              : session.payment_intent.id;
+            
+            console.log(`[HOST-APPROVE] Retrieved PI ID from Stripe: ${paymentIntentId}`);
+            
+            // Self-heal: Update the booking with the PI ID for future operations
+            await supabaseAdmin
+              .from("bookings")
+              .update({ stripe_payment_intent_id: paymentIntentId })
+              .eq("id", booking_id);
+            
+            // Also update the payment record
+            await supabaseAdmin
+              .from("payments")
+              .update({ stripe_payment_intent_id: paymentIntentId })
+              .eq("booking_id", booking_id);
+            
+            console.log(`[HOST-APPROVE] Self-healed: PI ID saved to booking and payment records`);
+          } else {
+            console.error(`[HOST-APPROVE] Stripe session has no payment_intent. Payment may not be complete.`);
+            throw new Error("Payment not yet completed by guest. Cannot approve.");
+          }
+        } else {
+          console.error(`[HOST-APPROVE] No payment record found for booking ${booking_id}`);
+          throw new Error("No payment found for this booking.");
+        }
+      }
+
+      // Step B: Capture Payment
       if (paymentIntentId) {
         console.log(`[HOST-APPROVE] Retrieving PI: ${paymentIntentId}`);
         const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -147,7 +194,7 @@ serve(async (req) => {
            console.warn(`[HOST-APPROVE] Unexpected PI status: ${pi.status}. Proceeding with caution.`);
         }
       } else {
-          console.warn(`[HOST-APPROVE] No payment intent ID found on booking. Proceeding without capture.`);
+          console.warn(`[HOST-APPROVE] No payment intent ID found. Proceeding without capture.`);
       }
 
       // Step B: Update Payment Status BEFORE Booking Confirmation
