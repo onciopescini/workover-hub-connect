@@ -1,6 +1,8 @@
 // Security headers utility for Edge Functions
 // Implements comprehensive HTTP security headers to protect against XSS, clickjacking, MIME sniffing
 
+import { getCorsHeaders } from './cors.ts';
+
 export const SECURITY_HEADERS = {
   'Content-Security-Policy': `
     default-src 'self';
@@ -23,16 +25,20 @@ export const SECURITY_HEADERS = {
   'X-XSS-Protection': '1; mode=block'
 };
 
+// Legacy static headers (for backward compatibility)
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
 };
 
-export const combineHeaders = (additionalHeaders: Record<string, string> = {}) => {
+export const combineHeaders = (
+  additionalHeaders: Record<string, string> = {},
+  requestOrigin?: string | null
+) => {
   return {
     ...SECURITY_HEADERS,
-    ...CORS_HEADERS,
+    ...getCorsHeaders(requestOrigin),
     ...additionalHeaders
   };
 };

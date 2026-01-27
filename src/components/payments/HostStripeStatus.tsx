@@ -60,7 +60,7 @@ export default function HostStripeStatus({ className = "" }: Props) {
       />
 
       {/* Mostra ID breve se presente */}
-      {acct && <span className="text-xs text-gray-500 font-mono">ID: …{acct.slice(-8)}</span>}
+      {acct && <span className="text-xs text-muted-foreground font-mono">ID: …{acct.slice(-8)}</span>}
 
       {/* Show manual refresh if connected */}
       {connected && acct && (
@@ -81,7 +81,7 @@ export default function HostStripeStatus({ className = "" }: Props) {
           onClick={connect}
           disabled={loading || isVerifying}
           size="sm"
-          className="bg-[#635bff] hover:bg-[#5b54f0] text-white"
+          className="bg-stripe hover:bg-stripe/90 text-white"
         >
           <CreditCard className="w-4 h-4 mr-2" />
           {loading ? "Reindirizzamento…" : "Collega pagamenti con Stripe"}

@@ -37,7 +37,7 @@ export interface UpdateProfileResult {
 
 export interface GetProfileResult {
   success: boolean;
-  data?: ProfileData & { id: string; email?: string };
+  data?: Readonly<ProfileData & { id: string; email?: string }>;
   error?: string;
 }
 
