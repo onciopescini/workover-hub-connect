@@ -11,12 +11,12 @@ interface ConnectionRequest {
   sender_id: string;
   receiver_id: string;
   status: string;
-  created_at: string;
+  created_at: string | null;
   sender?: {
     first_name: string;
     last_name: string;
-    profile_photo_url?: string;
-  };
+    profile_photo_url?: string | null;
+  } | null;
 }
 
 export const useConnectionRequests = (userId?: string) => {
@@ -24,13 +24,13 @@ export const useConnectionRequests = (userId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const getRecordId = (record: unknown): string | null => {
     if (!record || typeof record !== 'object') return null;
-    const idValue = (record as Record<string, unknown>).id;
+    const idValue = (record as Record<string, unknown>)['id'];
     return typeof idValue === 'string' ? idValue : null;
   };
 
   const getRecordStatus = (record: unknown): string | null => {
     if (!record || typeof record !== 'object') return null;
-    const statusValue = (record as Record<string, unknown>).status;
+    const statusValue = (record as Record<string, unknown>)['status'];
     return typeof statusValue === 'string' ? statusValue : null;
   };
 

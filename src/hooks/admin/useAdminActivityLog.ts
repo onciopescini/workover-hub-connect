@@ -20,7 +20,12 @@ export const useAdminActivityLog = (limit: number = 50) => {
           .limit(limit);
 
         if (error) throw error;
-        setLogs(data || []);
+        setLogs((data || []).map(row => ({
+          ...row,
+          metadata: typeof row.metadata === 'object' && row.metadata !== null
+            ? (row.metadata as Record<string, unknown>)
+            : undefined,
+        } as AdminActionLog)));
       } catch (err) {
         logError('Error fetching admin activity log', err as Error);
       } finally {

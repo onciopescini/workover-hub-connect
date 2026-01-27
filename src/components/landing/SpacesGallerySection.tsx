@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -6,10 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { InteractiveCard } from '@/components/ui/InteractiveCard';
 import { ParallaxSection } from '@/components/ui/ParallaxSection';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Wifi, Coffee, Users, Monitor, Car, Armchair, Zap } from 'lucide-react';
+import { MapPin, Wifi, Coffee, Users, Monitor, Car, Armchair, Zap, LucideIcon } from 'lucide-react';
 import { mapSpaceRowToSpace } from '@/lib/space-mappers';
-
-type AmenityIcon = React.ElementType<{ className?: string }>;
+import { API_ENDPOINTS } from '@/constants';
 
 interface LandingSpaceCard {
   id: string;
@@ -19,11 +17,11 @@ interface LandingSpaceCard {
   location: string;
   price: string;
   features: string[];
-  amenities: AmenityIcon[]; 
+  amenities: LucideIcon[]; 
 }
 
 // Helper to map feature strings to Lucide icons
-const getFeatureIcon = (feature: string): AmenityIcon => {
+const getFeatureIcon = (feature: string): LucideIcon => {
   const lower = feature.toLowerCase();
   if (lower.includes('wifi') || lower.includes('internet')) return Wifi;
   if (lower.includes('caffè') || lower.includes('coffee') || lower.includes('tea')) return Coffee;

@@ -233,10 +233,10 @@ export function NotificationCenter() {
                         {notification.metadata && Object.keys(notification.metadata).length > 0 && (
                           <div className="mt-2 text-xs text-gray-500">
                             {notification.metadata["sender_name"] && (
-                              <span>Da: {notification.metadata["sender_name"]}</span>
+                              <span>Da: {String(notification.metadata["sender_name"])}</span>
                             )}
                             {notification.metadata["space_title"] && (
-                              <span>Spazio: {notification.metadata["space_title"]}</span>
+                              <span>Spazio: {String(notification.metadata["space_title"])}</span>
                             )}
                           </div>
                         )}

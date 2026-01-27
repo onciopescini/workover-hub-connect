@@ -44,7 +44,7 @@ const isExistingBookingEntry = (value: unknown): value is ExistingBookingEntry =
 
   const record = value as Record<string, unknown>;
 
-  return typeof record.start_time === 'string' && typeof record.end_time === 'string';
+  return typeof record['start_time'] === 'string' && typeof record['end_time'] === 'string';
 };
 
 export interface UseBookingFlowProps {
@@ -262,7 +262,7 @@ export function useBookingFlow({
             logError('Failed to fetch user bookings', userBookingsError);
           } else if (userBookings && userBookings.length > 0) {
             // Add user bookings to existing bookings to block them
-            const formattedUserBookings: ExistingBookingEntry[] = userBookings
+            const formattedUserBookings = userBookings
               .map(b => {
                 if (!b.start_time || !b.end_time) return null;
 
@@ -287,9 +287,9 @@ export function useBookingFlow({
                 return {
                   start_time: format(zonedStart, 'HH:mm'),
                   end_time: format(zonedEnd, 'HH:mm'),
-                  status: b.status || undefined,
+                  status: String(b.status || ''),
                   user_id: userId
-                };
+                } as ExistingBookingEntry;
               })
               .filter((b): b is ExistingBookingEntry => b !== null);
 
