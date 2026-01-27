@@ -9,7 +9,7 @@ export const isCurrentUserAdmin = async (): Promise<boolean> => {
     if (!user.user) return false;
 
     const { data: isAdmin, error } = await supabase.rpc('is_admin', { 
-      user_id: user.user.id 
+      p_user_id: user.user.id 
     });
 
     if (error) {

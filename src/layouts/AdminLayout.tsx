@@ -24,7 +24,7 @@ export const AdminLayout = () => {
           // Explicitly call the RPC as requested in instructions
           // Casting 'is_admin' to any to avoid type errors with generated types
           const { data: isAdmin, error } = await supabase.rpc('is_admin' as any, {
-            user_id: authState.user.id
+            p_user_id: authState.user.id
           });
 
           if (error || !isAdmin) {

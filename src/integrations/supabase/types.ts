@@ -5611,13 +5611,32 @@ export type Database = {
         Row: {
           booking_count: number | null
           created_at: string | null
-          email: string | null
           first_name: string | null
           id: string | null
           is_suspended: boolean | null
           last_name: string | null
           space_count: number | null
           status: string | null
+        }
+        Insert: {
+          booking_count?: never
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_suspended?: boolean | null
+          last_name?: string | null
+          space_count?: never
+          status?: string | null
+        }
+        Update: {
+          booking_count?: never
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_suspended?: boolean | null
+          last_name?: string | null
+          space_count?: never
+          status?: string | null
         }
         Relationships: []
       }
@@ -6765,10 +6784,10 @@ export type Database = {
       }
       is_admin:
         | { Args: never; Returns: boolean }
-        | { Args: { user_id: string }; Returns: boolean }
+        | { Args: { p_user_id: string }; Returns: boolean }
       is_admin_new: { Args: { uid: string }; Returns: boolean }
       is_host_of_space: {
-        Args: { p_space: string; p_user: string }
+        Args: { p_space_id: string; p_user_id: string }
         Returns: boolean
       }
       is_moderator: { Args: { user_id: string }; Returns: boolean }
@@ -7753,7 +7772,7 @@ export type Database = {
           }
         | {
             Args: {
-              confirmation_type_param: string
+              confirmation_type_param?: string
               date_param: string
               end_time_param: string
               space_id_param: string
