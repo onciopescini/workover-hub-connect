@@ -5097,6 +5097,39 @@ export type Database = {
           },
         ]
       }
+      vat_rates: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          is_eu_member: boolean
+          reduced_rate: number | null
+          standard_rate: number
+          super_reduced_rate: number | null
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          is_eu_member?: boolean
+          reduced_rate?: number | null
+          standard_rate: number
+          super_reduced_rate?: number | null
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          is_eu_member?: boolean
+          reduced_rate?: number | null
+          standard_rate?: number
+          super_reduced_rate?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       waitlists: {
         Row: {
           created_at: string | null
@@ -6665,6 +6698,7 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_vat_rate: { Args: { p_country_code: string }; Returns: number }
       gettransactionid: { Args: never; Returns: unknown }
       has_role: {
         Args: {
