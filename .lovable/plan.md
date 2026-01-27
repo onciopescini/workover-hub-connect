@@ -1,329 +1,479 @@
 
-# Day 2: Utility Consolidation - Implementation Plan
+# Day 3: Service Layer Migration - Stripe & Admin Services
 
 ## Overview
 
-This task creates a centralized formatting library (`src/lib/format.ts`) and migrates all duplicate implementations across the codebase. This is a critical DRY (Don't Repeat Yourself) refactoring that will prevent future copy-paste programming and ensure consistent formatting across the entire application.
+This task creates two new services (`stripeService.ts` and `adminService.ts`) following the established pattern from `bookingService.ts`, while also fixing the pre-existing build errors that are blocking deployment.
 
 ---
 
 ## Current State Analysis
 
-### Duplicate `formatCurrency` Implementations Found: 10+
+### Build Errors to Fix First
 
-| File | Implementation Type | Issue |
-|------|---------------------|-------|
-| `src/pages/admin/AdminRevenue.tsx:31-36` | `Intl.NumberFormat('it-IT')` | Local function |
-| `src/pages/admin/AdminDashboard.tsx:65-70` | `Intl.NumberFormat('it-IT')` | Local function |
-| `src/pages/admin/AdminBookingsPage.tsx:92-96` | `Intl.NumberFormat` + `/100` | Assumes cents |
-| `src/components/host/fiscal/DAC7ReportCard.tsx:19-24` | `Intl.NumberFormat('it-IT')` | Local function |
-| `src/pages/SpaceRecap.tsx:83-88` | `Intl.NumberFormat('it-IT')` | Local function |
-| `src/components/payments/PaymentListItem.tsx:31` | Template literal `€${amount.toFixed(2)}` | Inconsistent format |
-| `src/components/payments/PaymentStats.tsx:19` | Template literal `€${amount.toFixed(2)}` | Inconsistent format |
-| `src/components/host/fiscal/FiscalDashboardContainer.tsx:60` | `€${value.toLocaleString('it-IT')}` | Manual prefix |
-| `src/components/host/fiscal/HostInvoicesReceived.tsx:97-99` | `€${Number(val).toFixed(2)}` | Manual prefix |
-| `src/components/host/fiscal/HostNonFiscalReceipts.tsx:106-110` | `€${Number(val).toFixed(2)}` | Manual prefix |
+Before implementing the new services, we need to fix **24 TypeScript build errors** that are blocking deployment:
 
-### Duplicate `cn` Function
+| Category | Count | Files |
+|----------|-------|-------|
+| `unknown` not assignable to `ReactNode` | 4 | `NotificationCenter.tsx`, `NotificationItem.tsx` |
+| `userId` undefined issue | 1 | `BookingForm.tsx` |
+| Enum string literal mismatches | 3 | `SpaceForm.tsx` |
+| Test `Location` type errors | 2 | `useCheckout.test.ts`, `useCheckoutReservationFailure.test.ts` |
+| Realtime subscription overloads | 2 | `useConnectionRequests.ts` |
+| `RawBookingData` type mismatches | 4 | `useCoworkerBookings.ts`, `useEnhancedBookings.ts`, `useHostBookings.ts` |
+| `useBookingsQuery` type errors | 4 | `useBookingsQuery.ts`, `useHostDashboardQuery.ts` |
 
-| File | Issue |
-|------|-------|
-| `src/lib/utils.ts:4-6` | Original, using `clsx` + `twMerge` |
-| `src/lib/booking-calculator-utils.ts:88-91` | Duplicate, simplified version |
+### Files with Direct Supabase Calls to Migrate
 
-### Existing Date Formatting
-
-The codebase already has a robust `src/lib/date-time/index.ts` with:
-- `formatUtcDateForDisplay()`
-- `formatBookingDateTime()`
-- `formatRelativeDate()`
-- `formatAbsoluteDate()`
-
-The new `formatDate()` in `format.ts` will be a thin wrapper for simpler use cases.
+| File | Current Pattern | Target Service |
+|------|----------------|----------------|
+| `StripeConnectButton.tsx` | `supabase.functions.invoke('create-connect-onboarding-link')` | `stripeService` |
+| `useStripeStatus.ts` | `supabase.functions.invoke('check-stripe-status')` | `stripeService` |
+| `useStripePayouts.ts` | `supabase.functions.invoke('get-stripe-payouts')` | `stripeService` |
+| `AdminBookingsPage.tsx` | `supabase.rpc('admin_get_bookings')` | `adminService` |
+| `useAdminBookings.ts` | Complex `supabase.from('bookings')...` | `adminService` |
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Create `src/lib/format.ts`
+### Phase 1: Fix Critical Build Errors (Priority)
 
-Create the centralized formatting library:
+#### 1.1 NotificationCenter.tsx & NotificationItem.tsx
+
+**Issue**: `Type 'unknown' is not assignable to type 'ReactNode'`
+
+**Root Cause**: `metadata` is `Record<string, unknown>` and TypeScript doesn't allow rendering `unknown` directly.
+
+**Fix**: Already using `String()` cast, but need to ensure JSX compatibility by wrapping in fragments or explicit type assertions.
+
+```typescript
+// Before (line 235-236)
+{notification.metadata["sender_name"] && (
+  <span>Da: {String(notification.metadata["sender_name"])}</span>
+)}
+
+// After - ensure proper fragment wrapping
+{notification.metadata["sender_name"] != null && (
+  <span>Da: {String(notification.metadata["sender_name"])}</span>
+)}
+```
+
+#### 1.2 BookingForm.tsx
+
+**Issue**: `userId: string | undefined` not assignable to `userId: string`
+
+**Fix**: Add early return or guard clause for undefined userId.
+
+#### 1.3 SpaceForm.tsx
+
+**Issue**: Enum string assignments failing strict checks.
+
+**Fix**: Use type assertions for Zod enum fields: `as "home" | "outdoor" | "professional"`.
+
+#### 1.4 useCheckout.test.ts files
+
+**Issue**: Mock `window.location` type incompatibility.
+
+**Fix**: Use proper TypeScript assertion for Location mock.
+
+#### 1.5 useConnectionRequests.ts
+
+**Issue**: Realtime subscription overload error.
+
+**Fix**: Use correct Supabase realtime channel syntax.
+
+#### 1.6 RawBookingData Type Mismatches
+
+**Issue**: `space_id: string | null` vs expected `string`.
+
+**Fix**: Update `RawBookingData` type to allow `null` for optional fields.
+
+---
+
+### Phase 2: Create stripeService.ts
+
+Create `src/services/api/stripeService.ts`:
 
 ```typescript
 /**
- * Centralized formatting utilities for Workover Hub Connect
+ * Stripe Service Layer
  * 
- * USAGE:
- * import { formatCurrency, formatDate, formatPercentage } from '@/lib/format';
- * 
- * formatCurrency(1234.56)           // → "€ 1.234,56"
- * formatCurrency(12345, { cents: true }) // → "€ 123,45" (Stripe cents)
- * formatDate('2024-01-15')          // → "15/01/2024"
- * formatDate('2024-01-15', 'MMMM yyyy') // → "gennaio 2024"
+ * Handles all Stripe Connect operations with proper error handling
+ * and type safety.
  */
 
-import { format, parseISO } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+
+// Supabase project constants
+const SUPABASE_URL = 'https://khtqwzvrxzsgfhsslwyz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+
+// ============= TYPES =============
+
+export interface StripeAccountStatus {
+  connected: boolean;
+  accountId: string | null;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+  onboardingStatus: 'none' | 'pending' | 'completed';
+}
+
+export interface StripeOnboardingResult {
+  success: boolean;
+  url?: string;
+  stripeAccountId?: string;
+  error?: string;
+}
+
+export interface StripePayoutData {
+  availableBalance: number;
+  pendingBalance: number;
+  currency: string;
+  lastPayout: {
+    amount: number;
+    arrivalDate: string;
+    status: string;
+  } | null;
+}
+
+// ============= METHODS =============
 
 /**
- * Formats a number as EUR currency using Italian locale.
- * @param amount - The amount to format.
- * @param options.cents - If true, divides amount by 100 (for Stripe cents). Default: false.
- * @returns Formatted currency string (e.g., "€ 1.234,56")
+ * Check and update Stripe account connection status.
+ * Calls the check-stripe-status Edge Function.
  */
-export const formatCurrency = (
-  amount: number | null | undefined,
-  options?: { cents?: boolean }
-): string => {
-  if (amount === null || amount === undefined) return '€ 0,00';
+export async function checkAccountStatus(): Promise<StripeAccountStatus> {
+  const { data, error } = await supabase.functions.invoke('check-stripe-status');
   
-  const value = options?.cents ? amount / 100 : amount;
+  if (error) throw new Error(`Stripe status check failed: ${error.message}`);
   
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-};
+  return {
+    connected: data?.connected ?? false,
+    accountId: data?.account_id ?? null,
+    chargesEnabled: data?.charges_enabled ?? false,
+    payoutsEnabled: data?.payouts_enabled ?? false,
+    detailsSubmitted: data?.details_submitted ?? false,
+    onboardingStatus: data?.onboarding_status ?? 'none'
+  };
+}
 
 /**
- * Formats a date string or Date object.
- * @param date - The date to format (ISO string, Date object, null, or undefined).
- * @param formatStr - Optional format string (default: 'dd/MM/yyyy').
- * @returns Formatted date string, or '-' if date is invalid/null.
+ * Create or get Stripe Connect onboarding/dashboard link.
+ * Uses native fetch for full header control.
  */
-export const formatDate = (
-  date: string | Date | null | undefined,
-  formatStr: string = 'dd/MM/yyyy'
-): string => {
-  if (!date) return '-';
+export async function createOnboardingLink(): Promise<StripeOnboardingResult> {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError || !sessionData.session?.access_token) {
+    return { success: false, error: 'Session expired, please login again' };
+  }
   
   try {
-    const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    return format(dateObj, formatStr, { locale: it });
-  } catch {
-    return '-';
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/create-connect-onboarding-link`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionData.session.access_token}`,
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok || data.error) {
+      return { success: false, error: data.error || 'Failed to create onboarding link' };
+    }
+    
+    return {
+      success: true,
+      url: data.url,
+      stripeAccountId: data.stripe_account_id
+    };
+  } catch (err) {
+    return { success: false, error: 'Network error connecting to Stripe' };
   }
-};
+}
 
 /**
- * Formats a number as percentage.
- * @param value - The value to format (0.15 → "15%", 15 → "15%").
- * @param options.decimal - If true, treats value as decimal (0.15 → 15%). Default: false.
- * @returns Formatted percentage string.
+ * Get payout information for a host.
  */
-export const formatPercentage = (
-  value: number | null | undefined,
-  options?: { decimal?: boolean }
-): string => {
-  if (value === null || value === undefined) return '0%';
+export async function getPayouts(hostId: string): Promise<StripePayoutData> {
+  const { data, error } = await supabase.functions.invoke('get-stripe-payouts', {
+    body: { host_id: hostId }
+  });
   
-  const percentage = options?.decimal ? value * 100 : value;
+  if (error) throw new Error(`Failed to fetch payouts: ${error.message}`);
   
-  return new Intl.NumberFormat('it-IT', {
-    style: 'percent',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1
-  }).format(percentage / 100);
-};
-
-/**
- * Formats a number with thousands separator (Italian locale).
- * @param value - The number to format.
- * @returns Formatted number string (e.g., "1.234.567").
- */
-export const formatNumber = (value: number | null | undefined): string => {
-  if (value === null || value === undefined) return '0';
-  
-  return new Intl.NumberFormat('it-IT').format(value);
-};
+  return {
+    availableBalance: data?.available_balance ?? 0,
+    pendingBalance: data?.pending_balance ?? 0,
+    currency: data?.currency ?? 'EUR',
+    lastPayout: data?.last_payout ?? null
+  };
+}
 ```
 
 ---
 
-### Step 2: Migrate Admin Pages
+### Phase 3: Create adminService.ts
 
-**File: `src/pages/admin/AdminRevenue.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 31-36 | Local `formatCurrency` function | Delete function |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-| All usages | `formatCurrency(row.gross_volume)` | (unchanged - same signature) |
-
-**File: `src/pages/admin/AdminDashboard.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 65-70 | Local `formatCurrency` function | Delete function |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
-**File: `src/pages/admin/AdminBookingsPage.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 92-103 | Complex local function with `/100` and comments | Delete function |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-| Usages | `formatCurrency(payment.amount)` | `formatCurrency(payment.amount, { cents: true })` |
-
----
-
-### Step 3: Migrate Payment Components
-
-**File: `src/components/payments/PaymentListItem.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 31 | `const formatCurrency = (amount: number) => \`€${amount.toFixed(2)}\`;` | Delete line |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
-**File: `src/components/payments/PaymentStats.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 19 | `const formatCurrency = (amount: number) => \`€${amount.toFixed(2)}\`;` | Delete line |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
----
-
-### Step 4: Migrate Fiscal Components
-
-**File: `src/components/host/fiscal/DAC7ReportCard.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 19-24 | Local `formatCurrency` function | Delete function |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
-**File: `src/components/host/fiscal/FiscalDashboardContainer.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 60 | `€{thresholdQuery.data.total_income.toLocaleString('it-IT')}` | `{formatCurrency(thresholdQuery.data.total_income)}` |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
-**File: `src/components/host/fiscal/HostInvoicesReceived.tsx`**
-
-| Lines | Before | After |
-|-------|--------|-------|
-| 97 | `Imponibile: €${Number(invoice.base_amount).toFixed(2)}` | `Imponibile: {formatCurrency(invoice.base_amount)}` |
-| 98 | `IVA: €${Number(invoice.vat_amount).toFixed(2)}` | `IVA: {formatCurrency(invoice.vat_amount)}` |
-| 99 | `Totale: €${Number(invoice.total_amount).toFixed(2)}` | `Totale: {formatCurrency(invoice.total_amount)}` |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
-**File: `src/components/host/fiscal/HostNonFiscalReceipts.tsx`**
-
-| Lines | Before | After |
-|-------|--------|-------|
-| 106-110 | Manual `€${Number(val).toFixed(2)}` | `{formatCurrency(val)}` |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
----
-
-### Step 5: Migrate SpaceRecap Page
-
-**File: `src/pages/SpaceRecap.tsx`**
-
-| Line | Before | After |
-|------|--------|-------|
-| 83-88 | Local `formatCurrency` function | Delete function |
-| 1 | - | Add `import { formatCurrency } from '@/lib/format';` |
-
----
-
-### Step 6: Remove Duplicate `cn` Function
-
-**File: `src/lib/booking-calculator-utils.ts`**
-
-| Line | Action |
-|------|--------|
-| 88-91 | Delete the duplicate `cn` function |
-| 1 | Add `import { cn } from '@/lib/utils';` |
-
-Verify any internal usages in this file still work with the imported version.
-
----
-
-### Step 7: Update Barrel Export
-
-**File: `src/lib/index.ts`** (create if not exists)
+Create `src/services/api/adminService.ts`:
 
 ```typescript
-// Re-export commonly used utilities
-export { cn } from './utils';
-export { formatCurrency, formatDate, formatPercentage, formatNumber } from './format';
+/**
+ * Admin Service Layer
+ * 
+ * Handles all admin dashboard operations with proper error handling
+ * and type safety.
+ */
+
+import { supabase } from '@/integrations/supabase/client';
+import { AdminBooking, AdminUser, AdminStats } from '@/types/admin';
+import { mapAdminBookingRecord } from '@/lib/admin-mappers';
+
+// ============= TYPES =============
+
+export interface GetBookingsParams {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  search?: string;
+}
+
+export interface GetBookingsResult {
+  bookings: AdminBooking[];
+  totalCount: number;
+}
+
+// ============= METHODS =============
+
+/**
+ * Fetch all bookings with optional filtering.
+ * Uses the admin_get_bookings RPC for security.
+ */
+export async function getAllBookings(params: GetBookingsParams = {}): Promise<GetBookingsResult> {
+  const { page = 1, pageSize = 50, status, search } = params;
+  
+  const { data, error } = await supabase.rpc('admin_get_bookings');
+  
+  if (error) throw new Error(`Failed to fetch bookings: ${error.message}`);
+  
+  // Map and filter the results
+  let bookings = (data || [])
+    .map(mapAdminBookingRecord)
+    .filter((item): item is AdminBooking => item !== null);
+  
+  // Apply client-side filtering
+  if (status && status !== 'all') {
+    bookings = bookings.filter(b => b.status === status);
+  }
+  
+  if (search) {
+    const searchLower = search.toLowerCase();
+    bookings = bookings.filter(b =>
+      b.coworker_name?.toLowerCase().includes(searchLower) ||
+      b.coworker_email?.toLowerCase().includes(searchLower) ||
+      b.space_name?.toLowerCase().includes(searchLower) ||
+      b.host_name?.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  // Apply pagination
+  const start = (page - 1) * pageSize;
+  const paginatedBookings = bookings.slice(start, start + pageSize);
+  
+  return {
+    bookings: paginatedBookings,
+    totalCount: bookings.length
+  };
+}
+
+/**
+ * Fetch all users for admin management.
+ */
+export async function getAllUsers(): Promise<AdminUser[]> {
+  const { data, error } = await supabase
+    .from('admin_users_view' as any)
+    .select('*');
+  
+  if (error) throw new Error(`Failed to fetch users: ${error.message}`);
+  
+  return data as AdminUser[];
+}
+
+/**
+ * Toggle user account status (active/suspended).
+ */
+export async function toggleUserStatus(userId: string, newStatus: 'active' | 'suspended'): Promise<void> {
+  const { error } = await supabase.rpc('admin_toggle_user_status', {
+    target_user_id: userId,
+    new_status: newStatus
+  });
+  
+  if (error) throw new Error(`Failed to update user status: ${error.message}`);
+}
+
+/**
+ * Get system-wide metrics for dashboard.
+ */
+export async function getSystemMetrics(): Promise<AdminStats> {
+  // This consolidates the logic from admin-stats-utils.ts
+  const [
+    { count: totalUsers },
+    { count: totalHosts },
+    { count: totalBookings },
+    { count: activeListings },
+    { data: payments }
+  ] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'host'),
+    supabase.from('bookings').select('id', { count: 'exact', head: true }),
+    supabase.from('spaces').select('id', { count: 'exact', head: true }).eq('published', true),
+    supabase.from('payments').select('amount').eq('payment_status', 'completed')
+  ]);
+  
+  const totalRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+  
+  return {
+    total_users: totalUsers || 0,
+    total_hosts: totalHosts || 0,
+    total_bookings: totalBookings || 0,
+    total_revenue: totalRevenue,
+    active_listings: activeListings || 0
+  };
+}
 ```
 
 ---
 
-## Files to Create
+### Phase 4: Refactor Components
 
-| File | Description |
-|------|-------------|
-| `src/lib/format.ts` | Centralized formatting utilities |
+#### 4.1 StripeConnectButton.tsx
 
-## Files to Modify
+**Changes:**
+- Import `createOnboardingLink` from `@/services/api/stripeService`
+- Replace `supabase.functions.invoke('create-connect-onboarding-link')` with `createOnboardingLink()`
+- Use structured result instead of raw response
 
-| File | Changes |
-|------|---------|
-| `src/pages/admin/AdminRevenue.tsx` | Remove local formatCurrency, import from @/lib/format |
-| `src/pages/admin/AdminDashboard.tsx` | Remove local formatCurrency, import from @/lib/format |
-| `src/pages/admin/AdminBookingsPage.tsx` | Remove local function, use `{ cents: true }` option |
-| `src/components/payments/PaymentListItem.tsx` | Remove local function, import from @/lib/format |
-| `src/components/payments/PaymentStats.tsx` | Remove local function, import from @/lib/format |
-| `src/components/host/fiscal/DAC7ReportCard.tsx` | Remove local function, import from @/lib/format |
-| `src/components/host/fiscal/FiscalDashboardContainer.tsx` | Replace inline formatting |
-| `src/components/host/fiscal/HostInvoicesReceived.tsx` | Replace inline formatting |
-| `src/components/host/fiscal/HostNonFiscalReceipts.tsx` | Replace inline formatting |
-| `src/pages/SpaceRecap.tsx` | Remove local function, import from @/lib/format |
-| `src/lib/booking-calculator-utils.ts` | Remove duplicate `cn`, import from utils |
+#### 4.2 useStripeStatus.ts
+
+**Changes:**
+- Import `checkAccountStatus` from `@/services/api/stripeService`
+- Replace `supabase.functions.invoke('check-stripe-status')` with `checkAccountStatus()`
+
+#### 4.3 useStripePayouts.ts
+
+**Changes:**
+- Import `getPayouts` from `@/services/api/stripeService`
+- Replace `supabase.functions.invoke('get-stripe-payouts')` with service call
+- Note: Keep the hook structure but delegate to service
+
+#### 4.4 AdminBookingsPage.tsx
+
+**Changes:**
+- Import `getAllBookings` from `@/services/api/adminService`
+- Replace `supabase.rpc('admin_get_bookings')` with `getAllBookings()`
+- Remove local mapper call (service handles it)
+
+---
+
+### Phase 5: Update Barrel Export
+
+Update `src/services/api/index.ts`:
+
+```typescript
+/**
+ * API Services Barrel Export
+ */
+
+// Booking Service
+export {
+  reserveSlot,
+  createCheckoutSession,
+  type ReserveSlotParams,
+  type ReserveSlotResult,
+  type CreateCheckoutSessionResult
+} from './bookingService';
+
+// Stripe Service
+export {
+  checkAccountStatus,
+  createOnboardingLink,
+  getPayouts,
+  type StripeAccountStatus,
+  type StripeOnboardingResult,
+  type StripePayoutData
+} from './stripeService';
+
+// Admin Service
+export {
+  getAllBookings,
+  getAllUsers,
+  toggleUserStatus,
+  getSystemMetrics,
+  type GetBookingsParams,
+  type GetBookingsResult
+} from './adminService';
+```
+
+---
+
+## File Changes Summary
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/notifications/NotificationCenter.tsx` | MODIFY | Fix ReactNode type errors |
+| `src/components/notifications/NotificationItem.tsx` | MODIFY | Fix ReactNode type errors |
+| `src/components/spaces/BookingForm.tsx` | MODIFY | Add userId guard |
+| `src/components/spaces/SpaceForm.tsx` | MODIFY | Fix enum type assertions |
+| `src/hooks/checkout/__tests__/useCheckout.test.ts` | MODIFY | Fix Location mock |
+| `src/hooks/checkout/__tests__/useCheckoutReservationFailure.test.ts` | MODIFY | Fix Location mock |
+| `src/hooks/networking/useConnectionRequests.ts` | MODIFY | Fix realtime subscription |
+| `src/types/booking.ts` or related | MODIFY | Fix RawBookingData null types |
+| `src/services/api/stripeService.ts` | CREATE | New Stripe service |
+| `src/services/api/adminService.ts` | CREATE | New Admin service |
+| `src/services/api/index.ts` | MODIFY | Add new exports |
+| `src/components/stripe/StripeConnectButton.tsx` | MODIFY | Use stripeService |
+| `src/hooks/useStripeStatus.ts` | MODIFY | Use stripeService |
+| `src/hooks/useStripePayouts.ts` | MODIFY | Use stripeService |
+| `src/pages/admin/AdminBookingsPage.tsx` | MODIFY | Use adminService |
 
 ---
 
 ## Technical Notes
 
-### Why `options.cents`?
+### Service Pattern Consistency
 
-Stripe stores amounts in the smallest currency unit (cents for EUR). The `{ cents: true }` option handles this conversion cleanly:
+All services follow the established pattern from `bookingService.ts`:
+- Typed interfaces for all inputs/outputs
+- Structured error handling with clear messages
+- Native fetch for Edge Functions requiring header control
+- `supabase.functions.invoke` for simpler Edge Function calls
+- `supabase.rpc` for database RPC calls
 
-```typescript
-// Stripe payment amount (in cents)
-formatCurrency(12345, { cents: true }) // → "€ 123,45"
+### Why Native Fetch for Onboarding Link?
 
-// Database amount (in euros)
-formatCurrency(123.45) // → "€ 123,45"
-```
+The `create-connect-onboarding-link` Edge Function may need future enhancements like:
+- Custom headers for rate limiting
+- Request deduplication
+- Retry logic with exponential backoff
 
-### Null/Undefined Handling
-
-The new functions handle edge cases gracefully:
-
-```typescript
-formatCurrency(null)      // → "€ 0,00"
-formatCurrency(undefined) // → "€ 0,00"
-formatDate(null)          // → "-"
-formatDate(undefined)     // → "-"
-```
-
-### Locale Consistency
-
-All functions use `it-IT` locale for:
-- Number formatting: `1.234,56` (dot for thousands, comma for decimals)
-- Currency symbol: `€` with proper spacing
-- Date formatting: Italian month/day names
+Using native fetch provides flexibility for these additions.
 
 ---
 
 ## Verification Checklist
 
-After implementation, verify:
-
-1. All admin pages display currency correctly
-2. Payment components show proper EUR formatting
-3. Fiscal reports maintain Italian locale
-4. No TypeScript errors related to formatting
-5. Build completes successfully
+1. All 24 build errors resolved
+2. `stripeService.ts` exports 3 methods
+3. `adminService.ts` exports 4 methods
+4. `StripeConnectButton.tsx` uses service (no direct Supabase)
+5. `useStripeStatus.ts` uses service (no direct Supabase)
+6. `AdminBookingsPage.tsx` uses service (no direct Supabase)
+7. All loading states preserved
+8. Toast notifications still work correctly
 
 ---
 
@@ -331,7 +481,7 @@ After implementation, verify:
 
 | Metric | Before | After |
 |--------|--------|-------|
-| `formatCurrency` implementations | 10+ | 1 |
-| Duplicate `cn` functions | 2 | 1 |
-| Lines of duplicate code | ~50 | 0 |
-| Consistency | Mixed formats | Uniform `it-IT` |
+| Build errors | 24 | 0 |
+| Direct Supabase calls in Stripe components | 4 | 0 |
+| Direct Supabase calls in Admin pages | 2 | 0 |
+| Service Layer coverage | 1 service | 3 services |
