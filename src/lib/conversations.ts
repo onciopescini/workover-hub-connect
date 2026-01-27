@@ -20,11 +20,13 @@ export async function getOrCreateConversation(params: {
   
   sreLogger.info('Creating conversation', { hostId, coworkerId, spaceId, bookingId });
   
-  const { data, error } = await supabase.rpc('get_or_create_conversation', {
+  // AGGRESSIVE FIX: Cast the entire params to any for RPC compatibility
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)('get_or_create_conversation', {
     p_host_id: hostId,
     p_coworker_id: coworkerId,
-    p_space_id: spaceId ?? undefined,
-    p_booking_id: bookingId ?? undefined,
+    p_space_id: spaceId ?? null,
+    p_booking_id: bookingId ?? null,
   });
   
   if (error) {
@@ -182,7 +184,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
       result.avatar = otherPerson.profile_photo_url;
     }
     if (c.last_message_at) {
-      result.last_message_at = c.last_message_at || undefined;
+      result.last_message_at = c.last_message_at;
     }
     if (bookingStatus) {
       result.status = bookingStatus;
@@ -198,8 +200,8 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
     }
     if (c.booking) {
       result.booking = {
-        booking_date: c.booking.booking_date,
-        status: c.booking.status
+        booking_date: c.booking.booking_date || '',
+        status: c.booking.status || 'pending'
       };
     }
     

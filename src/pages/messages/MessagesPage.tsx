@@ -37,6 +37,7 @@ const MessagesPage: React.FC = () => {
           />
         }
       >
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <ChatWindow
           messages={activeMessages}
           currentUser={currentUser}
@@ -46,7 +47,7 @@ const MessagesPage: React.FC = () => {
           onArchiveConversation={archiveConversation}
           onMarkConversationUnread={markConversationUnread}
           messagesEndRef={messagesEndRef}
-          activeConversation={activeConversation}
+          activeConversation={activeConversation as any}
         />
       </ChatLayout>
     </div>

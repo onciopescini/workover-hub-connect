@@ -182,7 +182,7 @@ const UserProfileView = () => {
              <Button
                 variant="outline"
                 className="w-full justify-start gap-2 border-primary/20 hover:bg-primary/5 text-primary"
-                onClick={() => window.open(profile['portfolio_url']!, '_blank')}
+                onClick={() => window.open(String(profile['portfolio_url']), '_blank')}
              >
                 <Briefcase className="h-4 w-4" />
                 Visualizza Portfolio

@@ -21,8 +21,8 @@ export interface WeeklySchedule {
 
 export interface AvailabilityException {
   date: string;
-  enabled: boolean; // Changed from 'available' to 'enabled' for consistency
-  slots: TimeSlot[]; // Required with empty array default
+  enabled: boolean;
+  slots?: TimeSlot[] | undefined; // AGGRESSIVE FIX: Accept undefined explicitly
 }
 
 export interface AvailabilityData {

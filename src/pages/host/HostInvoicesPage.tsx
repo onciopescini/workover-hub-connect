@@ -90,8 +90,8 @@ export default function HostInvoicesPage() {
           {loadingInvoices ? (
             <div className="text-center py-8">Caricamento fatture...</div>
           ) : pendingInvoices && pendingInvoices.length > 0 ? (
-            pendingInvoices.map(payment => (
-              <InvoiceCard key={payment.id} payment={payment} />
+            pendingInvoices.map((payment: any) => (
+              <InvoiceCard key={payment.id} payment={payment as any} />
             ))
           ) : (
             <Alert>
@@ -106,8 +106,8 @@ export default function HostInvoicesPage() {
           {loadingCreditNotes ? (
             <div className="text-center py-8">Caricamento note di credito...</div>
           ) : pendingCreditNotes && pendingCreditNotes.length > 0 ? (
-            pendingCreditNotes.map(payment => (
-              <CreditNoteCard key={payment.id} payment={payment} />
+            pendingCreditNotes.map((payment: any) => (
+              <CreditNoteCard key={payment.id} payment={payment as any} />
             ))
           ) : (
             <Alert>

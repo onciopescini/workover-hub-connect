@@ -32,7 +32,8 @@ export async function fetchMessages(bookingId: string): Promise<Message[]> {
       : [],
     is_read: msg.is_read || false,
     created_at: msg.created_at || '',
-    sender: msg.sender // PostgREST result
+    // AGGRESSIVE FIX: Ensure sender is always defined with defaults
+    sender: msg.sender ?? { first_name: '', last_name: '', profile_photo_url: null }
   }));
 }
 

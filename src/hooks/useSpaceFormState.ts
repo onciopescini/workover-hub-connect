@@ -160,7 +160,19 @@ export const useSpaceFormState = ({
             : dbDataAvailability;
 
           if (availabilityJson && typeof availabilityJson === 'object' && availabilityJson.recurring) {
-            parsedAvailability = availabilityJson;
+            // CRITICAL FIX: Normalize exceptions to ensure slots is always an array
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const exceptions = Array.isArray(availabilityJson.exceptions)
+              ? availabilityJson.exceptions.map((ex: any) => ({
+                  ...ex,
+                  slots: Array.isArray(ex['slots']) ? ex['slots'] : []
+                }))
+              : [];
+            const normalized = {
+              ...availabilityJson,
+              exceptions
+            };
+            parsedAvailability = normalized as AvailabilityData;
           }
         } catch (parseError) {
           error("Error parsing availability", parseError as Error, {

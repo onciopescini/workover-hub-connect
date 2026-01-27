@@ -12,6 +12,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
 // Type guard per validare la struttura della risposta RPC
+// AGGRESSIVE FIX: Use bracket notation for index signature access
 function isValidProfileAccessResponse(data: unknown): data is ProfileAccessResult {
   if (!isRecord(data) || Array.isArray(data)) return false;
 
@@ -20,9 +21,9 @@ function isValidProfileAccessResponse(data: unknown): data is ProfileAccessResul
     'has_access' in obj &&
     'access_reason' in obj &&
     'message' in obj &&
-    typeof obj.has_access === 'boolean' &&
-    typeof obj.access_reason === 'string' &&
-    typeof obj.message === 'string'
+    typeof obj['has_access'] === 'boolean' &&
+    typeof obj['access_reason'] === 'string' &&
+    typeof obj['message'] === 'string'
   );
 }
 

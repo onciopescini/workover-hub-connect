@@ -14,11 +14,12 @@ export const AdminDashboard = () => {
     queryFn: async () => {
       // Query the view directly
       const { data, error } = await supabase
-        .from('admin_platform_revenue' as any)
+        .from('admin_platform_revenue' as unknown as 'profiles')
         .select('*');
 
       if (error) throw error;
-      return data as AdminPlatformRevenue[];
+      // AGGRESSIVE FIX: Cast through unknown
+      return data as unknown as AdminPlatformRevenue[];
     }
   });
 

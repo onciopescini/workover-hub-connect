@@ -47,7 +47,8 @@ const PublicSpaces = () => {
 
   // Handle errors with proper user feedback
   if (error) {
-    handleError(error, { 
+    // AGGRESSIVE FIX: Pass error message or Error object
+    handleError(error instanceof Error ? error : new Error(String(error)), { 
       context: 'spaces_fetch',
       toastMessage: 'Errore nel caricamento degli spazi. Riprova più tardi.'
     });
