@@ -33,7 +33,7 @@ export const useTermsAcceptance = () => {
         .eq('document_type', 'tos')
         .order('effective_date', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (tosError || !latestToS) {
         // No ToS defined yet - don't block

@@ -55,11 +55,16 @@ const AdminUsers = () => {
     }
   };
 
-  const filteredUsers = users?.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.first_name && user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (user.last_name && user.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  const filteredUsers = users?.filter(user => {
+    const searchLower = searchTerm.toLowerCase();
+    const email = (user.email || '').toLowerCase();
+    const firstName = (user.first_name || '').toLowerCase();
+    const lastName = (user.last_name || '').toLowerCase();
+    
+    return email.includes(searchLower) ||
+           firstName.includes(searchLower) ||
+           lastName.includes(searchLower);
+  }) || [];
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -118,7 +123,7 @@ const AdminUsers = () => {
                     <TableRow key={user.id} className={user.status === 'suspended' ? 'opacity-50' : ''}>
                       <TableCell className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`} />
                         <AvatarFallback>
                           {user.first_name?.[0] ?? (user.email?.[0] ?? '?').toUpperCase()}
                         </AvatarFallback>
