@@ -155,12 +155,12 @@ export const addBookingReview = async (review: BookingReviewInsert): Promise<boo
 // Check review status for a booking
 export const getBookingReviewStatus = async (bookingId: string, userId: string, targetId: string): Promise<ReviewStatus> => {
   try {
-    // Get booking details to check completion status and payment
+    // Get booking details to check completion status and payment using explicit FK hint
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(`
         *,
-        payments (
+        payments:payments!fk_payments_booking_id (
           payment_status
         )
       `)

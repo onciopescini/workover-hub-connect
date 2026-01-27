@@ -37,7 +37,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
 
         // OPTIMIZED: Single query with JOINs instead of sequential queries
         if (isHost) {
-          // Fetch bookings and payments in one query with JOIN
+          // Fetch bookings and payments in one query with JOIN using explicit FK hint
           const { data: hostData, error: hostError } = await supabase
             .from('bookings')
             .select(`
@@ -45,7 +45,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
               status, 
               created_at,
               spaces!inner(host_id),
-              payments(host_amount, payment_status)
+              payments:payments!fk_payments_booking_id (host_amount, payment_status)
             `)
             .eq('spaces.host_id', profile.id);
 

@@ -51,7 +51,7 @@ export const useHostPayments = () => {
     queryFn: async (): Promise<HostPayment[]> => {
       if (!userId) throw new Error('User not authenticated');
 
-      // Fetch payments with bookings (without nested spaces to avoid FK issues)
+      // Fetch payments with explicit FK hint to avoid ambiguity
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -65,7 +65,7 @@ export const useHostPayments = () => {
           stripe_transfer_id,
           receipt_url,
           booking_id,
-          bookings!inner(
+          bookings:bookings!fk_payments_booking_id (
             id,
             booking_date,
             start_time,
@@ -73,11 +73,11 @@ export const useHostPayments = () => {
             space_id,
             user_id
           ),
-          invoices!fk_invoices_payment_id(
+          invoices:invoices!fk_invoices_payment_id (
             invoice_number,
             pdf_file_url
           ),
-          non_fiscal_receipts!non_fiscal_receipts_payment_id_fkey(
+          non_fiscal_receipts:non_fiscal_receipts!non_fiscal_receipts_payment_id_fkey (
             receipt_number,
             pdf_url
           )

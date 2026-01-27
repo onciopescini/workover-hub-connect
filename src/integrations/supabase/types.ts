@@ -524,6 +524,36 @@ export type Database = {
           },
         ]
       }
+      archived_orphaned_payments: {
+        Row: {
+          amount: number | null
+          archive_reason: string | null
+          archived_at: string | null
+          created_at: string | null
+          id: string
+          original_booking_id: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          created_at?: string | null
+          id: string
+          original_booking_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          created_at?: string | null
+          id?: string
+          original_booking_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       assistant_configs: {
         Row: {
           created_at: string | null
@@ -3140,6 +3170,20 @@ export type Database = {
           workover_invoice_xml_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payments_booking_id"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_payments_booking_id"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_booking_id_fkey"
             columns: ["booking_id"]
@@ -7662,10 +7706,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      update_space_rating_aggregate: {
-        Args: { p_space_id: string }
-        Returns: undefined
-      }
       update_ticket_sla_status: { Args: never; Returns: undefined }
       updategeometrysrid: {
         Args: {
@@ -7708,6 +7748,17 @@ export type Database = {
               p_space_id: string
               p_start_time: string
               p_user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              confirmation_type_param: string
+              date_param: string
+              end_time_param: string
+              space_id_param: string
+              start_time_param: string
+              user_id_param: string
             }
             Returns: Json
           }

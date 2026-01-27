@@ -34,7 +34,7 @@ serve(async (req) => {
           host_id,
           profiles!inner(stripe_account_id)
         ),
-        payments!inner(host_amount, currency)
+        payments:payments!fk_payments_booking_id!inner(host_amount, currency)
       `)
       .eq('status', 'served')
       .not('payout_scheduled_at', 'is', null)

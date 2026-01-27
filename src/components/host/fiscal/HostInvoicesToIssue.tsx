@@ -15,7 +15,7 @@ export const HostInvoicesToIssue = () => {
     queryFn: async () => {
       if (!authState.user?.id) return [];
       
-      // Fetch payments without nested spaces relation
+      // Fetch payments with explicit FK hint to avoid ambiguity
       const { data: payments, error } = await supabase
         .from('payments')
         .select(`
@@ -24,7 +24,7 @@ export const HostInvoicesToIssue = () => {
           host_invoice_deadline,
           host_invoice_reminder_sent,
           created_at,
-          bookings (
+          bookings:bookings!fk_payments_booking_id (
             id,
             booking_date,
             space_id
