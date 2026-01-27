@@ -1,30 +1,28 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SRELogger } from "../_shared/sre-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// SIMPLIFIED VERSION - DEBUG ONLY
-console.log('🚀 Starting GDPR Export Function - DEBUG MODE');
+// Fail fast if required secrets are missing
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-console.log('🔧 Environment check:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseServiceKey,
-  urlPreview: supabaseUrl?.substring(0, 30) + '...'
-});
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing required environment variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// COMPLETE GDPR data collection with DEBUG logging
+// PARALLELIZED GDPR data collection
 async function collectUserData(userId: string) {
-  console.log('🔵 Starting COMPLETE data collection for user:', userId);
-  const startTime = Date.now();
+  SRELogger.setFunctionName('generate-gdpr-export');
+  const timer = SRELogger.startTimer('collectUserData');
+  
   const userData: any = {
     profile: null,
     bookings: [],
@@ -44,233 +42,79 @@ async function collectUserData(userId: string) {
     errors: []
   };
 
-  // CHECKPOINT 1: Profile data
-  try {
-    console.log('📋 CHECKPOINT 1: Fetching profile...');
-    const profileStart = Date.now();
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  SRELogger.info('Starting parallel data collection', { userId });
 
-    if (profileError) {
-      console.error('❌ Profile error:', profileError);
-      userData.errors.push(`Profile fetch failed: ${profileError.message}`);
+  // Execute all queries in parallel using Promise.allSettled
+  const [
+    profileResult,
+    bookingsResult,
+    spacesResult,
+    messagesResult,
+    reviewsGivenResult,
+    reviewsReceivedResult,
+    connectionsResult,
+    paymentsResult,
+    notificationsResult,
+    gdprRequestsResult
+  ] = await Promise.allSettled([
+    supabase.from('profiles').select('*').eq('id', userId).single(),
+    supabase.from('bookings').select('*').eq('user_id', userId),
+    supabase.from('spaces').select('*').eq('host_id', userId),
+    supabase.from('messages').select('*').eq('sender_id', userId),
+    supabase.from('booking_reviews').select('*').eq('author_id', userId),
+    supabase.from('booking_reviews').select('*').eq('target_id', userId),
+    supabase.from('connections').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
+    supabase.from('payments').select('*').eq('user_id', userId),
+    supabase.from('user_notifications').select('*').eq('user_id', userId),
+    supabase.from('gdpr_requests').select('*').eq('user_id', userId)
+  ]);
+
+  // Process results with error handling
+  const processResult = (result: PromiseSettledResult<any>, key: string, isSingle = false) => {
+    if (result.status === 'fulfilled') {
+      const { data, error } = result.value;
+      if (error) {
+        userData.errors.push(`${key} fetch failed: ${error.message}`);
+        SRELogger.warn(`${key} query error`, { error: error.message });
+      } else {
+        userData[key] = isSingle ? data : (data || []);
+      }
     } else {
-      userData.profile = profile;
-      console.log('✅ Profile fetched in', Date.now() - profileStart, 'ms');
+      userData.errors.push(`${key} query rejected: ${result.reason}`);
+      SRELogger.error(`${key} query rejected`, { reason: String(result.reason) });
     }
-  } catch (error) {
-    console.error('🔴 Profile section failed:', error);
-    userData.errors.push(`Profile section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  };
 
-  // CHECKPOINT 2: Bookings
-  try {
-    console.log('📋 CHECKPOINT 2: Fetching bookings...');
-    const bookingsStart = Date.now();
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('user_id', userId);
+  processResult(profileResult, 'profile', true);
+  processResult(bookingsResult, 'bookings');
+  processResult(spacesResult, 'spaces');
+  processResult(messagesResult, 'messages');
+  processResult(reviewsGivenResult, 'reviews_given');
+  processResult(reviewsReceivedResult, 'reviews_received');
+  processResult(connectionsResult, 'connections');
+  processResult(paymentsResult, 'payments');
+  processResult(notificationsResult, 'notifications');
+  processResult(gdprRequestsResult, 'gdpr_requests');
 
-    if (bookingsError) {
-      console.error('❌ Bookings error:', bookingsError);
-      userData.errors.push(`Bookings fetch failed: ${bookingsError.message}`);
-    } else {
-      userData.bookings = bookings || [];
-      console.log(`✅ Bookings fetched: ${bookings?.length || 0} records in ${Date.now() - bookingsStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Bookings section failed:', error);
-    userData.errors.push(`Bookings section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 3: Spaces
-  try {
-    console.log('📋 CHECKPOINT 3: Fetching spaces...');
-    const spacesStart = Date.now();
-    const { data: spaces, error: spacesError } = await supabase
-      .from('spaces')
-      .select('*')
-      .eq('host_id', userId);
-
-    if (spacesError) {
-      console.error('❌ Spaces error:', spacesError);
-      userData.errors.push(`Spaces fetch failed: ${spacesError.message}`);
-    } else {
-      userData.spaces = spaces || [];
-      console.log(`✅ Spaces fetched: ${spaces?.length || 0} records in ${Date.now() - spacesStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Spaces section failed:', error);
-    userData.errors.push(`Spaces section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 4: Messages
-  try {
-    console.log('📋 CHECKPOINT 4: Fetching messages...');
-    const messagesStart = Date.now();
-    const { data: messages, error: messagesError } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('sender_id', userId);
-
-    if (messagesError) {
-      console.error('❌ Messages error:', messagesError);
-      userData.errors.push(`Messages fetch failed: ${messagesError.message}`);
-    } else {
-      userData.messages = messages || [];
-      console.log(`✅ Messages fetched: ${messages?.length || 0} records in ${Date.now() - messagesStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Messages section failed:', error);
-    userData.errors.push(`Messages section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 5: Reviews given
-  try {
-    console.log('📋 CHECKPOINT 5: Fetching reviews given...');
-    const reviewsStart = Date.now();
-    const { data: reviewsGiven, error: reviewsGivenError } = await supabase
-      .from('booking_reviews')
-      .select('*')
-      .eq('author_id', userId);
-
-    if (reviewsGivenError) {
-      console.error('❌ Reviews given error:', reviewsGivenError);
-      userData.errors.push(`Reviews given fetch failed: ${reviewsGivenError.message}`);
-    } else {
-      userData.reviews_given = reviewsGiven || [];
-      console.log(`✅ Reviews given fetched: ${reviewsGiven?.length || 0} records in ${Date.now() - reviewsStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Reviews given section failed:', error);
-    userData.errors.push(`Reviews given section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 6: Reviews received
-  try {
-    console.log('📋 CHECKPOINT 6: Fetching reviews received...');
-    const reviewsRecStart = Date.now();
-    const { data: reviewsReceived, error: reviewsReceivedError } = await supabase
-      .from('booking_reviews')
-      .select('*')
-      .eq('target_id', userId);
-
-    if (reviewsReceivedError) {
-      console.error('❌ Reviews received error:', reviewsReceivedError);
-      userData.errors.push(`Reviews received fetch failed: ${reviewsReceivedError.message}`);
-    } else {
-      userData.reviews_received = reviewsReceived || [];
-      console.log(`✅ Reviews received fetched: ${reviewsReceived?.length || 0} records in ${Date.now() - reviewsRecStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Reviews received section failed:', error);
-    userData.errors.push(`Reviews received section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 7: Connections
-  try {
-    console.log('📋 CHECKPOINT 7: Fetching connections...');
-    const connectionsStart = Date.now();
-    const { data: connections, error: connectionsError } = await supabase
-      .from('connections')
-      .select('*')
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-
-    if (connectionsError) {
-      console.error('❌ Connections error:', connectionsError);
-      userData.errors.push(`Connections fetch failed: ${connectionsError.message}`);
-    } else {
-      userData.connections = connections || [];
-      console.log(`✅ Connections fetched: ${connections?.length || 0} records in ${Date.now() - connectionsStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Connections section failed:', error);
-    userData.errors.push(`Connections section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 8: Payments
-  try {
-    console.log('📋 CHECKPOINT 8: Fetching payments...');
-    const paymentsStart = Date.now();
-    const { data: payments, error: paymentsError } = await supabase
-      .from('payments')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (paymentsError) {
-      console.error('❌ Payments error:', paymentsError);
-      userData.errors.push(`Payments fetch failed: ${paymentsError.message}`);
-    } else {
-      userData.payments = payments || [];
-      console.log(`✅ Payments fetched: ${payments?.length || 0} records in ${Date.now() - paymentsStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Payments section failed:', error);
-    userData.errors.push(`Payments section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 9: Notifications
-  try {
-    console.log('📋 CHECKPOINT 9: Fetching notifications...');
-    const notificationsStart = Date.now();
-    const { data: notifications, error: notificationsError } = await supabase
-      .from('user_notifications')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (notificationsError) {
-      console.error('❌ Notifications error:', notificationsError);
-      userData.errors.push(`Notifications fetch failed: ${notificationsError.message}`);
-    } else {
-      userData.notifications = notifications || [];
-      console.log(`✅ Notifications fetched: ${notifications?.length || 0} records in ${Date.now() - notificationsStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 Notifications section failed:', error);
-    userData.errors.push(`Notifications section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  // CHECKPOINT 10: GDPR requests
-  try {
-    console.log('📋 CHECKPOINT 10: Fetching GDPR requests...');
-    const gdprStart = Date.now();
-    const { data: gdprRequests, error: gdprError } = await supabase
-      .from('gdpr_requests')
-      .select('*')
-      .eq('user_id', userId);
-
-    if (gdprError) {
-      console.error('❌ GDPR requests error:', gdprError);
-      userData.errors.push(`GDPR requests fetch failed: ${gdprError.message}`);
-    } else {
-      userData.gdpr_requests = gdprRequests || [];
-      console.log(`✅ GDPR requests fetched: ${gdprRequests?.length || 0} records in ${Date.now() - gdprStart}ms`);
-    }
-  } catch (error) {
-    console.error('🔴 GDPR requests section failed:', error);
-    userData.errors.push(`GDPR requests section failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-
-  const totalTime = Date.now() - startTime;
-  console.log(`🎯 Data collection completed in ${totalTime}ms`);
-  console.log(`📊 Summary: ${userData.errors.length} errors encountered`);
+  timer();
   
-  if (userData.errors.length > 0) {
-    console.log('🔍 Errors encountered:', userData.errors);
-  }
+  SRELogger.info('Data collection complete', { 
+    userId,
+    errorCount: userData.errors.length,
+    recordCounts: {
+      bookings: userData.bookings.length,
+      spaces: userData.spaces.length,
+      messages: userData.messages.length,
+      payments: userData.payments.length
+    }
+  });
 
   return userData;
 }
 
-// COMPLETE text export with all data
+// Text export generator
 function generateTextExport(userData: any): Uint8Array {
-  console.log('📝 Generating COMPLETE text export...');
-  
-  const content = `GDPR DATA EXPORT - COMPLETE DEBUG VERSION
+  const content = `GDPR DATA EXPORT
 ==========================================
 Date: ${new Date().toLocaleDateString('it-IT')}
 Time: ${new Date().toLocaleTimeString('it-IT')}
@@ -336,42 +180,36 @@ END OF EXPORT
 ==========================================
 `;
 
-  console.log('✅ Complete text content generated, length:', content.length);
   return new TextEncoder().encode(content);
 }
 
 serve(async (req) => {
-  console.log('🌟 === GDPR Export Request START ===');
-  console.log('📥 Method:', req.method);
-  console.log('🔗 URL:', req.url);
-  console.log('⏰ Timestamp:', new Date().toISOString());
+  const correlationId = crypto.randomUUID();
+  SRELogger.setCorrelationId(correlationId);
+  SRELogger.setFunctionName('generate-gdpr-export');
+  
+  SRELogger.info('GDPR Export request received', { method: req.method });
   
   if (req.method === 'OPTIONS') {
-    console.log('✅ CORS preflight - responding');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('🔐 Starting authentication...');
-    
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
-      console.error('❌ No auth header');
-      return new Response(JSON.stringify({ 
-        error: 'No authorization header' 
-      }), { 
+      SRELogger.warn('No authorization header');
+      return new Response(JSON.stringify({ error: 'No authorization header' }), { 
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log('🔑 Validating token...');
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
     if (authError || !user) {
-      console.error('❌ Auth failed:', authError?.message);
+      SRELogger.warn('Authentication failed', { error: authError?.message });
       return new Response(JSON.stringify({ 
         error: 'Authentication failed',
         details: authError?.message 
@@ -381,13 +219,9 @@ serve(async (req) => {
       });
     }
 
-    console.log('✅ User authenticated:', user.id);
-
-    // Skip duplicate check for debugging
-    console.log('⚡ Skipping duplicate check for debug');
+    SRELogger.info('User authenticated', { userId: user.id });
 
     // Create GDPR request
-    console.log('📋 Creating GDPR request...');
     const downloadToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -399,29 +233,26 @@ serve(async (req) => {
         status: 'processing',
         download_token: downloadToken,
         expires_at: expiresAt.toISOString(),
-        notes: 'DEBUG: Simplified export'
+        notes: 'Parallel query export'
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error('❌ Insert error:', insertError);
+      SRELogger.error('GDPR request creation failed', { error: insertError.message });
       throw new Error(`Request creation failed: ${insertError.message}`);
     }
 
-    console.log('✅ Request created:', newRequest.id);
+    SRELogger.info('GDPR request created', { requestId: newRequest.id });
 
-    // Collect data
-    console.log('📊 Starting data collection...');
+    // Collect data (now parallelized)
     const userData = await collectUserData(user.id);
     
     // Generate export
-    console.log('📄 Generating export...');
     const textData = generateTextExport(userData);
     
     // Upload file
-    console.log('📤 Uploading file...');
-    const fileName = `debug/${user.id}/${downloadToken}/export.txt`;
+    const fileName = `exports/${user.id}/${downloadToken}/export.txt`;
     
     const { error: uploadError } = await supabase.storage
       .from('gdpr-exports')
@@ -431,28 +262,22 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error('❌ Upload error:', uploadError);
+      SRELogger.error('File upload failed', { error: uploadError.message });
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    console.log('✅ File uploaded');
-
     // Get download URL
-    console.log('🔗 Creating download URL...');
     const { data: signedUrlData, error: urlError } = await supabase.storage
       .from('gdpr-exports')
       .createSignedUrl(fileName, 24 * 60 * 60);
 
     if (urlError || !signedUrlData?.signedUrl) {
-      console.error('❌ URL error:', urlError);
+      SRELogger.error('URL generation failed', { error: urlError?.message });
       throw new Error(`URL generation failed: ${urlError?.message}`);
     }
 
-    console.log('✅ Download URL created');
-
-    // Update request
-    console.log('🔄 Updating request status...');
-    const { error: updateError } = await supabase
+    // Update request status
+    await supabase
       .from('gdpr_requests')
       .update({
         status: 'completed',
@@ -462,46 +287,37 @@ serve(async (req) => {
       })
       .eq('id', newRequest.id);
 
-    if (updateError) {
-      console.error('⚠️ Update error (non-critical):', updateError);
-    } else {
-      console.log('✅ Request updated');
-    }
-
-    console.log('🎉 Export completed successfully!');
-    console.log('📊 Final stats:', {
+    SRELogger.info('GDPR export completed successfully', { 
       requestId: newRequest.id,
-      fileSize: textData.length,
-      fileName
+      fileSize: textData.length 
     });
 
     return new Response(JSON.stringify({
       success: true,
+      requestId: newRequest.id,
       downloadUrl: signedUrlData.signedUrl,
-      fileSize: textData.length,
       expiresAt: expiresAt.toISOString(),
-      message: 'DEBUG: Export completed successfully'
+      fileSize: textData.length,
+      errorsEncountered: userData.errors.length
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
-    console.error('🔴 FATAL ERROR:', error);
-    const errorDetails = error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack?.substring(0, 500)
-    } : { message: String(error) };
-    console.error('🔍 Error details:', errorDetails);
+  } catch (error: any) {
+    SRELogger.error('GDPR export failed', { 
+      error: error.message,
+      stack: error.stack 
+    });
     
     return new Response(JSON.stringify({ 
-      error: 'Export failed',
-      details: error instanceof Error ? error.message : String(error)
+      error: 'Export failed', 
+      details: error.message 
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } finally {
-    console.log('🏁 === GDPR Export Request END ===');
+    SRELogger.reset();
   }
 });
