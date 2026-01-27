@@ -1,228 +1,134 @@
 
-# Day 5: Error Handling & UX Polish - Implementation Plan
+# Day 5: UX Safety Net - Build Fixes & Error Handling
 
-## Executive Summary
+## Overview
 
-This task focuses on three areas: (1) fixing remaining build errors from Day 4, (2) standardizing error logging by replacing `console.error` with `sreLogger`, (3) enhancing user feedback with toasts in critical flows, (4) adding dedicated ErrorBoundaries for admin routes, and (5) creating integration tests for the booking service.
+This plan addresses two priorities:
+1. **Fix remaining build errors** (blocking deployment)
+2. **Implement UX Safety Net features** (error handling and user feedback)
 
 ---
 
-## Phase 1: Fix Remaining Build Errors (Priority - Blocking)
+## Part 1: Fix Build Errors (Blocking)
 
-Before implementing Day 5 features, we must resolve the ~30+ TypeScript build errors from previous days.
+### 1.1 BookingSuccess.tsx - TS7030: Not all code paths return a value
 
-### 1.1 Space Form Availability Type Errors
+**File:** `src/pages/BookingSuccess.tsx`
+**Line:** 18 (useEffect callback)
 
-**Files:** `useSpaceFormState.ts`, `useSpaceFormSubmission.ts`
+**Problem:** The `setInterval` callback in the useEffect doesn't explicitly return a value on all code paths. TypeScript expects the callback to either always return a value or never return one.
 
-**Issue:** `AvailabilityException.slots` is required (`TimeSlot[]`) but form data has `slots?: ... | undefined`
-
-**Fix:** Normalize exceptions in `handleAvailabilityChange` to ensure `slots` is always an array:
-
-```typescript
-// In useSpaceFormState.ts
-handleAvailabilityChange: (data: AvailabilityData) => {
-  // Normalize exceptions to ensure slots is always an array
-  const normalizedData: AvailabilityData = {
-    ...data,
-    exceptions: data.exceptions.map(ex => ({
-      ...ex,
-      slots: ex.slots || [] // Ensure slots is never undefined
-    }))
-  };
-  setAvailabilityData(normalizedData);
-}
-```
-
-### 1.2 AdminStats Interface Mismatch
-
-**File:** `src/lib/admin/admin-stats-utils.ts`
-
-**Issue:** Returns `totalUsers` (camelCase) but `AdminStats` expects `total_users` (snake_case)
-
-**Fix:** Update the return object to use snake_case:
+**Fix:** Add explicit `return undefined;` at the end of the interval callback:
 
 ```typescript
-return {
-  total_users: totalUsers || 0,      // was: totalUsers
-  total_hosts: totalHosts || 0,      // was: totalHosts
-  total_bookings: totalBookings || 0,
-  total_revenue: totalRevenue,
-  active_listings: totalSpaces || 0  // was: activeListings
-};
-```
+const interval: any = setInterval(function() {
+  const timeLeft = animationEnd - Date.now();
 
-### 1.3 Missing Admin Type Exports
+  if (timeLeft <= 0) {
+    clearInterval(interval);
+    return;
+  }
 
-**File:** `src/types/admin.ts`
-
-**Issue:** `GlobalTag` and `AdminWarning` interfaces are missing from exports
-
-**Fix:** Add missing interfaces:
-
-```typescript
-export interface GlobalTag {
-  id: string;
-  name: string;
-  created_at: string;
-  approved: boolean;
-  approved_by: string | null;
-}
-
-export interface AdminWarning {
-  id: string;
-  user_id: string;
-  reason: string;
-  severity: 'low' | 'medium' | 'high';
-  created_at: string;
-  updated_at: string;
-}
-```
-
-### 1.4 SlotReservationResult exactOptionalPropertyTypes
-
-**File:** `src/lib/booking-reservation-utils.ts`
-
-**Issue:** `reservation_token` and `reserved_until` can be `undefined` but interface expects `string`
-
-**Fix:** Update return statements to handle undefined properly:
-
-```typescript
-// Line 115-121
-const result: SlotReservationResult = {
-  success: true,
-  booking_id: data.booking_id,
-  reservation_token: data['reservation_token'] as string | undefined,
-  reserved_until: data['reserved_until'] as string | undefined
-};
-```
-
-### 1.5 Conversations Type Errors
-
-**File:** `src/lib/conversations.ts`
-
-**Issue:** `booking_id` missing from message insert, null assignments
-
-**Fix:** Update `sendMessageToConversation` to include optional `booking_id`:
-
-```typescript
-type MessageInsertInput = Database['public']['Tables']['messages']['Insert'];
-
-const messageData: Partial<MessageInsertInput> = {
-  conversation_id: conversationId,
-  content,
-  sender_id: senderId
-};
-
-if (bookingId) {
-  messageData.booking_id = bookingId;
-}
-```
-
-### 1.6 Chat.ts Insert Error
-
-**File:** `src/lib/chat.ts`
-
-**Issue:** Inserting `booking_id` which may not exist on conversations table
-
-**Fix:** Remove `booking_id` from insert if column doesn't exist, or conditionally add:
-
-```typescript
-const insertData: Record<string, unknown> = {};
-if (bookingId) {
-  insertData.booking_id = bookingId;
-}
-
-const { data: newConv, error } = await supabase
-  .from('conversations')
-  .insert(insertData)
-  .select()
-  .single();
-```
-
-### 1.7 AdminProfile Missing Permissions
-
-**File:** `src/lib/admin/admin-user-utils.ts`
-
-**Issue:** Cast to `AdminProfile[]` fails because `permissions` field is missing
-
-**Fix:** Add permissions mapping:
-
-```typescript
-const usersWithRoles = data.map(user => ({
-  ...user,
-  role: userRolesList[0] || 'coworker',
-  roles: userRolesList,
-  email: "",
-  permissions: [] // Add default empty permissions
-}));
-```
-
-### 1.8 Rate Limit Index Signature Access
-
-**File:** `src/lib/admin/admin-rate-limit.ts`
-
-**Issue:** Must use bracket notation for index signature properties
-
-**Fix:** Already has `isRateLimitResult` type guard, but access needs bracket notation:
-
-```typescript
-// Line 67-72
-return {
-  allowed: data['allowed'] as boolean,
-  remaining: data['remaining'] as number,
-  resetMs: data['reset_ms'] as number,
-  message: typeof data['message'] === 'string' ? data['message'] : undefined
-};
+  // ... confetti logic ...
+  
+  return undefined; // Explicit return for TypeScript
+}, 250);
 ```
 
 ---
 
-## Phase 2: Standardize Error Logging in Services
+### 1.2 UserProfileView.tsx - Type 'unknown' is not assignable to type 'ReactNode'
 
-Replace `console.log` and `console.error` with `sreLogger` across all service files.
+**File:** `src/pages/UserProfileView.tsx`
+**Lines:** 180, 251, 271, 277, 283, 314, 338, 469, 492
 
-### 2.1 bookingService.ts
+**Problem:** The `profile` object is typed as `Record<string, unknown>` (or similar), and when accessing properties like `profile['portfolio_url']` or `profile['job_title']`, TypeScript sees them as `unknown`. React components cannot render `unknown` values directly.
 
-| Line | Current | Replacement |
-|------|---------|-------------|
-| 70 | `console.log('[BookingService] Calling...')` | `sreLogger.info('Calling validate_and_reserve_slot', { component: 'bookingService', ...rpcParams })` |
-| 76 | `console.error('[BookingService] RPC Error')` | `sreLogger.error('RPC error during slot reservation', { component: 'bookingService' }, rpcError)` |
-| 96 | `console.error('[BookingService] RPC returned no data')` | `sreLogger.error('RPC returned no data', { component: 'bookingService' })` |
-| 110 | `console.log('[BookingService] Reserved slot ID')` | `sreLogger.info('Reserved slot successfully', { component: 'bookingService', bookingId })` |
-| 113 | `console.error('[BookingService] Invalid Booking ID')` | `sreLogger.error('Invalid Booking ID format', { component: 'bookingService' })` |
-| 141 | `console.error('[BookingService] Session error')` | `sreLogger.error('Session error', { component: 'bookingService' }, sessionError)` |
-| 158 | `console.log('[BookingService] Creating checkout')` | `sreLogger.info('Creating checkout session', { component: 'bookingService', bookingId })` |
-| 176 | `console.error('[BookingService] Checkout error')` | `sreLogger.error('Checkout error response', { component: 'bookingService', status: response.status })` |
-| 209 | `console.error('[BookingService] No checkout URL')` | `sreLogger.error('No checkout URL in response', { component: 'bookingService' })` |
-| 217 | `console.log('[BookingService] Checkout session created')` | `sreLogger.info('Checkout session created', { component: 'bookingService', sessionId })` |
-| 226 | `console.error('[BookingService] Network error')` | `sreLogger.error('Network error during checkout', { component: 'bookingService' }, error as Error)` |
+**Current Code Examples:**
+```typescript
+// Line 180 - Conditional rendering
+{profile['portfolio_url'] && (  // unknown cannot be rendered
 
-### 2.2 stripeService.ts
+// Line 251 - Badge content
+{(String(profile['collaboration_availability']) !== 'not_available' && profile['collaboration_availability']) && (
 
-No `console.log/error` calls found - already clean.
+// Line 271 - Text content
+{profile['job_title'] && (  // unknown cannot be rendered
+```
 
-### 2.3 adminService.ts
+**Fix:** For each line, either:
+- Cast to string explicitly: `String(profile['portfolio_url'])`
+- Use a type guard before rendering
+- Wrap in `String()` where the value is rendered as text
 
-No `console.log/error` calls found - already clean.
+**Changes Required:**
+
+| Line | Current | Fix |
+|------|---------|-----|
+| 180 | `{profile['portfolio_url'] && (` | Keep as is (truthy check), but ensure rendered value uses `String()` |
+| 251 | `&& profile['collaboration_availability'])` | The value isn't rendered directly here, so keep |
+| 271 | `{profile['job_title'] && (` | Already using `String()` in line 274 |
+| 277 | `{profile['profession'] && (` | Already using `String()` in line 280 |
+| 283 | `{profile['location'] && (` | Already using `String()` in line 286 |
+| 314 | `{profile['portfolio_url'] && (` | Value rendered via href in line 322 with `String()` |
+| 338 | `{profile['bio'] && (` | Already using `String()` in line 344 |
+| 469 | `{profile['preferred_work_mode'] && (` | All uses already cast with `String()` |
+| 492 | `{profile['collaboration_description'] && (` | Already using `String()` in line 499 |
+
+**Root Issue:** The actual issue is that these conditional expressions (`{value && ...}`) can potentially render `false` or the raw `unknown` value when the condition is truthy but the value isn't a valid ReactNode.
+
+**Solution:** Change pattern from:
+```typescript
+{profile['key'] && (<Component />)}
+```
+To:
+```typescript
+{Boolean(profile['key']) && (<Component />)}
+```
+Or use nullish coalescing with explicit null:
+```typescript
+{profile['key'] ? (<Component />) : null}
+```
 
 ---
 
-## Phase 3: Enhance useCheckout with User Feedback
+## Part 2: Day 5 UX Features
+
+### 2.1 Error Boundary Already Exists
+
+The project already has a robust `ErrorBoundary` component in `src/components/error/ErrorBoundary.tsx` that:
+- Integrates with Sentry for error tracking
+- Uses `sreLogger.error` for structured logging
+- Shows Italian-language UI ("Qualcosa è andato storto")
+- Has "Riprova" and "Vai alla Home" buttons
+- Auto-reloads after 3 consecutive errors
+
+**Already wrapped in `src/main.tsx`:**
+```typescript
+<ErrorBoundary showDetails={import.meta.env.DEV}>
+  <App />
+</ErrorBoundary>
+```
+
+**No changes needed** - the global error boundary is already implemented.
+
+---
+
+### 2.2 Enhance useCheckout.ts with Toast Notifications
 
 **File:** `src/hooks/checkout/useCheckout.ts`
 
-### Changes Required
+**Changes:**
 
-1. **Import toast from sonner**
-2. **Add toast notifications on errors**
-3. **Remove console.log/error statements**
+1. **Import toast from sonner and sreLogger**
+2. **Replace console.log/error with sreLogger**
+3. **Add toast notifications for user feedback**
 
 ```typescript
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 
-// Line 73-79: On reservation failure
+// Line 73-80: Reservation failure
 if (!reservation.success) {
   const errorMessage = reservation.error || 'Reservation failed';
   sreLogger.error('Reservation failed', { 
@@ -234,27 +140,39 @@ if (!reservation.success) {
   return { ... };
 }
 
-// Line 82: Remove console.log
-// console.log("RESERVED SLOT ID:") -> sreLogger.debug
+// Line 82: Replace console.log
+// DELETE: console.log("RESERVED SLOT ID:", reservation.bookingId);
+sreLogger.debug('Reserved slot', { component: 'useCheckout', bookingId: reservation.bookingId });
 
-// Line 89: Remove console.log
-// console.log("CHECKOUT PAYLOAD:") -> remove or debug
+// Line 89: Replace console.log
+// DELETE: console.log("CHECKOUT PAYLOAD:", payload);
+// (Just remove - debug info not needed)
 
-// Line 94-100: On checkout failure
+// Line 94-101: Checkout failure
 if (!checkout.success || !checkout.url) {
   const errorMessage = checkout.error || 'No checkout URL';
   sreLogger.error('Checkout failed', { 
     component: 'useCheckout',
-    bookingId: reservation.bookingId 
+    bookingId: reservation.bookingId,
+    error: errorMessage
   });
   toast.error(`Pagamento fallito: ${errorMessage}`);
   return { ... };
 }
 
-// Line 109-117: On caught exception
+// Line 103-105: Success - add toast before redirect
+sreLogger.info('Checkout success, redirecting to Stripe', { 
+  component: 'useCheckout', 
+  url: checkout.url 
+});
+toast.success("Prenotazione confermata! Reindirizzamento a Stripe...");
+window.location.href = checkout.url;
+
+// Line 109-117: Catch block
 catch (err) {
-  const caughtError = err instanceof Error ? err : new Error('Unknown error');
-  sreLogger.error('Checkout flow failed', { 
+  const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
+  // DELETE: console.error("CRITICAL FAILURE:", caughtError.message);
+  sreLogger.error('Checkout flow critical failure', { 
     component: 'useCheckout',
     spaceId 
   }, caughtError);
@@ -265,255 +183,62 @@ catch (err) {
 
 ---
 
-## Phase 4: Add Admin-Specific ErrorBoundary
+### 2.3 Replace Console Logs in bookingService.ts
 
-### 4.1 Create AdminErrorBoundary Component
+**File:** `src/services/api/bookingService.ts`
 
-**File:** `src/components/admin/AdminErrorBoundary.tsx`
+Replace all `console.log` and `console.error` with `sreLogger`:
 
-```typescript
-import React from 'react';
-import { ErrorBoundary } from '@/components/error/ErrorBoundary';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-
-interface AdminErrorFallbackProps {
-  error?: Error;
-  resetError?: () => void;
-}
-
-const AdminErrorFallback = ({ error, resetError }: AdminErrorFallbackProps) => (
-  <div className="min-h-[400px] flex items-center justify-center p-8">
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-6 w-6 text-destructive" />
-          <CardTitle>Errore nel modulo admin</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground">
-          Si è verificato un errore nel pannello di amministrazione.
-          Riprova o contatta il supporto tecnico.
-        </p>
-        {error && (
-          <div className="p-3 bg-muted rounded-md text-sm font-mono overflow-auto max-h-24">
-            {error.message}
-          </div>
-        )}
-        <div className="flex gap-2">
-          <Button onClick={resetError} variant="outline" className="flex-1">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Riprova
-          </Button>
-          <Button onClick={() => window.location.href = '/admin'} className="flex-1">
-            <Home className="h-4 w-4 mr-2" />
-            Dashboard
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
-
-export const AdminErrorBoundary = ({ children }: { children: React.ReactNode }) => (
-  <ErrorBoundary
-    fallback={<AdminErrorFallback />}
-    onError={(error, errorInfo) => {
-      // Additional admin-specific logging
-      console.error('[AdminErrorBoundary]', error, errorInfo);
-    }}
-  >
-    {children}
-  </ErrorBoundary>
-);
-```
-
-### 4.2 Update AdminLayout to Use ErrorBoundary
-
-**File:** `src/layouts/AdminLayout.tsx`
-
-```typescript
-import { AdminErrorBoundary } from '@/components/admin/AdminErrorBoundary';
-
-// Wrap <Outlet /> with AdminErrorBoundary
-<main className="flex-1 ml-64 p-8">
-  <AdminErrorBoundary>
-    <Outlet />
-  </AdminErrorBoundary>
-</main>
-```
+| Line | Current | Replacement |
+|------|---------|-------------|
+| 70 | `console.log('[BookingService] Calling...')` | `sreLogger.info('Calling validate_and_reserve_slot', { component: 'bookingService', ...rpcParams })` |
+| 76 | `console.error('[BookingService] RPC Error')` | `sreLogger.error('RPC error during slot reservation', { component: 'bookingService' }, rpcError)` |
+| 96 | `console.error('[BookingService] RPC returned no data')` | `sreLogger.error('RPC returned no data', { component: 'bookingService' })` |
+| 110 | `console.log('[BookingService] Reserved slot ID')` | `sreLogger.info('Reserved slot successfully', { component: 'bookingService', bookingId })` |
+| 113 | `console.error('[BookingService] Invalid Booking ID')` | `sreLogger.error('Invalid Booking ID format', { component: 'bookingService', rpcData })` |
+| 141 | `console.error('[BookingService] Session error')` | `sreLogger.error('Session error', { component: 'bookingService' }, sessionError as Error)` |
+| 158 | `console.log('[BookingService] Creating checkout')` | `sreLogger.info('Creating checkout session', { component: 'bookingService', bookingId, idempotencyKey })` |
+| 176 | `console.error('[BookingService] Checkout error')` | `sreLogger.error('Checkout error response', { component: 'bookingService', status: response.status, responseData })` |
+| 209 | `console.error('[BookingService] No checkout URL')` | `sreLogger.error('No checkout URL in response', { component: 'bookingService', responseData })` |
+| 217 | `console.log('[BookingService] Checkout session created')` | `sreLogger.info('Checkout session created successfully', { component: 'bookingService', sessionId })` |
+| 226 | `console.error('[BookingService] Network error')` | `sreLogger.error('Network error during checkout', { component: 'bookingService' }, error as Error)` |
 
 ---
 
-## Phase 5: Create Integration Test for Booking Flow
+### 2.4 Create Smoke Test
 
-**File:** `src/services/api/__tests__/bookingService.integration.test.ts`
+**New File:** `src/services/api/__tests__/smoke.test.ts`
 
 ```typescript
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { reserveSlot, createCheckoutSession } from '../bookingService';
 
-// Mock supabase
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    rpc: vi.fn(),
-    auth: {
-      getSession: vi.fn()
-    }
-  }
-}));
-
-// Mock fetch for Edge Function calls
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
-describe('Booking Service Integration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+describe('Service Smoke Test', () => {
+  it('bookingService exports reserveSlot function', () => {
+    expect(reserveSlot).toBeDefined();
+    expect(typeof reserveSlot).toBe('function');
   });
 
-  describe('Full Booking Flow', () => {
-    it('should complete checkout flow when reservation and checkout succeed', async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      // 1. Mock successful slot reservation
-      (supabase.rpc as any).mockResolvedValueOnce({
-        data: { booking_id: 'test-booking-123' },
-        error: null
-      });
-
-      // 2. Mock successful auth session
-      (supabase.auth.getSession as any).mockResolvedValueOnce({
-        data: { 
-          session: { access_token: 'mock-token' }
-        },
-        error: null
-      });
-
-      // 3. Mock successful checkout session creation
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          checkout_session: {
-            url: 'https://checkout.stripe.com/test',
-            id: 'cs_test_123'
-          }
-        })
-      });
-
-      // Execute reservation
-      const reserveResult = await reserveSlot({
-        spaceId: 'space-123',
-        userId: 'user-456',
-        startTime: '2024-01-15T09:00:00Z',
-        endTime: '2024-01-15T17:00:00Z',
-        guests: 1,
-        confirmationType: 'instant',
-        clientBasePrice: 100
-      });
-
-      expect(reserveResult.success).toBe(true);
-      expect(reserveResult.bookingId).toBe('test-booking-123');
-
-      // Execute checkout
-      const checkoutResult = await createCheckoutSession(reserveResult.bookingId!);
-
-      expect(checkoutResult.success).toBe(true);
-      expect(checkoutResult.url).toBe('https://checkout.stripe.com/test');
-      expect(checkoutResult.sessionId).toBe('cs_test_123');
-    });
-
-    it('should return error when reservation fails', async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      (supabase.rpc as any).mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Slot already booked', code: '23P01' }
-      });
-
-      const result = await reserveSlot({
-        spaceId: 'space-123',
-        userId: 'user-456',
-        startTime: '2024-01-15T09:00:00Z',
-        endTime: '2024-01-15T17:00:00Z',
-        guests: 1,
-        confirmationType: 'instant'
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.errorCode).toBe('CONFLICT');
-    });
-
-    it('should return error when checkout session fails', async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      (supabase.auth.getSession as any).mockResolvedValueOnce({
-        data: { 
-          session: { access_token: 'mock-token' }
-        },
-        error: null
-      });
-
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({ error: 'Invalid booking ID' })
-      });
-
-      const result = await createCheckoutSession('invalid-booking');
-
-      expect(result.success).toBe(false);
-      expect(result.errorCode).toBe('INVALID_REQUEST');
-    });
-
-    it('should handle network errors gracefully', async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      (supabase.auth.getSession as any).mockResolvedValueOnce({
-        data: { 
-          session: { access_token: 'mock-token' }
-        },
-        error: null
-      });
-
-      mockFetch.mockRejectedValueOnce(new Error('Network failure'));
-
-      const result = await createCheckoutSession('test-booking');
-
-      expect(result.success).toBe(false);
-      expect(result.errorCode).toBe('NETWORK');
-    });
+  it('bookingService exports createCheckoutSession function', () => {
+    expect(createCheckoutSession).toBeDefined();
+    expect(typeof createCheckoutSession).toBe('function');
   });
 });
 ```
 
+Note: stripeService might not exist as a consolidated module yet, so the test focuses on bookingService which we know exists.
+
 ---
 
-## Files to Create
+## Summary of Files to Modify
 
-| File | Description |
-|------|-------------|
-| `src/components/admin/AdminErrorBoundary.tsx` | Admin-specific error boundary with Italian messaging |
-| `src/services/api/__tests__/bookingService.integration.test.ts` | Integration test for booking flow |
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/types/admin.ts` | Add `GlobalTag` and `AdminWarning` interfaces |
-| `src/lib/admin/admin-stats-utils.ts` | Fix snake_case property names |
-| `src/lib/admin/admin-rate-limit.ts` | Use bracket notation for index access |
-| `src/lib/admin/admin-user-utils.ts` | Add `permissions` field to mapping |
-| `src/lib/booking-reservation-utils.ts` | Fix exactOptionalPropertyTypes issues |
-| `src/lib/conversations.ts` | Fix message insert types |
-| `src/lib/chat.ts` | Fix conversation insert |
-| `src/hooks/useSpaceFormState.ts` | Normalize availability exceptions |
-| `src/hooks/useSpaceFormSubmission.ts` | Fix availability type cast |
-| `src/services/api/bookingService.ts` | Replace console.* with sreLogger |
-| `src/hooks/checkout/useCheckout.ts` | Add toast notifications |
-| `src/layouts/AdminLayout.tsx` | Wrap Outlet with AdminErrorBoundary |
+| File | Action | Priority |
+|------|--------|----------|
+| `src/pages/BookingSuccess.tsx` | Add explicit return in setInterval callback | High (Build blocker) |
+| `src/pages/UserProfileView.tsx` | Fix unknown → ReactNode type errors with Boolean() pattern | High (Build blocker) |
+| `src/hooks/checkout/useCheckout.ts` | Add toast notifications + replace console.* with sreLogger | Medium |
+| `src/services/api/bookingService.ts` | Replace console.* with sreLogger | Medium |
+| `src/services/api/__tests__/smoke.test.ts` | Create new smoke test file | Low |
 
 ---
 
@@ -521,11 +246,12 @@ describe('Booking Service Integration', () => {
 
 After implementation:
 - [ ] `npm run build` completes with 0 errors
-- [ ] Booking flow shows toast on reservation failure
-- [ ] Booking flow shows toast on checkout failure
-- [ ] Admin pages show friendly error UI when component crashes
-- [ ] No `console.error` calls in `src/services/` directory
-- [ ] Integration test passes: `npm test -- bookingService.integration`
+- [ ] Checkout flow shows toast on reservation failure
+- [ ] Checkout flow shows toast on checkout success (before redirect)
+- [ ] Checkout flow shows toast on checkout failure
+- [ ] No `console.log` or `console.error` in `src/services/api/bookingService.ts`
+- [ ] No `console.log` or `console.error` in `src/hooks/checkout/useCheckout.ts`
+- [ ] Smoke test passes
 
 ---
 
@@ -533,8 +259,8 @@ After implementation:
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Build errors | 30+ | 0 |
-| `console.error` in services | 10+ | 0 |
-| User-facing error toasts | 0 | 3+ |
-| Admin ErrorBoundary | None | Dedicated |
-| Integration tests | 0 | 1 file (4 tests) |
+| Build errors | 10 | 0 |
+| `console.*` in bookingService | 11 | 0 |
+| `console.*` in useCheckout | 3 | 0 |
+| User-facing error toasts | 0 | 3 |
+| Smoke tests | 0 | 1 file (2 tests) |
