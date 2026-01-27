@@ -21,7 +21,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
 
 const isPointObject = (value: unknown): value is PointObject =>
-  isRecord(value) && typeof value.x === 'number' && typeof value.y === 'number';
+  isRecord(value) && typeof value['x'] === 'number' && typeof value['y'] === 'number';
 
 /**
  * Helper to compare coordinates by value, not reference.
@@ -122,45 +122,46 @@ type NormalizedSpace = Record<string, unknown> & {
 
 function normalizePublicSpace(raw: Record<string, unknown>): NormalizedSpace {
   // Handle both raw spaces data (with lat/lng) and view data (with approximate_location)
-  let lat = typeof raw.latitude === 'number' ? raw.latitude : undefined;
-  let lng = typeof raw.longitude === 'number' ? raw.longitude : undefined;
+  let lat = typeof raw['latitude'] === 'number' ? raw['latitude'] : undefined;
+  let lng = typeof raw['longitude'] === 'number' ? raw['longitude'] : undefined;
 
-  if (raw.approximate_location && (lat === undefined || lng === undefined)) {
-    const point = parsePoint(raw.approximate_location);
+  if (raw['approximate_location'] && (lat === undefined || lng === undefined)) {
+    const point = parsePoint(raw['approximate_location']);
     lat = point.lat;
     lng = point.lng;
   }
   
-  const title = typeof raw.title === 'string' ? raw.title : undefined;
-  const name = typeof raw.name === 'string' ? raw.name : undefined;
+  const title = typeof raw['title'] === 'string' ? raw['title'] : undefined;
+  const name = typeof raw['name'] === 'string' ? raw['name'] : undefined;
   const features = resolveSpaceFeatures(raw);
-  const cityName = typeof raw.city_name === 'string' ? raw.city_name : undefined;
-  const city = typeof raw.city === 'string' ? raw.city : undefined;
-  const countryCode = typeof raw.country_code === 'string' ? raw.country_code : 'IT';
+  const cityName = typeof raw['city_name'] === 'string' ? raw['city_name'] : undefined;
+  const city = typeof raw['city'] === 'string' ? raw['city'] : undefined;
+  const countryCode = typeof raw['country_code'] === 'string' ? raw['country_code'] : 'IT';
 
-  return {
+  const result: NormalizedSpace = {
     ...raw,
-    title: title ?? name,
+    title: title ?? name ?? '',
     features,
-    city_name: cityName ?? city,
+    city_name: cityName ?? city ?? '',
     country_code: countryCode,
 
     // Derived fields for UI compatibility
     latitude: lat ?? null,
     longitude: lng ?? null,
     address:
-      (typeof raw.address === 'string' && raw.address) ||
+      (typeof raw['address'] === 'string' && raw['address']) ||
       [cityName ?? city, countryCode].filter(Boolean).join(', ') ||
       '',
     
     // Backward compatibility: singular from array
-    seating_type: Array.isArray(raw.seating_types) && raw.seating_types.length > 0 
-      ? raw.seating_types[0] 
+    seating_type: Array.isArray(raw['seating_types']) && raw['seating_types'].length > 0 
+      ? raw['seating_types'][0] 
       : null,
-    ideal_guest: Array.isArray(raw.ideal_guest_tags) && raw.ideal_guest_tags.length > 0 
-      ? raw.ideal_guest_tags[0] 
+    ideal_guest: Array.isArray(raw['ideal_guest_tags']) && raw['ideal_guest_tags'].length > 0 
+      ? raw['ideal_guest_tags'][0] 
       : null,
   };
+  return result;
 }
 
 /**
@@ -178,9 +179,9 @@ type AvailabilityItem = {
 
 const isAvailabilityItem = (value: unknown): value is AvailabilityItem =>
   isRecord(value) &&
-  typeof value.space_id === 'string' &&
-  typeof value.available_capacity === 'number' &&
-  typeof value.max_capacity === 'number';
+  typeof value['space_id'] === 'string' &&
+  typeof value['available_capacity'] === 'number' &&
+  typeof value['max_capacity'] === 'number';
 
 const checkSpacesAvailabilityBatch = async (
   spaceIds: string[],

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logError, logInfo } from '@/lib/sre-logger';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
 interface SessionStateOptions {
   ttlHours?: number;
@@ -103,7 +103,7 @@ export function useSessionState<T>(
         const payload: SessionStateInsert = {
           user_id: userId,
           session_key: key,
-          session_data: updatedValue as unknown,
+          session_data: updatedValue as Json,
           expires_at: expiresAt.toISOString()
         };
 

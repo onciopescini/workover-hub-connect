@@ -253,11 +253,12 @@ export const generateProfileSEO = (profile: ProfileSEOData): SEOConfig => {
 };
 
 export const generateEventSEO = (event: EventSEOData): SEOConfig => {
+  const eventDate = event.start_date ? new Date(event.start_date).toLocaleDateString('it-IT') : '';
   return {
     title: `${event.title} - Evento Networking | Workover`,
-    description: `Partecipa a ${event.title} il ${new Date(event.date).toLocaleDateString('it-IT')}. ${event.description?.substring(0, 120)}...`,
-    keywords: ['evento', 'networking', 'coworking', event.city || ''],
-    image: event.image_url || DEFAULT_CONFIG.image,
+    description: `Partecipa a ${event.title}${eventDate ? ` il ${eventDate}` : ''}. ${event.description?.substring(0, 120) || ''}...`,
+    keywords: ['evento', 'networking', 'coworking', event.location || ''],
+    image: event.cover_image_url || DEFAULT_CONFIG.image,
     url: `https://workover.app/events/${event.id}`,
     type: 'article',
     structuredData: {
@@ -265,11 +266,11 @@ export const generateEventSEO = (event: EventSEOData): SEOConfig => {
       "@type": "Event",
       "name": event.title,
       "description": event.description,
-      "startDate": event.date,
+      "startDate": event.start_date,
       "location": {
         "@type": "Place",
-        "name": event.location_name,
-        "address": event.location_address
+        "name": event.location,
+        "address": event.location
       },
       "organizer": {
         "@type": "Organization",

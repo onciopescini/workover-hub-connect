@@ -97,15 +97,16 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
         if (isAvailabilityPayload(availabilityData)) {
           const availObj = availabilityData;
           const defaultDay = { enabled: false, slots: [] };
+          const recurring = availObj.recurring || {};
           normalizedAvailability = {
             recurring: {
-              monday: availObj.recurring?.monday || defaultDay,
-              tuesday: availObj.recurring?.tuesday || defaultDay,
-              wednesday: availObj.recurring?.wednesday || defaultDay,
-              thursday: availObj.recurring?.thursday || defaultDay,
-              friday: availObj.recurring?.friday || defaultDay,
-              saturday: availObj.recurring?.saturday || defaultDay,
-              sunday: availObj.recurring?.sunday || defaultDay,
+              monday: recurring['monday'] || defaultDay,
+              tuesday: recurring['tuesday'] || defaultDay,
+              wednesday: recurring['wednesday'] || defaultDay,
+              thursday: recurring['thursday'] || defaultDay,
+              friday: recurring['friday'] || defaultDay,
+              saturday: recurring['saturday'] || defaultDay,
+              sunday: recurring['sunday'] || defaultDay,
             },
             exceptions: availObj.exceptions || []
           };
@@ -126,9 +127,9 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
         features: mappedSpace.features || [],
         event_friendly_tags: mappedSpace.event_friendly_tags || [],
         ideal_guest_tags: mappedSpace.ideal_guest_tags || [],
-        timezone: undefined,
-        city: mappedSpace.city || undefined,
-        country_code: undefined,
+        timezone: mappedSpace.timezone || '',
+        city: mappedSpace.city || '',
+        country_code: mappedSpace.country_code || '',
         host: hostData ? {
           id: hostData.id,
           first_name: hostData.first_name,
@@ -196,9 +197,10 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
           table: 'profiles',
           filter: `id=eq.${space.host_id}`
         },
-        (payload: RealtimePostgresChangesPayload<SpaceHostProfile>) => {
-          const newStripeConnected = payload.new.stripe_connected;
-          const newStripeAccountId = payload.new.stripe_account_id;
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          const newData = payload.new as SpaceHostProfile | undefined;
+          const newStripeConnected = newData?.stripe_connected;
+          const newStripeAccountId = newData?.stripe_account_id;
 
           queryClient.setQueryData(['space', id], (oldData: SpaceDetail | null | undefined) => {
             if (!oldData) return oldData;

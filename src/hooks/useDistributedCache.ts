@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logError, logInfo } from '@/lib/sre-logger';
-import type { Database } from '@/integrations/supabase/types';
+import type { Database, Json } from '@/integrations/supabase/types';
 
 interface CacheOptions {
   ttlMinutes?: number;
@@ -48,7 +48,7 @@ export function useDistributedCache<T = unknown>() {
       type CacheInsert = Database['public']['Tables']['availability_cache']['Insert'];
       const payload: CacheInsert = {
         cache_key: key,
-        data: value as unknown,
+        data: value as Json,
         expires_at: expiresAt.toISOString(),
         space_id: spaceId ?? null
       };
