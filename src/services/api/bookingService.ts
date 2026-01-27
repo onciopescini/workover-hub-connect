@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { sreLogger } from '@/lib/sre-logger';
 
 // Supabase project constants (no VITE_* env vars in services)
 const SUPABASE_URL = 'https://khtqwzvrxzsgfhsslwyz.supabase.co';
@@ -67,13 +68,13 @@ export async function reserveSlot(params: ReserveSlotParams): Promise<ReserveSlo
     p_client_base_price: clientBasePrice
   };
 
-  console.log('[BookingService] Calling validate_and_reserve_slot', rpcParams);
+  sreLogger.info('Calling validate_and_reserve_slot', { component: 'bookingService', ...rpcParams });
 
   const { data: rpcData, error: rpcError } = await supabase.rpc('validate_and_reserve_slot', rpcParams);
 
   // Handle RPC errors
   if (rpcError) {
-    console.error('[BookingService] RPC Error', rpcError);
+    sreLogger.error('RPC error during slot reservation', { component: 'bookingService' }, rpcError as Error);
     
     // Map specific error codes
     if (rpcError.code === '23P01' || rpcError.message?.includes('overlap')) {
@@ -93,7 +94,7 @@ export async function reserveSlot(params: ReserveSlotParams): Promise<ReserveSlo
 
   // Handle empty response
   if (!rpcData) {
-    console.error('[BookingService] RPC returned no data');
+    sreLogger.error('RPC returned no data', { component: 'bookingService' });
     return {
       success: false,
       error: 'Reservation failed: No response from server',
@@ -107,10 +108,10 @@ export async function reserveSlot(params: ReserveSlotParams): Promise<ReserveSlo
   const dataObj = rpcData as any;
   const bookingId = dataObj.booking_id || dataObj;
 
-  console.log('[BookingService] Reserved slot ID:', bookingId);
+  sreLogger.info('Reserved slot successfully', { component: 'bookingService', bookingId });
 
   if (typeof bookingId !== 'string') {
-    console.error('[BookingService] Invalid Booking ID format:', rpcData);
+    sreLogger.error('Invalid Booking ID format', { component: 'bookingService', rpcData });
     return {
       success: false,
       error: 'Invalid Booking ID received from server',
@@ -138,7 +139,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   
   if (sessionError || !sessionData.session?.access_token) {
-    console.error('[BookingService] Session error:', sessionError);
+    sreLogger.error('Session error', { component: 'bookingService' }, sessionError as Error);
     return {
       success: false,
       error: 'Session expired, please login again',
@@ -155,7 +156,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
     return_url: `${window.location.origin}/messages`
   });
 
-  console.log('[BookingService] Creating checkout session', { bookingId, idempotencyKey });
+  sreLogger.info('Creating checkout session', { component: 'bookingService', bookingId, idempotencyKey });
 
   try {
     const response = await fetch(url, {
@@ -173,7 +174,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
 
     // Handle non-OK responses
     if (!response.ok) {
-      console.error('[BookingService] Checkout error response:', response.status, responseData);
+      sreLogger.error('Checkout error response', { component: 'bookingService', status: response.status, responseData });
       
       const errorMessage = responseData?.error || responseData?.message || 'Checkout failed';
       
@@ -206,7 +207,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
     const sessionId = responseData?.checkout_session?.id;
 
     if (!checkoutUrl) {
-      console.error('[BookingService] No checkout URL in response:', responseData);
+      sreLogger.error('No checkout URL in response', { component: 'bookingService', responseData });
       return {
         success: false,
         error: 'No checkout URL returned from payment service',
@@ -214,7 +215,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
       };
     }
 
-    console.log('[BookingService] Checkout session created successfully', { sessionId });
+    sreLogger.info('Checkout session created successfully', { component: 'bookingService', sessionId });
 
     return {
       success: true,
@@ -223,7 +224,7 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
     };
 
   } catch (error) {
-    console.error('[BookingService] Network error:', error);
+    sreLogger.error('Network error during checkout', { component: 'bookingService' }, error as Error);
     return {
       success: false,
       error: 'Connection failed, please check your internet',

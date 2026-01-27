@@ -177,7 +177,7 @@ const UserProfileView = () => {
 
     return (
       <div className="mb-4">
-        {profile['portfolio_url'] && (
+        {Boolean(profile['portfolio_url']) && (
           <div className="mb-4">
              <Button
                 variant="outline"
@@ -248,7 +248,7 @@ const UserProfileView = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                 {String(profile['first_name'])} {String(profile['last_name'])}
               </h1>
-              {(String(profile['collaboration_availability']) !== 'not_available' && profile['collaboration_availability']) && (
+              {(String(profile['collaboration_availability']) !== 'not_available' && Boolean(profile['collaboration_availability'])) && (
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
                   profile['collaboration_availability'] === 'available' 
                     ? 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30' 
@@ -268,19 +268,19 @@ const UserProfileView = () => {
             </div>
             
             <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-              {profile['job_title'] && (
+              {Boolean(profile['job_title']) && (
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
                   <span className="font-medium">{String(profile['job_title'])}</span>
                 </div>
               )}
-              {profile['profession'] && (
+              {Boolean(profile['profession']) && (
                 <div className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
                   <span className="font-medium">{String(profile['profession'])}</span>
                 </div>
               )}
-              {profile['location'] && (
+              {Boolean(profile['location']) && (
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   <span>{String(profile['location'])}</span>
@@ -311,7 +311,7 @@ const UserProfileView = () => {
             {startingChat ? 'Avvio chat...' : 'Invia Messaggio'}
           </Button>
 
-          {profile['portfolio_url'] && (
+          {Boolean(profile['portfolio_url']) && (
             <Button
               asChild
               variant="outline"
@@ -335,7 +335,7 @@ const UserProfileView = () => {
         <div className="lg:col-span-1 space-y-6">
           <Card className="border-2 border-muted/50">
             <CardContent className="p-6">
-              {profile['bio'] && (
+              {Boolean(profile['bio']) && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <User className="h-5 w-5 text-primary" />
@@ -466,7 +466,7 @@ const UserProfileView = () => {
                           </div>
                         )}
                         
-                        {profile['preferred_work_mode'] && (
+                        {Boolean(profile['preferred_work_mode']) && (
                           <div>
                             <p className="text-sm font-medium mb-2 flex items-center gap-2">
                               <Building className="h-4 w-4" />
@@ -489,7 +489,7 @@ const UserProfileView = () => {
                           </div>
                         )}
                         
-                        {profile['collaboration_description'] && (
+                        {Boolean(profile['collaboration_description']) && (
                           <div>
                             <p className="text-sm font-medium mb-2 flex items-center gap-2">
                               <FileText className="h-4 w-4" />
