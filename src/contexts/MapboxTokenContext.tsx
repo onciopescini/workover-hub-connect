@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import * as mapboxService from '@/services/api/mapboxService';
 import { sreLogger } from '@/lib/sre-logger';
 
 interface MapboxTokenContextType {
@@ -33,30 +33,19 @@ export const MapboxTokenProvider: React.FC<MapboxTokenProviderProps> = ({ childr
       setIsLoading(true);
       setError(null);
       
-      const { data, error: invokeError } = await supabase.functions.invoke('get-mapbox-token');
+      // Use the mapboxService which handles token caching internally
+      const fetchedToken = await mapboxService.getMapboxToken();
       
-      if (invokeError) {
-        sreLogger.error('Error fetching Mapbox token from edge function', {}, invokeError);
-        setError('Impossibile ottenere il token Mapbox');
-        return;
-      }
-
-      if (data?.token) {
-        // Validazione base del token
-        if (typeof data.token === 'string' && data.token.length > 0) {
-          setToken(data.token);
-          sreLogger.info('Mapbox token fetched successfully');
-        } else {
-          setError('Token Mapbox non valido');
-          sreLogger.error('Invalid Mapbox token format', { token: data.token });
-        }
+      if (fetchedToken) {
+        setToken(fetchedToken);
+        sreLogger.info('Mapbox token fetched successfully via context', { component: 'MapboxTokenContext' });
       } else {
         setError('Token Mapbox non configurato');
-        sreLogger.error('No Mapbox token in response', { data });
+        sreLogger.error('No Mapbox token available', { component: 'MapboxTokenContext' });
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Errore sconosciuto';
-      sreLogger.error('Unexpected error fetching Mapbox token', {}, err as Error);
+      sreLogger.error('Unexpected error fetching Mapbox token', { component: 'MapboxTokenContext' }, err as Error);
       setError(`Errore nel recupero del token: ${errorMessage}`);
     } finally {
       setIsLoading(false);

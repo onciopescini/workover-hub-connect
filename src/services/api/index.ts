@@ -30,3 +30,29 @@ export {
   type GetBookingsParams,
   type GetBookingsResult
 } from './adminService';
+
+// Mapbox Service
+export * as mapboxService from './mapboxService';
+export type {
+  AddressSuggestion,
+  Coordinates,
+  GeocodeResult,
+  ReverseGeocodeResult,
+  SearchAddressOptions
+} from './mapboxService';
+
+// Fiscal Service
+export * as fiscalService from './fiscalService';
+export type {
+  DAC7ThresholdResult,
+  GenerateInvoiceParams,
+  GenerateInvoiceResult
+} from './fiscalService';
+
+// Privacy Service
+export * as privacyService from './privacyService';
+export type {
+  GDPRRequest,
+  ExportResult,
+  DeletionResult
+} from './privacyService';

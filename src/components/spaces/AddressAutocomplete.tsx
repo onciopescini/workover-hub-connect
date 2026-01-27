@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { MapPin, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import * as mapboxService from '@/services/api/mapboxService';
 import { useLogger } from "@/hooks/useLogger";
 
 interface AddressSuggestion {
@@ -36,54 +34,42 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const debounceTimer = useRef<NodeJS.Timeout>();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch Mapbox token
+  // Check if mapbox service is ready (token can be fetched)
   useEffect(() => {
-    const fetchMapboxToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (error) {
-          logError('Error fetching Mapbox token', error as Error, {
-            operation: 'fetch_mapbox_token'
-          });
-          return;
-        }
-        if (data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (err) {
-        logError('Error fetching Mapbox token', err as Error, {
-          operation: 'fetch_mapbox_token_exception'
-        });
-      }
+    const checkToken = async () => {
+      const token = await mapboxService.getMapboxToken();
+      setIsReady(!!token);
     };
-
-    fetchMapboxToken();
+    checkToken();
   }, []);
 
   const searchAddresses = async (query: string) => {
-    if (!mapboxToken || query.length < 3) {
+    if (query.length < 3) {
       setSuggestions([]);
       return;
     }
 
     setIsLoading(true);
     try {
-      const encodedQuery = encodeURIComponent(query);
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?access_token=${mapboxToken}&country=IT&types=address,poi&limit=5`
-      );
+      const result = await mapboxService.searchAddresses(query, {
+        types: 'address,poi',
+        limit: 5
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch suggestions');
+      if (result.success && result.suggestions) {
+        setSuggestions(result.suggestions);
+        setShowSuggestions(true);
+      } else {
+        logError('Failed to fetch address suggestions', new Error(result.error || 'Unknown error'), {
+          operation: 'fetch_address_suggestions',
+          query
+        });
+        setSuggestions([]);
       }
-
-      const data = await response.json();
-      setSuggestions(data.features || []);
-      setShowSuggestions(true);
     } catch (error) {
       logError('Error fetching address suggestions', error as Error, {
         operation: 'fetch_address_suggestions',
@@ -150,7 +136,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
           onBlur={handleInputBlur}
           onFocus={() => value.length >= 3 && setShowSuggestions(suggestions.length > 0)}
           placeholder={placeholder}
-          disabled={disabled || !mapboxToken}
+          disabled={disabled || !isReady}
           className={error ? "border-red-500" : ""}
         />
         
@@ -198,7 +184,7 @@ export const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
         </div>
       )}
       
-      {!mapboxToken && (
+      {!isReady && (
         <p className="text-sm text-yellow-600">
           Caricamento suggerimenti indirizzi...
         </p>
