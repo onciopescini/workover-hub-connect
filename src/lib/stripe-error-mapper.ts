@@ -27,17 +27,18 @@ export const mapStripeError = (error: string | null | undefined): string => {
   }
 
   // Keyword/Phrase Matching (if the input is a full message)
+  // AGGRESSIVE FIX: Use non-null assertion or provide fallback
   if (normalizedError.includes('decline') || normalizedError.includes('rifiuta')) {
-    return errorMap['card_declined'];
+    return errorMap['card_declined'] ?? 'La carta è stata rifiutata.';
   }
   if (normalizedError.includes('expired') || normalizedError.includes('scaduta')) {
-    return errorMap['expired_card'];
+    return errorMap['expired_card'] ?? 'La carta è scaduta.';
   }
   if (normalizedError.includes('insufficient') || normalizedError.includes('fondi')) {
-    return errorMap['insufficient_funds'];
+    return errorMap['insufficient_funds'] ?? 'Fondi insufficienti.';
   }
   if (normalizedError.includes('cvc') || normalizedError.includes('security code')) {
-    return errorMap['incorrect_cvc'];
+    return errorMap['incorrect_cvc'] ?? 'Codice CVC non corretto.';
   }
 
   // Fallback for generic errors

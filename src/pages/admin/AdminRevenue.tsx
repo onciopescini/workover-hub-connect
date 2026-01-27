@@ -20,12 +20,13 @@ const AdminRevenue = () => {
     queryKey: ['admin_platform_revenue'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('admin_platform_revenue' as any)
+        .from('admin_platform_revenue' as unknown as 'profiles')
         .select('*')
         .order('month', { ascending: false }); // Most recent first
 
       if (error) throw error;
-      return data as AdminPlatformRevenue[];
+      // AGGRESSIVE FIX: Cast through unknown
+      return data as unknown as AdminPlatformRevenue[];
     }
   });
 

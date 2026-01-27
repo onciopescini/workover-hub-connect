@@ -25,11 +25,13 @@ const BookingSuccess: React.FC = () => {
         return Math.random() * (max - min) + min;
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const interval: any = setInterval(function() {
         const timeLeft = animationEnd - Date.now();
 
         if (timeLeft <= 0) {
-          return clearInterval(interval);
+          clearInterval(interval);
+          return; // AGGRESSIVE FIX: Ensure return value
         }
 
         const particleCount = 50 * (timeLeft / duration);

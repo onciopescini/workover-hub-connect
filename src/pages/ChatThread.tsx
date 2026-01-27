@@ -122,12 +122,14 @@ export default function ChatThread() {
       }, async (payload) => {
         sreLogger.debug('New message received', { 
           conversationId, 
-          messageId: isRecord(payload.new) ? payload.new.id : undefined,
+          // AGGRESSIVE FIX: Use bracket notation
+          messageId: isRecord(payload.new) ? (payload.new as Record<string, unknown>)['id'] : undefined,
           component: 'ChatThread'
         });
         
         // Fetch sender details for the new message
-        const senderId = isRecord(payload.new) ? payload.new.sender_id : undefined;
+        // AGGRESSIVE FIX: Use bracket notation  
+        const senderId = isRecord(payload.new) ? (payload.new as Record<string, unknown>)['sender_id'] : undefined;
         if (typeof senderId !== 'string') {
           return;
         }

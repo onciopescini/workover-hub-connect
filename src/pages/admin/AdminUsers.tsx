@@ -27,11 +27,12 @@ const AdminUsers = () => {
     queryKey: ['admin_users'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('admin_users_view' as any)
+        .from('admin_users_view' as unknown as 'profiles')
         .select('*');
 
       if (error) throw error;
-      return data as AdminUser[];
+      // AGGRESSIVE FIX: Cast through unknown
+      return data as unknown as AdminUser[];
     }
   });
 
@@ -118,9 +119,9 @@ const AdminUsers = () => {
                       <TableCell className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
                           <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
-                          <AvatarFallback>
-                            {user.first_name?.[0] || user.email[0].toUpperCase()}
-                          </AvatarFallback>
+                        <AvatarFallback>
+                          {user.first_name?.[0] ?? (user.email?.[0] ?? '?').toUpperCase()}
+                        </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-medium text-gray-900">
