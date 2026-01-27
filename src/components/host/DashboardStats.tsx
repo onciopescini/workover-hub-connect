@@ -21,7 +21,7 @@ export function DashboardStats({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Spazi Attivi</CardTitle>
-          <Home className="h-4 w-4 text-[#4F46E5]" />
+          <Home className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalSpaces}</div>
@@ -31,7 +31,7 @@ export function DashboardStats({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Prenotazioni</CardTitle>
-          <Calendar className="h-4 w-4 text-[#4F46E5]" />
+          <Calendar className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{activeBookings}</div>
@@ -41,7 +41,7 @@ export function DashboardStats({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Rating Medio</CardTitle>
-          <Star className="h-4 w-4 text-[#22C55E]" />
+          <Star className="h-4 w-4 text-success" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
@@ -53,7 +53,7 @@ export function DashboardStats({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Messaggi</CardTitle>
-          <MessageSquare className="h-4 w-4 text-[#4F46E5]" />
+          <MessageSquare className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{unreadMessages}</div>

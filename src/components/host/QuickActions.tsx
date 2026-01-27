@@ -28,7 +28,7 @@ export function QuickActions() {
             
             <Button 
               onClick={() => navigate("/host/space/new")}
-              className="bg-[#4F46E5] hover:bg-[#4F46E5]/90 h-24 flex flex-col items-center justify-center gap-2"
+              className="bg-primary hover:bg-primary/90 h-24 flex flex-col items-center justify-center gap-2"
             >
               <PlusCircle className="w-6 h-6" />
               <span>Aggiungi Spazio</span>

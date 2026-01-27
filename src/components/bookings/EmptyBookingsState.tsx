@@ -35,7 +35,7 @@ export const EmptyBookingsState = ({ activeTab }: EmptyBookingsStateProps) => {
           {getEmptyMessage()}
         </p>
         {activeTab === "all" && (
-          <Button onClick={() => navigate("/dashboard")} className="bg-[#4F46E5] hover:bg-[#4F46E5]/90">
+          <Button onClick={() => navigate("/dashboard")} className="bg-primary hover:bg-primary/90">
             Trova spazi
           </Button>
         )}

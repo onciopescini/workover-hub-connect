@@ -72,7 +72,12 @@ export default {
 				'stitch-accent': 'var(--color-accent)',
 				'stitch-success': 'var(--color-success)',
 				'stitch-error': 'var(--color-error)',
-				'stitch-border': 'var(--color-border)'
+				'stitch-border': 'var(--color-border)',
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				stripe: '#635bff'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

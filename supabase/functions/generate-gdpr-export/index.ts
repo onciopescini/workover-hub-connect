@@ -36,9 +36,6 @@ async function collectUserData(userId: string) {
     gdpr_requests: [],
     favorites: [],
     reports: [],
-    events: [],
-    event_reviews_given: [],
-    event_reviews_received: [],
     errors: []
   };
 

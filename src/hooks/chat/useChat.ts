@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 import { queryKeys } from "@/lib/react-query-config";
 import * as chatService from "@/services/api/chatService";
+import { sreLogger } from "@/lib/sre-logger";
 
 export interface UseChatResult {
   conversations: Conversation[];
@@ -103,7 +104,7 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     },
     onError: (error) => {
       toast.error("Errore nell'invio del messaggio");
-      console.error(error);
+      sreLogger.error('Error sending message', { component: 'useChat' }, error);
     }
   });
 
@@ -123,7 +124,7 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     },
     onError: (error) => {
       toast.error("Errore nell'eliminazione del messaggio");
-      console.error(error);
+      sreLogger.error('Error deleting message', { component: 'useChat' }, error);
     }
   });
 
@@ -146,7 +147,7 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     },
     onError: (error) => {
       toast.error("Errore nell'archiviazione della conversazione");
-      console.error(error);
+      sreLogger.error('Error archiving conversation', { component: 'useChat' }, error);
     }
   });
 
@@ -169,7 +170,7 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     },
     onError: (error) => {
       toast.error("Errore nel contrassegnare come non letto");
-      console.error(error);
+      sreLogger.error('Error marking conversation unread', { component: 'useChat' }, error);
     }
   });
 

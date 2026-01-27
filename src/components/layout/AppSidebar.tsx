@@ -1,3 +1,4 @@
+import { useMemo, useCallback } from "react";
 import { Home, Building2, Calendar, MessageSquare, Users, LayoutDashboard, Shield, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -38,38 +39,39 @@ export function AppSidebar() {
     staleTime: 60000,
   });
 
-  const baseItems = [
-    { title: "Home", url: "/", icon: Home },
-    {
-      title: "Spazi",
-      url: "/spaces",
-      icon: Building2,
-      badge: (authState.roles.includes('admin') && pendingSpacesCount && pendingSpacesCount > 0) ? pendingSpacesCount : undefined
-    },
-    { title: "Prenotazioni", url: "/bookings", icon: Calendar },
-    { title: "Messaggi", url: "/messages", icon: MessageSquare },
-    { title: "Networking", url: "/networking", icon: Users },
-  ];
+  // Memoize navigation items to prevent recreation on every render
+  const allItems = useMemo(() => {
+    const items = [
+      { title: "Home", url: "/", icon: Home },
+      {
+        title: "Spazi",
+        url: "/spaces",
+        icon: Building2,
+        badge: (authState.roles.includes('admin') && pendingSpacesCount && pendingSpacesCount > 0) ? pendingSpacesCount : undefined
+      },
+      { title: "Prenotazioni", url: "/bookings", icon: Calendar },
+      { title: "Messaggi", url: "/messages", icon: MessageSquare },
+      { title: "Networking", url: "/networking", icon: Users },
+    ];
 
-  const roleItems = [];
-  
-  if (hasAnyRole(authState.roles, ['host', 'admin'])) {
-    roleItems.push({ title: "Dashboard Host", url: "/host/dashboard", icon: LayoutDashboard });
-    roleItems.push({ title: "Wallet", url: "/host/wallet", icon: Wallet });
-  }
-  
-  if (authState.roles.includes('admin')) {
-    roleItems.push({ title: "Admin Panel", url: "/admin/users", icon: Shield });
-  }
+    if (hasAnyRole(authState.roles, ['host', 'admin'])) {
+      items.push({ title: "Dashboard Host", url: "/host/dashboard", icon: LayoutDashboard });
+      items.push({ title: "Wallet", url: "/host/wallet", icon: Wallet });
+    }
+    
+    if (authState.roles.includes('admin')) {
+      items.push({ title: "Admin Panel", url: "/admin/users", icon: Shield });
+    }
 
-  const allItems = [...baseItems, ...roleItems];
+    return items;
+  }, [authState.roles, pendingSpacesCount]);
 
-  const isActive = (path: string) => {
+  const isActive = useCallback((path: string) => {
     if (path === '/') {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(path);
-  };
+  }, [location.pathname]);
 
   return (
     <Sidebar collapsible="icon" className="border-r">
