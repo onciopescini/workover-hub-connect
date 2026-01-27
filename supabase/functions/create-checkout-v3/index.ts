@@ -16,6 +16,7 @@ type BookingWithHost = {
   total_price: number;
   space_id: string;
   hostStripeAccountId: string | null;
+  confirmation_type: string;  // 'instant' | 'host_approval'
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -53,13 +54,14 @@ async function getUserFromAuth(req: Request) {
 }
 
 async function fetchBookingAndPrice(booking_id: string, user_id: string) {
-  // Fetch booking with space and host's Stripe account
+  // Fetch booking with space, confirmation_type, and host's Stripe account
   const { data, error } = await supabase
     .from("bookings")
     .select(`
       id, user_id, status, total_price, space_id,
       spaces!inner (
         host_id,
+        confirmation_type,
         profiles:host_id (stripe_account_id)
       )
     `)
@@ -68,11 +70,17 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
 
   if (error || !data) return { error: "booking_not_found" };
   if (data.user_id !== user_id) return { error: "forbidden" };
-  if (data.status !== "pending_payment") return { error: "invalid_booking_status" };
+  
+  // HOTFIX: Allow pending_approval and pending for "Request to Book" flows
+  const allowedStatuses = ['pending_payment', 'pending_approval', 'pending'];
+  if (!allowedStatuses.includes(data.status)) {
+    return { error: "invalid_booking_status" };
+  }
 
-  // Extract host's Stripe account ID from nested join
+  // Extract host's Stripe account ID and confirmation_type from nested join
   const spaces = data.spaces as any;
   const hostStripeAccountId = spaces?.profiles?.stripe_account_id || null;
+  const confirmationType = spaces?.confirmation_type || 'instant';
 
   // Base price is what the host set (before fees)
   const basePrice = Number(data.total_price);
@@ -80,10 +88,13 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   // Calculate full pricing breakdown using the shared engine
   const pricing = PricingEngine.calculatePricing(basePrice);
 
+  console.log(`[BOOKING] Status: ${data.status}, Confirmation Type: ${confirmationType}`);
+
   return { 
     booking: {
       ...data,
       hostStripeAccountId,
+      confirmation_type: confirmationType,
     } as BookingWithHost,
     basePrice,
     pricing,
@@ -147,6 +158,7 @@ async function createStripeCheckoutSession(params: {
   basePrice: number;
   hostPayout: number;
   platformFee: number;
+  confirmationType: string;  // 'instant' | 'host_approval'
 }) {
   // Fallback to production URL if origin not provided
   const frontendOrigin = params.origin || 'https://workover-hub-connect.lovable.app';
@@ -168,6 +180,11 @@ async function createStripeCheckoutSession(params: {
     "metadata[host_net_payout]": String(params.hostPayout),
     "metadata[total_platform_fee]": String(params.platformFee),
   });
+
+  // DYNAMIC CAPTURE: Instant = capture immediately, Request to Book = hold funds
+  const captureMethod = params.confirmationType === 'instant' ? 'automatic' : 'manual';
+  body.append("payment_intent_data[capture_method]", captureMethod);
+  console.log(`[CAPTURE] Confirmation: ${params.confirmationType}, Capture Method: ${captureMethod}`);
 
   // STRIPE CONNECT: Only add if host has connected Stripe account
   if (params.hostStripeAccountId) {
@@ -271,7 +288,7 @@ Deno.serve(async (req) => {
     // Get origin from request for redirect URLs
     const origin = req.headers.get('origin') || payload.origin || 'https://workover-hub-connect.lovable.app';
 
-    // 3) Stripe session with Idempotency-Key + Connect params
+    // 3) Stripe session with Idempotency-Key + Connect params + Dynamic Capture
     const stripe = await createStripeCheckoutSession({
       totalChargeCents,
       applicationFeeCents,
@@ -285,6 +302,7 @@ Deno.serve(async (req) => {
       basePrice,
       hostPayout: pricing.hostPayout,
       platformFee: pricing.applicationFee,
+      confirmationType: booking.confirmation_type,  // Pass for dynamic capture
     });
     if ("error" in stripe) return err(stripe.error!, 400, stripe);
 
