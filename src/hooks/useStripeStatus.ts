@@ -45,18 +45,22 @@ export const useStripeStatus = (): UseStripeStatusResult => {
 
         const statusResult = await checkAccountStatus();
 
+        if (!statusResult.success) {
+          throw new Error(statusResult.error || 'Failed to check status');
+        }
+
         sreLogger.info('Stripe status verification complete', { 
           userId: authState.user.id, 
-          connected: statusResult.connected,
-          updated: statusResult.updated
+          connected: statusResult.data?.connected,
+          updated: statusResult.data?.updated
         });
 
         // Force complete profile refresh with cache invalidation
-        if (statusResult.updated || isReturningFromStripe) {
+        if (statusResult.data?.updated || isReturningFromStripe) {
           // Wait for profile refresh to complete
           await refreshProfile();
           
-          if (statusResult.connected) {
+          if (statusResult.data?.connected) {
             toast.success('Account Stripe collegato con successo!');
           }
         }
@@ -89,7 +93,11 @@ export const useStripeStatus = (): UseStripeStatusResult => {
       setIsVerifying(true);
       const statusResult = await checkAccountStatus();
 
-      if (statusResult.updated) {
+      if (!statusResult.success) {
+        throw new Error(statusResult.error || 'Failed to check status');
+      }
+
+      if (statusResult.data?.updated) {
         await refreshProfile();
         toast.success('Status Stripe aggiornato');
       } else {

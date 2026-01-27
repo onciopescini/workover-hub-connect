@@ -28,10 +28,27 @@ export {
   checkAccountStatus,
   createOnboardingLink,
   getPayouts,
+  type CheckAccountStatusResult,
   type StripeAccountStatus,
   type StripeOnboardingResult,
-  type StripePayoutData
+  type StripePayoutData,
+  type GetPayoutsResult
 } from './stripeService';
+
+// Profile Service
+export * as profileService from './profileService';
+
+// Payment Service
+export * as paymentService from './paymentService';
+
+// Report Service
+export * as reportService from './reportService';
+
+// KYC Service
+export * as kycService from './kycService';
+
+// Notification Service
+export * as notificationService from './notificationService';
 
 // Admin Service
 export {
