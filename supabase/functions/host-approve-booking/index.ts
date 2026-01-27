@@ -94,7 +94,7 @@ serve(async (req) => {
     }
 
     const { data: workspace, error: workspaceError } = await supabaseAdmin
-      .from("workspaces")
+      .from("spaces")
       .select("host_id, title:name")
       .eq("id", booking.space_id)
       .single();

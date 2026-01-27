@@ -36,9 +36,9 @@ serve(async (req) => {
       throw new Error('Booking not found')
     }
 
-    // 2. Fetch workspace to get host_id
+    // 2. Fetch space to get host_id
     const { data: workspace, error: workspaceError } = await supabaseAdmin
-      .from('workspaces')
+      .from('spaces')
       .select('host_id')
       .eq('id', booking.space_id)
       .single()

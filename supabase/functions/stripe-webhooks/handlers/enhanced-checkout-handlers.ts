@@ -145,7 +145,7 @@ export class EnhancedCheckoutHandlers {
     }
 
     // Determine new booking status
-    const confirmationType = booking.workspaces.confirmation_type;
+    const confirmationType = booking.spaces.confirmation_type;
     // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
     
@@ -187,7 +187,7 @@ export class EnhancedCheckoutHandlers {
     await this.sendCompletionNotifications(booking, breakdown, supabaseAdmin);
 
     // Generate fiscal documents asynchronously (MOCK mode)
-    this.generateFiscalDocuments(payment.id, bookingId, booking.workspaces.host_id, booking.user_id, supabaseAdmin);
+    this.generateFiscalDocuments(payment.id, bookingId, booking.spaces.host_id, booking.user_id, supabaseAdmin);
 
     return { 
       success: true, 
@@ -254,7 +254,7 @@ export class EnhancedCheckoutHandlers {
     breakdown: ReturnType<typeof EnhancedPaymentCalculator.calculateBreakdown>,
     supabaseAdmin: any
   ): Promise<void> {
-    const confirmationType = booking.workspaces.confirmation_type;
+    const confirmationType = booking.spaces.confirmation_type;
     
     ErrorHandler.logInfo('Dispatching notifications via send-booking-notification', {
       bookingId: booking.id,

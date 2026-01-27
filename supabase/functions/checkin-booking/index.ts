@@ -47,12 +47,12 @@ serve(async (req) => {
     console.log("Enforcing time validation rules");
 
     // 5. Fetch Booking & Workspace Details
-    // We need the workspace to verify host ownership and to get timezone
+    // We need the space to verify host ownership and to get timezone
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
         *,
-        workspaces (
+        spaces (
           id,
           host_id,
           timezone
@@ -70,8 +70,8 @@ serve(async (req) => {
     }
 
     // 6. SECURITY CHECK: Verify Host Ownership
-    // The requirement states: "Verify that auth.uid() matches the host_id of the workspace."
-    const hostId = booking.workspaces?.host_id;
+    // The requirement states: "Verify that auth.uid() matches the host_id of the space."
+    const hostId = booking.spaces?.host_id;
 
     if (user.id !== hostId) {
       console.warn(`[checkin-booking] Unauthorized access attempt. User ${user.id} is not host of booking ${booking_id} (Host: ${hostId})`);
@@ -83,7 +83,7 @@ serve(async (req) => {
 
     // 7. TIME WINDOW CHECK
     const now = new Date();
-    const timezone = booking.workspaces?.timezone || 'Europe/Rome';
+    const timezone = booking.spaces?.timezone || 'Europe/Rome';
 
     // Construct Booking Start/End Dates (UTC) from Local Time Strings
     // booking.booking_date is YYYY-MM-DD
