@@ -1,218 +1,189 @@
 
 
-# HOTFIX: Dual Fee Architecture & Stability (Gold Standard)
+# HOTFIX: Enable "Request to Book" Payments
 
 ## Executive Summary
 
-This plan addresses **two critical issues**:
-1. **Pricing Engine Mismatch** - Current logic differs from the user's specified formula
-2. **500 Error Root Cause** - The `validate-payment` function sets `payment_status = 'completed'` but the database trigger checks for `payment_status_enum = 'succeeded'`
+The checkout flow is blocking "Request to Book" (host approval) payments with a `400 Bad Request: invalid_booking_status` error. This is because:
+
+1. **Status Gate Bug**: Line 71 in `create-checkout-v3` only allows `pending_payment` status
+2. **Missing Capture Mode**: No dynamic configuration for pre-authorization vs immediate capture
 
 ---
 
-## Transaction Simulation Tables
+## Root Cause Analysis
 
-### CURRENT IMPLEMENTATION (€100 Base Price)
+### Current Booking Creation Logic (from `validate_and_reserve_slot` RPC)
 
-| Component | Formula | Value (€) |
-|:----------|:--------|----------:|
-| **Base Price** | Input | €100.00 |
-| Guest Fee | 100 × 5% | €5.00 |
-| Guest VAT | 5 × 22% | €1.10 |
-| **User Pays** | 100 + 5 + 1.10 | **€106.10** |
-| Host Fee | 100 × 5% | €5.00 |
-| **Host Receives** | 100 - 5 | **€95.00** |
-| **Platform Net** | 106.10 - 95.00 | **€11.10** |
+| Confirmation Type | Initial Status | Payment Required |
+|:------------------|:---------------|:-----------------|
+| `instant` | `pending_payment` | Yes |
+| `host_approval` | `pending_approval` | No (until approved) |
 
-### USER'S REQUIRED IMPLEMENTATION (€100 Base Price)
-
-| Component | Formula | Value (€) |
-|:----------|:--------|----------:|
-| **Base Price** | Input | €100.00 |
-| Coworker Fee | 100 × 5% | €5.00 |
-| Coworker VAT | 5 × 22% | €1.10 |
-| **User Pays** | 100 + 5 + 1.10 | **€106.10** |
-| Host Fee | 100 × 5% | €5.00 |
-| Host VAT | 5 × 22% | €1.10 |
-| **Host Receives** | 100 - 5 - 1.10 | **€93.90** |
-| **Platform Net** | 106.10 - 93.90 | **€12.20** |
-
----
-
-## Critical Decision Required
-
-The user's task specifies that **Host VAT should be deducted from the Host Payout**:
-
-```
-Host Payout = X - (X * 0.05) - (X * 0.05 * 0.22)
-Example (€100): 100 - 5 - 1.10 = €93.90
-```
-
-However, the current `PricingEngine` does NOT apply VAT to the host side:
+### Current Checkout Validation (Line 71)
 
 ```typescript
-// Current (line 41 of _shared/pricing-engine.ts)
-const hostPayout = round(basePrice - hostFee);  // €95.00
-
-// User's Requirement
-const hostPayout = round(basePrice - hostFee - hostVat);  // €93.90
+if (data.status !== "pending_payment") return { error: "invalid_booking_status" };
 ```
 
-**This is a business decision** - we can either:
-- **Option A**: Keep current logic (€95 to host, €11.10 to platform)
-- **Option B**: Implement user's specified formula (€93.90 to host, €12.20 to platform)
+This blocks ALL "Request to Book" flows!
 
 ---
 
-## Technical Root Cause: 500 Error
+## Payment Logic Matrix (Required Behavior)
 
-The Edge Function logs reveal the exact error:
+| Confirmation Type | Booking Status Input | Allowed? | Stripe Capture Method |
+|:------------------|:---------------------|:---------|:----------------------|
+| **Instant** | `pending_payment` | ✅ Yes | `automatic` |
+| **Host Approval** | `pending_approval` | ✅ Yes | `manual` |
+| **Host Approval** | `pending_payment` | ✅ Yes | `manual` |
+| **Any** | `confirmed` | ❌ No | N/A (already paid) |
+| **Any** | `cancelled` | ❌ No | N/A |
 
+---
+
+## Technical Implementation
+
+### File: `supabase/functions/create-checkout-v3/index.ts`
+
+#### Change 1: Update BookingWithHost Type
+
+Add `confirmation_type` field to track booking type:
+
+```typescript
+type BookingWithHost = {
+  id: string;
+  user_id: string;
+  status: string;
+  total_price: number;
+  space_id: string;
+  hostStripeAccountId: string | null;
+  confirmation_type: string;  // NEW: 'instant' | 'host_approval'
+};
 ```
-Error updating booking: {
-  code: "P0001",
-  message: "Cannot confirm booking without a succeeded payment."
+
+#### Change 2: Update `fetchBookingAndPrice` Query
+
+Fetch `confirmation_type` from the space:
+
+```typescript
+const { data, error } = await supabase
+  .from("bookings")
+  .select(`
+    id, user_id, status, total_price, space_id,
+    spaces!inner (
+      host_id,
+      confirmation_type,
+      profiles:host_id (stripe_account_id)
+    )
+  `)
+  .eq("id", booking_id)
+  .single();
+```
+
+#### Change 3: Fix Status Validation (Line 71)
+
+Replace the strict check with a flexible one:
+
+```typescript
+// OLD (Line 71):
+if (data.status !== "pending_payment") return { error: "invalid_booking_status" };
+
+// NEW:
+const allowedStatuses = ['pending_payment', 'pending_approval', 'pending'];
+if (!allowedStatuses.includes(data.status)) {
+  return { error: "invalid_booking_status" };
 }
 ```
 
-### The Bug
+#### Change 4: Update `createStripeCheckoutSession` Signature
 
-1. **Database Trigger** (`guard_confirm_without_success`):
-   ```sql
-   IF NOT EXISTS (
-     SELECT 1 FROM public.payments p
-     WHERE p.booking_id = NEW.id
-       AND p.payment_status_enum = 'succeeded'  -- ← Checks THIS column
-   ) THEN
-     RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.';
-   END IF;
-   ```
+Add `confirmationType` parameter:
 
-2. **validate-payment Function** (line 107):
-   ```typescript
-   payment_status: 'completed',  // ← Sets the WRONG column (text field)
-   // Missing: payment_status_enum: 'succeeded'
-   ```
+```typescript
+async function createStripeCheckoutSession(params: {
+  // ... existing params ...
+  confirmationType: string;  // NEW: 'instant' | 'host_approval'
+}) {
+```
 
-3. **Result**: The trigger checks `payment_status_enum` (which is never set to 'succeeded'), so booking confirmation always fails.
+#### Change 5: Configure Dynamic Capture Method
+
+Add capture method based on confirmation type:
+
+```typescript
+// Inside createStripeCheckoutSession, after building base body:
+
+// DYNAMIC CAPTURE: Instant = capture immediately, Request = hold funds
+const captureMethod = params.confirmationType === 'instant' ? 'automatic' : 'manual';
+body.append("payment_intent_data[capture_method]", captureMethod);
+
+console.log(`[CAPTURE] Confirmation: ${params.confirmationType}, Capture Method: ${captureMethod}`);
+```
+
+#### Change 6: Update Main Handler Call
+
+Pass the confirmation type to the session creator:
+
+```typescript
+const stripe = await createStripeCheckoutSession({
+  // ... existing params ...
+  confirmationType: spaces.confirmation_type || 'instant',  // NEW
+});
+```
 
 ---
 
-## Implementation Plan
+## Stripe Payment Intent Lifecycle
 
-### Phase 1: Fix validate-payment (Critical - Stops 500 Errors)
-
-**File:** `supabase/functions/validate-payment/index.ts`
-
-**Changes:**
-1. Set `payment_status_enum: 'succeeded'` when inserting/updating payment
-2. Use consistent status values across both columns
-
-```typescript
-// Line ~102-113: INSERT case
-const { error: insertError } = await supabaseAdmin
-  .from('payments')
-  .insert({
-    booking_id: session.metadata.booking_id,
-    user_id: session.metadata.user_id,
-    amount: totalAmount,
-    currency: (session.currency || 'eur').toUpperCase(),
-    payment_status: 'completed',
-    payment_status_enum: 'succeeded',  // ADD THIS LINE
-    stripe_session_id: session_id,
-    receipt_url: session.receipt_url,
-    host_amount: hostAmount,
-    platform_fee: platformFee,
-    method: 'stripe'
-  });
-
-// Line ~126-131: UPDATE case
-const { error: updateError } = await supabaseAdmin
-  .from('payments')
-  .update({
-    payment_status: 'completed',
-    payment_status_enum: 'succeeded',  // ADD THIS LINE
-    receipt_url: session.receipt_url
-  })
-  .eq('id', existingPayment.id);
+### Instant Book Flow
+```text
+Guest Clicks Pay → Checkout Session Created → Payment Captured → Booking Confirmed
+                   (capture_method: automatic)
 ```
 
-### Phase 2: Fix Pricing Engine (If Option B Chosen)
-
-**File:** `supabase/functions/_shared/pricing-engine.ts`
-
-**Changes** (only if user confirms Option B):
-```typescript
-calculatePricing: (basePrice: number) => {
-  const round = (num: number) => Math.round(num * 100) / 100;
-
-  // Guest side (unchanged)
-  const rawGuestFee = basePrice * PricingEngine.GUEST_FEE_PERCENT;
-  const guestFee = round(Math.max(rawGuestFee, PricingEngine.MIN_GUEST_FEE));
-  const guestVat = round(guestFee * PricingEngine.VAT_RATE);
-  const totalGuestPay = round(basePrice + guestFee + guestVat);
-
-  // Host side (UPDATED per user requirement)
-  const hostFee = round(basePrice * PricingEngine.HOST_FEE_PERCENT);
-  const hostVat = round(hostFee * PricingEngine.VAT_RATE);  // NEW LINE
-  const hostPayout = round(basePrice - hostFee - hostVat);  // CHANGED
-
-  // Platform revenue recalculated
-  const applicationFee = round(totalGuestPay - hostPayout);
-
-  return {
-    basePrice: round(basePrice),
-    guestFee,
-    guestVat,
-    totalGuestPay,
-    hostFee,
-    hostVat,     // NEW FIELD
-    hostPayout,
-    applicationFee
-  };
-}
+### Request to Book Flow
+```text
+Guest Clicks Pay → Checkout Session Created → Payment AUTHORIZED (not captured)
+                   (capture_method: manual)
+                                ↓
+                   Host Reviews Request
+                        ↓           ↓
+              Host Accepts    Host Declines
+                    ↓              ↓
+           Capture Payment    Cancel Authorization
+             (via API)          (auto-expires)
+                    ↓
+            Booking Confirmed
 ```
-
-**Also update:** `src/lib/pricing-engine.ts` (frontend copy for UI display)
-
-### Phase 3: Sync Frontend Pricing Engine
-
-If Phase 2 is implemented, the frontend `src/lib/pricing-engine.ts` must be updated to match.
 
 ---
 
 ## Files to Modify
 
-| File | Changes | Priority |
-|------|---------|----------|
-| `supabase/functions/validate-payment/index.ts` | Add `payment_status_enum: 'succeeded'` | **CRITICAL** |
-| `supabase/functions/_shared/pricing-engine.ts` | Add hostVat calculation (if Option B) | Medium |
-| `src/lib/pricing-engine.ts` | Mirror backend changes (if Option B) | Medium |
+| File | Changes |
+|------|---------|
+| `supabase/functions/create-checkout-v3/index.ts` | Add confirmation_type, fix status gate, configure capture_method |
 
 ---
 
-## Deployment Steps
+## Future Considerations
 
-1. Deploy `validate-payment` first (stops 500 errors immediately)
-2. If pricing change approved, deploy pricing engine updates
-3. Test a complete payment flow end-to-end
+After this fix, you'll also need to implement:
+
+1. **Host Capture API**: When host approves, call `stripe.paymentIntents.capture(pi_xxx)` to collect funds
+2. **Host Decline API**: When host declines, call `stripe.paymentIntents.cancel(pi_xxx)` to release hold
+3. **Auto-Expiry Handling**: If host doesn't respond within 7 days, Stripe auto-releases the authorization
+
+These are separate tasks but depend on this fix being in place first.
 
 ---
 
 ## Verification Checklist
 
 After implementation:
-- [ ] Payment completes without 500 error
-- [ ] Booking status changes to 'confirmed' 
-- [ ] `payments.payment_status_enum` is 'succeeded'
-- [ ] Stripe Dashboard shows correct application fee
-
----
-
-## Summary
-
-| Issue | Root Cause | Fix |
-|-------|------------|-----|
-| **500 Error** | Trigger checks `payment_status_enum` but code sets `payment_status` | Add `payment_status_enum: 'succeeded'` |
-| **Pricing Discrepancy** | Current: Host gets €95; Required: Host gets €93.90 | Update PricingEngine (pending confirmation) |
+- [ ] "Instant Book" space → Checkout completes with immediate capture
+- [ ] "Request to Book" space → Checkout completes with funds held
+- [ ] Payment Intent shows `capture_method: manual` for requests
+- [ ] Booking status remains `pending_approval` after payment (not auto-confirmed)
 
