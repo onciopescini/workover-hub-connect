@@ -160,7 +160,7 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
       .from("bookings")
       .select(`
         *,
-        payments:payments!fk_payments_booking_id (
+        payments:payments!payments_booking_id_fkey (
           payment_status
         )
       `)
@@ -181,8 +181,9 @@ export const getBookingReviewStatus = async (bookingId: string, userId: string, 
     const bookingEndTime = new Date(`${booking.booking_date}T${booking.end_time || '18:00:00'}`);
     const isBookingCompleted = bookingEndTime < new Date();
 
-    // Check if payment is completed
-    const isPaymentCompleted = booking.payments?.some((payment: any) => payment.payment_status === 'completed') || false;
+    // Check if payment is completed - handle payments as potential array
+    const payments = Array.isArray(booking.payments) ? booking.payments : [booking.payments].filter(Boolean);
+    const isPaymentCompleted = payments.some((payment: any) => payment?.payment_status === 'completed') || false;
 
     // Check if user has written a review
     const { data: userReview } = await supabase

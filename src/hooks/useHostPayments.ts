@@ -65,7 +65,7 @@ export const useHostPayments = () => {
           stripe_transfer_id,
           receipt_url,
           booking_id,
-          bookings:bookings!fk_payments_booking_id (
+          bookings:bookings!payments_booking_id_fkey (
             id,
             booking_date,
             start_time,
@@ -73,7 +73,7 @@ export const useHostPayments = () => {
             space_id,
             user_id
           ),
-          invoices:invoices!fk_invoices_payment_id (
+          invoices:invoices!invoices_payment_id_fkey (
             invoice_number,
             pdf_file_url
           ),
@@ -90,8 +90,11 @@ export const useHostPayments = () => {
         throw error;
       }
 
-      // Fetch spaces separately
-      const spaceIds = [...new Set(data?.map(p => p.bookings?.space_id).filter((id): id is string => id !== null) || [])];
+      // Fetch spaces separately - handle bookings as potential array
+      const spaceIds = [...new Set(data?.map(p => {
+        const booking = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings;
+        return booking?.space_id;
+      }).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, title, host_id')
@@ -101,7 +104,10 @@ export const useHostPayments = () => {
       const spacesMap = new Map((spaces ?? []).map(s => [s.id, s]));
       
       // Fetch coworker profiles separately
-      const userIds = [...new Set(data?.map(p => p.bookings?.user_id).filter((id): id is string => id !== null) || [])];
+      const userIds = [...new Set(data?.map(p => {
+        const booking = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings;
+        return booking?.user_id;
+      }).filter((id): id is string => id !== null) || [])];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
@@ -111,10 +117,14 @@ export const useHostPayments = () => {
 
       // Transform data to match HostPayment interface, filtering by host's spaces
       const payments = (data || [])
-        .filter(payment => payment.bookings?.space_id && spacesMap.has(payment.bookings.space_id))
+        .filter(payment => {
+          const booking = Array.isArray(payment.bookings) ? payment.bookings[0] : payment.bookings;
+          return booking?.space_id && spacesMap.has(booking.space_id);
+        })
         .map(payment => {
-          const space = payment.bookings?.space_id ? spacesMap.get(payment.bookings.space_id) : null;
-          const coworker = payment.bookings?.user_id ? profilesMap.get(payment.bookings.user_id) : null;
+          const booking = Array.isArray(payment.bookings) ? payment.bookings[0] : payment.bookings;
+          const space = booking?.space_id ? spacesMap.get(booking.space_id) : null;
+          const coworker = booking?.user_id ? profilesMap.get(booking.user_id) : null;
           
           const result: HostPayment = {
             id: payment.id,
@@ -126,11 +136,11 @@ export const useHostPayments = () => {
             created_at: payment.created_at ?? '',
             stripe_transfer_id: payment.stripe_transfer_id,
             receipt_url: payment.receipt_url,
-            booking: payment.bookings ? {
-              id: payment.bookings.id,
-              booking_date: payment.bookings.booking_date,
-              start_time: payment.bookings.start_time || '',
-              end_time: payment.bookings.end_time || '',
+            booking: booking ? {
+              id: booking.id,
+              booking_date: booking.booking_date,
+              start_time: booking.start_time || '',
+              end_time: booking.end_time || '',
               space: space ? { id: space.id, title: space.title } : { id: '', title: '' },
               coworker: coworker || { first_name: '', last_name: '' }
             } : null,

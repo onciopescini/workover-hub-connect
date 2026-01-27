@@ -28,7 +28,7 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
           price_per_day,
           confirmation_type
         ),
-        payments (
+        payments!payments_booking_id_fkey (
           id,
           payment_status,
           amount,
@@ -122,7 +122,7 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
           last_name,
           profile_photo_url
         ),
-        payments (
+        payments!payments_booking_id_fkey (
           id,
           payment_status,
           amount,

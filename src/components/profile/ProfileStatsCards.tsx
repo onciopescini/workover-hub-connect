@@ -45,7 +45,7 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
               status, 
               created_at,
               spaces!inner(host_id),
-              payments:payments!fk_payments_booking_id (host_amount, payment_status)
+              payments:payments!payments_booking_id_fkey (host_amount, payment_status)
             `)
             .eq('spaces.host_id', profile.id);
 
@@ -61,8 +61,10 @@ export function ProfileStatsCards({ profile }: ProfileStatsCardsProps) {
 
           const allBookings = hostData || [];
           const earnings = allBookings.reduce((sum, booking) => {
-            const completedPayment = booking.payments?.find(
-              (p: any) => p.payment_status === 'completed'
+            // Handle payments as potential array
+            const payments = Array.isArray(booking.payments) ? booking.payments : [booking.payments].filter(Boolean);
+            const completedPayment = payments.find(
+              (p: any) => p?.payment_status === 'completed'
             );
             return sum + (completedPayment?.host_amount || 0);
           }, 0);
