@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,12 +12,14 @@ import {
   Star,
   Zap,
   Brain,
-  Send
+  Send,
+  AlertTriangle
 } from 'lucide-react';
 import { BookingWithDetails } from '@/types/booking';
 import { analyzeGuestProfile, generateBookingRecommendation, GuestProfile, BookingRecommendation } from '@/lib/bookings/smart-booking-service';
 import { sreLogger } from '@/lib/sre-logger';
 import { useApproveBooking, useRejectBooking } from '@/hooks/mutations/useBookingApproval';
+import { isPast, parseISO } from 'date-fns';
 
 interface SmartBookingActionsProps {
   booking: BookingWithDetails;
@@ -41,6 +42,17 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
   const [guestProfile, setGuestProfile] = useState<GuestProfile | null>(null);
   const [recommendation, setRecommendation] = useState<BookingRecommendation | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+
+  // Check if booking is in the past (disable actions)
+  const isBookingPast = useMemo(() => {
+    if (!booking.booking_date || !booking.end_time) return false;
+    try {
+      const bookingEndDateTime = parseISO(`${booking.booking_date}T${booking.end_time}`);
+      return isPast(bookingEndDateTime);
+    } catch {
+      return false;
+    }
+  }, [booking.booking_date, booking.end_time]);
 
   // Load guest analysis on component mount
   useEffect(() => {
@@ -219,58 +231,64 @@ export const SmartBookingActions: React.FC<SmartBookingActionsProps> = ({
               Azioni Rapide
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2 flex-wrap">
-              <Button 
-                onClick={handleApprove}
-                className="bg-green-600 hover:bg-green-700"
-                size="sm"
-                disabled={isApproving}
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                {isApproving ? 'Approvo...' : 'Approva'}
-              </Button>
-              
-              <Button 
-                variant="destructive" 
-                onClick={handleReject}
-                disabled={!rejectionReason || isRejecting}
-                size="sm"
-              >
-                <XCircle className="w-4 h-4 mr-2" />
-                {isRejecting ? 'Rifiuto...' : 'Rifiuta'}
-              </Button>
-              
-              <Button variant="outline" size="sm">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Richiedi Info
-              </Button>
-              
-              <Button variant="outline" size="sm">
-                <Star className="w-4 h-4 mr-2" />
-                Aggiungi a Preferiti
-              </Button>
+        <CardContent className="space-y-4">
+          {isBookingPast && (
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-md text-muted-foreground">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm">Questa prenotazione è scaduta. Le azioni non sono più disponibili.</span>
             </div>
+          )}
+          <div className="flex gap-2 flex-wrap">
+            <Button 
+              onClick={handleApprove}
+              className="bg-green-600 hover:bg-green-700"
+              size="sm"
+              disabled={isApproving || isBookingPast}
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              {isBookingPast ? 'Scaduta' : isApproving ? 'Approvo...' : 'Approva'}
+            </Button>
+            
+            <Button 
+              variant="destructive" 
+              onClick={handleReject}
+              disabled={!rejectionReason || isRejecting || isBookingPast}
+              size="sm"
+            >
+              <XCircle className="w-4 h-4 mr-2" />
+              {isBookingPast ? 'Scaduta' : isRejecting ? 'Rifiuto...' : 'Rifiuta'}
+            </Button>
+            
+            <Button variant="outline" size="sm" disabled={isBookingPast}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Richiedi Info
+            </Button>
+            
+            <Button variant="outline" size="sm">
+              <Star className="w-4 h-4 mr-2" />
+              Aggiungi a Preferiti
+            </Button>
+          </div>
 
-            {/* Rejection Reason */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Motivo del rifiuto (richiesto)
-              </label>
-              <Select onValueChange={setRejectionReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona un motivo..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {rejectionReasons.map((reason) => (
-                    <SelectItem key={reason} value={reason}>
-                      {reason}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
+          {/* Rejection Reason */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">
+              Motivo del rifiuto (richiesto)
+            </label>
+            <Select onValueChange={setRejectionReason} disabled={isBookingPast}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleziona un motivo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {rejectionReasons.map((reason) => (
+                  <SelectItem key={reason} value={reason}>
+                    {reason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
         </Card>
       )}
 
