@@ -23,8 +23,8 @@ const ANALYTICS_CONFIG = {
     apiHost: null // Using proxy via data-api attribute in index.html
   },
   gtag: {
-    measurementId: 'G-XXXXXXXXXX', // Replace with actual GA4 ID
-    enabled: false // Enable when ready
+    measurementId: 'G-MEASUREMENT_ID', // Replace with actual GA4 ID from Google Analytics
+    enabled: true // Enabled for launch readiness - requires valid ID
   }
 };
 

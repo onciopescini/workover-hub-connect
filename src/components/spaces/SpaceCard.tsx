@@ -20,6 +20,7 @@ import {
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
 import { frontendLogger } from '@/utils/frontend-logger';
+import { toast } from 'sonner';
 
 interface SpaceCardProps {
   space: Space;
@@ -80,14 +81,47 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick, variant = 
     );
   };
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Implement share logic
+    
+    const shareUrl = `${window.location.origin}/space/${space.id}`;
+    const shareTitle = space.name || space.title || 'Spazio Coworking';
+    
+    // Use Web Share API if available (mobile browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: `Scopri ${shareTitle} su Workover`,
+          url: shareUrl
+        });
+      } catch (err) {
+        // User cancelled or error - don't show toast for abort
+        if ((err as Error).name !== 'AbortError') {
+          toast.info('Condivisione non disponibile');
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copiato negli appunti!');
+      } catch {
+        toast.info('Funzionalità in arrivo!');
+      }
+    }
   };
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsLiked(!isLiked);
+    
+    // Show feedback - future: wire to addToFavorites from favorites-utils.ts
+    if (!isLiked) {
+      toast.success('Aggiunto ai preferiti!');
+    } else {
+      toast.info('Rimosso dai preferiti');
+    }
   };
 
   // --- SIMPLE VARIANT ---
