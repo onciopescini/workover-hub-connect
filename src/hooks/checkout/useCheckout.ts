@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useLogger } from '@/hooks/useLogger';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { createBookingDateTime } from '@/lib/date-time';
 import { reserveSlot, createCheckoutSession } from '@/services/api/bookingService';
+import { sreLogger } from '@/lib/sre-logger';
 import type { CoworkerFiscalData } from '@/types/booking';
 
 export interface CheckoutParams {
@@ -35,7 +36,6 @@ export interface UseCheckoutResult {
 
 export function useCheckout(): UseCheckoutResult {
   const [isLoading, setIsLoading] = useState(false);
-  const { debug, error: logError } = useLogger({ context: 'useCheckout' });
 
   const processCheckout = async (params: CheckoutParams): Promise<CheckoutResult> => {
     setIsLoading(true);
@@ -57,7 +57,7 @@ export function useCheckout(): UseCheckoutResult {
       const startIso = createBookingDateTime(dateStr, startTime).toISOString();
       const endIso = createBookingDateTime(dateStr, endTime).toISOString();
 
-      debug('Starting checkout flow', { spaceId, startIso, endIso });
+      sreLogger.debug('Starting checkout flow', { component: 'useCheckout', spaceId, startIso, endIso });
 
       // 2. Reserve slot via service
       const reservation = await reserveSlot({
@@ -71,45 +71,45 @@ export function useCheckout(): UseCheckoutResult {
       });
 
       if (!reservation.success) {
-        logError('Reservation failed', new Error(reservation.error || 'Unknown error'));
+        const errorMessage = reservation.error || 'Reservation failed';
+        sreLogger.error('Reservation failed', { component: 'useCheckout', spaceId, error: errorMessage });
+        toast.error(`Prenotazione fallita: ${errorMessage}`);
         return {
           success: false,
-          error: reservation.error || 'Reservation failed',
+          error: errorMessage,
           errorCode: reservation.errorCode || 'RESERVE_FAILED'
         };
       }
 
-      console.log("RESERVED SLOT ID:", reservation.bookingId);
+      sreLogger.debug('Reserved slot', { component: 'useCheckout', bookingId: reservation.bookingId });
 
       // 3. Create checkout session via service
-      const payload = {
-        booking_id: reservation.bookingId,
-        return_url: `${window.location.origin}/messages`
-      };
-      console.log("CHECKOUT PAYLOAD:", payload);
-      debug('Invoking create-checkout-v3', { bookingId: reservation.bookingId });
+      sreLogger.debug('Invoking create-checkout-v3', { component: 'useCheckout', bookingId: reservation.bookingId });
 
       const checkout = await createCheckoutSession(reservation.bookingId!);
 
       if (!checkout.success || !checkout.url) {
-        logError('Checkout failed', new Error(checkout.error || 'No checkout URL'));
+        const errorMessage = checkout.error || 'No checkout URL';
+        sreLogger.error('Checkout failed', { component: 'useCheckout', bookingId: reservation.bookingId, error: errorMessage });
+        toast.error(`Pagamento fallito: ${errorMessage}`);
         return {
           success: false,
-          error: checkout.error || 'Checkout failed',
+          error: errorMessage,
           errorCode: checkout.errorCode || 'CHECKOUT_FAILED'
         };
       }
 
       // 4. Redirect to Stripe
-      debug('Redirecting to Stripe', { url: checkout.url });
+      sreLogger.info('Checkout success, redirecting to Stripe', { component: 'useCheckout', url: checkout.url });
+      toast.success("Prenotazione confermata! Reindirizzamento a Stripe...");
       window.location.href = checkout.url;
 
       return { success: true, bookingId: reservation.bookingId || '' };
 
     } catch (err) {
       const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
-      console.error("CRITICAL FAILURE:", caughtError.message);
-      logError('Checkout Flow Failed', caughtError);
+      sreLogger.error('Checkout flow critical failure', { component: 'useCheckout', spaceId }, caughtError);
+      toast.error(`Errore imprevisto: ${caughtError.message}`);
       return {
         success: false,
         error: caughtError.message,
