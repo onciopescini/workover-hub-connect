@@ -863,6 +863,7 @@ export type Database = {
           checked_in_at: string | null
           checked_in_by: string | null
           created_at: string | null
+          deleted_at: string | null
           end_time: string | null
           fiscal_data: Json | null
           frozen_at: string | null
@@ -906,6 +907,7 @@ export type Database = {
           checked_in_at?: string | null
           checked_in_by?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           end_time?: string | null
           fiscal_data?: Json | null
           frozen_at?: string | null
@@ -949,6 +951,7 @@ export type Database = {
           checked_in_at?: string | null
           checked_in_by?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           end_time?: string | null
           fiscal_data?: Json | null
           frozen_at?: string | null
@@ -6736,6 +6739,7 @@ export type Database = {
           checked_in_at: string | null
           checked_in_by: string | null
           created_at: string | null
+          deleted_at: string | null
           end_time: string | null
           fiscal_data: Json | null
           frozen_at: string | null
@@ -6788,6 +6792,7 @@ export type Database = {
           checked_in_at: string | null
           checked_in_by: string | null
           created_at: string | null
+          deleted_at: string | null
           end_time: string | null
           fiscal_data: Json | null
           frozen_at: string | null
