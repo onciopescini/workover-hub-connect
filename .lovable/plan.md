@@ -1,6 +1,7 @@
 
-# DATABASE HEALTH REPORT
-## Workover Hub Connect - Foundation Layer Audit
+
+# SERVERLESS HEALTH REPORT
+## Workover Hub Connect - Compute Layer Audit
 
 ---
 
@@ -8,383 +9,443 @@
 
 | Metric | Score | Status |
 |--------|-------|--------|
-| **ERD Score** | **8.5/10** | Good with minor FK concerns |
-| **Security Score** | **8.0/10** | Solid, needs function hardening |
-| **Performance Score** | **7.5/10** | Well-indexed, some optimization needed |
-| **Data Integrity Score** | **7.0/10** | Orphaned records detected |
+| **Resilience Score** | **7.5/10** | Good with idempotency gaps |
+| **Security Score** | **8.0/10** | Solid, one credential exposure |
+| **Performance Score** | **8.5/10** | Well-optimized imports |
+| **Logging Score** | **7.0/10** | Mixed structured/emoji logging |
 
-**Overall Database Health: 7.8/10** - Production-ready with recommended maintenance
+**Overall Serverless Health: 7.8/10** - Production-ready with recommended hardening
 
 ---
 
-## 1. SCHEMA INTEGRITY ANALYSIS
+## 1. ERROR HANDLING & RETRIES ANALYSIS
 
-### 1.1 Foreign Key Configuration
+### 1.1 Idempotency Implementation
 
-The platform uses a thoughtful FK strategy:
+| Function | Idempotency Key | Implementation | Grade |
+|----------|----------------|----------------|-------|
+| `execute-payout` | `payout_${booking.id}` | Stripe API level | A |
+| `create-checkout-v3` | Header `Idempotency-Key` | DB lookup + Stripe API | A+ |
+| `stripe-webhooks` (main) | None | **MISSING** | D |
+| `stripe-webhooks` (handlers) | `stripe_event_id` column | DB-level check | A |
+| `host-approve-booking` | None | Compensating transaction | B |
+| `cancel-booking` | PI status check | Stripe state-based | B+ |
+| `admin-process-refund` | `charge_already_refunded` check | Error handling | B |
 
-| Relationship | ON DELETE | Assessment |
-|-------------|-----------|------------|
-| `bookings.space_id → spaces.id` | `SET NULL` | Correct - preserves booking history |
-| `bookings.user_id → profiles.id` | `CASCADE` | Correct - user deletion removes their bookings |
-| `payments.booking_id → bookings.id` | Not enforced | **WARNING** - 22 orphaned payments detected |
-| `space_reviews.booking_id → bookings.id` | `CASCADE` | Correct - but 4 orphaned records exist |
-| `conversations.booking_id → bookings.id` | `SET NULL` | Correct - preserves chat history |
-| `conversations.space_id → spaces.id` | `SET NULL` | Correct - space deletion keeps conversations |
+**Critical Finding**: The main `stripe-webhooks/index.ts` (35 lines) is a **SIMPLIFIED STUB** that bypasses the enhanced handlers with idempotency. If Stripe sends the same `checkout.session.completed` event twice, the booking could be double-confirmed.
 
-### 1.2 Soft-Delete Implementation (deleted_at)
-
-**Status: Properly Implemented**
-
-| Table | deleted_at Column | Partial Index | RLS Filter |
-|-------|-------------------|---------------|------------|
-| `bookings` | Yes | `idx_bookings_not_deleted` | Yes |
-| `spaces` | Yes | `idx_spaces_deleted_at` | Yes |
-
-**Consistency Check:**
-- All queries in RPCs and views filter `deleted_at IS NULL`
-- The `validate_and_reserve_slot` RPC does NOT currently filter by `deleted_at` - **Minor gap**
-
-### 1.3 Zombie Data Found
-
-```text
-CRITICAL FINDINGS:
-├── 22 orphaned payments (no matching booking_id)
-├── 4 orphaned space_reviews (no matching booking_id)
-└── 0 deleted bookings currently (soft-delete working)
+**Evidence** (stripe-webhooks/index.ts lines 19-29):
+```typescript
+if (event.type === "checkout.session.completed") {
+  const session = event.data.object;
+  const booking_id = session.metadata?.booking_id;
+  if (booking_id) {
+    await supabase
+      .from("bookings")
+      .update({ status: "confirmed", payment_status: "succeeded" })
+      .eq("id", booking_id);  // NO idempotency check!
+  }
+}
 ```
 
----
-
-## 2. PERFORMANCE ANALYSIS (INDEXING)
-
-### 2.1 Current Index Coverage
-
-The `bookings` table has **excellent** index coverage with 30+ indexes including:
-
-| Index Type | Examples | Assessment |
-|------------|----------|------------|
-| Primary lookups | `bookings_pkey`, `idx_bookings_id` | Good |
-| Status filters | `idx_bookings_space_status`, `idx_bookings_space_id_status` | Good |
-| Time-based | `idx_bookings_date`, `idx_bookings_space_date` | Good |
-| Partial (soft-delete) | `idx_bookings_not_deleted` | Excellent |
-| Frozen bookings | `idx_bookings_frozen_autocancel` | Excellent |
-
-### 2.2 Over-Indexing Warning
-
-The `bookings` table has **potential over-indexing**:
-- `idx_bookings_space` and `idx_bookings_space_id` are duplicates
-- `idx_bookings_space_status` and `idx_bookings_space_id_status` are duplicates
-- Each duplicate index slows INSERT/UPDATE by ~5-10%
-
-**Write Performance Impact at Scale:**
-```text
-Current: 6 bookings → negligible
-At 10k bookings: ~50ms INSERT overhead
-At 100k bookings: ~200ms INSERT overhead
+**Contrast with Enhanced Handler** (handlers/enhanced-checkout-handlers.ts lines 23-34):
+```typescript
+// IDEMPOTENCY CHECK: Previene doppi pagamenti
+if (eventId) {
+  const { data: existingPayment } = await supabaseAdmin
+    .from('payments')
+    .select('id')
+    .eq('stripe_event_id', eventId)
+    .maybeSingle();
+  
+  if (existingPayment) {
+    return { success: true, message: 'Duplicate event ignored' };
+  }
+}
 ```
 
-### 2.3 Missing Strategic Indexes
+### 1.2 HTTP Status Code Usage
 
-| Column/Pattern | Use Case | Recommendation |
-|----------------|----------|----------------|
-| `bookings.status` (standalone) | Admin dashboard filters | `CREATE INDEX idx_bookings_status ON bookings(status)` |
-| `payments.status` | Payment reconciliation | `CREATE INDEX idx_payments_status ON payments(status)` |
-| `profiles.stripe_connected` | Host verification queries | `CREATE INDEX idx_profiles_stripe_connected ON profiles(stripe_connected) WHERE stripe_connected = true` |
+| Function | 4xx (Client Error) | 5xx (Server Error) | Grade |
+|----------|-------------------|-------------------|-------|
+| `create-checkout-v3` | 400, 401, 405 | 500 | A |
+| `cancel-booking` | 400, 401, 403, 404, 405 | 500 | A |
+| `host-approve-booking` | 400, 401, 403, 404, 405 | 500 | A |
+| `stripe-webhooks` | 400 only | None | C |
+| `generate-invoice-pdf` | None | 500 only | C |
+| `send-email` | None | 500 only | C |
 
-### 2.4 Performance Risks at 100k Rows
+**Issue**: Several functions return 500 for all errors, making it impossible for clients to distinguish retryable vs non-retryable failures.
 
-| Query Pattern | Current Behavior | Risk at Scale |
-|---------------|------------------|---------------|
-| `validate_and_reserve_slot` | Table-level LOCK | **HIGH** - Serializes all booking attempts |
-| Host payment lookup | JOIN through bookings → spaces | Medium - Consider denormalization |
-| Search by radius | PostGIS functions | Low - Well-optimized |
+### 1.3 Retry Mechanism
 
----
+The `retry-failed-webhooks` function implements proper retry logic:
+- Max 3 retries per event
+- Incremental retry count via RPC
+- Error logging to `webhook_events` table
+- 10-event batch limit
 
-## 3. SECURITY DEEP DIVE (RLS)
-
-### 3.1 Linter Findings Summary
-
-| Issue Type | Count | Severity |
-|------------|-------|----------|
-| RLS Disabled Tables | 1 | ERROR (`spatial_ref_sys` - PostGIS, can ignore) |
-| Security Definer Views | 2 | ERROR (already fixed with `security_invoker`) |
-| Functions Missing `search_path` | 36 | WARN |
-| Permissive RLS (`USING true`) | 15 | WARN |
-
-### 3.2 USING(true) Policy Analysis
-
-| Table | Policy | Risk Assessment |
-|-------|--------|-----------------|
-| `bookings` | `Allow authenticated insert` | **Acceptable** - INSERT only, validated in RPC |
-| `vat_rates` | `Anyone can view` | Acceptable - Reference data |
-| `legal_documents_versions` | `Anyone can view` | Acceptable - Public legal docs |
-| `stripe_accounts` | `System can manage` | **CONCERN** - Needs role check |
-| `active_sessions` | `System manage` | **CONCERN** - Should be service-role only |
-
-### 3.3 Coworker Data Isolation Verification
-
-**Question:** Can Coworker A see Coworker B's sensitive data?
-
-| Table | Policy Check | Result |
-|-------|--------------|--------|
-| `payments` | `auth.uid() = user_id OR host_of_space` | **SAFE** |
-| `tax_details` | `auth.uid() = profile_id` | **SAFE** |
-| `invoices` | `auth.uid() = host_id OR auth.uid() = coworker_id` | **SAFE** |
-| `bookings` | `auth.uid() = user_id OR host_of_space` | **SAFE** |
-| `profiles` | `.select()` with explicit columns | **SAFE** (PII fix applied) |
-
-### 3.4 auth.uid() Performance Issue
-
-**15 policies** use bare `auth.uid()` instead of `(SELECT auth.uid())`:
-
-```sql
--- Slow (re-evaluates per row):
-USING (auth.uid() = user_id)
-
--- Fast (evaluates once):
-USING ((SELECT auth.uid()) = user_id)
-```
-
-Affected tables: `bookings`, `payments`, `space_reviews`, `user_notifications`, `payouts`, `profiles`
+**Grade: A**
 
 ---
 
-## 4. RPC & TRIGGER LOGIC ANALYSIS
+## 2. SECRET MANAGEMENT ANALYSIS
 
-### 4.1 validate_and_reserve_slot Atomicity
+### 2.1 Environment Variable Usage
 
-**Current Implementation:**
-```sql
--- Line 54: Table-level lock
-LOCK TABLE bookings IN SHARE ROW EXCLUSIVE MODE;
+| Secret | Deno.env.get() | Grade |
+|--------|---------------|-------|
+| `STRIPE_SECRET_KEY` | Yes | A |
+| `STRIPE_WEBHOOK_SECRET` | Yes | A |
+| `RESEND_API_KEY` | Yes | A |
+| `MAPBOX_ACCESS_TOKEN` | Yes | A |
+| `SUPABASE_URL` | Yes | A |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | A |
 
--- Line 57: Cleanup expired
-PERFORM cleanup_expired_slots();
+### 2.2 CRITICAL: Hardcoded Fallback Credentials
 
--- Lines 76-84: Conflict check
-SELECT COUNT(*) INTO conflict_count
-FROM bookings
-WHERE space_id = space_id_param
-  AND status IN ('pending', 'confirmed')
+**File**: `supabase/functions/send-email/index.ts` (lines 43-45)
+
+```typescript
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') || 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
+  Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   ...
-```
-
-**Race Condition Risk: LOW** (table lock prevents concurrent inserts)
-
-**Scalability Risk: HIGH**
-- `SHARE ROW EXCLUSIVE` blocks ALL concurrent booking attempts across ALL spaces
-- At 100 concurrent users: serialized to ~1 booking/second
-
-**Recommended Fix:**
-```sql
--- Use row-level advisory lock instead:
-SELECT pg_advisory_xact_lock(hashtext(space_id_param::text || date_param::text));
-```
-
-### 4.2 Missing Self-Booking Check in RPC
-
-The `check_self_booking` function was created, but it's **not called** inside `validate_and_reserve_slot`:
-
-```sql
--- Current RPC does NOT have:
-IF public.check_self_booking(space_id_param, user_id_param) THEN
-  RETURN json_build_object('success', false, 'error', 'cannot_book_own_space');
-END IF;
-```
-
-**Status:** Frontend guard exists, but database-level enforcement missing.
-
-### 4.3 Functions Missing search_path
-
-**20 SECURITY DEFINER functions** without `SET search_path`:
-
-| Function | Risk |
-|----------|------|
-| `is_admin` | HIGH - SQL injection via schema poisoning |
-| `validate_and_reserve_slot` | HIGH - Payment/booking integrity |
-| `handle_new_user` | MEDIUM - Account creation |
-| `calculate_space_weighted_rating` | LOW - Read-only |
-
----
-
-## 5. THE CLEAN-UP LIST
-
-### Priority 1: Critical Data Integrity (Execute Now)
-
-```sql
--- 1. Investigate and clean orphaned payments
-SELECT p.id, p.booking_id, p.amount, p.created_at
-FROM payments p
-WHERE NOT EXISTS (SELECT 1 FROM bookings b WHERE b.id = p.booking_id)
-LIMIT 25;
-
--- After investigation, either:
--- a) Re-link to correct booking_id if data recovery possible
--- b) Soft-delete or archive orphaned records
-
--- 2. Clean orphaned reviews
-DELETE FROM space_reviews sr
-WHERE NOT EXISTS (SELECT 1 FROM bookings b WHERE b.id = sr.booking_id);
-```
-
-### Priority 2: Performance Optimization
-
-```sql
--- 1. Remove duplicate indexes (run CONCURRENTLY in off-hours)
-DROP INDEX CONCURRENTLY IF EXISTS idx_bookings_space;
-DROP INDEX CONCURRENTLY IF EXISTS idx_bookings_space_status;
-
--- 2. Add missing indexes
-CREATE INDEX CONCURRENTLY idx_bookings_status 
-ON bookings(status) WHERE deleted_at IS NULL;
-
-CREATE INDEX CONCURRENTLY idx_payments_status 
-ON payments(status);
-
-CREATE INDEX CONCURRENTLY idx_profiles_stripe_active 
-ON profiles(id) WHERE stripe_connected = true;
-```
-
-### Priority 3: Security Hardening
-
-```sql
--- 1. Fix all SECURITY DEFINER functions with missing search_path
-CREATE OR REPLACE FUNCTION public.is_admin(user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public  -- ADD THIS LINE
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM admins WHERE admins.user_id = $1
-  );
-$$;
-
--- 2. Update RLS policies for performance
--- Example for bookings:
-DROP POLICY IF EXISTS "bookings_select_booker_or_workspace_host" ON bookings;
-CREATE POLICY "bookings_select_booker_or_workspace_host" ON bookings
-FOR SELECT USING (
-  (SELECT auth.uid()) = user_id OR 
-  EXISTS (
-    SELECT 1 FROM spaces s 
-    WHERE s.id = bookings.space_id AND s.host_id = (SELECT auth.uid())
-  )
 );
 ```
 
-### Priority 4: RPC Enhancement
+**Risk**: The anon key is exposed in the codebase. While anon keys are technically "publishable", this is a bad practice for Edge Functions because:
+1. It creates confusion about which key should be used
+2. If env vars fail, the function silently uses the hardcoded key
+3. Code reviews may miss the embedded credential
 
-```sql
--- Update validate_and_reserve_slot to:
--- 1. Use advisory lock instead of table lock
--- 2. Integrate self-booking check
--- 3. Filter deleted bookings
+**Recommendation**: Remove fallback values; fail fast if env vars are missing.
 
-CREATE OR REPLACE FUNCTION public.validate_and_reserve_slot(
-  space_id_param UUID,
-  date_param DATE,
-  start_time_param TIME,
-  end_time_param TIME,
-  user_id_param UUID,
-  confirmation_type_param TEXT
-) RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $function$
-DECLARE
-  conflict_count INTEGER := 0;
-  reservation_time TIMESTAMPTZ := NOW() + INTERVAL '5 minutes';
-  new_booking_id UUID;
-  space_host_id UUID;
-  space_title TEXT;
-  space_confirmation_type TEXT;
-BEGIN
-  -- Input validation (existing)
-  ...
+### 2.3 Secrets Inventory vs Usage
 
-  -- NEW: Check self-booking
-  IF public.check_self_booking(space_id_param, user_id_param) THEN
-    RETURN json_build_object(
-      'success', false,
-      'error', 'cannot_book_own_space'
+| Configured Secret | Used In Functions |
+|-------------------|-------------------|
+| `STRIPE_SECRET_KEY` | 12+ functions |
+| `STRIPE_WEBHOOK_SECRET` | stripe-webhooks |
+| `RESEND_API_KEY` | send-email |
+| `MAPBOX_ACCESS_TOKEN` | get-mapbox-token |
+| `SERVICE_ROLE_KEY` | All admin functions |
+
+**Missing Configuration Check**: None of the functions validate that required secrets are present at startup. They fail at runtime when the secret is first accessed.
+
+---
+
+## 3. PERFORMANCE ANALYSIS (COLD STARTS)
+
+### 3.1 Import Efficiency
+
+| Function | Heavy Libraries | Import Method | Grade |
+|----------|----------------|---------------|-------|
+| `create-checkout-v3` | None (uses fetch) | Native | A+ |
+| `execute-payout` | Stripe SDK | Top-level | B |
+| `stripe-webhooks` | Stripe SDK | Top-level | B |
+| `generate-invoice-pdf` | None (text only) | N/A | A |
+| `image-optimizer` | ImageScript | Dynamic import | A+ |
+| `send-email` | Resend, Zod | Top-level | B |
+
+**Best Practice Example** (image-optimizer/index.ts line 186):
+```typescript
+// Dynamic import - only loaded when needed
+const { Image } = await import('https://deno.land/x/imagescript@1.2.15/mod.ts')
+```
+
+### 3.2 Timeout Risks
+
+| Function | Potential Long Operation | Timeout Risk |
+|----------|------------------------|--------------|
+| `generate-gdpr-export` | 14+ sequential DB queries | HIGH |
+| `generate-dac7-report` | Loop over all hosts | MEDIUM |
+| `execute-payout` | 50 Stripe API calls in loop | HIGH |
+| `reconcile-payments` | Loop over all connected hosts | MEDIUM |
+| `image-optimizer` | Image processing | LOW (async) |
+
+**Critical Pattern in generate-gdpr-export** (lines 25-267):
+The function makes 14 sequential database queries with checkpoint logging. Each query is wrapped in try/catch but executed serially, leading to cumulative latency.
+
+**Recommendation**: Use `Promise.all()` or `Promise.allSettled()` for independent queries.
+
+### 3.3 Async Processing Pattern
+
+**Good Example** (image-optimizer/index.ts lines 68-70):
+```typescript
+// Start background processing
+// Process image asynchronously
+processImageAsync(supabaseClient, jobId, filePath, user.id).catch(console.error)
+```
+
+The function returns immediately with a job ID while heavy processing continues in the background.
+
+---
+
+## 4. LOGGING ANALYSIS (SRE READINESS)
+
+### 4.1 Logging Patterns Inventory
+
+| Pattern | Example | Functions Using | SRE Grade |
+|---------|---------|-----------------|-----------|
+| Emoji console.log | `console.log('✅ ...')` | 15+ | C |
+| Structured JSON | `console.error(JSON.stringify({...}))` | ErrorHandler | B+ |
+| Tagged prefix | `[EXECUTE-PAYOUT]` | 10+ | B |
+| No logging | (silent functions) | 3-4 | F |
+
+### 4.2 ErrorHandler Implementation
+
+**File**: `supabase/functions/shared/error-handler.ts`
+
+```typescript
+static logError(context: string, error: any, metadata?: Record<string, any>) {
+  const errorData = {
+    context,
+    error: error?.message || error,
+    timestamp: new Date().toISOString(),
+    ...metadata
+  };
+  
+  if (this.isProduction) {
+    console.error(JSON.stringify(errorData));  // Structured for production
+  } else {
+    console.error(`🔴 ${context}:`, error);    // Human-readable for dev
+  }
+}
+```
+
+**Good**: Production/dev mode separation
+**Missing**: Correlation ID, request tracing, log levels
+
+### 4.3 Functions Without ErrorHandler
+
+| Function | Logging Method | Issue |
+|----------|---------------|-------|
+| `stripe-webhooks/index.ts` | Plain console.log | No structure |
+| `freeze-bookings` | None | Silent failures |
+| `schedule-payouts` | Plain console.log | No error details |
+| `generate-dac7-report` | Plain console.log | No structure |
+
+---
+
+## 5. THE "FRAGILE" LIST
+
+### 5.1 Functions That May Crash Under Load
+
+| Function | Risk Factor | Impact | Mitigation |
+|----------|-------------|--------|------------|
+| `stripe-webhooks/index.ts` | No idempotency | Double payments | Route to enhanced handlers |
+| `execute-payout` | 50 Stripe calls sequential | Timeout | Batch/queue processing |
+| `generate-gdpr-export` | 14 sequential queries | Timeout | Parallelize queries |
+| `reconcile-payments` | N Stripe balance calls | Rate limiting | Add delays/batching |
+| `booking-expiry-check` | Unbatched Stripe calls | Timeout | Add pagination |
+
+### 5.2 Race Condition Risks
+
+| Function | Scenario | Current Protection |
+|----------|----------|-------------------|
+| `host-approve-booking` | Two hosts approve same booking | Status check, compensating refund |
+| `cancel-booking` | Guest and host cancel simultaneously | DB status as source of truth |
+| `validate_and_reserve_slot` | Two users book same slot | Advisory lock (fixed in DB audit) |
+
+---
+
+## 6. SECURITY RISKS
+
+### 6.1 Exposed Credentials
+
+| File | Issue | Severity |
+|------|-------|----------|
+| `send-email/index.ts` | Hardcoded anon key fallback | MEDIUM |
+
+### 6.2 CORS Configuration
+
+All functions use permissive CORS:
+```typescript
+'Access-Control-Allow-Origin': '*'
+```
+
+**Assessment**: Acceptable for public API functions. The enhanced security headers in `_shared/security-headers.ts` provide additional protection.
+
+### 6.3 Authorization Patterns
+
+| Pattern | Functions Using | Grade |
+|---------|-----------------|-------|
+| Bearer token → getUser() | 20+ | A |
+| Service role for cron jobs | reconcile-payments, schedule-payouts | A |
+| Admin role check via RPC | admin-*, monitoring-report | A |
+| No auth (public) | health-check, generate-sitemap | A (by design) |
+
+---
+
+## 7. THE "REFACTOR" PLAN
+
+### Priority 1: Critical - Webhook Idempotency (Day 1)
+
+**Problem**: Main webhook handler lacks idempotency protection.
+
+**Solution**: Route the main handler to use `EnhancedCheckoutHandlers`:
+
+```typescript
+// supabase/functions/stripe-webhooks/index.ts
+import { EnhancedCheckoutHandlers } from "./handlers/enhanced-checkout-handlers.ts";
+
+Deno.serve(async (req: Request) => {
+  // ... signature validation ...
+  
+  if (event.type === "checkout.session.completed") {
+    const result = await EnhancedCheckoutHandlers.handleCheckoutSessionCompleted(
+      event.data.object,
+      supabase,
+      event.id  // Pass event ID for idempotency
     );
-  END IF;
+    
+    if (!result.success) {
+      return new Response(JSON.stringify({ error: result.error }), { status: 400 });
+    }
+  }
+  
+  return new Response(JSON.stringify({ received: true }), { status: 200 });
+});
+```
 
-  -- NEW: Row-level advisory lock (scalable)
-  PERFORM pg_advisory_xact_lock(
-    hashtext(space_id_param::text || date_param::text)
-  );
+### Priority 2: High - Remove Hardcoded Credentials (Day 1)
+
+**File**: `supabase/functions/send-email/index.ts`
+
+**Change**:
+```typescript
+// BEFORE (lines 43-45)
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') || 'https://khtqwzvrxzsgfhsslwyz.supabase.co',
+  Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6...',
+
+// AFTER
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing required environment variables: SUPABASE_URL, SUPABASE_ANON_KEY');
+}
+const supabase = createClient(supabaseUrl, supabaseKey,
+```
+
+### Priority 3: Medium - Parallelize GDPR Export (Week 1)
+
+**File**: `supabase/functions/generate-gdpr-export/index.ts`
+
+**Change**: Replace sequential queries with parallel execution:
+
+```typescript
+// BEFORE: 14 sequential queries (lines 48-257)
+const { data: profile } = await supabase.from('profiles')...
+const { data: bookings } = await supabase.from('bookings')...
+// ...etc
+
+// AFTER: Parallel queries
+const [
+  profileResult,
+  bookingsResult,
+  spacesResult,
+  messagesResult,
+  reviewsGivenResult,
+  reviewsReceivedResult,
+  connectionsResult,
+  paymentsResult,
+  notificationsResult,
+  gdprRequestsResult
+] = await Promise.allSettled([
+  supabase.from('profiles').select('*').eq('id', userId).single(),
+  supabase.from('bookings').select('*').eq('user_id', userId),
+  supabase.from('spaces').select('*').eq('host_id', userId),
+  supabase.from('messages').select('*').eq('sender_id', userId),
+  supabase.from('booking_reviews').select('*').eq('author_id', userId),
+  supabase.from('booking_reviews').select('*').eq('target_id', userId),
+  supabase.from('connections').select('*').or(`sender_id.eq.${userId},receiver_id.eq.${userId}`),
+  supabase.from('payments').select('*').eq('user_id', userId),
+  supabase.from('user_notifications').select('*').eq('user_id', userId),
+  supabase.from('gdpr_requests').select('*').eq('user_id', userId)
+]);
+```
+
+### Priority 4: Medium - Standardize Error Logging (Week 1)
+
+**Action**: Create and enforce use of a standardized logger wrapper:
+
+```typescript
+// supabase/functions/_shared/sre-logger.ts
+export class SRELogger {
+  private static correlationId: string | null = null;
   
-  -- Cleanup expired slots
-  PERFORM cleanup_expired_slots();
+  static setCorrelationId(id: string) {
+    this.correlationId = id;
+  }
   
-  -- Conflict check - ADD deleted_at filter
-  SELECT COUNT(*) INTO conflict_count
-  FROM bookings
-  WHERE space_id = space_id_param
-    AND booking_date = date_param
-    AND deleted_at IS NULL  -- NEW
-    AND status IN ('pending', 'confirmed')
-    AND (
-      (start_time < end_time_param AND end_time > start_time_param) OR
-      (slot_reserved_until > NOW() AND start_time < end_time_param AND end_time > start_time_param)
-    );
-  
-  ... -- rest unchanged
-END;
-$function$;
+  static log(level: 'info' | 'warn' | 'error', message: string, data?: Record<string, any>) {
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      correlationId: this.correlationId,
+      ...data
+    };
+    
+    const output = JSON.stringify(logEntry);
+    
+    switch (level) {
+      case 'error': console.error(output); break;
+      case 'warn': console.warn(output); break;
+      default: console.log(output);
+    }
+  }
+}
+```
+
+### Priority 5: Low - Add Batching to Payout Execution (Week 2)
+
+**File**: `supabase/functions/execute-payout/index.ts`
+
+**Change**: Add delay between Stripe calls to avoid rate limiting:
+
+```typescript
+// Add after line 86 (after stripe.transfers.create)
+await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between calls
 ```
 
 ---
 
-## 6. SUMMARY SCORECARD
+## 8. VERIFICATION CHECKLIST
+
+After implementing fixes:
+
+- [ ] Send duplicate webhook event to stripe-webhooks - verify only one payment created
+- [ ] Remove env vars from send-email - verify function throws clear error
+- [ ] Run generate-gdpr-export with large dataset - verify completes under 30s
+- [ ] Check Edge Function logs for JSON-structured output
+- [ ] Trigger execute-payout with 50+ bookings - verify no Stripe rate limiting
+
+---
+
+## 9. FILES TO MODIFY
+
+| File | Priority | Change Summary |
+|------|----------|----------------|
+| `supabase/functions/stripe-webhooks/index.ts` | P1 | Route to enhanced handlers with idempotency |
+| `supabase/functions/send-email/index.ts` | P2 | Remove hardcoded credentials, fail fast |
+| `supabase/functions/generate-gdpr-export/index.ts` | P3 | Parallelize queries with Promise.allSettled |
+| `supabase/functions/_shared/sre-logger.ts` | P4 | Create standardized SRE logging utility |
+| `supabase/functions/execute-payout/index.ts` | P5 | Add rate limiting delays |
+
+---
+
+## 10. SUMMARY SCORECARD
 
 | Category | Issue | Impact | Effort | Priority |
 |----------|-------|--------|--------|----------|
-| Orphaned Payments | 22 records | Data integrity | Low | P1 |
-| Table Lock in RPC | Serializes bookings | Performance | Medium | P1 |
-| Functions w/o search_path | 36 functions | Security | Medium | P2 |
-| auth.uid() performance | 15 policies | Query speed | Medium | P2 |
-| Duplicate indexes | 2-4 indexes | Write speed | Low | P3 |
-| Self-booking in RPC | Not enforced | Logic gap | Low | P3 |
+| Webhook Idempotency | Main handler bypasses protection | Double payments | Low | P1 |
+| Hardcoded Credentials | Anon key in send-email | Security hygiene | Low | P2 |
+| Sequential Queries | GDPR export timeout risk | User experience | Medium | P3 |
+| Mixed Logging | Inconsistent log formats | SRE debugging | Medium | P4 |
+| Rate Limiting | execute-payout may hit limits | Payout delays | Low | P5 |
 
----
+**Post-Refactor Target Score: 9.0/10**
 
-## 7. VERIFICATION QUERIES
-
-After implementing fixes, run these to validate:
-
-```sql
--- Verify no orphaned payments remain
-SELECT COUNT(*) FROM payments p
-WHERE NOT EXISTS (SELECT 1 FROM bookings b WHERE b.id = p.booking_id);
-
--- Verify functions have search_path
-SELECT proname, proconfig 
-FROM pg_proc p
-JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE n.nspname = 'public' AND prosecdef = true
-AND (proconfig IS NULL OR NOT proconfig::text LIKE '%search_path%');
-
--- Verify advisory lock is being used (check pg_locks during booking)
-SELECT * FROM pg_locks WHERE locktype = 'advisory';
-```
-
----
-
-## TECHNICAL IMPLEMENTATION NOTES
-
-### Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `supabase/migrations/YYYYMMDDHHMMSS_cleanup_orphaned_records.sql` | Delete orphaned reviews, archive orphaned payments |
-| `supabase/migrations/YYYYMMDDHHMMSS_optimize_indexes.sql` | Remove duplicates, add missing indexes |
-| `supabase/migrations/YYYYMMDDHHMMSS_harden_functions.sql` | Add `SET search_path` to 36 functions |
-| `supabase/migrations/YYYYMMDDHHMMSS_update_validate_rpc.sql` | Add advisory lock, self-booking check, deleted_at filter |
-| `supabase/migrations/YYYYMMDDHHMMSS_optimize_rls_policies.sql` | Update 15 policies to use `(SELECT auth.uid())` |
