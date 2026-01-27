@@ -87,6 +87,7 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !booking) {
+      console.error(`[HOST-REJECT] Booking not found: ${booking_id}, Error: ${fetchError?.message}`);
       return new Response(
         JSON.stringify({ error: "Booking not found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
@@ -108,6 +109,7 @@ serve(async (req) => {
 
     // 6. SECURITY CHECKS
     if (space.host_id !== user.id) {
+      console.error(`[HOST-REJECT] Host mismatch: Expected ${space.host_id}, got ${user.id}`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: You are not the host of this space" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }

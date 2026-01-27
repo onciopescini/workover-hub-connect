@@ -150,7 +150,26 @@ serve(async (req) => {
           console.warn(`[HOST-APPROVE] No payment intent ID found on booking. Proceeding without capture.`);
       }
 
-      // Step B: Update Database
+      // Step B: Update Payment Status BEFORE Booking Confirmation
+      // This satisfies the guard_confirm_without_success trigger
+      if (paymentIntentId) {
+        const { error: paymentUpdateError } = await supabaseAdmin
+          .from("payments")
+          .update({
+            payment_status: 'completed',
+            payment_status_enum: 'succeeded',
+            capture_status: 'captured'
+          })
+          .eq("booking_id", booking_id);
+          
+        if (paymentUpdateError) {
+          console.error(`[HOST-APPROVE] Failed to update payment status:`, paymentUpdateError);
+          throw new Error(`Payment status update failed: ${paymentUpdateError.message}`);
+        }
+        console.log(`[HOST-APPROVE] Payment status updated to succeeded`);
+      }
+
+      // Step C: Update Booking Status (trigger will now pass)
       const { error: updateError } = await supabaseAdmin
         .from("bookings")
         .update({
