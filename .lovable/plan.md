@@ -1,479 +1,260 @@
 
-# Day 3: Service Layer Migration - Stripe & Admin Services
+# Day 4: Type System Unification - Gold Standard Implementation
 
-## Overview
+## Executive Summary
 
-This task creates two new services (`stripeService.ts` and `adminService.ts`) following the established pattern from `bookingService.ts`, while also fixing the pre-existing build errors that are blocking deployment.
-
----
-
-## Current State Analysis
-
-### Build Errors to Fix First
-
-Before implementing the new services, we need to fix **24 TypeScript build errors** that are blocking deployment:
-
-| Category | Count | Files |
-|----------|-------|-------|
-| `unknown` not assignable to `ReactNode` | 4 | `NotificationCenter.tsx`, `NotificationItem.tsx` |
-| `userId` undefined issue | 1 | `BookingForm.tsx` |
-| Enum string literal mismatches | 3 | `SpaceForm.tsx` |
-| Test `Location` type errors | 2 | `useCheckout.test.ts`, `useCheckoutReservationFailure.test.ts` |
-| Realtime subscription overloads | 2 | `useConnectionRequests.ts` |
-| `RawBookingData` type mismatches | 4 | `useCoworkerBookings.ts`, `useEnhancedBookings.ts`, `useHostBookings.ts` |
-| `useBookingsQuery` type errors | 4 | `useBookingsQuery.ts`, `useHostDashboardQuery.ts` |
-
-### Files with Direct Supabase Calls to Migrate
-
-| File | Current Pattern | Target Service |
-|------|----------------|----------------|
-| `StripeConnectButton.tsx` | `supabase.functions.invoke('create-connect-onboarding-link')` | `stripeService` |
-| `useStripeStatus.ts` | `supabase.functions.invoke('check-stripe-status')` | `stripeService` |
-| `useStripePayouts.ts` | `supabase.functions.invoke('get-stripe-payouts')` | `stripeService` |
-| `AdminBookingsPage.tsx` | `supabase.rpc('admin_get_bookings')` | `adminService` |
-| `useAdminBookings.ts` | Complex `supabase.from('bookings')...` | `adminService` |
+This task addresses the root cause of 10+ cascading TypeScript build errors by creating a unified type system that properly bridges the gap between Supabase's database types and the application's domain models. The key issues stem from `exactOptionalPropertyTypes: true` in the TypeScript config, which requires explicit handling of `undefined` vs `null` values.
 
 ---
 
-## Implementation Steps
+## Problem Analysis
 
-### Phase 1: Fix Critical Build Errors (Priority)
+### Root Cause: Type Incompatibility Hierarchy
 
-#### 1.1 NotificationCenter.tsx & NotificationItem.tsx
-
-**Issue**: `Type 'unknown' is not assignable to type 'ReactNode'`
-
-**Root Cause**: `metadata` is `Record<string, unknown>` and TypeScript doesn't allow rendering `unknown` directly.
-
-**Fix**: Already using `String()` cast, but need to ensure JSX compatibility by wrapping in fragments or explicit type assertions.
-
-```typescript
-// Before (line 235-236)
-{notification.metadata["sender_name"] && (
-  <span>Da: {String(notification.metadata["sender_name"])}</span>
-)}
-
-// After - ensure proper fragment wrapping
-{notification.metadata["sender_name"] != null && (
-  <span>Da: {String(notification.metadata["sender_name"])}</span>
-)}
+```
+Supabase Query Results (undefined for missing relations)
+          ↓
+   RawBookingData interface (expects null)
+          ↓
+   Transform functions (type mismatch)
+          ↓
+   BookingWithDetails (strict status enum)
 ```
 
-#### 1.2 BookingForm.tsx
+The TypeScript error `Type 'undefined' is not assignable to type '... | null'` occurs because:
+1. Supabase returns `undefined` for optional relations
+2. Our `RawBookingData` type defines `payments?: unknown[] | null` 
+3. With `exactOptionalPropertyTypes: true`, these are incompatible
 
-**Issue**: `userId: string | undefined` not assignable to `userId: string`
+### Build Errors to Fix
 
-**Fix**: Add early return or guard clause for undefined userId.
-
-#### 1.3 SpaceForm.tsx
-
-**Issue**: Enum string assignments failing strict checks.
-
-**Fix**: Use type assertions for Zod enum fields: `as "home" | "outdoor" | "professional"`.
-
-#### 1.4 useCheckout.test.ts files
-
-**Issue**: Mock `window.location` type incompatibility.
-
-**Fix**: Use proper TypeScript assertion for Location mock.
-
-#### 1.5 useConnectionRequests.ts
-
-**Issue**: Realtime subscription overload error.
-
-**Fix**: Use correct Supabase realtime channel syntax.
-
-#### 1.6 RawBookingData Type Mismatches
-
-**Issue**: `space_id: string | null` vs expected `string`.
-
-**Fix**: Update `RawBookingData` type to allow `null` for optional fields.
+| File | Error Type | Root Cause |
+|------|-----------|------------|
+| `useCoworkerBookings.ts:44` | payments type mismatch | RawBookingData doesn't accept `undefined` |
+| `useEnhancedBookings.ts:64-65` | payments type mismatch | Same as above |
+| `useHostBookings.ts:59` | payments type mismatch | Same as above |
+| `useAchievements.ts:41` | Realtime overload | Wrong generic type syntax |
+| `useAdminUsers.ts:93` | system_roles incompatible | UserRole has wrong fields |
+| `useAnalytics.ts:75` | props undefined/unknown | Interface mismatch |
+| `useDistributedCache.ts:51` | unknown ≠ Json | Type assertion needed |
+| `useHostPayments.ts:49-51` | QueryFn return type | Query result not matching HostPayment[] |
 
 ---
 
-### Phase 2: Create stripeService.ts
+## Implementation Plan
 
-Create `src/services/api/stripeService.ts`:
+### Phase 1: Fix `RawBookingData` Type Definition
+
+**File: `src/hooks/queries/bookings/useBookingTransforms.ts`**
+
+The local `RawBookingData` interface needs to accept `undefined` from Supabase queries:
 
 ```typescript
-/**
- * Stripe Service Layer
- * 
- * Handles all Stripe Connect operations with proper error handling
- * and type safety.
- */
-
-import { supabase } from '@/integrations/supabase/client';
-
-// Supabase project constants
-const SUPABASE_URL = 'https://khtqwzvrxzsgfhsslwyz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-
-// ============= TYPES =============
-
-export interface StripeAccountStatus {
-  connected: boolean;
-  accountId: string | null;
-  chargesEnabled: boolean;
-  payoutsEnabled: boolean;
-  detailsSubmitted: boolean;
-  onboardingStatus: 'none' | 'pending' | 'completed';
-}
-
-export interface StripeOnboardingResult {
-  success: boolean;
-  url?: string;
-  stripeAccountId?: string;
-  error?: string;
-}
-
-export interface StripePayoutData {
-  availableBalance: number;
-  pendingBalance: number;
-  currency: string;
-  lastPayout: {
-    amount: number;
-    arrivalDate: string;
-    status: string;
-  } | null;
-}
-
-// ============= METHODS =============
-
-/**
- * Check and update Stripe account connection status.
- * Calls the check-stripe-status Edge Function.
- */
-export async function checkAccountStatus(): Promise<StripeAccountStatus> {
-  const { data, error } = await supabase.functions.invoke('check-stripe-status');
+interface RawBookingData {
+  // ... existing fields ...
   
-  if (error) throw new Error(`Stripe status check failed: ${error.message}`);
-  
-  return {
-    connected: data?.connected ?? false,
-    accountId: data?.account_id ?? null,
-    chargesEnabled: data?.charges_enabled ?? false,
-    payoutsEnabled: data?.payouts_enabled ?? false,
-    detailsSubmitted: data?.details_submitted ?? false,
-    onboardingStatus: data?.onboarding_status ?? 'none'
-  };
+  // Fix: Accept undefined OR null to match Supabase query returns
+  payments?: unknown[] | null | undefined;
 }
+```
 
-/**
- * Create or get Stripe Connect onboarding/dashboard link.
- * Uses native fetch for full header control.
- */
-export async function createOnboardingLink(): Promise<StripeOnboardingResult> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError || !sessionData.session?.access_token) {
-    return { success: false, error: 'Session expired, please login again' };
-  }
-  
-  try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/create-connect-onboarding-link`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${sessionData.session.access_token}`,
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok || data.error) {
-      return { success: false, error: data.error || 'Failed to create onboarding link' };
+**Alternative approach**: Keep the type strict but add a normalization step in the transform functions that converts `undefined` to `null` before processing.
+
+### Phase 2: Fix `UserRole` Type to Match Database Schema
+
+**File: `src/types/admin-user.ts`**
+
+The database `user_roles` table has `assigned_at` and `assigned_by` columns, NOT `created_at` and `created_by`. The current type is wrong:
+
+**Current (Wrong):**
+```typescript
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role: SystemRole;
+  created_at: string | null;    // ❌ Doesn't exist
+  created_by: string | null;    // ❌ Doesn't exist
+  assigned_at?: string | null;  // ❌ Optional, but mandatory in DB
+  assigned_by?: string | null;  // ❌ Optional, but mandatory in DB
+}
+```
+
+**Correct (Database Schema):**
+```typescript
+export interface UserRole {
+  id: string;
+  user_id: string;
+  role: SystemRole;
+  assigned_at: string | null;   // ✅ Matches DB
+  assigned_by: string | null;   // ✅ Matches DB
+}
+```
+
+### Phase 3: Fix `useAdminUsers.ts` Mapping
+
+**File: `src/hooks/useAdminUsers.ts`**
+
+The mapping at line 93-113 creates objects that don't match `UserRole`. Since the database doesn't have `created_at`/`created_by`, we don't need to add them:
+
+```typescript
+const userRoles = roles
+  .filter((role): role is UserRoleRow => role.user_id === profile.id)
+  .map((role) => ({
+    id: role.id,
+    user_id: role.user_id,
+    role: role.role as 'admin' | 'moderator',
+    assigned_at: role.assigned_at,
+    assigned_by: role.assigned_by
+  }))
+  .filter((role) => role.role === 'admin' || role.role === 'moderator');
+```
+
+### Phase 4: Fix `useAchievements.ts` Realtime Subscription
+
+**File: `src/hooks/useAchievements.ts`**
+
+The current code at line 40-48 has a type annotation issue. The `.on<T>()` generic needs to match what Supabase expects:
+
+```typescript
+// Fix: Remove the `as const` suffixes that cause overload issues
+const channel = supabase
+  .channel(`achievements-${userId}`)
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'user_achievements',
+      filter: `user_id=eq.${userId}`
+    },
+    (payload) => {
+      // Handle payload with proper type guards
+      sreLogger.debug('Achievement realtime event', { payload });
+      // ... rest of handler
     }
+  )
+  .subscribe();
+```
+
+### Phase 5: Fix `useAnalytics.ts` Props Type
+
+**File: `src/hooks/useAnalytics.ts`**
+
+The Plausible function expects `props?: Record<string, unknown>` but we pass `props: Record<string, any> | undefined`. With strict mode, `any` is not assignable to `unknown`.
+
+```typescript
+// Line 75 - Add explicit cast or normalize the value
+if (plausible) {
+  plausible(eventName, { 
+    props: properties as Record<string, unknown> | undefined 
+  });
+}
+```
+
+### Phase 6: Fix `useDistributedCache.ts` Json Cast
+
+**File: `src/hooks/useDistributedCache.ts`**
+
+The `data` column expects `Json` type, but we're assigning `unknown`. The existing `as unknown` cast is wrong:
+
+```typescript
+// Line 51 - Correct cast to Json
+import type { Json } from '@/integrations/supabase/types';
+
+const payload: CacheInsert = {
+  cache_key: key,
+  data: value as Json,  // ✅ Cast to Json, not unknown
+  expires_at: expiresAt.toISOString(),
+  space_id: spaceId ?? null
+};
+```
+
+### Phase 7: Fix `useHostPayments.ts` Query Types
+
+**File: `src/hooks/useHostPayments.ts`**
+
+The query function returns a different shape than `HostPayment[]` due to nested joins. The fix is to properly type the query results:
+
+**Option A: Explicit Return Type Mapping**
+```typescript
+return useQuery({
+  queryKey: queryKeys.hostPayments.list(userId ?? undefined),
+  queryFn: async (): Promise<HostPayment[]> => {
+    // ... existing fetch logic ...
     
-    return {
-      success: true,
-      url: data.url,
-      stripeAccountId: data.stripe_account_id
-    };
-  } catch (err) {
-    return { success: false, error: 'Network error connecting to Stripe' };
-  }
-}
-
-/**
- * Get payout information for a host.
- */
-export async function getPayouts(hostId: string): Promise<StripePayoutData> {
-  const { data, error } = await supabase.functions.invoke('get-stripe-payouts', {
-    body: { host_id: hostId }
-  });
-  
-  if (error) throw new Error(`Failed to fetch payouts: ${error.message}`);
-  
-  return {
-    availableBalance: data?.available_balance ?? 0,
-    pendingBalance: data?.pending_balance ?? 0,
-    currency: data?.currency ?? 'EUR',
-    lastPayout: data?.last_payout ?? null
-  };
-}
+    // Ensure return matches HostPayment[] exactly
+    const payments: HostPayment[] = (data || [])
+      .filter(/* ... */)
+      .map((payment): HostPayment => ({
+        // Explicitly type each field
+        id: payment.id,
+        amount: payment.amount,
+        // ... with null coalescing for optional fields
+        created_at: payment.created_at ?? '',
+        // ... etc
+      }));
+    
+    return payments;
+  },
+  enabled: !!userId
+}) as UseQueryResult<HostPayment[], Error>;
 ```
+
+**Option B: Fix the HostPayment interface** to make `created_at` nullable to match DB.
 
 ---
 
-### Phase 3: Create adminService.ts
+## Files to Modify
 
-Create `src/services/api/adminService.ts`:
+| File | Action | Priority |
+|------|--------|----------|
+| `src/hooks/queries/bookings/useBookingTransforms.ts` | Update RawBookingData to accept undefined | High |
+| `src/types/admin-user.ts` | Fix UserRole interface (remove created_at/by, keep assigned_at/by) | High |
+| `src/hooks/useAdminUsers.ts` | Update role mapping to match new interface | High |
+| `src/hooks/useAchievements.ts` | Fix realtime subscription syntax | Medium |
+| `src/hooks/useAnalytics.ts` | Fix props type cast | Medium |
+| `src/hooks/useDistributedCache.ts` | Fix Json type cast | Medium |
+| `src/hooks/useHostPayments.ts` | Fix query return type | High |
+
+---
+
+## Technical Deep Dive
+
+### Why `exactOptionalPropertyTypes` Matters
+
+TypeScript's `exactOptionalPropertyTypes` flag (enabled in this project) treats `undefined` and `null` as distinct:
 
 ```typescript
-/**
- * Admin Service Layer
- * 
- * Handles all admin dashboard operations with proper error handling
- * and type safety.
- */
+// With exactOptionalPropertyTypes: true
+interface A { x?: number | null }  // x can be missing, number, or null
+interface B { x?: number }          // x can be missing or number (NOT null)
 
-import { supabase } from '@/integrations/supabase/client';
-import { AdminBooking, AdminUser, AdminStats } from '@/types/admin';
-import { mapAdminBookingRecord } from '@/lib/admin-mappers';
-
-// ============= TYPES =============
-
-export interface GetBookingsParams {
-  page?: number;
-  pageSize?: number;
-  status?: string;
-  search?: string;
-}
-
-export interface GetBookingsResult {
-  bookings: AdminBooking[];
-  totalCount: number;
-}
-
-// ============= METHODS =============
-
-/**
- * Fetch all bookings with optional filtering.
- * Uses the admin_get_bookings RPC for security.
- */
-export async function getAllBookings(params: GetBookingsParams = {}): Promise<GetBookingsResult> {
-  const { page = 1, pageSize = 50, status, search } = params;
-  
-  const { data, error } = await supabase.rpc('admin_get_bookings');
-  
-  if (error) throw new Error(`Failed to fetch bookings: ${error.message}`);
-  
-  // Map and filter the results
-  let bookings = (data || [])
-    .map(mapAdminBookingRecord)
-    .filter((item): item is AdminBooking => item !== null);
-  
-  // Apply client-side filtering
-  if (status && status !== 'all') {
-    bookings = bookings.filter(b => b.status === status);
-  }
-  
-  if (search) {
-    const searchLower = search.toLowerCase();
-    bookings = bookings.filter(b =>
-      b.coworker_name?.toLowerCase().includes(searchLower) ||
-      b.coworker_email?.toLowerCase().includes(searchLower) ||
-      b.space_name?.toLowerCase().includes(searchLower) ||
-      b.host_name?.toLowerCase().includes(searchLower)
-    );
-  }
-  
-  // Apply pagination
-  const start = (page - 1) * pageSize;
-  const paginatedBookings = bookings.slice(start, start + pageSize);
-  
-  return {
-    bookings: paginatedBookings,
-    totalCount: bookings.length
-  };
-}
-
-/**
- * Fetch all users for admin management.
- */
-export async function getAllUsers(): Promise<AdminUser[]> {
-  const { data, error } = await supabase
-    .from('admin_users_view' as any)
-    .select('*');
-  
-  if (error) throw new Error(`Failed to fetch users: ${error.message}`);
-  
-  return data as AdminUser[];
-}
-
-/**
- * Toggle user account status (active/suspended).
- */
-export async function toggleUserStatus(userId: string, newStatus: 'active' | 'suspended'): Promise<void> {
-  const { error } = await supabase.rpc('admin_toggle_user_status', {
-    target_user_id: userId,
-    new_status: newStatus
-  });
-  
-  if (error) throw new Error(`Failed to update user status: ${error.message}`);
-}
-
-/**
- * Get system-wide metrics for dashboard.
- */
-export async function getSystemMetrics(): Promise<AdminStats> {
-  // This consolidates the logic from admin-stats-utils.ts
-  const [
-    { count: totalUsers },
-    { count: totalHosts },
-    { count: totalBookings },
-    { count: activeListings },
-    { data: payments }
-  ] = await Promise.all([
-    supabase.from('profiles').select('id', { count: 'exact', head: true }),
-    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'host'),
-    supabase.from('bookings').select('id', { count: 'exact', head: true }),
-    supabase.from('spaces').select('id', { count: 'exact', head: true }).eq('published', true),
-    supabase.from('payments').select('amount').eq('payment_status', 'completed')
-  ]);
-  
-  const totalRevenue = payments?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
-  
-  return {
-    total_users: totalUsers || 0,
-    total_hosts: totalHosts || 0,
-    total_bookings: totalBookings || 0,
-    total_revenue: totalRevenue,
-    active_listings: activeListings || 0
-  };
-}
+// This fails:
+const val: A = { x: undefined }  // ❌ undefined !== null
 ```
 
----
+This is why Supabase query results (which use `undefined` for missing relations) don't match our types (which use `null`).
 
-### Phase 4: Refactor Components
+### Solution Strategy
 
-#### 4.1 StripeConnectButton.tsx
-
-**Changes:**
-- Import `createOnboardingLink` from `@/services/api/stripeService`
-- Replace `supabase.functions.invoke('create-connect-onboarding-link')` with `createOnboardingLink()`
-- Use structured result instead of raw response
-
-#### 4.2 useStripeStatus.ts
-
-**Changes:**
-- Import `checkAccountStatus` from `@/services/api/stripeService`
-- Replace `supabase.functions.invoke('check-stripe-status')` with `checkAccountStatus()`
-
-#### 4.3 useStripePayouts.ts
-
-**Changes:**
-- Import `getPayouts` from `@/services/api/stripeService`
-- Replace `supabase.functions.invoke('get-stripe-payouts')` with service call
-- Note: Keep the hook structure but delegate to service
-
-#### 4.4 AdminBookingsPage.tsx
-
-**Changes:**
-- Import `getAllBookings` from `@/services/api/adminService`
-- Replace `supabase.rpc('admin_get_bookings')` with `getAllBookings()`
-- Remove local mapper call (service handles it)
-
----
-
-### Phase 5: Update Barrel Export
-
-Update `src/services/api/index.ts`:
-
-```typescript
-/**
- * API Services Barrel Export
- */
-
-// Booking Service
-export {
-  reserveSlot,
-  createCheckoutSession,
-  type ReserveSlotParams,
-  type ReserveSlotResult,
-  type CreateCheckoutSessionResult
-} from './bookingService';
-
-// Stripe Service
-export {
-  checkAccountStatus,
-  createOnboardingLink,
-  getPayouts,
-  type StripeAccountStatus,
-  type StripeOnboardingResult,
-  type StripePayoutData
-} from './stripeService';
-
-// Admin Service
-export {
-  getAllBookings,
-  getAllUsers,
-  toggleUserStatus,
-  getSystemMetrics,
-  type GetBookingsParams,
-  type GetBookingsResult
-} from './adminService';
-```
-
----
-
-## File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/notifications/NotificationCenter.tsx` | MODIFY | Fix ReactNode type errors |
-| `src/components/notifications/NotificationItem.tsx` | MODIFY | Fix ReactNode type errors |
-| `src/components/spaces/BookingForm.tsx` | MODIFY | Add userId guard |
-| `src/components/spaces/SpaceForm.tsx` | MODIFY | Fix enum type assertions |
-| `src/hooks/checkout/__tests__/useCheckout.test.ts` | MODIFY | Fix Location mock |
-| `src/hooks/checkout/__tests__/useCheckoutReservationFailure.test.ts` | MODIFY | Fix Location mock |
-| `src/hooks/networking/useConnectionRequests.ts` | MODIFY | Fix realtime subscription |
-| `src/types/booking.ts` or related | MODIFY | Fix RawBookingData null types |
-| `src/services/api/stripeService.ts` | CREATE | New Stripe service |
-| `src/services/api/adminService.ts` | CREATE | New Admin service |
-| `src/services/api/index.ts` | MODIFY | Add new exports |
-| `src/components/stripe/StripeConnectButton.tsx` | MODIFY | Use stripeService |
-| `src/hooks/useStripeStatus.ts` | MODIFY | Use stripeService |
-| `src/hooks/useStripePayouts.ts` | MODIFY | Use stripeService |
-| `src/pages/admin/AdminBookingsPage.tsx` | MODIFY | Use adminService |
-
----
-
-## Technical Notes
-
-### Service Pattern Consistency
-
-All services follow the established pattern from `bookingService.ts`:
-- Typed interfaces for all inputs/outputs
-- Structured error handling with clear messages
-- Native fetch for Edge Functions requiring header control
-- `supabase.functions.invoke` for simpler Edge Function calls
-- `supabase.rpc` for database RPC calls
-
-### Why Native Fetch for Onboarding Link?
-
-The `create-connect-onboarding-link` Edge Function may need future enhancements like:
-- Custom headers for rate limiting
-- Request deduplication
-- Retry logic with exponential backoff
-
-Using native fetch provides flexibility for these additions.
+1. **Accept Both**: Update interfaces to accept `| undefined` where Supabase might return undefined
+2. **Normalize Early**: In transform functions, convert `undefined` to `null` immediately
+3. **Strict Output**: Final domain types (like `BookingWithDetails`) remain strict with just `null`
 
 ---
 
 ## Verification Checklist
 
-1. All 24 build errors resolved
-2. `stripeService.ts` exports 3 methods
-3. `adminService.ts` exports 4 methods
-4. `StripeConnectButton.tsx` uses service (no direct Supabase)
-5. `useStripeStatus.ts` uses service (no direct Supabase)
-6. `AdminBookingsPage.tsx` uses service (no direct Supabase)
-7. All loading states preserved
-8. Toast notifications still work correctly
+After implementation:
+- [ ] `npm run build` completes with 0 errors
+- [ ] `useCoworkerBookings` query works correctly
+- [ ] `useHostBookings` query works correctly  
+- [ ] `useEnhancedBookings` combines both without errors
+- [ ] Admin users page loads with correct role display
+- [ ] Achievements realtime updates work
+- [ ] Analytics events fire without console errors
+- [ ] Distributed cache reads/writes work
+- [ ] Host payments page displays correctly
 
 ---
 
@@ -481,7 +262,7 @@ Using native fetch provides flexibility for these additions.
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Build errors | 24 | 0 |
-| Direct Supabase calls in Stripe components | 4 | 0 |
-| Direct Supabase calls in Admin pages | 2 | 0 |
-| Service Layer coverage | 1 service | 3 services |
+| TypeScript build errors | 10+ | 0 |
+| `as unknown as` casts | 3+ | 0 |
+| Type definition conflicts | 5 | 0 |
+| Database schema alignment | Partial | 100% |
