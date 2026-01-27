@@ -1,109 +1,212 @@
 
 
-# HOTFIX: Endpoint Synchronization & Deployment Verification
+# HOTFIX: Stripe Webhook Upsert Failure (Root Cause Analysis & Fix)
 
 ## Executive Summary
 
-The audit confirms **100% alignment** across all layers. The functions are correctly configured and deployed. The previous "404" errors were likely transient deployment issues or misattributed error codes.
+The `checkout.session.completed` webhook fails with `"Payment not found after upsert"` due to **TWO critical issues** in the enhanced-checkout-handlers.ts logic.
 
 ---
 
-## Routing Integrity Matrix (VERIFIED)
+## Root Cause Analysis
 
-| Function | Folder Name | Config Entry | Frontend Call | Status |
-|:---------|:------------|:-------------|:--------------|:-------|
-| **Approve** | `host-approve-booking` | Line 51-52 | `'host-approve-booking'` | MATCH |
-| **Reject** | `host-reject-booking` | Line 54-55 | `'host-reject-booking'` | MATCH |
+### Issue #1: Missing `stripe_payment_intent_id` in UPDATE path
 
----
+**Location:** `enhanced-checkout-handlers.ts` lines 76-85
 
-## Evidence Summary
+When an existing payment is found and updated, the code sets:
+- `payment_status: 'completed'`
+- `receipt_url`
+- `stripe_event_id`
+- `host_amount`
+- `platform_fee`
 
-### File System Layer
-- `supabase/functions/host-approve-booking/index.ts` - EXISTS (288 lines)
-- `supabase/functions/host-reject-booking/index.ts` - EXISTS (274 lines)
+**BUT IT NEVER SAVES `stripe_payment_intent_id`!**
 
-### Configuration Layer
-```toml
-[functions.host-approve-booking]
-verify_jwt = true
-
-[functions.host-reject-booking]
-verify_jwt = true
-```
-
-### Frontend Layer
 ```typescript
-// useBookingApproval.ts - Line 12
-supabase.functions.invoke('host-approve-booking', {...})
-
-// useBookingApproval.ts - Line 39
-supabase.functions.invoke('host-reject-booking', {...})
-
-// BookingDetailsModal.tsx - Line 90
-supabase.functions.invoke('host-approve-booking', {...})
+// CURRENT CODE (BROKEN)
+.update({
+  payment_status: 'completed',
+  receipt_url: session.receipt_url || null,
+  stripe_event_id: eventId,
+  host_amount: breakdown.hostNetPayout,
+  platform_fee: breakdown.platformRevenue
+})
+// ← Missing: stripe_payment_intent_id !!!
 ```
 
-### Direct API Test Results
-```
-POST /host-approve-booking → 401 Unauthorized (JWT required)
-POST /host-reject-booking  → 401 Unauthorized (JWT required)
+**Database Evidence:** All 10 recent payments have `stripe_payment_intent_id = NULL` despite having `payment_status = 'completed'`.
+
+### Issue #2: Missing `stripe_payment_intent_id` in INSERT path
+
+**Location:** `enhanced-checkout-handlers.ts` lines 100-114
+
+The INSERT fallback also does not include `stripe_payment_intent_id`:
+
+```typescript
+// CURRENT CODE (BROKEN)
+.insert({
+  booking_id: bookingId,
+  user_id: session.metadata!.user_id,
+  amount: (session.amount_total || 0) / 100,
+  currency: (session.currency || 'eur').toUpperCase(),
+  payment_status: 'completed',
+  stripe_session_id: session.id,
+  receipt_url: session.receipt_url || null,
+  host_amount: breakdown.hostNetPayout,
+  platform_fee: breakdown.platformRevenue,
+  stripe_event_id: eventId,
+  method: 'stripe'
+})
+// ← Missing: stripe_payment_intent_id !!!
 ```
 
-**401 confirms the functions ARE deployed and reachable** (404 would mean "not found").
+### Issue #3: Missing `payment_status_enum` in both paths
+
+The database has TWO status fields:
+- `payment_status` (text, legacy)
+- `payment_status_enum` (USER-DEFINED enum)
+
+The webhook updates `payment_status = 'completed'` but leaves `payment_status_enum = 'pending'`. This causes the DB trigger `guard_confirm_without_success` to block booking confirmations.
 
 ---
 
-## Implementation Plan
+## Fix Implementation
 
-### Step 1: Force Fresh Deployment (Confidence Refresh)
+### File: `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts`
 
-Deploy both functions to refresh the gateway routing table and ensure the latest code is active:
+#### Change 1: Add Payment Intent ID extraction BEFORE the upsert logic (around line 66)
 
+```typescript
+// Extract Payment Intent ID BEFORE database operations
+const paymentIntentId = typeof session.payment_intent === 'string'
+  ? session.payment_intent
+  : session.payment_intent?.id || null;
+
+ErrorHandler.logInfo('Payment Intent ID extracted for upsert', {
+  sessionId: session.id,
+  paymentIntentId: paymentIntentId || 'NULL'
+});
 ```
-Functions to deploy:
-- host-approve-booking
-- host-reject-booking
+
+#### Change 2: Fix UPDATE path (lines 76-85)
+
+```typescript
+// FIXED: Include stripe_payment_intent_id and payment_status_enum
+const { error: updateError } = await supabaseAdmin
+  .from('payments')
+  .update({
+    payment_status: 'completed',
+    payment_status_enum: 'succeeded',  // ← ADD THIS
+    stripe_payment_intent_id: paymentIntentId,  // ← ADD THIS
+    receipt_url: session.receipt_url || null,
+    stripe_event_id: eventId,
+    host_amount: breakdown.hostNetPayout,
+    platform_fee: breakdown.platformRevenue
+  })
+  .eq('id', existingPayment.id);
 ```
 
-This guarantees:
-- Latest code is live
-- Gateway routing is refreshed
-- Any stale deployment state is cleared
+#### Change 3: Fix INSERT path (lines 100-114)
 
-### Step 2: Verification Test
+```typescript
+// FIXED: Include stripe_payment_intent_id and payment_status_enum
+const { error: insertError } = await supabaseAdmin
+  .from('payments')
+  .insert({
+    booking_id: bookingId,
+    user_id: session.metadata!.user_id,
+    amount: (session.amount_total || 0) / 100,
+    currency: (session.currency || 'eur').toUpperCase(),
+    payment_status: 'completed',
+    payment_status_enum: 'succeeded',  // ← ADD THIS
+    stripe_session_id: session.id,
+    stripe_payment_intent_id: paymentIntentId,  // ← ADD THIS
+    receipt_url: session.receipt_url || null,
+    host_amount: breakdown.hostNetPayout,
+    platform_fee: breakdown.platformRevenue,
+    stripe_event_id: eventId,
+    method: 'stripe'
+  });
+```
 
-After deployment, perform an authenticated test from the browser:
-1. Log in as a host user
-2. Navigate to a booking with `pending_approval` status
-3. Click "Approve" button
-4. Verify the Edge Function executes (check logs)
+#### Change 4: Handle "Request to Book" flows (Manual Capture)
+
+For manual capture flows, the payment is authorized but NOT captured yet. The status should be different:
+
+```typescript
+// Determine correct status based on capture method
+const isManualCapture = session.payment_intent_data?.capture_method === 'manual' 
+  || session.metadata?.confirmation_type === 'host_approval';
+
+// For manual capture: funds are authorized, not yet captured
+// For automatic capture: funds are captured, payment succeeded
+const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
+const paymentStatus = isManualCapture ? 'pending' : 'completed';
+
+ErrorHandler.logInfo('Payment status determined', {
+  sessionId: session.id,
+  isManualCapture,
+  paymentStatusEnum,
+  paymentStatus
+});
+```
+
+Then use these variables in both UPDATE and INSERT:
+
+```typescript
+.update({
+  payment_status: paymentStatus,
+  payment_status_enum: paymentStatusEnum,
+  stripe_payment_intent_id: paymentIntentId,
+  // ... rest
+})
+```
 
 ---
 
-## Files Modified
+## Complete Fixed Logic (handleCheckoutSessionCompleted)
 
-No code changes required - all layers are already aligned.
+The corrected flow should be:
 
-| Layer | Status | Action Required |
-|:------|:-------|:----------------|
-| File System | Aligned | None |
-| Config.toml | Aligned | None |
-| Frontend Hooks | Aligned | None |
-| Deployment | Needs Refresh | Force deploy |
+```text
+1. Extract Payment Intent ID from session
+2. Determine capture method (manual vs automatic)
+3. Set appropriate status (pending for manual, succeeded for automatic)
+4. Check if payment exists by stripe_session_id
+5. IF EXISTS → UPDATE with PI ID, status, etc.
+6. IF NOT EXISTS → INSERT with PI ID, status, etc.
+7. Update booking with PI ID
+8. Send notifications
+```
 
 ---
 
-## Technical Notes
+## Files to Modify
 
-### Why 404 Was Previously Reported
+| File | Change | Priority |
+|:-----|:-------|:---------|
+| `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts` | Add `stripe_payment_intent_id` to UPDATE/INSERT, add `payment_status_enum`, handle manual capture | **CRITICAL** |
 
-Possible explanations:
-1. **Temporary deployment gap** - During deploy cycles, functions may briefly return 404
-2. **Frontend error handling** - The error might have been a 500 displayed as "function not found"
-3. **Browser cache** - Stale JavaScript bundle with old function references
+---
 
-### Current State
+## Verification Checklist
 
-The infrastructure is healthy. A fresh deployment will serve as the final confirmation that all routing paths are active.
+After deployment:
+- [ ] Webhook processes `checkout.session.completed` without error
+- [ ] `payments.stripe_payment_intent_id` is populated (not NULL)
+- [ ] `payments.payment_status_enum` matches intent (`succeeded` for instant, `pending` for request)
+- [ ] Host approval can capture the payment
+- [ ] DB trigger `guard_confirm_without_success` passes
+
+---
+
+## Technical Summary
+
+| Issue | Root Cause | Fix |
+|:------|:-----------|:----|
+| "Payment not found after upsert" | Query succeeds, but missing PI ID causes downstream issues | Add `stripe_payment_intent_id` to both UPDATE and INSERT |
+| `payment_status_enum = 'pending'` forever | Webhook only updates `payment_status` (legacy field) | Also update `payment_status_enum` |
+| DB trigger blocks confirmation | `payment_status_enum` not `succeeded` | Set correctly based on capture method |
+| Host approval fails | No PI ID to capture | PI ID now saved in webhook |
 
