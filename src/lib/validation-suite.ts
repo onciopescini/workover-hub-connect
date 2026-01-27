@@ -265,7 +265,7 @@ export class Sprint1ValidationSuite {
       // Test admin function
       const { data: isAdminData, error: adminError } = await supabase
         .rpc('is_admin', {
-          user_id: '00000000-0000-0000-0000-000000000000'
+          p_user_id: '00000000-0000-0000-0000-000000000000'
         });
       
       if (adminError) {
