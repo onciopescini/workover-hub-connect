@@ -68,6 +68,24 @@ serve(async (req) => {
     const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
     
     if (isPaymentSuccessful && session.metadata?.booking_id) {
+      // Calculate amounts from metadata (with fallback for legacy sessions)
+      const totalAmount = (session.amount_total || 0) / 100;
+      let hostAmount = 0;
+      let platformFee = 0;
+      
+      if (session.metadata.host_net_payout && session.metadata.total_platform_fee) {
+        // New sessions with proper metadata
+        hostAmount = parseFloat(session.metadata.host_net_payout);
+        platformFee = parseFloat(session.metadata.total_platform_fee);
+      } else {
+        // Legacy fallback: reverse-engineer from total
+        // totalGuestPay = basePrice * 1.061 (5% fee + 1.1% VAT on fee)
+        const basePrice = totalAmount / 1.061;
+        hostAmount = basePrice * 0.95; // Host gets base - 5%
+        platformFee = totalAmount - hostAmount;
+        ErrorHandler.logWarning('Using fallback pricing calculation', { totalAmount, basePrice, hostAmount, platformFee });
+      }
+
       // FASE 4: Verifica esistenza payment e crea se necessario (fallback critico)
       const { data: existingPayment } = await supabaseAdmin
         .from('payments')
@@ -84,13 +102,13 @@ serve(async (req) => {
           .insert({
             booking_id: session.metadata.booking_id,
             user_id: session.metadata.user_id,
-            amount: (session.amount_total || 0) / 100,
+            amount: totalAmount,
             currency: (session.currency || 'eur').toUpperCase(),
             payment_status: 'completed',
             stripe_session_id: session_id,
             receipt_url: session.receipt_url,
-            host_amount: parseFloat(session.metadata.host_net_payout || '0'),
-            platform_fee: parseFloat(session.metadata.total_platform_fee || '0'),
+            host_amount: hostAmount,
+            platform_fee: platformFee,
             method: 'stripe'
           });
 

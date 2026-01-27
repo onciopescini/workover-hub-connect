@@ -1,15 +1,26 @@
 // supabase/functions/create-checkout-v3/index.ts
 // Deno.serve + CORS + Idempotency + Stripe via fetch + robust error handling
+// DUAL FEE MODEL: 5% Guest Fee + 22% VAT + 5% Host Fee
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+import { PricingEngine } from "../_shared/pricing-engine.ts";
 
 type CreateCheckoutBody = { 
   booking_id: string; /* UUID */
   origin?: string;    // Frontend origin for redirect URLs
 };
 
+type BookingWithHost = {
+  id: string;
+  user_id: string;
+  status: string;
+  total_price: number;
+  space_id: string;
+  hostStripeAccountId: string | null;
+};
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!; // già configurato
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false }, });
 
@@ -42,9 +53,16 @@ async function getUserFromAuth(req: Request) {
 }
 
 async function fetchBookingAndPrice(booking_id: string, user_id: string) {
+  // Fetch booking with space and host's Stripe account
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, user_id, status, total_price, space_id")
+    .select(`
+      id, user_id, status, total_price, space_id,
+      spaces!inner (
+        host_id,
+        profiles:host_id (stripe_account_id)
+      )
+    `)
     .eq("id", booking_id)
     .single();
 
@@ -52,9 +70,25 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   if (data.user_id !== user_id) return { error: "forbidden" };
   if (data.status !== "pending_payment") return { error: "invalid_booking_status" };
 
-  const amountCents = Math.max(0, Math.round(Number(data.total_price) * 100));
-  const currency = "eur";
-  return { booking: data, amountCents, currency, spaceId: data.space_id };
+  // Extract host's Stripe account ID from nested join
+  const spaces = data.spaces as any;
+  const hostStripeAccountId = spaces?.profiles?.stripe_account_id || null;
+
+  // Base price is what the host set (before fees)
+  const basePrice = Number(data.total_price);
+  
+  // Calculate full pricing breakdown using the shared engine
+  const pricing = PricingEngine.calculatePricing(basePrice);
+
+  return { 
+    booking: {
+      ...data,
+      hostStripeAccountId,
+    } as BookingWithHost,
+    basePrice,
+    pricing,
+    spaceId: data.space_id 
+  };
 }
 
 async function findPaymentByIdempotencyKey(key: string) {
@@ -101,27 +135,48 @@ async function upsertPayment(params: {
 }
 
 async function createStripeCheckoutSession(params: {
-  amountCents: number;
+  totalChargeCents: number;
+  applicationFeeCents: number;
   currency: string;
   idempotencyKey: string;
   booking_id: string;
+  user_id: string;
   origin: string;
   space_id: string;
+  hostStripeAccountId: string | null;
+  basePrice: number;
+  hostPayout: number;
+  platformFee: number;
 }) {
   // Fallback to production URL if origin not provided
   const frontendOrigin = params.origin || 'https://workover-hub-connect.lovable.app';
   
+  // Build base checkout params
   const body = new URLSearchParams({
     mode: "payment",
     "payment_method_types[]": "card",
     "line_items[0][quantity]": "1",
     "line_items[0][price_data][currency]": params.currency,
-    "line_items[0][price_data][unit_amount]": String(params.amountCents),
-    "line_items[0][price_data][product_data][name]": `Booking ${params.booking_id}`,
+    "line_items[0][price_data][unit_amount]": String(params.totalChargeCents),
+    "line_items[0][price_data][product_data][name]": `Prenotazione Spazio`,
     success_url: `${frontendOrigin}/spaces/${params.space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${frontendOrigin}/bookings?canceled=true&booking_id=${params.booking_id}`,
+    // Critical metadata for webhook processing
     "metadata[booking_id]": params.booking_id,
+    "metadata[user_id]": params.user_id,
+    "metadata[base_amount]": String(params.basePrice),
+    "metadata[host_net_payout]": String(params.hostPayout),
+    "metadata[total_platform_fee]": String(params.platformFee),
   });
+
+  // STRIPE CONNECT: Only add if host has connected Stripe account
+  if (params.hostStripeAccountId) {
+    body.append("payment_intent_data[application_fee_amount]", String(params.applicationFeeCents));
+    body.append("payment_intent_data[transfer_data][destination]", params.hostStripeAccountId);
+    console.log(`[STRIPE CONNECT] Routing to host: ${params.hostStripeAccountId}, app_fee: ${params.applicationFeeCents} cents`);
+  } else {
+    console.log(`[STRIPE] No host Stripe account - platform collects full amount`);
+  }
 
   const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -201,30 +256,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2) Server-side booking/amount
+    // 2) Server-side booking/amount with pricing calculation
     const bookingRes = await fetchBookingAndPrice(payload.booking_id, user.id);
     if ("error" in bookingRes) return err(bookingRes.error!, 400);
+
+    const { pricing, basePrice, booking } = bookingRes;
+    
+    // Convert to cents for Stripe
+    const totalChargeCents = Math.round(pricing.totalGuestPay * 100);
+    const applicationFeeCents = Math.round(pricing.applicationFee * 100);
+
+    console.log(`[PRICING] Base: €${basePrice}, Guest Pays: €${pricing.totalGuestPay}, Host Gets: €${pricing.hostPayout}, Platform: €${pricing.applicationFee}`);
 
     // Get origin from request for redirect URLs
     const origin = req.headers.get('origin') || payload.origin || 'https://workover-hub-connect.lovable.app';
 
-    // 3) Stripe session with Idempotency-Key
+    // 3) Stripe session with Idempotency-Key + Connect params
     const stripe = await createStripeCheckoutSession({
-      amountCents: bookingRes.amountCents!,
-      currency: bookingRes.currency!,
+      totalChargeCents,
+      applicationFeeCents,
+      currency: "eur",
       idempotencyKey,
       booking_id: payload.booking_id,
+      user_id: user.id,
       origin,
       space_id: bookingRes.spaceId!,
+      hostStripeAccountId: booking.hostStripeAccountId,
+      basePrice,
+      hostPayout: pricing.hostPayout,
+      platformFee: pricing.applicationFee,
     });
     if ("error" in stripe) return err(stripe.error!, 400, stripe);
 
-    // 4) Upsert payment
+    // 4) Upsert payment with pricing breakdown
     const upsert = await upsertPayment({
       booking_id: payload.booking_id,
       user_id: user.id,
-      amount: bookingRes.amountCents!,
-      currency: bookingRes.currency!,
+      amount: totalChargeCents,
+      currency: "eur",
       stripe_idempotency_key: idempotencyKey,
       stripe_session_id: stripe.session!.id,
       stripe_payment_intent_id: stripe.session!.payment_intent_id,
