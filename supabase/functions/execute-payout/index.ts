@@ -86,6 +86,9 @@ serve(async (req) => {
         );
 
         console.log(`[EXECUTE-PAYOUT] Transfer created: ${transfer.id} for booking ${booking.id}`);
+        
+        // Rate limiting: 100ms delay between Stripe API calls to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         const { error: updateError } = await supabaseAdmin
           .from('bookings')
