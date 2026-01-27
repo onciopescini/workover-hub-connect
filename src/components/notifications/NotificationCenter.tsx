@@ -232,11 +232,11 @@ export function NotificationCenter() {
                         {/* Metadati aggiuntivi */}
                         {notification.metadata && Object.keys(notification.metadata).length > 0 && (
                           <div className="mt-2 text-xs text-gray-500">
-                            {notification.metadata["sender_name"] && (
-                              <span>Da: {String(notification.metadata["sender_name"])}</span>
+                            {notification.metadata["sender_name"] != null && (
+                              <span>Da: {String(notification.metadata["sender_name"] as string)}</span>
                             )}
-                            {notification.metadata["space_title"] && (
-                              <span>Spazio: {String(notification.metadata["space_title"])}</span>
+                            {notification.metadata["space_title"] != null && (
+                              <span>Spazio: {String(notification.metadata["space_title"] as string)}</span>
                             )}
                           </div>
                         )}

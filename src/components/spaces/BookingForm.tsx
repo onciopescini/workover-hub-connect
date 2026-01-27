@@ -51,10 +51,13 @@ export function BookingForm({
   const { fiscalData: savedFiscalData } = useCoworkerFiscalData();
   const { authState } = useAuth();
 
+  // Early return if no user - form requires authentication
+  const userId = authState.user?.id;
+  
   const bookingFlow = useBookingFlow({
     spaceId,
     pricePerDay,
-    userId: authState.user?.id,
+    userId: userId ?? '',
     ...(pricePerHourProp !== undefined && { pricePerHour: pricePerHourProp }),
     confirmationType,
     maxCapacity,

@@ -6,7 +6,7 @@ interface RawSpace {
   id: string;
   title: string;
   address: string;
-  photos: string[] | null;
+  photos: unknown[] | string[] | null;
   host_id: string;
   price_per_day: number;
   confirmation_type: string;
@@ -14,7 +14,7 @@ interface RawSpace {
 
 interface RawBookingData {
   id?: string;
-  space_id?: string;
+  space_id?: string | null;
   user_id?: string;
   booking_date?: string;
   start_time?: string | null;
@@ -58,20 +58,29 @@ interface RawBookingData {
     profile_photo_url?: string | null;
   } | null;
 
-  payments?: unknown[];
+  payments?: unknown[] | null;
+  
+  // Allow for extra properties from the database
+  [key: string]: unknown;
 }
+
+const toStringArray = (arr: unknown[] | string[] | null | undefined): string[] => {
+  if (!arr || !Array.isArray(arr)) return [];
+  return arr.map(item => typeof item === 'string' ? item : String(item));
+};
 
 const getSpaceData = (booking: RawBookingData) => {
   // Priority 1: Check 'spaces' returned by Supabase join
   if (booking.spaces) {
     const s = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
     if (s) {
+      const photos = toStringArray(s.photos);
       return {
         id: s.id,
         title: s.title,
         address: s.address,
-        image_url: (s.photos && s.photos.length > 0) ? s.photos[0] : '', // Map first photo to image_url
-        photos: s.photos || [], // Keep photos array for gallery if needed
+        image_url: photos.length > 0 ? photos[0] : '', // Map first photo to image_url
+        photos: photos, // Keep photos array for gallery if needed
         type: 'space', // Default type as it's not currently fetched
         host_id: s.host_id, // CRITICAL: Ensure host_id is mapped
         price_per_day: s.price_per_day,

@@ -69,7 +69,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
     .eq("user_id", userId)
     .order("booking_date", { ascending: false })) as unknown as {
     data: CoworkerBookingRow[] | null;
-    error: unknown;
+    error: Error | null;
   };
 
   if (coworkerError) {
@@ -104,7 +104,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       .neq("user_id", userId)
       .order("booking_date", { ascending: false })) as unknown as {
       data: HostBookingRow[] | null;
-      error: unknown;
+      error: Error | null;
     };
 
     if (!hostError && hostBookingsRaw) {
@@ -115,7 +115,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
   }
 
   // Transform bookings to match BookingWithDetails interface
-  const transformCoworkerBookings = (coworkerBookingsRaw || []).map((booking) => {
+  const transformCoworkerBookings = (coworkerBookingsRaw || []).map((booking): BookingWithDetails => {
     return {
       id: toString(booking.id),
       space_id: toString(booking.space_id),
@@ -123,14 +123,14 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       booking_date: toString(booking.booking_date),
       start_time: toString(booking.start_time),
       end_time: toString(booking.end_time),
-      status: toString(booking.status),
+      status: (booking.status || 'pending') as BookingWithDetails['status'],
       created_at: toString(booking.created_at),
       updated_at: toString(booking.updated_at),
-      cancelled_at: booking.cancelled_at ?? "",
+      cancelled_at: booking.cancelled_at ?? null,
       cancellation_fee: toNumber(booking.cancellation_fee),
       cancelled_by_host: Boolean(booking.cancelled_by_host),
-      cancellation_reason: booking.cancellation_reason ?? "",
-      service_completed_at: booking.service_completed_at,
+      cancellation_reason: booking.cancellation_reason ?? null,
+      service_completed_at: booking.service_completed_at ?? null,
       space: {
         id: toString(booking.space?.id),
         title: toString(booking.space?.title),
@@ -145,7 +145,7 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
     };
   });
 
-  const transformHostBookings = hostBookings.map((booking) => {
+  const transformHostBookings = hostBookings.map((booking): BookingWithDetails => {
     return {
       id: toString(booking.id),
       space_id: toString(booking.space_id),
@@ -153,14 +153,14 @@ const fetchBookings = async (userId: string, userRoles: string[]): Promise<Booki
       booking_date: toString(booking.booking_date),
       start_time: toString(booking.start_time),
       end_time: toString(booking.end_time),
-      status: toString(booking.status),
+      status: (booking.status || 'pending') as BookingWithDetails['status'],
       created_at: toString(booking.created_at),
       updated_at: toString(booking.updated_at),
-      cancelled_at: booking.cancelled_at ?? "",
+      cancelled_at: booking.cancelled_at ?? null,
       cancellation_fee: toNumber(booking.cancellation_fee),
       cancelled_by_host: Boolean(booking.cancelled_by_host),
-      cancellation_reason: booking.cancellation_reason ?? "",
-      service_completed_at: booking.service_completed_at,
+      cancellation_reason: booking.cancellation_reason ?? null,
+      service_completed_at: booking.service_completed_at ?? null,
       space: {
         id: toString(booking.space?.id),
         title: toString(booking.space?.title),

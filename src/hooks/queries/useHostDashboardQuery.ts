@@ -1,9 +1,7 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { BookingWithDetails } from "@/types/booking";
-import { BookingReviewWithDetails } from "@/types/review";
-import { Message } from "@/types/booking";
+import { BookingWithDetails, Message } from "@/types/booking";
 import { getUserReviews, getUserAverageRating } from "@/lib/review-utils";
 import { type Database, Json } from "@/integrations/supabase/types";
 import { queryKeys } from "@/lib/react-query-config";
@@ -212,7 +210,7 @@ export const useHostMessagesQuery = (bookings: BookingWithDetails[]): UseQueryRe
   });
 };
 
-export const useHostReviewsQuery = (): UseQueryResult<{ reviews: BookingReviewWithDetails[]; averageRating: number | null }, Error> => {
+export const useHostReviewsQuery = () => {
   const { authState } = useAuth();
   const isHost = (authState.roles || []).includes('host') || (authState.roles || []).includes('admin');
   
