@@ -1,143 +1,183 @@
 
+# Implementation Plan: Dual Fee Model & Backend Stabilization
 
-# HOTFIX: Stripe Success URL Redirect
+## Executive Summary
 
-## Root Cause Analysis
+We need to implement the agreed Dual Fee pricing model and fix the validation crash. The current checkout flow has **three critical issues**:
 
-The `create-checkout-v3` Edge Function (lines 113-114) sets the Stripe `success_url` and `cancel_url` to point to the **Supabase Edge Function URL**:
-
-```typescript
-success_url: `${SUPABASE_URL}/functions/v1/validate-payment?booking_id=${params.booking_id}&status=success`,
-cancel_url: `${SUPABASE_URL}/functions/v1/validate-payment?booking_id=${params.booking_id}&status=cancel`,
-```
-
-This causes:
-- User completes payment on Stripe Checkout
-- Stripe redirects to the Edge Function URL (`/functions/v1/validate-payment`)
-- Browser makes a GET request without Authorization headers
-- Edge Function returns 401 Unauthorized (black screen)
-
-The correct flow should redirect to the **Frontend App** where:
-- User sees a "Payment Successful" confirmation page
-- The `stripe-webhooks` function (which we secured earlier) handles the database update via `checkout.session.completed` event
+1. **No Pricing Engine Integration** - `create-checkout-v3` uses raw `total_price` without fees
+2. **Missing Stripe Metadata** - Webhook expects `base_amount` but checkout doesn't set it
+3. **No Stripe Connect** - No `application_fee_amount` or `transfer_data` for host payouts
 
 ---
 
-## Solution
+## Transaction Simulation Table (€100 Base Price)
 
-### Step 1: Update `create-checkout-v3/index.ts`
-
-Modify the function to:
-1. Accept `origin` from the request body (already sent by frontend in `usePaymentLink.ts` line 76)
-2. Use the frontend URL pattern `/spaces/{spaceId}/booking-success?session_id={CHECKOUT_SESSION_ID}`
-3. Add a fallback to the published app URL for safety
-
-**Changes to `createStripeCheckoutSession` function (lines 100-116):**
-
-```typescript
-// Add origin parameter
-async function createStripeCheckoutSession(params: {
-  amountCents: number;
-  currency: string;
-  idempotencyKey: string;
-  booking_id: string;
-  origin: string;  // NEW: Frontend origin
-  space_id: string; // NEW: For success URL routing
-}) {
-  // Fallback to production URL if origin not provided
-  const frontendOrigin = params.origin || 'https://workover-hub-connect.lovable.app';
-  
-  const body = new URLSearchParams({
-    mode: "payment",
-    "payment_method_types[]": "card",
-    "line_items[0][quantity]": "1",
-    "line_items[0][price_data][currency]": params.currency,
-    "line_items[0][price_data][unit_amount]": String(params.amountCents),
-    "line_items[0][price_data][product_data][name]": `Booking ${params.booking_id}`,
-    // FIXED: Point to Frontend success/cancel pages
-    success_url: `${frontendOrigin}/spaces/${params.space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${frontendOrigin}/bookings?canceled=true&booking_id=${params.booking_id}`,
-    "metadata[booking_id]": params.booking_id,
-  });
-  // ... rest of function
-}
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    DUAL FEE MODEL BREAKDOWN                      │
+├─────────────────────────────────────────────────────────────────┤
+│ Base Price (Host Sets)                           €100.00        │
+├─────────────────────────────────────────────────────────────────┤
+│ COWORKER SIDE:                                                  │
+│   Guest Fee (5% of Base)                         +€5.00         │
+│   VAT on Guest Fee (22%)                         +€1.10         │
+│   ─────────────────────────────────────────────────────         │
+│   TOTAL COWORKER PAYS                           €106.10         │
+├─────────────────────────────────────────────────────────────────┤
+│ HOST SIDE:                                                      │
+│   Base Price                                     €100.00        │
+│   Host Fee (5% of Base)                          -€5.00         │
+│   ─────────────────────────────────────────────────────         │
+│   HOST RECEIVES (Stripe Transfer)                €95.00         │
+├─────────────────────────────────────────────────────────────────┤
+│ PLATFORM REVENUE:                                               │
+│   Guest Fee                                       €5.00         │
+│   Guest VAT                                       €1.10         │
+│   Host Fee                                        €5.00         │
+│   ─────────────────────────────────────────────────────         │
+│   PLATFORM GETS (Application Fee)               €11.10         │
+├─────────────────────────────────────────────────────────────────┤
+│ VERIFICATION: €106.10 = €95.00 + €11.10          ✓ BALANCED    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Changes to `fetchBookingAndPrice` function (lines 41-55):**
+---
 
+## Technical Implementation
+
+### Phase 1: Update `create-checkout-v3` (Critical)
+
+**File:** `supabase/functions/create-checkout-v3/index.ts`
+
+**Changes Required:**
+
+1. **Import the Pricing Engine:**
+```typescript
+import { PricingEngine } from "../_shared/pricing-engine.ts";
+```
+
+2. **Fetch Host's Stripe Account ID:**
 ```typescript
 async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, user_id, status, total_price, space_id")  // ADD space_id
+    .select(`
+      id, user_id, status, total_price, space_id,
+      spaces!inner (
+        host_id,
+        profiles!inner (stripe_account_id)
+      )
+    `)
     .eq("id", booking_id)
     .single();
-
-  if (error || !data) return { error: "booking_not_found" };
-  if (data.user_id !== user_id) return { error: "forbidden" };
-  if (data.status !== "pending_payment") return { error: "invalid_booking_status" };
-
-  const amountCents = Math.max(0, Math.round(Number(data.total_price) * 100));
-  const currency = "eur";
-  return { booking: data, amountCents, currency, spaceId: data.space_id };  // ADD spaceId
+  // ... return hostStripeAccountId
 }
 ```
 
-**Changes to `CreateCheckoutBody` type (line 5):**
-
+3. **Calculate Pricing Breakdown:**
 ```typescript
-type CreateCheckoutBody = { 
-  booking_id: string;
-  origin?: string;  // Frontend origin for redirect URLs
-};
+const basePrice = bookingRes.booking.total_price; // This is the BASE price
+const pricing = PricingEngine.calculatePricing(basePrice);
+
+// Convert to cents for Stripe
+const totalChargeCents = Math.round(pricing.totalGuestPay * 100);
+const applicationFeeCents = Math.round(pricing.applicationFee * 100);
+const hostPayoutCents = Math.round(pricing.hostPayout * 100);
 ```
 
-**Changes to main handler (lines 196-207):**
-
+4. **Configure Stripe Checkout with Connect:**
 ```typescript
-// Get origin from request for redirect URLs
-const origin = req.headers.get('origin') || payload.origin || 'https://workover-hub-connect.lovable.app';
-
-// ... existing validation code ...
-
-const stripe = await createStripeCheckoutSession({
-  amountCents: bookingRes.amountCents!,
-  currency: bookingRes.currency!,
-  idempotencyKey,
-  booking_id: payload.booking_id,
-  origin,                           // NEW
-  space_id: bookingRes.spaceId!,    // NEW
+const body = new URLSearchParams({
+  mode: "payment",
+  "payment_method_types[]": "card",
+  "line_items[0][quantity]": "1",
+  "line_items[0][price_data][currency]": "eur",
+  "line_items[0][price_data][unit_amount]": String(totalChargeCents),
+  "line_items[0][price_data][product_data][name]": `Prenotazione ${params.booking_id}`,
+  
+  // STRIPE CONNECT: Route payment to Host
+  "payment_intent_data[application_fee_amount]": String(applicationFeeCents),
+  "payment_intent_data[transfer_data][destination]": params.hostStripeAccountId,
+  
+  // METADATA: Required for webhook processing
+  "metadata[booking_id]": params.booking_id,
+  "metadata[base_amount]": String(basePrice),
+  "metadata[user_id]": params.user_id,
+  "metadata[host_net_payout]": String(pricing.hostPayout),
+  "metadata[total_platform_fee]": String(pricing.applicationFee),
+  
+  success_url: `${frontendOrigin}/spaces/${params.space_id}/booking-success?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${frontendOrigin}/bookings?canceled=true&booking_id=${params.booking_id}`,
 });
 ```
 
 ---
 
-## Technical Details
+### Phase 2: Database Update for `total_price` Storage
 
-### Current Flow (BROKEN)
-```text
-User clicks Pay → Stripe Checkout → Payment Complete
-                                         ↓
-                      Redirect to: supabase.co/functions/v1/validate-payment
-                                         ↓
-                      401 Unauthorized (no auth headers) ❌
+**Issue:** Currently `total_price` in bookings stores the **base price** (€100), not the total charged. We need to clarify this semantic.
+
+**Decision:** Keep `total_price` as BASE PRICE (what host set). The Pricing Engine calculates the rest dynamically.
+
+**Add New Migration** to ensure booking has `base_price` column (or rename for clarity):
+```sql
+-- Add comment to clarify semantics
+COMMENT ON COLUMN public.bookings.total_price IS 
+  'Base price set by host (before fees). Guest pays more, Host receives less.';
 ```
 
-### Fixed Flow
-```text
-User clicks Pay → Stripe Checkout → Payment Complete
-                                         ↓
-                      Redirect to: workover-hub-connect.lovable.app/spaces/{id}/booking-success
-                                         ↓
-                      Frontend shows success page with confetti ✅
-                                         ↓
-                      (Meanwhile) Stripe Webhook → checkout.session.completed
-                                         ↓
-                      stripe-webhooks Edge Function confirms booking ✅
+---
+
+### Phase 3: Fix `validate-payment` Function
+
+**File:** `supabase/functions/validate-payment/index.ts`
+
+**Current Issues:**
+1. ✅ Import is correct (`../_shared/error-handler.ts`)
+2. ✅ No `workspaces` references
+3. ⚠️ Missing `base_amount` handling from metadata
+
+**Add Fallback for `base_amount`:**
+```typescript
+// If metadata missing base_amount, calculate from session amount
+let baseAmount: number;
+if (session.metadata?.base_amount) {
+  baseAmount = parseFloat(session.metadata.base_amount);
+} else {
+  // Reverse-engineer from amount_total (not ideal but prevents crash)
+  // totalGuestPay = basePrice * 1.061 (5% fee + 22% VAT on fee)
+  baseAmount = (session.amount_total || 0) / 100 / 1.061;
+}
 ```
 
-### Webhook Verification
-The `stripe-webhooks/index.ts` already handles `checkout.session.completed` events (line 44), which properly updates the payment and booking status. The frontend success page is purely presentational.
+---
+
+### Phase 4: Update `upsertPayment` Function
+
+Store the breakdown in the payments table:
+
+```typescript
+async function upsertPayment(params: {
+  booking_id: string;
+  user_id: string;
+  amount: number;        // Total charged (cents)
+  currency: string;
+  host_amount: number;   // Host payout (euros)
+  platform_fee: number;  // Platform revenue (euros)
+  // ... other fields
+}) {
+  const insert = {
+    booking_id: params.booking_id,
+    user_id: params.user_id,
+    amount: params.amount / 100,  // Convert to euros
+    currency: params.currency,
+    host_amount: params.host_amount,
+    platform_fee: params.platform_fee,
+    // ... 
+  };
+}
+```
 
 ---
 
@@ -145,16 +185,59 @@ The `stripe-webhooks/index.ts` already handles `checkout.session.completed` even
 
 | File | Changes |
 |------|---------|
-| `supabase/functions/create-checkout-v3/index.ts` | Update success_url, cancel_url, add origin/space_id params |
+| `supabase/functions/create-checkout-v3/index.ts` | Import PricingEngine, add Stripe Connect params, add metadata |
+| `supabase/functions/validate-payment/index.ts` | Add fallback for missing base_amount |
+| `supabase/migrations/XXXXXX_clarify_total_price.sql` | Add column comment for clarity |
 
 ---
 
-## Verification Checklist
+## Stripe Connect Requirements
+
+**Prerequisites for this to work:**
+1. Hosts must have a connected Stripe account (`stripe_account_id` in profiles)
+2. The platform Stripe account must be in "destination charges" mode
+3. `STRIPE_SECRET_KEY` must be the platform's secret key
+
+**Current State Check:**
+- Hosts DO have `stripe_account_id` stored ✓
+- `stripe_connected` flag exists ✓
+- We need to use `payment_intent_data.transfer_data.destination` for split payments
+
+---
+
+## Verification Steps
 
 After implementation:
-- [ ] Complete a test payment flow
-- [ ] Verify redirect goes to `/spaces/{id}/booking-success?session_id=...`
-- [ ] Confirm confetti animation plays on success page
-- [ ] Verify `stripe-webhooks` still processes `checkout.session.completed` event
-- [ ] Confirm booking status updates to `confirmed` in database
+1. Create a test booking for €100
+2. Verify Stripe Checkout shows €106.10 as total
+3. Complete payment
+4. Check Stripe Dashboard:
+   - Payment: €106.10
+   - Application Fee: €11.10
+   - Transfer to Host: €95.00
+5. Check `payments` table:
+   - `amount`: 106.10
+   - `host_amount`: 95.00
+   - `platform_fee`: 11.10
 
+---
+
+## Edge Cases Handled
+
+| Scenario | Handling |
+|----------|----------|
+| Low value booking (€5) | Guest Fee floor of €0.50 applies |
+| Host Stripe not connected | RPC already blocks booking creation |
+| Missing base_amount in webhook | Fallback calculation from total |
+| Duplicate webhook events | Existing idempotency check via `stripe_event_id` |
+
+---
+
+## Summary
+
+This implementation:
+1. **Activates the Pricing Engine** in checkout
+2. **Enables Stripe Connect** for automatic payment splits
+3. **Fixes metadata** for webhook processing
+4. **Adds resilience** with fallback calculations
+5. **Generates €11.10 platform revenue** per €100 booking (vs. €0 currently)
