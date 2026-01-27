@@ -37,32 +37,33 @@ export const useAchievements = (userId?: string) => {
     // Real-time subscription for achievement updates
     const channel = supabase
       .channel(`achievements-${userId}`)
-      .on<UserAchievementRow>(
-        'postgres_changes' as const,
+      .on(
+        'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_achievements',
           filter: `user_id=eq.${userId}`
-        } as const,
-        (payload: RealtimePayload<UserAchievementRow>) => {
-          sreLogger.debug('Achievement realtime event', { payload });
+        },
+        (payload) => {
+          const typedPayload = payload as unknown as RealtimePayload<UserAchievementRow>;
+          sreLogger.debug('Achievement realtime event', { payload: typedPayload });
           
-          if (payload.eventType === 'INSERT') {
-            if (payload.new) {
-              const newAchievement = payload.new as Achievement;
+          if (typedPayload.eventType === 'INSERT') {
+            if (typedPayload.new) {
+              const newAchievement = typedPayload.new as Achievement;
               setAchievements(prev => [...prev, newAchievement]);
               toast.success(`🎉 Achievement unlocked: ${newAchievement.title}`);
             }
-          } else if (payload.eventType === 'UPDATE') {
-            const newId = getRecordId(payload.new);
-            if (newId && payload.new) {
+          } else if (typedPayload.eventType === 'UPDATE') {
+            const newId = getRecordId(typedPayload.new);
+            if (newId && typedPayload.new) {
               setAchievements(prev =>
-                prev.map(a => a.id === newId ? payload.new as Achievement : a)
+                prev.map(a => a.id === newId ? typedPayload.new as Achievement : a)
               );
             }
-          } else if (payload.eventType === 'DELETE') {
-            const oldId = getRecordId(payload.old);
+          } else if (typedPayload.eventType === 'DELETE') {
+            const oldId = getRecordId(typedPayload.old);
             if (oldId) {
               setAchievements(prev => prev.filter(a => a.id !== oldId));
             }

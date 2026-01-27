@@ -19,14 +19,14 @@ interface HostPayoutBookingRow {
 const fetchHostPayoutEvents = async (hostId: string): Promise<HostPayoutEvent[]> => {
   const { data: spaces, error: spacesError } = await supabase
     .from('spaces')
-    .select('id, title:name')
+    .select('id, title')
     .eq('host_id', hostId);
 
   if (spacesError) {
     throw spacesError;
   }
 
-  const hostSpaces = (spaces ?? []) as HostSpaceLookup[];
+  const hostSpaces = (spaces ?? []) as unknown as HostSpaceLookup[];
 
   if (hostSpaces.length === 0) {
     return [];

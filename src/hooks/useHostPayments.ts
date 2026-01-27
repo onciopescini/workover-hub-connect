@@ -37,7 +37,7 @@ export interface HostPayment {
   }[] | null;
 }
 
-export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
+export const useHostPayments = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,9 +46,9 @@ export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
     });
   }, []);
 
-  return useQuery<HostPayment[], Error>({
+  return useQuery({
     queryKey: queryKeys.hostPayments.list(userId ?? undefined),
-    queryFn: async () => {
+    queryFn: async (): Promise<HostPayment[]> => {
       if (!userId) throw new Error('User not authenticated');
 
       // Fetch payments with bookings (without nested spaces to avoid FK issues)
@@ -94,11 +94,11 @@ export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
       const spaceIds = [...new Set(data?.map(p => p.bookings?.space_id).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
         .from('spaces')
-        .select('id, title:name, host_id')
+        .select('id, title, host_id')
         .in('id', spaceIds)
         .eq('host_id', userId);
         
-      const spacesMap = new Map(spaces?.map(s => [s.id, s]) || []);
+      const spacesMap = new Map((spaces ?? []).map(s => [s.id, s]));
       
       // Fetch coworker profiles separately
       const userIds = [...new Set(data?.map(p => p.bookings?.user_id).filter((id): id is string => id !== null) || [])];
@@ -116,14 +116,14 @@ export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
           const space = payment.bookings?.space_id ? spacesMap.get(payment.bookings.space_id) : null;
           const coworker = payment.bookings?.user_id ? profilesMap.get(payment.bookings.user_id) : null;
           
-          return {
+          const result: HostPayment = {
             id: payment.id,
             amount: payment.amount,
             host_amount: payment.host_amount,
             platform_fee: payment.platform_fee,
             currency: payment.currency,
             payment_status: payment.payment_status,
-            created_at: payment.created_at,
+            created_at: payment.created_at ?? '',
             stripe_transfer_id: payment.stripe_transfer_id,
             receipt_url: payment.receipt_url,
             booking: payment.bookings ? {
@@ -137,6 +137,7 @@ export const useHostPayments = (): UseQueryResult<HostPayment[], Error> => {
             invoice: payment.invoices || null,
             non_fiscal_receipt: payment.non_fiscal_receipts || null
           };
+          return result;
         });
 
       return payments;

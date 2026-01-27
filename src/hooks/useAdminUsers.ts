@@ -90,27 +90,44 @@ export const useAdminUsers = ({
         }
 
         // Merge profiles con system_roles
-        const usersWithRoles: AdminUserWithRoles[] = profilesData.map(profile => {
+        const usersWithRoles = profilesData.map(profile => {
           // Defensive coding: Ensure rolesData is treated as an array and userRoles is always an array
           const roles = Array.isArray(rolesData) ? rolesData : [];
           const userRoles = roles
             .filter((role): role is UserRoleRow => role.user_id === profile.id)
             .map((role) => ({
-              ...role,
-              role: role.role as 'admin' | 'moderator'
+              id: role.id,
+              user_id: role.user_id,
+              role: role.role as 'admin' | 'moderator',
+              assigned_at: role.assigned_at,
+              assigned_by: role.assigned_by
             }))
             .filter((role) => role.role === 'admin' || role.role === 'moderator');
 
           const primaryRole = userRoles.length > 0 ? 'admin' : 'coworker';
           
-          return {
-            ...profile,
-            email: 'N/A', // Email is not in profiles table, handled by UI usually or specific admin view
+          const adminUser: AdminUserWithRoles = {
+            id: profile.id,
+            email: 'N/A',
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
             role: primaryRole,
+            profile_photo_url: profile.profile_photo_url,
+            created_at: profile.created_at || '',
+            updated_at: profile.updated_at || '',
+            last_login_at: profile.last_login_at,
+            phone: profile.phone,
+            city: profile.city,
+            profession: profile.profession,
             competencies: profile.competencies ? (Array.isArray(profile.competencies) ? profile.competencies : JSON.parse(profile.competencies as unknown as string)) : [],
             industries: profile.industries ? (Array.isArray(profile.industries) ? profile.industries : JSON.parse(profile.industries as unknown as string)) : [],
+            is_suspended: profile.is_suspended ?? false,
+            suspension_reason: profile.suspension_reason,
+            banned_at: profile.banned_at,
+            ban_reason: profile.ban_reason,
             system_roles: userRoles
           };
+          return adminUser;
         });
         
         setUsers(usersWithRoles);

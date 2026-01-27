@@ -53,7 +53,7 @@ export function useOptimizedMutation<TData = unknown, TError = Error, TVariables
       if (invalidateKeys) {
         for (const keyArray of invalidateKeys) {
           const keyString = keyArray.join('_');
-          const invalidateMap = invalidateUtils as Record<string, () => Promise<void> | void>;
+          const invalidateMap = invalidateUtils as unknown as Record<string, (...args: unknown[]) => Promise<void> | void>;
           const invalidateFn = invalidateMap[keyString];
           if (typeof invalidateFn === 'function') {
             await invalidateFn();

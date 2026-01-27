@@ -33,7 +33,7 @@ interface RawBookingData {
   service_completed_at?: string | null;
 
   // The fetcher returns 'spaces' (joined table)
-  spaces?: RawSpace | RawSpace[] | null;
+  spaces?: RawSpace | RawSpace[] | null | undefined;
 
   // Legacy or alternative field structure
   space?: {
@@ -44,7 +44,7 @@ interface RawBookingData {
     host_id?: string;
     price_per_day?: number;
     confirmation_type?: string;
-  };
+  } | undefined;
 
   coworker?: {
     id?: string;
@@ -56,9 +56,10 @@ interface RawBookingData {
     first_name?: string;
     last_name?: string;
     profile_photo_url?: string | null;
-  } | null;
+  } | null | undefined;
 
-  payments?: unknown[] | null;
+  // Accept undefined from Supabase queries (exactOptionalPropertyTypes: true)
+  payments?: unknown[] | null | undefined;
   
   // Allow for extra properties from the database
   [key: string]: unknown;

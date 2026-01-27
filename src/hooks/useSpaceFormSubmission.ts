@@ -109,7 +109,8 @@ export const useSpaceFormSubmission = ({
         category: (formData.category as Database["public"]["Enums"]["space_category"]) || 'home',
         rules: formData.rules || null,
         cancellation_policy: (formData.cancellation_policy as Database["public"]["Enums"]["cancellation_policy"] | null) || null,
-        availability: availabilityData,
+        // Cast availability to Json type for database compatibility
+        availability: availabilityData as unknown as Database['public']['Tables']['spaces']['Insert']['availability'],
         host_id: user.id,
         description: formData.description || "",
         photos: photoUrls,

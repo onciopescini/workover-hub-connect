@@ -71,8 +71,10 @@ export const useAnalytics = () => {
 
       // Plausible tracking for custom events
       const plausible = getPlausible();
-      if (plausible) {
-        plausible(eventName, { props: properties });
+      if (plausible && properties) {
+        plausible(eventName, { props: properties as Record<string, unknown> });
+      } else if (plausible) {
+        plausible(eventName);
       }
     } catch (error) {
       Sentry.captureException(error);

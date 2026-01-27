@@ -9,8 +9,13 @@ import type { PostgrestError } from "@supabase/supabase-js";
 export const useUserActions = (updateUser: (userId: string, updates: Partial<AdminUserWithRoles>) => void) => {
   type RoleRpcResult = { success: boolean; error?: string };
 
-  const callRoleRpc = async (fn: string, args: Record<string, string>) => {
-    return supabase.rpc(fn as unknown as keyof Database["public"]["Functions"], args) as {
+  const callRoleRpc = async (fn: string, args: Record<string, string>): Promise<{
+    data: RoleRpcResult | null;
+    error: PostgrestError | null;
+  }> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (supabase.rpc as any)(fn, args);
+    return result as {
       data: RoleRpcResult | null;
       error: PostgrestError | null;
     };

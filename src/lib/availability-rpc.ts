@@ -25,9 +25,9 @@ function isValidationResult(data: unknown): data is ValidationResult {
     return false;
   }
 
-  const valid = data.valid;
-  const conflicts = data.conflicts;
-  const message = data.message;
+  const valid = data['valid'];
+  const conflicts = data['conflicts'];
+  const message = data['message'];
 
   return (
     typeof valid === 'boolean' &&

@@ -17,8 +17,8 @@ const toBookingSpace = (value: unknown): BookingSpace | null => {
     return null;
   }
 
-  const title = typeof value.title === "string" ? value.title : null;
-  const name = typeof value.name === "string" ? value.name : null;
+  const title = typeof value['title'] === "string" ? value['title'] : null;
+  const name = typeof value['name'] === "string" ? value['name'] : null;
 
   if (!title && !name) {
     return null;
@@ -28,7 +28,7 @@ const toBookingSpace = (value: unknown): BookingSpace | null => {
 };
 
 export const resolveBookingSpace = (booking: Record<string, unknown>): BookingSpace | null => {
-  const relation = booking.space ?? booking.spaces ?? booking.workspaces;
+  const relation = booking['space'] ?? booking['spaces'] ?? booking['workspaces'];
   if (Array.isArray(relation)) {
     return toBookingSpace(relation[0]);
   }
@@ -37,7 +37,7 @@ export const resolveBookingSpace = (booking: Record<string, unknown>): BookingSp
 };
 
 export const resolveBookingCoworker = (booking: Record<string, unknown>): BookingCoworker | null => {
-  const coworkerRelation = booking.coworker;
+  const coworkerRelation = booking['coworker'];
   if (Array.isArray(coworkerRelation)) {
     return isRecord(coworkerRelation[0]) ? (coworkerRelation[0] as BookingCoworker) : null;
   }
