@@ -65,10 +65,6 @@ export function RefactoredBookingsDashboardContent() {
         isChatEnabled={isChatEnabled}
         onOpenMessageDialog={actions.onOpenMessageDialog}
         onOpenCancelDialog={actions.onOpenCancelDialog}
-        messageDialogOpen={dashboardState.dialogStates.messageDialog}
-        setMessageDialogOpen={setMessageDialogOpen}
-        messageBookingId={dashboardState.dialogStates.messageBookingId}
-        messageSpaceTitle={dashboardState.dialogStates.messageSpaceTitle}
         cancelDialogOpen={dashboardState.dialogStates.cancelDialog}
         setCancelDialogOpen={setCancelDialogOpen}
         selectedBooking={dashboardState.selectedBooking}

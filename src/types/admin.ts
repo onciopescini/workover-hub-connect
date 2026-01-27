@@ -40,11 +40,33 @@ export interface AdminBooking {
 export interface AdminActionLog {
   id: string;
   admin_id: string;
-  action: string;
-  target_id?: string;
-  details?: unknown;
-  created_at: string;
+  action_type: string;
+  target_type: string;
+  target_id: string;
+  description: string;
+  created_at: string | null;
+  metadata?: Record<string, unknown>;
+  ip_address?: unknown;
+  user_agent?: string | null;
+  geo_location?: unknown;
+  session_id?: string | null;
   admin_email?: string;
+  // Legacy field for backward compatibility
+  action?: string;
+  details?: unknown;
+}
+
+export interface AdminSpace {
+  id: string;
+  title: string;
+  author_id: string;
+  category: string;
+  published: boolean;
+  is_suspended: boolean;
+  created_at: string;
+  city?: string;
+  address?: string;
+  workspace_features?: string[];
 }
 
 export interface AdminStats {

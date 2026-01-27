@@ -2,6 +2,7 @@ export interface ChatParticipant {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  email?: string | null;
   profile_photo_url: string | null;
   avatar_url: string | null;
 }

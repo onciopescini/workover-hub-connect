@@ -55,17 +55,17 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
       const systemAlerts: SystemAlert[] = (errorLogs || []).map(log => {
         const metadata = typeof log.metadata === 'object' && log.metadata !== null
           ? (log.metadata as Record<string, unknown>)
-          : undefined;
+          : {};
         return {
           id: log.id,
           type: log.action_type.includes('security') ? 'security' : 
                 log.action_type.includes('performance') ? 'performance' : 'error',
           severity: determineSeverity(metadata),
           title: log.description,
-          message: typeof metadata?.message === 'string' ? metadata.message : log.description,
+          message: typeof metadata['message'] === 'string' ? metadata['message'] : log.description,
           timestamp: new Date(log.created_at || Date.now()),
-          metadata: metadata || undefined,
-          acknowledged: typeof metadata?.acknowledged === 'boolean' ? metadata.acknowledged : false,
+          metadata: metadata,
+          acknowledged: typeof metadata['acknowledged'] === 'boolean' ? metadata['acknowledged'] : false,
         };
       });
 
@@ -174,8 +174,8 @@ export const useSystemAlerts = (options: UseSystemAlertsOptions = {}) => {
 function determineSeverity(metadata?: Record<string, unknown>): SystemAlert['severity'] {
   if (!metadata) return 'info';
   
-  const levelValue = typeof metadata.level === 'string' ? metadata.level : undefined;
-  const severity = typeof metadata.severity === 'string' ? metadata.severity : levelValue;
+  const levelValue = typeof metadata['level'] === 'string' ? metadata['level'] : undefined;
+  const severity = typeof metadata['severity'] === 'string' ? metadata['severity'] : levelValue;
   if (severity === 'critical' || severity === 'error') return 'critical';
   if (severity === 'warning' || severity === 'warn') return 'warning';
   return 'info';

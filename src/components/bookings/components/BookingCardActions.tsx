@@ -39,8 +39,8 @@ export const BookingCardActions = ({ booking, displayData, actions, userRole = '
       // Handle profiles as potential array (Supabase relation)
       const profilesValue = isRecord(spaceData) ? spaceData.profiles : undefined;
       const stripeConnected = Array.isArray(profilesValue)
-        ? isRecord(profilesValue[0]) && profilesValue[0].stripe_connected === true
-        : isRecord(profilesValue) && profilesValue.stripe_connected === true;
+        ? isRecord(profilesValue[0]) && profilesValue[0]['stripe_connected'] === true
+        : isRecord(profilesValue) && profilesValue['stripe_connected'] === true;
       if (spaceError || !stripeConnected) {
         toast.error('Host non collegato a Stripe');
         return;

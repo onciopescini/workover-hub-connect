@@ -74,7 +74,7 @@ export function useCheckout(): UseCheckoutResult {
         logError('Reservation failed', new Error(reservation.error || 'Unknown error'));
         return {
           success: false,
-          error: reservation.error,
+          error: reservation.error || 'Reservation failed',
           errorCode: reservation.errorCode || 'RESERVE_FAILED'
         };
       }
@@ -95,7 +95,7 @@ export function useCheckout(): UseCheckoutResult {
         logError('Checkout failed', new Error(checkout.error || 'No checkout URL'));
         return {
           success: false,
-          error: checkout.error,
+          error: checkout.error || 'Checkout failed',
           errorCode: checkout.errorCode || 'CHECKOUT_FAILED'
         };
       }
@@ -104,7 +104,7 @@ export function useCheckout(): UseCheckoutResult {
       debug('Redirecting to Stripe', { url: checkout.url });
       window.location.href = checkout.url;
 
-      return { success: true, bookingId: reservation.bookingId };
+      return { success: true, bookingId: reservation.bookingId || '' };
 
     } catch (err) {
       const caughtError = err instanceof Error ? err : new Error('Unknown error occurred');
