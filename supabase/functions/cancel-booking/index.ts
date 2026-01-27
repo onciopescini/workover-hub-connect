@@ -99,9 +99,9 @@ serve(async (req) => {
       });
     }
 
-    // Fetch Workspace (Host ID)
+    // Fetch Space (Host ID)
     const { data: workspace, error: workspaceError } = await supabaseClient
-      .from('workspaces')
+      .from('spaces')
       .select('host_id, title:name')
       .eq('id', booking.space_id)
       .single();

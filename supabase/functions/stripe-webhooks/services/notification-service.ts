@@ -83,7 +83,7 @@ export class NotificationService {
     booking: any
   ): Promise<void> {
     // This method is kept for backward compatibility with existing code
-    const confirmationType = booking.workspaces?.confirmation_type || 'instant';
+    const confirmationType = booking.spaces?.confirmation_type || 'instant';
     
     // Send In-App & Email based on type
     if (confirmationType === 'instant') {
@@ -91,10 +91,10 @@ export class NotificationService {
         supabaseAdmin,
         booking.user_id,
         'Prenotazione confermata!',
-        `La tua prenotazione presso "${booking.workspaces.title}" è stata confermata automaticamente.`,
+        `La tua prenotazione presso "${booking.spaces.title}" è stata confermata automaticamente.`,
         {
           booking_id: booking.id,
-          space_title: booking.workspaces.title,
+          space_title: booking.spaces.title,
           confirmation_type: confirmationType
         }
       );
@@ -119,10 +119,10 @@ export class NotificationService {
         supabaseAdmin,
         booking.user_id,
         'Richiesta inviata',
-        `La richiesta per "${booking.workspaces.title}" è stata inviata all'host.`,
+        `La richiesta per "${booking.spaces.title}" è stata inviata all'host.`,
         {
           booking_id: booking.id,
-          space_title: booking.workspaces.title,
+          space_title: booking.spaces.title,
           confirmation_type: confirmationType
         }
       );

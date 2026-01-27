@@ -12,7 +12,7 @@ export class BookingService {
           status,
           space_id,
           user_id,
-          workspaces!inner (
+          spaces!inner (
             id,
             confirmation_type,
             host_id,

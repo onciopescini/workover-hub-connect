@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { ErrorHandler } from "../shared/error-handler.ts";
+import { ErrorHandler } from "../_shared/error-handler.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,12 +64,12 @@ serve(async (req) => {
       .from('bookings')
       .select(`
         *,
-        workspaces (
+        spaces (
           title,
           address,
           city_name,
           cancellation_policy,
-          host:profiles!workspaces_owner_id_fkey (
+          host:profiles!spaces_owner_id_fkey (
             first_name,
             last_name,
             phone,
@@ -94,9 +94,9 @@ serve(async (req) => {
 
     // 2. Prepare Data (Logica FASE 2 adattata alla struttura dati del Main)
     const guestName = `${booking.user.first_name || ''} ${booking.user.last_name || ''}`.trim();
-    const hostProfile = booking.workspaces.host;
+    const hostProfile = booking.spaces.host;
     const hostName = `${hostProfile.first_name || ''} ${hostProfile.last_name || ''}`.trim();
-    const spaceTitle = booking.workspaces.title;
+    const spaceTitle = booking.spaces.title;
 
     // Format helpers
     const formatDate = (date: string) => new Date(date).toLocaleDateString('it-IT');
@@ -121,10 +121,10 @@ serve(async (req) => {
             amount: (booking.total_price || 0) * 100, // Cents conversion
             currency: booking.currency || 'eur',
             bookingId: booking.id,
-            spaceAddress: booking.workspaces.address,
+            spaceAddress: booking.spaces.address,
             hostName: hostName,
             hostPhone: hostProfile.phone,
-            cancellationPolicy: booking.workspaces.cancellation_policy
+            cancellationPolicy: booking.spaces.cancellation_policy
           }
         };
 
