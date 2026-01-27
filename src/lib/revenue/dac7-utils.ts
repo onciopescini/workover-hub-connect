@@ -1,34 +1,27 @@
-
-import { supabase } from "@/integrations/supabase/client";
+import * as fiscalService from "@/services/api/fiscalService";
 import { DAC7Data, Dac7ThresholdResult } from "../types/host-revenue-types";
-import { sreLogger } from '@/lib/sre-logger';
 
 export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC7Data> => {
-  const { data, error } = await supabase
-    .from('dac7_reports')
-    .select('*')
-    .eq('host_id', hostId)
-    .eq('reporting_year', year)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    sreLogger.error('Error fetching DAC7 data', { error, hostId, year });
-    throw error;
+  // First try to get existing report
+  try {
+    const reports = await fiscalService.getDAC7Reports({ hostId, year });
+    
+    if (reports.length > 0) {
+      const data = reports[0];
+      return {
+        totalIncome: data?.total_income || 0,
+        totalTransactions: data?.total_transactions || 0,
+        thresholdMet: data?.reporting_threshold_met || false,
+        reportingYear: data?.reporting_year || year
+      };
+    }
+  } catch {
+    // If no report exists, calculate thresholds
   }
 
-  if (!data) {
-    // Calculate DAC7 thresholds if no report exists
-    const { data: calculatedData, error: calcError } = await supabase.rpc('calculate_dac7_thresholds', {
-      host_id_param: hostId,
-      year_param: year
-    });
-
-    if (calcError) {
-      sreLogger.error('Error calculating DAC7 thresholds', { error: calcError, hostId, year });
-      throw calcError;
-    }
-
-    const dac7: Dac7ThresholdResult = calculatedData as unknown as Dac7ThresholdResult;
+  // Calculate DAC7 thresholds if no report exists
+  try {
+    const dac7 = await fiscalService.calculateDAC7Thresholds(hostId, year);
 
     return {
       totalIncome: dac7?.total_income || 0,
@@ -36,12 +29,13 @@ export const getHostDAC7Data = async (hostId: string, year: number): Promise<DAC
       thresholdMet: dac7?.threshold_met || false,
       reportingYear: year
     };
+  } catch {
+    // Return default values on error
+    return {
+      totalIncome: 0,
+      totalTransactions: 0,
+      thresholdMet: false,
+      reportingYear: year
+    };
   }
-
-  return {
-    totalIncome: data.total_income || 0,
-    totalTransactions: data.total_transactions || 0,
-    thresholdMet: data.reporting_threshold_met || false,
-    reportingYear: data.reporting_year
-  };
 };

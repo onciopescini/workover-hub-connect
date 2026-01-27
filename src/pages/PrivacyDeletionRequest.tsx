@@ -5,10 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Trash2, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from '@/integrations/supabase/client';
+import * as privacyService from '@/services/api/privacyService';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from 'sonner';
+import { sreLogger } from '@/lib/sre-logger';
 
 const PrivacyDeletionRequest = () => {
   const navigate = useNavigate();
@@ -25,23 +26,17 @@ const PrivacyDeletionRequest = () => {
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('confirm-account-deletion', {
-        body: { reason },
-        headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-      });
+      const result = await privacyService.confirmAccountDeletion(reason);
 
-      if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
+      if (!result.success) {
+        toast.error(result.error || 'Errore durante l\'invio della richiesta');
         return;
       }
 
       toast.success('Richiesta inviata! Controlla la tua email per confermare.');
       navigate('/privacy');
     } catch (error) {
-      console.error('Error:', error);
+      sreLogger.error('Error submitting deletion request', { component: 'PrivacyDeletionRequest' }, error as Error);
       toast.error('Errore durante l\'invio della richiesta');
     } finally {
       setIsSubmitting(false);
