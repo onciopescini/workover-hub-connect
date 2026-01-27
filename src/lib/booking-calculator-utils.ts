@@ -85,7 +85,5 @@ export const calculateBookingDetails = (
   };
 };
 
-// Helper function for CSS classes
-export const cn = (...classes: (string | undefined | boolean)[]): string => {
-  return classes.filter(Boolean).join(' ');
-};
+// cn is now imported from @/lib/utils - this duplicate has been removed
+// import { cn } from '@/lib/utils';

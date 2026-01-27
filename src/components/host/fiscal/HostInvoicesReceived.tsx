@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/auth/useAuth";
 import { FileText, Download, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
 
 export const HostInvoicesReceived = () => {
   const { authState } = useAuth();
@@ -94,9 +95,9 @@ export const HostInvoicesReceived = () => {
                         <Calendar className="h-3 w-3" />
                         {new Date(invoice.invoice_date).toLocaleDateString('it-IT')}
                       </p>
-                      <p>Imponibile: €{Number(invoice.base_amount).toFixed(2)}</p>
-                      <p>IVA: €{Number(invoice.vat_amount).toFixed(2)}</p>
-                      <p className="font-medium">Totale: €{Number(invoice.total_amount).toFixed(2)}</p>
+                      <p>Imponibile: {formatCurrency(Number(invoice.base_amount))}</p>
+                      <p>IVA: {formatCurrency(Number(invoice.vat_amount))}</p>
+                      <p className="font-medium">Totale: {formatCurrency(Number(invoice.total_amount))}</p>
                     </div>
                   </div>
 

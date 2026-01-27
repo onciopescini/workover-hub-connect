@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { FileText, Download, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/format";
 
 export const HostNonFiscalReceipts = () => {
   const { authState } = useAuth();
@@ -103,11 +104,11 @@ export const HostNonFiscalReceipts = () => {
                           {new Date(receipt.receipt_date).toLocaleDateString('it-IT')}
                         </p>
                         <p>Spazio: {(space as any)?.title}</p>
-                        <p>Importo canone: €{Number(receipt.canone_amount).toFixed(2)}</p>
+                        <p>Importo canone: {formatCurrency(Number(receipt.canone_amount))}</p>
                         {receipt.discount_amount && receipt.discount_amount > 0 && (
-                          <p>Sconto: €{Number(receipt.discount_amount).toFixed(2)}</p>
+                          <p>Sconto: {formatCurrency(Number(receipt.discount_amount))}</p>
                         )}
-                        <p className="font-medium">Totale: €{Number(receipt.total_amount).toFixed(2)}</p>
+                        <p className="font-medium">Totale: {formatCurrency(Number(receipt.total_amount))}</p>
                       </div>
                     </div>
 

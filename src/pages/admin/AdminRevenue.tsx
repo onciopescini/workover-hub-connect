@@ -13,6 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LoadingScreen from '@/components/LoadingScreen';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/format';
 
 const AdminRevenue = () => {
   const { data: revenueData, isLoading, error } = useQuery({
@@ -28,12 +29,7 @@ const AdminRevenue = () => {
     }
   });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
+  // formatCurrency imported from @/lib/format
 
   const formatDate = (dateString: string) => {
     // Handling date string to avoid timezone issues when just displaying Month/Year

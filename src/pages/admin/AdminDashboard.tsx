@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, DollarSign, TrendingUp } from 'lucide-react';
 import LoadingScreen from '@/components/LoadingScreen';
 import { AdminPlatformRevenue, AdminUserStats } from '@/types/admin';
+import { formatCurrency } from '@/lib/format';
 
 export const AdminDashboard = () => {
   // Fetch Platform Revenue
@@ -61,13 +62,7 @@ export const AdminDashboard = () => {
   const grossVolume = calculateGrossVolume(revenueData || null);
   const estimatedRevenue = calculateEstimatedRevenue(revenueData || null);
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
+  // formatCurrency imported from @/lib/format
 
   return (
     <div className="space-y-6">

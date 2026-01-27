@@ -13,6 +13,7 @@ import { AdminBooking } from '@/types/admin';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { mapAdminBookingRecord } from '@/lib/admin-mappers';
+import { formatCurrency } from '@/lib/format';
 import {
   Table,
   TableBody,
@@ -89,22 +90,7 @@ export const AdminBookingsPage = () => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount / 100); // Assuming amount is in cents, though view might return float. Check view logic.
-    // Wait, payments table amount is usually in cents for Stripe.
-    // But if stored as integer cents, need /100. If stored as float/numeric, maybe not.
-    // The payments table definition showed 'amount: number'.
-    // Typically Stripe amounts are cents.
-    // However, I should verifying if existing codebase divides by 100.
-    // Looking at `src/types/payment.ts`, no explicit conversion helper is shown.
-    // I'll assume standard Stripe cents for now. If the values look huge, I'll know.
-    // Actually, `admin_get_bookings` logic sums `amount`.
-    // If `payments.amount` is float (euros), then fine. If cents, need /100.
-    // I will divide by 100 to be safe for Stripe defaults, consistent with other dashboards.
-  };
+  // formatCurrency imported from @/lib/format - use { cents: true } for Stripe amounts
 
   return (
     <div className="space-y-6">
@@ -226,7 +212,7 @@ export const AdminBookingsPage = () => {
                       {/* Amount */}
                       <TableCell>
                         <span className="font-mono font-medium">
-                          {formatCurrency(booking.total_price)}
+                          {formatCurrency(booking.total_price, { cents: true })}
                         </span>
                       </TableCell>
 
