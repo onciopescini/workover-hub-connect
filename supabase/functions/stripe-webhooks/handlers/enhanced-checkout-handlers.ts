@@ -63,6 +63,33 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: 'Payment amount validation failed' };
     }
 
+    // CRITICAL FIX: Extract Payment Intent ID BEFORE database operations
+    const paymentIntentId = typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id || null;
+
+    ErrorHandler.logInfo('Payment Intent ID extracted for upsert', {
+      sessionId: session.id,
+      paymentIntentId: paymentIntentId || 'NULL'
+    });
+
+    // CRITICAL FIX: Determine correct status based on capture method
+    // For Request to Book (manual capture): funds are authorized but NOT captured yet
+    // For Instant Book (automatic capture): funds are captured, payment succeeded
+    const isManualCapture = session.metadata?.confirmation_type === 'host_approval' ||
+                            session.metadata?.capture_method === 'manual';
+    
+    const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
+    const paymentStatus = isManualCapture ? 'pending' : 'completed';
+
+    ErrorHandler.logInfo('Payment status determined', {
+      sessionId: session.id,
+      isManualCapture,
+      paymentStatusEnum,
+      paymentStatus,
+      confirmationType: session.metadata?.confirmation_type
+    });
+
     // FASE 3: Upsert idempotente del payment (crea se non esiste, aggiorna se esiste)
     const { data: existingPayment } = await supabaseAdmin
       .from('payments')
@@ -76,7 +103,9 @@ export class EnhancedCheckoutHandlers {
         const { error: updateError } = await supabaseAdmin
           .from('payments')
           .update({
-            payment_status: 'completed',
+            payment_status: paymentStatus,
+            payment_status_enum: paymentStatusEnum,  // CRITICAL FIX: Update enum field
+            stripe_payment_intent_id: paymentIntentId,  // CRITICAL FIX: Save PI ID
             receipt_url: session.receipt_url || null,
             stripe_event_id: eventId,
             host_amount: breakdown.hostNetPayout,
@@ -89,7 +118,11 @@ export class EnhancedCheckoutHandlers {
           return { success: false, error: 'Failed to update payment' };
         }
         
-        ErrorHandler.logSuccess('Payment updated to completed', { paymentId: existingPayment.id });
+        ErrorHandler.logSuccess('Payment updated with PI ID and status enum', { 
+          paymentId: existingPayment.id,
+          paymentIntentId,
+          paymentStatusEnum
+        });
       } else {
         ErrorHandler.logInfo('Payment already completed (idempotency)', { paymentId: existingPayment.id });
       }
@@ -104,8 +137,10 @@ export class EnhancedCheckoutHandlers {
           user_id: session.metadata!.user_id,
           amount: (session.amount_total || 0) / 100,
           currency: (session.currency || 'eur').toUpperCase(),
-          payment_status: 'completed',
+          payment_status: paymentStatus,
+          payment_status_enum: paymentStatusEnum,  // CRITICAL FIX: Set enum field
           stripe_session_id: session.id,
+          stripe_payment_intent_id: paymentIntentId,  // CRITICAL FIX: Save PI ID
           receipt_url: session.receipt_url || null,
           host_amount: breakdown.hostNetPayout,
           platform_fee: breakdown.platformRevenue,
@@ -118,7 +153,10 @@ export class EnhancedCheckoutHandlers {
         return { success: false, error: 'Failed to create payment' };
       }
       
-      ErrorHandler.logSuccess('Payment created in webhook (fallback)');
+      ErrorHandler.logSuccess('Payment created in webhook with PI ID and status enum', {
+        paymentIntentId,
+        paymentStatusEnum
+      });
     }
 
     // Get payment details (reload per avere dati aggiornati)
@@ -149,13 +187,10 @@ export class EnhancedCheckoutHandlers {
     // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
     
-    // STRICT: Extract Payment Intent ID (pi_...)
-    // Must handle string or object (though typically string in this webhook event)
-    const paymentIntentId = typeof session.payment_intent === 'string'
-      ? session.payment_intent
-      : session.payment_intent?.id;
+    // STRICT: Extract Payment Intent ID (pi_...) - using value already extracted above
+    // paymentIntentId was extracted at line ~68 before the upsert logic
 
-    ErrorHandler.logInfo('Extracted Payment Intent ID for Booking Update', {
+    ErrorHandler.logInfo('Using Payment Intent ID for Booking Update', {
       bookingId,
       paymentIntentId,
       rawPaymentIntent: typeof session.payment_intent === 'object' ? 'object' : session.payment_intent
