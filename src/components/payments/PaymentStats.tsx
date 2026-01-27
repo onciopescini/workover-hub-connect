@@ -1,6 +1,6 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Euro, Clock, CheckCircle, XCircle, TrendingUp, Percent } from "lucide-react";
+import { formatCurrency } from "@/lib/format";
 
 interface PaymentStatsProps {
   stats: {
@@ -16,7 +16,7 @@ interface PaymentStatsProps {
 }
 
 export function PaymentStats({ stats, timeRange, userRole }: PaymentStatsProps) {
-  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
+  // formatCurrency imported from @/lib/format
   
   const getTimeRangeText = () => {
     switch (timeRange) {

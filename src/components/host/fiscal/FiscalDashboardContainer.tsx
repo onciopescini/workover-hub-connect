@@ -11,6 +11,7 @@ import { HostInvoiceHistory } from './HostInvoiceHistory';
 import { FiscalStatusBadge } from '@/components/fiscal/FiscalStatusBadge';
 import { FileText, AlertTriangle, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/format';
 
 export const FiscalDashboardContainer = () => {
   const { taxDetails, primaryTaxDetails, isLoading: taxLoading } = useTaxDetails();
@@ -57,7 +58,7 @@ export const FiscalDashboardContainer = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Reddito Corrente</p>
                 <p className="text-xl font-bold">
-                  €{thresholdQuery.data.total_income.toLocaleString('it-IT')}
+                  {formatCurrency(thresholdQuery.data.total_income)}
                 </p>
               </div>
               <div>

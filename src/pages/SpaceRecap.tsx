@@ -12,6 +12,7 @@ import { useSpaceMetrics } from '@/hooks/queries/useSpaceMetrics';
 import { useSpaceReviewsWithRating } from '@/hooks/queries/useSpaceReviewsQuery';
 import { calculateSpaceReviewStats, formatSpaceReviewAuthor, getTimeSinceSpaceReview } from '@/lib/space-review-service';
 import { Link } from 'react-router-dom';
+import { formatCurrency } from '@/lib/format';
 
 const SpaceRecap = () => {
   const { spaceId } = useParams<{ spaceId: string }>();
@@ -80,12 +81,7 @@ const SpaceRecap = () => {
 
   // renderStars removed in favor of StarRating component
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // formatCurrency imported from @/lib/format
 
   const formatGrowth = (growth: number) => {
     const isPositive = growth >= 0;

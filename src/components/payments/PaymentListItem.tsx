@@ -1,9 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, RefreshCw, ArrowRight } from "lucide-react";
 import { PaymentWithDetails, PAYMENT_STATUS, PAYMENT_STATUS_COLORS } from "@/types/payment";
 import { API_ENDPOINTS } from "@/constants";
+import { formatCurrency } from "@/lib/format";
 
 interface PaymentListItemProps {
   payment: PaymentWithDetails;
@@ -27,8 +27,7 @@ export function PaymentListItem({
       minute: '2-digit'
     });
   };
-
-  const formatCurrency = (amount: number) => `€${amount.toFixed(2)}`;
+  // formatCurrency imported from @/lib/format
 
   return (
     <div className="border rounded-lg p-4 bg-white">

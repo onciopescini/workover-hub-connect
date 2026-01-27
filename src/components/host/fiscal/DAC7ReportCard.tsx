@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { FiscalStatusBadge } from '@/components/fiscal/FiscalStatusBadge';
 import { Download, FileJson, FileText, CheckCircle } from 'lucide-react';
 import { useDAC7Reports } from '@/hooks/fiscal/useDAC7Reports';
+import { formatCurrency } from '@/lib/format';
 
 interface DAC7ReportCardProps {
   report: DAC7Report;
@@ -15,13 +16,7 @@ export const DAC7ReportCard = ({ report }: DAC7ReportCardProps) => {
   const handleAcknowledge = async () => {
     await acknowledgeReport(report.id);
   };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  };
+  // formatCurrency imported from @/lib/format
 
   return (
     <Card>
