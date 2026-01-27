@@ -1,241 +1,252 @@
 
-# HOTFIX: Host Workflow & Automated Expiration (Gold Standard)
+# HOTFIX: Debug Application-Level 404/500 (DB Trigger Conflict)
 
 ## Executive Summary
 
-Two critical issues need resolution:
-1. **host-reject-booking Edge Function is MISSING** - The frontend calls it but it doesn't exist (404)
-2. **host-approve-booking exists** but we should verify it's deployed and hardened
-3. **Expiration logic exists** via `booking-expiry-check` function with pg_cron, but needs verification
+The investigation reveals that the reported "404" is actually a **500 Internal Server Error** caused by a database trigger conflict. The functions are executing correctly, but the `guard_confirm_without_success` trigger blocks the status update.
 
 ---
 
-## Action Consequence Matrix (Verified Behavior)
+## Root Cause Chain
 
-| Host Action | Current Time vs Booking Time | Resulting Status | Stripe Action | Refund/Capture? |
-|:------------|:-----------------------------|:-----------------|:--------------|:----------------|
-| **Accept** | Future | `confirmed` | `stripe.paymentIntents.capture(pi_xxx)` | ✅ Host Paid |
-| **Reject** | Future | `cancelled` | `stripe.paymentIntents.cancel(pi_xxx)` | ↩️ Full Refund (Release) |
-| **Ignore** | Past (Expired) | `cancelled` | `stripe.paymentIntents.cancel(pi_xxx)` | ↩️ Full Refund (Release) |
-
----
-
-## Current State Analysis
-
-### 1. host-approve-booking (EXISTS ✅)
-- Located at: `supabase/functions/host-approve-booking/index.ts`
-- Uses `service_role` key correctly
-- Captures payment via `stripe.paymentIntents.capture(pi.id)`
-- Has compensating transaction (refund on DB failure)
-- Status check: `status === 'pending_approval'` ✅
-
-### 2. host-reject-booking (MISSING ❌)
-- **File does not exist**: `supabase/functions/host-reject-booking/index.ts`
-- Frontend hook `useRejectBooking` calls this function
-- Results in 404 error when hosts try to reject
-
-### 3. booking-expiry-check (EXISTS ✅)
-- Located at: `supabase/functions/booking-expiry-check/index.ts`
-- Already handles:
-  - `pending_approval` where `approval_deadline < NOW()` → Cancels + releases Stripe auth
-  - `pending_payment` where `payment_deadline < NOW()` → Cancels booking
-  - `pending` with expired `slot_reserved_until` → Cancels booking
-- Uses `stripe.paymentIntents.cancel(pi.id)` to release holds
-- Scheduled via pg_cron every 5 minutes
-
----
-
-## Implementation Plan
-
-### Phase 1: Create host-reject-booking Edge Function (CRITICAL)
-
-**File:** `supabase/functions/host-reject-booking/index.ts`
-
-This function will:
-1. Authenticate the calling host
-2. Verify they own the space attached to the booking
-3. Check booking status is `pending_approval`
-4. **Release Stripe authorization** via `stripe.paymentIntents.cancel(pi_xxx)`
-5. Update booking status to `cancelled`
-6. Send notification to coworker
-
-**Logic Flow:**
 ```text
-Host Clicks Reject
-     ↓
-Auth Validation (service_role for DB, user token for identity)
-     ↓
-Fetch Booking + Space (verify host_id matches user.id)
-     ↓
-Status Check (must be 'pending_approval')
-     ↓
-Stripe: Cancel Payment Intent (releases held funds)
-     ↓
-DB: Update status = 'cancelled', cancellation_reason
-     ↓
-Notify Coworker (via send-booking-notification)
-     ↓
-Return Success
-```
+1. Guest creates "Request to Book" booking
+   └── Booking status: pending_approval
+   
+2. Guest pays via Stripe Checkout (capture_method: manual)
+   └── Payment created with:
+       ├── payment_status_enum = 'pending'  ← PROBLEM HERE
+       └── stripe_payment_intent_id = NULL
 
-**Code Structure (matching host-approve-booking pattern):**
-```typescript
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import Stripe from "https://esm.sh/stripe@15.0.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-serve(async (req) => {
-  // 1. CORS
-  // 2. Auth validation
-  // 3. Get booking_id + reason from body
-  // 4. Fetch booking with stripe_payment_intent_id
-  // 5. Fetch space to verify host_id
-  // 6. Check booking.status === 'pending_approval'
-  // 7. Stripe: Cancel PaymentIntent (release funds)
-  // 8. DB: Update booking to 'cancelled'
-  // 9. Notify coworker
-  // 10. Return success
-});
-```
-
-### Phase 2: Update config.toml
-
-**File:** `supabase/config.toml`
-
-Add configuration for the new function:
-```toml
-[functions.host-reject-booking]
-verify_jwt = true
-```
-
-### Phase 3: UI Guard Enhancement (Optional)
-
-**File:** `src/components/bookings/SmartBookingActions.tsx`
-
-Add time-based guard to disable approve/reject buttons if booking is in the past:
-
-```typescript
-import { isPast, parseISO } from 'date-fns';
-
-// Inside component
-const bookingEndDateTime = parseISO(`${booking.booking_date}T${booking.end_time}`);
-const isBookingPast = isPast(bookingEndDateTime);
-
-// In JSX, disable buttons
-<Button 
-  onClick={handleApprove}
-  disabled={isApproving || isBookingPast}
->
-  {isBookingPast ? 'Scaduta' : isApproving ? 'Approvo...' : 'Approva'}
-</Button>
+3. Host clicks "Approve" → Edge Function runs
+   └── Function attempts: UPDATE bookings SET status = 'confirmed'
+   
+4. DB Trigger guard_confirm_without_success fires
+   └── Checks: SELECT 1 FROM payments WHERE payment_status_enum = 'succeeded'
+   └── Result: NOT FOUND (because it's 'pending', not 'succeeded')
+   └── Action: RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.'
+   
+5. Edge Function catches DB error → Returns 500
 ```
 
 ---
 
-## Technical Details
+## Database Evidence
 
-### host-reject-booking Implementation
+**Booking Record:**
+| Field | Value |
+|:------|:------|
+| id | 5fde655a-fdb3-4482-ae49-10bb2af7b230 |
+| status | pending_approval |
+| stripe_payment_intent_id | NULL |
 
-**Input:**
-```json
-{
-  "booking_id": "uuid",
-  "reason": "Date non disponibili"
+**Payment Record (same booking):**
+| Field | Value |
+|:------|:------|
+| payment_status | pending |
+| payment_status_enum | pending |
+| stripe_payment_intent_id | NULL |
+
+**DB Trigger Definition:**
+```sql
+IF NEW.status = 'confirmed' AND (OLD.status IS DISTINCT FROM 'confirmed') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.payments p
+    WHERE p.booking_id = NEW.id
+      AND p.payment_status_enum = 'succeeded'  -- ← THIS CHECK FAILS
+  ) THEN
+    RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.';
+  END IF;
+END IF;
+```
+
+---
+
+## The Business Logic Problem
+
+For "Request to Book" bookings, the flow is:
+
+1. **Payment authorized** (funds held, not captured)
+2. **Host approves** → Stripe capture → Payment succeeds
+3. **Booking confirmed**
+
+But the current code:
+- Sets `payment_status_enum = 'pending'` at checkout
+- Never updates it to `succeeded` until AFTER webhook fires
+- Host approval tries to confirm BEFORE the payment is marked succeeded
+
+**The trigger assumes payment success BEFORE confirmation, but for manual capture, success happens DURING host approval.**
+
+---
+
+## Technical Fix Plan
+
+### Phase 1: Fix host-approve-booking Logic
+
+**File:** `supabase/functions/host-approve-booking/index.ts`
+
+The function must update the payment status BEFORE attempting to confirm the booking:
+
+```typescript
+// STEP 1: Capture Payment (if exists)
+if (paymentIntentId) {
+  const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+  if (pi.status === 'requires_capture') {
+    const capturedPi = await stripe.paymentIntents.capture(pi.id);
+    if (capturedPi.status === 'succeeded') {
+      // STEP 2: Update payment record FIRST
+      await supabaseAdmin
+        .from("payments")
+        .update({
+          payment_status: 'completed',
+          payment_status_enum: 'succeeded',
+          capture_status: 'captured'
+        })
+        .eq("booking_id", booking_id);
+    }
+  }
+}
+
+// STEP 3: Now update booking (trigger will pass)
+await supabaseAdmin
+  .from("bookings")
+  .update({ status: "confirmed" })
+  .eq("id", booking_id);
+```
+
+### Phase 2: Handle Missing Payment Intent ID
+
+The booking shows `stripe_payment_intent_id = NULL` on the booking record. This needs to be:
+1. Stored during checkout (already done in `create-checkout-v3`)
+2. Synced to the booking record (currently missing)
+
+**Fix:** After Stripe checkout creation, update the booking with the payment intent ID:
+
+```typescript
+// In create-checkout-v3 after session creation
+await supabase
+  .from("bookings")
+  .update({ stripe_payment_intent_id: stripe.session.payment_intent_id })
+  .eq("id", booking_id);
+```
+
+### Phase 3: Add Diagnostic Logging
+
+Both Edge Functions need better error logging:
+
+```typescript
+// Before returning 404
+console.error(`[HOST-APPROVE] Booking not found: ${booking_id}`);
+
+// Before returning 403
+console.error(`[HOST-APPROVE] Host mismatch: Expected ${workspace.host_id}, got ${user.id}`);
+
+// After DB update failure
+console.error(`[HOST-APPROVE] DB Update Failed:`, updateError);
+```
+
+---
+
+## Files to Modify
+
+| File | Change | Priority |
+|:-----|:-------|:---------|
+| `supabase/functions/host-approve-booking/index.ts` | Update payment status before booking confirmation | **CRITICAL** |
+| `supabase/functions/create-checkout-v3/index.ts` | Store payment_intent_id on booking record | HIGH |
+| `supabase/functions/host-reject-booking/index.ts` | Add diagnostic logging | MEDIUM |
+
+---
+
+## Implementation Details
+
+### host-approve-booking Changes
+
+**Before DB Update (around line 153):**
+
+```typescript
+// NEW: Update payment status BEFORE booking confirmation
+// This satisfies the guard_confirm_without_success trigger
+if (paymentIntentId) {
+  const { error: paymentUpdateError } = await supabaseAdmin
+    .from("payments")
+    .update({
+      payment_status: 'completed',
+      payment_status_enum: 'succeeded',
+      capture_status: 'captured'
+    })
+    .eq("booking_id", booking_id);
+    
+  if (paymentUpdateError) {
+    console.error(`[HOST-APPROVE] Failed to update payment status:`, paymentUpdateError);
+    throw new Error(`Payment status update failed: ${paymentUpdateError.message}`);
+  }
+  console.log(`[HOST-APPROVE] Payment status updated to succeeded`);
+}
+
+// EXISTING: Update Database
+const { error: updateError } = await supabaseAdmin
+  .from("bookings")
+  .update({
+    status: "confirmed",
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", booking_id);
+```
+
+### create-checkout-v3 Changes
+
+**After Stripe session creation (around line 307):**
+
+```typescript
+// Store payment_intent_id on booking for later capture
+if (stripe.session.payment_intent_id) {
+  await supabase
+    .from("bookings")
+    .update({ stripe_payment_intent_id: stripe.session.payment_intent_id })
+    .eq("id", payload.booking_id);
+    
+  console.log(`[CHECKOUT] Stored PI ${stripe.session.payment_intent_id} on booking`);
 }
 ```
 
-**Output (Success):**
-```json
-{
-  "success": true,
-  "booking_id": "uuid",
-  "stripe_cancelled": true
-}
-```
-
-**Output (Error):**
-```json
-{
-  "error": "Booking not found" | "Unauthorized" | "Invalid status"
-}
-```
-
-**Stripe API Call:**
-```typescript
-// Release held funds back to customer
-await stripe.paymentIntents.cancel(paymentIntentId);
-```
-
-**Key Differences from host-approve-booking:**
-| Aspect | host-approve-booking | host-reject-booking |
-|--------|---------------------|---------------------|
-| Stripe Action | `paymentIntents.capture()` | `paymentIntents.cancel()` |
-| New Status | `confirmed` | `cancelled` |
-| Notification Type | `confirmation` | `rejection` |
-| Money Flow | Platform captures funds → Host payout | Funds released to coworker |
-
 ---
 
-## Files to Create/Modify
+## Alternative: Modify the Trigger
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `supabase/functions/host-reject-booking/index.ts` | **CREATE** | Handle rejection + Stripe release |
-| `supabase/config.toml` | MODIFY | Add function config |
-| `src/components/bookings/SmartBookingActions.tsx` | MODIFY (Optional) | Add isPast guard |
+If business logic allows, the trigger could be updated to:
 
----
+```sql
+-- Allow confirmation if payment_status_enum is 'succeeded' OR 'pending' (for manual capture)
+IF NEW.status = 'confirmed' AND (OLD.status IS DISTINCT FROM 'confirmed') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.payments p
+    WHERE p.booking_id = NEW.id
+      AND p.payment_status_enum IN ('succeeded', 'pending')  -- Allow pending for pre-auth
+  ) THEN
+    RAISE EXCEPTION 'Cannot confirm booking without a valid payment.';
+  END IF;
+END IF;
+```
 
-## Existing Expiration Logic Verification
-
-The `booking-expiry-check` function already handles:
-
-1. **Expired Approval Requests:**
-   ```sql
-   status = 'pending_approval' AND approval_deadline <= NOW()
-   ```
-   - Releases Stripe auth via `stripe.paymentIntents.cancel()`
-   - Updates status to `cancelled`
-   - Notifies coworker
-
-2. **Expired Payment Deadlines:**
-   ```sql
-   status = 'pending_payment' AND payment_deadline <= NOW()
-   ```
-   - Updates status to `cancelled`
-   - Notifies both parties
-
-3. **Expired Slot Reservations:**
-   ```sql
-   status = 'pending' AND slot_reserved_until <= NOW()
-   ```
-   - Updates status to `cancelled`
-   - Notifies coworker
-
-**Cron Schedule:** Every 5 minutes via pg_cron
-
----
-
-## Deployment Steps
-
-1. Create `supabase/functions/host-reject-booking/index.ts`
-2. Update `supabase/config.toml` to include the function
-3. Deploy both `host-approve-booking` and `host-reject-booking`
-4. (Optional) Update SmartBookingActions UI with isPast guard
+However, this is less safe as it allows confirmation without payment completion. The recommended approach is to update payment status BEFORE booking confirmation.
 
 ---
 
 ## Verification Checklist
 
 After implementation:
-- [ ] Host can reject a `pending_approval` booking
-- [ ] Stripe PaymentIntent is cancelled (funds released)
-- [ ] Booking status changes to `cancelled`
-- [ ] Coworker receives rejection notification
-- [ ] Expired bookings are auto-cancelled by cron
-- [ ] Past bookings show disabled buttons (if UI guard added)
+- [ ] Payment status updates to 'succeeded' before booking confirmation
+- [ ] Booking status changes to 'confirmed' without trigger error
+- [ ] Payment intent ID is stored on booking record
+- [ ] Edge function logs show clear error messages on failure
+- [ ] Host can approve "Request to Book" bookings successfully
+
+---
+
+## Summary
+
+| Issue | Root Cause | Fix |
+|:------|:-----------|:----|
+| 500 Error on Approve | DB trigger requires `payment_status_enum = 'succeeded'` | Update payment status BEFORE booking confirmation |
+| Missing Payment Intent | Not stored on booking record | Store PI ID after checkout creation |
+| No Diagnostic Info | Insufficient logging | Add context to all error returns |
