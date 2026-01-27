@@ -5,6 +5,11 @@
  * to eliminate 'any' casts and improve type safety.
  */
 
+// ============= READONLY RESPONSE WRAPPERS =============
+// Prevents accidental mutation of service response data in the UI
+
+export type ReadonlyRPCResponse<T> = Readonly<T>;
+
 // ============= BOOKING RPCs =============
 
 export interface ValidateSlotRPCResponse {

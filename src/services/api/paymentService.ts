@@ -43,7 +43,7 @@ export interface GetPaymentsParams {
 
 export interface GetPaymentsResult {
   success: boolean;
-  payments?: Payment[];
+  payments?: Readonly<Payment[]>;
   error?: string;
 }
 
@@ -56,7 +56,7 @@ export interface PaymentStats {
 
 export interface GetPaymentStatsResult {
   success: boolean;
-  stats?: PaymentStats;
+  stats?: Readonly<PaymentStats>;
   error?: string;
 }
 

@@ -44,7 +44,7 @@ export function SpaceChecklist({ checklists, spaceTitle }: SpaceChecklistProps) 
           </Badge>
         </div>
         {spaceTitle && (
-          <p className="text-sm text-gray-600">{spaceTitle}</p>
+          <p className="text-sm text-muted-foreground">{spaceTitle}</p>
         )}
       </CardHeader>
       <CardContent>
@@ -55,11 +55,11 @@ export function SpaceChecklist({ checklists, spaceTitle }: SpaceChecklistProps) 
             {checklists.map((item) => (
               <div key={item.id} className="flex items-center space-x-3">
                 {item.completed ? (
-                  <CheckCircle className="w-4 h-4 text-[#22C55E]" />
+                  <CheckCircle className="w-4 h-4 text-success" />
                 ) : (
-                  <Circle className="w-4 h-4 text-gray-400" />
+                  <Circle className="w-4 h-4 text-muted-foreground" />
                 )}
-                <span className={`text-sm ${item.completed ? 'text-gray-600' : 'text-gray-900'}`}>
+                <span className={`text-sm ${item.completed ? 'text-muted-foreground' : 'text-foreground'}`}>
                   {sectionLabels[item.section] || item.section}
                 </span>
               </div>

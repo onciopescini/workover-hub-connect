@@ -8,9 +8,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 
-// Supabase project constants (no VITE_* env vars in services)
-const SUPABASE_URL = 'https://khtqwzvrxzsgfhsslwyz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtodHF3enZyeHpzZ2Zoc3Nsd3l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5NDg0ODUsImV4cCI6MjA2MzUyNDQ4NX0.QThCoBfb0JuFZ5dLru-TNSA_B0PZqp8AL0x0yaEWNFk';
+// Supabase project ID - URL is derived from this
+const SUPABASE_PROJECT_ID = 'khtqwzvrxzsgfhsslwyz';
+const SUPABASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co`;
 
 // ============= TYPES =============
 
@@ -29,6 +29,7 @@ export interface ReserveSlotResult {
   bookingId?: string;
   error?: string;
   errorCode?: 'CONFLICT' | 'VALIDATION' | 'SERVER_ERROR';
+  data?: Readonly<{ bookingId: string; status: string }>;
 }
 
 export interface CreateCheckoutSessionResult {
@@ -51,7 +52,7 @@ export interface SpaceBooking {
 
 export interface GetSpaceBookingsResult {
   success: boolean;
-  bookings?: SpaceBooking[];
+  bookings?: Readonly<SpaceBooking[]>;
   error?: string;
 }
 
@@ -222,7 +223,6 @@ export async function createCheckoutSession(bookingId: string): Promise<CreateCh
         'Authorization': `Bearer ${accessToken}`,
         'Idempotency-Key': idempotencyKey,
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
       },
       body
     });
