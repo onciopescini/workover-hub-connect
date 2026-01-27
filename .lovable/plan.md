@@ -1,233 +1,253 @@
 
-# Fix Infinite Re-render Loop in Location Filter
+# Implementation Plan: Gold Standard Booking Logic (Service Layer)
 
-## Problem Analysis
+## Overview
 
-When a user clicks "Use my location" on the Spaces Search page, the application enters an infinite re-render loop causing a crash. I've traced the issue through multiple components and identified **three interconnected root causes**.
-
----
-
-## Root Cause Identification
-
-### Root Cause #1: Cyclic State-URL Synchronization
-
-**Location:** `src/hooks/usePublicSpacesLogic.ts` (lines 383-403 & 720-727)
-
-The `useEffect` at line 383 syncs URL parameters to internal filter state:
-
-```text
-useEffect → reads initialCoordinates from URL → updates filters state
-```
-
-But `getUserLocation()` at line 720 does the reverse:
-
-```text
-getUserLocation → updates filters state → calls syncFiltersToUrl → updates URL
-```
-
-**The Loop:**
-1. User clicks "Use my location"
-2. `getUserLocation()` gets coordinates and calls `setFilters()` with new coordinates
-3. `setFilters()` triggers `syncFiltersToUrl()` which updates the URL
-4. URL change triggers `useLocationParams()` to return new `initialCoordinates`
-5. The `useEffect` at line 383 sees `initialCoordinates` changed and calls `setFilters()` again
-6. The cycle repeats indefinitely
-
-### Root Cause #2: Unstable Object Reference in Dependencies
-
-**Location:** `src/hooks/useLocationParams.ts` (lines 25-28)
-
-```typescript
-const initialCoordinates = (latParam && lngParam) ? {
-  lat: parseFloat(latParam),
-  lng: parseFloat(lngParam)
-} : null;
-```
-
-This creates a **new object reference** on every render, even when lat/lng values are identical. When used in the `useEffect` dependency array in `usePublicSpacesLogic.ts` (line 403), React sees it as a new dependency every time and re-runs the effect.
-
-### Root Cause #3: Missing Equality Check Before State Update
-
-**Location:** `src/hooks/usePublicSpacesLogic.ts` (lines 383-398)
-
-The `setFilters()` call inside `useEffect` always updates state without checking if values actually changed:
-
-```typescript
-setFilters(prev => ({
-  ...prev,
-  coordinates: initialCoordinates || prev.coordinates, // No equality check!
-  // ... other fields
-}));
-```
-
-Even if `initialCoordinates` has the same lat/lng values, a new object triggers re-render.
+This refactoring creates a dedicated Service Layer for booking operations, replacing scattered inline Supabase calls with clean, testable API functions. The hook will become a thin orchestrator while all backend communication logic moves to dedicated service modules.
 
 ---
 
-## Solution Implementation
+## Current Architecture Analysis
 
-### Fix 1: Memoize Coordinates in useLocationParams
-
-Stabilize the coordinate object reference using `useMemo`:
-
-```typescript
-// src/hooks/useLocationParams.ts
-
-import { useSearchParams, useMemo } from 'react-router-dom';
-
-// Replace lines 25-28 with:
-const initialCoordinates = useMemo(() => {
-  if (latParam && lngParam) {
-    return {
-      lat: parseFloat(latParam),
-      lng: parseFloat(lngParam)
-    };
-  }
-  return null;
-}, [latParam, lngParam]); // Only recreate when URL params actually change
+### Current Flow (useCheckout.ts)
+```text
+Component → useCheckout Hook → Direct Supabase Calls
+                            ↓
+                    1. supabase.rpc('validate_and_reserve_slot')
+                    2. supabase.functions.invoke('create-checkout-v3')
 ```
 
-### Fix 2: Add Coordinate Equality Check in usePublicSpacesLogic
-
-Prevent unnecessary state updates by comparing coordinate values:
-
-```typescript
-// src/hooks/usePublicSpacesLogic.ts
-
-// Add helper function after line 25:
-const areCoordinatesEqual = (
-  a: { lat: number; lng: number } | null,
-  b: { lat: number; lng: number } | null
-): boolean => {
-  if (a === null && b === null) return true;
-  if (a === null || b === null) return false;
-  return a.lat === b.lat && a.lng === b.lng;
-};
-
-// Modify the useEffect at lines 383-403:
-useEffect(() => {
-  setFilters(prev => {
-    // Skip update if coordinates are already equal
-    const shouldUpdateCoords = !areCoordinatesEqual(initialCoordinates, prev.coordinates);
-    
-    // Only update if there are actual changes
-    if (!shouldUpdateCoords && 
-        (initialCity || '') === prev.location &&
-        // ... other equality checks
-    ) {
-      return prev; // Return previous state, no re-render
-    }
-    
-    return {
-      ...prev,
-      location: initialCity || prev.location,
-      coordinates: shouldUpdateCoords ? initialCoordinates : prev.coordinates,
-      // ... rest of fields
-    };
-  });
-
-  if (initialCoordinates && !areCoordinatesEqual(initialCoordinates, userLocation)) {
-    setUserLocation(initialCoordinates);
-  }
-}, [initialCity, initialCoordinates, /* ... */]);
+### Target Flow (Service Layer)
+```text
+Component → useCheckout Hook → bookingService
+                            ↓
+              1. reserveSlot() → supabase.rpc()
+              2. createCheckoutSession() → native fetch()
 ```
 
-### Fix 3: Guard getUserLocation Against Redundant Updates
+---
 
-Add equality check before updating state:
+## Implementation Steps
+
+### Step 1: Create Service Layer Directory Structure
+
+Create the following files:
+
+| File | Purpose |
+|------|---------|
+| `src/services/api/bookingService.ts` | Main booking API functions |
+| `src/services/api/index.ts` | Barrel export file |
+
+---
+
+### Step 2: Implement bookingService.ts
+
+The service will export two main functions:
+
+#### 2.1 reserveSlot Function
 
 ```typescript
-// src/hooks/usePublicSpacesLogic.ts (lines 720-731)
+interface ReserveSlotParams {
+  spaceId: string;
+  userId: string;
+  startTime: string;  // ISO string
+  endTime: string;    // ISO string
+  guests: number;
+  confirmationType: 'instant' | 'host_approval';
+  clientBasePrice?: number;
+}
 
-if (locationResult) {
-  info('User location obtained successfully');
-  
-  // Only update if coordinates actually changed
-  if (!areCoordinatesEqual(locationResult, userLocation)) {
-    setUserLocation(locationResult);
-    setFilters(prev => {
-      // Double-check: don't update if already equal
-      if (areCoordinatesEqual(locationResult, prev.coordinates)) {
-        return prev;
-      }
-      const next = { ...prev, coordinates: locationResult };
-      syncFiltersToUrl(next, radiusKm);
-      return next;
-    });
-  }
+interface ReserveSlotResult {
+  success: boolean;
+  bookingId?: string;
+  error?: string;
 }
 ```
 
-### Fix 4: Stabilize syncFiltersToUrl Reference
+**Implementation Details:**
+- Calls `supabase.rpc('validate_and_reserve_slot')` with mapped parameters
+- Handles RPC response parsing (the RPC returns `{ success, booking_id, error }`)
+- Maps error codes (e.g., `23P01` → `CONFLICT`)
+- Throws typed errors for upstream handling
 
-Wrap `syncFiltersToUrl` in `useCallback` to prevent recreation:
+#### 2.2 createCheckoutSession Function
 
 ```typescript
-// src/hooks/usePublicSpacesLogic.ts
+interface CreateCheckoutSessionResult {
+  success: boolean;
+  url?: string;
+  sessionId?: string;
+  error?: string;
+}
+```
 
-const syncFiltersToUrl = useCallback((newFilters: SpaceFilters, radius: number) => {
-  updateLocationParam(
-    newFilters.location,
-    newFilters.coordinates || undefined,
-    radius,
-    {
-      category: newFilters.category,
-      priceRange: newFilters.priceRange,
-      workEnvironment: newFilters.workEnvironment,
-      amenities: newFilters.amenities,
-      minCapacity: newFilters.capacity[0],
-      date: newFilters.startDate,
-      startTime: newFilters.startTime,
-      endTime: newFilters.endTime
+**Implementation Details:**
+- Uses native `fetch()` instead of `supabase.functions.invoke()` for full header control
+- Constructs URL: `https://khtqwzvrxzsgfhsslwyz.supabase.co/functions/v1/create-checkout-v3`
+- Required Headers:
+  - `Authorization: Bearer <access_token>` (from `supabase.auth.getSession()`)
+  - `Idempotency-Key: <uuid>` (generated with `crypto.randomUUID()`)
+  - `Content-Type: application/json`
+  - `apikey: <anon_key>` (Supabase requires this for edge functions)
+- Body: `{ booking_id: string }`
+- Parses response and handles error states
+
+---
+
+### Step 3: Refactor useCheckout.ts
+
+The hook will be simplified to:
+
+1. **Remove** all direct Supabase imports and calls
+2. **Import** `reserveSlot` and `createCheckoutSession` from bookingService
+3. **Maintain** existing interfaces (`CheckoutParams`, `CheckoutResult`)
+4. **Keep** date/time preparation logic (using `createBookingDateTime`)
+
+**New Flow:**
+```typescript
+const processCheckout = async (params) => {
+  setIsLoading(true);
+  try {
+    // 1. Prepare ISO timestamps
+    const startIso = createBookingDateTime(dateStr, startTime).toISOString();
+    const endIso = createBookingDateTime(dateStr, endTime).toISOString();
+    
+    // 2. Reserve slot via service
+    const reservation = await reserveSlot({
+      spaceId, userId, startTime: startIso, endTime: endIso,
+      guests: guestsCount, confirmationType, clientBasePrice
+    });
+    
+    if (!reservation.success) {
+      return { success: false, error: reservation.error, errorCode: 'RESERVE_FAILED' };
     }
-  );
-}, [updateLocationParam]);
+    
+    // 3. Create checkout session via service
+    const checkout = await createCheckoutSession(reservation.bookingId!);
+    
+    if (!checkout.success || !checkout.url) {
+      return { success: false, error: checkout.error, errorCode: 'CHECKOUT_FAILED' };
+    }
+    
+    // 4. Redirect to Stripe
+    window.location.href = checkout.url;
+    return { success: true, bookingId: reservation.bookingId };
+    
+  } catch (err) {
+    // Error handling...
+  } finally {
+    setIsLoading(false);
+  }
+};
 ```
 
 ---
 
-## Files to Modify
+### Step 4: Update Tests
 
-| File | Changes |
-|------|---------|
-| `src/hooks/useLocationParams.ts` | Add `useMemo` for `initialCoordinates` to stabilize object reference |
-| `src/hooks/usePublicSpacesLogic.ts` | Add `areCoordinatesEqual` helper, guard `useEffect` and `getUserLocation` against redundant updates, wrap `syncFiltersToUrl` in `useCallback` |
+Replace Supabase mocks with service mocks:
+
+#### Current Test Structure (to remove):
+```typescript
+jest.mock('@/integrations/supabase/client', () => ({
+  supabase: { rpc: jest.fn(), functions: { invoke: jest.fn() } }
+}));
+```
+
+#### New Test Structure:
+```typescript
+jest.mock('@/services/api/bookingService', () => ({
+  reserveSlot: jest.fn(),
+  createCheckoutSession: jest.fn()
+}));
+```
+
+#### Test Cases to Maintain:
+1. **Success flow**: `reserveSlot` succeeds → `createCheckoutSession` succeeds → redirect
+2. **Reserve slot failure**: `reserveSlot` returns error → proper error handling
+3. **Checkout failure**: `reserveSlot` succeeds but `createCheckoutSession` fails
+4. **Network error handling**: Service throws exception
+5. **Conflict error (slot already booked)**: Specific error code mapping
+
+---
+
+## File Changes Summary
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/services/api/bookingService.ts` | **CREATE** | New service layer with `reserveSlot` and `createCheckoutSession` |
+| `src/services/api/index.ts` | **CREATE** | Barrel export |
+| `src/hooks/checkout/useCheckout.ts` | **MODIFY** | Remove inline Supabase calls, use service layer |
+| `src/hooks/checkout/__tests__/useCheckout.test.ts` | **MODIFY** | Mock service instead of Supabase |
 
 ---
 
 ## Technical Details
 
-### Why This Happens in React
+### Edge Function API Contract (create-checkout-v3)
 
-React's `useEffect` uses `Object.is()` for dependency comparison. Since objects are compared by reference (not value), `{ lat: 45.0, lng: 9.0 } !== { lat: 45.0, lng: 9.0 }` even though their contents are identical.
+Based on analysis of `supabase/functions/create-checkout-v3/index.ts`:
 
-### State Update Flow (After Fix)
-
-```text
-User clicks "Use my location"
-    ↓
-getUserLocation() obtains coordinates
-    ↓
-areCoordinatesEqual(newCoords, currentCoords)?
-    ↓
-NO → Update state, sync to URL, useEffect skips (memoized)
-YES → Skip update entirely (loop broken)
+**Request:**
 ```
+POST /functions/v1/create-checkout-v3
+Headers:
+  - Authorization: Bearer <user_token>
+  - Idempotency-Key: <uuid>
+  - Content-Type: application/json
+  - apikey: <anon_key>
+Body: { "booking_id": "<uuid>" }
+```
+
+**Success Response (200):**
+```json
+{
+  "idempotent": false,
+  "checkout_session": { "id": "cs_xxx", "url": "https://checkout.stripe.com/..." },
+  "payment": { "id": "...", "status": "pending", ... }
+}
+```
+
+**Error Response (4xx/5xx):**
+```json
+{
+  "error": "error_code",
+  "details": { ... }
+}
+```
+
+### Idempotency Key Strategy
+
+The `Idempotency-Key` header ensures that:
+- Retried requests don't create duplicate payments
+- The same checkout session is returned for the same key
+- Must be unique per booking attempt (use `crypto.randomUUID()`)
+
+### Environment Variables Used
+
+The service will use these hardcoded values (as per Lovable guidelines - no VITE_* in service code):
+- Supabase URL: `https://khtqwzvrxzsgfhsslwyz.supabase.co`
+- Supabase Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (from project config)
 
 ---
 
-## Additional Recommendation
+## Error Handling Strategy
 
-Consider using React Query's mutation pattern for geolocation instead of direct state updates, which provides built-in deduplication:
+| Error Source | Error Type | User Message |
+|--------------|------------|--------------|
+| RPC `23P01` | `CONFLICT` | "Slot already booked" |
+| RPC timeout | `TIMEOUT` | "Server not responding, please retry" |
+| Checkout 401 | `UNAUTHORIZED` | "Session expired, please login again" |
+| Checkout 400 | `INVALID_REQUEST` | "Invalid booking data" |
+| Network error | `NETWORK` | "Connection failed, please check your internet" |
 
-```typescript
-const locationMutation = useMutation({
-  mutationKey: ['user-location'],
-  mutationFn: getUserLocationAsync,
-  onSuccess: (coords) => {
-    // Single controlled update point
-  }
-});
-```
+---
 
-This would centralize location updates and prevent race conditions.
+## Benefits of This Refactoring
+
+1. **Separation of Concerns**: Hook handles state, service handles API calls
+2. **Testability**: Easy to mock service functions independently
+3. **Header Control**: Native fetch allows full control over Idempotency-Key
+4. **Reusability**: Service can be used by other components/hooks
+5. **Error Isolation**: API errors handled in one place
+6. **Type Safety**: Strong typing on service interfaces
