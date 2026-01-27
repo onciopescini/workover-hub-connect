@@ -50,10 +50,10 @@ export function useAdminBookings({
       }
 
       // Step 2: Build Main Query
-      // We use payments!inner if we need to filter by payment status
+      // We use payments!fk_payments_booking_id!inner if we need to filter by payment status
       const selectString = paymentFilter && paymentFilter !== 'all'
-        ? `*, space:spaces(id, title, address, host_id), coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url), payments!inner(id, amount, payment_status, method, created_at)`
-        : `*, space:spaces(id, title, address, host_id), coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url), payments(id, amount, payment_status, method, created_at)`;
+        ? `*, space:spaces(id, title, address, host_id), coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url), payments:payments!fk_payments_booking_id!inner(id, amount, payment_status, method, created_at)`
+        : `*, space:spaces(id, title, address, host_id), coworker:profiles!bookings_user_id_fkey(id, first_name, last_name, profile_photo_url), payments:payments!fk_payments_booking_id(id, amount, payment_status, method, created_at)`;
 
       let query = supabase
         .from('bookings')

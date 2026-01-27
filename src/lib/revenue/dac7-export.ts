@@ -23,7 +23,7 @@ export const exportDAC7Report = async (hostId: string, year: number): Promise<st
       id,
       host_amount,
       created_at,
-      bookings!inner (
+      bookings:bookings!fk_payments_booking_id (
         id,
         booking_date,
         spaces!inner (

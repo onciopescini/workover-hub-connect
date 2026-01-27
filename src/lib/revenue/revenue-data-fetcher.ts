@@ -31,7 +31,7 @@ export const getHostRevenueData = async (
       created_at,
       booking_id,
       payment_status,
-      bookings!inner (
+      bookings:bookings!fk_payments_booking_id (
         id,
         space_id,
         spaces!inner (

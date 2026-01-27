@@ -40,7 +40,7 @@ export const usePaymentInvoiceReconciliation = () => {
         .from('payments')
         .select(`
           *,
-          booking:bookings(id, space_id)
+          booking:bookings!fk_payments_booking_id (id, space_id)
         `)
         .eq('payment_status', 'completed')
         .order('created_at', { ascending: false });
