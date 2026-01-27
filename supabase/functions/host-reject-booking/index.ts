@@ -125,8 +125,55 @@ serve(async (req) => {
 
     // 7. STRIPE CANCELLATION (Release Held Funds)
     const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
-    const paymentIntentId = booking.stripe_payment_intent_id;
+    let paymentIntentId = booking.stripe_payment_intent_id;
     let stripeCancelled = false;
+
+    // SELF-HEALING FALLBACK: If PI ID is missing, try to retrieve from Stripe via session
+    if (!paymentIntentId) {
+      console.log(`[HOST-REJECT] PI ID missing on booking, attempting fallback via payments table...`);
+      
+      const { data: payment } = await supabaseAdmin
+        .from("payments")
+        .select("stripe_session_id")
+        .eq("booking_id", booking_id)
+        .single();
+      
+      if (payment?.stripe_session_id) {
+        console.log(`[HOST-REJECT] Found session ID: ${payment.stripe_session_id}, retrieving from Stripe...`);
+        
+        try {
+          const session = await stripe.checkout.sessions.retrieve(payment.stripe_session_id);
+          
+          if (session.payment_intent) {
+            paymentIntentId = typeof session.payment_intent === 'string' 
+              ? session.payment_intent 
+              : session.payment_intent.id;
+            
+            console.log(`[HOST-REJECT] Retrieved PI ID from Stripe: ${paymentIntentId}`);
+            
+            // Self-heal: Update the booking with the PI ID for future operations
+            await supabaseAdmin
+              .from("bookings")
+              .update({ stripe_payment_intent_id: paymentIntentId })
+              .eq("id", booking_id);
+            
+            // Also update the payment record
+            await supabaseAdmin
+              .from("payments")
+              .update({ stripe_payment_intent_id: paymentIntentId })
+              .eq("booking_id", booking_id);
+            
+            console.log(`[HOST-REJECT] Self-healed: PI ID saved to booking and payment records`);
+          } else {
+            console.log(`[HOST-REJECT] Stripe session has no payment_intent. Proceeding with DB update only.`);
+          }
+        } catch (sessionError) {
+          console.error(`[HOST-REJECT] Could not retrieve session from Stripe:`, sessionError);
+        }
+      } else {
+        console.log(`[HOST-REJECT] No payment record found. Proceeding with DB update only.`);
+      }
+    }
 
     if (paymentIntentId) {
       console.log(`[HOST-REJECT] Retrieving PI: ${paymentIntentId}`);
