@@ -27,8 +27,10 @@ export interface UserRole {
   id: string;
   user_id: string;
   role: SystemRole;
-  created_at: string;
+  created_at: string | null;
   created_by: string | null;
+  assigned_at?: string | null;
+  assigned_by?: string | null;
 }
 
 // Extended AdminUser with system roles

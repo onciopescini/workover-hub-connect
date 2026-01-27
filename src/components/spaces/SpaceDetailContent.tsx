@@ -78,9 +78,12 @@ export function SpaceDetailContent({ space, reviews, weightedRating = 0 }: Space
   // Intersection Observer to toggle Sticky Bar visibility
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        // If the booking card is intersecting (visible), hide the sticky bar
-        setIsStickyBarVisible(!entry.isIntersecting);
+      (entries) => {
+        const entry = entries[0];
+        if (entry) {
+          // If the booking card is intersecting (visible), hide the sticky bar
+          setIsStickyBarVisible(!entry.isIntersecting);
+        }
       },
       {
         root: null, // viewport

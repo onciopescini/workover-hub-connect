@@ -65,15 +65,14 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
             </div>
             <div>
               <Label htmlFor="category">Category</Label>
-              <Select onValueChange={(value) => handleInputChange("category", value)}>
+              <Select onValueChange={(value) => handleInputChange("category", value as "home" | "outdoor" | "professional")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" defaultValue={formData['category']} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="home">Home</SelectItem>
-                  <SelectItem value="office">Office</SelectItem>
-                  <SelectItem value="event">Event</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="outdoor">Outdoor</SelectItem>
+                  <SelectItem value="professional">Professional</SelectItem>
                 </SelectContent>
               </Select>
               {errors['category'] && <p className="text-red-500 text-sm">{errors['category']}</p>}
@@ -197,14 +196,14 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
         <CardContent className="grid gap-4">
           <div>
             <Label htmlFor="work_environment">Work Environment</Label>
-            <Select onValueChange={(value) => handleInputChange("work_environment", value)}>
+            <Select onValueChange={(value) => handleInputChange("work_environment", value as "controlled" | "dynamic" | "silent")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select an environment" defaultValue={formData['work_environment']} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="controlled">Controlled</SelectItem>
-                <SelectItem value="collaborative">Collaborative</SelectItem>
-                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="dynamic">Dynamic</SelectItem>
+                <SelectItem value="silent">Silent</SelectItem>
               </SelectContent>
             </Select>
             {errors['work_environment'] && <p className="text-red-500 text-sm">{errors['work_environment']}</p>}
@@ -251,7 +250,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
           <CancellationPolicySection
             cancellationPolicy={(formData['cancellation_policy'] as 'flexible' | 'moderate' | 'strict') || 'moderate'}
             rules={formData['rules'] || ''}
-            onInputChange={handleInputChange}
+            onInputChange={(field: string, value: unknown) => handleInputChange(field as keyof typeof formData, value as typeof formData[keyof typeof formData])}
             isSubmitting={isSubmitting}
             errors={errors}
           />
@@ -260,7 +259,7 @@ const SpaceForm = ({ initialData }: SpaceFormProps) => {
       
       <PublishingOptions
         published={formData['published'] ?? false}
-        onInputChange={handleInputChange}
+        onInputChange={(field: string, value: unknown) => handleInputChange(field as keyof typeof formData, value as typeof formData[keyof typeof formData])}
         isSubmitting={isSubmitting}
         stripeOnboardingStatus={stripeOnboardingStatus}
         stripeConnected={stripeConnected}

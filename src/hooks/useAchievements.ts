@@ -22,7 +22,7 @@ export const useAchievements = (userId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const getRecordId = (record: unknown): string | null => {
     if (!record || typeof record !== 'object') return null;
-    const idValue = (record as Record<string, unknown>).id;
+    const idValue = (record as Record<string, unknown>)['id'];
     return typeof idValue === 'string' ? idValue : null;
   };
 
@@ -37,14 +37,14 @@ export const useAchievements = (userId?: string) => {
     // Real-time subscription for achievement updates
     const channel = supabase
       .channel(`achievements-${userId}`)
-      .on(
-        'postgres_changes',
+      .on<UserAchievementRow>(
+        'postgres_changes' as const,
         {
           event: '*',
           schema: 'public',
           table: 'user_achievements',
           filter: `user_id=eq.${userId}`
-        },
+        } as const,
         (payload: RealtimePayload<UserAchievementRow>) => {
           sreLogger.debug('Achievement realtime event', { payload });
           

@@ -1,7 +1,21 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllUsers, suspendUser, reactivateUser, createWarning, getUserWarnings } from "@/lib/admin-utils";
-import { AdminProfile, AdminWarning } from "@/types/admin";
+import { AdminProfile } from "@/types/admin";
+
+// Local type for warnings fetched from admin_warnings table
+interface AdminWarning {
+  id: string;
+  user_id: string;
+  admin_id: string;
+  warning_type: string;
+  title: string;
+  message: string;
+  severity: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 import { sreLogger } from '@/lib/sre-logger';

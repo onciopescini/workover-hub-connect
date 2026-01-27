@@ -19,14 +19,19 @@ jest.mock('@/hooks/useLogger', () => ({
 // Mock window.location
 const originalLocation = window.location;
 beforeAll(() => {
-  // @ts-ignore
-  delete window.location;
-  // @ts-ignore
-  window.location = { href: '', origin: 'http://localhost' };
+  Object.defineProperty(window, 'location', {
+    value: { href: '', origin: 'http://localhost' } as unknown as Location,
+    writable: true,
+    configurable: true
+  });
 });
 
 afterAll(() => {
-  window.location = originalLocation;
+  Object.defineProperty(window, 'location', {
+    value: originalLocation,
+    writable: true,
+    configurable: true
+  });
 });
 
 describe('useCheckout', () => {

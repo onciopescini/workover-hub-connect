@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { toast } from 'sonner';
-import type { RealtimePayload } from '@/types/realtime';
+
 import type { ConnectionRow, ConnectionWithSenderJoin } from '@/types/supabase-joins';
 
 interface ConnectionRequest {
@@ -45,15 +45,15 @@ export const useConnectionRequests = (userId?: string) => {
     // Real-time subscription for new connection requests
     const channel = supabase
       .channel(`connection-requests-${userId}`)
-      .on(
-        'postgres_changes',
+      .on<ConnectionRow>(
+        'postgres_changes' as const,
         {
           event: 'INSERT',
           schema: 'public',
           table: 'connections',
           filter: `receiver_id=eq.${userId}`
-        },
-        (payload: RealtimePayload<ConnectionRow>) => {
+        } as const,
+        (payload) => {
           sreLogger.debug('New connection request received', { payload });
           
           // Fetch sender details and add to pending requests
@@ -69,15 +69,15 @@ export const useConnectionRequests = (userId?: string) => {
           });
         }
       )
-      .on(
-        'postgres_changes',
+      .on<ConnectionRow>(
+        'postgres_changes' as const,
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'connections',
           filter: `receiver_id=eq.${userId}`
-        },
-        (payload: RealtimePayload<ConnectionRow>) => {
+        } as const,
+        (payload) => {
           sreLogger.debug('Connection request updated', { payload });
           
           // Remove from pending if accepted/rejected
