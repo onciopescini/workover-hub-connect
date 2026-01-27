@@ -20,6 +20,7 @@ import { OrganizationSchema, WebsiteSchema } from "@/components/seo/StructuredDa
 import { optimizedQueryClient } from "@/lib/react-query-config";
 import { FiscalModeProvider } from "@/contexts/FiscalModeContext";
 import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
+import { TermsGuardProvider } from "@/providers/TermsGuardProvider";
 import { MapboxTokenProvider } from "@/contexts/MapboxTokenContext";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 import { LimboGuard } from "@/components/auth/LimboGuard";
@@ -54,18 +55,20 @@ function App() {
                     <MapboxTokenProvider>
                       <FiscalModeProvider>
                         <GDPRProvider>
-                          <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
-                            <PerformanceMonitor />
-                            <PerformanceBudget />
-                            <RoutePreloader />
-            <OrganizationSchema />
-            <WebsiteSchema />
-            <FiscalModeIndicator />
-            <ServiceWorkerRegistration />
-            <LimboGuard />
-            <AuthRedirector />
-            <AppRoutes />
-                          </ErrorBoundary>
+                          <TermsGuardProvider>
+                            <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+                              <PerformanceMonitor />
+                              <PerformanceBudget />
+                              <RoutePreloader />
+              <OrganizationSchema />
+              <WebsiteSchema />
+              <FiscalModeIndicator />
+              <ServiceWorkerRegistration />
+              <LimboGuard />
+              <AuthRedirector />
+              <AppRoutes />
+                            </ErrorBoundary>
+                          </TermsGuardProvider>
                         </GDPRProvider>
                       </FiscalModeProvider>
                     </MapboxTokenProvider>

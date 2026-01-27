@@ -87,11 +87,30 @@ serve(async (req) => {
 
     console.log('📄 Generated invoice number:', invoiceNumber);
 
-    // 5. Calculate amounts
+    // 5. Get dynamic VAT rate based on host's country
+    const hostCountryCode = taxDetails?.country_code || 'IT';
+    const { data: vatData } = await supabaseAdmin
+      .from('vat_rates')
+      .select('standard_rate')
+      .eq('country_code', hostCountryCode.toUpperCase())
+      .single();
+
+    const vatRateDecimal = vatData?.standard_rate 
+      ? parseFloat(String(vatData.standard_rate)) / 100 
+      : 0.22; // Fallback to 22% if lookup fails
+
+    // Recalculate amounts with dynamic VAT
     const baseAmount = breakdown.host_fee;
-    const vatAmount = breakdown.host_vat;
-    const totalAmount = breakdown.total;
-    const vatRate = 0.22;
+    const vatAmount = Math.round(baseAmount * vatRateDecimal * 100) / 100;
+    const totalAmount = baseAmount + vatAmount;
+
+    console.log('📊 VAT calculation', { 
+      country: hostCountryCode, 
+      rate: vatRateDecimal * 100, 
+      base: baseAmount, 
+      vat: vatAmount, 
+      total: totalAmount 
+    });
 
     // 6. Prepare invoice data
     const invoiceDate = new Date().toISOString();
@@ -111,7 +130,7 @@ serve(async (req) => {
         invoice_date: invoiceDate,
         due_date: dueDate.toISOString(),
         base_amount: baseAmount,
-        vat_rate: vatRate,
+        vat_rate: vatRateDecimal,
         vat_amount: vatAmount,
         total_amount: totalAmount,
         xml_delivery_status: 'draft'

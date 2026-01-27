@@ -418,6 +418,18 @@ Deno.serve(async (req) => {
       .delete()
       .eq('user_id', deletionRequest.user_id);
 
+    // 2b. Anonymize messages - set sender_id to NULL for GDPR compliance
+    await supabase
+      .from('messages')
+      .update({ sender_id: null })
+      .eq('sender_id', deletionRequest.user_id);
+
+    // 2c. Anonymize reviews - set author_id to NULL for GDPR compliance
+    await supabase
+      .from('booking_reviews')
+      .update({ author_id: null })
+      .eq('author_id', deletionRequest.user_id);
+
     // 3. Delete auth user (this will cascade delete related data)
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(
       deletionRequest.user_id
