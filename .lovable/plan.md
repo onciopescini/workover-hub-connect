@@ -1,269 +1,310 @@
 
-# Day 7: Deep Cleaning - Remove Zombie Code
+# Day 8: The Final Seal - Integration Tests
 
-## Overview
+## Objective
 
-Following the successful migration to the Service Layer Pattern, this cleanup removes deprecated hooks, unused components, and redundant utility files to keep the codebase lean and maintainable.
-
----
-
-## Summary of Actions
-
-| Category | File | Action |
-|----------|------|--------|
-| Hook (unused) | `src/hooks/useMapboxGeocodingCached.ts` | DELETE |
-| Hook (refactor) | `src/hooks/useStripeStatus.ts` | REFACTOR to use `stripeService` |
-| Hook (keep) | `src/hooks/useGDPRRequests.ts` | KEEP (already uses `privacyService`) |
-| Component | `src/components/layout/NotificationButton.tsx` | DELETE |
-| Component | `src/components/payments/PaymentButton.tsx` | DELETE |
-| Utility | `src/lib/stripe-status-utils.ts` | DELETE |
-| Utility | `src/lib/admin-utils.ts` | KEEP as re-export layer |
-| Utility | `src/lib/admin/admin-payment-utils.ts` | REMOVE deprecated function |
+Create an integration test that validates the complete Booking -> Payment flow, ensuring the Service Layer works correctly end-to-end without hitting real APIs.
 
 ---
 
-## Phase 1: Delete Deprecated Hooks
+## Analysis Summary
 
-### 1.1 DELETE: `src/hooks/useMapboxGeocodingCached.ts`
+### Current Testing Setup
+- **Test Runner:** Jest with ts-jest (configured in `jest.config.cjs`)
+- **Test Environment:** jsdom
+- **Setup File:** `src/setupTests.ts` with mocks for matchMedia, IntersectionObserver, ResizeObserver
+- **Existing Tests:** `src/hooks/checkout/__tests__/useCheckout.test.ts` provides excellent patterns for mocking
 
-**Status:** Completely unused - no imports found anywhere in the codebase.
-
-**Reason:** Replaced by `mapboxService.ts` which handles token caching internally.
-
-**Action:** Safe to delete.
+### Console.log Cleanup Status
+Production code is clean - verified that:
+- `src/services/api/bookingService.ts` uses only `sreLogger`
+- `src/hooks/checkout/useCheckout.ts` uses only `sreLogger`
+- `vite.config.ts:101-102` drops all `console.*` and `debugger` statements in production builds
 
 ---
 
-### 1.2 REFACTOR: `src/hooks/useStripeStatus.ts`
+## Implementation Plan
 
-**Status:** Still in use by:
-- `src/components/payments/HostStripeStatus.tsx` (line 9)
-- Indirectly by `ProfileDashboard.tsx` and `HostDashboardHeader.tsx`
+### 1. Create Integration Test File
 
-**Current Problem:** The hook makes direct `supabase.functions.invoke('check-stripe-status')` calls (lines 46, 94) instead of using `stripeService.checkAccountStatus()`.
+**New File:** `src/services/api/__tests__/booking-integration.test.ts`
 
-**Action:** Refactor to use `stripeService`:
+This test simulates the complete user journey: Reserve Slot -> Create Checkout Session
 
 ```typescript
-// Before (line 46):
-const { data, error } = await supabase.functions.invoke('check-stripe-status');
+/**
+ * Booking Integration Test
+ * 
+ * Tests the complete booking -> payment flow using the Service Layer.
+ * Validates that bookingService methods are called in correct sequence
+ * with proper parameters.
+ */
 
-// After:
-import { checkAccountStatus } from '@/services/api/stripeService';
-// ...
-const statusResult = await checkAccountStatus();
+import * as bookingService from '../bookingService';
+
+// Mock the Supabase client (used internally by bookingService)
+jest.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    rpc: jest.fn(),
+    auth: {
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'mock-token' } },
+        error: null
+      })
+    }
+  }
+}));
+
+// Mock fetch for Edge Function calls
+global.fetch = jest.fn();
+
+// Mock crypto.randomUUID for idempotency key
+Object.defineProperty(global, 'crypto', {
+  value: { randomUUID: jest.fn(() => 'test-uuid-1234') }
+});
+
+describe('Booking Integration Flow', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Complete Booking -> Checkout Flow', () => {
+    it('should reserve slot and create checkout session successfully', async () => {
+      // Arrange: Mock reserveSlot via spyOn
+      const reserveSlotSpy = jest.spyOn(bookingService, 'reserveSlot')
+        .mockResolvedValue({
+          success: true,
+          bookingId: 'booking-123'
+        });
+
+      const createCheckoutSpy = jest.spyOn(bookingService, 'createCheckoutSession')
+        .mockResolvedValue({
+          success: true,
+          url: 'https://checkout.stripe.com/pay/cs_test_123',
+          sessionId: 'cs_test_123'
+        });
+
+      // Act: Step 1 - Reserve slot
+      const reserveParams = {
+        spaceId: 'space-abc',
+        userId: 'user-xyz',
+        startTime: '2025-02-15T10:00:00.000Z',
+        endTime: '2025-02-15T11:00:00.000Z',
+        guests: 2,
+        confirmationType: 'instant' as const,
+        clientBasePrice: 2500 // €25.00 in cents
+      };
+
+      const reserveResult = await bookingService.reserveSlot(reserveParams);
+
+      // Assert: Reservation succeeded
+      expect(reserveResult.success).toBe(true);
+      expect(reserveResult.bookingId).toBe('booking-123');
+      expect(reserveSlotSpy).toHaveBeenCalledWith(reserveParams);
+
+      // Act: Step 2 - Create checkout session with booking ID
+      const checkoutResult = await bookingService.createCheckoutSession('booking-123');
+
+      // Assert: Checkout session created
+      expect(checkoutResult.success).toBe(true);
+      expect(checkoutResult.url).toBe('https://checkout.stripe.com/pay/cs_test_123');
+      expect(createCheckoutSpy).toHaveBeenCalledWith('booking-123');
+
+      // Cleanup
+      reserveSlotSpy.mockRestore();
+      createCheckoutSpy.mockRestore();
+    });
+
+    it('should stop flow if reservation fails', async () => {
+      // Arrange: Mock reservation failure
+      const reserveSlotSpy = jest.spyOn(bookingService, 'reserveSlot')
+        .mockResolvedValue({
+          success: false,
+          error: 'Slot already booked',
+          errorCode: 'CONFLICT'
+        });
+
+      const createCheckoutSpy = jest.spyOn(bookingService, 'createCheckoutSession');
+
+      // Act
+      const reserveParams = {
+        spaceId: 'space-abc',
+        userId: 'user-xyz',
+        startTime: '2025-02-15T10:00:00.000Z',
+        endTime: '2025-02-15T11:00:00.000Z',
+        guests: 2,
+        confirmationType: 'instant' as const
+      };
+
+      const reserveResult = await bookingService.reserveSlot(reserveParams);
+
+      // Assert: Reservation failed
+      expect(reserveResult.success).toBe(false);
+      expect(reserveResult.errorCode).toBe('CONFLICT');
+
+      // Checkout should NOT be called when reservation fails
+      expect(createCheckoutSpy).not.toHaveBeenCalled();
+
+      // Cleanup
+      reserveSlotSpy.mockRestore();
+      createCheckoutSpy.mockRestore();
+    });
+
+    it('should handle checkout session failure after successful reservation', async () => {
+      // Arrange
+      const reserveSlotSpy = jest.spyOn(bookingService, 'reserveSlot')
+        .mockResolvedValue({
+          success: true,
+          bookingId: 'booking-456'
+        });
+
+      const createCheckoutSpy = jest.spyOn(bookingService, 'createCheckoutSession')
+        .mockResolvedValue({
+          success: false,
+          error: 'Payment service unavailable',
+          errorCode: 'SERVER_ERROR'
+        });
+
+      // Act
+      const reserveResult = await bookingService.reserveSlot({
+        spaceId: 'space-abc',
+        userId: 'user-xyz',
+        startTime: '2025-02-15T10:00:00.000Z',
+        endTime: '2025-02-15T11:00:00.000Z',
+        guests: 1,
+        confirmationType: 'instant'
+      });
+
+      expect(reserveResult.success).toBe(true);
+
+      const checkoutResult = await bookingService.createCheckoutSession(reserveResult.bookingId!);
+
+      // Assert: Checkout failed
+      expect(checkoutResult.success).toBe(false);
+      expect(checkoutResult.errorCode).toBe('SERVER_ERROR');
+
+      // Cleanup
+      reserveSlotSpy.mockRestore();
+      createCheckoutSpy.mockRestore();
+    });
+  });
+
+  describe('Service Exports', () => {
+    it('should export reserveSlot function', () => {
+      expect(bookingService.reserveSlot).toBeDefined();
+      expect(typeof bookingService.reserveSlot).toBe('function');
+    });
+
+    it('should export createCheckoutSession function', () => {
+      expect(bookingService.createCheckoutSession).toBeDefined();
+      expect(typeof bookingService.createCheckoutSession).toBe('function');
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle unauthorized session error', async () => {
+      const createCheckoutSpy = jest.spyOn(bookingService, 'createCheckoutSession')
+        .mockResolvedValue({
+          success: false,
+          error: 'Session expired, please login again',
+          errorCode: 'UNAUTHORIZED'
+        });
+
+      const result = await bookingService.createCheckoutSession('booking-789');
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('UNAUTHORIZED');
+
+      createCheckoutSpy.mockRestore();
+    });
+
+    it('should handle network error', async () => {
+      const createCheckoutSpy = jest.spyOn(bookingService, 'createCheckoutSession')
+        .mockResolvedValue({
+          success: false,
+          error: 'Connection failed, please check your internet',
+          errorCode: 'NETWORK'
+        });
+
+      const result = await bookingService.createCheckoutSession('booking-999');
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NETWORK');
+
+      createCheckoutSpy.mockRestore();
+    });
+  });
+});
 ```
 
-The hook should remain as a React wrapper around the service (managing state like `isVerifying`, `hasVerified`, and integrating with `useAuth` for profile refresh).
+---
+
+### 2. Test Coverage Summary
+
+| Scenario | Test Case | Expected Result |
+|----------|-----------|-----------------|
+| Happy Path | Reserve + Checkout succeeds | Both return success, correct params passed |
+| Reservation Failure | Slot conflict (CONFLICT) | Flow stops, checkout not called |
+| Checkout Failure | Server error after reservation | Reservation OK, checkout fails gracefully |
+| Auth Error | Session expired | Returns UNAUTHORIZED error code |
+| Network Error | Connection failed | Returns NETWORK error code |
+| Exports | Functions defined | reserveSlot, createCheckoutSession exported |
 
 ---
 
-### 1.3 KEEP: `src/hooks/useGDPRRequests.ts`
+### 3. Project Health Verification
 
-**Status:** Already correctly uses `privacyService` (confirmed in previous refactoring).
+**Console.log Status:** CLEAN
 
-**Still in use by:**
-- `src/pages/Privacy.tsx`
-- `src/components/settings/GDPRExportButton.tsx`
+The production code has been verified clean:
+- `bookingService.ts` - Uses `sreLogger` (11 log points)
+- `useCheckout.ts` - Uses `sreLogger` (7 log points)
+- `vite.config.ts:101-102` - Production build strips all console statements:
+  ```typescript
+  drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : []
+  ```
 
-**Action:** Keep as-is. The hook provides React state management (`useState`, `useEffect`, `useCallback`) around the service calls.
-
----
-
-## Phase 2: Delete Deprecated Components
-
-### 2.1 DELETE: `src/components/layout/NotificationButton.tsx`
-
-**Status:** Explicitly deprecated in file header:
-```typescript
-// This component is now deprecated - notifications are integrated directly in UnifiedHeader
-// Keeping for backwards compatibility but no longer used
-```
-
-**Verification:** No active imports found. `OptimizedUnifiedHeader.tsx` imports `NotificationIcon` directly.
-
-**Action:** Safe to delete.
-
----
-
-### 2.2 DELETE: `src/components/payments/PaymentButton.tsx`
-
-**Status:** Explicitly deprecated in code:
-```typescript
-toast.error("PaymentButton deprecato - usa TwoStepBookingForm", { ... });
-```
-
-**Verification:** No active imports found. The project uses `TwoStepBookingForm` for all payment flows.
-
-**Action:** Safe to delete.
-
----
-
-## Phase 3: Clean `src/lib`
-
-### 3.1 DELETE: `src/lib/stripe-status-utils.ts`
-
-**Status:** Contains two functions that are completely unused:
-- `checkAndUpdateStripeStatus()` - 0 imports found
-- `fixCurrentStripeIssue()` - 0 imports found
-
-**Reason:** Redundant with `stripeService.checkAccountStatus()`.
-
-**Action:** Safe to delete.
-
----
-
-### 3.2 KEEP: `src/lib/admin-utils.ts`
-
-**Status:** Re-export barrel file for backward compatibility.
-
-**Current content:**
-```typescript
-export { isCurrentUserAdmin } from "./admin/admin-auth-utils";
-export { getAdminStats } from "./admin/admin-stats-utils";
-export { getAllUsers, suspendUser, ... } from "./admin/admin-user-utils";
-// ... more re-exports
-```
-
-**Still in use by 5+ files:**
-- `AdminProtected.tsx` - uses `isCurrentUserAdmin`
-- `useUsersQuery.ts` - uses user management functions
-- `useAdminActionsLog.ts` - uses `getAdminActionsLog`
-- `useUserActions.ts` - uses `banUser`, `unbanUser`
-- `useAdminDashboard.ts` - uses `getAdminStats`
-
-**Action:** Keep as-is. This is a clean re-export pattern, not duplicated logic. The actual implementations are already modularized in `src/lib/admin/*.ts`.
-
----
-
-### 3.3 REFACTOR: `src/lib/admin/admin-payment-utils.ts`
-
-**Status:** Contains:
-- `calculatePlatformFee()` - KEEP (still useful utility)
-- `calculateHostAmount()` - KEEP (still useful utility)
-- `exportPaymentsToCSV()` - DELETE (deprecated, unused, replaced by `exportAdminCSV`)
-- `detectPaymentAnomalies()` - KEEP (still useful for admin validation)
-
-**Action:** Remove only the deprecated `exportPaymentsToCSV` function.
-
----
-
-## Phase 4: Additional Refactoring
-
-### 4.1 REFACTOR: `src/components/payments/HostStripeStatus.tsx`
-
-**Current Problem:** Makes direct `supabase.functions.invoke()` call (line 36).
-
-**Action:** Refactor to use `stripeService.createOnboardingLink()`:
-
-```typescript
-// Before (line 36):
-const { data, error } = await supabase.functions.invoke(API_ENDPOINTS.STRIPE_CONNECT, { ... });
-
-// After:
-import { createOnboardingLink } from '@/services/api/stripeService';
-// ...
-const result = await createOnboardingLink();
-if (result.success && result.url) {
-  window.location.href = result.url;
-}
-```
+**Remaining console.log in codebase are intentional:**
+- `src/lib/sre-logger.ts` - The logger itself (output sink)
+- Dev-only contexts with `import.meta.env.DEV` guards
+- CLI scripts (`scripts/migration-runner.ts`)
+- Edge Functions (Supabase logging infrastructure)
 
 ---
 
 ## Files Summary
 
-### Files to DELETE (4 files)
+### Files to Create
 
-| File | Reason |
+| File | Description |
+|------|-------------|
+| `src/services/api/__tests__/booking-integration.test.ts` | Integration test for booking flow |
+
+### Files to Verify (No Changes Needed)
+
+| File | Status |
 |------|--------|
-| `src/hooks/useMapboxGeocodingCached.ts` | Unused, replaced by `mapboxService` |
-| `src/components/layout/NotificationButton.tsx` | Deprecated, replaced by `NotificationIcon` |
-| `src/components/payments/PaymentButton.tsx` | Deprecated, replaced by `TwoStepBookingForm` |
-| `src/lib/stripe-status-utils.ts` | Unused, redundant with `stripeService` |
-
-### Files to MODIFY (3 files)
-
-| File | Changes |
-|------|---------|
-| `src/hooks/useStripeStatus.ts` | Replace `supabase.functions.invoke` with `stripeService.checkAccountStatus()` |
-| `src/components/payments/HostStripeStatus.tsx` | Replace direct Supabase call with `stripeService.createOnboardingLink()` |
-| `src/lib/admin/admin-payment-utils.ts` | Remove deprecated `exportPaymentsToCSV` function |
-
-### Files to KEEP (unchanged)
-
-| File | Reason |
-|------|--------|
-| `src/hooks/useGDPRRequests.ts` | Already uses `privacyService`, provides React state wrapper |
-| `src/lib/admin-utils.ts` | Clean re-export barrel, still actively imported |
+| `src/services/api/bookingService.ts` | Clean - uses sreLogger |
+| `src/hooks/checkout/useCheckout.ts` | Clean - uses sreLogger |
+| `vite.config.ts` | Production drops console statements |
 
 ---
 
-## Technical Details
+## Technical Notes
 
-### useStripeStatus.ts Refactoring
+### Jest vs Vitest
+The project uses Jest (not Vitest) for unit/integration tests as configured in:
+- `jest.config.cjs` - Main configuration
+- `package.json:13` - `"test": "jest --coverage"`
 
-```typescript
-// Import
-import { checkAccountStatus } from '@/services/api/stripeService';
+Some files in `tests/integration/` use Vitest syntax, but the core `src/**/__tests__/` directory uses Jest.
 
-// In verifyStripeStatus():
-const statusResult = await checkAccountStatus();
-
-sreLogger.info('Stripe status verification complete', { 
-  userId: authState.user.id, 
-  connected: statusResult.connected,
-  updated: statusResult.updated
-});
-
-if (statusResult.updated || isReturningFromStripe) {
-  await refreshProfile();
-  if (statusResult.connected) {
-    toast.success('Account Stripe collegato con successo!');
-  }
-}
-
-// In manualRefresh():
-const statusResult = await checkAccountStatus();
-
-if (statusResult.updated) {
-  await refreshProfile();
-  toast.success('Status Stripe aggiornato');
-} else {
-  toast.info('Lo status è già aggiornato');
-}
-```
-
-### HostStripeStatus.tsx Refactoring
-
-```typescript
-// Import
-import { createOnboardingLink } from '@/services/api/stripeService';
-
-// In connect():
-const result = await createOnboardingLink();
-
-if (!result.success) {
-  throw new Error(result.error || 'Failed to create onboarding link');
-}
-
-if (result.url) {
-  window.location.href = result.url;
-} else {
-  throw new Error('No redirect URL returned');
-}
-```
-
----
-
-## Verification Checklist
-
-After implementation:
-- [ ] `npm run build` completes with 0 errors
-- [ ] No orphaned imports referencing deleted files
-- [ ] `useStripeStatus` hook works correctly with service
-- [ ] `HostStripeStatus` component connects to Stripe correctly
-- [ ] All deleted files have no remaining references
+### Test Patterns Used
+Following existing patterns from `src/hooks/checkout/__tests__/useCheckout.test.ts`:
+- `jest.spyOn()` for mocking service functions
+- `jest.mock()` for module-level mocks
+- `mockResolvedValue()` for async returns
+- `mockRestore()` for cleanup
 
 ---
 
@@ -271,8 +312,17 @@ After implementation:
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Deprecated hooks | 1 | 0 |
-| Deprecated components | 2 | 0 |
-| Unused utility files | 1 | 0 |
-| Direct Supabase calls in UI | 2 | 0 |
-| Lines of dead code removed | ~350 | 0 |
+| Integration tests for bookingService | 0 | 6 |
+| Test coverage for booking flow | Partial | Complete |
+| Console.log in production services | 0 | 0 (verified) |
+
+---
+
+## Verification Checklist
+
+After implementation:
+- [ ] `npm run test` passes all tests
+- [ ] Integration test covers happy path and error cases
+- [ ] `npm run build` succeeds with 0 errors
+- [ ] No console.log in `src/services/api/*.ts`
+- [ ] No console.log in `src/hooks/checkout/*.ts`
