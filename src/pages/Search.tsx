@@ -5,19 +5,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, MapPin, List, Map as MapIcon } from 'lucide-react';
+import { Search as SearchIcon, MapPin, List, Map as MapIcon, Locate } from 'lucide-react';
 import { Space } from '@/types/space';
 import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LazySpaceMap } from '@/components/spaces/LazySpaceMap';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useUserLocation } from '@/hooks/useUserLocation';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  
+  // Real geolocation hook
+  const { userLocation, getUserLocation, isLoading: isGettingLocation } = useUserLocation();
 
   // Initialize query from URL
   useEffect(() => {
@@ -106,6 +110,17 @@ const Search = () => {
             <Button type="submit" className="h-12 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-lg">
               Cerca
             </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={getUserLocation}
+              disabled={isGettingLocation}
+              className="h-12"
+              title="Trova spazi vicino a me"
+            >
+              <Locate className={`h-4 w-4 mr-2 ${isGettingLocation ? 'animate-pulse' : ''}`} />
+              {isGettingLocation ? 'Localizzazione...' : 'Vicino a me'}
+            </Button>
             {searchQuery && (
               <Button type="button" variant="outline" onClick={handleClearSearch} className="h-12">
                 Reset
@@ -179,11 +194,11 @@ const Search = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+                className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm relative"
               >
                 <LazySpaceMap
                   spaces={spaces}
-                  userLocation={null} // TODO: Get user location
+                  userLocation={userLocation}
                   onSpaceClick={(id: string) => navigate(`/space/${id}`)}
                 />
               </motion.div>

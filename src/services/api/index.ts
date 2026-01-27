@@ -6,10 +6,22 @@
 export {
   reserveSlot,
   createCheckoutSession,
+  getBookingsForSpace,
   type ReserveSlotParams,
   type ReserveSlotResult,
-  type CreateCheckoutSessionResult
+  type CreateCheckoutSessionResult,
+  type SpaceBooking,
+  type GetSpaceBookingsResult
 } from './bookingService';
+
+// Chat Service
+export * as chatService from './chatService';
+export type {
+  FetchConversationsResult,
+  FetchMessagesResult,
+  SendMessageParams,
+  SendMessageResult
+} from './chatService';
 
 // Stripe Service
 export {
