@@ -77,7 +77,7 @@ export const getHostBookings = async (hostId: string) => {
           last_name,
           profile_photo_url
         ),
-        payments (
+        payments!payments_booking_id_fkey (
           id,
           payment_status,
           amount,

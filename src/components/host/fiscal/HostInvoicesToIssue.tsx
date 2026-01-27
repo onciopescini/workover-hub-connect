@@ -24,7 +24,7 @@ export const HostInvoicesToIssue = () => {
           host_invoice_deadline,
           host_invoice_reminder_sent,
           created_at,
-          bookings:bookings!fk_payments_booking_id (
+          bookings:bookings!payments_booking_id_fkey (
             id,
             booking_date,
             space_id
@@ -35,8 +35,11 @@ export const HostInvoicesToIssue = () => {
       if (error) throw error;
       
       // Fetch spaces separately and filter by host
-      // Filter nulls and assert type string
-      const spaceIds = [...new Set(payments?.map(p => p.bookings?.space_id).filter((id): id is string => !!id) || [])];
+      // Handle bookings as potential array and filter nulls
+      const spaceIds = [...new Set(payments?.map(p => {
+        const booking = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings;
+        return booking?.space_id;
+      }).filter((id): id is string => !!id) || [])];
 
       const { data: spaces } = await supabase
         .from('spaces')
@@ -48,14 +51,20 @@ export const HostInvoicesToIssue = () => {
       
       // Filter payments by host's spaces and attach space info
       return (payments || [])
-        .filter(p => p.bookings?.space_id && spacesMap.has(p.bookings.space_id))
-        .map(p => ({
-          ...p,
-          bookings: {
-            ...p.bookings,
-            spaces: p.bookings?.space_id ? spacesMap.get(p.bookings.space_id) : null
-          }
-        }));
+        .filter(p => {
+          const booking = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings;
+          return booking?.space_id && spacesMap.has(booking.space_id);
+        })
+        .map(p => {
+          const booking = Array.isArray(p.bookings) ? p.bookings[0] : p.bookings;
+          return {
+            ...p,
+            bookings: booking ? {
+              ...booking,
+              spaces: booking.space_id ? spacesMap.get(booking.space_id) : null
+            } : null
+          };
+        });
     },
     enabled: !!authState.user?.id,
   });
@@ -124,7 +133,7 @@ export const HostInvoicesToIssue = () => {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <p className="flex items-center gap-2">
                           <Calendar className="h-3 w-3" />
-                          Prenotazione: {new Date(booking.booking_date).toLocaleDateString('it-IT')}
+                          Prenotazione: {booking?.booking_date ? new Date(booking.booking_date).toLocaleDateString('it-IT') : 'N/A'}
                         </p>
                         <p className="font-medium">Importo canone: €{Number(payment.host_amount).toFixed(2)}</p>
                         <p className={isUrgent ? 'text-destructive font-medium' : ''}>

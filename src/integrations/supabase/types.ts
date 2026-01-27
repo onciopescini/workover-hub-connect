@@ -3171,20 +3171,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_payments_booking_id"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "admin_bookings_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_payments_booking_id"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "payments_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false

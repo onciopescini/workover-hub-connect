@@ -40,7 +40,7 @@ export const usePaymentInvoiceReconciliation = () => {
         .from('payments')
         .select(`
           *,
-          booking:bookings!fk_payments_booking_id (id, space_id)
+          booking:bookings!payments_booking_id_fkey (id, space_id)
         `)
         .eq('payment_status', 'completed')
         .order('created_at', { ascending: false });
@@ -51,7 +51,11 @@ export const usePaymentInvoiceReconciliation = () => {
       }
 
       // Fetch spaces separately to avoid FK relationship issues
-      const spaceIds = [...new Set(payments?.map(p => p.booking?.space_id).filter((id): id is string => id !== null) || [])];
+      // Handle booking as potential array
+      const spaceIds = [...new Set(payments?.map(p => {
+        const booking = Array.isArray(p.booking) ? p.booking[0] : p.booking;
+        return booking?.space_id;
+      }).filter((id): id is string => id !== null) || [])];
       const { data: spaces } = await supabase
         .from('spaces')
         .select('id, host_id, title')
@@ -75,13 +79,16 @@ export const usePaymentInvoiceReconciliation = () => {
       
       const paymentsWithoutInvoice = (payments || [])
         .filter(p => !invoicedPaymentIds.has(p.id))
-        .map(p => ({
-          ...p,
-          booking: p.booking ? {
-            ...p.booking,
-            spaces: p.booking.space_id ? spacesMap.get(p.booking.space_id) : undefined
-          } : undefined
-        }));
+        .map(p => {
+          const booking = Array.isArray(p.booking) ? p.booking[0] : p.booking;
+          return {
+            ...p,
+            booking: booking ? {
+              ...booking,
+              spaces: booking.space_id ? spacesMap.get(booking.space_id) : undefined
+            } : undefined
+          };
+        });
 
       return paymentsWithoutInvoice as unknown as PaymentWithoutInvoice[];
     }
