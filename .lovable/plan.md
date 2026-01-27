@@ -1,253 +1,212 @@
 
-# Implementation Plan: Gold Standard Booking Logic (Service Layer)
-
-## Overview
-
-This refactoring creates a dedicated Service Layer for booking operations, replacing scattered inline Supabase calls with clean, testable API functions. The hook will become a thin orchestrator while all backend communication logic moves to dedicated service modules.
+# Principal Architect Audit Report: Workover Hub Connect
+## From Prototype to Production - Gold Standard Refactoring Plan
 
 ---
 
-## Current Architecture Analysis
+## Executive Summary
 
-### Current Flow (useCheckout.ts)
+After an extensive audit of the entire codebase, I've identified **significant technical debt** that must be addressed before production release. The application has grown organically with multiple development iterations, leaving behind zombie code, architectural violations, and inconsistent patterns.
+
+**Current State**: Functional prototype with scattered patterns
+**Target State**: Production-ready Gold Standard architecture
+
+---
+
+## 🔴 KILL LIST (Delete Immediately)
+
+### Deprecated Components (Safe to Remove)
+
+| File | Reason | Risk |
+|------|--------|------|
+| `src/components/payments/PaymentButton.tsx` | Explicitly deprecated - shows error toast "usa TwoStepBookingForm" | None |
+| `src/components/layout/NotificationButton.tsx` | Explicitly deprecated - "notifications integrated in UnifiedHeader" | None |
+| `src/lib/booking-calculator-utils.ts` lines 88-91 | Duplicate `cn` function - already exists in `src/lib/utils.ts` | None |
+
+### Zombie Hooks (Verify Usage Before Removal)
+
+| File | Issue |
+|------|-------|
+| `src/hooks/useMapboxGeocodingCached.ts` | Check if `useMapboxGeocoding.ts` supersedes this |
+| `src/hooks/useOptimisticSlotLock.ts` vs `src/lib/optimistic-slot-lock.ts` | Potential duplication |
+| `src/hooks/useLoadingState.ts` vs `src/hooks/useLoading.ts` vs `src/hooks/useUnifiedLoading.ts` | Three loading hooks - consolidate |
+
+### Dead Logic to Remove
+
+| Location | Code Pattern |
+|----------|--------------|
+| `src/pages/host/StripeReturn.tsx:18` | Empty catch block `{ /* no-op */ }` - add proper error handling or remove |
+| Multiple components | Console.error statements that bypass `sreLogger` |
+
+---
+
+## 🟡 REFACTOR LIST (Technical Debt)
+
+### Priority 1: Service Layer Migration (Critical)
+
+**57 files** contain direct `supabase.rpc` or `supabase.functions.invoke` calls that should move to the Service Layer:
+
+| Domain | Files to Migrate | New Service |
+|--------|-----------------|-------------|
+| **Stripe/Payments** | `StripeConnectButton.tsx`, `HostStripeStatus.tsx`, `HostDashboardContent.tsx`, `HostOnboardingWizard.tsx`, `useStripeStatus.ts`, `useStripePayouts.ts` | `stripeService.ts` |
+| **Bookings** | `BookingCardActions.tsx`, `BookingDetailsModal.tsx`, `useCancelBookingMutation.ts`, `useBookingApproval.ts` | Extend `bookingService.ts` |
+| **Mapbox** | `AddressAutocomplete.tsx`, `useMapboxGeocoding.ts`, `MapboxTokenContext.tsx` | `mapboxService.ts` |
+| **Admin** | `AdminBookingsPage.tsx`, `AdminUsers.tsx`, `useAdminSettings.ts` | `adminService.ts` |
+| **GDPR/Privacy** | `useGDPRRequests.ts`, `PrivacyExportRequest.tsx`, `PrivacyDeletionRequest.tsx` | `privacyService.ts` |
+| **Fiscal** | `HostFiscalDataForm.tsx`, `useFiscalDashboard.ts`, `DAC7ReportCard.tsx` | `fiscalService.ts` |
+
+### Priority 2: Type Safety Violations
+
+**~30 instances** of `as unknown as` and `any` types detected:
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `src/hooks/queries/useBookingsQuery.ts:70,105` | Query results cast to unknown | Create proper return types in Supabase types |
+| `src/lib/admin/admin-space-utils.ts:16` | `as unknown as AdminSpace[]` | Define RPC return type |
+| `src/hooks/useAdminUsers.ts:110-111` | JSON.parse with unknown cast | Validate JSON structure before parsing |
+| `src/components/host/revenue/AdvancedRevenueAnalytics.tsx:37` | `'host_daily_metrics' as any` | Add view to Supabase types |
+| `src/hooks/useUserActions.ts:13` | Dynamic RPC function name | Create typed wrapper functions |
+
+### Priority 3: Duplicate Utility Functions
+
+**7+ implementations** of `formatCurrency` scattered across:
+- `src/pages/admin/AdminRevenue.tsx:31-36`
+- `src/pages/admin/AdminDashboard.tsx:65-70`
+- `src/pages/admin/AdminBookingsPage.tsx:92-96`
+- `src/components/payments/PaymentListItem.tsx:31`
+- `src/components/payments/PaymentStats.tsx:19`
+- `src/pages/SpaceRecap.tsx:83-88`
+- `src/components/host/fiscal/DAC7ReportCard.tsx:19-24`
+
+**Action**: Create `src/lib/format.ts` with:
+```typescript
+export const formatCurrency = (amount: number, options?: { cents?: boolean }) => 
+  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' })
+    .format(options?.cents ? amount / 100 : amount);
+
+export const formatDate = (date: string | Date, format?: string) => { ... };
+```
+
+### Priority 4: Status Configuration Inconsistency
+
+`src/utils/statusUtils.ts` provides centralized status configs, but ignored by:
+- `src/components/bookings/EnhancedBookingCard.tsx:84-161` - inline status definitions
+- `src/pages/admin/AdminBookingsPage.tsx:75-90` - local `getStatusBadgeColor`
+
+### Priority 5: Hardcoded Values
+
+| Location | Issue | Fix |
+|----------|-------|-----|
+| `src/services/api/bookingService.ts:11-12` | Hardcoded Supabase URL and anon key | Import from `@/integrations/supabase/client` |
+| `src/components/payments/PaymentButton.tsx:66` | Hardcoded "5%" fee string | Use `PricingEngine.GUEST_FEE_PERCENT` |
+| `supabase/functions/create-stripe-connect-account/index.ts:111` | Fallback `localhost:3000` | Use origin header only |
+
+---
+
+## 🟢 GREEN LIGHT (Production Ready)
+
+### Excellent Architecture
+
+| Area | Files | Why It's Good |
+|------|-------|---------------|
+| **New Service Layer** | `src/services/api/bookingService.ts` | Clean separation, typed interfaces, proper error codes |
+| **Pricing Engine** | `src/lib/pricing-engine.ts` | Centralized business logic, testable, documented |
+| **Status Utils** | `src/utils/statusUtils.ts` | Centralized config pattern (just needs adoption) |
+| **SRE Logger** | `src/lib/sre-logger.ts` | Proper structured logging with context |
+| **Error Boundary** | `src/components/ErrorBoundaryWrapper.tsx` | Global error handling |
+| **Auth System** | `src/contexts/AuthContext.tsx`, `src/hooks/auth/*` | Well-structured auth flow |
+| **Booking Wizard** | `src/components/booking-wizard/TwoStepBookingForm.tsx` | Modern two-step flow |
+| **Payment Success/Cancel** | `src/pages/BookingSuccess.tsx`, `src/pages/BookingCancelled.tsx` | Proper post-payment UX |
+
+### Well-Documented
+
+| Document | Purpose |
+|----------|---------|
+| `docs/DEVELOPER_GUIDE.md` | Onboarding guide |
+| `docs/ARCHITECTURE.md` | System architecture |
+| `docs/code-bloat-audit-report.md` | Previous optimization work |
+
+---
+
+## 🔵 ROADMAP TO PRODUCTION
+
+### Phase 1: Critical Bug Fixes (1-2 days)
+
+Fix the **12 TypeScript build errors** currently blocking deployment:
+
+| Error | File | Fix |
+|-------|------|-----|
+| `messageDialogOpen` prop mismatch | `RefactoredBookingsDashboardContent.tsx:68` | Remove unused prop from interface or add to component |
+| `stripe_connected` index signature | `BookingCardActions.tsx:42` | Use `['stripe_connected']` bracket notation |
+| `email` missing on ChatParticipant | `RecentMessages.tsx:44` | Add email to ChatParticipant type |
+| AmenityIcon type incompatibility | `SpacesGallerySection.tsx:28-34` | Use `LucideIcon` type from lucide-react |
+| Missing `API_ENDPOINTS` | `SpacesGallerySection.tsx:205` | Import from `@/constants` |
+| `profiles` relation error | `WhosHereList.tsx:74` | Fix Supabase join query |
+| ReactNode type errors | `NotificationCenter.tsx:235-239` | Type metadata values properly |
+
+### Phase 2: Service Layer Completion (3-5 days)
+
+Create missing services following the `bookingService.ts` pattern:
+
 ```text
-Component → useCheckout Hook → Direct Supabase Calls
-                            ↓
-                    1. supabase.rpc('validate_and_reserve_slot')
-                    2. supabase.functions.invoke('create-checkout-v3')
+src/services/api/
+├── bookingService.ts    ✅ EXISTS
+├── stripeService.ts     🔵 CREATE
+├── mapboxService.ts     🔵 CREATE
+├── adminService.ts      🔵 CREATE
+├── privacyService.ts    🔵 CREATE
+├── fiscalService.ts     🔵 CREATE
+└── index.ts             ✅ EXISTS
 ```
 
-### Target Flow (Service Layer)
-```text
-Component → useCheckout Hook → bookingService
-                            ↓
-              1. reserveSlot() → supabase.rpc()
-              2. createCheckoutSession() → native fetch()
-```
+### Phase 3: Utility Consolidation (1-2 days)
+
+1. Create `src/lib/format.ts` with `formatCurrency`, `formatDate`
+2. Migrate all 7+ inline implementations
+3. Migrate components to use `statusUtils.ts`
+4. Remove duplicate `cn` function from `booking-calculator-utils.ts`
+
+### Phase 4: Error Handling Standardization (1-2 days)
+
+1. Replace all `console.error` with `sreLogger.error`
+2. Replace empty catch blocks with proper error handling
+3. Add `Loader2` spinners to all async buttons
+4. Standardize on `LoadingSpinner` component
 
 ---
 
-## Implementation Steps
+## Security & Stability Gaps Summary
 
-### Step 1: Create Service Layer Directory Structure
-
-Create the following files:
-
-| File | Purpose |
-|------|---------|
-| `src/services/api/bookingService.ts` | Main booking API functions |
-| `src/services/api/index.ts` | Barrel export file |
-
----
-
-### Step 2: Implement bookingService.ts
-
-The service will export two main functions:
-
-#### 2.1 reserveSlot Function
-
-```typescript
-interface ReserveSlotParams {
-  spaceId: string;
-  userId: string;
-  startTime: string;  // ISO string
-  endTime: string;    // ISO string
-  guests: number;
-  confirmationType: 'instant' | 'host_approval';
-  clientBasePrice?: number;
-}
-
-interface ReserveSlotResult {
-  success: boolean;
-  bookingId?: string;
-  error?: string;
-}
-```
-
-**Implementation Details:**
-- Calls `supabase.rpc('validate_and_reserve_slot')` with mapped parameters
-- Handles RPC response parsing (the RPC returns `{ success, booking_id, error }`)
-- Maps error codes (e.g., `23P01` → `CONFLICT`)
-- Throws typed errors for upstream handling
-
-#### 2.2 createCheckoutSession Function
-
-```typescript
-interface CreateCheckoutSessionResult {
-  success: boolean;
-  url?: string;
-  sessionId?: string;
-  error?: string;
-}
-```
-
-**Implementation Details:**
-- Uses native `fetch()` instead of `supabase.functions.invoke()` for full header control
-- Constructs URL: `https://khtqwzvrxzsgfhsslwyz.supabase.co/functions/v1/create-checkout-v3`
-- Required Headers:
-  - `Authorization: Bearer <access_token>` (from `supabase.auth.getSession()`)
-  - `Idempotency-Key: <uuid>` (generated with `crypto.randomUUID()`)
-  - `Content-Type: application/json`
-  - `apikey: <anon_key>` (Supabase requires this for edge functions)
-- Body: `{ booking_id: string }`
-- Parses response and handles error states
+| Category | Issue Count | Priority |
+|----------|-------------|----------|
+| Empty catch blocks | 3 | High |
+| `console.error` instead of sreLogger | 8+ | Medium |
+| Missing loading spinners | 4 | Medium |
+| Client-only validation (no server match) | Review needed | High |
+| Hardcoded credentials in service | 1 | Critical |
 
 ---
 
-### Step 3: Refactor useCheckout.ts
+## Metrics Target
 
-The hook will be simplified to:
-
-1. **Remove** all direct Supabase imports and calls
-2. **Import** `reserveSlot` and `createCheckoutSession` from bookingService
-3. **Maintain** existing interfaces (`CheckoutParams`, `CheckoutResult`)
-4. **Keep** date/time preparation logic (using `createBookingDateTime`)
-
-**New Flow:**
-```typescript
-const processCheckout = async (params) => {
-  setIsLoading(true);
-  try {
-    // 1. Prepare ISO timestamps
-    const startIso = createBookingDateTime(dateStr, startTime).toISOString();
-    const endIso = createBookingDateTime(dateStr, endTime).toISOString();
-    
-    // 2. Reserve slot via service
-    const reservation = await reserveSlot({
-      spaceId, userId, startTime: startIso, endTime: endIso,
-      guests: guestsCount, confirmationType, clientBasePrice
-    });
-    
-    if (!reservation.success) {
-      return { success: false, error: reservation.error, errorCode: 'RESERVE_FAILED' };
-    }
-    
-    // 3. Create checkout session via service
-    const checkout = await createCheckoutSession(reservation.bookingId!);
-    
-    if (!checkout.success || !checkout.url) {
-      return { success: false, error: checkout.error, errorCode: 'CHECKOUT_FAILED' };
-    }
-    
-    // 4. Redirect to Stripe
-    window.location.href = checkout.url;
-    return { success: true, bookingId: reservation.bookingId };
-    
-  } catch (err) {
-    // Error handling...
-  } finally {
-    setIsLoading(false);
-  }
-};
-```
+| Metric | Current | Target |
+|--------|---------|--------|
+| TypeScript errors | 12 | 0 |
+| Direct Supabase calls in components | 57 | 0 |
+| Duplicate utility functions | 15+ | 0 |
+| `any` type usage | 30+ | <5 |
+| Empty catch blocks | 3 | 0 |
 
 ---
 
-### Step 4: Update Tests
+## Recommended Execution Order
 
-Replace Supabase mocks with service mocks:
+1. **Day 1**: Fix 12 build errors (blocking)
+2. **Day 2-3**: Create `stripeService.ts` and migrate Stripe calls
+3. **Day 4**: Create `src/lib/format.ts` and consolidate utilities
+4. **Day 5**: Error handling standardization
+5. **Day 6-7**: Complete remaining service migrations
+6. **Day 8**: Delete zombie code from KILL LIST
+7. **Day 9-10**: Integration testing and verification
 
-#### Current Test Structure (to remove):
-```typescript
-jest.mock('@/integrations/supabase/client', () => ({
-  supabase: { rpc: jest.fn(), functions: { invoke: jest.fn() } }
-}));
-```
-
-#### New Test Structure:
-```typescript
-jest.mock('@/services/api/bookingService', () => ({
-  reserveSlot: jest.fn(),
-  createCheckoutSession: jest.fn()
-}));
-```
-
-#### Test Cases to Maintain:
-1. **Success flow**: `reserveSlot` succeeds → `createCheckoutSession` succeeds → redirect
-2. **Reserve slot failure**: `reserveSlot` returns error → proper error handling
-3. **Checkout failure**: `reserveSlot` succeeds but `createCheckoutSession` fails
-4. **Network error handling**: Service throws exception
-5. **Conflict error (slot already booked)**: Specific error code mapping
-
----
-
-## File Changes Summary
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/services/api/bookingService.ts` | **CREATE** | New service layer with `reserveSlot` and `createCheckoutSession` |
-| `src/services/api/index.ts` | **CREATE** | Barrel export |
-| `src/hooks/checkout/useCheckout.ts` | **MODIFY** | Remove inline Supabase calls, use service layer |
-| `src/hooks/checkout/__tests__/useCheckout.test.ts` | **MODIFY** | Mock service instead of Supabase |
-
----
-
-## Technical Details
-
-### Edge Function API Contract (create-checkout-v3)
-
-Based on analysis of `supabase/functions/create-checkout-v3/index.ts`:
-
-**Request:**
-```
-POST /functions/v1/create-checkout-v3
-Headers:
-  - Authorization: Bearer <user_token>
-  - Idempotency-Key: <uuid>
-  - Content-Type: application/json
-  - apikey: <anon_key>
-Body: { "booking_id": "<uuid>" }
-```
-
-**Success Response (200):**
-```json
-{
-  "idempotent": false,
-  "checkout_session": { "id": "cs_xxx", "url": "https://checkout.stripe.com/..." },
-  "payment": { "id": "...", "status": "pending", ... }
-}
-```
-
-**Error Response (4xx/5xx):**
-```json
-{
-  "error": "error_code",
-  "details": { ... }
-}
-```
-
-### Idempotency Key Strategy
-
-The `Idempotency-Key` header ensures that:
-- Retried requests don't create duplicate payments
-- The same checkout session is returned for the same key
-- Must be unique per booking attempt (use `crypto.randomUUID()`)
-
-### Environment Variables Used
-
-The service will use these hardcoded values (as per Lovable guidelines - no VITE_* in service code):
-- Supabase URL: `https://khtqwzvrxzsgfhsslwyz.supabase.co`
-- Supabase Anon Key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` (from project config)
-
----
-
-## Error Handling Strategy
-
-| Error Source | Error Type | User Message |
-|--------------|------------|--------------|
-| RPC `23P01` | `CONFLICT` | "Slot already booked" |
-| RPC timeout | `TIMEOUT` | "Server not responding, please retry" |
-| Checkout 401 | `UNAUTHORIZED` | "Session expired, please login again" |
-| Checkout 400 | `INVALID_REQUEST` | "Invalid booking data" |
-| Network error | `NETWORK` | "Connection failed, please check your internet" |
-
----
-
-## Benefits of This Refactoring
-
-1. **Separation of Concerns**: Hook handles state, service handles API calls
-2. **Testability**: Easy to mock service functions independently
-3. **Header Control**: Native fetch allows full control over Idempotency-Key
-4. **Reusability**: Service can be used by other components/hooks
-5. **Error Isolation**: API errors handled in one place
-6. **Type Safety**: Strong typing on service interfaces
+**Total Estimated Effort**: 10 working days for full Gold Standard compliance
