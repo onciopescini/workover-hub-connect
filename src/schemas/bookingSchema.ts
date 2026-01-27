@@ -1,6 +1,11 @@
 
 import { z } from 'zod';
 
+// ============= CONSTANTS =============
+
+/** Maximum number of days in advance a booking can be made */
+export const MAX_BOOKING_DAYS_AHEAD = 365;
+
 // Time slot validation
 const TimeSlotSchema = z.object({
   start: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato orario non valido"),
@@ -28,7 +33,20 @@ export const MultiDayBookingSchema = z.object({
 // Booking creation/update
 export const BookingFormSchema = z.object({
   space_id: z.string().uuid("ID spazio non valido"),
-  booking_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido"),
+  booking_date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data non valido")
+    .refine(val => {
+      const bookingDate = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return bookingDate >= today;
+    }, 'La data deve essere futura')
+    .refine(val => {
+      const bookingDate = new Date(val);
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + MAX_BOOKING_DAYS_AHEAD);
+      return bookingDate <= maxDate;
+    }, `Prenotazione massima ${MAX_BOOKING_DAYS_AHEAD} giorni in anticipo`),
   start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Orario inizio non valido").optional(),
   end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Orario fine non valido").optional(),
   guests_count: z.number().min(1, "Almeno 1 ospite richiesto").max(100, "Massimo 100 ospiti"),

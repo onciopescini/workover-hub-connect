@@ -74,6 +74,47 @@ export async function reserveSlot(params: ReserveSlotParams): Promise<ReserveSlo
     clientBasePrice = 0
   } = params;
 
+  // Check if user is suspended before RPC call
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_suspended')
+      .eq('id', userId)
+      .single();
+
+    if (profile?.is_suspended) {
+      sreLogger.warn('Suspended user attempted booking', { component: 'bookingService', userId });
+      return {
+        success: false,
+        error: 'Account sospeso. Impossibile effettuare prenotazioni.',
+        errorCode: 'VALIDATION'
+      };
+    }
+  } catch (checkErr) {
+    sreLogger.warn('Exception checking suspension status', { component: 'bookingService' }, checkErr as Error);
+    // Continue - don't block if check fails
+  }
+
+  // Check self-booking prevention
+  try {
+    const { data: isSelfBooking } = await supabase.rpc('check_self_booking', {
+      p_space_id: spaceId,
+      p_user_id: userId
+    });
+
+    if (isSelfBooking) {
+      sreLogger.warn('Self-booking attempt blocked', { component: 'bookingService', userId, spaceId });
+      return {
+        success: false,
+        error: 'Non puoi prenotare il tuo stesso spazio.',
+        errorCode: 'VALIDATION'
+      };
+    }
+  } catch (checkErr) {
+    sreLogger.warn('Exception checking self-booking', { component: 'bookingService' }, checkErr as Error);
+    // Continue - RPC will also check this
+  }
+
   const rpcParams = {
     p_space_id: spaceId,
     p_user_id: userId,
