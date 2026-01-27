@@ -12,29 +12,31 @@ export const mapConnectionSuggestion = (record: unknown): ConnectionSuggestion |
   }
 
   const spaceName =
-    typeof record.space_name === "string"
-      ? record.space_name
-      : typeof record.workspace_name === "string"
-      ? record.workspace_name
+    typeof record['space_name'] === "string"
+      ? record['space_name']
+      : typeof record['workspace_name'] === "string"
+      ? record['workspace_name']
       : "";
 
+  const suggestedUser = isRecord(record['suggested_user']) ? record['suggested_user'] : null;
+
   return {
-    id: typeof record.id === "string" ? record.id : undefined,
-    user_id: getString(record.user_id),
-    first_name: getString(record.first_name),
-    last_name: getString(record.last_name),
-    avatar_url: typeof record.avatar_url === "string" ? record.avatar_url : null,
+    id: typeof record['id'] === "string" ? record['id'] : '',
+    user_id: getString(record['user_id']),
+    first_name: getString(record['first_name']),
+    last_name: getString(record['last_name']),
+    avatar_url: typeof record['avatar_url'] === "string" ? record['avatar_url'] : null,
     space_name: spaceName,
-    booking_date: getString(record.booking_date),
-    suggested_user: isRecord(record.suggested_user)
+    booking_date: getString(record['booking_date']),
+    suggested_user: suggestedUser
       ? {
-          id: getString(record.suggested_user.id),
-          first_name: getString(record.suggested_user.first_name),
-          last_name: getString(record.suggested_user.last_name),
-          bio: typeof record.suggested_user.bio === "string" ? record.suggested_user.bio : null,
+          id: getString(suggestedUser['id']),
+          first_name: getString(suggestedUser['first_name']),
+          last_name: getString(suggestedUser['last_name']),
+          bio: typeof suggestedUser['bio'] === "string" ? suggestedUser['bio'] : null,
           avatar_url:
-            typeof record.suggested_user.avatar_url === "string"
-              ? record.suggested_user.avatar_url
+            typeof suggestedUser['avatar_url'] === "string"
+              ? suggestedUser['avatar_url']
               : null
         }
       : undefined

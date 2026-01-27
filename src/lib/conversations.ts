@@ -23,8 +23,8 @@ export async function getOrCreateConversation(params: {
   const { data, error } = await supabase.rpc('get_or_create_conversation', {
     p_host_id: hostId,
     p_coworker_id: coworkerId,
-    p_space_id: spaceId || null,
-    p_booking_id: bookingId || null,
+    p_space_id: spaceId ?? undefined,
+    p_booking_id: bookingId ?? undefined,
   });
   
   if (error) {
@@ -51,20 +51,15 @@ export async function sendMessageToConversation(params: {
   
   sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
   
-  type MessageInsertInput = Database['public']['Tables']['messages']['Insert'] & {
-    booking_id?: string;
-  };
+  type MessageInsertInput = Database['public']['Tables']['messages']['Insert'];
 
+  // Build the message data with required fields - booking_id is required in DB schema
   const messageData: MessageInsertInput = {
     conversation_id: conversationId,
     content,
     sender_id: senderId,
+    booking_id: bookingId || '' // Required by schema, use empty string if not provided
   };
-  
-  // Only add booking_id if it's provided and not null
-  if (bookingId) {
-    messageData.booking_id = bookingId;
-  }
   
   // Step 1: Insert Message
   const { data, error } = await supabase
@@ -107,19 +102,27 @@ export async function sendMessageToConversation(params: {
     }
   }
 
-  // Cast to Message type, ensuring compatibility
-  const attachments = Array.isArray(data.attachments) ? (data.attachments as MessageAttachment[]) : [];
+  // Cast to Message type, ensuring compatibility with proper type coercion
+  const attachments = Array.isArray(data.attachments) 
+    ? (data.attachments as unknown as MessageAttachment[]) 
+    : [];
 
-  return {
+  const result: Message = {
     id: data.id,
     conversation_id: data.conversation_id || conversationId,
     sender_id: data.sender_id,
     content: data.content,
     created_at: data.created_at || new Date().toISOString(),
     is_read: data.is_read || false,
-    booking_id: data.booking_id,
     attachments
   };
+  
+  // Only add booking_id if it exists
+  if (data.booking_id) {
+    result.booking_id = data.booking_id;
+  }
+  
+  return result;
 }
 
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
@@ -156,7 +159,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   const conversations = data || [];
   const validStatuses = new Set<Conversation['status']>(['confirmed', 'pending', 'cancelled', 'active']);
 
-  return conversations.map((c) => {
+  return conversations.map((c): Conversation => {
     // Determine the "other" person
     const isHost = c.host_id === userId;
     const otherPerson = isHost ? c.coworker : c.host;
@@ -164,25 +167,43 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
       ? (c.booking.status as Conversation['status'])
       : undefined;
 
-    return {
+    const result: Conversation = {
       id: c.id,
       type: c.booking_id ? 'booking' : 'private',
       title: otherPerson ? `${otherPerson.first_name} ${otherPerson.last_name}` : 'Utente Sconosciuto',
       subtitle: c.space?.title || (c.booking_id ? "Prenotazione" : "Networking"),
-      avatar: otherPerson?.profile_photo_url,
       last_message: c.last_message || "",
-      last_message_at: c.last_message_at,
-      status: bookingStatus,
       host_id: c.host_id,
-      coworker_id: c.coworker_id,
-      other_user_id: otherPerson?.id,
-      booking_id: c.booking_id,
-      space: c.space ? { name: c.space.title } : undefined,
-      booking: c.booking ? {
+      coworker_id: c.coworker_id
+    };
+    
+    // Add optional fields only if they have values
+    if (otherPerson?.profile_photo_url) {
+      result.avatar = otherPerson.profile_photo_url;
+    }
+    if (c.last_message_at) {
+      result.last_message_at = c.last_message_at || undefined;
+    }
+    if (bookingStatus) {
+      result.status = bookingStatus;
+    }
+    if (otherPerson?.id) {
+      result.other_user_id = otherPerson.id;
+    }
+    if (c.booking_id) {
+      result.booking_id = c.booking_id;
+    }
+    if (c.space) {
+      result.space = { name: c.space.title };
+    }
+    if (c.booking) {
+      result.booking = {
         booking_date: c.booking.booking_date,
         status: c.booking.status
-      } : undefined
-    };
+      };
+    }
+    
+    return result;
   });
 }
 
@@ -205,16 +226,24 @@ export async function fetchConversationMessages(conversationId: string): Promise
 
   const messages = data || [];
 
-  return messages.map((m) => ({
-    id: m.id,
-    conversation_id: m.conversation_id,
-    sender_id: m.sender_id,
-    content: m.content,
-    created_at: m.created_at,
-    is_read: m.is_read || false,
-    booking_id: m.booking_id,
-    attachments: Array.isArray(m.attachments) ? (m.attachments as MessageAttachment[]) : []
-  }));
+  return messages.map((m): Message => {
+    const result: Message = {
+      id: m.id,
+      conversation_id: m.conversation_id || conversationId, // Use provided ID if null
+      sender_id: m.sender_id,
+      content: m.content,
+      created_at: m.created_at || new Date().toISOString(), // Default if null
+      is_read: m.is_read || false,
+      attachments: Array.isArray(m.attachments) ? (m.attachments as unknown as MessageAttachment[]) : []
+    };
+    
+    // Only add booking_id if it exists
+    if (m.booking_id) {
+      result.booking_id = m.booking_id;
+    }
+    
+    return result;
+  });
 }
 
 export async function fetchUnreadCounts(userId: string): Promise<Record<string, number>> {

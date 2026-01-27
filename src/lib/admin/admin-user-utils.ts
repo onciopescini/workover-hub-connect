@@ -101,15 +101,16 @@ export const getAllUsers = async (): Promise<AdminProfile[]> => {
       const userRolesList = allRoles?.filter(r => r.user_id === user.id).map(r => r.role) || [];
       return {
         ...user,
-        role: userRolesList[0] || 'coworker', // Primary role for backward compatibility
+        role: (userRolesList[0] || 'coworker') as 'super_admin' | 'admin' | 'moderator', // Primary role for backward compatibility
         roles: userRolesList,
-        email: "" // Placeholder as we can't fetch email directly from profiles
+        email: "", // Placeholder as we can't fetch email directly from profiles
+        permissions: [] as string[] // Required by AdminProfile
       };
     });
     
     logger.info("Successfully fetched user profiles", { count: usersWithRoles.length });
     
-    return usersWithRoles as AdminProfile[];
+    return usersWithRoles as unknown as AdminProfile[];
   } catch (error) {
     logger.error("Error fetching users", {}, error as Error);
     throw error;

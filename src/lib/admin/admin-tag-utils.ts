@@ -13,7 +13,15 @@ export const getAllTags = async (): Promise<GlobalTag[]> => {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as GlobalTag[];
+    
+    // Map database columns to GlobalTag interface
+    return (data || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      created_at: item.created_at || '',
+      approved: item.is_approved || false,
+      approved_by: item.approved_by
+    }));
   } catch (error) {
     sreLogger.error('Error fetching tags', {}, error as Error);
     throw error;

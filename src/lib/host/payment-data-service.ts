@@ -75,8 +75,8 @@ export const getHostPaymentStats = async (hostId: string): Promise<PaymentStats>
     const metrics = isRecord(hostMetrics) ? hostMetrics : {};
     
     // Calcoli basati sulle metriche sicure
-    const totalRevenue = getNumber(metrics.totalRevenue) || 0;
-    const monthlyRevenue = getNumber(metrics.monthlyRevenue) || 0;
+    const totalRevenue = getNumber(metrics['totalRevenue']) || 0;
+    const monthlyRevenue = getNumber(metrics['monthlyRevenue']) || 0;
     
     // Mock calculations per saldo e payouts (in un'app reale verrebbero da Stripe)
     const availableBalance = totalRevenue * 0.3; // 30% disponibile
@@ -127,19 +127,26 @@ export const getHostTransactions = async (hostId: string): Promise<Transaction[]
         return null;
       }
       // Per pagamenti legacy con host_amount null, calcola come amount / 1.05 (rimuove il 5% fee del buyer)
-      const hostAmount = getNumber(row.host_amount) ?? (getNumber(row.amount) ?? 0) / 1.05;
-      const createdAt = getString(row.created_at) || new Date().toISOString();
+      const hostAmount = getNumber(row['host_amount']) ?? (getNumber(row['amount']) ?? 0) / 1.05;
+      const createdAt = getString(row['created_at']) || new Date().toISOString();
+      const bookingId = getString(row['booking_id']);
       
-      return {
-        id: getString(row.id) || '',
+      const transaction: Transaction = {
+        id: getString(row['id']) || '',
         type: 'earning' as const,
-        description: `Prenotazione ${getString(row.space_title) || 'Spazio'}`,
+        description: `Prenotazione ${getString(row['space_title']) || 'Spazio'}`,
         amount: hostAmount,
-        date: createdAt.split('T')[0],
+        date: createdAt.split('T')[0] || '',
         status: 'completed', // RPC returns only completed payments
-        customer: getString(row.customer_name) || 'Guest sconosciuto',
-        booking_id: getString(row.booking_id)
+        customer: getString(row['customer_name']) || 'Guest sconosciuto'
       };
+      
+      // Only add booking_id if it exists (avoid undefined)
+      if (bookingId) {
+        transaction.booking_id = bookingId;
+      }
+      
+      return transaction;
     }).filter((row): row is Transaction => row !== null)
       : [];
 

@@ -7,7 +7,7 @@ export const getHostSpaces = async (hostId: string) => {
   try {
     const { data, error } = await supabase
       .from('spaces')
-      .select('*, title:name') // Alias name to title for backward compatibility within this function if needed, but best to use updated types
+      .select('*')
       .eq('host_id', hostId)
       .order('created_at', { ascending: false });
 
@@ -21,15 +21,14 @@ export const getHostSpaces = async (hostId: string) => {
       spacesCount: data?.length || 0,
       spaces: data?.map(space => ({
         id: space.id,
-        title: space.name,
+        title: space.title,
         published: space.published,
-        // is_suspended: space.is_suspended, // Removed as not in workspaces
         host_id: space.host_id
       }))
     });
     
-    // Map name back to title for consumers of this utility if they expect 'title' property
-    return (data || []).map(s => ({...s, title: s.name}));
+    // Return data with title from spaces table (which uses title column now)
+    return data || [];
   } catch (error) {
     sreLogger.error('getHostSpaces: Exception occurred', { hostId }, error as Error);
     throw error;

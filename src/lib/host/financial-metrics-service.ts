@@ -52,12 +52,12 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     
     const monthlyData: MonthlyData[] = monthNames.map((month, index) => ({
       month,
-      revenue: index === currentMonth ? Math.round(getNumber(metrics.monthlyRevenue) || 0) : 0,
-      bookings: index === currentMonth ? Math.max(1, Math.floor(getNumber(metrics.confirmedBookings) || 0)) : 0
+      revenue: index === currentMonth ? Math.round(getNumber(metrics['monthlyRevenue']) || 0) : 0,
+      bookings: index === currentMonth ? Math.max(1, Math.floor(getNumber(metrics['confirmedBookings']) || 0)) : 0
     }));
 
     // Categoria di revenue semplificata (non espone dettagli sensibili)
-    const revenueByCategory: RevenueByCategory[] = metrics.topPerformingSpace ? [
+    const revenueByCategory: RevenueByCategory[] = metrics['topPerformingSpace'] ? [
       {
         name: 'Spazi Coworking',
         value: 100, // Percentuale (100% dato che è l'unica categoria mostrata)
@@ -66,11 +66,11 @@ export const getHostFinancialMetrics = async (hostId: string, year: number = new
     ] : [];
 
     return {
-      totalRevenue: Math.round(getNumber(metrics.totalRevenue) || 0),
-      monthlyRevenue: Math.round(getNumber(metrics.monthlyRevenue) || 0),
-      revenueGrowth: Math.round((getNumber(metrics.revenueGrowth) || 0) * 100) / 100,
-      averageBookingValue: Math.round(getNumber(metrics.averageBookingValue) || 0),
-      occupancyRate: Math.min(Math.round(getNumber(metrics.occupancyRate) || 0), 100),
+      totalRevenue: Math.round(getNumber(metrics['totalRevenue']) || 0),
+      monthlyRevenue: Math.round(getNumber(metrics['monthlyRevenue']) || 0),
+      revenueGrowth: Math.round((getNumber(metrics['revenueGrowth']) || 0) * 100) / 100,
+      averageBookingValue: Math.round(getNumber(metrics['averageBookingValue']) || 0),
+      occupancyRate: Math.min(Math.round(getNumber(metrics['occupancyRate']) || 0), 100),
       monthlyData,
       revenueByCategory
     };
