@@ -6125,6 +6125,10 @@ export type Database = {
         }
         Returns: Json
       }
+      check_self_booking: {
+        Args: { p_space_id: string; p_user_id: string }
+        Returns: boolean
+      }
       check_slot_conflicts: {
         Args: {
           date_param: string

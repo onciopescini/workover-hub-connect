@@ -145,6 +145,31 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     return { success: false, error: 'Missing required parameters' };
   }
 
+  // Check if sender is suspended before allowing message
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_suspended')
+      .eq('id', senderId)
+      .single();
+
+    if (profileError) {
+      sreLogger.warn('Could not check suspension status', { component: 'chatService', senderId });
+    } else if (profile?.is_suspended) {
+      sreLogger.warn('Suspended user attempted to send message', { 
+        component: 'chatService', 
+        senderId 
+      });
+      return { 
+        success: false, 
+        error: 'Il tuo account è sospeso. Non puoi inviare messaggi.' 
+      };
+    }
+  } catch (checkErr) {
+    sreLogger.warn('Exception checking suspension status', { component: 'chatService' }, checkErr as Error);
+    // Continue - don't block if check fails
+  }
+
   sreLogger.info('Sending message', { component: 'chatService', conversationId });
 
   try {

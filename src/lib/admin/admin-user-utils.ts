@@ -135,6 +135,21 @@ export const suspendUser = async (userId: string, reason: string): Promise<void>
       throw new Error(result.error || "Failed to suspend user");
     }
 
+    // Immediately invalidate all active sessions for the suspended user
+    try {
+      const { error: sessionError } = await supabase.functions.invoke('handle-user-suspension', {
+        body: { user_id: userId, action: 'suspend' }
+      });
+      
+      if (sessionError) {
+        // Log but don't fail - suspension already happened
+        logger.warn("Session invalidation warning", { userId }, sessionError);
+      }
+    } catch (sessionErr) {
+      // Log but don't fail - suspension already happened
+      logger.warn("Session invalidation failed", { userId }, sessionErr as Error);
+    }
+
     toast.success("Utente sospeso con successo");
   } catch (error) {
     logger.error("Error suspending user", { userId, reason }, error as Error);

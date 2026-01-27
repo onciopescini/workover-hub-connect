@@ -6,6 +6,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from "@/lib/utils";
+import { MAX_BOOKING_DAYS_AHEAD } from '@/schemas/bookingSchema';
 
 interface DateSelectionStepProps {
   selectedDate: Date | null;
@@ -34,6 +35,11 @@ export function DateSelectionStep({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) return true;
+
+    // Disable dates > MAX_BOOKING_DAYS_AHEAD (e.g., 365 days)
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + MAX_BOOKING_DAYS_AHEAD);
+    if (date > maxDate) return true;
     
     // Check availability if configured
     if (!availability) return false;
