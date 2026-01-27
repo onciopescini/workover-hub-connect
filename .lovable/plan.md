@@ -1,182 +1,144 @@
 
-# HOTFIX: Real World Testing Stabilization
-## Fixing 406 Error and Admin Crash
+# HOTFIX: Resolve Ambiguous Foreign Key (PGRST201)
+
+## Root Cause Analysis
+
+The database has **two foreign key constraints** from `payments.booking_id` to `bookings.id`:
+
+| Constraint Name | ON DELETE Behavior | Origin |
+|-----------------|-------------------|--------|
+| `payments_booking_id_fkey` | CASCADE | Original (Supabase auto-generated) |
+| `fk_payments_booking_id` | SET NULL | Added in migration `20260127132849_*.sql` |
+
+This duplication causes:
+1. **PGRST201 Error**: PostgREST cannot determine which relationship to use for embedding
+2. **Conflicting behavior**: One cascades deletes, one sets null
 
 ---
 
-## ISSUE 1: 406 Error on Legal Documents Fetch
+## Solution: Two-Part Fix
 
-### Root Cause
-The `useTermsAcceptance.ts` hook (line 36) uses `.single()` when fetching the latest ToS version from `legal_documents_versions`. When the table is empty:
-- `.single()` expects exactly one row
-- Returns HTTP 406 error when zero rows found
+### Part 1: Database Migration (Drop Duplicate Constraint)
 
-### Solution (Two-Part Fix)
-
-**Part A: Database Migration - Seed Initial Legal Documents**
-
-Create `supabase/migrations/YYYYMMDDHHMMSS_seed_legal_docs.sql`:
+Create `supabase/migrations/YYYYMMDDHHMMSS_fix_duplicate_payments_fk.sql`:
 
 ```sql
--- Seed initial legal document versions
--- These provide baseline ToS and Privacy Policy for new deployments
+-- Fix PGRST201: Drop duplicate foreign key constraint
+-- The payments table has two FK constraints to bookings:
+-- 1. payments_booking_id_fkey (original, ON DELETE CASCADE)
+-- 2. fk_payments_booking_id (duplicate, ON DELETE SET NULL)
+-- 
+-- We keep the original CASCADE behavior as it's the correct semantic
+-- for a payment-booking relationship.
 
-INSERT INTO public.legal_documents_versions (
+ALTER TABLE public.payments
+DROP CONSTRAINT IF EXISTS fk_payments_booking_id;
+
+COMMENT ON CONSTRAINT payments_booking_id_fkey ON public.payments IS 
+'Foreign key to bookings. ON DELETE CASCADE ensures payments are removed when booking is deleted.';
+```
+
+### Part 2: Frontend Queries (Add Explicit FK Hints)
+
+Even after fixing the database, we should add explicit FK hints as a defensive measure to prevent future ambiguity issues.
+
+**File: `src/hooks/queries/bookings/useBookingDataFetcher.ts`**
+
+Lines 31-36 and 125-130 - Change:
+```typescript
+// BEFORE
+payments (
   id,
-  document_type,
-  version,
-  content,
-  effective_date,
+  payment_status,
+  amount,
   created_at
-) VALUES (
-  gen_random_uuid(),
-  'tos',
-  '1.0',
-  'Termini di Servizio di Workover Hub Connect.
-
-1. ACCETTAZIONE DEI TERMINI
-Utilizzando la piattaforma Workover Hub Connect, accetti integralmente i presenti Termini di Servizio.
-
-2. DESCRIZIONE DEL SERVIZIO
-Workover Hub Connect è una piattaforma di prenotazione spazi di coworking che connette host (proprietari di spazi) e coworker (utenti che prenotano).
-
-3. REGISTRAZIONE E ACCOUNT
-Per utilizzare i servizi è necessario registrarsi fornendo informazioni accurate e complete.
-
-4. RESPONSABILITÀ DEGLI UTENTI
-Gli utenti sono responsabili del corretto utilizzo della piattaforma e del rispetto delle regole degli spazi prenotati.
-
-5. PAGAMENTI E RIMBORSI
-I pagamenti sono processati tramite Stripe. Le politiche di cancellazione sono definite da ogni singolo host.
-
-6. PRIVACY
-Il trattamento dei dati personali è descritto nella nostra Privacy Policy.
-
-7. MODIFICHE AI TERMINI
-Ci riserviamo il diritto di modificare questi termini con preavviso agli utenti registrati.
-
-8. LEGGE APPLICABILE
-Questi termini sono regolati dalla legge italiana.',
-  CURRENT_DATE,
-  NOW()
-), (
-  gen_random_uuid(),
-  'privacy_policy',
-  '1.0',
-  'Privacy Policy di Workover Hub Connect.
-
-1. TITOLARE DEL TRATTAMENTO
-Workover Hub Connect è responsabile del trattamento dei tuoi dati personali.
-
-2. DATI RACCOLTI
-Raccogliamo: nome, cognome, email, telefono (opzionale), dati di prenotazione, informazioni di pagamento.
-
-3. FINALITÀ DEL TRATTAMENTO
-I dati sono utilizzati per: gestione account, prenotazioni, pagamenti, comunicazioni di servizio.
-
-4. BASE GIURIDICA
-Il trattamento si basa su: esecuzione contrattuale, consenso, adempimento obblighi legali.
-
-5. CONSERVAZIONE DEI DATI
-I dati sono conservati per la durata del rapporto contrattuale più i termini di legge.
-
-6. DIRITTI DELL''INTERESSATO
-Hai diritto a: accesso, rettifica, cancellazione, portabilità, opposizione al trattamento.
-
-7. CONDIVISIONE DEI DATI
-I dati sono condivisi con: Stripe (pagamenti), Supabase (hosting), host degli spazi prenotati.
-
-8. CONTATTI
-Per esercitare i tuoi diritti: privacy@workover.app',
-  CURRENT_DATE,
-  NOW()
 )
-ON CONFLICT (document_type, version) DO NOTHING;
-```
-
-**Part B: Service Fix - Change `.single()` to `.maybeSingle()`**
-
-Update `src/hooks/useTermsAcceptance.ts` line 36:
-
-```typescript
-// BEFORE (line 34-36)
-.order('effective_date', { ascending: false })
-.limit(1)
-.single();
 
 // AFTER
-.order('effective_date', { ascending: false })
-.limit(1)
-.maybeSingle();
+payments!payments_booking_id_fkey (
+  id,
+  payment_status,
+  amount,
+  created_at
+)
 ```
 
-This change ensures:
-- Returns `null` instead of throwing 406 when table is empty
-- Existing logic on lines 38-42 already handles `!latestToS` case gracefully
+**File: `src/lib/host-utils.ts`**
 
----
-
-## ISSUE 2: Admin Users Page Crash on Null Fields
-
-### Root Cause
-In `src/pages/admin/AdminUsers.tsx` line 59:
-```typescript
-user.email.toLowerCase().includes(searchTerm.toLowerCase())
-```
-
-While the `AdminUser` type defines `email` as required (`string`), the actual database view can return null values for users with incomplete profiles. Additionally, `first_name` and `last_name` are explicitly nullable.
-
-### Solution
-
-Update the filter function (lines 58-62) with null-safe operators:
-
+Lines 80-85 - Change:
 ```typescript
 // BEFORE
-const filteredUsers = users?.filter(user =>
-  user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  (user.first_name && user.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  (user.last_name && user.last_name.toLowerCase().includes(searchTerm.toLowerCase()))
-) || [];
+payments (
+  id,
+  payment_status,
+  amount,
+  created_at
+)
 
 // AFTER
-const filteredUsers = users?.filter(user => {
-  const searchLower = searchTerm.toLowerCase();
-  const email = (user.email || '').toLowerCase();
-  const firstName = (user.first_name || '').toLowerCase();
-  const lastName = (user.last_name || '').toLowerCase();
-  
-  return email.includes(searchLower) ||
-         firstName.includes(searchLower) ||
-         lastName.includes(searchLower);
-}) || [];
+payments!payments_booking_id_fkey (
+  id,
+  payment_status,
+  amount,
+  created_at
+)
 ```
 
-Also update line 121 for the avatar fallback to handle null email:
+**File: `src/services/api/paymentService.ts`**
+
+Lines 112-119 and 173-175 - Change:
 ```typescript
 // BEFORE
-<AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
+bookings!inner (
+  id,
+  booking_date,
+  space_id,
+  spaces!inner (
+    host_id
+  )
+)
 
-// AFTER
-<AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || user.id}`} />
+// AFTER - No change needed here since this is from payments TO bookings
+// The FK hint goes on the child relation, not the parent
+// Keep as-is
 ```
 
 ---
 
-## IMPLEMENTATION SUMMARY
+## Files to Modify
 
-| Fix | File | Line(s) | Change |
-|-----|------|---------|--------|
-| 1A | `supabase/migrations/YYYYMMDDHHMMSS_seed_legal_docs.sql` | New | Insert v1.0 ToS and Privacy Policy |
-| 1B | `src/hooks/useTermsAcceptance.ts` | 36 | `.single()` -> `.maybeSingle()` |
-| 2A | `src/pages/admin/AdminUsers.tsx` | 58-62 | Null-safe string operations in filter |
-| 2B | `src/pages/admin/AdminUsers.tsx` | 121 | Fallback to `user.id` if email is null |
+| File | Change |
+|------|--------|
+| `supabase/migrations/YYYYMMDDHHMMSS_fix_duplicate_payments_fk.sql` | Drop duplicate FK constraint |
+| `src/hooks/queries/bookings/useBookingDataFetcher.ts` | Add `!payments_booking_id_fkey` hint (2 places) |
+| `src/lib/host-utils.ts` | Add `!payments_booking_id_fkey` hint (1 place) |
 
 ---
 
-## VERIFICATION
+## Technical Details
+
+### Why Drop vs Keep?
+
+We drop `fk_payments_booking_id` (SET NULL) and keep `payments_booking_id_fkey` (CASCADE) because:
+- **CASCADE** is semantically correct: If a booking is deleted, its payments should be deleted too (orphan payments make no sense)
+- The original constraint was auto-generated by Supabase when the table was created
+- SET NULL would leave orphaned payment records with no booking reference
+
+### PostgREST FK Hint Syntax
+
+When using embedded resources in Supabase queries:
+```
+table_name!constraint_name(columns)
+```
+
+This tells PostgREST exactly which relationship path to use, eliminating ambiguity.
+
+---
+
+## Verification
 
 After implementation:
-- [ ] Empty `legal_documents_versions` table does not cause 406 error
-- [ ] Users with null first_name/last_name don't crash admin page
-- [ ] Search filter works correctly with partial data
-- [ ] Avatar generation works even without email
+- [ ] `fetchCoworkerBookings` returns bookings with payments without PGRST201 error
+- [ ] `fetchHostBookings` returns bookings with payments without PGRST201 error
+- [ ] Host dashboard loads correctly
+- [ ] Booking details page shows payment information
