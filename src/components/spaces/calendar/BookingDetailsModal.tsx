@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { sreLogger } from "@/lib/sre-logger";
 
 interface BookingDetailsModalProps {
   booking: any | null;
@@ -96,7 +97,7 @@ export const BookingDetailsModal = ({
       queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
       onClose();
     } catch (error) {
-      console.error('Error confirming booking:', error);
+      sreLogger.error('Error confirming booking', { component: 'BookingDetailsModal' }, error instanceof Error ? error : undefined);
       toast.error("Errore durante la conferma della prenotazione");
     } finally {
       setIsLoading(false);
@@ -119,7 +120,7 @@ export const BookingDetailsModal = ({
       queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
       onClose();
     } catch (error) {
-      console.error('Error cancelling booking:', error);
+      sreLogger.error('Error cancelling booking', { component: 'BookingDetailsModal' }, error instanceof Error ? error : undefined);
       toast.error("Errore durante la cancellazione della prenotazione");
     } finally {
       setIsLoading(false);

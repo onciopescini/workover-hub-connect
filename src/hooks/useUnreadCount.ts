@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/auth/useAuth";
-import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/react-query-config";
+import { sreLogger } from "@/lib/sre-logger";
 
 export interface UnreadCounts {
   total: number;
@@ -11,78 +13,81 @@ export interface UnreadCounts {
   privateMessages: number;
 }
 
+const defaultCounts: UnreadCounts = {
+  total: 0,
+  bookingMessages: 0,
+  messages: 0,
+  notifications: 0,
+  privateMessages: 0
+};
+
+async function fetchUnreadCounts(userId: string, roles: string[]): Promise<UnreadCounts> {
+  try {
+    // Fetch unread messages count
+    const { count: messagesCount, error: messagesError } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact' })
+      .eq('is_read', false)
+      .neq('sender_id', userId);
+
+    if (messagesError) {
+      sreLogger.error('Error fetching unread messages', { component: 'useUnreadCount' }, messagesError);
+    }
+
+    // Fetch unread booking requests (for hosts)
+    let bookingsCount = 0;
+    if (roles.includes('host')) {
+      const { count, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id', { count: 'exact' })
+        .eq('status', 'pending')
+        .not('created_at', 'is', null);
+
+      if (!bookingsError && count !== null) {
+        bookingsCount = count;
+      }
+    }
+
+    // Fetch unread notifications
+    const { count: notificationsCount, error: notifError } = await supabase
+      .from('user_notifications')
+      .select('id', { count: 'exact' })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+
+    if (notifError) {
+      sreLogger.error('Error fetching unread notifications', { component: 'useUnreadCount' }, notifError);
+    }
+
+    return {
+      total: (messagesCount || 0) + bookingsCount + (notificationsCount || 0),
+      bookingMessages: bookingsCount,
+      messages: messagesCount || 0,
+      notifications: notificationsCount || 0,
+      privateMessages: messagesCount || 0
+    };
+  } catch (error) {
+    sreLogger.error('Error in fetchUnreadCounts', { component: 'useUnreadCount' }, error instanceof Error ? error : undefined);
+    return defaultCounts;
+  }
+}
+
 export const useUnreadCount = () => {
   const { authState } = useAuth();
   const queryClient = useQueryClient();
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
-    total: 0,
-    bookingMessages: 0,
-    messages: 0,
-    notifications: 0,
-    privateMessages: 0
+
+  const { data: counts = defaultCounts, refetch } = useQuery({
+    queryKey: queryKeys.messages.unreadCount(),
+    queryFn: () => fetchUnreadCounts(authState.user!.id, authState.roles || []),
+    enabled: !!authState.user?.id,
+    staleTime: 30000, // 30 seconds - unread counts should be relatively fresh
+    refetchOnWindowFocus: true,
   });
 
-  const fetchUnreadCounts = async () => {
-    if (!authState.user) return;
-
-    try {
-      // Fetch unread messages count
-      const { count: messagesCount, error: messagesError } = await supabase
-        .from('messages')
-        .select('id', { count: 'exact' })
-        .eq('is_read', false)
-        .neq('sender_id', authState.user.id);
-
-      if (messagesError) console.error('Error fetching unread messages:', messagesError);
-
-      // Fetch unread booking requests (for hosts)
-      let bookingsCount = 0;
-      if ((authState.roles || []).includes('host')) {
-        const { count, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('id', { count: 'exact' })
-          .eq('status', 'pending')
-          // This is a simplified check. Ideally we join with spaces where host_id = user.id
-          // But for now, we rely on RLS or specific RPCs if available.
-          // Let's try to filter by spaces owned by user if possible, or use the 'host_id' logic if RLS allows.
-          // Assuming RLS filters bookings for the host correctly:
-          .not('created_at', 'is', null);
-
-        // Better approach: use a specific query if RLS isn't strict enough on 'pending' alone
-        // But assuming standard RLS:
-        if (!bookingsError && count !== null) {
-          bookingsCount = count;
-        }
-      }
-
-      // Fetch unread notifications
-      const { count: notificationsCount, error: notifError } = await supabase
-        .from('user_notifications')
-        .select('id', { count: 'exact' })
-        .eq('user_id', authState.user.id)
-        .eq('is_read', false);
-
-      if (notifError) console.error('Error fetching unread notifications:', notifError);
-
-      setUnreadCounts({
-        total: (messagesCount || 0) + bookingsCount + (notificationsCount || 0),
-        bookingMessages: bookingsCount,
-        messages: messagesCount || 0,
-        notifications: notificationsCount || 0,
-        privateMessages: messagesCount || 0 // Mapping messages to privateMessages as they are now unified
-      });
-
-    } catch (error) {
-      console.error('Error in fetchUnreadCounts:', error);
-    }
-  };
-
+  // Realtime subscriptions for automatic updates
   useEffect(() => {
-    fetchUnreadCounts();
+    if (!authState.user?.id) return;
 
-    if (!authState.user) return;
-
-    // Realtime subscriptions
     const channel = supabase
       .channel('unread-counts')
       .on(
@@ -91,11 +96,11 @@ export const useUnreadCount = () => {
           event: '*',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${authState.user.id}`, // Assuming receiver_id exists or similar logic
+          filter: `receiver_id=eq.${authState.user.id}`,
         },
         () => {
-          fetchUnreadCounts();
-          queryClient.invalidateQueries({ queryKey: ['messages'] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.messages.unreadCount() });
+          queryClient.invalidateQueries({ queryKey: queryKeys.messages.all });
         }
       )
       .on(
@@ -106,15 +111,16 @@ export const useUnreadCount = () => {
           table: 'user_notifications',
           filter: `user_id=eq.${authState.user.id}`,
         },
-        () => fetchUnreadCounts()
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.messages.unreadCount() });
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authState.user]);
+  }, [authState.user?.id, queryClient]);
 
-  // Return "counts" to match the destructuring in consumers
-  return { counts: unreadCounts, refetch: fetchUnreadCounts };
+  return { counts, refetch };
 };

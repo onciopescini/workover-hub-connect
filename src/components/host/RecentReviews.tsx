@@ -24,7 +24,7 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
           <CardTitle>Recensioni Recenti</CardTitle>
           {averageRating && (
             <div className="flex items-center space-x-1">
-              <Star className="w-4 h-4 fill-[#22C55E] text-[#22C55E]" />
+              <Star className="w-4 h-4 fill-success text-success" />
               <span className="font-semibold">{averageRating.toFixed(1)}</span>
             </div>
           )}
@@ -58,7 +58,7 @@ export function RecentReviews({ reviews, averageRating }: RecentReviewsProps) {
                             key={i} 
                             className={`w-3 h-3 ${
                               i < review.rating 
-                                ? 'fill-[#22C55E] text-[#22C55E]' 
+                                ? 'fill-success text-success' 
                                 : 'text-gray-300'
                             }`} 
                           />

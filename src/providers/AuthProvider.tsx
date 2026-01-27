@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { AuthContext } from '@/contexts/AuthContext';
 import { useAuthLogic } from '@/hooks/auth/useAuthLogic';
 import { useAuthMethods } from '@/hooks/auth/useAuthMethods';
@@ -26,11 +26,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     currentUser: authState.user
   });
 
-  const contextValue: AuthContextType = {
+  // MEMOIZE the context value to prevent unnecessary re-renders
+  const contextValue = useMemo<AuthContextType>(() => ({
     authState,
     ...authMethods,
     refreshProfile
-  };
+  }), [authState, authMethods, refreshProfile]);
 
   return (
     <AuthContext.Provider value={contextValue}>
