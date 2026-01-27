@@ -1,252 +1,193 @@
 
-# HOTFIX: Debug Application-Level 404/500 (DB Trigger Conflict)
+# HOTFIX: Stripe Webhook & Payment Capture Cascade
 
 ## Executive Summary
 
-The investigation reveals that the reported "404" is actually a **500 Internal Server Error** caused by a database trigger conflict. The functions are executing correctly, but the `guard_confirm_without_success` trigger blocks the status update.
+The entire host approval workflow is broken due to a **cascading failure** starting from the `stripe-webhooks` Edge Function. This analysis provides the complete fix chain.
 
 ---
 
-## Root Cause Chain
+## Root Cause Chain (Verified)
 
 ```text
-1. Guest creates "Request to Book" booking
-   └── Booking status: pending_approval
-   
-2. Guest pays via Stripe Checkout (capture_method: manual)
-   └── Payment created with:
-       ├── payment_status_enum = 'pending'  ← PROBLEM HERE
-       └── stripe_payment_intent_id = NULL
-
-3. Host clicks "Approve" → Edge Function runs
-   └── Function attempts: UPDATE bookings SET status = 'confirmed'
-   
-4. DB Trigger guard_confirm_without_success fires
-   └── Checks: SELECT 1 FROM payments WHERE payment_status_enum = 'succeeded'
-   └── Result: NOT FOUND (because it's 'pending', not 'succeeded')
-   └── Action: RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.'
-   
-5. Edge Function catches DB error → Returns 500
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: Stripe Webhook Crashes                                                  │
+│ ─────────────────────────────────────────────────────────────────────────────── │
+│ Error: "SubtleCryptoProvider cannot be used in a synchronous context.           │
+│        Use `await constructEventAsync(...)` instead of `constructEvent(...)`"   │
+│                                                                                 │
+│ File: stripe-webhooks/index.ts (Line 35)                                        │
+│ Current: stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET)       │
+│ Fix:     await stripe.webhooks.constructEventAsync(body, sig, SECRET)           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: Payment Intent ID Never Saved                                          │
+│ ─────────────────────────────────────────────────────────────────────────────── │
+│ The webhook handler in enhanced-checkout-handlers.ts correctly extracts        │
+│ `session.payment_intent` but the crash prevents execution.                      │
+│                                                                                 │
+│ DB Evidence: ALL payments have stripe_payment_intent_id = NULL                  │
+│ DB Evidence: ALL pending_approval bookings have stripe_payment_intent_id = NULL │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: Host Approval Cannot Capture                                           │
+│ ─────────────────────────────────────────────────────────────────────────────── │
+│ host-approve-booking reads booking.stripe_payment_intent_id → NULL              │
+│ Cannot call stripe.paymentIntents.capture() without the ID                      │
+│ payment_status_enum remains 'pending' (never updated to 'succeeded')            │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: DB Trigger Blocks Confirmation                                          │
+│ ─────────────────────────────────────────────────────────────────────────────── │
+│ Trigger: guard_confirm_without_success                                          │
+│ Requirement: payment_status_enum = 'succeeded' before status = 'confirmed'      │
+│ Result: RAISE EXCEPTION → 500 Error returned to frontend                        │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Database Evidence
+## Why create-checkout-v3 Didn't Save the PI ID
 
-**Booking Record:**
-| Field | Value |
-|:------|:------|
-| id | 5fde655a-fdb3-4482-ae49-10bb2af7b230 |
-| status | pending_approval |
-| stripe_payment_intent_id | NULL |
+The Stripe Checkout Session API does **not return the payment_intent** at creation time. It only returns it **after the customer completes payment**. This is documented Stripe behavior:
 
-**Payment Record (same booking):**
-| Field | Value |
-|:------|:------|
-| payment_status | pending |
-| payment_status_enum | pending |
-| stripe_payment_intent_id | NULL |
-
-**DB Trigger Definition:**
-```sql
-IF NEW.status = 'confirmed' AND (OLD.status IS DISTINCT FROM 'confirmed') THEN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.payments p
-    WHERE p.booking_id = NEW.id
-      AND p.payment_status_enum = 'succeeded'  -- ← THIS CHECK FAILS
-  ) THEN
-    RAISE EXCEPTION 'Cannot confirm booking without a succeeded payment.';
-  END IF;
-END IF;
+```json
+// Response from POST /v1/checkout/sessions (BEFORE customer pays)
+{
+  "id": "cs_test_xxx",
+  "payment_intent": null,  // ← NULL at creation
+  "payment_status": "unpaid",
+  "status": "open"
+}
 ```
 
----
-
-## The Business Logic Problem
-
-For "Request to Book" bookings, the flow is:
-
-1. **Payment authorized** (funds held, not captured)
-2. **Host approves** → Stripe capture → Payment succeeds
-3. **Booking confirmed**
-
-But the current code:
-- Sets `payment_status_enum = 'pending'` at checkout
-- Never updates it to `succeeded` until AFTER webhook fires
-- Host approval tries to confirm BEFORE the payment is marked succeeded
-
-**The trigger assumes payment success BEFORE confirmation, but for manual capture, success happens DURING host approval.**
+The `payment_intent` is populated only in the `checkout.session.completed` webhook event, which is exactly where the crash occurs.
 
 ---
 
-## Technical Fix Plan
+## Fix Implementation Plan
 
-### Phase 1: Fix host-approve-booking Logic
+### Phase 1: Fix stripe-webhooks (ROOT CAUSE)
 
-**File:** `supabase/functions/host-approve-booking/index.ts`
+**File**: `supabase/functions/stripe-webhooks/index.ts`
 
-The function must update the payment status BEFORE attempting to confirm the booking:
+**Change**: Line 35
 
 ```typescript
-// STEP 1: Capture Payment (if exists)
-if (paymentIntentId) {
-  const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-  if (pi.status === 'requires_capture') {
-    const capturedPi = await stripe.paymentIntents.capture(pi.id);
-    if (capturedPi.status === 'succeeded') {
-      // STEP 2: Update payment record FIRST
+// BEFORE (crashes in Deno)
+const event = stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET);
+
+// AFTER (async-safe for Deno)
+const event = await stripe.webhooks.constructEventAsync(body, sig, STRIPE_WEBHOOK_SECRET);
+```
+
+This single fix restores the entire webhook pipeline:
+- `checkout.session.completed` events will process successfully
+- `payment_intent` IDs will be saved to bookings and payments tables
+- Future host approvals will have the ID they need
+
+### Phase 2: Add Fallback in host-approve-booking (SELF-HEALING)
+
+**File**: `supabase/functions/host-approve-booking/index.ts`
+
+For bookings that were created before the fix, the `stripe_payment_intent_id` is NULL. We need a fallback mechanism to retrieve the PI ID from Stripe using the session ID.
+
+**Logic (around line 127)**:
+
+```typescript
+// Step A: Get Payment Intent ID (with fallback)
+let paymentIntentId = booking.stripe_payment_intent_id;
+
+// FALLBACK: If PI ID is missing, try to retrieve from Stripe via session
+if (!paymentIntentId) {
+  console.log(`[HOST-APPROVE] PI ID missing on booking, attempting fallback via payments table...`);
+  
+  // Get the session ID from payments table
+  const { data: payment } = await supabaseAdmin
+    .from("payments")
+    .select("stripe_session_id")
+    .eq("booking_id", booking_id)
+    .single();
+  
+  if (payment?.stripe_session_id) {
+    console.log(`[HOST-APPROVE] Found session ID: ${payment.stripe_session_id}, retrieving from Stripe...`);
+    
+    // Retrieve the checkout session from Stripe to get the PI ID
+    const session = await stripe.checkout.sessions.retrieve(payment.stripe_session_id);
+    
+    if (session.payment_intent) {
+      paymentIntentId = typeof session.payment_intent === 'string' 
+        ? session.payment_intent 
+        : session.payment_intent.id;
+      
+      console.log(`[HOST-APPROVE] Retrieved PI ID from Stripe: ${paymentIntentId}`);
+      
+      // Self-heal: Update the booking with the PI ID for future operations
+      await supabaseAdmin
+        .from("bookings")
+        .update({ stripe_payment_intent_id: paymentIntentId })
+        .eq("id", booking_id);
+      
+      // Also update the payment record
       await supabaseAdmin
         .from("payments")
-        .update({
-          payment_status: 'completed',
-          payment_status_enum: 'succeeded',
-          capture_status: 'captured'
-        })
+        .update({ stripe_payment_intent_id: paymentIntentId })
         .eq("booking_id", booking_id);
+      
+      console.log(`[HOST-APPROVE] Self-healed: PI ID saved to booking and payment records`);
+    } else {
+      console.error(`[HOST-APPROVE] Stripe session has no payment_intent. Payment may not be complete.`);
+      throw new Error("Payment not yet completed by guest. Cannot approve.");
     }
+  } else {
+    console.error(`[HOST-APPROVE] No payment record found for booking ${booking_id}`);
+    throw new Error("No payment found for this booking.");
   }
 }
-
-// STEP 3: Now update booking (trigger will pass)
-await supabaseAdmin
-  .from("bookings")
-  .update({ status: "confirmed" })
-  .eq("id", booking_id);
 ```
 
-### Phase 2: Handle Missing Payment Intent ID
+### Phase 3: Add Fallback in host-reject-booking
 
-The booking shows `stripe_payment_intent_id = NULL` on the booking record. This needs to be:
-1. Stored during checkout (already done in `create-checkout-v3`)
-2. Synced to the booking record (currently missing)
+**File**: `supabase/functions/host-reject-booking/index.ts`
 
-**Fix:** After Stripe checkout creation, update the booking with the payment intent ID:
-
-```typescript
-// In create-checkout-v3 after session creation
-await supabase
-  .from("bookings")
-  .update({ stripe_payment_intent_id: stripe.session.payment_intent_id })
-  .eq("id", booking_id);
-```
-
-### Phase 3: Add Diagnostic Logging
-
-Both Edge Functions need better error logging:
-
-```typescript
-// Before returning 404
-console.error(`[HOST-APPROVE] Booking not found: ${booking_id}`);
-
-// Before returning 403
-console.error(`[HOST-APPROVE] Host mismatch: Expected ${workspace.host_id}, got ${user.id}`);
-
-// After DB update failure
-console.error(`[HOST-APPROVE] DB Update Failed:`, updateError);
-```
+Same fallback logic for rejections, since we need the PI ID to call `stripe.paymentIntents.cancel()`.
 
 ---
 
 ## Files to Modify
 
-| File | Change | Priority |
-|:-----|:-------|:---------|
-| `supabase/functions/host-approve-booking/index.ts` | Update payment status before booking confirmation | **CRITICAL** |
-| `supabase/functions/create-checkout-v3/index.ts` | Store payment_intent_id on booking record | HIGH |
-| `supabase/functions/host-reject-booking/index.ts` | Add diagnostic logging | MEDIUM |
-
----
-
-## Implementation Details
-
-### host-approve-booking Changes
-
-**Before DB Update (around line 153):**
-
-```typescript
-// NEW: Update payment status BEFORE booking confirmation
-// This satisfies the guard_confirm_without_success trigger
-if (paymentIntentId) {
-  const { error: paymentUpdateError } = await supabaseAdmin
-    .from("payments")
-    .update({
-      payment_status: 'completed',
-      payment_status_enum: 'succeeded',
-      capture_status: 'captured'
-    })
-    .eq("booking_id", booking_id);
-    
-  if (paymentUpdateError) {
-    console.error(`[HOST-APPROVE] Failed to update payment status:`, paymentUpdateError);
-    throw new Error(`Payment status update failed: ${paymentUpdateError.message}`);
-  }
-  console.log(`[HOST-APPROVE] Payment status updated to succeeded`);
-}
-
-// EXISTING: Update Database
-const { error: updateError } = await supabaseAdmin
-  .from("bookings")
-  .update({
-    status: "confirmed",
-    updated_at: new Date().toISOString(),
-  })
-  .eq("id", booking_id);
-```
-
-### create-checkout-v3 Changes
-
-**After Stripe session creation (around line 307):**
-
-```typescript
-// Store payment_intent_id on booking for later capture
-if (stripe.session.payment_intent_id) {
-  await supabase
-    .from("bookings")
-    .update({ stripe_payment_intent_id: stripe.session.payment_intent_id })
-    .eq("id", payload.booking_id);
-    
-  console.log(`[CHECKOUT] Stored PI ${stripe.session.payment_intent_id} on booking`);
-}
-```
-
----
-
-## Alternative: Modify the Trigger
-
-If business logic allows, the trigger could be updated to:
-
-```sql
--- Allow confirmation if payment_status_enum is 'succeeded' OR 'pending' (for manual capture)
-IF NEW.status = 'confirmed' AND (OLD.status IS DISTINCT FROM 'confirmed') THEN
-  IF NOT EXISTS (
-    SELECT 1 FROM public.payments p
-    WHERE p.booking_id = NEW.id
-      AND p.payment_status_enum IN ('succeeded', 'pending')  -- Allow pending for pre-auth
-  ) THEN
-    RAISE EXCEPTION 'Cannot confirm booking without a valid payment.';
-  END IF;
-END IF;
-```
-
-However, this is less safe as it allows confirmation without payment completion. The recommended approach is to update payment status BEFORE booking confirmation.
+| File | Change | Impact |
+|:-----|:-------|:-------|
+| `supabase/functions/stripe-webhooks/index.ts` | `constructEvent` → `await constructEventAsync` | Fixes webhook processing |
+| `supabase/functions/host-approve-booking/index.ts` | Add PI ID fallback via Stripe API | Self-heals broken bookings |
+| `supabase/functions/host-reject-booking/index.ts` | Add PI ID fallback via Stripe API | Self-heals broken bookings |
 
 ---
 
 ## Verification Checklist
 
-After implementation:
-- [ ] Payment status updates to 'succeeded' before booking confirmation
-- [ ] Booking status changes to 'confirmed' without trigger error
-- [ ] Payment intent ID is stored on booking record
-- [ ] Edge function logs show clear error messages on failure
-- [ ] Host can approve "Request to Book" bookings successfully
+After deployment:
+- [ ] Webhook processes `checkout.session.completed` without error
+- [ ] New payments have `stripe_payment_intent_id` populated
+- [ ] New bookings have `stripe_payment_intent_id` populated
+- [ ] Host can approve existing broken bookings (fallback works)
+- [ ] Host can reject existing broken bookings (fallback works)
+- [ ] DB trigger `guard_confirm_without_success` passes on approval
 
 ---
 
-## Summary
+## Technical Summary
 
 | Issue | Root Cause | Fix |
 |:------|:-----------|:----|
-| 500 Error on Approve | DB trigger requires `payment_status_enum = 'succeeded'` | Update payment status BEFORE booking confirmation |
-| Missing Payment Intent | Not stored on booking record | Store PI ID after checkout creation |
-| No Diagnostic Info | Insufficient logging | Add context to all error returns |
+| Webhook 500 error | `constructEvent` sync call in Deno | Use `constructEventAsync` |
+| PI ID missing | Webhook crash prevents save | Fix webhook + add fallback |
+| Approval fails | No PI ID to capture | Fallback retrieves from Stripe |
+| Rejection fails | No PI ID to cancel | Fallback retrieves from Stripe |
+| DB trigger blocks | payment_status_enum not updated | Fix already in place (Step B) |
