@@ -76,11 +76,17 @@ export class EnhancedCheckoutHandlers {
     // CRITICAL FIX: Determine correct status based on capture method
     // For Request to Book (manual capture): funds are authorized but NOT captured yet
     // For Instant Book (automatic capture): funds are captured, payment succeeded
-    const isManualCapture = session.metadata?.confirmation_type === 'host_approval' ||
-                            session.metadata?.capture_method === 'manual';
+    // Check BOTH metadata AND database for redundancy (metadata may be missing on old sessions)
+    const metadataConfirmationType = session.metadata?.confirmation_type;
     
-    const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
-    const paymentStatus = isManualCapture ? 'pending' : 'completed';
+    // We'll also check DB later, but pre-determine from metadata first
+    const isManualCaptureFromMetadata = metadataConfirmationType === 'host_approval' ||
+                                         session.metadata?.capture_method === 'manual';
+    
+    // Note: We'll finalize isManualCapture after fetching booking from DB
+    // For now, use metadata as initial determination
+    let paymentStatusEnum = isManualCaptureFromMetadata ? 'pending' : 'succeeded';
+    let paymentStatus = isManualCaptureFromMetadata ? 'pending' : 'completed';
 
     ErrorHandler.logInfo('Payment status determined', {
       sessionId: session.id,
@@ -182,10 +188,26 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: `Booking status ${currentStatus} does not allow payment confirmation` };
     }
 
-    // Determine new booking status
+    // Determine new booking status - use DB confirmation_type as source of truth
     const confirmationType = booking.spaces.confirmation_type;
     // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
     const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
+    
+    // SAFETY: Re-check isManualCapture using DB value if metadata was missing
+    const isManualCapture = metadataConfirmationType === 'host_approval' || 
+                            confirmationType === 'host_approval';
+    
+    // Update payment status if DB check reveals it's manual capture but metadata was missing
+    if (isManualCapture && paymentStatusEnum === 'succeeded') {
+      paymentStatusEnum = 'pending';
+      paymentStatus = 'pending';
+      ErrorHandler.logInfo('Corrected payment status based on DB confirmation_type', {
+        sessionId: session.id,
+        metadataConfirmationType,
+        dbConfirmationType: confirmationType,
+        correctedPaymentStatusEnum: paymentStatusEnum
+      });
+    }
     
     // STRICT: Extract Payment Intent ID (pi_...) - using value already extracted above
     // paymentIntentId was extracted at line ~68 before the upsert logic

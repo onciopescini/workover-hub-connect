@@ -179,6 +179,8 @@ async function createStripeCheckoutSession(params: {
     "metadata[base_amount]": String(params.basePrice),
     "metadata[host_net_payout]": String(params.hostPayout),
     "metadata[total_platform_fee]": String(params.platformFee),
+    // CRITICAL: Include confirmation_type for webhook branching
+    "metadata[confirmation_type]": params.confirmationType,
   });
 
   // DYNAMIC CAPTURE: Instant = capture immediately, Request to Book = hold funds
