@@ -1,220 +1,301 @@
 
 
-# HOTFIX: Stripe Webhook Repair & Host Function Rescue
+# DEEP ARCHITECTURAL SCAN & LOGIC REPAIR
 
 ## Executive Summary
 
-The codebase already contains the correct fixes from previous hotfixes, but **the deployed functions are not running the latest code**. Database evidence proves that `stripe_payment_intent_id` is still NULL and `payment_status_enum` is not being updated despite the code changes.
+The audit reveals **THREE critical bugs** causing "Request to Book" flows to be wrongfully auto-confirmed:
+
+| Component | Bug | Severity |
+|:----------|:----|:---------|
+| `create-checkout-v3` | Missing `confirmation_type` in Stripe metadata | **CRITICAL** |
+| `validate-payment` | Always sets `status: 'confirmed'` (ignores confirmation type) | **CRITICAL** |
+| `BookingSuccess.tsx` | Always shows "Pagamento completato!" (no Request to Book state) | **HIGH** |
 
 ---
 
-## Root Cause: Stale Deployment
+## Phase 1: Deep Scan Results
 
-### Database Evidence (Live Data)
+### Checkpoint 1: Booking Creation (`create-checkout-v3`)
 
-| Booking ID | Booking PI ID | Payment PI ID | payment_status | payment_status_enum | Status |
-|:-----------|:--------------|:--------------|:---------------|:--------------------|:-------|
-| 863776ce... | **NULL** | **NULL** | completed | **pending** | pending_approval |
-| 2878a95e... | **NULL** | **NULL** | completed | **pending** | pending_approval |
-| 5fde655a... | **NULL** | **NULL** | completed | **pending** | pending_approval |
-| d6c95777... | **NULL** | **NULL** | completed | **pending** | pending_approval |
-
-All recent bookings created AFTER the hotfix show:
-- `stripe_payment_intent_id = NULL` (both tables)
-- `payment_status_enum = pending` (not `succeeded`)
-
-**This proves the deployed webhook is NOT running the fixed code.**
-
----
-
-## Code Verification (All Correct)
-
-### 1. stripe-webhooks/index.ts - ✅ Already Correct
+**Finding: `confirmation_type` NOT included in Stripe metadata**
 
 ```typescript
-// Line 35 - CORRECT (async version)
-const event = await stripe.webhooks.constructEventAsync(body, sig, STRIPE_WEBHOOK_SECRET);
+// Current Code (Lines 176-181) - MISSING confirmation_type
+body.append("metadata[booking_id]", params.booking_id);
+body.append("metadata[user_id]", params.user_id);
+body.append("metadata[base_amount]", String(params.basePrice));
+body.append("metadata[host_net_payout]", String(params.hostPayout));
+body.append("metadata[total_platform_fee]", String(params.platformFee));
+// ← confirmation_type NOT SENT! Webhook cannot branch.
 ```
 
-### 2. enhanced-checkout-handlers.ts - ✅ Already Correct
+The `confirmationType` is available in `params.confirmationType` (Line 161, 305) but **never appended to metadata**.
+
+**Evidence**: Search for `metadata[confirmation_type` returns 0 matches.
+
+---
+
+### Checkpoint 2: Webhook Processing (`enhanced-checkout-handlers.ts`)
+
+**Finding: Handler correctly checks for `confirmation_type`, but it's always `undefined`**
 
 ```typescript
-// Lines 66-74 - PI ID Extraction
-const paymentIntentId = typeof session.payment_intent === 'string'
-  ? session.payment_intent
-  : session.payment_intent?.id || null;
-
-// Lines 76-83 - Status Determination
+// Lines 79-83 - Logic is CORRECT but metadata.confirmation_type is UNDEFINED
 const isManualCapture = session.metadata?.confirmation_type === 'host_approval' ||
                         session.metadata?.capture_method === 'manual';
-const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
 
-// Lines 105-108 - UPDATE path includes PI ID
-.update({
-  payment_status: paymentStatus,
-  payment_status_enum: paymentStatusEnum,  // ✓ Correct
-  stripe_payment_intent_id: paymentIntentId,  // ✓ Correct
-  ...
-})
-
-// Lines 140-143 - INSERT path includes PI ID
-.insert({
-  payment_status_enum: paymentStatusEnum,  // ✓ Correct
-  stripe_payment_intent_id: paymentIntentId,  // ✓ Correct
-  ...
-})
+// Result: isManualCapture is ALWAYS false because metadata lacks confirmation_type
 ```
 
-### 3. host-approve-booking/index.ts - ✅ Already Correct
+**Downstream Effect**: 
+- `paymentStatusEnum` always = `'succeeded'` (wrong for Request to Book)
+- `newStatus` always = `'confirmed'` (Line 188 - but only if the DB lookup doesn't override)
+
+Wait - let me check Line 186-188 more carefully:
 
 ```typescript
-// Lines 18-24 - POST method handling
-if (req.method !== "POST") {
-  return new Response(
-    JSON.stringify({ error: "Method Not Allowed" }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 405 }
-  );
-}
-
-// Lines 131-175 - Self-Healing Fallback (ALREADY IMPLEMENTED)
-if (!paymentIntentId) {
-  console.log(`[HOST-APPROVE] PI ID missing on booking, attempting fallback via payments table...`);
-  
-  const { data: payment } = await supabaseAdmin
-    .from("payments")
-    .select("stripe_session_id")
-    .eq("booking_id", booking_id)
-    .single();
-  
-  if (payment?.stripe_session_id) {
-    const session = await stripe.checkout.sessions.retrieve(payment.stripe_session_id);
-    
-    if (session.payment_intent) {
-      paymentIntentId = typeof session.payment_intent === 'string' 
-        ? session.payment_intent 
-        : session.payment_intent.id;
-      
-      // Self-heal: Update DB records
-      await supabaseAdmin
-        .from("bookings")
-        .update({ stripe_payment_intent_id: paymentIntentId })
-        .eq("id", booking_id);
-      
-      await supabaseAdmin
-        .from("payments")
-        .update({ stripe_payment_intent_id: paymentIntentId })
-        .eq("booking_id", booking_id);
-    }
-  }
-}
+// Line 186 - THIS fetches from DB, not metadata!
+const confirmationType = booking.spaces.confirmation_type;
+// Line 188
+const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
 ```
 
-### 4. host-reject-booking/index.ts - ✅ Already Correct
+**AH!** The webhook DOES check `booking.spaces.confirmation_type` from the **database join** (Line 186), NOT from metadata. So the newStatus branching IS working correctly!
 
-Same self-healing pattern implemented at lines 132-176.
-
----
-
-## Solution: Force Redeployment
-
-Since all code is correct but not running in production, we need to:
-
-### Step 1: Deploy all three functions with fresh build
-
-Deploy the following functions to force the Supabase platform to rebuild and deploy from the current codebase:
-
-1. `stripe-webhooks`
-2. `host-approve-booking`
-3. `host-reject-booking`
-
-### Step 2: Trigger a test webhook to verify
-
-After deployment, we can verify by:
-- Testing the webhook endpoint directly
-- Creating a new test booking to confirm PI ID is saved
-
-### Step 3: Test host approval on existing broken booking
-
-The self-healing fallback in `host-approve-booking` should:
-1. Detect missing PI ID
-2. Fetch it from Stripe via session ID
-3. Update DB records (self-heal)
-4. Capture the payment
-5. Update status to confirmed
+**BUT** - The `paymentStatusEnum` logic (Lines 79-83) uses **metadata**, which is missing. So `payment_status_enum` is wrongly set to `'succeeded'` instead of `'pending'`.
 
 ---
 
-## Self-Healing Code Reference
+### Checkpoint 3: Frontend Verification (`validate-payment`)
 
-This is the critical self-healing block in `host-approve-booking` (lines 131-175):
+**Finding: CRITICAL BUG - Always auto-confirms regardless of type**
 
 ```typescript
-// Step A: Get Payment Intent ID (with self-healing fallback)
-if (!paymentIntentId) {
-  console.log(`[HOST-APPROVE] PI ID missing on booking, attempting fallback via payments table...`);
-  
-  // Get the session ID from payments table
-  const { data: payment } = await supabaseAdmin
-    .from("payments")
-    .select("stripe_session_id")
-    .eq("booking_id", booking_id)
-    .single();
-  
-  if (payment?.stripe_session_id) {
-    console.log(`[HOST-APPROVE] Found session ID: ${payment.stripe_session_id}, retrieving from Stripe...`);
+// Lines 147-154 - HARDCODED TO 'confirmed'
+const { error: bookingError } = await supabaseAdmin
+  .from('bookings')
+  .update({
+    status: 'confirmed',  // ← WRONG! Should branch on confirmation_type
+    updated_at: new Date().toISOString()
+  })
+  .eq('id', session.metadata.booking_id);
+```
+
+**This is THE primary bug**. When the user lands on BookingSuccess and triggers `usePaymentVerification` → `validate-payment`, this function unconditionally sets `status: 'confirmed'`, **overwriting** the webhook's correct `pending_approval` status.
+
+**Race Condition**: If `validate-payment` runs AFTER the webhook, it overwrites `pending_approval` → `confirmed`.
+
+---
+
+### Checkpoint 4: UI (`BookingSuccess.tsx`)
+
+**Finding: No differentiation for Request to Book**
+
+```typescript
+// Lines 102-115 - Always shows "Pagamento completato!"
+<h1>{isLoading ? 'Verifica pagamento...' : 'Pagamento completato!'}</h1>
+
+{isSuccess && !isLoading && (
+  <p>La tua prenotazione è stata confermata...</p>
+)}
+```
+
+No branching for `pending_approval` / "Request Sent to Host" state.
+
+---
+
+## Phase 2: The Resolution
+
+### Fix 1: Add `confirmation_type` to Stripe Metadata
+
+**File**: `supabase/functions/create-checkout-v3/index.ts`
+
+**Location**: After line 181
+
+```typescript
+// Add confirmation_type to metadata for webhook processing
+body.append("metadata[confirmation_type]", params.confirmationType);
+```
+
+This enables the webhook to correctly determine `isManualCapture`.
+
+---
+
+### Fix 2: Fix `validate-payment` to Respect Confirmation Type
+
+**File**: `supabase/functions/validate-payment/index.ts`
+
+**Current (Lines 147-154)**:
+```typescript
+// ALWAYS sets 'confirmed' - WRONG
+await supabaseAdmin
+  .from('bookings')
+  .update({ status: 'confirmed', ... })
+  .eq('id', session.metadata.booking_id);
+```
+
+**Fixed**:
+```typescript
+// Get confirmation_type from metadata or fetch from booking
+const confirmationType = session.metadata?.confirmation_type;
+const isRequestToBook = confirmationType === 'host_approval';
+
+// For manual capture (Request to Book), payment is AUTHORIZED not CAPTURED
+// Stripe still reports payment_status: 'paid' for authorized payments
+if (isRequestToBook) {
+  // Request to Book: Payment authorized, booking awaits host approval
+  // Update payment to 'pending' (authorized but not captured)
+  const { error: paymentError } = await supabaseAdmin
+    .from('payments')
+    .update({
+      payment_status: 'pending',
+      payment_status_enum: 'pending',
+    })
+    .eq('stripe_session_id', session_id);
     
-    // Retrieve the checkout session from Stripe to get the PI ID
-    const session = await stripe.checkout.sessions.retrieve(payment.stripe_session_id);
-    
-    if (session.payment_intent) {
-      paymentIntentId = typeof session.payment_intent === 'string' 
-        ? session.payment_intent 
-        : session.payment_intent.id;
-      
-      console.log(`[HOST-APPROVE] Retrieved PI ID from Stripe: ${paymentIntentId}`);
-      
-      // Self-heal: Update the booking with the PI ID for future operations
-      await supabaseAdmin
-        .from("bookings")
-        .update({ stripe_payment_intent_id: paymentIntentId })
-        .eq("id", booking_id);
-      
-      // Also update the payment record
-      await supabaseAdmin
-        .from("payments")
-        .update({ stripe_payment_intent_id: paymentIntentId })
-        .eq("booking_id", booking_id);
-      
-      console.log(`[HOST-APPROVE] Self-healed: PI ID saved to booking and payment records`);
-    } else {
-      console.error(`[HOST-APPROVE] Stripe session has no payment_intent. Payment may not be complete.`);
-      throw new Error("Payment not yet completed by guest. Cannot approve.");
-    }
-  } else {
-    console.error(`[HOST-APPROVE] No payment record found for booking ${booking_id}`);
-    throw new Error("No payment found for this booking.");
-  }
+  // Keep booking as 'pending_approval' (don't change status)
+  // The webhook should have already set this correctly
+  ErrorHandler.logInfo('Request to Book - keeping pending_approval status', {
+    booking_id: session.metadata.booking_id
+  });
+} else {
+  // Instant Book: Payment captured, confirm booking
+  // (existing INSERT/UPDATE logic for payment with 'succeeded')
+  // ...existing payment upsert code...
+  
+  // Confirm booking
+  await supabaseAdmin
+    .from('bookings')
+    .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+    .eq('id', session.metadata.booking_id);
 }
+```
+
+**Key Logic**:
+- **Instant Book**: `payment_status_enum = 'succeeded'`, `booking.status = 'confirmed'`
+- **Request to Book**: `payment_status_enum = 'pending'`, `booking.status = 'pending_approval'` (no change)
+
+---
+
+### Fix 3: Fix `enhanced-checkout-handlers.ts` Status Determination
+
+**File**: `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts`
+
+**Current (Lines 79-83)**:
+```typescript
+// Uses metadata (which is undefined) - falls back incorrectly
+const isManualCapture = session.metadata?.confirmation_type === 'host_approval' ||
+                        session.metadata?.capture_method === 'manual';
+```
+
+**Fixed** (after Fix 1 is deployed, metadata will have `confirmation_type`):
+```typescript
+// After Fix 1, this will work correctly because metadata.confirmation_type is set
+const isManualCapture = session.metadata?.confirmation_type === 'host_approval';
+```
+
+But as a **safety fallback**, also check the DB join result:
+```typescript
+// Line 186 already fetches from DB
+const confirmationType = booking.spaces.confirmation_type;
+// Use BOTH sources (metadata and DB) for redundancy
+const isManualCapture = session.metadata?.confirmation_type === 'host_approval' ||
+                        confirmationType === 'host_approval';
 ```
 
 ---
 
-## Deployment Plan
+### Fix 4: Update `BookingSuccess.tsx` for Request to Book State
 
-| Function | Status | Action |
-|:---------|:-------|:-------|
-| `stripe-webhooks` | Code correct, deployment stale | **REDEPLOY** |
-| `host-approve-booking` | Code correct, deployment stale | **REDEPLOY** |
-| `host-reject-booking` | Code correct, deployment stale | **REDEPLOY** |
+**File**: `src/pages/BookingSuccess.tsx`
+
+**Add**: Hook to fetch booking status and differentiate messaging
+
+```typescript
+// Add hook to get booking status
+const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+
+// After verification, fetch the actual booking status
+useEffect(() => {
+  if (isSuccess && sessionId) {
+    // Fetch booking to get actual status
+    const fetchBookingStatus = async () => {
+      const { data } = await supabase.functions.invoke('validate-payment', {
+        body: { session_id: sessionId, status_only: true }
+      });
+      setBookingStatus(data?.booking_status || 'confirmed');
+    };
+    fetchBookingStatus();
+  }
+}, [isSuccess, sessionId]);
+
+// Update UI to branch on status
+{isSuccess && !isLoading && bookingStatus === 'pending_approval' && (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Richiesta inviata!</h1>
+    <p className="text-muted-foreground">
+      La tua richiesta è stata inviata all'host. Riceverai una notifica quando 
+      l'host approverà la tua prenotazione.
+    </p>
+    ...
+  </div>
+)}
+
+{isSuccess && !isLoading && bookingStatus === 'confirmed' && (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Pagamento completato!</h1>
+    <p className="text-muted-foreground">
+      La tua prenotazione è stata confermata. Riceverai una email di conferma a breve.
+    </p>
+    ...
+  </div>
+)}
+```
+
+**Alternative simpler approach**: Use the metadata `confirmation_type` passed via URL param:
+1. In `create-checkout-v3` success_url, add `&type={confirmation_type}`
+2. In BookingSuccess, read `type` from searchParams to determine messaging
 
 ---
 
-## Verification Checklist
+## Phase 3: Logic Truth Matrix
 
-After deployment:
-- [ ] New checkout sessions save `stripe_payment_intent_id` to both tables
-- [ ] `payment_status_enum` correctly reflects capture method
-- [ ] Host approval works on broken bookings (self-healing)
-- [ ] Host rejection works on broken bookings (self-healing)
-- [ ] DB trigger `guard_confirm_without_success` passes on approval
+After implementing all fixes:
+
+| Scenario | Initial DB Status | Capture Method | Webhook Outcome (DB) | `validate-payment` Outcome | UI Message |
+|:---------|:------------------|:---------------|:---------------------|:---------------------------|:-----------|
+| **Instant Book** | `pending_payment` | `automatic` | `payment_status_enum: succeeded`, `status: confirmed` | No change (already confirmed) | "Pagamento completato!" |
+| **Request to Book** | `pending_approval` | `manual` | `payment_status_enum: pending`, `status: pending_approval` | No change (respects type) | "Richiesta inviata all'host!" |
+
+---
+
+## Files to Modify
+
+| File | Change | Priority |
+|:-----|:-------|:---------|
+| `supabase/functions/create-checkout-v3/index.ts` | Add `metadata[confirmation_type]` | **CRITICAL** |
+| `supabase/functions/validate-payment/index.ts` | Branch on `confirmation_type`, don't auto-confirm Request to Book | **CRITICAL** |
+| `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts` | Add DB fallback for `isManualCapture` | **MEDIUM** |
+| `src/pages/BookingSuccess.tsx` | Differentiate "Request Sent" vs "Confirmed" UI | **HIGH** |
+| `src/hooks/usePaymentVerification.ts` | Return `booking_status` for UI branching | **HIGH** |
+
+---
+
+## Deployment Order
+
+1. Deploy `create-checkout-v3` (metadata fix)
+2. Deploy `validate-payment` (branching logic)
+3. Deploy `stripe-webhooks` (handlers update)
+4. Deploy frontend changes (BookingSuccess UI)
+
+---
+
+## Technical Summary
+
+| Root Cause | Impact | Fix |
+|:-----------|:-------|:----|
+| Missing `confirmation_type` in metadata | Webhook can't determine flow type | Add to metadata in checkout |
+| `validate-payment` hardcodes `confirmed` | Overwrites `pending_approval` | Branch on `confirmation_type` |
+| UI shows same message for both flows | User confusion | Show "Request Sent" for host_approval |
 
