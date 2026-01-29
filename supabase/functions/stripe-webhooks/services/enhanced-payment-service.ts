@@ -73,7 +73,37 @@ export class EnhancedPaymentService {
         .single();
 
       if (error) {
-        ErrorHandler.logError('Error fetching payment by session ID', error);
+        // Enhanced error logging with full Supabase error details
+        ErrorHandler.logError('Error fetching payment by session ID (join query)', {
+          sessionId,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorDetails: error.details,
+          errorHint: error.hint
+        });
+
+        // Fallback: Try simple query to isolate the issue
+        ErrorHandler.logInfo('Join query failed, trying simple payment fetch', { sessionId });
+        
+        const { data: simpleData, error: simpleError } = await supabaseAdmin
+          .from('payments')
+          .select('id, booking_id, stripe_session_id')
+          .eq('stripe_session_id', sessionId)
+          .maybeSingle();
+          
+        if (simpleData) {
+          ErrorHandler.logError('Payment EXISTS but booking join failed', {
+            paymentId: simpleData.id,
+            bookingId: simpleData.booking_id,
+            hint: 'Check if booking exists and has valid spaces relation'
+          });
+        } else {
+          ErrorHandler.logError('Payment truly not found after upsert', {
+            sessionId,
+            simpleError: simpleError?.message
+          });
+        }
+        
         return null;
       }
 

@@ -53,6 +53,42 @@ export class EnhancedCheckoutHandlers {
 
     const bookingId = session.metadata!.booking_id;
     const baseAmount = parseFloat(session.metadata!.base_amount);
+
+    // CRITICAL: Validate booking exists BEFORE any upsert operations
+    if (!bookingId) {
+      ErrorHandler.logError('CRITICAL: Missing booking_id in metadata', {
+        sessionId: session.id,
+        metadata: session.metadata
+      });
+      return { success: false, error: 'Missing booking_id in Stripe metadata' };
+    }
+
+    const { data: bookingExists, error: bookingCheckError } = await supabaseAdmin
+      .from('bookings')
+      .select('id, status')
+      .eq('id', bookingId)
+      .maybeSingle();
+
+    if (bookingCheckError) {
+      ErrorHandler.logError('CRITICAL: Database error checking booking existence', {
+        bookingId,
+        errorMessage: bookingCheckError.message,
+        errorCode: bookingCheckError.code,
+        errorDetails: bookingCheckError.details,
+        errorHint: bookingCheckError.hint
+      });
+      return { success: false, error: `DB Error: ${bookingCheckError.message} (Code: ${bookingCheckError.code})` };
+    }
+
+    if (!bookingExists) {
+      ErrorHandler.logError('CRITICAL: Booking not found in database', {
+        bookingId,
+        sessionId: session.id
+      });
+      return { success: false, error: `Booking ${bookingId} not found in database` };
+    }
+
+    ErrorHandler.logInfo('Booking validated successfully', { bookingId, status: bookingExists.status });
     
     // Calculate breakdown
     const breakdown = EnhancedPaymentCalculator.calculateBreakdown(baseAmount);
