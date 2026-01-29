@@ -65,11 +65,16 @@ serve(async (req) => {
       status: session.status
     });
 
-    const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
-    
-    // CRITICAL: Determine confirmation type for branching logic
+    // CRITICAL: Determine confirmation type for branching logic FIRST
     const confirmationType = session.metadata?.confirmation_type;
     const isRequestToBook = confirmationType === 'host_approval';
+    
+    // CRITICAL FIX: For Request to Book (manual capture), Stripe returns payment_status='unpaid'
+    // because funds are authorized but NOT captured yet. Session status is still 'complete'.
+    // For Instant Book: payment_status='paid' (captured), status='complete'
+    const isInstantBookSuccess = session.payment_status === 'paid' && session.status === 'complete';
+    const isRequestToBookSuccess = session.payment_status === 'unpaid' && session.status === 'complete' && isRequestToBook;
+    const isPaymentSuccessful = isInstantBookSuccess || isRequestToBookSuccess;
     
     ErrorHandler.logInfo('Payment flow type determined', {
       session_id,
