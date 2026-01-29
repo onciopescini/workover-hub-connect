@@ -90,7 +90,7 @@ export class EnhancedCheckoutHandlers {
 
     ErrorHandler.logInfo('Payment status determined', {
       sessionId: session.id,
-      isManualCapture,
+      isManualCapture: isManualCaptureFromMetadata,
       paymentStatusEnum,
       paymentStatus,
       confirmationType: session.metadata?.confirmation_type
