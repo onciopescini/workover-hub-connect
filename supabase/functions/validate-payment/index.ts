@@ -67,6 +67,16 @@ serve(async (req) => {
 
     const isPaymentSuccessful = session.payment_status === 'paid' && session.status === 'complete';
     
+    // CRITICAL: Determine confirmation type for branching logic
+    const confirmationType = session.metadata?.confirmation_type;
+    const isRequestToBook = confirmationType === 'host_approval';
+    
+    ErrorHandler.logInfo('Payment flow type determined', {
+      session_id,
+      confirmationType: confirmationType || 'unknown (legacy session)',
+      isRequestToBook
+    });
+    
     if (isPaymentSuccessful && session.metadata?.booking_id) {
       // Calculate amounts from metadata (with fallback for legacy sessions)
       const totalAmount = (session.amount_total || 0) / 100;
@@ -144,31 +154,63 @@ serve(async (req) => {
         ErrorHandler.logSuccess('Payment updated successfully');
       }
 
-      // STEP 2: Ora conferma la booking (il trigger troverà il payment completed)
-      const { error: bookingError } = await supabaseAdmin
-        .from('bookings')
-        .update({
-          status: 'confirmed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', session.metadata.booking_id);
-
-      if (bookingError) {
-        ErrorHandler.logError('Error updating booking', bookingError, {
-          operation: 'update_booking',
-          booking_id: session.metadata.booking_id
+      // STEP 2: Update booking status based on confirmation type
+      // CRITICAL: Request to Book stays as 'pending_approval', Instant Book becomes 'confirmed'
+      if (isRequestToBook) {
+        // Request to Book: Payment authorized but NOT captured
+        // Keep booking as 'pending_approval' - DO NOT auto-confirm
+        // Also ensure payment status reflects 'pending' (authorized, not captured)
+        const { error: paymentStatusError } = await supabaseAdmin
+          .from('payments')
+          .update({
+            payment_status: 'pending',
+            payment_status_enum: 'pending',
+          })
+          .eq('stripe_session_id', session_id);
+          
+        if (paymentStatusError) {
+          ErrorHandler.logWarning('Failed to update payment status to pending', {
+            error: paymentStatusError,
+            session_id
+          });
+        }
+        
+        ErrorHandler.logSuccess('Request to Book - keeping pending_approval status', {
+          booking_id: session.metadata.booking_id,
+          payment_status: 'pending'
         });
-        throw new Error('Failed to confirm booking');
+      } else {
+        // Instant Book: Payment captured, confirm booking
+        const { error: bookingError } = await supabaseAdmin
+          .from('bookings')
+          .update({
+            status: 'confirmed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', session.metadata.booking_id);
+
+        if (bookingError) {
+          ErrorHandler.logError('Error updating booking', bookingError, {
+            operation: 'update_booking',
+            booking_id: session.metadata.booking_id
+          });
+          throw new Error('Failed to confirm booking');
+        }
+        
+        ErrorHandler.logSuccess('Instant Book - booking confirmed successfully');
       }
-      
-      ErrorHandler.logSuccess('Booking confirmed successfully');
     }
+
+    // Determine the final booking status to return to frontend
+    const finalBookingStatus = isRequestToBook ? 'pending_approval' : 'confirmed';
 
     return new Response(JSON.stringify({
       success: isPaymentSuccessful,
       payment_status: session.payment_status,
       session_status: session.status,
-      booking_id: session.metadata?.booking_id
+      booking_id: session.metadata?.booking_id,
+      booking_status: finalBookingStatus,
+      confirmation_type: confirmationType || 'instant'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

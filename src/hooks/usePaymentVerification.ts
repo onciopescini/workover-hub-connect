@@ -11,6 +11,8 @@ interface PaymentVerificationResult {
   isSuccess: boolean;
   error: string | null;
   bookingId: string | null;
+  bookingStatus: string | null;
+  confirmationType: string | null;
 }
 
 export const usePaymentVerification = (sessionId: string | null): PaymentVerificationResult => {
@@ -18,6 +20,8 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+  const [confirmationType, setConfirmationType] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -44,17 +48,31 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
         if (data?.success) {
           setIsSuccess(true);
           setBookingId(data.booking_id);
+          setBookingStatus(data.booking_status || 'confirmed');
+          setConfirmationType(data.confirmation_type || 'instant');
           
           // Invalida le query delle prenotazioni per forzare il refresh
           queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
           queryClient.invalidateQueries({ queryKey: ['coworker-bookings'] });
           queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
           
-          toast.success('Pagamento completato con successo! La tua prenotazione è confermata.', {
-            duration: 5000
-          });
+          // Differentiate toast message based on booking type
+          const isRequestToBook = data.confirmation_type === 'host_approval';
+          if (isRequestToBook) {
+            toast.success('Richiesta inviata! L\'host valuterà la tua prenotazione.', {
+              duration: 5000
+            });
+          } else {
+            toast.success('Pagamento completato con successo! La tua prenotazione è confermata.', {
+              duration: 5000
+            });
+          }
 
-          sreLogger.info('Booking queries invalidated', { bookingId: data.booking_id });
+          sreLogger.info('Booking queries invalidated', { 
+            bookingId: data.booking_id,
+            bookingStatus: data.booking_status,
+            confirmationType: data.confirmation_type
+          });
         } else {
           throw new Error('Payment verification failed');
         }
@@ -71,5 +89,5 @@ export const usePaymentVerification = (sessionId: string | null): PaymentVerific
     verifyPayment();
   }, [sessionId, queryClient]);
 
-  return { isLoading, isSuccess, error, bookingId };
+  return { isLoading, isSuccess, error, bookingId, bookingStatus, confirmationType };
 };
