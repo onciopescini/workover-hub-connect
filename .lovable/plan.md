@@ -1,102 +1,189 @@
 
 
-# Fix Plan: 404 on Host Actions (Routing Mismatch)
+# DEEP AUDIT: Cancellation Policy & Refund Logic
 
-## Routing Integrity Matrix
+## Executive Summary
 
-| Function | Folder Name | Config Entry | Frontend Call | Status |
-|:---------|:------------|:-------------|:--------------|:-------|
-| **Approve** | `host-approve-booking/` | `[functions.host-approve-booking]` ✅ | `invoke('host-approve-booking')` | 🟢 MATCH |
-| **Reject** | `host-reject-booking/` | `[functions.host-reject-booking]` ✅ | `invoke('host-reject-booking')` | 🟢 MATCH |
+After a comprehensive code review of the cancellation and refund mechanisms, I found **3 CRITICAL schema bugs** and **1 LOGIC concern**. The good news: the Stripe interaction logic is fundamentally correct.
 
 ---
 
-## Root Cause: CORS Headers Missing Required Fields
+## PHASE 1: LOGIC INSPECTION RESULTS
 
-The 404 is likely a **CORS preflight rejection** being reported as 404. Both functions use incomplete CORS headers:
+### 1. `host-reject-booking/index.ts` - ✅ CORRECT
 
+| Check | Status | Details |
+|:------|:-------|:--------|
+| **Mechanism** | ✅ Correct | Uses `stripe.paymentIntents.cancel()` for `requires_capture` status (lines 185-191) |
+| **Fallback** | ✅ Correct | If PI already captured (`succeeded`), correctly creates refund instead (lines 195-204) |
+| **Idempotency** | ✅ Correct | Handles already-canceled PI gracefully (lines 192-194) |
+| **DB Update** | ✅ Correct | Sets `status: 'cancelled'`, `cancelled_by_host: true` (lines 223-232) |
+
+**Code Snippet (lines 185-191):**
 ```typescript
-// CURRENT (line 5-8 in both functions)
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+if (pi.status === 'requires_capture') {
+  await stripe.paymentIntents.cancel(pi.id, {
+    cancellation_reason: 'requested_by_customer'
+  });
+}
 ```
 
-The Supabase JS client sends additional headers that are NOT in the allow-list:
-- `x-supabase-client-platform`
-- `x-supabase-client-platform-version`  
-- `x-supabase-client-runtime`
-- `x-supabase-client-runtime-version`
-
-When the browser's preflight (`OPTIONS`) request asks for permission to send these headers, the function denies them, causing a CORS failure that may manifest as a 404.
+**Verdict:** This function correctly handles host rejection - it releases the authorization hold (not refund) for pending Request to Book flows.
 
 ---
 
-## Fix 1: Update CORS Headers
+### 2. `cancel-booking/index.ts` - ⚠️ HAS BUGS
 
-**Files:** 
-- `supabase/functions/host-approve-booking/index.ts` (lines 5-8)
-- `supabase/functions/host-reject-booking/index.ts` (lines 5-8)
+| Check | Status | Details |
+|:------|:-------|:--------|
+| **Policy Check** | ✅ Yes | Uses `booking.cancellation_policy` from DB (line 136) |
+| **Timing Check** | ✅ Yes | Calculates `bookingDateTime` from `booking_date + start_time` (lines 187-190) |
+| **Refund Math** | ✅ Correct | Uses `calculateRefund()` from policy-calculator (line 193) |
+| **Platform Fee** | ⚠️ Partial | Refunds are based on `basePriceCents` (line 229), not gross amount |
+| **Host Transfer Reversal** | ✅ Yes | Reverses host transfer proportionally (lines 236-247) |
+| **Schema Bug** | ❌ CRITICAL | Line 105: `title:name` - column `name` doesn't exist! |
 
-**Change:**
+**Code Snippet (line 105) - BUG:**
+```typescript
+.select('host_id, title:name')  // ← FAILS: "name" column doesn't exist
+```
+
+**Verdict:** The logic is sound, but **this function will crash silently** due to the schema mismatch, causing `workspace` to be `null` and the host check to fail.
+
+---
+
+### 3. `policy-calculator.ts` - ✅ CORRECT
+
+The policy calculator implements correct refund percentages:
+
+| Policy | >7 days | 5-7 days | 24h-5 days | <24h |
+|:-------|:--------|:---------|:-----------|:-----|
+| **Flexible** | 100% | 100% | 100% | 0% |
+| **Moderate** | 100% | 100% | 50% | 0% |
+| **Strict** | 50% | 0% | 0% | 0% |
+
+---
+
+### 4. `booking-expiry-check/index.ts` - ✅ CORRECT
+
+| Check | Status | Details |
+|:------|:-------|:--------|
+| **Auth Release** | ✅ Yes | Correctly calls `stripe.paymentIntents.cancel()` for expired `pending_approval` bookings (lines 45-54) |
+| **DB Update** | ✅ Yes | Sets `status: 'cancelled'` with appropriate reason |
+
+---
+
+## PHASE 2: DATA INTEGRITY SIMULATION
+
+### Scenario: User Cancels Confirmed Booking (Late)
+
+1. **cancel-booking** is invoked
+2. Query for `workspace` FAILS due to `title:name` bug → `workspace = null`
+3. Function returns 404 "Workspace not found" (line 110-114)
+4. **No Stripe refund is processed**
+5. **Booking remains in `confirmed` status**
+
+**Impact:** User sees error, no refund happens, booking is NOT cancelled.
+
+### Scenario: Host Rejects Request to Book
+
+1. **host-reject-booking** is invoked
+2. Correctly fetches `space` with `title` (FIXED in last deploy)
+3. Calls `stripe.paymentIntents.cancel()` to release authorization
+4. Updates booking to `status: 'cancelled'`
+5. Payment record updated to `payment_status: 'cancelled'` (via code logic)
+
+**Impact:** ✅ Works correctly after CORS/schema fix.
+
+---
+
+## REFUND LOGIC AUDIT REPORT
+
+| Scenario | Current Code Logic | Stripe Method | Potential Risk |
+|:---------|:-------------------|:--------------|:---------------|
+| **Host Reject** | Check PI status. If `requires_capture` → cancel. If `succeeded` → refund 100%. | `paymentIntents.cancel()` or `refunds.create()` | ✅ OK |
+| **User Cancel (Free)** | Calculate refund via policy-calculator. If `refundPercentage = 1.0` → full refund. Reverses host transfer. | `transfers.createReversal()` + `refunds.create()` | ❌ **BLOCKED BY SCHEMA BUG** |
+| **User Cancel (Late)** | Calculate refund via policy-calculator. If `refundPercentage < 1.0` → partial refund. | `refunds.create({ amount })` | ❌ **BLOCKED BY SCHEMA BUG** |
+| **System Auto-Cancel (Expiry)** | Release auth if PI exists. Pure DB cancel. | `paymentIntents.cancel()` | ✅ OK |
+
+---
+
+## CRITICAL BUGS FOUND
+
+### Bug 1: `cancel-booking/index.ts` Line 105
+```typescript
+.select('host_id, title:name')  // "name" column doesn't exist
+```
+**Impact:** ALL user-initiated and host-initiated cancellations fail with 404.
+
+### Bug 2: `booking-service.ts` Line 19
+```typescript
+title:name  // "name" column doesn't exist
+```
+**Impact:** Webhook may fail to fetch booking details correctly.
+
+### Bug 3: `admin-process-refund/index.ts` Lines 81-88
+```typescript
+.in('payment_status', ['succeeded', 'paid'])  // "paid" is not a valid enum value
+```
+**Impact:** Admin refunds may fail for valid payments.
+
+---
+
+## RECOMMENDED FIXES
+
+### Fix 1: `cancel-booking/index.ts` (CRITICAL)
+**Line 105:** Change `title:name` to `title`
 
 ```typescript
 // BEFORE
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+.select('host_id, title:name')
 
 // AFTER
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
-};
+.select('host_id, title')
 ```
 
----
-
-## Fix 2: Schema Mismatch in Space Query (Secondary Bug)
-
-Both functions have a schema query bug identical to the webhook issue. Line 98-100 in `host-approve-booking/index.ts` and line 97-101 in `host-reject-booking/index.ts`:
+### Fix 2: `booking-service.ts` (CRITICAL)
+**Line 19:** Change `title:name` to `title`
 
 ```typescript
-// CURRENT (BROKEN)
-.select("host_id, title:name")  // ← "name" column doesn't exist!
+// BEFORE
+title:name
 
-// FIXED
-.select("host_id, title")  // ← Use actual column name
+// AFTER
+title
 ```
 
-This bug would cause a silent failure when fetching the space, returning `space` as null even when the space exists.
+### Fix 3: `admin-process-refund/index.ts` (MEDIUM)
+**Line 85:** Fix payment status filter
+
+```typescript
+// BEFORE
+.in('payment_status', ['succeeded', 'paid'])
+
+// AFTER
+.in('payment_status', ['completed', 'succeeded'])  // Match actual enum values
+```
 
 ---
 
-## Summary of Changes
+## Summary Matrix
 
-| File | Line | Change | Priority |
-|:-----|:-----|:-------|:---------|
-| `host-approve-booking/index.ts` | 5-8 | Add missing CORS headers | **CRITICAL** |
-| `host-approve-booking/index.ts` | 98 | Fix `title:name` → `title` | **CRITICAL** |
-| `host-reject-booking/index.ts` | 5-8 | Add missing CORS headers | **CRITICAL** |
-| `host-reject-booking/index.ts` | 99 | Fix `title:name` → `title` | **CRITICAL** |
+| Component | Status | Issue | Priority |
+|:----------|:-------|:------|:---------|
+| `host-reject-booking` | ✅ Fixed | None (after last deploy) | - |
+| `cancel-booking` | ❌ BROKEN | Schema bug line 105 | **CRITICAL** |
+| `booking-service.ts` | ❌ BROKEN | Schema bug line 19 | **CRITICAL** |
+| `admin-process-refund` | ⚠️ Degraded | Wrong status filter | MEDIUM |
+| `policy-calculator` | ✅ OK | None | - |
+| `booking-expiry-check` | ✅ OK | None | - |
 
 ---
 
 ## Deployment Order
 
-1. Apply CORS fix and schema fix to both functions
-2. Deploy `host-approve-booking` and `host-reject-booking`
-3. Test approve/reject actions from the host dashboard
-
----
-
-## Expected Behavior After Fix
-
-| Action | Before Fix | After Fix |
-|:-------|:-----------|:----------|
-| **Host clicks "Approve"** | 404 Not Found | 200 OK - Booking confirmed, funds captured |
-| **Host clicks "Reject"** | 404 Not Found | 200 OK - Booking cancelled, funds released |
+1. Fix schema bugs in `cancel-booking` and `booking-service.ts`
+2. Fix payment status filter in `admin-process-refund`
+3. Deploy all three Edge Functions
+4. Test user cancellation flow
 
