@@ -82,7 +82,7 @@ serve(async (req) => {
       .from('payments')
       .select('stripe_payment_intent_id, amount, payment_status, id')
       .eq('booking_id', targetBookingId)
-      .in('payment_status', ['succeeded', 'paid'])
+      .in('payment_status', ['completed', 'succeeded'])
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

@@ -102,7 +102,7 @@ serve(async (req) => {
     // Fetch Space (Host ID)
     const { data: workspace, error: workspaceError } = await supabaseClient
       .from('spaces')
-      .select('host_id, title:name')
+      .select('host_id, title')
       .eq('id', booking.space_id)
       .single();
 
