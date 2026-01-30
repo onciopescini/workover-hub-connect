@@ -63,7 +63,7 @@ export class EnhancedPaymentService {
             user_id,
             spaces!inner (
               id,
-              title:name,
+              title,
               host_id,
               confirmation_type
             )
