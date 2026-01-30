@@ -1,274 +1,175 @@
 
 
-# COMPLETE WEBHOOK REPAIR - SCHEMA + LOGIC + FRONTEND POLLING
+# Fix Plan: Auto-Confirm Bug & QR Code Display
 
-## Summary of Findings
+## Root Cause Analysis
 
-After reviewing the current code, I found:
+After tracing the code and logs, I've identified **TWO critical bugs**:
 
-1. **Schema Bug (Line 66)**: `enhanced-payment-service.ts` uses `title:name` but the column is just `title`
-2. **Booking Status Logic**: The code at lines 228-230 DOES branch correctly based on `confirmationType`, BUT there's a potential issue where the payment status correction logic (lines 237-246) only updates the `paymentStatusEnum` variable but does NOT update the database with the corrected values
-3. **Frontend**: No retry mechanism - fails immediately if webhook hasn't finished
-
----
-
-## ACTION 1: Fix Schema Mismatch
-
-**File:** `supabase/functions/stripe-webhooks/services/enhanced-payment-service.ts`
-
-**Line 66:** Change `title:name` to `title`
+### Bug 1: Undefined Variable in Webhook (CRITICAL)
+**File:** `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts`  
+**Line 272:** Uses undefined variable `newStatus` in success message
 
 ```typescript
-// CURRENT (Line 64-69)
-spaces!inner (
-  id,
-  title:name,  // ← "name" column doesn't exist!
-  host_id,
-  confirmation_type
-)
-
-// FIXED
-spaces!inner (
-  id,
-  title,  // ← Correct column name
-  host_id,
-  confirmation_type
-)
-```
-
----
-
-## ACTION 2: Override Booking Status Logic (MANDATORY)
-
-**File:** `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts`
-
-### Problem Identified
-
-Looking at lines 237-246, there's a logic flaw:
-
-```typescript
-// Current code (lines 237-246)
-if (isManualCapture && paymentStatusEnum === 'succeeded') {
-  paymentStatusEnum = 'pending';  // ← Updates LOCAL variable
-  paymentStatus = 'pending';      // ← Updates LOCAL variable
-  // BUT DOESN'T UPDATE THE DATABASE!
-}
-```
-
-The correction happens AFTER the payment has already been saved to the database (lines 145-201). The corrected values are never written back!
-
-### Solution: Move Status Determination BEFORE Database Upsert
-
-Refactor to determine the FINAL status values BEFORE any database operations:
-
-```typescript
-// STEP 1: Get confirmation_type from metadata
-const metadataConfirmationType = session.metadata?.confirmation_type;
-
-// STEP 2: Pre-flight check - validate booking exists and get DB confirmation_type
-const { data: bookingWithSpace, error: bookingCheckError } = await supabaseAdmin
-  .from('bookings')
-  .select('id, status, space_id, spaces!inner(confirmation_type)')
-  .eq('id', bookingId)
-  .maybeSingle();
-
-// STEP 3: Determine isManualCapture using BOTH sources (metadata + DB)
-const dbConfirmationType = bookingWithSpace?.spaces?.confirmation_type;
-const isManualCapture = metadataConfirmationType === 'host_approval' || 
-                        dbConfirmationType === 'host_approval';
-
-// STEP 4: Set FINAL status values BEFORE upsert
-const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
-const paymentStatus = isManualCapture ? 'pending' : 'completed';
-const targetBookingStatus = isManualCapture ? 'pending_approval' : 'confirmed';
-
-// STEP 5: Use these FINAL values in all database operations
-```
-
-### Specific Code Changes
-
-**Lines 116-133 (Status Determination)** - Enhance to fetch DB confirmation_type early:
-
-```typescript
-// CRITICAL: Determine confirmation type from BOTH sources
-const metadataConfirmationType = session.metadata?.confirmation_type;
-
-// Fetch DB confirmation_type as part of booking validation (already done at line 66-70)
-// Enhance the query to include spaces.confirmation_type
-const { data: bookingWithSpace, error: bookingCheckError } = await supabaseAdmin
-  .from('bookings')
-  .select('id, status, space_id, spaces!inner(confirmation_type)')
-  .eq('id', bookingId)
-  .maybeSingle();
-
-const dbConfirmationType = bookingWithSpace?.spaces?.confirmation_type;
-
-// Use EITHER source - metadata takes precedence, DB is fallback
-const isManualCapture = metadataConfirmationType === 'host_approval' || 
-                        dbConfirmationType === 'host_approval';
-
-// FINAL STATUS VALUES - determined ONCE, used everywhere
-const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
-const paymentStatus = isManualCapture ? 'pending' : 'completed';
-const targetBookingStatus = isManualCapture ? 'pending_approval' : 'confirmed';
-
-ErrorHandler.logInfo('FINAL status values determined', {
-  sessionId: session.id,
-  metadataConfirmationType,
-  dbConfirmationType,
-  isManualCapture,
-  paymentStatusEnum,
-  targetBookingStatus
-});
-```
-
-**Lines 259-265 (Booking Update)** - Use `targetBookingStatus`:
-
-```typescript
-// CRITICAL: Use the pre-determined targetBookingStatus
-const { error: updateBookingError } = await supabaseAdmin
-  .from('bookings')
-  .update({
-    status: targetBookingStatus,  // ← FORCE THIS STATUS (was: newStatus)
-    stripe_payment_intent_id: paymentIntentId || null
-  })
-  .eq('id', bookingId);
-```
-
-**Remove Lines 227-246** - Delete the redundant logic that recalculates status after the fact.
-
----
-
-## ACTION 3: Frontend Polling with Retry Mechanism
-
-**File:** `src/hooks/usePaymentVerification.ts`
-
-Add exponential backoff retry to handle race conditions where webhook hasn't finished:
-
-```typescript
-export const usePaymentVerification = (sessionId: string | null): PaymentVerificationResult => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [bookingId, setBookingId] = useState<string | null>(null);
-  const [bookingStatus, setBookingStatus] = useState<string | null>(null);
-  const [confirmationType, setConfirmationType] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (!sessionId) return;
-
-    const MAX_ATTEMPTS = 5;
-    const BASE_DELAY_MS = 1000;
-
-    const verifyPaymentWithRetry = async (attempt: number = 1): Promise<void> => {
-      try {
-        sreLogger.debug('Verifying payment', { sessionId, attempt, maxAttempts: MAX_ATTEMPTS });
-
-        const { data, error: functionError } = await supabase.functions.invoke('validate-payment', {
-          body: { session_id: sessionId }
-        });
-
-        if (functionError || !data?.success) {
-          // If we have retries left, wait and try again
-          if (attempt < MAX_ATTEMPTS) {
-            const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1); // Exponential backoff
-            sreLogger.debug('Retry scheduled', { attempt, nextAttemptIn: delay });
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return verifyPaymentWithRetry(attempt + 1);
-          }
-          // All retries exhausted
-          throw new Error(functionError?.message || data?.error || 'Payment verification failed after retries');
-        }
-
-        // Success!
-        setIsSuccess(true);
-        setBookingId(data.booking_id);
-        setBookingStatus(data.booking_status || 'confirmed');
-        setConfirmationType(data.confirmation_type || 'instant');
-        
-        // Invalidate booking queries
-        queryClient.invalidateQueries({ queryKey: ['enhanced-bookings'] });
-        queryClient.invalidateQueries({ queryKey: ['coworker-bookings'] });
-        queryClient.invalidateQueries({ queryKey: ['host-bookings'] });
-        
-        // Show appropriate toast
-        const isRequestToBook = data.confirmation_type === 'host_approval';
-        if (isRequestToBook) {
-          toast.success('Richiesta inviata! L\'host valuterà la tua prenotazione.', { duration: 5000 });
-        } else {
-          toast.success('Pagamento completato con successo! La tua prenotazione è confermata.', { duration: 5000 });
-        }
-
-        sreLogger.info('Payment verification succeeded', { 
-          bookingId: data.booking_id,
-          bookingStatus: data.booking_status,
-          confirmationType: data.confirmation_type,
-          attempts: attempt
-        });
-
-      } catch (err: unknown) {
-        sreLogger.error('Payment verification failed after all retries', { sessionId, attempts: attempt }, err as Error);
-        setError(err instanceof Error ? err.message : 'Errore nella verifica del pagamento');
-        toast.error('Errore nella verifica del pagamento. Contatta il supporto se il problema persiste.');
-      }
-    };
-
-    setIsLoading(true);
-    setError(null);
-    
-    verifyPaymentWithRetry()
-      .finally(() => setIsLoading(false));
-
-  }, [sessionId, queryClient]);
-
-  return { isLoading, isSuccess, error, bookingId, bookingStatus, confirmationType };
+return { 
+  success: true, 
+  message: `Checkout session processed successfully. Booking ${newStatus}.`  // ← CRASH!
 };
 ```
 
+The variable `targetBookingStatus` exists, but `newStatus` does not. This causes the webhook to crash AFTER the booking update succeeds, leading to Stripe retries and potential duplicate processing.
+
+### Bug 2: Payment Status Race Condition in validate-payment (CRITICAL)
+**File:** `supabase/functions/validate-payment/index.ts`  
+**Lines 142-148:** ALWAYS sets payment to `succeeded` FIRST, even for Request to Book
+
+```typescript
+// Line 145-146 (runs for ALL bookings)
+payment_status: 'completed',
+payment_status_enum: 'succeeded',  // ← Triggers guard_confirm_without_success to allow confirmation!
+```
+
+Then only AFTER this (lines 168-173), it corrects back to `pending` for Request to Book. But during that window, concurrent processes may see `succeeded` and allow confirmation.
+
 ---
 
-## Files to Modify
+## Evidence from Logs
+
+| Timestamp | Event | Status |
+|:----------|:------|:-------|
+| 10:33:07 | Webhook sets booking to `pending_approval` | ✓ |
+| 10:33:09 | Webhook crashes: `newStatus is not defined` | ✗ |
+| 10:33:19 | validate-payment sets payment to `succeeded` | Briefly |
+| 10:33:19 | validate-payment corrects payment to `pending` | Too late |
+| 10:33:19 | Booking updated_at | Status: `confirmed` |
+
+The booking's `updated_at` (10:33:19.740362) is BEFORE the payment's `updated_at` (10:33:19.783345), confirming the race condition.
+
+---
+
+## Technical Fixes
+
+### Fix 1: Replace Undefined Variable (Backend)
+**File:** `supabase/functions/stripe-webhooks/handlers/enhanced-checkout-handlers.ts`  
+**Line 272:** Replace `newStatus` with `targetBookingStatus`
+
+```typescript
+// BEFORE
+return { 
+  success: true, 
+  message: `Checkout session processed successfully. Booking ${newStatus}.`
+};
+
+// AFTER
+return { 
+  success: true, 
+  message: `Checkout session processed successfully. Booking ${targetBookingStatus}.`
+};
+```
+
+### Fix 2: Conditional Payment Status Logic (Backend)
+**File:** `supabase/functions/validate-payment/index.ts`  
+**Lines 140-160:** Set correct payment status IMMEDIATELY based on confirmation type, NOT after
+
+```typescript
+// BEFORE (lines 142-148)
+const { error: updateError } = await supabaseAdmin
+  .from('payments')
+  .update({
+    payment_status: 'completed',       // Always 'completed'
+    payment_status_enum: 'succeeded',  // Always 'succeeded'
+    receipt_url: session.receipt_url
+  })
+  .eq('id', existingPayment.id);
+
+// AFTER
+const correctPaymentStatus = isRequestToBook ? 'pending' : 'completed';
+const correctPaymentStatusEnum = isRequestToBook ? 'pending' : 'succeeded';
+
+const { error: updateError } = await supabaseAdmin
+  .from('payments')
+  .update({
+    payment_status: correctPaymentStatus,
+    payment_status_enum: correctPaymentStatusEnum,
+    receipt_url: session.receipt_url
+  })
+  .eq('id', existingPayment.id);
+```
+
+**Also update lines 117-128** (the INSERT path for fallback):
+
+```typescript
+// BEFORE (lines 122-123)
+payment_status: 'completed',
+payment_status_enum: 'succeeded',
+
+// AFTER
+payment_status: isRequestToBook ? 'pending' : 'completed',
+payment_status_enum: isRequestToBook ? 'pending' : 'succeeded',
+```
+
+### Fix 3: Remove Redundant Correction Block
+**Lines 164-186** can be simplified since payment status is now set correctly upfront. Keep only the logging:
+
+```typescript
+if (isRequestToBook) {
+  ErrorHandler.logSuccess('Request to Book - payment authorized, booking pending_approval', {
+    booking_id: session.metadata.booking_id,
+    payment_status: 'pending'
+  });
+  // No database update needed - already set correctly above
+} else {
+  // Instant Book: confirm booking
+  const { error: bookingError } = await supabaseAdmin
+    .from('bookings')
+    .update({
+      status: 'confirmed',
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', session.metadata.booking_id);
+  // ... error handling
+}
+```
+
+### Fix 4: QR Code Guard Already Correct
+**File:** `src/components/bookings/checkin/BookingQRCode.tsx`  
+**Lines 18-21:** Already correctly guards with `status === 'confirmed'`
+
+```typescript
+const isConfirmed = status === 'confirmed';
+if (!isConfirmed || !isBookingToday) {
+  return null;
+}
+```
+
+No changes needed - the QR code will correctly hide once the backend stops auto-confirming.
+
+---
+
+## Summary of Changes
 
 | File | Change | Priority |
 |:-----|:-------|:---------|
-| `enhanced-payment-service.ts` | Fix `title:name` → `title` (line 66) | **CRITICAL** |
-| `enhanced-checkout-handlers.ts` | Move status determination BEFORE upsert, use `targetBookingStatus` | **CRITICAL** |
-| `usePaymentVerification.ts` | Add retry mechanism with exponential backoff | **HIGH** |
+| `enhanced-checkout-handlers.ts` (line 272) | Fix undefined `newStatus` → `targetBookingStatus` | CRITICAL |
+| `validate-payment/index.ts` (lines 122-123) | Set correct payment status based on `isRequestToBook` in INSERT | CRITICAL |
+| `validate-payment/index.ts` (lines 145-146) | Set correct payment status based on `isRequestToBook` in UPDATE | CRITICAL |
+| `validate-payment/index.ts` (lines 168-186) | Remove redundant correction block (now handled upfront) | HIGH |
+| `BookingQRCode.tsx` | No change needed - guard already correct | N/A |
 
 ---
 
 ## Deployment Order
 
-1. Deploy `stripe-webhooks` (schema + logic fixes)
-2. Deploy frontend (retry mechanism)
-3. Test with new Request to Book transaction
+1. Deploy `stripe-webhooks` (fix undefined variable crash)
+2. Deploy `validate-payment` (fix race condition)
+3. Test with a new Request to Book transaction
 
 ---
 
-## Confirmation: Logic Override
+## Expected Behavior After Fix
 
-The key change is replacing the auto-confirm logic with conditional `targetBookingStatus`:
-
-```typescript
-// OLD (auto-confirms everything):
-const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
-// But this was calculated AFTER the payment upsert, and the correction was never saved!
-
-// NEW (strict branching BEFORE any DB ops):
-const targetBookingStatus = isManualCapture ? 'pending_approval' : 'confirmed';
-// Used directly in the booking update query
-```
-
----
-
-## Expected Audit Matrix (Post-Fix)
-
-| Component | Check | Expected Result |
-|:----------|:------|:----------------|
-| **Webhook** | DB Error Visibility | ✅ Logs specific SQL error with code/details |
-| **Webhook** | Schema Query | ✅ Uses correct `title` column |
-| **Webhook** | "Request" Logic | ✅ Sets `pending_approval` + `pending` BEFORE upsert |
-| **Frontend** | Race Condition | ✅ Retries up to 5 times with exponential backoff |
-| **Host** | Approval Flow | ✅ Already captures funds correctly |
+| Flow Type | Payment Status | Booking Status | QR Code |
+|:----------|:---------------|:---------------|:--------|
+| **Request to Book** | `pending` (authorized) | `pending_approval` | Hidden |
+| **Instant Book** | `succeeded` (captured) | `confirmed` | Visible (if today) |
 
