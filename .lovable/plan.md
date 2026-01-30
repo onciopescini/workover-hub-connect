@@ -1,186 +1,135 @@
 
-# Messaging UX Finalization - Sidebar and Refactoring (Phase 3)
+# Super Admin Dashboard - Platform Oversight (Build Plan)
 
-## Overview
+## Executive Summary
 
-This plan implements the final phase of the messaging overhaul: a collapsible Context Sidebar and type consolidation to eliminate technical debt.
+After auditing the existing admin infrastructure, I've found that **most of the core structure already exists**. The `/admin` route is protected, RPC-based admin verification is in place, and many widgets are functional. The task is to **enhance** the existing dashboard with missing widgets and add the Force Cancel capability.
 
 ---
 
 ## Current State Analysis
 
-### Type Duplication Identified
+### Security Infrastructure (Already Implemented)
 
-| File | `Conversation` Type | Primary User |
-|:-----|:--------------------|:-------------|
-| `src/types/chat.ts` | Rich type with `booking`, `space`, `participants[]`, `archived_at` | `useChat.ts`, `ChatWindow.tsx`, `ConversationList.tsx`, `chatService.ts` |
-| `src/types/messaging.ts` | Simpler type with `title`, `subtitle`, `avatar`, `status` | Only `src/lib/conversations.ts` |
+| Component | Status | Implementation |
+|:----------|:-------|:---------------|
+| Admin Route Protection | ✅ Exists | `AdminLayout.tsx` calls `supabase.rpc('is_admin', { p_user_id })` |
+| Database Function | ✅ Exists | `is_admin()` checks `admins` table for user membership |
+| RLS Policies | ✅ Exists | Multiple tables use `is_admin(auth.uid())` in policies |
+| Admin Actions Log | ✅ Exists | `admin_actions_log` table with `admin_process_refund` logging |
 
-The `src/types/chat.ts` version is more complete and aligned with the current architecture.
+**Security Verification**: The current implementation is secure - it uses server-side RPC validation (`SECURITY DEFINER` function) that checks the `admins` table, NOT client-side storage or URL guessing.
 
-### Profile Fields Available for Networking Context
+### Existing Admin Pages
 
-The `profiles` table contains rich user data for the sidebar:
-- `bio` - User biography
-- `skills` - Comma-separated skills
-- `interests` - User interests
-- `job_title` - Professional title
-- `location` - User location
-- Social links (LinkedIn, Instagram, etc.)
+| Page | Status | Features |
+|:-----|:-------|:---------|
+| `/admin` (Dashboard) | ✅ Basic | Total Users, Gross Volume, Estimated Revenue |
+| `/admin/bookings` | ✅ Complete | Booking table, Refund Modal, Force Delete |
+| `/admin/users` | ✅ Exists | User management |
+| `/admin/kyc` | ✅ Exists | KYC verification queue |
+| `/admin/revenue` | ✅ Exists | Monthly revenue breakdown |
+
+### Missing Dashboard Widgets
+
+| Widget | Current | Required |
+|:-------|:--------|:---------|
+| Pending Escrow | ❌ Missing | Show funds held awaiting payout |
+| Pending Approval Count | ❌ Missing | Bookings awaiting host approval |
+| Disputed/Cancelled Today | ❌ Missing | Quick health indicator |
+| Host vs Coworker Signups | ❌ Missing | User growth chart by role |
+
+### Missing Actions
+
+| Action | Status | Notes |
+|:-------|:-------|:------|
+| Force Cancel Booking | ❌ Missing | Different from "Force Delete" - should trigger full refund |
+| Refund Override | ✅ Exists | `RefundModal.tsx` + `admin-process-refund` edge function |
 
 ---
 
 ## Implementation Plan
 
-### Action 1: Create the `ChatDetailsPanel` Component
+### Phase 1: Enhance AdminDashboard with Missing Widgets
 
-A new component that displays contextual information based on conversation type.
+**File**: `src/pages/admin/AdminDashboard.tsx`
 
-**File**: `src/components/chat/ChatDetailsPanel.tsx`
+**New Widgets to Add**:
+
+1. **Financial Pulse Card (Enhanced)**
+   - Gross Volume (existing)
+   - Estimated Revenue (existing)
+   - **NEW**: Pending Escrow - Query: `SUM(total_price) WHERE payout_completed_at IS NULL AND status IN ('served', 'confirmed')`
+
+2. **Booking Health Card (New)**
+   - Pending Approval Count - Query: `COUNT(*) WHERE status = 'pending_approval'`
+   - Disputed Today - Query: `COUNT(*) WHERE status = 'disputed' AND created_at >= today`
+   - Cancelled Today - Query: `COUNT(*) WHERE status = 'cancelled' AND cancelled_at >= today`
+
+3. **User Growth Chart (New)**
+   - Integrate existing `useAdminAnalytics` hook
+   - Show Host vs Coworker signups over last 30 days
+   - Use recharts `AreaChart` for visualization
+
+**Data Source**: Extend existing queries in `AdminDashboard.tsx` to include:
+```typescript
+// Pending Escrow
+const { data: pendingEscrow } = await supabase
+  .from('bookings')
+  .select('total_price')
+  .is('payout_completed_at', null)
+  .in('status', ['served', 'confirmed'])
+  .is('deleted_at', null);
+
+// Booking Health
+const { count: pendingApproval } = await supabase
+  .from('bookings')
+  .select('id', { count: 'exact', head: true })
+  .eq('status', 'pending_approval')
+  .is('deleted_at', null);
+```
+
+### Phase 2: Add Force Cancel Action to AdminBookingsPage
+
+**File**: `src/pages/admin/AdminBookingsPage.tsx`
+
+**Current Actions**:
+- View Details
+- Rimborsa (Refund) → Triggers `admin-process-refund`
+- Elimina (Force) → Soft-delete (`deleted_at`)
+
+**New Action**: "Forza Cancellazione" (Force Cancel)
 
 **Behavior**:
-- Desktop: Toggleable panel on the right side of the chat (300px width)
-- Mobile: Bottom sheet/drawer overlay using Vaul `Drawer` component
+1. Opens a confirmation dialog (similar to delete dialog)
+2. Calls `admin-process-refund` with `refundType: 'full'`
+3. Also updates booking status to `cancelled`
+4. Logs action to `admin_actions_log`
 
-**Conditional Content**:
+**UI Location**: Add as new DropdownMenuItem in the Actions menu
 
-```text
-+--------------------------------+
-|  ChatDetailsPanel              |
-+--------------------------------+
-| IF booking_id exists:          |
-|   - BookingContextCard         |
-|   - "View Booking" button      |
-|   - Space photo + link         |
-+--------------------------------+
-| ELSE (networking):             |
-|   - User Avatar + Name         |
-|   - Bio                        |
-|   - Skills (as badges)         |
-|   - "Where We Met" history     |
-|   - "View Profile" button      |
-+--------------------------------+
-```
+**Difference from Refund**:
+- Refund: User requested, applies policy
+- Force Cancel: Admin override, ALWAYS full refund, sets status = 'cancelled'
 
-**Data Fetching**:
-- User profile data: New query to fetch `profiles` by `otherUserId`
-- Shared history: Reuse existing `NetworkingContextCard` logic
+### Phase 3: Create Admin Action Center Panel
 
----
+**New File**: `src/components/admin/AdminActionCenter.tsx`
 
-### Action 2: Update `ChatLayout.tsx` for Three-Panel Desktop Layout
+A collapsible panel for quick interventions:
 
-**Current Structure**:
-```
-[Sidebar (w-80)] [Main Chat (flex-1)]
-```
+1. **Quick Refund by Booking ID**
+   - Input: Booking ID
+   - Action: Fetch booking → Show summary → Confirm refund
 
-**New Structure**:
-```
-[Sidebar (w-80)] [Main Chat (flex-1)] [Details Panel (w-80, toggleable)]
-```
+2. **Dispute Resolution Queue**
+   - List of `disputed` bookings
+   - Quick action buttons: Refund to Guest | Payout to Host
 
-**Changes**:
-1. Accept new prop `detailsPanel: React.ReactNode`
-2. Accept new prop `showDetails: boolean`
-3. Add `onToggleDetails: () => void` callback
-4. Desktop: Render details panel on the right when `showDetails` is true
-5. Mobile: Details panel is handled separately via Drawer
-
----
-
-### Action 3: Add Toggle Button to `ChatWindow.tsx` Header
-
-**Location**: Right side of header, after Archive button
-
-**Icon**: `Info` from lucide-react
-
-**Behavior**: Calls `onToggleDetails()` callback to show/hide the sidebar
-
----
-
-### Action 4: Update `MessagesPage.tsx` to Orchestrate Panel State
-
-**Changes**:
-1. Add state: `const [showDetailsPanel, setShowDetailsPanel] = useState(false)`
-2. Pass `showDetails` and `onToggleDetails` to `ChatLayout`
-3. Pass `onToggleDetails` to `ChatWindow`
-4. Render `ChatDetailsPanel` as the third panel
-
----
-
-### Action 5: Technical Debt Cleanup - Consolidate Types
-
-**Strategy**: Keep `src/types/chat.ts` as the authoritative source. Migrate `src/lib/conversations.ts` to use these types.
-
-**Files to Update**:
-
-| File | Change |
-|:-----|:-------|
-| `src/types/chat.ts` | Add `MessageAttachment` interface (from messaging.ts) |
-| `src/lib/conversations.ts` | Change import to `from '@/types/chat'` |
-| `src/lib/conversations.ts` | Update return types to match `Conversation` from chat.ts |
-| `src/types/messaging.ts` | **DELETE** after migration |
-
-**Type Additions to `src/types/chat.ts`**:
-```typescript
-// From messaging.ts
-export interface MessageAttachment {
-  url: string;
-  type: 'image' | 'file';
-  name: string;
-  size?: number;
-}
-
-// Extend Message with optional fields
-export interface Message {
-  // ... existing fields
-  attachments?: MessageAttachment[];
-  status?: 'pending' | 'sent' | 'error';
-  tempId?: string;
-}
-```
-
----
-
-## Technical Details
-
-### New Component: `ChatDetailsPanel.tsx`
-
-```typescript
-interface ChatDetailsPanelProps {
-  conversation: Conversation | undefined;
-  currentUserId: string | undefined;
-  onClose: () => void;
-}
-```
-
-**Features**:
-1. **For Booking Chats**:
-   - Enhanced `BookingContextCard` with space photo
-   - Link to `/bookings/{booking_id}`
-   - Space link to `/spaces/{space_id}`
-
-2. **For Networking Chats**:
-   - Fetch other user's profile via query
-   - Display bio, job title, skills as badges
-   - Reuse `NetworkingContextCard` for shared history
-   - Link to `/profile/{user_id}`
-
-### Mobile Drawer Implementation
-
-Using the existing `Drawer` component from Vaul:
-
-```typescript
-<Drawer open={isOpen} onOpenChange={onClose}>
-  <DrawerContent>
-    <DrawerHeader>
-      <DrawerTitle>Dettagli</DrawerTitle>
-    </DrawerHeader>
-    {/* Panel content */}
-  </DrawerContent>
-</Drawer>
-```
+3. **Pending Alerts**
+   - KYC overdue count (link to /admin/kyc)
+   - Unresolved support tickets
+   - GDPR requests pending
 
 ---
 
@@ -188,36 +137,137 @@ Using the existing `Drawer` component from Vaul:
 
 | File | Action | Description |
 |:-----|:-------|:------------|
-| `src/components/chat/ChatDetailsPanel.tsx` | **CREATE** | New sidebar component with conditional content |
-| `src/components/chat/ChatLayout.tsx` | **EDIT** | Add third panel slot for desktop, props for toggle state |
-| `src/components/chat/ChatWindow.tsx` | **EDIT** | Add Info button to header, pass toggle callback |
-| `src/pages/messages/MessagesPage.tsx` | **EDIT** | Add state management, pass panel to layout |
-| `src/types/chat.ts` | **EDIT** | Add `MessageAttachment` and extend `Message` interface |
-| `src/lib/conversations.ts` | **EDIT** | Change import from messaging.ts to chat.ts |
-| `src/types/messaging.ts` | **DELETE** | Remove duplicate types file |
+| `src/pages/admin/AdminDashboard.tsx` | **EDIT** | Add Pending Escrow, Booking Health, User Growth widgets |
+| `src/pages/admin/AdminBookingsPage.tsx` | **EDIT** | Add "Force Cancel" action in dropdown |
+| `src/components/admin/AdminActionCenter.tsx` | **CREATE** | Quick intervention panel |
+| `src/hooks/admin/useAdminDashboardStats.ts` | **CREATE** | Centralized hook for all dashboard metrics |
 
 ---
 
-## Expected Result
+## Technical Details
+
+### New Hook: `useAdminDashboardStats`
+
+Centralizes all dashboard queries to avoid N+1 issues:
+
+```typescript
+export function useAdminDashboardStats() {
+  return useQuery({
+    queryKey: ['admin-dashboard-stats'],
+    queryFn: async () => {
+      const [pendingEscrow, bookingHealth, userCounts] = await Promise.all([
+        // Pending Escrow
+        supabase.from('bookings').select('total_price')
+          .is('payout_completed_at', null)
+          .in('status', ['served', 'confirmed'])
+          .is('deleted_at', null),
+        // Booking Health
+        Promise.all([
+          supabase.from('bookings').select('id', { count: 'exact', head: true })
+            .eq('status', 'pending_approval').is('deleted_at', null),
+          supabase.from('bookings').select('id', { count: 'exact', head: true })
+            .eq('status', 'disputed').is('deleted_at', null),
+          supabase.from('bookings').select('id', { count: 'exact', head: true })
+            .eq('status', 'cancelled')
+            .gte('cancelled_at', new Date().toISOString().split('T')[0])
+        ]),
+        // User counts from existing views
+        supabase.from('admin_users_view').select('*', { count: 'exact', head: true })
+      ]);
+
+      return {
+        pendingEscrow: pendingEscrow.data?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0,
+        pendingApproval: bookingHealth[0].count || 0,
+        disputed: bookingHealth[1].count || 0,
+        cancelledToday: bookingHealth[2].count || 0,
+        totalUsers: userCounts.count || 0,
+      };
+    },
+    refetchInterval: 60000, // Auto-refresh every minute
+  });
+}
+```
+
+### Force Cancel Flow
+
+```text
+User clicks "Forza Cancellazione"
+        ↓
+AlertDialog opens (confirmation)
+        ↓
+On confirm: Call mutation
+        ↓
+Mutation:
+  1. supabase.functions.invoke('admin-process-refund', {
+       body: { bookingId, refundType: 'full', reason: 'Admin force cancel' }
+     })
+  2. (The edge function already handles status update + logging)
+        ↓
+Invalidate queries → UI updates
+```
+
+### Dashboard Layout (Enhanced)
+
+```text
++--------------------------------------------------+
+|  Admin Control Center                            |
+|  Overview of platform performance                |
++--------------------------------------------------+
+|  [Users]    [Gross Volume]    [Net Revenue]      |  ← Existing
+|   1,234      €45,678           €4,567            |
++--------------------------------------------------+
+|  [Pending Escrow]  [Pending Approval]  [Issues]  |  ← NEW
+|   €42.50 (9)        5 bookings          3 today  |
++--------------------------------------------------+
+|                                                  |
+|  User Growth (Last 30 Days)                      |  ← NEW
+|  ╭──────────────────────────────╮                |
+|  │  📈 Hosts vs Coworkers Chart │                |
+|  ╰──────────────────────────────╯                |
+|                                                  |
++--------------------------------------------------+
+```
+
+---
+
+## Security Confirmation
+
+**How URL Guessing is Prevented**:
+
+1. `AdminLayout.tsx` wraps all `/admin/*` routes
+2. On mount, it calls `supabase.rpc('is_admin', { p_user_id })` 
+3. This RPC is a `SECURITY DEFINER` function that queries `admins` table
+4. If not admin, user is redirected to `/`
+5. Even if someone bypasses frontend, all sensitive queries hit RLS policies that check `is_admin(auth.uid())`
+
+**Current `is_admin()` function**:
+```sql
+CREATE FUNCTION public.is_admin()
+  RETURNS boolean
+  LANGUAGE sql STABLE SECURITY DEFINER
+AS $$
+  SELECT EXISTS (SELECT 1 FROM public.admins WHERE user_id = (SELECT auth.uid()));
+$$
+```
+
+This is the correct pattern - no localStorage, no hardcoded credentials, pure database-backed RBAC.
+
+---
+
+## Expected Outcome
 
 After implementation:
 
-1. **Desktop**: Users see a toggleable right sidebar with:
-   - Booking details + View Booking button (for booking chats)
-   - User profile + shared history (for networking chats)
+1. **Dashboard shows real-time platform pulse**:
+   - Financial: GMV + Revenue + Pending Escrow
+   - Operational: Pending approvals, disputes, cancellations
+   - Growth: Host vs Coworker signup trends
 
-2. **Mobile**: Tapping the Info icon opens a bottom drawer with the same content
+2. **Force Cancel capability**:
+   - Admin can cancel any booking with automatic full refund
+   - Action is logged to `admin_actions_log`
+   - Notifications are triggered
 
-3. **Type System**: Single authoritative `Conversation` type in `src/types/chat.ts`, no duplicate definitions
-
----
-
-## Confirmation Checklist
-
-| Item | Status |
-|:-----|:-------|
-| `Conversation` type duplication resolved | Will be confirmed |
-| Sidebar renders booking data correctly | Will be confirmed |
-| Sidebar renders networking profile data | Will be confirmed |
-| Mobile drawer works correctly | Will be confirmed |
-| Info toggle button in header | Will be confirmed |
+3. **Security unchanged**:
+   - Same RPC-based admin verification
+   - No new attack vectors introduced
