@@ -16,7 +16,7 @@ export class BookingService {
             id,
             confirmation_type,
             host_id,
-            title:name
+            title
           )
         `)
         .eq('id', bookingId)
