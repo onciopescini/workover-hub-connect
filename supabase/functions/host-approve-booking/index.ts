@@ -4,7 +4,8 @@ import Stripe from "https://esm.sh/stripe@15.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
 };
 
 console.log("HOST-APPROVE-BOOKING V5 - GOLD STANDARD RAW HANDLER");
@@ -95,7 +96,7 @@ serve(async (req) => {
 
     const { data: workspace, error: workspaceError } = await supabaseAdmin
       .from("spaces")
-      .select("host_id, title:name")
+      .select("host_id, title")
       .eq("id", booking.space_id)
       .single();
 
