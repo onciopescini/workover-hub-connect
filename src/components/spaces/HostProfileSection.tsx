@@ -1,19 +1,21 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { 
-  MessageSquare, 
   Star, 
   Clock, 
   MapPin, 
   Award,
   Shield,
   Languages,
-  Calendar
+  Calendar,
+  MessageSquare
 } from "lucide-react";
+import { useHostReviews } from '@/hooks/queries/useHostReviews';
+import { HostReviewsList } from './HostReviewsList';
 
 interface HostProfileSectionProps {
   host: {
@@ -36,6 +38,9 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
   totalReviews = 0,
   totalSpaces = 0
 }) => {
+  // Fetch host reviews for the reviews list
+  const { data: hostReviews, isLoading: reviewsLoading } = useHostReviews(host.id);
+
   const getInitials = (firstName: string = '', lastName: string = '') => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -141,10 +146,27 @@ export const HostProfileSection: React.FC<HostProfileSectionProps> = ({
 
         {/* Bio */}
         {host.bio && (
-          <div>
-            <p className="text-gray-700 text-sm leading-relaxed">{host.bio}</p>
+          <div className="mb-6">
+            <p className="text-muted-foreground text-sm leading-relaxed">{host.bio}</p>
           </div>
         )}
+
+        {/* Recent Reviews Section */}
+        {(hostReviews && hostReviews.length > 0) || reviewsLoading ? (
+          <>
+            <Separator className="my-4" />
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <h4 className="text-sm font-semibold">Recensioni Recenti</h4>
+              </div>
+              <HostReviewsList 
+                reviews={hostReviews || []} 
+                isLoading={reviewsLoading} 
+              />
+            </div>
+          </>
+        ) : null}
       </CardContent>
     </Card>
   );
