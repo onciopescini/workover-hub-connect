@@ -63,9 +63,10 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: 'Missing booking_id in Stripe metadata' };
     }
 
-    const { data: bookingExists, error: bookingCheckError } = await supabaseAdmin
+    // CRITICAL: Fetch booking WITH space confirmation_type BEFORE any status determination
+    const { data: bookingWithSpace, error: bookingCheckError } = await supabaseAdmin
       .from('bookings')
-      .select('id, status')
+      .select('id, status, space_id, spaces!inner(confirmation_type)')
       .eq('id', bookingId)
       .maybeSingle();
 
@@ -80,7 +81,7 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: `DB Error: ${bookingCheckError.message} (Code: ${bookingCheckError.code})` };
     }
 
-    if (!bookingExists) {
+    if (!bookingWithSpace) {
       ErrorHandler.logError('CRITICAL: Booking not found in database', {
         bookingId,
         sessionId: session.id
@@ -88,7 +89,30 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: `Booking ${bookingId} not found in database` };
     }
 
-    ErrorHandler.logInfo('Booking validated successfully', { bookingId, status: bookingExists.status });
+    // CRITICAL: Determine confirmation type from BOTH metadata AND database
+    const metadataConfirmationType = session.metadata?.confirmation_type;
+    const dbConfirmationType = bookingWithSpace.spaces?.confirmation_type;
+    
+    // Use EITHER source - if either says host_approval, it's manual capture
+    const isManualCapture = metadataConfirmationType === 'host_approval' || 
+                            dbConfirmationType === 'host_approval' ||
+                            session.metadata?.capture_method === 'manual';
+
+    // FINAL STATUS VALUES - determined ONCE, used everywhere
+    const paymentStatusEnum = isManualCapture ? 'pending' : 'succeeded';
+    const paymentStatus = isManualCapture ? 'pending' : 'completed';
+    const targetBookingStatus = isManualCapture ? 'pending_approval' : 'confirmed';
+
+    ErrorHandler.logInfo('FINAL status values determined BEFORE any DB operations', {
+      sessionId: session.id,
+      bookingId,
+      currentBookingStatus: bookingWithSpace.status,
+      metadataConfirmationType,
+      dbConfirmationType,
+      isManualCapture,
+      paymentStatusEnum,
+      targetBookingStatus
+    });
     
     // Calculate breakdown
     const breakdown = EnhancedPaymentCalculator.calculateBreakdown(baseAmount);
@@ -109,28 +133,9 @@ export class EnhancedCheckoutHandlers {
       paymentIntentId: paymentIntentId || 'NULL'
     });
 
-    // CRITICAL FIX: Determine correct status based on capture method
-    // For Request to Book (manual capture): funds are authorized but NOT captured yet
-    // For Instant Book (automatic capture): funds are captured, payment succeeded
-    // Check BOTH metadata AND database for redundancy (metadata may be missing on old sessions)
-    const metadataConfirmationType = session.metadata?.confirmation_type;
-    
-    // We'll also check DB later, but pre-determine from metadata first
-    const isManualCaptureFromMetadata = metadataConfirmationType === 'host_approval' ||
-                                         session.metadata?.capture_method === 'manual';
-    
-    // Note: We'll finalize isManualCapture after fetching booking from DB
-    // For now, use metadata as initial determination
-    let paymentStatusEnum = isManualCaptureFromMetadata ? 'pending' : 'succeeded';
-    let paymentStatus = isManualCaptureFromMetadata ? 'pending' : 'completed';
-
-    ErrorHandler.logInfo('Payment status determined', {
-      sessionId: session.id,
-      isManualCapture: isManualCaptureFromMetadata,
-      paymentStatusEnum,
-      paymentStatus,
-      confirmationType: session.metadata?.confirmation_type
-    });
+    // NOTE: Status values (paymentStatusEnum, paymentStatus, targetBookingStatus) 
+    // were already determined at line ~92-108 using BOTH metadata and DB confirmation_type
+    // This ensures consistent values are used throughout the entire handler
 
     // FASE 3: Upsert idempotente del payment (crea se non esiste, aggiorna se esiste)
     const { data: existingPayment } = await supabaseAdmin
@@ -224,42 +229,22 @@ export class EnhancedCheckoutHandlers {
       return { success: false, error: `Booking status ${currentStatus} does not allow payment confirmation` };
     }
 
-    // Determine new booking status - use DB confirmation_type as source of truth
-    const confirmationType = booking.spaces.confirmation_type;
-    // If Instant -> Confirmed. If Request -> Keep 'pending_approval' (payment authorized, waiting for host)
-    const newStatus = confirmationType === 'instant' ? 'confirmed' : 'pending_approval';
-    
-    // SAFETY: Re-check isManualCapture using DB value if metadata was missing
-    const isManualCapture = metadataConfirmationType === 'host_approval' || 
-                            confirmationType === 'host_approval';
-    
-    // Update payment status if DB check reveals it's manual capture but metadata was missing
-    if (isManualCapture && paymentStatusEnum === 'succeeded') {
-      paymentStatusEnum = 'pending';
-      paymentStatus = 'pending';
-      ErrorHandler.logInfo('Corrected payment status based on DB confirmation_type', {
-        sessionId: session.id,
-        metadataConfirmationType,
-        dbConfirmationType: confirmationType,
-        correctedPaymentStatusEnum: paymentStatusEnum
-      });
-    }
-    
-    // STRICT: Extract Payment Intent ID (pi_...) - using value already extracted above
-    // paymentIntentId was extracted at line ~68 before the upsert logic
+    // NOTE: targetBookingStatus was already determined BEFORE any DB operations at line ~100
+    // Using the pre-determined value ensures consistent logic throughout the handler
 
     ErrorHandler.logInfo('Using Payment Intent ID for Booking Update', {
       bookingId,
       paymentIntentId,
+      targetBookingStatus,
       rawPaymentIntent: typeof session.payment_intent === 'object' ? 'object' : session.payment_intent
     });
 
     // Update booking status and save payment intent ID
-    // CRITICAL: We strictly use paymentIntentId. If null, we set null. NO fallback to session.id.
+    // CRITICAL: Use targetBookingStatus determined BEFORE upsert, NOT recalculated here
     const { error: updateBookingError } = await supabaseAdmin
       .from('bookings')
       .update({
-        status: newStatus,
+        status: targetBookingStatus,  // CRITICAL FIX: Use pre-determined status
         stripe_payment_intent_id: paymentIntentId || null
       })
       .eq('id', bookingId);
@@ -271,8 +256,8 @@ export class EnhancedCheckoutHandlers {
 
     ErrorHandler.logSuccess('Booking updated with status and payment intent', {
       bookingId,
-      newStatus,
-      confirmationType,
+      targetBookingStatus,
+      isManualCapture,
       paymentIntentId: paymentIntentId || 'NULL (Warning)'
     });
 
