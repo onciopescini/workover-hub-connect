@@ -112,6 +112,10 @@ serve(async (req) => {
         // Payment record non trovato → CREA (fallback critico)
         ErrorHandler.logWarning('Payment record not found, creating now (critical fallback)', { session_id });
         
+        // CRITICAL FIX: Set correct payment status based on confirmation type
+        const correctPaymentStatus = isRequestToBook ? 'pending' : 'completed';
+        const correctPaymentStatusEnum = isRequestToBook ? 'pending' : 'succeeded';
+        
         const { error: insertError } = await supabaseAdmin
           .from('payments')
           .insert({
@@ -119,8 +123,8 @@ serve(async (req) => {
             user_id: session.metadata.user_id,
             amount: totalAmount,
             currency: (session.currency || 'eur').toUpperCase(),
-            payment_status: 'completed',
-            payment_status_enum: 'succeeded',
+            payment_status: correctPaymentStatus,
+            payment_status_enum: correctPaymentStatusEnum,
             stripe_session_id: session_id,
             receipt_url: session.receipt_url,
             host_amount: hostAmount,
@@ -138,12 +142,15 @@ serve(async (req) => {
         
         ErrorHandler.logSuccess('Payment record created in validate-payment (fallback)');
       } else {
-        // Payment esiste → UPDATE a completed
+        // Payment esiste → UPDATE with correct status based on confirmation type
+        const correctPaymentStatus = isRequestToBook ? 'pending' : 'completed';
+        const correctPaymentStatusEnum = isRequestToBook ? 'pending' : 'succeeded';
+        
         const { error: updateError } = await supabaseAdmin
           .from('payments')
           .update({
-            payment_status: 'completed',
-            payment_status_enum: 'succeeded',
+            payment_status: correctPaymentStatus,
+            payment_status_enum: correctPaymentStatusEnum,
             receipt_url: session.receipt_url
           })
           .eq('id', existingPayment.id);
@@ -156,31 +163,19 @@ serve(async (req) => {
           throw new Error('Failed to update payment status');
         }
         
-        ErrorHandler.logSuccess('Payment updated successfully');
+        ErrorHandler.logSuccess('Payment updated successfully', {
+          paymentStatus: correctPaymentStatus,
+          isRequestToBook
+        });
       }
 
       // STEP 2: Update booking status based on confirmation type
       // CRITICAL: Request to Book stays as 'pending_approval', Instant Book becomes 'confirmed'
+      // NOTE: Payment status is now set correctly upfront (lines 117-119 or 142-144)
       if (isRequestToBook) {
         // Request to Book: Payment authorized but NOT captured
-        // Keep booking as 'pending_approval' - DO NOT auto-confirm
-        // Also ensure payment status reflects 'pending' (authorized, not captured)
-        const { error: paymentStatusError } = await supabaseAdmin
-          .from('payments')
-          .update({
-            payment_status: 'pending',
-            payment_status_enum: 'pending',
-          })
-          .eq('stripe_session_id', session_id);
-          
-        if (paymentStatusError) {
-          ErrorHandler.logWarning('Failed to update payment status to pending', {
-            error: paymentStatusError,
-            session_id
-          });
-        }
-        
-        ErrorHandler.logSuccess('Request to Book - keeping pending_approval status', {
+        // Booking stays as 'pending_approval' - payment already set to 'pending' above
+        ErrorHandler.logSuccess('Request to Book - payment pending, booking pending_approval', {
           booking_id: session.metadata.booking_id,
           payment_status: 'pending'
         });

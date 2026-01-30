@@ -269,7 +269,7 @@ export class EnhancedCheckoutHandlers {
 
     return { 
       success: true, 
-      message: `Checkout session processed successfully. Booking ${newStatus}.`
+      message: `Checkout session processed successfully. Booking ${targetBookingStatus}.`
     };
   }
 
