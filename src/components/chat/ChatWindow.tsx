@@ -13,7 +13,7 @@ import { BookingContextCard } from './BookingContextCard';
 import { NetworkingContextCard } from './NetworkingContextCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, ArrowLeft, Archive, Mail, Trash2 } from 'lucide-react';
+import { Send, ArrowLeft, Archive, Mail, Trash2, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,6 +27,8 @@ interface ChatWindowProps {
   onMarkConversationUnread: (payload: MarkConversationUnreadPayload) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   activeConversation?: Conversation | undefined;
+  onToggleDetails?: () => void;
+  showDetails?: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -38,7 +40,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onArchiveConversation,
   onMarkConversationUnread,
   messagesEndRef,
-  activeConversation
+  activeConversation,
+  onToggleDetails,
+  showDetails
 }) => {
   const [inputValue, setInputValue] = useState("");
   const navigate = useNavigate();
@@ -91,7 +95,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="font-semibold text-sm">
           {displayName}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -108,6 +112,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           >
             <Archive className="h-4 w-4" />
           </Button>
+          {onToggleDetails && (
+            <Button
+              variant={showDetails ? "secondary" : "ghost"}
+              size="icon"
+              onClick={onToggleDetails}
+              title="Dettagli conversazione"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
