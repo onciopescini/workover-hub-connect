@@ -1,8 +1,38 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sreLogger } from '@/lib/sre-logger';
-import { Conversation, Message, MessageAttachment } from '@/types/messaging';
+import { MessageAttachment } from '@/types/chat';
 import type { Database } from '@/integrations/supabase/types';
 import type { ConversationJoin, MessageWithSenderJoin } from '@/types/supabase-joins';
+
+// Local type for this file's fetchConversations return (legacy format)
+interface LegacyConversation {
+  id: string;
+  type: 'booking' | 'private';
+  title: string;
+  subtitle: string;
+  avatar?: string;
+  last_message?: string;
+  last_message_at?: string;
+  status?: 'confirmed' | 'pending' | 'cancelled' | 'active';
+  other_user_id?: string;
+  host_id: string;
+  coworker_id: string;
+  booking_id?: string;
+  space?: { name: string };
+  booking?: { booking_date: string; status: string };
+}
+
+// Local message type
+interface LegacyMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
+  booking_id?: string;
+  attachments?: MessageAttachment[];
+}
 
 export async function getOrCreateConversation(params: {
   hostId: string;
@@ -48,7 +78,7 @@ export async function sendMessageToConversation(params: {
   content: string;
   senderId: string;
   recipientId?: string | undefined; // Allow undefined explicitly
-}): Promise<Message> {
+}): Promise<LegacyMessage> {
   const { conversationId, bookingId, content, senderId, recipientId = "" } = params;
   
   sreLogger.info('Sending message', { conversationId, bookingId, senderId, recipientId });
@@ -104,12 +134,12 @@ export async function sendMessageToConversation(params: {
     }
   }
 
-  // Cast to Message type, ensuring compatibility with proper type coercion
+  // Cast to LegacyMessage type, ensuring compatibility with proper type coercion
   const attachments = Array.isArray(data.attachments) 
     ? (data.attachments as unknown as MessageAttachment[]) 
     : [];
 
-  const result: Message = {
+  const result: LegacyMessage = {
     id: data.id,
     conversation_id: data.conversation_id || conversationId,
     sender_id: data.sender_id,
@@ -127,7 +157,7 @@ export async function sendMessageToConversation(params: {
   return result;
 }
 
-export async function fetchConversations(userId: string): Promise<Conversation[]> {
+export async function fetchConversations(userId: string): Promise<LegacyConversation[]> {
   sreLogger.info('Fetching conversations', { userId });
   
   if (!userId) {
@@ -157,19 +187,19 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   
   sreLogger.info('Found conversations', { userId, count: data?.length || 0 });
 
-  // Map to new Conversation type
+  // Map to new LegacyConversation type
   const conversations = data || [];
-  const validStatuses = new Set<Conversation['status']>(['confirmed', 'pending', 'cancelled', 'active']);
+  const validStatuses = new Set<LegacyConversation['status']>(['confirmed', 'pending', 'cancelled', 'active']);
 
-  return conversations.map((c): Conversation => {
+  return conversations.map((c): LegacyConversation => {
     // Determine the "other" person
     const isHost = c.host_id === userId;
     const otherPerson = isHost ? c.coworker : c.host;
-    const bookingStatus = c.booking?.status && validStatuses.has(c.booking.status as Conversation['status'])
-      ? (c.booking.status as Conversation['status'])
+    const bookingStatus = c.booking?.status && validStatuses.has(c.booking.status as LegacyConversation['status'])
+      ? (c.booking.status as LegacyConversation['status'])
       : undefined;
 
-    const result: Conversation = {
+    const result: LegacyConversation = {
       id: c.id,
       type: c.booking_id ? 'booking' : 'private',
       title: otherPerson ? `${otherPerson.first_name} ${otherPerson.last_name}` : 'Utente Sconosciuto',
@@ -209,7 +239,7 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
   });
 }
 
-export async function fetchConversationMessages(conversationId: string): Promise<Message[]> {
+export async function fetchConversationMessages(conversationId: string): Promise<LegacyMessage[]> {
   sreLogger.info('Fetching conversation messages', { conversationId });
   
   const { data, error } = await supabase
@@ -228,8 +258,8 @@ export async function fetchConversationMessages(conversationId: string): Promise
 
   const messages = data || [];
 
-  return messages.map((m): Message => {
-    const result: Message = {
+  return messages.map((m): LegacyMessage => {
+    const result: LegacyMessage = {
       id: m.id,
       conversation_id: m.conversation_id || conversationId, // Use provided ID if null
       sender_id: m.sender_id,

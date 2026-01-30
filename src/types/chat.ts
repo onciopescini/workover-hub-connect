@@ -1,3 +1,5 @@
+// Consolidated chat types - authoritative source for all messaging types
+
 export interface ChatParticipant {
   id: string;
   first_name: string | null;
@@ -43,6 +45,14 @@ export interface Conversation {
   coworker_id?: string;
 }
 
+// Message attachment support (consolidated from messaging.ts)
+export interface MessageAttachment {
+  url: string;
+  type: 'image' | 'file';
+  name: string;
+  size?: number;
+}
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -50,6 +60,10 @@ export interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
+  booking_id?: string;
+  attachments?: MessageAttachment[];
+  status?: 'pending' | 'sent' | 'error';
+  tempId?: string;
 }
 
 export interface DeleteMessagePayload {
@@ -68,4 +82,17 @@ export interface MarkConversationUnreadPayload {
 export interface SharedHistoryItem {
   space_title: string;
   booking_date: string;
+}
+
+// Legacy compatibility aliases (for gradual migration)
+export type ConversationItem = Conversation;
+
+export interface ConversationSummary {
+  id: string;
+  host_id: string;
+  coworker_id: string;
+  booking_id?: string | null;
+  space_id?: string | null;
+  last_message?: string | null;
+  last_message_at?: string | null;
 }
