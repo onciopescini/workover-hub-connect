@@ -16,7 +16,8 @@ import {
   MoreHorizontal, 
   RefreshCcw, 
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Ban
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -58,6 +59,7 @@ export const AdminBookingsPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [refundBooking, setRefundBooking] = useState<AdminBooking | null>(null);
   const [deleteBooking, setDeleteBooking] = useState<AdminBooking | null>(null);
+  const [forceCancelBooking, setForceCancelBooking] = useState<AdminBooking | null>(null);
 
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['admin_bookings'],
@@ -87,6 +89,33 @@ export const AdminBookingsPage = () => {
       toast.success('Prenotazione eliminata con successo');
       queryClient.invalidateQueries({ queryKey: ['admin_bookings'] });
       setDeleteBooking(null);
+    },
+    onError: (error) => {
+      toast.error(`Errore: ${error.message}`);
+    }
+  });
+
+  // Force Cancel mutation - full refund + status update
+  const forceCancelMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const { data, error } = await supabase.functions.invoke('admin-process-refund', {
+        body: { 
+          bookingId, 
+          refundType: 'full', 
+          reason: 'Admin force cancel - full refund override',
+          forceCancel: true 
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Prenotazione cancellata e rimborsata con successo');
+      queryClient.invalidateQueries({ queryKey: ['admin_bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      setForceCancelBooking(null);
     },
     onError: (error) => {
       toast.error(`Errore: ${error.message}`);
@@ -300,6 +329,15 @@ export const AdminBookingsPage = () => {
                               Rimborsa
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onClick={() => setForceCancelBooking(booking)}
+                              disabled={!canRefund(booking.status)}
+                              className="text-orange-600 focus:text-orange-700"
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Forza Cancellazione
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
                               onClick={() => setDeleteBooking(booking)}
                               className="text-destructive focus:text-destructive"
                             >
@@ -359,6 +397,43 @@ export const AdminBookingsPage = () => {
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? 'Eliminazione...' : 'Conferma Eliminazione'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Force Cancel Confirmation Dialog */}
+      <AlertDialog open={!!forceCancelBooking} onOpenChange={() => setForceCancelBooking(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-600" />
+              Forza Cancellazione
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Stai per cancellare la prenotazione{' '}
+              <strong>#{forceCancelBooking?.booking_id.slice(0, 8)}</strong> di{' '}
+              <strong>{forceCancelBooking?.coworker_name}</strong>.
+              <br /><br />
+              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200 mt-2">
+                <strong className="text-orange-800">Questa azione:</strong>
+                <ul className="list-disc list-inside mt-2 space-y-1 text-orange-700">
+                  <li>Emetterà un <strong>rimborso completo</strong> su Stripe</li>
+                  <li>Cambierà lo stato a "cancelled"</li>
+                  <li>Invierà notifica al coworker</li>
+                  <li><strong>Non può essere annullata</strong></li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-orange-600 text-white hover:bg-orange-700"
+              onClick={() => forceCancelBooking && forceCancelMutation.mutate(forceCancelBooking.booking_id)}
+              disabled={forceCancelMutation.isPending}
+            >
+              {forceCancelMutation.isPending ? 'Elaborazione...' : 'Conferma Cancellazione'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
