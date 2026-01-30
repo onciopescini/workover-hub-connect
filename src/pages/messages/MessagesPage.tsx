@@ -47,7 +47,7 @@ const MessagesPage: React.FC = () => {
           onArchiveConversation={archiveConversation}
           onMarkConversationUnread={markConversationUnread}
           messagesEndRef={messagesEndRef}
-          activeConversation={activeConversation as any}
+          activeConversation={activeConversation}
         />
       </ChatLayout>
     </div>

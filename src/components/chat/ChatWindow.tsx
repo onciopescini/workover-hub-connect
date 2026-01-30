@@ -9,6 +9,8 @@ import {
 } from '@/types/chat';
 import { User } from '@supabase/supabase-js';
 import { MessageBubble } from './MessageBubble';
+import { BookingContextCard } from './BookingContextCard';
+import { NetworkingContextCard } from './NetworkingContextCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, ArrowLeft, Archive, Mail, Trash2 } from 'lucide-react';
@@ -24,7 +26,7 @@ interface ChatWindowProps {
   onArchiveConversation: (payload: ArchiveConversationPayload) => void;
   onMarkConversationUnread: (payload: MarkConversationUnreadPayload) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-  activeConversation?: Conversation;
+  activeConversation?: Conversation | undefined;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -65,6 +67,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const displayName = otherPerson
       ? `${otherPerson.first_name || ''} ${otherPerson.last_name || ''}`.trim() || 'Utente'
       : 'Utente';
+  
+  const isBookingChat = !!activeConversation.booking_id && !!activeConversation.booking;
+  const isNetworkingChat = !activeConversation.booking_id && currentUser && otherPerson;
 
   return (
     <div className="flex flex-col h-full relative">
@@ -104,6 +109,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <Archive className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      {/* Context Cards */}
+      <div className="px-4 pt-2">
+        {isBookingChat && activeConversation.booking && (
+          <BookingContextCard 
+            booking={activeConversation.booking} 
+            space={activeConversation.space} 
+          />
+        )}
+        {isNetworkingChat && otherPerson && (
+          <NetworkingContextCard 
+            currentUserId={currentUser.id} 
+            otherUserId={otherPerson.id} 
+          />
+        )}
       </div>
 
       {/* Messages Area */}
