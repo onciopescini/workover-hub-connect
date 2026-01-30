@@ -1,189 +1,194 @@
 
 
-# DEEP AUDIT: Cancellation Policy & Refund Logic
+# Messaging UX & Contextual Data Integration - Gap Analysis Report
 
 ## Executive Summary
 
-After a comprehensive code review of the cancellation and refund mechanisms, I found **3 CRITICAL schema bugs** and **1 LOGIC concern**. The good news: the Stripe interaction logic is fundamentally correct.
+After a deep audit of the messaging system, I've identified significant gaps between the current implementation and the desired UX for contextual messaging. The core infrastructure exists, but **context-aware UI differentiation** and **networking history features** are missing.
 
 ---
 
-## PHASE 1: LOGIC INSPECTION RESULTS
+## PHASE 1: DATA STRUCTURE AUDIT (Backend)
 
-### 1. `host-reject-booking/index.ts` - ✅ CORRECT
+### Table: `conversations`
 
-| Check | Status | Details |
-|:------|:-------|:--------|
-| **Mechanism** | ✅ Correct | Uses `stripe.paymentIntents.cancel()` for `requires_capture` status (lines 185-191) |
-| **Fallback** | ✅ Correct | If PI already captured (`succeeded`), correctly creates refund instead (lines 195-204) |
-| **Idempotency** | ✅ Correct | Handles already-canceled PI gracefully (lines 192-194) |
-| **DB Update** | ✅ Correct | Sets `status: 'cancelled'`, `cancelled_by_host: true` (lines 223-232) |
+| Column | Exists | Purpose |
+|:-------|:-------|:--------|
+| `id` | ✅ | Primary key |
+| `host_id` | ✅ | Space owner in booking context |
+| `coworker_id` | ✅ | Booker in booking context |
+| `space_id` | ✅ (nullable) | Links to space |
+| `booking_id` | ✅ (nullable) | Links to specific booking |
+| `type` | ❌ | **MISSING** - No explicit type column |
+| `last_message` | ✅ | Preview text |
+| `last_message_at` | ✅ | Timestamp |
 
-**Code Snippet (lines 185-191):**
-```typescript
-if (pi.status === 'requires_capture') {
-  await stripe.paymentIntents.cancel(pi.id, {
-    cancellation_reason: 'requested_by_customer'
-  });
-}
-```
+**Finding:** The `booking_id` column exists and is used to determine conversation type. However, there's **no explicit `type` column** (e.g., `'booking_enquiry'`, `'direct_message'`, `'networking'`). The type is inferred at runtime: `type: c.booking_id ? 'booking' : 'private'`.
 
-**Verdict:** This function correctly handles host rejection - it releases the authorization hold (not refund) for pending Request to Book flows.
+### Table: `conversation_participants`
 
----
+| Column | Exists | Purpose |
+|:-------|:-------|:--------|
+| `conversation_id` | ✅ | FK to conversations |
+| `user_id` | ✅ | Participant |
+| `role` | ✅ (nullable) | Not currently used |
+| `joined_at` | ✅ | Timestamp |
+| `archived_at` | ✅ | **Supports archiving** |
+| `last_read_at` | ✅ | Read receipts |
 
-### 2. `cancel-booking/index.ts` - ⚠️ HAS BUGS
+**Finding:** The `archived_at` column exists and is **correctly implemented** in `useChat.ts` (line 137-142). The mutation to archive is functional.
 
-| Check | Status | Details |
-|:------|:-------|:--------|
-| **Policy Check** | ✅ Yes | Uses `booking.cancellation_policy` from DB (line 136) |
-| **Timing Check** | ✅ Yes | Calculates `bookingDateTime` from `booking_date + start_time` (lines 187-190) |
-| **Refund Math** | ✅ Correct | Uses `calculateRefund()` from policy-calculator (line 193) |
-| **Platform Fee** | ⚠️ Partial | Refunds are based on `basePriceCents` (line 229), not gross amount |
-| **Host Transfer Reversal** | ✅ Yes | Reverses host transfer proportionally (lines 236-247) |
-| **Schema Bug** | ❌ CRITICAL | Line 105: `title:name` - column `name` doesn't exist! |
+### Networking Logic (Database Functions)
 
-**Code Snippet (line 105) - BUG:**
-```typescript
-.select('host_id, title:name')  // ← FAILS: "name" column doesn't exist
-```
+| Function | Purpose | Status |
+|:---------|:--------|:-------|
+| `get_networking_suggestions` | Finds users who booked same space on same date | ✅ Exists |
+| `generate_connection_suggestions` | Generates suggestions based on shared spaces/events | ✅ Exists |
 
-**Verdict:** The logic is sound, but **this function will crash silently** due to the schema mismatch, causing `workspace` to be `null` and the host check to fail.
+**Finding:** A function exists to find "shared history" (same space + same date), but it's **NOT connected to the chat system**. The data exists but isn't surfaced in the messaging UI.
 
 ---
 
-### 3. `policy-calculator.ts` - ✅ CORRECT
+## PHASE 2: FRONTEND COMPONENT AUDIT (UI/UX)
 
-The policy calculator implements correct refund percentages:
+### Current Chat Components
 
-| Policy | >7 days | 5-7 days | 24h-5 days | <24h |
-|:-------|:--------|:---------|:-----------|:-----|
-| **Flexible** | 100% | 100% | 100% | 0% |
-| **Moderate** | 100% | 100% | 50% | 0% |
-| **Strict** | 50% | 0% | 0% | 0% |
+| Component | Exists | Current Functionality |
+|:----------|:-------|:---------------------|
+| `ChatWindow.tsx` | ✅ | Basic messages + header with name |
+| `ChatLayout.tsx` | ✅ | Responsive 2-column layout |
+| `ConversationList.tsx` | ✅ | List of conversations |
+| `MessageBubble.tsx` | ✅ | Individual message rendering |
+| `ChatThread.tsx` | ✅ | Full-page chat view (alternate) |
 
----
+### Missing Components
 
-### 4. `booking-expiry-check/index.ts` - ✅ CORRECT
+| Component | Status | Purpose |
+|:----------|:-------|:--------|
+| `ChatDetailsPanel` / `ConversationSidebar` | ❌ **MISSING** | Show booking/networking context |
+| `BookingContextCard` | ❌ **MISSING** | Display booking info in chat |
+| `NetworkingContextCard` | ❌ **MISSING** | Display "Where we met" info |
+| `ArchivedConversationsView` | ❌ **MISSING** | UI to view/restore archived chats |
 
-| Check | Status | Details |
-|:------|:-------|:--------|
-| **Auth Release** | ✅ Yes | Correctly calls `stripe.paymentIntents.cancel()` for expired `pending_approval` bookings (lines 45-54) |
-| **DB Update** | ✅ Yes | Sets `status: 'cancelled'` with appropriate reason |
+### Current Data Flow
 
----
-
-## PHASE 2: DATA INTEGRITY SIMULATION
-
-### Scenario: User Cancels Confirmed Booking (Late)
-
-1. **cancel-booking** is invoked
-2. Query for `workspace` FAILS due to `title:name` bug → `workspace = null`
-3. Function returns 404 "Workspace not found" (line 110-114)
-4. **No Stripe refund is processed**
-5. **Booking remains in `confirmed` status**
-
-**Impact:** User sees error, no refund happens, booking is NOT cancelled.
-
-### Scenario: Host Rejects Request to Book
-
-1. **host-reject-booking** is invoked
-2. Correctly fetches `space` with `title` (FIXED in last deploy)
-3. Calls `stripe.paymentIntents.cancel()` to release authorization
-4. Updates booking to `status: 'cancelled'`
-5. Payment record updated to `payment_status: 'cancelled'` (via code logic)
-
-**Impact:** ✅ Works correctly after CORS/schema fix.
-
----
-
-## REFUND LOGIC AUDIT REPORT
-
-| Scenario | Current Code Logic | Stripe Method | Potential Risk |
-|:---------|:-------------------|:--------------|:---------------|
-| **Host Reject** | Check PI status. If `requires_capture` → cancel. If `succeeded` → refund 100%. | `paymentIntents.cancel()` or `refunds.create()` | ✅ OK |
-| **User Cancel (Free)** | Calculate refund via policy-calculator. If `refundPercentage = 1.0` → full refund. Reverses host transfer. | `transfers.createReversal()` + `refunds.create()` | ❌ **BLOCKED BY SCHEMA BUG** |
-| **User Cancel (Late)** | Calculate refund via policy-calculator. If `refundPercentage < 1.0` → partial refund. | `refunds.create({ amount })` | ❌ **BLOCKED BY SCHEMA BUG** |
-| **System Auto-Cancel (Expiry)** | Release auth if PI exists. Pure DB cancel. | `paymentIntents.cancel()` | ✅ OK |
-
----
-
-## CRITICAL BUGS FOUND
-
-### Bug 1: `cancel-booking/index.ts` Line 105
-```typescript
-.select('host_id, title:name')  // "name" column doesn't exist
-```
-**Impact:** ALL user-initiated and host-initiated cancellations fail with 404.
-
-### Bug 2: `booking-service.ts` Line 19
-```typescript
-title:name  // "name" column doesn't exist
-```
-**Impact:** Webhook may fail to fetch booking details correctly.
-
-### Bug 3: `admin-process-refund/index.ts` Lines 81-88
-```typescript
-.in('payment_status', ['succeeded', 'paid'])  // "paid" is not a valid enum value
-```
-**Impact:** Admin refunds may fail for valid payments.
-
----
-
-## RECOMMENDED FIXES
-
-### Fix 1: `cancel-booking/index.ts` (CRITICAL)
-**Line 105:** Change `title:name` to `title`
+The `fetchConversations` function in `src/lib/conversations.ts` already fetches rich data:
 
 ```typescript
-// BEFORE
-.select('host_id, title:name')
-
-// AFTER
-.select('host_id, title')
+.select(`
+  *,
+  host:profiles!conversations_host_id_fkey(...),
+  coworker:profiles!conversations_coworker_id_fkey(...),
+  space:spaces(id, title, address, city_name, price_per_hour, photos),
+  booking:bookings(id, booking_date, status, start_time, end_time)
+`)
 ```
 
-### Fix 2: `booking-service.ts` (CRITICAL)
-**Line 19:** Change `title:name` to `title`
+**Finding:** The backend query **already fetches booking and space data** but it's **NOT RENDERED in the chat UI**. The data is available; the UI just doesn't display it.
 
-```typescript
-// BEFORE
-title:name
+### Actions Audit
 
-// AFTER
-title
-```
-
-### Fix 3: `admin-process-refund/index.ts` (MEDIUM)
-**Line 85:** Fix payment status filter
-
-```typescript
-// BEFORE
-.in('payment_status', ['succeeded', 'paid'])
-
-// AFTER
-.in('payment_status', ['completed', 'succeeded'])  // Match actual enum values
-```
+| Action | Backend Support | UI Button | Status |
+|:-------|:----------------|:----------|:-------|
+| Archive Chat | ✅ `archived_at` column | ✅ Archive button in ChatWindow | ✅ **Working** |
+| Mark Unread | ✅ `last_read_at` column | ✅ Mail button in ChatWindow | ✅ **Working** |
+| Delete Message | ✅ RLS policy exists | ✅ Trash button on own messages | ✅ **Working** |
+| View Archived | ✅ Data exists | ❌ No UI to view archived | ❌ **Missing** |
+| Restore Archived | ✅ Just set `archived_at = null` | ❌ No UI | ❌ **Missing** |
 
 ---
 
-## Summary Matrix
+## PHASE 3: GAP ANALYSIS REPORT
 
-| Component | Status | Issue | Priority |
-|:----------|:-------|:------|:---------|
-| `host-reject-booking` | ✅ Fixed | None (after last deploy) | - |
-| `cancel-booking` | ❌ BROKEN | Schema bug line 105 | **CRITICAL** |
-| `booking-service.ts` | ❌ BROKEN | Schema bug line 19 | **CRITICAL** |
-| `admin-process-refund` | ⚠️ Degraded | Wrong status filter | MEDIUM |
-| `policy-calculator` | ✅ OK | None | - |
-| `booking-expiry-check` | ✅ OK | None | - |
+| Feature | Current State (Codebase) | Missing / Action Required |
+|:--------|:-------------------------|:--------------------------|
+| **Booking Context** | Data fetched (`space`, `booking` joins) but NOT displayed in chat UI | Create `BookingContextCard` component showing: Space name, Date, Time, Price, Status. Display in chat header or sidebar. |
+| **Networking Context** | `get_networking_suggestions` RPC exists for finding shared bookings, but not called from chat | Create `NetworkingContextCard` component. Add RPC call to fetch "shared history" between two users when opening a non-booking chat. Display: "Met at [Space] on [Date]" |
+| **Conversation Type Indicator** | Inferred from `booking_id` presence | Add visual badge/icon in `ConversationList` to differentiate booking vs networking chats |
+| **Close/Archive Chat** | ✅ Backend + UI exist | **Working correctly** - sets `archived_at` timestamp |
+| **View Archived Chats** | Data exists in DB | Add "Archived" tab or filter in `ConversationList`. Query with `.not('archived_at', 'is', null)` |
+| **Restore Archived Chat** | Simple DB update | Add "Restore" button in archived view. Mutation: `update({ archived_at: null })` |
+| **Chat Details Panel** | Does not exist | Create collapsible sidebar showing: User profile, Booking details (if booking chat), Shared history (if networking chat) |
+| **"Where We Met" Logic** | RPC `get_networking_suggestions` calculates this | Extract into reusable function. Call when opening chat with a coworker. Display in `NetworkingContextCard`. |
 
 ---
 
-## Deployment Order
+## Recommended Implementation Approach
 
-1. Fix schema bugs in `cancel-booking` and `booking-service.ts`
-2. Fix payment status filter in `admin-process-refund`
-3. Deploy all three Edge Functions
-4. Test user cancellation flow
+### Priority 1: Display Existing Booking Context (Low Effort, High Impact)
+
+The data is ALREADY fetched. We just need to render it.
+
+**Files to modify:**
+- `src/components/chat/ChatWindow.tsx` - Add booking info in header
+- `src/types/chat.ts` - Extend `Conversation` type to include `booking` and `space` objects
+
+**Changes:**
+1. Pass the full `activeConversation` object (which contains `booking` and `space` data from `fetchConversations`)
+2. Render booking info below the participant name:
+   - Space name
+   - Booking date/time
+   - Booking status badge
+
+### Priority 2: Create Networking Context Card (Medium Effort)
+
+**New component:** `src/components/chat/NetworkingContextCard.tsx`
+
+**Logic:**
+1. When opening a non-booking conversation, call a new function to find shared history
+2. Query: Find bookings where both users were at the same space on the same date
+3. Display: "Vi siete incontrati a [Space] il [Date]"
+
+**Backend query needed:**
+```sql
+SELECT s.title, b1.booking_date
+FROM bookings b1
+JOIN bookings b2 ON b1.space_id = b2.space_id AND b1.booking_date = b2.booking_date
+JOIN spaces s ON s.id = b1.space_id
+WHERE b1.user_id = $user_a AND b2.user_id = $user_b
+ORDER BY b1.booking_date DESC
+LIMIT 3;
+```
+
+### Priority 3: Add Archived Conversations View (Medium Effort)
+
+**Files to modify:**
+- `src/components/chat/ConversationList.tsx` - Add "Archived" toggle/tab
+- `src/services/api/chatService.ts` - Add `fetchArchivedConversations` function
+
+**Changes:**
+1. Add a filter state for `showArchived`
+2. When `showArchived=true`, query with `.not('archived_at', 'is', null)`
+3. Add "Restore" button that updates `archived_at = null`
+
+---
+
+## Technical Debt Identified
+
+1. **Type Duplication:** Two `Conversation` types exist:
+   - `src/types/chat.ts` - Simpler, used by `ChatWindow`
+   - `src/types/messaging.ts` - Richer, includes `booking` and `space`
+   
+   **Recommendation:** Consolidate into one comprehensive type.
+
+2. **Two Chat Implementations:** Both `MessagesPage.tsx` and `ChatThread.tsx` exist with similar functionality.
+   
+   **Recommendation:** Consolidate into single implementation.
+
+3. **Hardcoded Mock Data:** In `EnhancedConnectionCard.tsx`, metrics like `sharedSpaces` and `mutualConnections` are hardcoded to 0.
+   
+   **Recommendation:** Implement actual queries for these metrics.
+
+---
+
+## Summary of Actions
+
+| Action | Priority | Effort | Impact |
+|:-------|:---------|:-------|:-------|
+| Display booking info in chat header | **P1** | Low (data exists) | High |
+| Add conversation type badge (Booking/Networking) | **P1** | Low | Medium |
+| Create Networking Context "Where we met" card | **P2** | Medium | High |
+| Add Archived conversations view | **P2** | Medium | Medium |
+| Create Chat Details sidebar panel | **P3** | High | High |
+| Consolidate duplicate types/components | **P3** | Medium | Technical debt |
 
