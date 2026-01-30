@@ -57,6 +57,9 @@ export async function fetchConversations(userId: string): Promise<FetchConversat
         last_message,
         last_message_at,
         booking_id,
+        space_id,
+        host_id,
+        coworker_id,
         participant_status:conversation_participants!inner (
           user_id,
           archived_at,
@@ -72,6 +75,20 @@ export async function fetchConversations(userId: string): Promise<FetchConversat
             last_name,
             profile_photo_url
           )
+        ),
+        space:spaces (
+          id,
+          title,
+          address,
+          city_name,
+          price_per_hour
+        ),
+        booking:bookings (
+          id,
+          booking_date,
+          status,
+          start_time,
+          end_time
         )
       `)
       .eq("participant_status.user_id", userId)
@@ -99,6 +116,26 @@ export async function fetchConversations(userId: string): Promise<FetchConversat
         : null,
       archived_at: conv.participant_status?.[0]?.archived_at ?? null,
       last_read_at: conv.participant_status?.[0]?.last_read_at ?? null,
+      // Context data
+      type: conv.booking_id ? 'booking' : 'private',
+      booking_id: conv.booking_id,
+      space_id: conv.space_id,
+      host_id: conv.host_id,
+      coworker_id: conv.coworker_id,
+      booking: conv.booking ? {
+        id: conv.booking.id,
+        booking_date: conv.booking.booking_date,
+        status: conv.booking.status,
+        start_time: conv.booking.start_time,
+        end_time: conv.booking.end_time,
+      } : null,
+      space: conv.space ? {
+        id: conv.space.id,
+        title: conv.space.title,
+        address: conv.space.address,
+        city_name: conv.space.city_name,
+        price_per_hour: conv.space.price_per_hour,
+      } : null,
     }));
 
     return { success: true, conversations };
