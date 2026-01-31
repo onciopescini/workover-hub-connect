@@ -6,7 +6,7 @@
 export const AUTH_ERRORS = {
   // Login errors
   INVALID_CREDENTIALS: 'Email o password non validi. Riprova.',
-  WEAK_PASSWORD: 'La password deve contenere almeno 8 caratteri.',
+  WEAK_PASSWORD: 'La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale.',
   PASSWORD_MISMATCH: 'Le password non corrispondono.',
   EMAIL_NOT_CONFIRMED: 'Verifica la tua email prima di effettuare il login.',
   USER_NOT_FOUND: 'Utente non trovato. Verifica l\'indirizzo email.',

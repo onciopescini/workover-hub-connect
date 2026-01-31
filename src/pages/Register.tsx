@@ -12,6 +12,9 @@ import { sreLogger } from '@/lib/sre-logger';
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
 
+// Password regex matching Supabase requirements
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
+
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,8 +38,8 @@ const Register = () => {
     const newPassword = e.target.value;
     setPassword(newPassword);
 
-    // Clear weak password error if length requirement is met
-    if (error === AUTH_ERRORS.WEAK_PASSWORD && newPassword.length >= 8) {
+    // Clear weak password error if full requirements are met
+    if (error === AUTH_ERRORS.WEAK_PASSWORD && passwordRegex.test(newPassword)) {
       setError('');
     }
   };
@@ -61,7 +64,7 @@ const Register = () => {
       return;
     }
 
-    if (password.length < 8) {
+    if (!passwordRegex.test(password)) {
       setError(AUTH_ERRORS.WEAK_PASSWORD);
       return;
     }
@@ -155,7 +158,7 @@ const Register = () => {
                     onChange={handlePasswordChange}
                     required
                     disabled={isLoading}
-                    placeholder="Almeno 8 caratteri"
+                    placeholder="Crea una password sicura"
                   />
                   <button
                     type="button"
@@ -169,6 +172,9 @@ const Register = () => {
                     )}
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Minimo 8 caratteri, includi maiuscola, minuscola, numero e carattere speciale
+                </p>
               </div>
 
               <div>
