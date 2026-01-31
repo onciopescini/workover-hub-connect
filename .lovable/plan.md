@@ -1,273 +1,265 @@
 
-# Super Admin Dashboard - Platform Oversight (Build Plan)
+# Notification System Repair Plan
 
-## Executive Summary
+## Problem Summary
 
-After auditing the existing admin infrastructure, I've found that **most of the core structure already exists**. The `/admin` route is protected, RPC-based admin verification is in place, and many widgets are functional. The task is to **enhance** the existing dashboard with missing widgets and add the Force Cancel capability.
+Three critical issues need to be fixed:
 
----
+1. **Host Rejection Bug (P1)**: The `host-reject-booking` function calls `send-booking-notification` with `type: 'rejection'`, but the Zod schema only allows `['confirmation', 'new_request', 'host_confirmation', 'refund']`, causing the call to fail with a 400 Bad Request.
 
-## Current State Analysis
+2. **Cancellation Notifications Gap (P2)**: The `cancel-booking` function processes refunds correctly but never notifies either party (guest or host) via email or in-app notification.
 
-### Security Infrastructure (Already Implemented)
-
-| Component | Status | Implementation |
-|:----------|:-------|:---------------|
-| Admin Route Protection | ✅ Exists | `AdminLayout.tsx` calls `supabase.rpc('is_admin', { p_user_id })` |
-| Database Function | ✅ Exists | `is_admin()` checks `admins` table for user membership |
-| RLS Policies | ✅ Exists | Multiple tables use `is_admin(auth.uid())` in policies |
-| Admin Actions Log | ✅ Exists | `admin_actions_log` table with `admin_process_refund` logging |
-
-**Security Verification**: The current implementation is secure - it uses server-side RPC validation (`SECURITY DEFINER` function) that checks the `admins` table, NOT client-side storage or URL guessing.
-
-### Existing Admin Pages
-
-| Page | Status | Features |
-|:-----|:-------|:---------|
-| `/admin` (Dashboard) | ✅ Basic | Total Users, Gross Volume, Estimated Revenue |
-| `/admin/bookings` | ✅ Complete | Booking table, Refund Modal, Force Delete |
-| `/admin/users` | ✅ Exists | User management |
-| `/admin/kyc` | ✅ Exists | KYC verification queue |
-| `/admin/revenue` | ✅ Exists | Monthly revenue breakdown |
-
-### Missing Dashboard Widgets
-
-| Widget | Current | Required |
-|:-------|:--------|:---------|
-| Pending Escrow | ❌ Missing | Show funds held awaiting payout |
-| Pending Approval Count | ❌ Missing | Bookings awaiting host approval |
-| Disputed/Cancelled Today | ❌ Missing | Quick health indicator |
-| Host vs Coworker Signups | ❌ Missing | User growth chart by role |
-
-### Missing Actions
-
-| Action | Status | Notes |
-|:-------|:-------|:------|
-| Force Cancel Booking | ❌ Missing | Different from "Force Delete" - should trigger full refund |
-| Refund Override | ✅ Exists | `RefundModal.tsx` + `admin-process-refund` edge function |
+3. **In-App Consistency**: Both rejection and cancellation events should insert records into `user_notifications` for in-app visibility.
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Enhance AdminDashboard with Missing Widgets
+### Phase 1: Fix Host Rejection Notifications
 
-**File**: `src/pages/admin/AdminDashboard.tsx`
+**File Changes:**
 
-**New Widgets to Add**:
+**1. Update `supabase/functions/send-booking-notification/index.ts`**
 
-1. **Financial Pulse Card (Enhanced)**
-   - Gross Volume (existing)
-   - Estimated Revenue (existing)
-   - **NEW**: Pending Escrow - Query: `SUM(total_price) WHERE payout_completed_at IS NULL AND status IN ('served', 'confirmed')`
+Add 'rejection' to the Zod enum and implement the case handler:
 
-2. **Booking Health Card (New)**
-   - Pending Approval Count - Query: `COUNT(*) WHERE status = 'pending_approval'`
-   - Disputed Today - Query: `COUNT(*) WHERE status = 'disputed' AND created_at >= today`
-   - Cancelled Today - Query: `COUNT(*) WHERE status = 'cancelled' AND cancelled_at >= today`
-
-3. **User Growth Chart (New)**
-   - Integrate existing `useAdminAnalytics` hook
-   - Show Host vs Coworker signups over last 30 days
-   - Use recharts `AreaChart` for visualization
-
-**Data Source**: Extend existing queries in `AdminDashboard.tsx` to include:
 ```typescript
-// Pending Escrow
-const { data: pendingEscrow } = await supabase
-  .from('bookings')
-  .select('total_price')
-  .is('payout_completed_at', null)
-  .in('status', ['served', 'confirmed'])
-  .is('deleted_at', null);
-
-// Booking Health
-const { count: pendingApproval } = await supabase
-  .from('bookings')
-  .select('id', { count: 'exact', head: true })
-  .eq('status', 'pending_approval')
-  .is('deleted_at', null);
+// Line 18: Update Zod schema
+const requestSchema = z.object({
+  type: z.enum(['confirmation', 'new_request', 'host_confirmation', 'refund', 'rejection', 'cancellation']),
+  booking_id: z.string().uuid(),
+  metadata: z.record(z.any()).optional()
+});
 ```
 
-### Phase 2: Add Force Cancel Action to AdminBookingsPage
+Add the rejection case in the switch statement (after the refund case, around line 207):
 
-**File**: `src/pages/admin/AdminBookingsPage.tsx`
+```typescript
+case 'rejection': {
+  // Notify Guest that their request was rejected
+  emailRequest = {
+    type: 'booking_cancelled',  // Reuse existing cancellation template
+    to: booking.user.email,
+    data: {
+      userName: guestName,
+      spaceTitle: spaceTitle,
+      bookingDate: formatDate(booking.booking_date),
+      reason: metadata?.reason || 'L\'host non ha potuto accettare la tua richiesta',
+      cancellationFee: 0,
+      refundAmount: 0, // Authorization released, no actual refund
+      currency: booking.currency || 'eur',
+      bookingId: booking.id,
+      cancelledByHost: true
+    }
+  };
 
-**Current Actions**:
-- View Details
-- Rimborsa (Refund) → Triggers `admin-process-refund`
-- Elimina (Force) → Soft-delete (`deleted_at`)
+  notificationRequest = {
+    user_id: booking.user_id,
+    type: 'booking',
+    title: 'Richiesta Rifiutata ❌',
+    content: `L'host ha rifiutato la tua richiesta per "${spaceTitle}".`,
+    metadata: { booking_id: booking.id, type: 'rejection', reason: metadata?.reason }
+  };
+  break;
+}
+```
 
-**New Action**: "Forza Cancellazione" (Force Cancel)
+**2. Verify `supabase/functions/host-reject-booking/index.ts`**
 
-**Behavior**:
-1. Opens a confirmation dialog (similar to delete dialog)
-2. Calls `admin-process-refund` with `refundType: 'full'`
-3. Also updates booking status to `cancelled`
-4. Logs action to `admin_actions_log`
+The existing call is correct (line 245-247):
+```typescript
+await supabaseAdmin.functions.invoke('send-booking-notification', {
+  body: { booking_id: booking_id, type: 'rejection' }
+});
+```
 
-**UI Location**: Add as new DropdownMenuItem in the Actions menu
-
-**Difference from Refund**:
-- Refund: User requested, applies policy
-- Force Cancel: Admin override, ALWAYS full refund, sets status = 'cancelled'
-
-### Phase 3: Create Admin Action Center Panel
-
-**New File**: `src/components/admin/AdminActionCenter.tsx`
-
-A collapsible panel for quick interventions:
-
-1. **Quick Refund by Booking ID**
-   - Input: Booking ID
-   - Action: Fetch booking → Show summary → Confirm refund
-
-2. **Dispute Resolution Queue**
-   - List of `disputed` bookings
-   - Quick action buttons: Refund to Guest | Payout to Host
-
-3. **Pending Alerts**
-   - KYC overdue count (link to /admin/kyc)
-   - Unresolved support tickets
-   - GDPR requests pending
+Add the reason to the payload for better user context:
+```typescript
+await supabaseAdmin.functions.invoke('send-booking-notification', {
+  body: { 
+    booking_id: booking_id, 
+    type: 'rejection',
+    metadata: { reason: reason }
+  }
+});
+```
 
 ---
 
-## File Changes Summary
+### Phase 2: Implement Cancellation Notifications
 
-| File | Action | Description |
-|:-----|:-------|:------------|
-| `src/pages/admin/AdminDashboard.tsx` | **EDIT** | Add Pending Escrow, Booking Health, User Growth widgets |
-| `src/pages/admin/AdminBookingsPage.tsx` | **EDIT** | Add "Force Cancel" action in dropdown |
-| `src/components/admin/AdminActionCenter.tsx` | **CREATE** | Quick intervention panel |
-| `src/hooks/admin/useAdminDashboardStats.ts` | **CREATE** | Centralized hook for all dashboard metrics |
+**File Changes:**
+
+**1. Update `supabase/functions/send-booking-notification/index.ts`**
+
+Add the cancellation case (after the rejection case):
+
+```typescript
+case 'cancellation': {
+  const cancelledByHost = metadata?.cancelled_by_host === true;
+  const refundAmount = metadata?.refund_amount || 0;
+  const cancellationFee = metadata?.cancellation_fee || 0;
+  
+  // Email to Guest
+  emailRequest = {
+    type: 'booking_cancelled',
+    to: booking.user.email,
+    data: {
+      userName: guestName,
+      spaceTitle: spaceTitle,
+      bookingDate: formatDate(booking.booking_date),
+      reason: metadata?.reason || (cancelledByHost ? 'Cancellata dall\'host' : 'Cancellata su richiesta'),
+      cancellationFee: cancellationFee,
+      refundAmount: refundAmount,
+      currency: booking.currency || 'eur',
+      bookingId: booking.id,
+      cancelledByHost: cancelledByHost
+    }
+  };
+
+  // In-App notification to the affected party
+  if (cancelledByHost) {
+    // Host cancelled → Notify Guest
+    notificationRequest = {
+      user_id: booking.user_id,
+      type: 'booking',
+      title: 'Prenotazione Cancellata ❌',
+      content: `L'host ha cancellato la prenotazione per "${spaceTitle}". Riceverai un rimborso completo.`,
+      metadata: { booking_id: booking.id, type: 'cancellation', refund_amount: refundAmount }
+    };
+  } else {
+    // Guest cancelled → Notify Host
+    notificationRequest = {
+      user_id: hostProfile.id,
+      type: 'booking',
+      title: 'Prenotazione Cancellata ❌',
+      content: `${guestName} ha cancellato la prenotazione per "${spaceTitle}".`,
+      metadata: { booking_id: booking.id, type: 'cancellation' }
+    };
+  }
+  break;
+}
+```
+
+**2. Update `supabase/functions/cancel-booking/index.ts`**
+
+After the successful DB update (around line 306), add notification dispatch:
+
+```typescript
+// 9. NOTIFICATIONS (After successful DB update)
+try {
+  console.log(`[cancel-booking] Dispatching notifications...`);
+  
+  const refundAmountEuros = refundId 
+    ? (grossAmountCents ? grossAmountCents / 100 : booking.total_price || 0)
+    : 0;
+  
+  const { error: notifyError } = await supabaseClient.functions.invoke('send-booking-notification', {
+    body: {
+      type: 'cancellation',
+      booking_id: booking_id,
+      metadata: {
+        cancelled_by_host: cancelled_by_host,
+        refund_amount: refundAmountEuros,
+        cancellation_fee: 0,
+        reason: reason || (cancelled_by_host ? 'Cancellata dall\'host' : 'Cancellata dall\'ospite')
+      }
+    }
+  });
+
+  if (notifyError) {
+    console.error('[cancel-booking] Notification dispatch failed:', notifyError);
+  } else {
+    console.log('[cancel-booking] Notifications dispatched successfully');
+  }
+} catch (notifyErr) {
+  console.error('[cancel-booking] Notification error (non-blocking):', notifyErr);
+}
+```
+
+---
+
+### Phase 3: Also Notify Host When Guest's Request is Rejected
+
+When a host rejects a booking, the host should also receive confirmation. Add a second notification insert in `send-booking-notification` for the rejection case:
+
+```typescript
+case 'rejection': {
+  // ... existing email to guest ...
+  
+  // Also notify Host (confirmation of their action)
+  const hostNotification = {
+    user_id: hostProfile.id,
+    type: 'booking',
+    title: 'Richiesta Rifiutata',
+    content: `Hai rifiutato la richiesta di ${guestName} per "${spaceTitle}".`,
+    metadata: { booking_id: booking.id, type: 'rejection_confirmed' }
+  };
+  
+  // Insert host notification (non-blocking)
+  await supabaseAdmin.from('user_notifications').insert(hostNotification);
+  
+  // ... existing guest notification ...
+}
+```
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|:-----|:--------|
+| `supabase/functions/send-booking-notification/index.ts` | Add 'rejection' and 'cancellation' to Zod schema; implement both switch cases |
+| `supabase/functions/host-reject-booking/index.ts` | Pass reason in metadata when calling send-booking-notification |
+| `supabase/functions/cancel-booking/index.ts` | Add notification dispatch after successful cancellation |
 
 ---
 
 ## Technical Details
 
-### New Hook: `useAdminDashboardStats`
-
-Centralizes all dashboard queries to avoid N+1 issues:
-
+### Updated Zod Schema
 ```typescript
-export function useAdminDashboardStats() {
-  return useQuery({
-    queryKey: ['admin-dashboard-stats'],
-    queryFn: async () => {
-      const [pendingEscrow, bookingHealth, userCounts] = await Promise.all([
-        // Pending Escrow
-        supabase.from('bookings').select('total_price')
-          .is('payout_completed_at', null)
-          .in('status', ['served', 'confirmed'])
-          .is('deleted_at', null),
-        // Booking Health
-        Promise.all([
-          supabase.from('bookings').select('id', { count: 'exact', head: true })
-            .eq('status', 'pending_approval').is('deleted_at', null),
-          supabase.from('bookings').select('id', { count: 'exact', head: true })
-            .eq('status', 'disputed').is('deleted_at', null),
-          supabase.from('bookings').select('id', { count: 'exact', head: true })
-            .eq('status', 'cancelled')
-            .gte('cancelled_at', new Date().toISOString().split('T')[0])
-        ]),
-        // User counts from existing views
-        supabase.from('admin_users_view').select('*', { count: 'exact', head: true })
-      ]);
-
-      return {
-        pendingEscrow: pendingEscrow.data?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0,
-        pendingApproval: bookingHealth[0].count || 0,
-        disputed: bookingHealth[1].count || 0,
-        cancelledToday: bookingHealth[2].count || 0,
-        totalUsers: userCounts.count || 0,
-      };
-    },
-    refetchInterval: 60000, // Auto-refresh every minute
-  });
-}
+const requestSchema = z.object({
+  type: z.enum([
+    'confirmation',     // Booking confirmed (instant or manual)
+    'new_request',      // New booking request for host
+    'host_confirmation', // Host gets confirmation of booking
+    'refund',           // Refund processed (admin)
+    'rejection',        // NEW: Host rejected request
+    'cancellation'      // NEW: Booking cancelled by either party
+  ]),
+  booking_id: z.string().uuid(),
+  metadata: z.record(z.any()).optional()
+});
 ```
 
-### Force Cancel Flow
+### Notification Flow After Changes
 
-```text
-User clicks "Forza Cancellazione"
-        ↓
-AlertDialog opens (confirmation)
-        ↓
-On confirm: Call mutation
-        ↓
-Mutation:
-  1. supabase.functions.invoke('admin-process-refund', {
-       body: { bookingId, refundType: 'full', reason: 'Admin force cancel' }
-     })
-  2. (The edge function already handles status update + logging)
-        ↓
-Invalidate queries → UI updates
-```
+| Event | Guest Email | Guest In-App | Host Email | Host In-App |
+|:------|:------------|:-------------|:-----------|:------------|
+| **Host Rejects** | Yes (booking_cancelled) | Yes | No | Yes (action confirmed) |
+| **Guest Cancels** | Yes (booking_cancelled) | No | Yes (host_booking_cancelled) | Yes |
+| **Host Cancels** | Yes (booking_cancelled) | Yes | No | No |
 
-### Dashboard Layout (Enhanced)
-
-```text
-+--------------------------------------------------+
-|  Admin Control Center                            |
-|  Overview of platform performance                |
-+--------------------------------------------------+
-|  [Users]    [Gross Volume]    [Net Revenue]      |  ← Existing
-|   1,234      €45,678           €4,567            |
-+--------------------------------------------------+
-|  [Pending Escrow]  [Pending Approval]  [Issues]  |  ← NEW
-|   €42.50 (9)        5 bookings          3 today  |
-+--------------------------------------------------+
-|                                                  |
-|  User Growth (Last 30 Days)                      |  ← NEW
-|  ╭──────────────────────────────╮                |
-|  │  📈 Hosts vs Coworkers Chart │                |
-|  ╰──────────────────────────────╯                |
-|                                                  |
-+--------------------------------------------------+
-```
+### Email Template Reuse
+- Rejection uses `booking_cancelled` template with `cancelledByHost: true`
+- Cancellation uses `booking_cancelled` for guest, `host_booking_cancelled` for host
 
 ---
 
-## Security Confirmation
+## Verification Steps
 
-**How URL Guessing is Prevented**:
+After deployment:
 
-1. `AdminLayout.tsx` wraps all `/admin/*` routes
-2. On mount, it calls `supabase.rpc('is_admin', { p_user_id })` 
-3. This RPC is a `SECURITY DEFINER` function that queries `admins` table
-4. If not admin, user is redirected to `/`
-5. Even if someone bypasses frontend, all sensitive queries hit RLS policies that check `is_admin(auth.uid())`
+1. **Test Rejection Flow**: Create a booking request, have host reject it, verify:
+   - Guest receives rejection email
+   - Guest sees in-app notification
+   - Host sees confirmation notification
 
-**Current `is_admin()` function**:
-```sql
-CREATE FUNCTION public.is_admin()
-  RETURNS boolean
-  LANGUAGE sql STABLE SECURITY DEFINER
-AS $$
-  SELECT EXISTS (SELECT 1 FROM public.admins WHERE user_id = (SELECT auth.uid()));
-$$
-```
+2. **Test Guest Cancellation**: Create confirmed booking, cancel as guest, verify:
+   - Guest receives cancellation email with refund info
+   - Host receives in-app notification about freed slot
 
-This is the correct pattern - no localStorage, no hardcoded credentials, pure database-backed RBAC.
-
----
-
-## Expected Outcome
-
-After implementation:
-
-1. **Dashboard shows real-time platform pulse**:
-   - Financial: GMV + Revenue + Pending Escrow
-   - Operational: Pending approvals, disputes, cancellations
-   - Growth: Host vs Coworker signup trends
-
-2. **Force Cancel capability**:
-   - Admin can cancel any booking with automatic full refund
-   - Action is logged to `admin_actions_log`
-   - Notifications are triggered
-
-3. **Security unchanged**:
-   - Same RPC-based admin verification
-   - No new attack vectors introduced
+3. **Test Host Cancellation**: Create confirmed booking, cancel as host, verify:
+   - Guest receives cancellation email with full refund
+   - Guest sees in-app notification
