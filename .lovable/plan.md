@@ -1,265 +1,185 @@
 
-# Notification System Repair Plan
 
-## Problem Summary
+# Legal & Compliance Content Audit Report
 
-Three critical issues need to be fixed:
+## Executive Summary
 
-1. **Host Rejection Bug (P1)**: The `host-reject-booking` function calls `send-booking-notification` with `type: 'rejection'`, but the Zod schema only allows `['confirmation', 'new_request', 'host_confirmation', 'refund']`, causing the call to fail with a 400 Bad Request.
+After a thorough audit of the legal infrastructure, I found that **the platform has a comprehensive and professionally complete legal content system** - not placeholder text. The legal pages are production-ready with Italian localization and GDPR compliance features already built in.
 
-2. **Cancellation Notifications Gap (P2)**: The `cancel-booking` function processes refunds correctly but never notifies either party (guest or host) via email or in-app notification.
+---
 
-3. **In-App Consistency**: Both rejection and cancellation events should insert records into `user_notifications` for in-app visibility.
+## Phase 1: Audit Findings
+
+### 1.1 Route Structure & Status
+
+| Route | Page | Status | Content Quality |
+|:------|:-----|:-------|:----------------|
+| `/terms` | `Terms.tsx` | **COMPLETE** | Professional - 11 sections, 260 lines |
+| `/privacy-policy` | `PrivacyPolicy.tsx` | **COMPLETE** | Professional - 12 sections, 615 lines |
+| `/privacy` | `Privacy.tsx` | **COMPLETE** | GDPR Action Center (functional) |
+| `/cookies` | Does not exist | **MISSING** | Cookie info is in Privacy Policy Section 7 |
+| `/legal/history/:type` | `LegalHistory.tsx` | **COMPLETE** | Version tracking with DB integration |
+
+### 1.2 Cookie Consent Banner Status
+
+| Component | Status | Features |
+|:----------|:-------|:---------|
+| `CookieConsentBanner.tsx` | **COMPLETE** (252 lines) | GDPR-compliant 3-button UI (Accept All/Reject All/Customize) |
+| `CookieConsentManager.tsx` | **COMPLETE** | Logs consent to `cookie_consent_log` table |
+| `useConsent.ts` | **COMPLETE** | LocalStorage + version management |
+| `GDPRProvider.tsx` | **COMPLETE** | Global provider wrapping the app |
+| **Integration** | Rendered in `MainLayout.tsx` | Shown on first visit, remembers choice |
+
+### 1.3 Footer Links Status
+
+The Footer (`src/components/layout/Footer.tsx`) contains all required legal links:
+- `/terms` - "Termini di servizio"
+- `/privacy-policy` - "Privacy Policy"  
+- `/privacy` - "Centro Privacy"
+- `/support` - "Supporto"
+
+---
+
+## Phase 2: Content Quality Verification
+
+### 2.1 Terms of Service (`Terms.tsx`)
+
+**Content Coverage**:
+
+| Section | Content | Quality |
+|:--------|:--------|:--------|
+| 1. Acceptance | Binding agreement language | Professional |
+| 2. Service Description | Coworker/Host roles, features | Complete |
+| 3. Account Responsibilities | Security, accuracy | Complete |
+| 4. User Obligations | Separate rules for Coworker/Host | Complete |
+| 5. Payments & Fees | Stripe mention, commission structure, **Beta Mode disclaimer** | Excellent |
+| 6. IP & Content | User license grant | Professional |
+| 7. Liability Limitation | Intermediary disclaimer, **Beta disclaimers** | Complete |
+| 8. Suspension/Termination | Account closure policy | Complete |
+| 9. Modifications | 30-day notice for changes | Compliant |
+| 10. Governing Law | Italian law, Italian courts | Correct |
+| 11. Contacts | Email provided | Complete |
+
+**Key Finding**: Includes a prominent **Beta Testing Section (5.5)** with Stripe Test Mode disclaimers - exactly what's needed for your launch phase.
+
+### 2.2 Privacy Policy (`PrivacyPolicy.tsx`)
+
+**Content Coverage** (12 sections, 615 lines):
+
+| Section | Content | Third-Party Mentions |
+|:--------|:--------|:---------------------|
+| 1. Data Controller | WorkOver identification | - |
+| 2. Data Collected | Account, Host, Booking, Communication, Geolocation, Analytics | Complete |
+| 3. Legal Basis (GDPR) | Art. 6.1.a/b/c/f citations | Compliant |
+| 4. Third-Party Sharing | Supabase, Stripe, Mapbox, PostHog, Sentry | All documented with privacy links |
+| 5. Retention Periods | Account, fiscal (7 years), logs (90 days) | Complete |
+| 6. User Rights | Art. 15-21 GDPR enumerated | Complete |
+| 7. Cookies | Technical vs Analytics explanation | Integrated (not separate page) |
+| 8. International Transfers | SCC clauses mentioned | Compliant |
+| 9. Security Measures | SSL, bcrypt, RLS, backups | Technical |
+| 10. Minors (16+) | Age restriction statement | Compliant |
+| 11. Policy Changes | 30-day notice commitment | Compliant |
+| 12. Contacts | Privacy Center + Garante reference | Complete |
+
+### 2.3 Cookie Policy
+
+**Finding**: There is no standalone `/cookies` route. Instead, cookie information is embedded in **Section 7 of the Privacy Policy** with:
+- Necessary cookies (sb-access-token, cookie-consent)
+- Analytics cookies (PostHog, Sentry)
+- Link to Centro Privacy for preference management
+
+This is **legally acceptable** under GDPR as long as the Cookie Banner links to the Privacy Policy (which it does - line 119 of `CookieConsentBanner.tsx`).
+
+---
+
+## Phase 3: Identified Gaps & Minor Fixes
+
+### Gap 1: Email Domain Typo
+
+**Location**: `Terms.tsx` lines 250-251
+```tsx
+<a href="mailto:legal@workover.it.com" ...>
+  legal@workover.it.com
+</a>
+```
+
+The domain `workover.it.com` appears to be a typo. Should be either:
+- `legal@workover.it` (Italian domain), or
+- Match the email in `companyInfo.ts` which uses `hello@workover.it`
+
+### Gap 2: No Dedicated Cookie Policy Page
+
+While legally acceptable to embed in Privacy Policy, some users expect a `/cookies` route. The Footer doesn't include a direct Cookie Policy link.
+
+**Recommendation**: Either add a simple redirect `/cookies` → `/privacy-policy#cookies` or create a dedicated page.
+
+### Gap 3: Version Database Seeding
+
+The `legal_documents_versions` table stores versioned documents for the LegalHistory page. Ensure:
+1. The initial v1.0 documents are seeded
+2. The `content` field contains the raw text (for display in LegalHistory)
+3. Future updates use the DB for single-source-of-truth
 
 ---
 
 ## Implementation Plan
 
-### Phase 1: Fix Host Rejection Notifications
+### Fix 1: Correct Email Domain
 
-**File Changes:**
+**File**: `src/pages/Terms.tsx` (lines 250-253)
 
-**1. Update `supabase/functions/send-booking-notification/index.ts`**
+Change from `legal@workover.it.com` to `hello@workover.it` to match `companyInfo.ts`.
 
-Add 'rejection' to the Zod enum and implement the case handler:
+### Fix 2: Add Cookie Policy Route (Optional Enhancement)
 
+**Option A**: Simple redirect in `AppRoutes.tsx`:
 ```typescript
-// Line 18: Update Zod schema
-const requestSchema = z.object({
-  type: z.enum(['confirmation', 'new_request', 'host_confirmation', 'refund', 'rejection', 'cancellation']),
-  booking_id: z.string().uuid(),
-  metadata: z.record(z.any()).optional()
-});
+<Route path="cookies" element={<Navigate to="/privacy-policy#cookies" replace />} />
 ```
 
-Add the rejection case in the switch statement (after the refund case, around line 207):
+**Option B**: Create dedicated `CookiePolicy.tsx` page with extracted content from Privacy Policy Section 7, cross-linking to the Cookie Consent Banner.
 
-```typescript
-case 'rejection': {
-  // Notify Guest that their request was rejected
-  emailRequest = {
-    type: 'booking_cancelled',  // Reuse existing cancellation template
-    to: booking.user.email,
-    data: {
-      userName: guestName,
-      spaceTitle: spaceTitle,
-      bookingDate: formatDate(booking.booking_date),
-      reason: metadata?.reason || 'L\'host non ha potuto accettare la tua richiesta',
-      cancellationFee: 0,
-      refundAmount: 0, // Authorization released, no actual refund
-      currency: booking.currency || 'eur',
-      bookingId: booking.id,
-      cancelledByHost: true
-    }
-  };
+### Fix 3: Add Cookies Link to Footer (Optional)
 
-  notificationRequest = {
-    user_id: booking.user_id,
-    type: 'booking',
-    title: 'Richiesta Rifiutata ❌',
-    content: `L'host ha rifiutato la tua richiesta per "${spaceTitle}".`,
-    metadata: { booking_id: booking.id, type: 'rejection', reason: metadata?.reason }
-  };
-  break;
-}
+**File**: `src/components/layout/Footer.tsx`
+
+Add under the "Legale" section:
+```tsx
+<li><button onClick={() => navigate('/privacy-policy#cookies')} className="hover:text-white transition-colors">Cookie Policy</button></li>
 ```
 
-**2. Verify `supabase/functions/host-reject-booking/index.ts`**
+### Fix 4: Verify Database Seeding
 
-The existing call is correct (line 245-247):
-```typescript
-await supabaseAdmin.functions.invoke('send-booking-notification', {
-  body: { booking_id: booking_id, type: 'rejection' }
-});
-```
-
-Add the reason to the payload for better user context:
-```typescript
-await supabaseAdmin.functions.invoke('send-booking-notification', {
-  body: { 
-    booking_id: booking_id, 
-    type: 'rejection',
-    metadata: { reason: reason }
-  }
-});
-```
+Ensure migration seeds `legal_documents_versions` with:
+- `document_type: 'tos'`, `version: '1.0'`, `content: [full ToS text]`
+- `document_type: 'privacy_policy'`, `version: '1.0'`, `content: [full Privacy Policy text]`
 
 ---
 
-### Phase 2: Implement Cancellation Notifications
+## Summary: What Needs to Be Done
 
-**File Changes:**
-
-**1. Update `supabase/functions/send-booking-notification/index.ts`**
-
-Add the cancellation case (after the rejection case):
-
-```typescript
-case 'cancellation': {
-  const cancelledByHost = metadata?.cancelled_by_host === true;
-  const refundAmount = metadata?.refund_amount || 0;
-  const cancellationFee = metadata?.cancellation_fee || 0;
-  
-  // Email to Guest
-  emailRequest = {
-    type: 'booking_cancelled',
-    to: booking.user.email,
-    data: {
-      userName: guestName,
-      spaceTitle: spaceTitle,
-      bookingDate: formatDate(booking.booking_date),
-      reason: metadata?.reason || (cancelledByHost ? 'Cancellata dall\'host' : 'Cancellata su richiesta'),
-      cancellationFee: cancellationFee,
-      refundAmount: refundAmount,
-      currency: booking.currency || 'eur',
-      bookingId: booking.id,
-      cancelledByHost: cancelledByHost
-    }
-  };
-
-  // In-App notification to the affected party
-  if (cancelledByHost) {
-    // Host cancelled → Notify Guest
-    notificationRequest = {
-      user_id: booking.user_id,
-      type: 'booking',
-      title: 'Prenotazione Cancellata ❌',
-      content: `L'host ha cancellato la prenotazione per "${spaceTitle}". Riceverai un rimborso completo.`,
-      metadata: { booking_id: booking.id, type: 'cancellation', refund_amount: refundAmount }
-    };
-  } else {
-    // Guest cancelled → Notify Host
-    notificationRequest = {
-      user_id: hostProfile.id,
-      type: 'booking',
-      title: 'Prenotazione Cancellata ❌',
-      content: `${guestName} ha cancellato la prenotazione per "${spaceTitle}".`,
-      metadata: { booking_id: booking.id, type: 'cancellation' }
-    };
-  }
-  break;
-}
-```
-
-**2. Update `supabase/functions/cancel-booking/index.ts`**
-
-After the successful DB update (around line 306), add notification dispatch:
-
-```typescript
-// 9. NOTIFICATIONS (After successful DB update)
-try {
-  console.log(`[cancel-booking] Dispatching notifications...`);
-  
-  const refundAmountEuros = refundId 
-    ? (grossAmountCents ? grossAmountCents / 100 : booking.total_price || 0)
-    : 0;
-  
-  const { error: notifyError } = await supabaseClient.functions.invoke('send-booking-notification', {
-    body: {
-      type: 'cancellation',
-      booking_id: booking_id,
-      metadata: {
-        cancelled_by_host: cancelled_by_host,
-        refund_amount: refundAmountEuros,
-        cancellation_fee: 0,
-        reason: reason || (cancelled_by_host ? 'Cancellata dall\'host' : 'Cancellata dall\'ospite')
-      }
-    }
-  });
-
-  if (notifyError) {
-    console.error('[cancel-booking] Notification dispatch failed:', notifyError);
-  } else {
-    console.log('[cancel-booking] Notifications dispatched successfully');
-  }
-} catch (notifyErr) {
-  console.error('[cancel-booking] Notification error (non-blocking):', notifyErr);
-}
-```
+| Priority | Task | Effort |
+|:---------|:-----|:-------|
+| **P1** | Fix email typo in Terms.tsx | 1 min |
+| **P2** | Add `/cookies` redirect route | 2 min |
+| **P3** | Add "Cookie Policy" link to Footer | 2 min |
+| **P4** | Verify DB seeding for version history | Check migration |
 
 ---
 
-### Phase 3: Also Notify Host When Guest's Request is Rejected
+## Conclusion
 
-When a host rejects a booking, the host should also receive confirmation. Add a second notification insert in `send-booking-notification` for the rejection case:
+**The legal pages are NOT placeholder text** - they contain comprehensive, professionally structured content that is GDPR-compliant and suitable for Italian Beta launch.
 
-```typescript
-case 'rejection': {
-  // ... existing email to guest ...
-  
-  // Also notify Host (confirmation of their action)
-  const hostNotification = {
-    user_id: hostProfile.id,
-    type: 'booking',
-    title: 'Richiesta Rifiutata',
-    content: `Hai rifiutato la richiesta di ${guestName} per "${spaceTitle}".`,
-    metadata: { booking_id: booking.id, type: 'rejection_confirmed' }
-  };
-  
-  // Insert host notification (non-blocking)
-  await supabaseAdmin.from('user_notifications').insert(hostNotification);
-  
-  // ... existing guest notification ...
-}
-```
+The only action items are:
+1. Fix a typo in the email address
+2. Optionally add a dedicated `/cookies` route and Footer link
+3. Verify the version history database is properly seeded
 
----
+The Cookie Consent Banner is already fully functional with:
+- 3-button UI (Accept/Reject/Customize)
+- Per-category toggles (Necessary/Analytics/Marketing/Preferences)
+- LocalStorage persistence
+- Database logging to `cookie_consent_log`
+- Integration with analytics services (PostHog consent mode)
 
-## Files to Modify
-
-| File | Changes |
-|:-----|:--------|
-| `supabase/functions/send-booking-notification/index.ts` | Add 'rejection' and 'cancellation' to Zod schema; implement both switch cases |
-| `supabase/functions/host-reject-booking/index.ts` | Pass reason in metadata when calling send-booking-notification |
-| `supabase/functions/cancel-booking/index.ts` | Add notification dispatch after successful cancellation |
-
----
-
-## Technical Details
-
-### Updated Zod Schema
-```typescript
-const requestSchema = z.object({
-  type: z.enum([
-    'confirmation',     // Booking confirmed (instant or manual)
-    'new_request',      // New booking request for host
-    'host_confirmation', // Host gets confirmation of booking
-    'refund',           // Refund processed (admin)
-    'rejection',        // NEW: Host rejected request
-    'cancellation'      // NEW: Booking cancelled by either party
-  ]),
-  booking_id: z.string().uuid(),
-  metadata: z.record(z.any()).optional()
-});
-```
-
-### Notification Flow After Changes
-
-| Event | Guest Email | Guest In-App | Host Email | Host In-App |
-|:------|:------------|:-------------|:-----------|:------------|
-| **Host Rejects** | Yes (booking_cancelled) | Yes | No | Yes (action confirmed) |
-| **Guest Cancels** | Yes (booking_cancelled) | No | Yes (host_booking_cancelled) | Yes |
-| **Host Cancels** | Yes (booking_cancelled) | Yes | No | No |
-
-### Email Template Reuse
-- Rejection uses `booking_cancelled` template with `cancelledByHost: true`
-- Cancellation uses `booking_cancelled` for guest, `host_booking_cancelled` for host
-
----
-
-## Verification Steps
-
-After deployment:
-
-1. **Test Rejection Flow**: Create a booking request, have host reject it, verify:
-   - Guest receives rejection email
-   - Guest sees in-app notification
-   - Host sees confirmation notification
-
-2. **Test Guest Cancellation**: Create confirmed booking, cancel as guest, verify:
-   - Guest receives cancellation email with refund info
-   - Host receives in-app notification about freed slot
-
-3. **Test Host Cancellation**: Create confirmed booking, cancel as host, verify:
-   - Guest receives cancellation email with full refund
-   - Guest sees in-app notification
