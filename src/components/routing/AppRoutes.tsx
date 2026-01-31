@@ -139,6 +139,7 @@ export const AppRoutes = () => {
         <Route path="contact" element={<Contact />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
+        <Route path="cookies" element={<Navigate to="/privacy-policy#cookies" replace />} />
         <Route path="privacy-policy" element={
           <LazyWrapper>
             <PrivacyPolicy />

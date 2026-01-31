@@ -247,8 +247,8 @@ const Terms = () => {
                 Per domande sui termini di servizio, contattaci all'indirizzo:
               </p>
               <p className="mt-2">
-                <a href="mailto:legal@workover.it.com" className="text-indigo-600 hover:underline">
-                  legal@workover.it.com
+                <a href="mailto:hello@workover.it" className="text-indigo-600 hover:underline">
+                  hello@workover.it
                 </a>
               </p>
             </CardContent>
