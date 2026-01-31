@@ -15,7 +15,14 @@ const supabaseAdmin = createClient(
 
 // Mappiamo i tipi della Fase 2 nello schema Zod del Main
 const requestSchema = z.object({
-  type: z.enum(['confirmation', 'new_request', 'host_confirmation', 'refund']),
+  type: z.enum([
+    'confirmation',      // Booking confirmed (instant or manual)
+    'new_request',       // New booking request for host
+    'host_confirmation', // Host gets confirmation of booking
+    'refund',            // Refund processed (admin)
+    'rejection',         // Host rejected request
+    'cancellation'       // Booking cancelled by either party
+  ]),
   booking_id: z.string().uuid(),
   metadata: z.record(z.any()).optional()
 });
@@ -203,6 +210,91 @@ serve(async (req) => {
           content: `Il rimborso per la prenotazione "${spaceTitle}" è stato elaborato.`,
           metadata: { booking_id: booking.id, type: 'refund' }
         };
+        break;
+      }
+
+      case 'rejection': {
+        // Notify Guest that their request was rejected
+        emailRequest = {
+          type: 'booking_cancelled',  // Reuse existing cancellation template
+          to: booking.user.email,
+          data: {
+            userName: guestName,
+            spaceTitle: spaceTitle,
+            bookingDate: formatDate(booking.booking_date),
+            reason: metadata?.reason || 'L\'host non ha potuto accettare la tua richiesta',
+            cancellationFee: 0,
+            refundAmount: 0, // Authorization released, no actual refund
+            currency: booking.currency || 'eur',
+            bookingId: booking.id,
+            cancelledByHost: true
+          }
+        };
+
+        notificationRequest = {
+          user_id: booking.user_id,
+          type: 'booking',
+          title: 'Richiesta Rifiutata ❌',
+          content: `L'host ha rifiutato la tua richiesta per "${spaceTitle}".`,
+          metadata: { booking_id: booking.id, type: 'rejection', reason: metadata?.reason }
+        };
+
+        // Also notify Host (confirmation of their action)
+        const hostRejectionNotification = {
+          user_id: hostProfile.id,
+          type: 'booking',
+          title: 'Richiesta Rifiutata',
+          content: `Hai rifiutato la richiesta di ${guestName} per "${spaceTitle}".`,
+          metadata: { booking_id: booking.id, type: 'rejection_confirmed' }
+        };
+
+        // Insert host notification (non-blocking)
+        await supabaseAdmin.from('user_notifications').insert(hostRejectionNotification);
+        break;
+      }
+
+      case 'cancellation': {
+        const cancelledByHost = metadata?.cancelled_by_host === true;
+        const refundAmount = metadata?.refund_amount || 0;
+        const cancellationFee = metadata?.cancellation_fee || 0;
+
+        // Email to Guest
+        emailRequest = {
+          type: 'booking_cancelled',
+          to: booking.user.email,
+          data: {
+            userName: guestName,
+            spaceTitle: spaceTitle,
+            bookingDate: formatDate(booking.booking_date),
+            reason: metadata?.reason || (cancelledByHost ? 'Cancellata dall\'host' : 'Cancellata su richiesta'),
+            cancellationFee: cancellationFee,
+            refundAmount: refundAmount,
+            currency: booking.currency || 'eur',
+            bookingId: booking.id,
+            cancelledByHost: cancelledByHost
+          }
+        };
+
+        // In-App notification to the affected party
+        if (cancelledByHost) {
+          // Host cancelled → Notify Guest
+          notificationRequest = {
+            user_id: booking.user_id,
+            type: 'booking',
+            title: 'Prenotazione Cancellata ❌',
+            content: `L'host ha cancellato la prenotazione per "${spaceTitle}". Riceverai un rimborso completo.`,
+            metadata: { booking_id: booking.id, type: 'cancellation', refund_amount: refundAmount }
+          };
+        } else {
+          // Guest cancelled → Notify Host
+          notificationRequest = {
+            user_id: hostProfile.id,
+            type: 'booking',
+            title: 'Prenotazione Cancellata ❌',
+            content: `${guestName} ha cancellato la prenotazione per "${spaceTitle}".`,
+            metadata: { booking_id: booking.id, type: 'cancellation' }
+          };
+        }
         break;
       }
 

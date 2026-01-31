@@ -307,6 +307,38 @@ serve(async (req) => {
          await supabaseClient.from('payments').update({ payment_status: 'cancelled' }).eq('id', payment.id);
     }
 
+    // 9. NOTIFICATIONS (After successful DB update)
+    try {
+      console.log(`[cancel-booking] Dispatching notifications...`);
+
+      // Calculate refund amount in euros for notification
+      const grossAmountCents = payment?.amount ? Math.round(payment.amount * 100) : 0;
+      const refundAmountEuros = refundId 
+        ? (grossAmountCents ? grossAmountCents / 100 : booking.total_price || 0)
+        : 0;
+
+      const { error: notifyError } = await supabaseClient.functions.invoke('send-booking-notification', {
+        body: {
+          type: 'cancellation',
+          booking_id: booking_id,
+          metadata: {
+            cancelled_by_host: cancelled_by_host,
+            refund_amount: refundAmountEuros,
+            cancellation_fee: 0,
+            reason: reason || (cancelled_by_host ? 'Cancellata dall\'host' : 'Cancellata dall\'ospite')
+          }
+        }
+      });
+
+      if (notifyError) {
+        console.error('[cancel-booking] Notification dispatch failed:', notifyError);
+      } else {
+        console.log('[cancel-booking] Notifications dispatched successfully');
+      }
+    } catch (notifyErr) {
+      console.error('[cancel-booking] Notification error (non-blocking):', notifyErr);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       action: actionTaken,

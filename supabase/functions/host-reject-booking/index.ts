@@ -243,7 +243,11 @@ serve(async (req) => {
     try {
       console.log(`[HOST-REJECT] Invoking send-booking-notification for rejection...`);
       const { error: invokeError } = await supabaseAdmin.functions.invoke('send-booking-notification', {
-        body: { booking_id: booking_id, type: 'rejection' }
+        body: { 
+          booking_id: booking_id, 
+          type: 'rejection',
+          metadata: { reason: reason }
+        }
       });
 
       if (invokeError) {
