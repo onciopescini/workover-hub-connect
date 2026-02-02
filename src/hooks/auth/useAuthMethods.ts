@@ -7,7 +7,7 @@ import { cleanSignIn, cleanSignInWithGoogle, aggressiveSignOut, cleanupAuthState
 import { getAuthSyncChannel } from '@/utils/auth/multi-tab-sync';
 import { containsSuspiciousContent } from '@/utils/security';
 import { AUTH_ERRORS, mapSupabaseError } from '@/utils/auth/auth-errors';
-import type { Profile } from '@/types/auth';
+import type { Profile, SignUpResult } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface UseAuthMethodsProps {
@@ -53,7 +53,7 @@ export const useAuthMethods = ({
     }
   }, [fetchProfile, updateAuthState, navigate]);
 
-  const signUp = useCallback(async (email: string, password: string): Promise<void> => {
+  const signUp = useCallback(async (email: string, password: string): Promise<SignUpResult> => {
     try {
       // Pulisci eventuale stato auth e prova sign out globale per evitare limbo
       try {
@@ -63,7 +63,7 @@ export const useAuthMethods = ({
         // Ignora errori di cleanup
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -71,10 +71,14 @@ export const useAuthMethods = ({
         }
       });
 
-      if (error) {
-        throw new Error(mapSupabaseError(error));
+      if (signUpError) {
+        throw new Error(mapSupabaseError(signUpError));
       }
-      toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
+      
+      // Check if email confirmation is required (user exists but no session)
+      const needsEmailConfirmation = !!data.user && !data.session;
+      
+      return { needsEmailConfirmation };
     } catch (signUpError: unknown) {
       error('Sign up error', signUpError as Error, {
         operation: 'sign_up',

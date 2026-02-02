@@ -52,14 +52,14 @@ export const mapSupabaseError = (error: any): string => {
     return AUTH_ERRORS.EMAIL_ALREADY_REGISTERED;
   }
   
-  // Invalid credentials
-  if (message.includes('invalid login credentials') || message.includes('email not confirmed')) {
-    return AUTH_ERRORS.INVALID_CREDENTIALS;
-  }
-  
-  // Email not confirmed
+  // Email not confirmed - MUST check BEFORE invalid credentials
   if (message.includes('email not confirmed')) {
     return AUTH_ERRORS.EMAIL_NOT_CONFIRMED;
+  }
+  
+  // Invalid credentials
+  if (message.includes('invalid login credentials')) {
+    return AUTH_ERRORS.INVALID_CREDENTIALS;
   }
   
   // User not found

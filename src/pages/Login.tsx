@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, RefreshCw } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +20,12 @@ const Login = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Resend confirmation state
+  const [showResendOption, setShowResendOption] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { signIn, signInWithGoogle } = useAuth();
@@ -36,9 +42,42 @@ const Login = () => {
     }
   }, [location]);
 
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [resendCooldown]);
+
+  const handleResendConfirmation = async () => {
+    if (resendCooldown > 0 || isResending || !email) return;
+    
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Email di conferma inviata! Controlla la tua casella di posta.');
+      setResendCooldown(60);
+    } catch (err: any) {
+      toast.error('Impossibile inviare l\'email. Riprova tra poco.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShowResendOption(false);
 
     // Check network connection
     if (!navigator.onLine) {
@@ -67,6 +106,11 @@ const Login = () => {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : AUTH_ERRORS.UNKNOWN_ERROR;
       setError(errorMessage);
+      
+      // Show resend option if email not confirmed
+      if (errorMessage === AUTH_ERRORS.EMAIL_NOT_CONFIRMED) {
+        setShowResendOption(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,6 +118,7 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setError(null);
+    setShowResendOption(false);
     setGoogleLoading(true);
 
     try {
@@ -176,11 +221,43 @@ const Login = () => {
               </div>
             </div>
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="mt-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+            
+            {/* Resend confirmation email option */}
+            {showResendOption && (
+              <div className="mt-3 p-3 bg-muted rounded-md">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Non hai ricevuto l'email di conferma?
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResendConfirmation}
+                  disabled={resendCooldown > 0 || isResending}
+                  className="w-full"
+                >
+                  {isResending ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Invio in corso...
+                    </>
+                  ) : resendCooldown > 0 ? (
+                    `Riprova tra ${resendCooldown}s`
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Invia di nuovo l'email
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
             <Button disabled={loading || googleLoading} className="w-full mt-4">
               {loading ? (
                 <div className="flex items-center justify-center">
