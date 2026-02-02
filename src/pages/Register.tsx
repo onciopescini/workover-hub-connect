@@ -3,14 +3,15 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Building2, Mail, CheckCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
 import { AUTH_ERRORS } from '@/utils/auth/auth-errors';
 import { checkAuthRateLimit, resetAuthRateLimit } from '@/lib/auth-rate-limit';
+import { supabase } from '@/integrations/supabase/client';
 
 // Password regex matching Supabase requirements
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
@@ -24,6 +25,12 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // Registration success state
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  
   const { signUp, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
 
@@ -33,6 +40,15 @@ const Register = () => {
       navigate('/dashboard');
     }
   }, [authState.isAuthenticated, authState.isLoading, navigate]);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [resendCooldown]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPassword = e.target.value;
@@ -52,6 +68,39 @@ const Register = () => {
     if (error === AUTH_ERRORS.PASSWORD_MISMATCH && newConfirmPassword === password) {
       setError('');
     }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (resendCooldown > 0 || isResending) return;
+    
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: registeredEmail,
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success('Email di conferma inviata!');
+      setResendCooldown(60);
+    } catch (err: any) {
+      sreLogger.error('Resend confirmation failed', { email: registeredEmail }, err);
+      toast.error('Impossibile inviare l\'email. Riprova tra poco.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleResetForm = () => {
+    setRegistrationComplete(false);
+    setRegisteredEmail('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,13 +128,20 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      await signUp(email, password);
+      const result = await signUp(email, password);
       
       // Reset rate limit on successful signup
       resetAuthRateLimit(email);
       
-      toast.success('Registrazione completata! Controlla la tua email per confermare l\'account.');
-      navigate('/login');
+      if (result.needsEmailConfirmation) {
+        // Show success state with email confirmation instructions
+        setRegisteredEmail(email);
+        setRegistrationComplete(true);
+      } else {
+        // Auto-login succeeded (rare, depends on Supabase settings)
+        toast.success('Registrazione completata!');
+        navigate('/profile');
+      }
     } catch (err: any) {
       sreLogger.error('Registration failed', { email }, err);
       const errorMessage = err.message || AUTH_ERRORS.UNKNOWN_ERROR;
@@ -110,6 +166,82 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
+  // Success state - show email confirmation instructions
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          {/* Logo and header */}
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center mb-4">
+              <Building2 className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Workover</h1>
+          </div>
+
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <Mail className="w-6 h-6 text-green-600" />
+              </div>
+              <CardTitle className="text-xl">Controlla la tua email</CardTitle>
+              <CardDescription className="mt-2">
+                Abbiamo inviato un link di conferma a:
+              </CardDescription>
+              <p className="font-medium text-foreground mt-1">{registeredEmail}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert className="bg-muted border-muted-foreground/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription>
+                  Clicca sul link nell'email per attivare il tuo account e poter effettuare l'accesso.
+                </AlertDescription>
+              </Alert>
+
+              <div className="text-sm text-muted-foreground text-center">
+                Non hai ricevuto l'email? Controlla la cartella spam oppure:
+              </div>
+
+              <Button
+                onClick={handleResendConfirmation}
+                variant="outline"
+                className="w-full"
+                disabled={resendCooldown > 0 || isResending}
+              >
+                {isResending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Invio in corso...
+                  </>
+                ) : resendCooldown > 0 ? (
+                  `Riprova tra ${resendCooldown}s`
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Invia di nuovo l'email
+                  </>
+                )}
+              </Button>
+
+              <div className="flex flex-col items-center gap-3 pt-4 border-t">
+                <Button
+                  variant="ghost"
+                  onClick={handleResetForm}
+                  className="text-sm"
+                >
+                  Usa un'email diversa
+                </Button>
+                <Link to="/login" className="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                  Vai al login
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
