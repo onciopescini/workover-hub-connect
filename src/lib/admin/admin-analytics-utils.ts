@@ -1,36 +1,64 @@
 import { format, subDays } from "date-fns";
 import { it } from "date-fns/locale";
+import type {
+  AnalyticsProfile,
+  AnalyticsBooking,
+  AnalyticsPayment,
+  AnalyticsReview,
+  KPIResult,
+  UserGrowthDataPoint,
+  BookingTrendsResult,
+  BookingTrendDataPoint,
+  CityDistribution,
+  CategoryDistribution,
+  RevenueTrendsResult,
+  RevenueTrendDataPoint,
+  RevenueBreakdown,
+  HostPerformanceStats,
+  AnalyticsExportData,
+} from "./admin-analytics-types";
 
 // KPI Calculations
 export function calculateKPIs(
-  users: any[],
-  bookings: any[],
-  payments: any[],
+  users: AnalyticsProfile[],
+  bookings: AnalyticsBooking[],
+  payments: AnalyticsPayment[],
   days: number
-) {
+): KPIResult {
   const now = new Date();
   const prevPeriodStart = subDays(now, days * 2);
   const currentPeriodStart = subDays(now, days);
 
   // Current period metrics
-  const currentUsers = users.filter(u => new Date(u.last_login_at) >= currentPeriodStart);
-  const currentBookings = bookings.filter(b => new Date(b.created_at) >= currentPeriodStart);
-  const currentPayments = payments.filter(p => new Date(p.created_at) >= currentPeriodStart);
+  const currentUsers = users.filter(u => {
+    const lastLogin = u.last_login_at ? new Date(u.last_login_at) : null;
+    return lastLogin && lastLogin >= currentPeriodStart;
+  });
+  const currentBookings = bookings.filter(b => {
+    if (!b.created_at) return false;
+    return new Date(b.created_at) >= currentPeriodStart;
+  });
+  const currentPayments = payments.filter(p => {
+    if (!p.created_at) return false;
+    return new Date(p.created_at) >= currentPeriodStart;
+  });
   const currentRevenue = currentPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   // Previous period metrics
-  const prevUsers = users.filter(u => 
-    new Date(u.last_login_at) >= prevPeriodStart && 
-    new Date(u.last_login_at) < currentPeriodStart
-  );
-  const prevBookings = bookings.filter(b => 
-    new Date(b.created_at) >= prevPeriodStart && 
-    new Date(b.created_at) < currentPeriodStart
-  );
-  const prevPayments = payments.filter(p => 
-    new Date(p.created_at) >= prevPeriodStart && 
-    new Date(p.created_at) < currentPeriodStart
-  );
+  const prevUsers = users.filter(u => {
+    const lastLogin = u.last_login_at ? new Date(u.last_login_at) : null;
+    return lastLogin && lastLogin >= prevPeriodStart && lastLogin < currentPeriodStart;
+  });
+  const prevBookings = bookings.filter(b => {
+    if (!b.created_at) return false;
+    const createdAt = new Date(b.created_at);
+    return createdAt >= prevPeriodStart && createdAt < currentPeriodStart;
+  });
+  const prevPayments = payments.filter(p => {
+    if (!p.created_at) return false;
+    const createdAt = new Date(p.created_at);
+    return createdAt >= prevPeriodStart && createdAt < currentPeriodStart;
+  });
   const prevRevenue = prevPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   // Calculate changes
@@ -72,8 +100,11 @@ export function calculateKPIs(
 }
 
 // User Growth Calculations
-export function calculateUserGrowth(profiles: any[], days: number) {
-  const data: any[] = [];
+export function calculateUserGrowth(
+  profiles: AnalyticsProfile[],
+  days: number
+): UserGrowthDataPoint[] {
+  const data: UserGrowthDataPoint[] = [];
   const now = new Date();
 
   for (let i = days - 1; i >= 0; i--) {
@@ -81,22 +112,26 @@ export function calculateUserGrowth(profiles: any[], days: number) {
     const dateStr = format(date, "dd MMM", { locale: it });
 
     const signups = profiles.filter(p => {
+      if (!p.created_at) return false;
       const createdDate = new Date(p.created_at);
       return createdDate.toDateString() === date.toDateString();
     }).length;
 
     const activeUsers = profiles.filter(p => {
+      if (!p.last_login_at) return false;
       const lastLogin = new Date(p.last_login_at);
       return lastLogin.toDateString() === date.toDateString();
     }).length;
 
-    const hosts = profiles.filter(p => 
-      p.role === 'host' && new Date(p.created_at) <= date
-    ).length;
+    const hosts = profiles.filter(p => {
+      if (!p.created_at) return false;
+      return p.role === 'host' && new Date(p.created_at) <= date;
+    }).length;
 
-    const coworkers = profiles.filter(p => 
-      p.role === 'coworker' && new Date(p.created_at) <= date
-    ).length;
+    const coworkers = profiles.filter(p => {
+      if (!p.created_at) return false;
+      return p.role === 'coworker' && new Date(p.created_at) <= date;
+    }).length;
 
     data.push({
       date: dateStr,
@@ -112,8 +147,11 @@ export function calculateUserGrowth(profiles: any[], days: number) {
 }
 
 // Booking Trends Calculations
-export function calculateBookingTrends(bookings: any[], days: number) {
-  const trends: any[] = [];
+export function calculateBookingTrends(
+  bookings: AnalyticsBooking[],
+  days: number
+): BookingTrendsResult {
+  const trends: BookingTrendDataPoint[] = [];
   const byCity: Record<string, number> = {};
   const byCategory: Record<string, number> = {};
   const now = new Date();
@@ -123,6 +161,7 @@ export function calculateBookingTrends(bookings: any[], days: number) {
     const dateStr = format(date, "dd MMM", { locale: it });
 
     const dayBookings = bookings.filter(b => {
+      if (!b.created_at) return false;
       const createdDate = new Date(b.created_at);
       return createdDate.toDateString() === date.toDateString();
     });
@@ -134,8 +173,8 @@ export function calculateBookingTrends(bookings: any[], days: number) {
       date: dateStr,
       confirmed,
       cancelled,
-      avgLeadTime: 3, // Mock data
-      occupancyRate: 65, // Mock data
+      avgLeadTime: 3, // Mock data - would come from DB
+      occupancyRate: 65, // Mock data - would come from DB
     });
   }
 
@@ -149,26 +188,30 @@ export function calculateBookingTrends(bookings: any[], days: number) {
     }
   });
 
+  const cityDistribution: CityDistribution[] = Object.entries(byCity)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  const categoryDistribution: CategoryDistribution[] = Object.entries(byCategory)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
+
   return {
     trends,
-    byCity: Object.entries(byCity)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5),
-    byCategory: Object.entries(byCategory)
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count),
+    byCity: cityDistribution,
+    byCategory: categoryDistribution,
   };
 }
 
 // Revenue Trends Calculations
 export function calculateRevenueTrends(
-  payments: any[],
+  payments: AnalyticsPayment[],
   totalUsers: number,
   totalHosts: number,
   days: number
-) {
-  const trends: any[] = [];
+): RevenueTrendsResult {
+  const trends: RevenueTrendDataPoint[] = [];
   const now = new Date();
   const paymentMethods: Record<string, number> = {};
 
@@ -181,6 +224,7 @@ export function calculateRevenueTrends(
     const dateStr = format(date, "dd MMM", { locale: it });
 
     const dayPayments = payments.filter(p => {
+      if (!p.created_at) return false;
       const createdDate = new Date(p.created_at);
       return createdDate.toDateString() === date.toDateString();
     });
@@ -207,37 +251,41 @@ export function calculateRevenueTrends(
     paymentMethods[method] = (paymentMethods[method] || 0) + 1;
   });
 
+  const breakdown: RevenueBreakdown = {
+    totalRevenue,
+    platformFees: totalPlatformFees,
+    hostPayouts: totalHostPayouts,
+    avgBookingValue: payments.length > 0 ? totalRevenue / payments.length : 0,
+    revenuePerUser: totalUsers > 0 ? totalRevenue / totalUsers : 0,
+    revenuePerHost: totalHosts > 0 ? totalRevenue / totalHosts : 0,
+    paymentMethods: Object.entries(paymentMethods).map(([method, count]) => ({
+      method,
+      count,
+    })),
+  };
+
   return {
     trends,
-    breakdown: {
-      totalRevenue,
-      platformFees: totalPlatformFees,
-      hostPayouts: totalHostPayouts,
-      avgBookingValue: payments.length > 0 ? totalRevenue / payments.length : 0,
-      revenuePerUser: totalUsers > 0 ? totalRevenue / totalUsers : 0,
-      revenuePerHost: totalHosts > 0 ? totalRevenue / totalHosts : 0,
-      paymentMethods: Object.entries(paymentMethods).map(([method, count]) => ({
-        method,
-        count,
-      })),
-    },
+    breakdown,
   };
 }
 
 // Host Performance Calculations
 export function calculateHostPerformance(
-  bookings: any[],
-  payments: any[],
-  reviews: any[],
-  hosts: any[]
-) {
-  const hostStats: Record<string, any> = {};
+  bookings: AnalyticsBooking[],
+  payments: AnalyticsPayment[],
+  reviews: AnalyticsReview[],
+  hosts: AnalyticsProfile[]
+): HostPerformanceStats[] {
+  const hostStats: Record<string, HostPerformanceStats> = {};
 
   // Initialize host stats
   hosts.forEach(host => {
+    const firstName = host.first_name || '';
+    const lastName = host.last_name || '';
     hostStats[host.id] = {
       hostId: host.id,
-      hostName: `${host.first_name} ${host.last_name}`,
+      hostName: `${firstName} ${lastName}`.trim() || 'Host',
       totalRevenue: 0,
       totalBookings: 0,
       spacesCount: 0,
@@ -274,23 +322,23 @@ export function calculateHostPerformance(
   });
 
   // Finalize averages
-  Object.values(hostStats).forEach((stat: any) => {
+  Object.values(hostStats).forEach(stat => {
     if (stat.ratingCount > 0) {
       stat.avgRating = stat.avgRating / stat.ratingCount;
     } else {
       stat.avgRating = 0;
     }
-    // Count unique spaces (mock for now)
+    // Count unique spaces (mock for now - would come from DB)
     stat.spacesCount = Math.floor(Math.random() * 5) + 1;
   });
 
   return Object.values(hostStats)
-    .sort((a: any, b: any) => b.totalRevenue - a.totalRevenue)
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
     .slice(0, 10);
 }
 
 // Export functions
-export function exportAnalyticsToCSV(data: any) {
+export function exportAnalyticsToCSV(data: AnalyticsExportData): void {
   const csvRows: string[] = [];
   
   // Add KPIs section
@@ -316,7 +364,7 @@ export function exportAnalyticsToCSV(data: any) {
   URL.revokeObjectURL(url);
 }
 
-export function exportAnalyticsToPDF(data: any) {
+export function exportAnalyticsToPDF(data: AnalyticsExportData): void {
   // Simplified PDF export - in production, use a library like jsPDF
   console.warn("PDF export would be implemented with jsPDF library", data);
   alert("PDF export feature - would use jsPDF library in production");

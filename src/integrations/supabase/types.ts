@@ -5791,6 +5791,8 @@ export type Database = {
         Row: {
           admin_notes: string | null
           age_confirmed: boolean | null
+          ban_reason: string | null
+          banned_at: string | null
           bio: string | null
           cached_avg_rating: number | null
           cached_review_count: number | null
@@ -5804,6 +5806,7 @@ export type Database = {
           dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
           email_verification_blocked_actions: string[] | null
+          face_data_ref: string | null
           facebook_url: string | null
           first_name: string | null
           fiscal_regime: string | null
@@ -5811,11 +5814,13 @@ export type Database = {
           iban: string | null
           id: string | null
           industries: string[] | null
+          industry: string | null
           instagram_url: string | null
           interests: string | null
           is_suspended: boolean | null
           job_title: string | null
           job_type: string | null
+          joined_role: Database["public"]["Enums"]["app_role"] | null
           kyc_documents_verified: boolean | null
           kyc_rejection_reason: string | null
           kyc_verified_at: string | null
@@ -5826,20 +5831,25 @@ export type Database = {
           location: string | null
           networking_enabled: boolean | null
           nickname: string | null
+          num_reviews: number | null
           onboarding_completed: boolean | null
           pec_email: string | null
           phone: string | null
+          portfolio_url: string | null
           preferred_work_mode: string | null
           profession: string | null
           profile_photo_url: string | null
+          rating_avg: number | null
           restriction_reason: string | null
           return_url: string | null
-          role: Database["public"]["Enums"]["app_role"] | null
+          role: string | null
           sdi_code: string | null
           skills: string | null
           space_creation_restricted: boolean | null
+          status: string | null
           stripe_account_id: string | null
           stripe_connected: boolean | null
+          stripe_onboarding_complete: boolean | null
           stripe_onboarding_status:
             | Database["public"]["Enums"]["stripe_onboarding_state"]
             | null
@@ -5848,9 +5858,11 @@ export type Database = {
           suspension_reason: string | null
           tax_country: string | null
           tax_id: string | null
+          tax_id_norm: string | null
           twitter_url: string | null
           updated_at: string | null
           vat_number: string | null
+          vat_number_norm: string | null
           website: string | null
           work_style: string | null
           youtube_url: string | null
@@ -6433,6 +6445,19 @@ export type Database = {
               skills: string[]
             }[]
           }
+        | {
+            Args: { booking_id?: string; current_user_id?: string }
+            Returns: {
+              avatar_url: string
+              city: string
+              first_name: string
+              id: string
+              job_title: string
+              last_name: string
+              nickname: string
+              role: Database["public"]["Enums"]["app_role"]
+            }[]
+          }
       get_coworkers_in_space: {
         Args: { p_space_id: string }
         Returns: {
@@ -6556,10 +6581,7 @@ export type Database = {
           skills: string
         }[]
       }
-      get_public_profile_safe: {
-        Args: { profile_id_param: string }
-        Returns: Json
-      }
+      get_public_profile_safe: { Args: { profile_id: string }; Returns: Json }
       get_public_spaces: {
         Args: never
         Returns: {

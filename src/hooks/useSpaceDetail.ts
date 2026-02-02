@@ -62,7 +62,17 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
 
       const { data: spaceData, error: spaceError } = await supabase
         .from('spaces')
-        .select('*')
+        .select(`
+          id, host_id, title, description, address, city_name, latitude, longitude,
+          price_per_hour, price_per_day, capacity, max_capacity, amenities, photos,
+          category, workspace_features, published, pending_approval, created_at, updated_at,
+          seating_types, ideal_guest_tags, event_friendly_tags,
+          cancellation_policy, availability, timezone, country_code,
+          cached_avg_rating, cached_review_count, confirmation_type, work_environment,
+          rules, is_suspended, suspension_reason, suspended_at, suspended_by,
+          deleted_at, approved_at, approved_by, rejection_reason, revision_notes,
+          revision_requested, approximate_location
+        `)
         .eq('id', id)
         .maybeSingle();
 

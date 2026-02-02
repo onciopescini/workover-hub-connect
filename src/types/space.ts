@@ -6,8 +6,8 @@ import { Database } from "@/integrations/supabase/types";
 export type Space = Omit<Database["public"]["Tables"]["spaces"]["Row"], "workspace_features"> & {
   timezone?: string;
   city?: string;
-  country_code?: string;
-  is_suspended?: boolean;
+  country_code?: string | null;
+  is_suspended?: boolean | null;
   suspension_reason?: string | null;
   suspended_at?: string | null;
   suspended_by?: string | null;
@@ -23,9 +23,9 @@ export type Space = Omit<Database["public"]["Tables"]["spaces"]["Row"], "workspa
   name?: string;
   distance_km?: number;
   // UI Alias Properties - mapped from database fields for backwards compatibility
-  title?: string;        // Alias for 'title'
-  capacity?: number;     // Alias for 'max_capacity'
-  city_name?: string | null;    // Alias for 'city'
+  title?: string;
+  capacity?: number | null;
+  city_name?: string | null;
 };
 
 export type SpaceInsert = Omit<Database["public"]["Tables"]["spaces"]["Insert"], "workspace_features"> & {

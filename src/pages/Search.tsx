@@ -55,7 +55,12 @@ const Search = () => {
     queryFn: async () => {
       let query = supabase
         .from('spaces')
-        .select('*');
+        .select(`
+          id, host_id, title, description, address, city_name, latitude, longitude,
+          price_per_hour, price_per_day, max_capacity, amenities, photos, category,
+          published, cached_avg_rating, cached_review_count, workspace_features,
+          seating_types, work_environment, confirmation_type
+        `);
 
       // Filter only published spaces
       query = query.eq('published', true);
@@ -65,7 +70,7 @@ const Search = () => {
         const sanitizedQuery = searchQuery.replace(/,/g, ' ').trim();
 
         if (sanitizedQuery) {
-          query = query.or(`title.ilike.%${sanitizedQuery}%, city.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
+          query = query.or(`title.ilike.%${sanitizedQuery}%, city_name.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
         }
       }
 

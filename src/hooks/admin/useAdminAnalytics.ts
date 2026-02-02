@@ -29,7 +29,7 @@ export function useAdminAnalytics(timeRange: "7d" | "30d" | "90d") {
 
       const { data: payments } = await supabase
         .from('payments')
-        .select('amount, created_at')
+        .select('id, amount, created_at')
         .eq('payment_status', 'completed')
         .gte('created_at', startDate.toISOString());
 
@@ -62,7 +62,7 @@ export function useAdminAnalytics(timeRange: "7d" | "30d" | "90d") {
           status,
           created_at,
           booking_date,
-          space:spaces(id, city, category)
+          space:spaces(id, host_id)
         `)
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
@@ -117,6 +117,8 @@ export function useAdminAnalytics(timeRange: "7d" | "30d" | "90d") {
         .from('payments')
         .select(`
           id,
+          amount,
+          created_at,
           host_amount,
           booking:bookings(
             space:spaces(host_id)
