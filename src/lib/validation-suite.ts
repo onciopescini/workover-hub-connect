@@ -1,12 +1,34 @@
+// Validation suite - circular dependency fixed by removing import of executeValidationSuite
 
-import { executeValidationSuite } from './validation-runner';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sreLogger } from '@/lib/sre-logger';
+import { runPaymentValidation, formatValidationReport } from './payment-validation';
+import { runStripeValidationSuite } from './stripe-validation';
+import type { ValidationResult, PaymentValidationResult } from './validation-types';
+
+// Inline payment validation execution to break circular dependency
+const runPaymentValidationInline = (): PaymentValidationResult => {
+  const results = runPaymentValidation();
+  const report = formatValidationReport(results);
+  sreLogger.debug('Validation report generated', { action: 'validation_report', report });
+  
+  runStripeValidationSuite();
+  
+  const passedCount = results.filter(r => r.passed).length;
+  const totalCount = results.length;
+  
+  return {
+    passed: passedCount === totalCount,
+    results,
+    passedCount,
+    totalCount
+  };
+};
 
 // Comprehensive validation suite for Sprint 1
 export class Sprint1ValidationSuite {
-  private results: Array<{ category: string; status: string; details?: string; error?: unknown }> = [];
+  private results: ValidationResult[] = [];
   
   async runFullValidation(): Promise<void> {
     sreLogger.info('STARTING SPRINT 1 FULL VALIDATION SUITE', { action: 'validation_suite_start' });
@@ -52,11 +74,11 @@ export class Sprint1ValidationSuite {
         sreLogger.info('DAC7 calculation RPC is functional', { dac7Data });
       }
       
-      // Test payments query for revenue calculation
+      // Test payments query for revenue calculation - EXPLICIT COLUMNS
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select(`
-          *,
+          id, amount, payment_status, created_at,
           bookings:booking_id(
             space_id,
             spaces:space_id(host_id, title)
@@ -71,8 +93,8 @@ export class Sprint1ValidationSuite {
         sreLogger.info('Revenue calculation query structure is valid');
       }
       
-      // Run payment validation suite
-      const paymentValidation = executeValidationSuite();
+      // Run payment validation suite (inlined to break circular dep)
+      const paymentValidation = runPaymentValidationInline();
       sreLogger.info('Payment calculations validated', { passed: paymentValidation.passed });
       
       this.results.push({
@@ -95,10 +117,10 @@ export class Sprint1ValidationSuite {
     sreLogger.info('VALIDATING GDPR PRIVACY CENTER', { action: 'validate_gdpr' });
     
     try {
-      // Test GDPR requests table structure
+      // Test GDPR requests table structure - EXPLICIT COLUMNS
       const { data: gdprRequests, error: gdprError } = await supabase
         .from('gdpr_requests')
-        .select('*')
+        .select('id, user_id, request_type, status, created_at')
         .limit(1);
       
       if (gdprError) {
@@ -107,10 +129,10 @@ export class Sprint1ValidationSuite {
         sreLogger.info('GDPR requests table structure is valid');
       }
       
-      // Test cookie consent log structure
+      // Test cookie consent log structure - EXPLICIT COLUMNS
       const { data: cookieLog, error: cookieError } = await supabase
         .from('cookie_consent_log')
-        .select('*')
+        .select('id, user_id, consent_given_at, analytics_consent, marketing_consent')
         .limit(1);
       
       if (cookieError) {
@@ -190,11 +212,11 @@ export class Sprint1ValidationSuite {
         });
       }
       
-      // Test bookings table structure
+      // Test bookings table structure - EXPLICIT COLUMNS
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
-          *,
+          id, user_id, space_id, booking_date, status, total_price, created_at,
           space:spaces(id, title, host_id, price_per_hour, price_per_day),
           user:profiles!fk_bookings_user_id(id, first_name, last_name)
         `)
@@ -206,11 +228,11 @@ export class Sprint1ValidationSuite {
         sreLogger.info('Bookings query structure is valid');
       }
       
-      // Test payments table structure
+      // Test payments table structure - EXPLICIT COLUMNS
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select(`
-          *,
+          id, booking_id, amount, payment_status, created_at,
           bookings:booking_id(id, user_id, space_id)
         `)
         .limit(1);
@@ -250,7 +272,7 @@ export class Sprint1ValidationSuite {
         sreLogger.info('Auth session mechanism is functional');
       }
       
-      // Test profiles table structure
+      // Test profiles table structure - EXPLICIT COLUMNS
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, role, first_name, last_name, is_suspended')
@@ -274,10 +296,10 @@ export class Sprint1ValidationSuite {
         sreLogger.info('Admin role check RPC is functional');
       }
       
-      // Test user notifications structure
+      // Test user notifications structure - EXPLICIT COLUMNS
       const { data: notifications, error: notificationsError } = await supabase
         .from('user_notifications')
-        .select('*')
+        .select('id, user_id, title, message, read, created_at')
         .limit(1);
       
       if (notificationsError) {

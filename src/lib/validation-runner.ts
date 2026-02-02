@@ -1,11 +1,14 @@
+// Validation suite execution function - circular dependency fixed
+// Now imports from validation-suite without being imported BY validation-suite
 
 import { runPaymentValidation, formatValidationReport } from './payment-validation';
 import { runStripeValidationSuite } from './stripe-validation';
 import { sprint1Validator } from './validation-suite';
 import { sreLogger } from '@/lib/sre-logger';
+import type { PaymentValidationResult } from './validation-types';
 
 // Validation suite execution function - only runs when manually called
-export const executeValidationSuite = () => {
+export const executeValidationSuite = (): PaymentValidationResult => {
   sreLogger.info('🎯 WORKOVER PAYMENT VALIDATION SUITE', { action: 'validation_suite_start' });
   
   // Run payment calculation validation
@@ -52,7 +55,7 @@ export const executeValidationSuite = () => {
 };
 
 // Run comprehensive Sprint 1 validation
-export const executeFullValidation = async () => {
+export const executeFullValidation = async (): Promise<void> => {
   sreLogger.info('🚀 EXECUTING FULL SPRINT 1 VALIDATION', { action: 'full_validation_start' });
   
   // Run payment validation first
