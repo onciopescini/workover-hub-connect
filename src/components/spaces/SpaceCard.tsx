@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,9 @@ import {
 } from 'lucide-react';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { Space } from '@/types/space';
-import { frontendLogger } from '@/utils/frontend-logger';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { addToFavorites, removeFromFavorites, isSpaceFavorited } from '@/lib/favorites-utils';
 
 interface SpaceCardProps {
   space: Space;
@@ -31,6 +32,19 @@ interface SpaceCardProps {
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick, variant = 'simple' }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const { authState } = useAuth();
+
+  // Check initial favorite status when authenticated
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (authState.isAuthenticated && space.id) {
+        const isFavorited = await isSpaceFavorited(space.id);
+        setIsLiked(isFavorited);
+      }
+    };
+    checkFavoriteStatus();
+  }, [space.id, authState.isAuthenticated]);
 
   // OPTIMIZATION: Use cached values from the space record instead of separate fetches
   const reviewCount = space.cached_review_count || 0;
@@ -112,15 +126,32 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onClick, variant = 
     }
   };
 
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
     
-    // Show feedback - future: wire to addToFavorites from favorites-utils.ts
-    if (!isLiked) {
-      toast.success('Aggiunto ai preferiti!');
-    } else {
-      toast.info('Rimosso dai preferiti');
+    if (!authState.isAuthenticated) {
+      toast.error('Accedi per salvare i preferiti');
+      return;
+    }
+    
+    if (isLikeLoading) return;
+    
+    setIsLikeLoading(true);
+    
+    try {
+      if (isLiked) {
+        const success = await removeFromFavorites(space.id);
+        if (success) {
+          setIsLiked(false);
+        }
+      } else {
+        const success = await addToFavorites(space.id);
+        if (success) {
+          setIsLiked(true);
+        }
+      }
+    } finally {
+      setIsLikeLoading(false);
     }
   };
 
