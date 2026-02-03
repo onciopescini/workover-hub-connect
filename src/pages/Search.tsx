@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SpaceCard } from '@/components/spaces/SpaceCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search as SearchIcon, MapPin, List, Map as MapIcon, Locate } from 'lucide-react';
+import { Search as SearchIcon, MapPin, List, Map as MapIcon, Locate, SlidersHorizontal } from 'lucide-react';
 import { Space } from '@/types/space';
 import { mapSpaceRowToSpace } from '@/lib/space-mappers';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,12 +13,20 @@ import { LazySpaceMap } from '@/components/spaces/LazySpaceMap';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUserLocation } from '@/hooks/useUserLocation';
+import { AmenityFilters } from '@/components/spaces/search/AmenityFilters';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   
   // Real geolocation hook
   const { userLocation, getUserLocation, isLoading: isGettingLocation } = useUserLocation();
@@ -27,31 +35,53 @@ const Search = () => {
   useEffect(() => {
     const queryParam = searchParams.get('q');
     const cityParam = searchParams.get('city');
+    const amenitiesParam = searchParams.get('amenities');
 
     if (queryParam) {
       setSearchQuery(queryParam);
     } else if (cityParam) {
       setSearchQuery(cityParam);
     }
+    
+    if (amenitiesParam) {
+      setSelectedAmenities(amenitiesParam.split(','));
+    }
   }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const params = new URLSearchParams();
     if (searchQuery.trim()) {
-      setSearchParams({ q: searchQuery.trim() });
-    } else {
-      setSearchParams({});
+      params.set('q', searchQuery.trim());
     }
+    if (selectedAmenities.length > 0) {
+      params.set('amenities', selectedAmenities.join(','));
+    }
+    setSearchParams(params);
   };
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    setSearchParams({});
+    setSelectedAmenities([]);
+    setSearchParams(new URLSearchParams());
+  };
+  
+  const handleAmenitiesChange = (amenities: string[]) => {
+    setSelectedAmenities(amenities);
+    // Update URL immediately for amenity changes
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) {
+      params.set('q', searchQuery.trim());
+    }
+    if (amenities.length > 0) {
+      params.set('amenities', amenities.join(','));
+    }
+    setSearchParams(params);
   };
 
-  // Fetch spaces logic
+  // Fetch spaces logic with amenity filtering
   const { data: spaces = [], isLoading, error } = useQuery({
-    queryKey: ['search-spaces', searchQuery],
+    queryKey: ['search-spaces', searchQuery, selectedAmenities],
     queryFn: async () => {
       let query = supabase
         .from('spaces')
@@ -71,6 +101,16 @@ const Search = () => {
 
         if (sanitizedQuery) {
           query = query.or(`title.ilike.%${sanitizedQuery}%, city_name.ilike.%${sanitizedQuery}%, address.ilike.%${sanitizedQuery}%`);
+        }
+      }
+      
+      // Apply amenity filters using PostgreSQL array contains operator
+      for (const amenity of selectedAmenities) {
+        // Check both amenities and workspace_features columns
+        if (amenity === 'Meeting room') {
+          query = query.contains('workspace_features', [amenity]);
+        } else {
+          query = query.contains('amenities', [amenity]);
         }
       }
 
@@ -112,7 +152,7 @@ const Search = () => {
             />
           </div>
           <div className="flex gap-2">
-            <Button type="submit" className="h-12 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-lg">
+            <Button type="submit" className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-lg">
               Cerca
             </Button>
             <Button 
@@ -126,7 +166,7 @@ const Search = () => {
               <Locate className={`h-4 w-4 mr-2 ${isGettingLocation ? 'animate-pulse' : ''}`} />
               {isGettingLocation ? 'Localizzazione...' : 'Vicino a me'}
             </Button>
-            {searchQuery && (
+            {(searchQuery || selectedAmenities.length > 0) && (
               <Button type="button" variant="outline" onClick={handleClearSearch} className="h-12">
                 Reset
               </Button>
@@ -134,20 +174,42 @@ const Search = () => {
           </div>
         </form>
 
-        <div className="flex justify-end">
-           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')}>
-            <TabsList>
-              <TabsTrigger value="list" className="flex gap-2">
-                <List className="h-4 w-4" />
-                Elenco
-              </TabsTrigger>
-              <TabsTrigger value="map" className="flex gap-2">
-                <MapIcon className="h-4 w-4" />
-                Mappa
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        {/* Amenity Filters Toggle */}
+        <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtri
+                {selectedAmenities.length > 0 && (
+                  <span className="ml-1 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                    {selectedAmenities.length}
+                  </span>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'map')}>
+              <TabsList>
+                <TabsTrigger value="list" className="flex gap-2">
+                  <List className="h-4 w-4" />
+                  Elenco
+                </TabsTrigger>
+                <TabsTrigger value="map" className="flex gap-2">
+                  <MapIcon className="h-4 w-4" />
+                  Mappa
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          <CollapsibleContent className="pt-4">
+            <AmenityFilters
+              selectedAmenities={selectedAmenities}
+              onAmenitiesChange={handleAmenitiesChange}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Results */}

@@ -40,6 +40,7 @@ const ProfileEdit = lazy(() => import("@/pages/ProfileEdit"));
 const UserProfileView = lazy(() => import("@/pages/UserProfileView"));
 import Bookings from "@/pages/Bookings";
 const Search = lazy(() => import("@/pages/Search"));
+const Favorites = lazy(() => import("@/pages/Favorites"));
 
 // Replaced Messaging Modules
 const MessagesPage = lazy(() => import("@/pages/messages/MessagesPage"));
@@ -194,6 +195,14 @@ export const AppRoutes = () => {
           <AuthProtected>
             <LazyWrapper>
               <ProfileEdit />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+        
+        <Route path="favorites" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <Favorites />
             </LazyWrapper>
           </AuthProtected>
         } />
