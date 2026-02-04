@@ -1,10 +1,17 @@
-import React, { createContext, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
+import { 
+  initializeGA4, 
+  trackPageView, 
+  trackEvent as ga4TrackEvent, 
+  identifyUser as ga4IdentifyUser,
+  trackConversion as ga4TrackConversion 
+} from '@/lib/analytics';
 
 interface AnalyticsContextType {
-  trackEvent: (eventName: string, properties?: Record<string, any>) => void;
+  trackEvent: (eventName: string, properties?: Record<string, unknown>) => void;
   trackPageView: (path: string, title?: string) => void;
-  identifyUser: (userId: string, traits?: Record<string, any>) => void;
+  identifyUser: (userId: string, traits?: Record<string, unknown>) => void;
   trackConversion: (conversionType: string, value?: number, currency?: string) => void;
 }
 
@@ -15,53 +22,6 @@ interface AnalyticsProviderProps {
   enabledInDev?: boolean;
 }
 
-// Analytics configuration
-const ANALYTICS_CONFIG = {
-  plausible: {
-    domain: import.meta.env.PROD ? 'workover.app' : window.location.hostname,
-    enabled: true,
-    apiHost: null // Using proxy via data-api attribute in index.html
-  },
-  gtag: {
-    measurementId: 'G-MEASUREMENT_ID', // Replace with actual GA4 ID from Google Analytics
-    enabled: true // Enabled for launch readiness - requires valid ID
-  }
-};
-
-// Rate limiting for analytics calls
-let analyticsQueue: Array<() => void> = [];
-let isProcessingQueue = false;
-
-const processAnalyticsQueue = () => {
-  if (isProcessingQueue || analyticsQueue.length === 0) return;
-  
-  isProcessingQueue = true;
-  const batch = analyticsQueue.splice(0, 3); // Process max 3 events at once
-  
-    batch.forEach(fn => {
-    try {
-      fn();
-    } catch (error) {
-      // Silently fail, analytics shouldn't break the app
-    }
-  });
-  
-  isProcessingQueue = false;
-  
-  // Continue processing if queue has more items
-  if (analyticsQueue.length > 0) {
-    setTimeout(processAnalyticsQueue, 200); // 200ms delay between batches
-  }
-};
-
-declare global {
-  interface Window {
-    plausible?: (eventName: string, options?: { props?: Record<string, any> }) => void;
-    gtag?: (...args: unknown[]) => void;
-    dataLayer?: unknown[];
-  }
-}
-
 export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ 
   children, 
   enabledInDev = false 
@@ -70,124 +30,50 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({
   const isProduction = import.meta.env.PROD;
   const shouldTrack = isProduction || enabledInDev;
 
+  // Initialize GA4 on mount
+  useEffect(() => {
+    if (shouldTrack) {
+      initializeGA4();
+    }
+  }, [shouldTrack]);
+
   // Track page views on route changes
   useEffect(() => {
     if (shouldTrack) {
       trackPageView(location.pathname, document.title);
     }
-  }, [location, shouldTrack]);
+  }, [location.pathname, shouldTrack]);
 
-  const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+  const handleTrackEvent = useCallback((eventName: string, properties?: Record<string, unknown>) => {
     if (!shouldTrack) return;
-
-    // Add to queue to prevent rate limiting
-    analyticsQueue.push(() => {
-      // Plausible Analytics with error handling
-      if (ANALYTICS_CONFIG.plausible.enabled && window.plausible) {
-        try {
-          window.plausible(eventName, properties ? { props: properties } : {});
-        } catch (error) {
-          // Silently fail
-        }
-      }
-
-      // Google Analytics 4
-      if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
-        try {
-          window.gtag('event', eventName, {
-            ...properties,
-            send_to: ANALYTICS_CONFIG.gtag.measurementId
-          });
-        } catch (error) {
-          // Silently fail
-        }
-      }
-    });
-
-    // Process queue
-    processAnalyticsQueue();
-
-    // Development logging removed - use SRE logger instead
-  };
-
-  const trackPageView = (path: string, title?: string) => {
-    if (!shouldTrack) return;
-
-    // Debounce page views to prevent excessive calls
-    const debounceKey = `pageview-${path}`;
-    const currentWindow = window as any;
     
-    if (currentWindow[debounceKey]) {
-      clearTimeout(currentWindow[debounceKey]);
-    }
+    // Convert to GA4 compatible format
+    const ga4Properties = properties as Record<string, string | number | boolean | undefined>;
+    ga4TrackEvent(eventName, ga4Properties);
+  }, [shouldTrack]);
 
-    currentWindow[debounceKey] = setTimeout(() => {
-      // Plausible automatically tracks page views, no need to send custom events
-      
-      // Google Analytics 4
-      if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
-        try {
-          window.gtag('config', ANALYTICS_CONFIG.gtag.measurementId, {
-            page_path: path,
-            page_title: title
-          });
-        } catch (error) {
-          // Silently fail
-        }
-      }
-    }, 100); // 100ms debounce
-  };
-
-  const identifyUser = (userId: string, traits?: Record<string, any>) => {
+  const handleTrackPageView = useCallback((path: string, title?: string) => {
     if (!shouldTrack) return;
+    trackPageView(path, title);
+  }, [shouldTrack]);
 
-    // Google Analytics 4 User ID
-    if (ANALYTICS_CONFIG.gtag.enabled && window.gtag) {
-      window.gtag('config', ANALYTICS_CONFIG.gtag.measurementId, {
-        user_id: userId,
-        custom_map: traits
-      });
-    }
-
-    // Track user identification event
-    trackEvent('user_identified', { user_id: userId, ...traits });
-  };
-
-  const trackConversion = (conversionType: string, value?: number, currency = 'EUR') => {
+  const handleIdentifyUser = useCallback((userId: string, traits?: Record<string, unknown>) => {
     if (!shouldTrack) return;
+    const ga4Traits = traits as Record<string, string | number | boolean>;
+    ga4IdentifyUser(userId, ga4Traits);
+  }, [shouldTrack]);
 
-    const conversionData = {
-      conversion_type: conversionType,
-      value,
-      currency
-    };
+  const handleTrackConversion = useCallback((conversionType: string, value?: number, currency = 'EUR') => {
+    if (!shouldTrack) return;
+    ga4TrackConversion(conversionType, value, currency);
+  }, [shouldTrack]);
 
-    // Track as regular event
-    trackEvent('conversion', conversionData);
-
-    // Google Analytics Enhanced Ecommerce
-    if (ANALYTICS_CONFIG.gtag.enabled && window.gtag && value) {
-      window.gtag('event', 'purchase', {
-        transaction_id: `${conversionType}_${Date.now()}`,
-        value,
-        currency,
-        items: [{
-          item_id: conversionType,
-          item_name: conversionType,
-          category: 'conversion',
-          quantity: 1,
-          price: value
-        }]
-      });
-    }
-  };
-
-  const contextValue: AnalyticsContextType = {
-    trackEvent,
-    trackPageView,
-    identifyUser,
-    trackConversion
-  };
+  const contextValue: AnalyticsContextType = useMemo(() => ({
+    trackEvent: handleTrackEvent,
+    trackPageView: handleTrackPageView,
+    identifyUser: handleIdentifyUser,
+    trackConversion: handleTrackConversion
+  }), [handleTrackEvent, handleTrackPageView, handleIdentifyUser, handleTrackConversion]);
 
   return (
     <AnalyticsContext.Provider value={contextValue}>
@@ -207,64 +93,64 @@ export const useAnalytics = (): AnalyticsContextType => {
 // Pre-defined tracking functions for common events
 export const trackingEvents = {
   // User actions
-  userSignUp: (method: string) => ({ event: 'user_sign_up', method }),
-  userLogin: (method: string) => ({ event: 'user_login', method }),
-  userLogout: () => ({ event: 'user_logout' }),
+  userSignUp: (method: string) => ({ event: 'sign_up', method }),
+  userLogin: (method: string) => ({ event: 'login', method }),
+  userLogout: () => ({ event: 'logout' }),
   
   // Space interactions
   spaceView: (spaceId: string, spaceTitle: string) => ({ 
-    event: 'space_view', 
-    space_id: spaceId, 
-    space_title: spaceTitle 
+    event: 'view_item', 
+    item_id: spaceId, 
+    item_name: spaceTitle 
   }),
   spaceSearch: (query: string, location?: string) => ({ 
-    event: 'space_search', 
+    event: 'search', 
     search_term: query, 
     location 
   }),
   spaceFavorite: (spaceId: string, action: 'add' | 'remove') => ({ 
-    event: 'space_favorite', 
-    space_id: spaceId, 
+    event: 'add_to_wishlist', 
+    item_id: spaceId, 
     action 
   }),
   
   // Booking flow
-  bookingStart: (spaceId: string) => ({ event: 'booking_start', space_id: spaceId }),
+  bookingStart: (spaceId: string) => ({ event: 'begin_checkout', item_id: spaceId }),
   bookingComplete: (spaceId: string, amount: number) => ({ 
-    event: 'booking_complete', 
-    space_id: spaceId, 
+    event: 'purchase', 
+    item_id: spaceId, 
     value: amount 
   }),
   bookingCancel: (bookingId: string, reason?: string) => ({ 
-    event: 'booking_cancel', 
-    booking_id: bookingId, 
+    event: 'refund', 
+    transaction_id: bookingId, 
     reason 
   }),
   
   // Networking
   connectionRequest: (targetUserId: string) => ({ 
-    event: 'connection_request', 
+    event: 'generate_lead', 
     target_user_id: targetUserId 
   }),
   connectionAccept: (senderUserId: string) => ({ 
-    event: 'connection_accept', 
+    event: 'generate_lead', 
     sender_user_id: senderUserId 
   }),
   messagesSent: (recipientId: string) => ({ 
-    event: 'message_sent', 
+    event: 'contact', 
     recipient_id: recipientId 
   }),
   
   // Reviews
   reviewSubmit: (targetType: string, rating: number) => ({ 
-    event: 'review_submit', 
-    target_type: targetType, 
+    event: 'rate', 
+    content_type: targetType, 
     rating 
   }),
   
   // Host actions
-  spaceCreate: (spaceType: string) => ({ event: 'space_create', space_type: spaceType }),
-  spaceEdit: (spaceId: string) => ({ event: 'space_edit', space_id: spaceId }),
+  spaceCreate: (spaceType: string) => ({ event: 'add_listing', item_category: spaceType }),
+  spaceEdit: (spaceId: string) => ({ event: 'edit_listing', item_id: spaceId }),
   bookingApprove: (bookingId: string) => ({ event: 'booking_approve', booking_id: bookingId }),
   
   // Engagement

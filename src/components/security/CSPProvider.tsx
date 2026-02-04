@@ -24,7 +24,6 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           https://maps.googleapis.com 
           https://www.googletagmanager.com 
           https://www.google-analytics.com
-          https://plausible.io
           https://cdn.gpteng.co;
         style-src 'self' 'unsafe-inline' 
           https://fonts.googleapis.com 
@@ -45,8 +44,8 @@ const CSPProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           https://api.stripe.com
           https://maps.googleapis.com
           https://www.google-analytics.com
+          https://www.googletagmanager.com
           https://stats.g.doubleclick.net
-          https://plausible.io
           https://api.mapbox.com
           https://events.mapbox.com;
         media-src 'self' https: blob:;

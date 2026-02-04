@@ -1,8 +1,8 @@
 /**
  * Analytics tracking hook - GDPR compliant
  * 
- * Provides unified interface for tracking events across different analytics platforms
- * while respecting user consent preferences.
+ * Provides unified interface for tracking events using Google Analytics 4.
+ * Respects user consent preferences.
  * 
  * @example
  * ```tsx
@@ -23,24 +23,11 @@ import posthog from 'posthog-js';
 import * as Sentry from '@sentry/react';
 import { useConsent } from '@/hooks/useConsent';
 import { sreLogger } from '@/lib/sre-logger';
-
-interface AnalyticsEvent {
-  name: string;
-  properties?: Record<string, any>;
-}
-
-interface UserProperties {
-  userId?: string;
-  properties?: Record<string, any>;
-}
-
-type PlausibleFn = (event: string, options?: { props?: Record<string, unknown>; u?: string }) => void;
-
-const getPlausible = (): PlausibleFn | null => {
-  if (typeof window === 'undefined') return null;
-  const plausible = (window as Window & { plausible?: PlausibleFn }).plausible;
-  return typeof plausible === 'function' ? plausible : null;
-};
+import { 
+  trackEvent as ga4TrackEvent, 
+  trackPageView as ga4PageView,
+  identifyUser as ga4Identify 
+} from '@/lib/analytics';
 
 /**
  * Custom hook for analytics tracking with GDPR compliance
@@ -57,25 +44,21 @@ export const useAnalytics = () => {
    * @param eventName - Name of the event to track
    * @param properties - Optional event properties
    */
-  const trackEvent = useCallback((eventName: string, properties?: Record<string, any>) => {
+  const trackEvent = useCallback((eventName: string, properties?: Record<string, unknown>) => {
     // Only track if user has given analytics consent
     if (!consent?.analytics) {
       return;
     }
 
     try {
-      // PostHog tracking
+      // PostHog tracking (if available)
       if (import.meta.env.PROD && typeof window !== 'undefined') {
         posthog.capture(eventName, properties);
       }
 
-      // Plausible tracking for custom events
-      const plausible = getPlausible();
-      if (plausible && properties) {
-        plausible(eventName, { props: properties as Record<string, unknown> });
-      } else if (plausible) {
-        plausible(eventName);
-      }
+      // GA4 tracking
+      const ga4Properties = properties as Record<string, string | number | boolean | undefined>;
+      ga4TrackEvent(eventName, ga4Properties);
     } catch (error) {
       Sentry.captureException(error);
       sreLogger.warn('Analytics tracking failed', {}, error as Error);
@@ -88,7 +71,7 @@ export const useAnalytics = () => {
    * @param page - Page path to track
    * @param properties - Optional page properties
    */
-  const pageview = useCallback((page: string, properties?: Record<string, any>) => {
+  const pageview = useCallback((page: string, properties?: Record<string, unknown>) => {
     if (!consent?.analytics) {
       return;
     }
@@ -103,11 +86,9 @@ export const useAnalytics = () => {
         });
       }
 
-      // Plausible pageview
-      const plausible = getPlausible();
-      if (plausible) {
-        plausible('pageview', { u: page });
-      }
+      // GA4 pageview
+      const pageTitle = properties?.['title'] as string | undefined;
+      ga4PageView(page, pageTitle);
     } catch (error) {
       Sentry.captureException(error);
       sreLogger.warn('Pageview tracking failed', {}, error as Error);
@@ -120,7 +101,7 @@ export const useAnalytics = () => {
    * @param userId - User identifier
    * @param properties - User properties
    */
-  const identify = useCallback((userId: string, properties?: Record<string, any>) => {
+  const identify = useCallback((userId: string, properties?: Record<string, unknown>) => {
     if (!consent?.analytics) {
       return;
     }
@@ -130,6 +111,10 @@ export const useAnalytics = () => {
       if (import.meta.env.PROD && typeof window !== 'undefined') {
         posthog.identify(userId, properties);
       }
+
+      // GA4 identify
+      const ga4Traits = properties as Record<string, string | number | boolean>;
+      ga4Identify(userId, ga4Traits);
 
       // Sentry user context
       Sentry.setUser({
