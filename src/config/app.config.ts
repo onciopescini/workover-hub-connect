@@ -26,7 +26,7 @@ interface AppConfig {
     defaultVatPct: number;
   };
   analytics: {
-    plausibleDomain: string;
+    ga4MeasurementId?: string;
     sentryDsn?: string;
     posthogKey?: string;
   };
@@ -92,7 +92,7 @@ export const appConfig: AppConfig = {
     defaultVatPct: PricingEngine.VAT_RATE,
   },
   analytics: {
-    plausibleDomain: 'workover.app',
+    ga4MeasurementId: getEnvVar('VITE_GOOGLE_ANALYTICS_ID'),
     sentryDsn: getEnvVar('VITE_SENTRY_DSN'),
     posthogKey: getEnvVar('VITE_POSTHOG_KEY'),
   },

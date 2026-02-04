@@ -11,7 +11,6 @@ export const API_ENDPOINTS = {
   CANCEL_BOOKING: 'cancel-booking',
   STRIPE_CONNECT: 'stripe-connect',
   CREATE_STRIPE_CONNECT_ACCOUNT: 'create-stripe-connect-account',
-  ANALYTICS_PROXY: 'analytics-proxy',
   UNSPLASH_BASE: 'https://images.unsplash.com',
   STRIPE_DASHBOARD: 'https://dashboard.stripe.com',
 };
