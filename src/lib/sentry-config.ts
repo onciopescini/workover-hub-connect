@@ -66,8 +66,8 @@ export function initSentry() {
             return null;
           }
 
-          // Ignore script loading errors from ad blockers
-          if (error.message.includes('script.js') && error.message.includes('Failed to load')) {
+          // Ignore script loading errors from ad blockers (GA4 gtag.js)
+          if (error.message.includes('gtag') && error.message.includes('Failed to load')) {
             return null;
           }
         }
