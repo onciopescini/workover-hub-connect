@@ -2,27 +2,23 @@ import React from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Euro, TrendingUp, Calendar, Users, PieChart, BarChart3 } from "lucide-react";
+import { PieChart } from "lucide-react";
 import { AdvancedRevenueAnalytics } from '@/components/host/revenue/AdvancedRevenueAnalytics';
 import { TabContentProps } from '../types/dashboard-tabs-types';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { RevenueChart } from './RevenueChart';
+import { HostAnalyticsDashboard } from '@/components/host/analytics/HostAnalyticsDashboard';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'recentActivity'>> = ({
   metrics,
   recentActivity
 }) => {
+  const { authState } = useAuth();
+  const hostId = authState.user?.id || '';
+
   const formatDate = (date: Date): string => {
     return format(date, 'dd MMMM yyyy', { locale: it });
-  };
-
-  // Calcola dati revenue reali dalle metriche
-  const revenueData = {
-    totalRevenue: metrics.totalRevenue,
-    averageDailyRevenue: metrics.monthlyRevenue / 30,
-    bookingsCount: metrics.totalBookings,
-    spacesCount: 1, // Placeholder - da implementare conteggio spazi reali
   };
 
   return (
@@ -33,64 +29,12 @@ export const RevenueTabContent: React.FC<Pick<TabContentProps, 'metrics' | 'rece
           <p className="text-muted-foreground">Analisi completa di ricavi e finanze basata sui dati reali</p>
         </div>
         <Badge variant="secondary" className="bg-green-100 text-green-800">
-          {revenueData.bookingsCount} prenotazioni totali
+          {metrics.totalBookings} prenotazioni totali
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center space-x-4">
-            <div className="rounded-full bg-green-100 p-2">
-              <Euro className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">€{revenueData.totalRevenue.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground">Revenue Totale</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center space-x-4">
-            <div className="rounded-full bg-blue-100 p-2">
-              <Calendar className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">€{revenueData.averageDailyRevenue.toFixed(2)}</div>
-              <div className="text-sm text-muted-foreground">Media Giornaliera</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center space-x-4">
-            <div className="rounded-full bg-indigo-100 p-2">
-              <Users className="w-6 h-6 text-indigo-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{revenueData.bookingsCount}</div>
-              <div className="text-sm text-muted-foreground">Prenotazioni Totali</div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center space-x-4">
-            <div className="rounded-full bg-purple-100 p-2">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">
-                {metrics.revenueGrowth >= 0 ? '+' : ''}{metrics.revenueGrowth.toFixed(1)}%
-              </div>
-              <div className="text-sm text-muted-foreground">Crescita Mensile</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Revenue Trend Chart */}
-      <RevenueChart monthlyRevenue={metrics.monthlyRevenue} />
+      {/* Real-Data Analytics Dashboard */}
+      {hostId && <HostAnalyticsDashboard hostId={hostId} monthsBack={12} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
