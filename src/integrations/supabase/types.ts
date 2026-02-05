@@ -682,6 +682,13 @@ export type Database = {
             foreignKeyName: "attendance_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -724,6 +731,13 @@ export type Database = {
             foreignKeyName: "availability_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -760,6 +774,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_cache_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1023,6 +1044,13 @@ export type Database = {
             foreignKeyName: "bookings_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -1096,6 +1124,13 @@ export type Database = {
             foreignKeyName: "check_ins_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_ins_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -1129,6 +1164,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1487,6 +1529,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2152,6 +2201,13 @@ export type Database = {
             foreignKeyName: "events_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -2240,6 +2296,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2461,6 +2524,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "image_processing_jobs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -4061,6 +4131,13 @@ export type Database = {
             foreignKeyName: "reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -4162,6 +4239,13 @@ export type Database = {
             foreignKeyName: "space_locations_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: true
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_locations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -4213,6 +4297,13 @@ export type Database = {
             foreignKeyName: "space_reviews_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -4243,6 +4334,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_tags_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5232,6 +5330,13 @@ export type Database = {
             foreignKeyName: "waitlists_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
             referencedRelation: "spaces_public_view"
             referencedColumns: ["id"]
           },
@@ -5332,6 +5437,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_features_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5543,6 +5655,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_public_safe"
             referencedColumns: ["id"]
           },
           {
@@ -5880,17 +5999,26 @@ export type Database = {
       }
       spaces_public_safe: {
         Row: {
-          address: string | null
           amenities: string[] | null
           approximate_location: unknown
           availability: Json | null
-          category: string | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category: Database["public"]["Enums"]["space_category"] | null
           city_name: string | null
+          confirmation_type:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
           country_code: string | null
           created_at: string | null
           description: string | null
+          event_friendly_tags: string[] | null
+          host_id: string | null
           id: string | null
-          images: string[] | null
+          ideal_guest_tags: string[] | null
           max_capacity: number | null
           photos: string[] | null
           price_per_day: number | null
@@ -5900,10 +6028,111 @@ export type Database = {
           seating_types: string[] | null
           title: string | null
           updated_at: string | null
-          work_environment: string | null
+          work_environment:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
           workspace_features: string[] | null
         }
-        Relationships: []
+        Insert: {
+          amenities?: string[] | null
+          approximate_location?: unknown
+          availability?: Json | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          city_name?: string | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          country_code?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          host_id?: string | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          max_capacity?: number | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Update: {
+          amenities?: string[] | null
+          approximate_location?: unknown
+          availability?: Json | null
+          cached_avg_rating?: number | null
+          cached_review_count?: number | null
+          cancellation_policy?:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          category?: Database["public"]["Enums"]["space_category"] | null
+          city_name?: string | null
+          confirmation_type?:
+            | Database["public"]["Enums"]["confirmation_type"]
+            | null
+          country_code?: string | null
+          created_at?: string | null
+          description?: string | null
+          event_friendly_tags?: string[] | null
+          host_id?: string | null
+          id?: string | null
+          ideal_guest_tags?: string[] | null
+          max_capacity?: number | null
+          photos?: string[] | null
+          price_per_day?: number | null
+          price_per_hour?: number | null
+          published?: boolean | null
+          rules?: string | null
+          seating_types?: string[] | null
+          title?: string | null
+          updated_at?: string | null
+          work_environment?:
+            | Database["public"]["Enums"]["work_environment"]
+            | null
+          workspace_features?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       spaces_public_view: {
         Row: {
