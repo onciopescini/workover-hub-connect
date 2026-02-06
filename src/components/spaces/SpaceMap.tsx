@@ -22,6 +22,14 @@ interface SpaceMapProps {
   highlightedSpaceId?: string | null;
 }
 
+const isValidCoordinates = (coords: Coordinates | null | undefined): coords is Coordinates => (
+  !!coords
+  && typeof coords.lat === 'number'
+  && Number.isFinite(coords.lat)
+  && typeof coords.lng === 'number'
+  && Number.isFinite(coords.lng)
+);
+
 const SEARCH_RADIUS_SOURCE_ID = 'search-radius';
 const SEARCH_RADIUS_FILL_LAYER_ID = 'search-radius-circle';
 const SEARCH_RADIUS_BORDER_LAYER_ID = 'search-radius-border';
@@ -213,11 +221,13 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
     mapboxgl.accessToken = mapboxToken;
 
+    const hasValidUserLocation = isValidCoordinates(userLocation);
+
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/light-v11',
-      center: userLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
-      zoom: userLocation ? 10 : 6,
+      center: hasValidUserLocation ? [userLocation.lng, userLocation.lat] : [12.4964, 41.9028],
+      zoom: hasValidUserLocation ? 10 : 6,
       attributionControl: false,
       renderWorldCopies: false,
     });
@@ -332,7 +342,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
   useEffect(() => {
     const mapInstance = mapRef.current;
-    if (!mapInstance || !mapReady || !userLocation) {
+    if (!mapInstance || !mapReady || !isValidCoordinates(userLocation)) {
       return;
     }
 
@@ -354,7 +364,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       return;
     }
 
-    if (!searchCenter) {
+    if (!isValidCoordinates(searchCenter)) {
       scheduleStyleTask('search-radius', (readyMap) => {
         removeSearchRadiusLayers(readyMap);
       });
@@ -390,8 +400,17 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     });
 
     validSpaces.forEach((space) => {
+      if (!space.latitude || !space.longitude) {
+        return;
+      }
+
       const longitude = Number(space.longitude);
       const latitude = Number(space.latitude);
+
+      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+        return;
+      }
+
       const existing = markerMapRef.current[space.id];
       const isHighlighted = highlightedSpaceId === space.id;
 
@@ -472,7 +491,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       return;
     }
 
-    if (!userLocation) {
+    if (!isValidCoordinates(userLocation)) {
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
       return;
