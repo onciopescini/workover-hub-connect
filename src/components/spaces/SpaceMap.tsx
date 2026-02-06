@@ -78,6 +78,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   const popupsRef = useRef<mapboxgl.Popup[]>([]);
   const popupRootsRef = useRef<WeakMap<HTMLElement, Root>>(new WeakMap());
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const lastDrawnRef = useRef<Coordinates & { radius: number }>({ lat: 0, lng: 0, radius: 0 });
 
   const isStyleLoadedRef = useRef<boolean>(false);
   const pendingStyleTasksRef = useRef<Map<string, (mapInstance: mapboxgl.Map) => void>>(new Map());
@@ -158,33 +159,38 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   const upsertSearchRadiusLayers = useCallback((mapInstance: mapboxgl.Map, center: Coordinates, radiusKm: number): void => {
     const circleData = createGeoJSONCircle([center.lng, center.lat], radiusKm);
 
-    removeSearchRadiusLayers(mapInstance);
+    const existingSource = mapInstance.getSource(SEARCH_RADIUS_SOURCE_ID);
+    if (existingSource && 'setData' in existingSource) {
+      existingSource.setData(circleData);
+    } else {
+      removeSearchRadiusLayers(mapInstance);
 
-    mapInstance.addSource(SEARCH_RADIUS_SOURCE_ID, {
-      type: 'geojson',
-      data: circleData,
-    });
+      mapInstance.addSource(SEARCH_RADIUS_SOURCE_ID, {
+        type: 'geojson',
+        data: circleData,
+      });
 
-    mapInstance.addLayer({
-      id: SEARCH_RADIUS_FILL_LAYER_ID,
-      type: 'fill',
-      source: SEARCH_RADIUS_SOURCE_ID,
-      paint: {
-        'fill-color': '#4F46E5',
-        'fill-opacity': 0.1,
-      },
-    });
+      mapInstance.addLayer({
+        id: SEARCH_RADIUS_FILL_LAYER_ID,
+        type: 'fill',
+        source: SEARCH_RADIUS_SOURCE_ID,
+        paint: {
+          'fill-color': '#4F46E5',
+          'fill-opacity': 0.1,
+        },
+      });
 
-    mapInstance.addLayer({
-      id: SEARCH_RADIUS_BORDER_LAYER_ID,
-      type: 'line',
-      source: SEARCH_RADIUS_SOURCE_ID,
-      paint: {
-        'line-color': '#4F46E5',
-        'line-width': 2,
-        'line-opacity': 0.6,
-      },
-    });
+      mapInstance.addLayer({
+        id: SEARCH_RADIUS_BORDER_LAYER_ID,
+        type: 'line',
+        source: SEARCH_RADIUS_SOURCE_ID,
+        paint: {
+          'line-color': '#4F46E5',
+          'line-width': 2,
+          'line-opacity': 0.6,
+        },
+      });
+    }
 
     const bounds = new mapboxgl.LngLatBounds();
     const coordinates = circleData.features[0]?.geometry?.coordinates?.[0] ?? [];
@@ -352,12 +358,20 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       scheduleStyleTask('search-radius', (readyMap) => {
         removeSearchRadiusLayers(readyMap);
       });
+      lastDrawnRef.current = { lat: 0, lng: 0, radius: 0 };
+      return;
+    }
+
+    const previousDrawn = lastDrawnRef.current;
+    const centerDelta = Math.abs(previousDrawn.lat - searchCenter.lat) + Math.abs(previousDrawn.lng - searchCenter.lng);
+    if (previousDrawn.radius === searchRadiusKm && centerDelta < 0.000001) {
       return;
     }
 
     scheduleStyleTask('search-radius', (readyMap) => {
       upsertSearchRadiusLayers(readyMap, searchCenter, searchRadiusKm);
     });
+    lastDrawnRef.current = { lat: searchCenter.lat, lng: searchCenter.lng, radius: searchRadiusKm };
   }, [mapReady, removeSearchRadiusLayers, scheduleStyleTask, searchCenter, searchRadiusKm, upsertSearchRadiusLayers]);
 
   useEffect(() => {
