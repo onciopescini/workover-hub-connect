@@ -516,6 +516,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       markerElement.appendChild(markerContent);
 
       userMarkerRef.current = new mapboxgl.Marker(markerElement)
+        .setLngLat([userLocation.lng, userLocation.lat])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setHTML('<div class="p-2"><p class="text-sm font-medium">La tua posizione</p></div>')
         )
