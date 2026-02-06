@@ -17,7 +17,6 @@ import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import AuthCallback from "@/pages/AuthCallback";
-import PublicSpaces from "@/pages/PublicSpaces";
 import About from "@/pages/About";
 import FAQ from "@/pages/FAQ";
 import Contact from "@/pages/Contact";
@@ -100,7 +99,8 @@ export const AppRoutes = () => {
         <Route path="auth/callback" element={<AuthCallback />} />
         
         {/* Public content */}
-        <Route path="spaces" element={<PublicSpaces />} />
+        <Route path="spaces" element={<Navigate to="/search" replace />} />
+        <Route path="public-spaces" element={<Navigate to="/search" replace />} />
         <Route path="search" element={
           <LazyWrapper>
             <Search />

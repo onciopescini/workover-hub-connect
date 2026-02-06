@@ -5,7 +5,7 @@
  * Handles filters, location, and data fetching logic.
  */
 import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useLocationParams } from '@/hooks/useLocationParams';
 import { useMapCardInteraction } from '@/hooks/useMapCardInteraction';
@@ -170,6 +170,12 @@ function normalizePublicSpace(raw: Record<string, unknown>): NormalizedSpace {
  */
 const BATCH_SIZE = 50;
 const MAX_RETRIES = 2;
+const SPACES_PAGE_SIZE = 12;
+
+type SpacesPage = {
+  spaces: NormalizedSpace[];
+  nextOffset: number | null;
+};
 
 type AvailabilityItem = {
   space_id: string;
@@ -342,6 +348,9 @@ interface UsePublicSpacesLogicResult extends MapInteractionState {
   searchMode: 'text' | 'radius';
   spaces: NormalizedSpace[] | undefined;
   isLoading: boolean;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  fetchNextPage: () => Promise<unknown>;
   error: unknown;
   handleFiltersChange: (newFilters: SpaceFilters) => void;
   handleRadiusChange: (newRadius: number) => void;
@@ -507,9 +516,11 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
   }, [filters.location, stableGeocodeAddress, info, warn]); // Removed updateLocationParam from dep to avoid loop
 
   // Spaces data fetching with React Query - optimized
-  const spacesQuery = useQuery<NormalizedSpace[], Error>({
+  const spacesQuery = useInfiniteQuery<SpacesPage, Error>({
     queryKey: ['public-spaces', filterKey, searchMode, radiusKm],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const offset = typeof pageParam === 'number' ? pageParam : 0;
       info('Fetching public spaces with filters', { filters, searchMode, radiusKm });
       
       // NEW: Use geographic search RPC if coordinates available and in radius mode
@@ -569,7 +580,17 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             radius: radiusKm
           });
           
-          return Array.isArray(data) ? data : [];
+          const spaces = Array.isArray(data)
+            ? data
+                .slice(offset, offset + SPACES_PAGE_SIZE)
+                .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
+                .filter((space): space is NormalizedSpace => space !== null)
+            : [];
+
+          return {
+            spaces,
+            nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
+          };
         } catch (err) {
           // If radius search fails completely, switch to text search mode
           warn('Geographic search failed, switching to text search mode', {
@@ -615,7 +636,17 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
           searchText: filters.location
         });
         
-        return Array.isArray(data) ? data : [];
+        const spaces = Array.isArray(data)
+          ? data
+              .slice(offset, offset + SPACES_PAGE_SIZE)
+              .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
+              .filter((space): space is NormalizedSpace => space !== null)
+          : [];
+
+        return {
+          spaces,
+          nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
+        };
       }
       
       // Fallback: Use standard query (fetch all from spaces + client-side filtering)
@@ -624,7 +655,8 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
       const { data: spacesData, error: spacesError } = await supabase
         .from('spaces')
         .select(SPACES_SELECT)
-        .eq('published', true);
+        .eq('published', true)
+        .range(offset, offset + SPACES_PAGE_SIZE - 1);
       
       if (spacesError) {
         info('Failed to fetch spaces', { error: spacesError });
@@ -702,13 +734,20 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
         });
       }
       
-      info(`Successfully fetched and filtered ${Array.isArray(filteredSpaces) ? filteredSpaces.length : 0} spaces`);
-      return Array.isArray(filteredSpaces) ? filteredSpaces : [];
+      const spaces = Array.isArray(filteredSpaces) ? filteredSpaces : [];
+      info(`Successfully fetched and filtered ${spaces.length} spaces`);
+      return {
+        spaces,
+        nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,
     gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
     refetchOnWindowFocus: false,
   });
+
+  const flattenedSpaces = spacesQuery.data?.pages.flatMap((page) => page.spaces) ?? [];
 
   const handleFiltersChange = (newFilters: SpaceFilters) => {
     info('Filters changed', { previousFilters: filters, newFilters });
@@ -789,8 +828,11 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
     searchMode, // NEW
     
     // Data
-    spaces: spacesQuery.data,
+    spaces: flattenedSpaces,
     isLoading: spacesQuery.isLoading,
+    isFetchingNextPage: spacesQuery.isFetchingNextPage,
+    hasNextPage: Boolean(spacesQuery.hasNextPage),
+    fetchNextPage: spacesQuery.fetchNextPage,
     error: spacesQuery.error,
     
     // Actions
