@@ -14,6 +14,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { AmenityFilters } from '@/components/spaces/search/AmenityFilters';
+import { queryKeys } from '@/lib/react-query-config';
+import type { Database } from '@/integrations/supabase/types';
 import {
   Collapsible,
   CollapsibleContent,
@@ -26,6 +28,7 @@ const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [isNearMeActive, setIsNearMeActive] = useState<boolean>(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   
   // Real geolocation hook
@@ -63,7 +66,15 @@ const Search = () => {
   const handleClearSearch = () => {
     setSearchQuery('');
     setSelectedAmenities([]);
+    setIsNearMeActive(false);
     setSearchParams(new URLSearchParams());
+  };
+
+  const handleNearMeSearch = async (): Promise<void> => {
+    const location = await getUserLocation();
+    if (location) {
+      setIsNearMeActive(true);
+    }
   };
   
   const handleAmenitiesChange = (amenities: string[]) => {
@@ -81,8 +92,47 @@ const Search = () => {
 
   // Fetch spaces logic with amenity filtering
   const { data: spaces = [], isLoading, error } = useQuery({
-    queryKey: ['search-spaces', searchQuery, selectedAmenities],
+    queryKey: queryKeys.spaces.list({
+      query: searchQuery,
+      amenities: selectedAmenities,
+      nearMe: isNearMeActive,
+      lat: userLocation?.lat,
+      lng: userLocation?.lng,
+    }),
     queryFn: async () => {
+      type NearbySpaceRpcRow = Database['public']['Functions']['get_nearby_spaces']['Returns'][number];
+
+      if (isNearMeActive && userLocation) {
+        const { data, error: rpcError } = await supabase.rpc('get_nearby_spaces', {
+          lat: userLocation.lat,
+          long: userLocation.lng,
+          radius_meters: 20000,
+          limit: 100,
+          offset: 0,
+        });
+
+        if (rpcError) {
+          throw rpcError;
+        }
+
+        const rpcSpaces: NearbySpaceRpcRow[] = data ?? [];
+
+        const filteredRpcSpaces = selectedAmenities.length > 0
+          ? rpcSpaces.filter((space) => {
+              return selectedAmenities.every((amenity) => {
+                if (amenity === 'Meeting room') {
+                  return space.workspace_features.includes(amenity);
+                }
+                return space.amenities.includes(amenity);
+              });
+            })
+          : rpcSpaces;
+
+        return filteredRpcSpaces
+          .map((space) => mapSpaceRowToSpace(space))
+          .filter((space): space is Space => space !== null);
+      }
+
       let query = supabase
         .from('spaces')
         .select(`
@@ -158,7 +208,7 @@ const Search = () => {
             <Button 
               type="button" 
               variant="outline" 
-              onClick={getUserLocation}
+              onClick={handleNearMeSearch}
               disabled={isGettingLocation}
               className="h-12"
               title="Trova spazi vicino a me"

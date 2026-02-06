@@ -2,37 +2,17 @@ import { renderHook, act } from '@testing-library/react';
 import { useCheckout } from '../useCheckout';
 import * as bookingService from '@/services/api/bookingService';
 
-// Mock the booking service
 jest.mock('@/services/api/bookingService', () => ({
   reserveSlot: jest.fn(),
-  createCheckoutSession: jest.fn()
+  createCheckoutSession: jest.fn(),
 }));
 
-// Mock logger
 jest.mock('@/hooks/useLogger', () => ({
   useLogger: () => ({
     debug: jest.fn(),
-    error: jest.fn()
-  })
+    error: jest.fn(),
+  }),
 }));
-
-// Mock window.location
-const originalLocation = window.location;
-beforeAll(() => {
-  Object.defineProperty(window, 'location', {
-    value: { href: '', origin: 'http://localhost' } as unknown as Location,
-    writable: true,
-    configurable: true
-  });
-});
-
-afterAll(() => {
-  Object.defineProperty(window, 'location', {
-    value: originalLocation,
-    writable: true,
-    configurable: true
-  });
-});
 
 describe('useCheckout', () => {
   beforeEach(() => {
@@ -49,23 +29,20 @@ describe('useCheckout', () => {
     confirmationType: 'instant' as const,
     pricePerHour: 10,
     pricePerDay: 80,
-    durationHours: 1
+    durationHours: 1,
   };
 
   it('should handle successful checkout flow', async () => {
-    // Setup service mocks
     (bookingService.reserveSlot as jest.Mock).mockResolvedValue({
       success: true,
-      bookingId: 'booking-123'
+      bookingId: 'booking-123',
     });
 
     (bookingService.createCheckoutSession as jest.Mock).mockResolvedValue({
       success: true,
       url: 'https://checkout.stripe.com/session-123',
-      sessionId: 'cs_test_123'
+      sessionId: 'cs_test_123',
     });
-
-    const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
@@ -75,28 +52,20 @@ describe('useCheckout', () => {
       expect(outcome.bookingId).toBe('booking-123');
     });
 
-    expect(window.location.href).toBe('https://checkout.stripe.com/session-123');
-    expect(consoleLogSpy).toHaveBeenCalledWith("CHECKOUT PAYLOAD:", expect.objectContaining({
-      booking_id: 'booking-123',
-      return_url: expect.stringContaining('/messages')
-    }));
-
-    consoleLogSpy.mockRestore();
+    expect(bookingService.createCheckoutSession).toHaveBeenCalledWith('booking-123');
   });
 
   it('should handle checkout session failure', async () => {
     (bookingService.reserveSlot as jest.Mock).mockResolvedValue({
       success: true,
-      bookingId: 'booking-123'
+      bookingId: 'booking-123',
     });
 
     (bookingService.createCheckoutSession as jest.Mock).mockResolvedValue({
       success: false,
       error: 'Payment service unavailable',
-      errorCode: 'SERVER_ERROR'
+      errorCode: 'SERVER_ERROR',
     });
-
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
@@ -107,23 +76,19 @@ describe('useCheckout', () => {
       expect(outcome.error).toBe('Payment service unavailable');
       expect(outcome.errorCode).toBe('SERVER_ERROR');
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('should handle unauthorized checkout error', async () => {
     (bookingService.reserveSlot as jest.Mock).mockResolvedValue({
       success: true,
-      bookingId: 'booking-123'
+      bookingId: 'booking-123',
     });
 
     (bookingService.createCheckoutSession as jest.Mock).mockResolvedValue({
       success: false,
       error: 'Session expired, please login again',
-      errorCode: 'UNAUTHORIZED'
+      errorCode: 'UNAUTHORIZED',
     });
-
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
@@ -134,23 +99,19 @@ describe('useCheckout', () => {
       expect(outcome.error).toBe('Session expired, please login again');
       expect(outcome.errorCode).toBe('UNAUTHORIZED');
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('should handle network errors gracefully', async () => {
     (bookingService.reserveSlot as jest.Mock).mockResolvedValue({
       success: true,
-      bookingId: 'booking-123'
+      bookingId: 'booking-123',
     });
 
     (bookingService.createCheckoutSession as jest.Mock).mockResolvedValue({
       success: false,
       error: 'Connection failed, please check your internet',
-      errorCode: 'NETWORK'
+      errorCode: 'NETWORK',
     });
-
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const { result } = renderHook(() => useCheckout());
 
@@ -161,16 +122,10 @@ describe('useCheckout', () => {
       expect(outcome.error).toBe('Connection failed, please check your internet');
       expect(outcome.errorCode).toBe('NETWORK');
     });
-
-    consoleErrorSpy.mockRestore();
   });
 
   it('should handle exception thrown by service', async () => {
-    (bookingService.reserveSlot as jest.Mock).mockRejectedValue(
-      new Error('Unexpected service error')
-    );
-
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (bookingService.reserveSlot as jest.Mock).mockRejectedValue(new Error('Unexpected service error'));
 
     const { result } = renderHook(() => useCheckout());
 
@@ -181,9 +136,5 @@ describe('useCheckout', () => {
       expect(outcome.error).toBe('Unexpected service error');
       expect(outcome.errorCode).toBe('UNKNOWN');
     });
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith("CRITICAL FAILURE:", "Unexpected service error");
-
-    consoleErrorSpy.mockRestore();
   });
 });

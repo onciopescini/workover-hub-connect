@@ -4380,6 +4380,7 @@ export type Database = {
           is_suspended: boolean | null
           latitude: number | null
           longitude: number | null
+          location: unknown | null
           max_capacity: number
           pending_approval: boolean | null
           photos: string[]
@@ -4427,6 +4428,7 @@ export type Database = {
           is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          location?: unknown | null
           max_capacity: number
           pending_approval?: boolean | null
           photos?: string[]
@@ -4474,6 +4476,7 @@ export type Database = {
           is_suspended?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          location?: unknown | null
           max_capacity?: number
           pending_approval?: boolean | null
           photos?: string[]
@@ -5478,6 +5481,7 @@ export type Database = {
           latitude: number | null
           location_point: unknown
           longitude: number | null
+          location: unknown | null
           max_capacity: number | null
           name: string
           num_reviews: number
@@ -5517,6 +5521,7 @@ export type Database = {
           latitude?: number | null
           location_point?: unknown
           longitude?: number | null
+          location?: unknown | null
           max_capacity?: number | null
           name: string
           num_reviews?: number
@@ -5556,6 +5561,7 @@ export type Database = {
           latitude?: number | null
           location_point?: unknown
           longitude?: number | null
+          location?: unknown | null
           max_capacity?: number | null
           name?: string
           num_reviews?: number
@@ -6764,6 +6770,39 @@ export type Database = {
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_nearby_spaces: {
+        Args: {
+          lat: number
+          limit?: number
+          long: number
+          offset?: number
+          radius_meters?: number
+        }
+        Returns: {
+          address: string
+          amenities: string[]
+          cached_avg_rating: number | null
+          cached_review_count: number | null
+          category: Database["public"]["Enums"]["space_category"]
+          city_name: string | null
+          confirmation_type: Database["public"]["Enums"]["confirmation_type"]
+          description: string
+          distance_meters: number
+          host_id: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          max_capacity: number
+          photos: string[]
+          price_per_day: number
+          price_per_hour: number
+          published: boolean
+          seating_types: string[]
+          title: string
+          work_environment: Database["public"]["Enums"]["work_environment"]
+          workspace_features: string[]
+        }[]
       }
       get_networking_stats: { Args: { p_user_id: string }; Returns: Json }
       get_networking_suggestions: {
