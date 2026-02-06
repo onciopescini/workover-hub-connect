@@ -3,6 +3,7 @@ import { Message } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { AttachmentPreview } from './AttachmentPreview';
 import type { LucideIcon } from 'lucide-react';
 
 interface MessageBubbleProps {
@@ -13,6 +14,9 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe, onDelete, deleteIcon: DeleteIcon }) => {
+  const hasAttachments = message.attachments && message.attachments.length > 0;
+  const isOnlyAttachment = hasAttachments && (!message.content || message.content === '📎 Allegato');
+
   return (
     <div className={cn("flex mb-4 group", isMe ? "justify-end" : "justify-start")}>
       <div
@@ -23,7 +27,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe, onD
             : "bg-muted text-foreground rounded-bl-none"
         )}
       >
-        <p>{message.content}</p>
+        {/* Text content (hide if only attachment placeholder) */}
+        {!isOnlyAttachment && message.content && (
+          <p>{message.content}</p>
+        )}
+        
+        {/* Attachments */}
+        {hasAttachments && (
+          <AttachmentPreview 
+            attachments={message.attachments!} 
+            isMe={isMe} 
+          />
+        )}
+        
         <div className={cn("text-[10px] mt-1 opacity-70", isMe ? "text-primary-foreground/80" : "text-muted-foreground")}>
           {format(new Date(message.created_at), 'HH:mm')}
         </div>

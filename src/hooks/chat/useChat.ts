@@ -8,6 +8,7 @@ import {
   DeleteMessagePayload,
   MarkConversationUnreadPayload,
   Message,
+  MessageAttachment,
 } from "@/types/chat";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { toast } from "sonner";
@@ -21,7 +22,7 @@ export interface UseChatResult {
   activeMessages: Message[];
   isLoading: boolean;
   isMessagesLoading: boolean;
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string, attachments?: MessageAttachment[]) => void;
   deleteMessage: (payload: DeleteMessagePayload) => void;
   archiveConversation: (payload: ArchiveConversationPayload) => void;
   markConversationUnread: (payload: MarkConversationUnreadPayload) => void;
@@ -83,16 +84,23 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
   });
 
   // Send Message Mutation using chatService
-  const sendMessage = useMutation({
-    mutationFn: async (content: string) => {
+  const sendMessageMutation = useMutation({
+    mutationFn: async (params: { content: string; attachments?: MessageAttachment[] }) => {
       if (!activeConversationId || !user?.id) throw new Error("Missing conversation or user");
 
-      // Use chatService - NO FALLBACK UUID, booking_id can be null
-      const result = await chatService.sendMessage({
+      // Build params for chatService
+      const sendParams: chatService.SendMessageParams = {
         conversationId: activeConversationId,
         senderId: user.id,
-        content
-      });
+        content: params.content
+      };
+      
+      // Only add attachments if they exist
+      if (params.attachments && params.attachments.length > 0) {
+        sendParams.attachments = params.attachments;
+      }
+
+      const result = await chatService.sendMessage(sendParams);
 
       if (!result.success) {
         throw new Error(result.error);
@@ -213,11 +221,17 @@ export const useChat = (activeConversationId?: string): UseChatResult => {
     activeMessages: messages || [],
     isLoading: isLoadingConversations,
     isMessagesLoading: isLoadingMessages,
-    sendMessage: sendMessage.mutate,
+    sendMessage: (content: string, attachments?: MessageAttachment[]) => {
+      const params: { content: string; attachments?: MessageAttachment[] } = { content };
+      if (attachments && attachments.length > 0) {
+        params.attachments = attachments;
+      }
+      sendMessageMutation.mutate(params);
+    },
     deleteMessage: deleteMessage.mutate,
     archiveConversation: archiveConversation.mutate,
     markConversationUnread: markConversationUnread.mutate,
-    isSending: sendMessage.isPending,
+    isSending: sendMessageMutation.isPending,
     isDeletingMessage: deleteMessage.isPending,
     isArchivingConversation: archiveConversation.isPending,
     isMarkingConversationUnread: markConversationUnread.isPending,
