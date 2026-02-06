@@ -19,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 const CatalogFiltersStitch = lazy(() => import('@/feature/spaces/CatalogFiltersStitch'));
 
 interface PublicSpacesContentProps {
+  currentUserId: string | null;
   filters: SpaceFilters;
   spaces: any[];
   isLoading: boolean;
@@ -34,6 +35,7 @@ interface PublicSpacesContentProps {
 }
 
 export const PublicSpacesContent = ({
+  currentUserId,
   filters,
   spaces,
   isLoading,
@@ -199,6 +201,7 @@ export const PublicSpacesContent = ({
             searchCenter={filters.coordinates}
             searchRadiusKm={radiusKm}
             onSpaceClick={onMapSpaceClick}
+            currentUserId={currentUserId}
             highlightedSpaceId={highlightedId}
           />
           
@@ -213,6 +216,7 @@ export const PublicSpacesContent = ({
           <CompactSpaceCardsGrid 
             spaces={spaces || []} 
             onSpaceClick={onSpaceClick}
+            currentUserId={currentUserId}
             highlightedId={highlightedId}
             isLoading={isLoading}
             isFetchingNextPage={isFetchingNextPage}

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface CompactSpaceCardsGridProps {
   spaces: Space[];
   onSpaceClick: (spaceId: string) => void;
+  currentUserId: string | null;
   highlightedId?: string | null;
   isLoading?: boolean;
   isFetchingNextPage?: boolean;
@@ -19,6 +20,7 @@ interface CompactSpaceCardsGridProps {
 export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
   spaces,
   onSpaceClick,
+  currentUserId,
   highlightedId,
   isLoading = false,
   isFetchingNextPage = false,
@@ -86,6 +88,7 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
               space={space}
               onClick={() => onSpaceClick(space.id)}
               isHighlighted={highlightedId === space.id}
+              currentUserId={currentUserId}
               size={cardSize}
               selectedDate={selectedDate}
             />

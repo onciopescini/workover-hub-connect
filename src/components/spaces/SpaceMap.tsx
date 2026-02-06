@@ -19,6 +19,7 @@ interface SpaceMapProps {
   searchCenter?: Coordinates | null;
   searchRadiusKm?: number;
   onSpaceClick: (spaceId: string) => void;
+  currentUserId: string | null;
   highlightedSpaceId?: string | null;
 }
 
@@ -81,6 +82,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   searchCenter,
   searchRadiusKm = 10,
   onSpaceClick,
+  currentUserId,
   highlightedSpaceId,
 }) => {
   const queryClient = useQueryClient();
@@ -469,6 +471,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
             <SpaceMapPreview
               space={space}
               onViewDetails={safeOnSpaceClick}
+              currentUserId={currentUserId}
             />
           </QueryClientProvider>
         );
@@ -495,7 +498,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         .setLngLat([longitude, latitude])
         .addTo(mapInstance);
     });
-  }, [cleanupPopups, highlightedSpaceId, mapReady, queryClient, safeOnSpaceClick, validSpaces]);
+  }, [cleanupPopups, currentUserId, highlightedSpaceId, mapReady, queryClient, safeOnSpaceClick, validSpaces]);
 
   useEffect(() => {
     const mapInstance = mapRef.current;

@@ -30,7 +30,7 @@ export const OptimizedUnifiedHeader = () => {
   const navigationItems = useMemo(() => {
     if (!authState.isAuthenticated) {
       return [
-        { name: 'Spazi', href: '/spaces', icon: MapPin },
+        { name: 'Spazi', href: '/search', icon: MapPin },
         { name: 'Chi siamo', href: '/about', icon: Users },
         { name: 'FAQ', href: '/faq', icon: MessageSquare },
       ];
@@ -43,7 +43,7 @@ export const OptimizedUnifiedHeader = () => {
     }
 
     const baseItems = [
-      { name: 'Spazi', href: '/spaces', icon: MapPin },
+      { name: 'Spazi', href: '/search', icon: MapPin },
       { name: 'Networking', href: '/networking', icon: Users },
       { name: 'Prenotazioni', href: '/bookings', icon: Calendar },
       // "Messaggi" is now removed from here and moved to a standalone icon
