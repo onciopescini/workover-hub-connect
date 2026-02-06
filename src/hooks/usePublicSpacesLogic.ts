@@ -36,6 +36,13 @@ const areCoordinatesEqual = (
   return a.lat === b.lat && a.lng === b.lng;
 };
 
+const hasValidCoordinates = (
+  coordinates: { lat: number; lng: number } | null
+): coordinates is { lat: number; lng: number } =>
+  coordinates !== null &&
+  Number.isFinite(coordinates.lat) &&
+  Number.isFinite(coordinates.lng);
+
 
 // Field selection for direct spaces query (simulating the view structure)
 const SPACES_SELECT = [
@@ -536,8 +543,8 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
       const offset = typeof pageParam === 'number' ? pageParam : 0;
       info('Fetching public spaces with filters', { filters, searchMode, radiusKm: debouncedRadiusKm });
       
-      // NEW: Use geographic search RPC if coordinates available and in radius mode
-      if (filters.coordinates && searchMode === 'radius') {
+      // Priority: when coordinates are available, always use radius search (PostGIS)
+      if (hasValidCoordinates(filters.coordinates)) {
         try {
           info('Using geographic search by radius', { 
             coordinates: filters.coordinates, 
