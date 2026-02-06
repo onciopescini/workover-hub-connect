@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, MapPin, Briefcase, Users, ExternalLink } from "lucide-react";
+import { User, Briefcase, ExternalLink, Building } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -17,12 +17,12 @@ interface UserProfile {
   id: string;
   first_name: string;
   last_name: string;
-  profile_photo_url: string | null;
+  avatar_url: string | null;
   bio: string | null;
   job_title: string | null;
-  location: string | null;
-  skills: string | null;
-  competencies: string[] | null;
+  linkedin_url: string | null;
+  website_url: string | null;
+  is_host: boolean;
 }
 
 export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePreviewDialogProps) => {
@@ -40,8 +40,8 @@ export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePrev
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, profile_photo_url, bio, job_title, location, skills, competencies')
+        .from('profiles_public_view')
+        .select('id, first_name, last_name, avatar_url, bio, job_title, linkedin_url, website_url, is_host')
         .eq('id', userId)
         .single();
 
@@ -98,7 +98,7 @@ export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePrev
           {/* Header con foto e nome */}
           <div className="flex items-start gap-4">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={profile.profile_photo_url || undefined} />
+              <AvatarImage src={profile.avatar_url || undefined} />
               <AvatarFallback>
                 <User className="w-10 h-10" />
               </AvatarFallback>
@@ -116,10 +116,10 @@ export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePrev
                 </div>
               )}
               
-              {profile.location && (
+              {(profile.linkedin_url || profile.website_url || profile.is_host) && (
                 <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{profile.location}</span>
+                  <Building className="w-4 h-4" />
+                  <span>{profile.is_host ? 'Host' : 'Coworker'}</span>
                 </div>
               )}
             </div>
@@ -133,28 +133,13 @@ export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePrev
             </div>
           )}
 
-          {/* Competenze */}
-          {profile.competencies && profile.competencies.length > 0 && (
+          {(profile.linkedin_url || profile.website_url) && (
             <div>
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Competenze
-              </h4>
+              <h4 className="font-semibold mb-2">Link</h4>
               <div className="flex flex-wrap gap-2">
-                {profile.competencies.map((comp, idx) => (
-                  <Badge key={idx} variant="secondary">
-                    {comp}
-                  </Badge>
-                ))}
+                {profile.linkedin_url ? <Badge variant="secondary">LinkedIn</Badge> : null}
+                {profile.website_url ? <Badge variant="secondary">Website</Badge> : null}
               </div>
-            </div>
-          )}
-
-          {/* Skills */}
-          {profile.skills && (
-            <div>
-              <h4 className="font-semibold mb-2">Skills</h4>
-              <p className="text-muted-foreground">{profile.skills}</p>
             </div>
           )}
 

@@ -81,13 +81,13 @@ export const getUserReviews = async (userId: string): Promise<{
     
     const [revieweeProfiles, reviewerProfiles] = await Promise.all([
       givenRevieweeIds.length > 0 ? supabase
-        .from('profiles')
-        .select('id, first_name, last_name, profile_photo_url')
+        .from('profiles_public_view')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', givenRevieweeIds) : Promise.resolve({ data: [] }),
       
       receivedReviewerIds.length > 0 ? supabase
-        .from('profiles')
-        .select('id, first_name, last_name, profile_photo_url')
+        .from('profiles_public_view')
+        .select('id, first_name, last_name, avatar_url')
         .in('id', receivedReviewerIds) : Promise.resolve({ data: [] })
     ]);
 
@@ -100,7 +100,15 @@ export const getUserReviews = async (userId: string): Promise<{
       created_at: review.created_at ?? '',
       reviewer_id: review.author_id,
       reviewee_id: review.target_id,
-      reviewee: revieweeProfilesMap.get(review.target_id) || null,
+      reviewee: (() => {
+        const profile = revieweeProfilesMap.get(review.target_id);
+        if (!profile) return null;
+        return {
+          first_name: profile.first_name ?? '',
+          last_name: profile.last_name ?? '',
+          profile_photo_url: profile.avatar_url
+        };
+      })(),
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
@@ -110,7 +118,15 @@ export const getUserReviews = async (userId: string): Promise<{
       created_at: review.created_at ?? '',
       reviewer_id: review.author_id,
       reviewee_id: review.target_id,
-      reviewer: reviewerProfilesMap.get(review.author_id) || null,
+      reviewer: (() => {
+        const profile = reviewerProfilesMap.get(review.author_id);
+        if (!profile) return null;
+        return {
+          first_name: profile.first_name ?? '',
+          last_name: profile.last_name ?? '',
+          profile_photo_url: profile.avatar_url
+        };
+      })(),
       booking: Array.isArray(review.booking) ? review.booking[0] : review.booking
     }));
 
@@ -128,18 +144,7 @@ export const getUserReviews = async (userId: string): Promise<{
 // Get user average rating (optimized with cached value)
 export const getUserAverageRating = async (userId: string): Promise<number | null> => {
   try {
-    // Try to use cached value first (PERFORMANCE OPTIMIZATION)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('cached_avg_rating')
-      .eq('id', userId)
-      .single();
-
-    if (!profileError && profile?.cached_avg_rating !== null) {
-      return profile.cached_avg_rating;
-    }
-
-    // Fallback to real-time calculation if cache unavailable
+    // Real-time calculation from public review data
     const { data, error } = await supabase
       .from('booking_reviews')
       .select('rating')

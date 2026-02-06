@@ -91,12 +91,8 @@ export const checkProfileAccess = async (profileId: string): Promise<ProfileAcce
 
 // Define safe public fields to select
 const PUBLIC_PROFILE_FIELDS = [
-  'id', 'first_name', 'last_name', 'profile_photo_url', 'bio',
-  'job_title', 'profession', 'location',
-  'skills', 'interests', 'competencies', 'industries',
-  'website', 'linkedin_url', 'twitter_url', 'instagram_url', 'facebook_url', 'youtube_url', 'github_url',
-  'created_at',
-  'collaboration_availability', 'collaboration_types', 'preferred_work_mode', 'collaboration_description'
+  'id', 'first_name', 'last_name', 'avatar_url', 'bio',
+  'job_title', 'company_name', 'linkedin_url', 'website_url', 'is_host'
 ].join(',');
 
 // Fetch profilo utente con controllo accesso
@@ -106,7 +102,7 @@ export const fetchUserProfileWithAccess = async (userId: string) => {
     const [accessResult, profileResponse] = await Promise.all([
       checkProfileAccess(userId),
       supabase
-        .from('profiles')
+        .from('profiles_public_view')
         .select(PUBLIC_PROFILE_FIELDS)
         .eq('id', userId)
         .maybeSingle()
@@ -198,7 +194,7 @@ export const getProfileVisibilityLevel = (accessReason: string): 'full' | 'limit
 };
 
 // Filtra dati profilo in base al livello di accesso
-export const filterProfileData = (profile: Record<string, any>, visibilityLevel: 'full' | 'limited' | 'none') => {
+export const filterProfileData = (profile: Record<string, unknown>, visibilityLevel: 'full' | 'limited' | 'none') => {
   if (visibilityLevel === 'none') {
     return null;
   }
@@ -207,11 +203,10 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
     id: profile['id'],
     first_name: profile['first_name'],
     last_name: profile['last_name'],
-    profile_photo_url: profile['profile_photo_url'],
+    profile_photo_url: profile['avatar_url'] as string | null | undefined,
     bio: profile['bio'],
     job_title: profile['job_title'],
-    profession: profile['profession'],
-    location: profile['location']
+    company_name: profile['company_name']
   };
 
   if (visibilityLevel === 'limited') {
@@ -221,21 +216,8 @@ export const filterProfileData = (profile: Record<string, any>, visibilityLevel:
   // Full access - restituisce tutti i dati pubblici
   return {
     ...baseData,
-    skills: profile['skills'],
-    interests: profile['interests'],
-    competencies: profile['competencies'],
-    industries: profile['industries'],
-    website: profile['website'],
+    website: profile['website_url'],
     linkedin_url: profile['linkedin_url'],
-    twitter_url: profile['twitter_url'],
-    instagram_url: profile['instagram_url'],
-    facebook_url: profile['facebook_url'],
-    youtube_url: profile['youtube_url'],
-    github_url: profile['github_url'],
-    created_at: profile['created_at'],
-    collaboration_availability: profile['collaboration_availability'],
-    collaboration_types: profile['collaboration_types'],
-    preferred_work_mode: profile['preferred_work_mode'],
-    collaboration_description: profile['collaboration_description']
+    is_host: profile['is_host']
   };
 };

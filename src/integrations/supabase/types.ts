@@ -5912,6 +5912,45 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles_public_view: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          company_name: string | null
+          first_name: string | null
+          id: string | null
+          is_host: boolean | null
+          job_title: string | null
+          last_name: string | null
+          linkedin_url: string | null
+          website_url: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          company_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_host?: boolean | null
+          job_title?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          company_name?: string | null
+          first_name?: string | null
+          id?: string | null
+          is_host?: boolean | null
+          job_title?: string | null
+          last_name?: string | null
+          linkedin_url?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       profiles_with_role: {
         Row: {
           admin_notes: string | null
