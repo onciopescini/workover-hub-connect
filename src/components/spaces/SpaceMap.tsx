@@ -7,8 +7,7 @@ import { SpaceMapPreview } from './SpaceMapPreview';
 import { createRoot, Root } from 'react-dom/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { useMapboxToken } from '@/contexts/MapboxTokenContext';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { optimizedQueryClient } from '@/lib/react-query-config';
+import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -27,6 +26,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   onSpaceClick,
   highlightedSpaceId 
 }) => {
+  const queryClient = useQueryClient();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
@@ -538,7 +538,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
               popupRootsRef.current.set(popupContainer, root);
               
               root.render(
-                <QueryClientProvider client={optimizedQueryClient}>
+                <QueryClientProvider client={queryClient}>
                   <SpaceMapPreview 
                     space={space} 
                     onViewDetails={onSpaceClick}
