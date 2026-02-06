@@ -36,8 +36,8 @@ interface ProfileData {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  profile_photo_url: string | null;
-  profession: string | null;
+  avatar_url: string | null;
+  job_title: string | null;
 }
 
 export const WhosHereList = () => {
@@ -77,8 +77,8 @@ export const WhosHereList = () => {
         
         // Fetch profiles separately
         const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, profile_photo_url, profession')
+          .from('profiles_public_view')
+          .select('id, first_name, last_name, avatar_url, job_title')
           .in('id', userIds);
 
         if (profilesError) {
@@ -103,8 +103,8 @@ export const WhosHereList = () => {
             profiles: {
               first_name: profile?.first_name || '',
               last_name: profile?.last_name || '',
-              profile_photo_url: profile?.profile_photo_url || null,
-              profession: profile?.profession || null
+              profile_photo_url: profile?.avatar_url || null,
+              profession: profile?.job_title || null
             },
             spaces: {
               title: row.spaces?.title || 'Space',
