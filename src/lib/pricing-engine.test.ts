@@ -20,11 +20,11 @@ describe('PricingEngine', () => {
       // Host Fee: 5% of 100 = 5.00
       expect(result.hostFee).toBe(5.00);
 
-      // Host Payout: 100 - 5.00 = 95.00
-      expect(result.hostPayout).toBe(95.00);
+      // Host Payout: 100 - 5.00 - 1.10 = 93.90
+      expect(result.hostPayout).toBe(93.90);
 
-      // Application Fee: 106.10 - 95.00 = 11.10
-      expect(result.applicationFee).toBe(11.10);
+      // Application Fee: 106.10 - 93.90 = 12.20
+      expect(result.applicationFee).toBe(12.20);
     });
 
     it('should apply minimum guest fee floor', () => {
@@ -44,11 +44,11 @@ describe('PricingEngine', () => {
       // Host Fee: 5% of 5 = 0.25 (No floor for host)
       expect(result.hostFee).toBe(0.25);
 
-      // Host Payout: 5 - 0.25 = 4.75
-      expect(result.hostPayout).toBe(4.75);
+      // Host Payout: 5 - 0.25 - 0.06 = 4.69
+      expect(result.hostPayout).toBe(4.69);
 
-      // App Fee: 5.61 - 4.75 = 0.86
-      expect(result.applicationFee).toBe(0.86);
+      // App Fee: 5.61 - 4.69 = 0.92
+      expect(result.applicationFee).toBe(0.92);
     });
 
     it('should handle rounding correctly (e.g., repeating decimals)', () => {
@@ -70,11 +70,11 @@ describe('PricingEngine', () => {
       // Host Fee: 33.33 * 0.05 = 1.6665 -> 1.67
       expect(result.hostFee).toBe(1.67);
 
-      // Host Payout: 33.33 - 1.67 = 31.66
-      expect(result.hostPayout).toBe(31.66);
+      // Host Payout: 33.33 - 1.67 - 0.37 = 31.29
+      expect(result.hostPayout).toBe(31.29);
 
-      // App Fee: 35.37 - 31.66 = 3.71
-      expect(result.applicationFee).toBe(3.71);
+      // App Fee: 35.37 - 31.29 = 4.08
+      expect(result.applicationFee).toBe(4.08);
     });
 
     it('should handle large numbers correctly', () => {
@@ -93,11 +93,11 @@ describe('PricingEngine', () => {
       // Host Fee: 500
       expect(result.hostFee).toBe(500);
 
-      // Payout: 9500
-      expect(result.hostPayout).toBe(9500);
+      // Payout: 9390
+      expect(result.hostPayout).toBe(9390);
 
-      // App Fee: 10610 - 9500 = 1110
-      expect(result.applicationFee).toBe(1110);
+      // App Fee: 10610 - 9390 = 1220
+      expect(result.applicationFee).toBe(1220);
     });
   });
 });
