@@ -389,6 +389,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
   }));
 
   const [radiusKm, setRadiusKm] = useState(initialRadius);
+  const [debouncedRadiusKm, setDebouncedRadiusKm] = useState(initialRadius);
   const [searchMode, setSearchMode] = useState<'text' | 'radius'>(
     initialCoordinates ? 'radius' : 'text'
   );
@@ -434,10 +435,22 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
     });
 
     // Only update userLocation if coordinates actually changed
-    if (initialCoordinates && !areCoordinatesEqual(initialCoordinates, userLocation)) {
-      setUserLocation(initialCoordinates);
+    if (initialCoordinates) {
+      setUserLocation((prevUserLocation) =>
+        areCoordinatesEqual(initialCoordinates, prevUserLocation) ? prevUserLocation : initialCoordinates
+      );
     }
-  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, initialCategory, initialWorkEnvironment, initialMinCapacity, userLocation]);
+  }, [initialCity, initialCoordinates, initialDate, initialStartTime, initialEndTime, initialCategory, initialWorkEnvironment, initialMinCapacity]);
+
+  useEffect(() => {
+    const radiusDebounce = window.setTimeout(() => {
+      setDebouncedRadiusKm(radiusKm);
+    }, 500);
+
+    return () => {
+      window.clearTimeout(radiusDebounce);
+    };
+  }, [radiusKm]);
 
   // Sync state changes to URL - wrapped in useCallback for stability
   const syncFiltersToUrl = useCallback((newFilters: SpaceFilters, radius: number) => {
@@ -517,18 +530,18 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
 
   // Spaces data fetching with React Query - optimized
   const spacesQuery = useInfiniteQuery<SpacesPage, Error>({
-    queryKey: ['public-spaces', filterKey, searchMode, radiusKm],
+    queryKey: ['public-spaces', filterKey, searchMode, debouncedRadiusKm],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const offset = typeof pageParam === 'number' ? pageParam : 0;
-      info('Fetching public spaces with filters', { filters, searchMode, radiusKm });
+      info('Fetching public spaces with filters', { filters, searchMode, radiusKm: debouncedRadiusKm });
       
       // NEW: Use geographic search RPC if coordinates available and in radius mode
       if (filters.coordinates && searchMode === 'radius') {
         try {
           info('Using geographic search by radius', { 
             coordinates: filters.coordinates, 
-            radius: radiusKm 
+            radius: debouncedRadiusKm 
           });
           
           const params: {
@@ -545,7 +558,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
           } = {
             p_lat: filters.coordinates.lat,
             p_lng: filters.coordinates.lng,
-            p_radius_km: radiusKm,
+            p_radius_km: debouncedRadiusKm,
             p_limit: 100
           };
           
@@ -567,17 +580,12 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
               hint: error.hint
             });
             
-            // FALLBACK: Switch to text search automatically
-            setSearchMode('text');
-            
-            // If we have a location, the query will automatically retry with text search
-            // because the query key changed when we updated searchMode
-            throw error; // Let React Query handle the retry with new searchMode
+            throw error;
           }
           
           info('Geographic search completed', {
             resultsCount: data?.length || 0,
-            radius: radiusKm
+            radius: debouncedRadiusKm
           });
           
           const spaces = Array.isArray(data)
@@ -592,12 +600,55 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
           };
         } catch (err) {
-          // If radius search fails completely, switch to text search mode
           warn('Geographic search failed, switching to text search mode', {
             error: err
           });
-          setSearchMode('text');
-          throw err; // Let React Query handle the error
+
+          if (filters.location) {
+            const fallbackParams: {
+              p_search_text: string;
+              p_limit: number;
+              p_category?: string;
+              p_work_environment?: string;
+              p_min_price?: number;
+              p_max_price?: number;
+              p_amenities?: string[];
+              p_min_capacity?: number;
+            } = {
+              p_search_text: filters.location,
+              p_limit: 100
+            };
+
+            if (filters.category) fallbackParams.p_category = filters.category;
+            if (filters.workEnvironment) fallbackParams.p_work_environment = filters.workEnvironment;
+            if (filters.priceRange[0]) fallbackParams.p_min_price = filters.priceRange[0];
+            if (filters.priceRange[1] < 200) fallbackParams.p_max_price = filters.priceRange[1];
+            if (filters.amenities.length > 0) fallbackParams.p_amenities = filters.amenities;
+            if (filters.capacity[0] > 1) fallbackParams.p_min_capacity = filters.capacity[0];
+
+            const { data: fallbackData, error: fallbackError } = await supabase.rpc(
+              'search_spaces_by_location_text',
+              fallbackParams
+            );
+
+            if (fallbackError) {
+              throw fallbackError;
+            }
+
+            const fallbackSpaces = Array.isArray(fallbackData)
+              ? fallbackData
+                  .slice(offset, offset + SPACES_PAGE_SIZE)
+                  .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
+                  .filter((space): space is NormalizedSpace => space !== null)
+              : [];
+
+            return {
+              spaces: fallbackSpaces,
+              nextOffset: fallbackSpaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
+            };
+          }
+
+          throw err;
         }
       }
       

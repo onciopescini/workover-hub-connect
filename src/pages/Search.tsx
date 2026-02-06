@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicSpacesContent } from '@/components/spaces/PublicSpacesContent';
 import { usePublicSpacesLogic } from '@/hooks/usePublicSpacesLogic';
@@ -30,18 +30,22 @@ const Search = () => {
 
   const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
 
-  const handleSpaceClick = (spaceId: string): void => {
+  const handleSpaceClick = useCallback((spaceId: string): void => {
     if (!spaceId || spaceId === 'undefined') {
       return;
     }
 
     handleCardClick(spaceId);
     navigate(`/spaces/${spaceId}`);
-  };
+  }, [handleCardClick, navigate]);
 
-  const handleMapSpaceClick = (spaceId: string): void => {
+  const handleMapSpaceClick = useCallback((spaceId: string): void => {
     handleMarkerClick(spaceId);
-  };
+  }, [handleMarkerClick]);
+
+  const handleFiltersUpdate = useCallback((nextFilters: SpaceFilters): void => {
+    handleFiltersChange(nextFilters);
+  }, [handleFiltersChange]);
 
   if (error) {
     handleError(error instanceof Error ? error : new Error(String(error)), {
@@ -83,7 +87,7 @@ const Search = () => {
         mapCenter={mapCenter}
         radiusKm={radiusKm}
         highlightedId={highlightedId}
-        onFiltersChange={(nextFilters: SpaceFilters) => handleFiltersChange(nextFilters)}
+        onFiltersChange={handleFiltersUpdate}
         onRadiusChange={handleRadiusChange}
         onSpaceClick={handleSpaceClick}
         onMapSpaceClick={handleMapSpaceClick}

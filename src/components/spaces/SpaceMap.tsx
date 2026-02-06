@@ -7,6 +7,8 @@ import { SpaceMapPreview } from './SpaceMapPreview';
 import { createRoot, Root } from 'react-dom/client';
 import { sreLogger } from '@/lib/sre-logger';
 import { useMapboxToken } from '@/contexts/MapboxTokenContext';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { optimizedQueryClient } from '@/lib/react-query-config';
 
 interface SpaceMapProps {
   spaces: Space[];
@@ -34,12 +36,8 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   const { token: mapboxToken, isLoading: isLoadingToken, error: tokenError } = useMapboxToken();
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  // Memoize callbacks to prevent re-renders
-  const handleSpaceClick = useCallback((spaceId: string) => {
-    onSpaceClick(spaceId);
-  }, [onSpaceClick]);
 
   // Memoize spaces processing to prevent unnecessary recalculations  
   const processedSpaces = useMemo(() => {
@@ -138,6 +136,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           
           sreLogger.debug('Map loaded successfully');
           setMapReady(true);
+          setIsMapLoaded(true);
           setError(null);
           
           // Force resize after load
@@ -147,6 +146,10 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
               sreLogger.debug('Map resized after load');
             }
           }, 100);
+        });
+
+        map.current.on('style.load', () => {
+          setIsMapLoaded(true);
         });
 
         map.current.on('error', (e) => {
@@ -192,12 +195,37 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       sreLogger.debug('Cleaning up map');
       if (map.current) {
         setMapReady(false);
+        setIsMapLoaded(false);
         map.current.remove();
         map.current = null;
       }
       mapInitialized.current = false;
     };
   }, [mapboxToken, spaces.length]);
+
+  const runWhenStyleReady = useCallback((callback: (currentMap: mapboxgl.Map) => void): void => {
+    const currentMap = map.current;
+    if (!currentMap || !mapReady) {
+      return;
+    }
+
+    if (currentMap.isStyleLoaded()) {
+      setIsMapLoaded(true);
+      callback(currentMap);
+      return;
+    }
+
+    setIsMapLoaded(false);
+    currentMap.once('style.load', () => {
+      const loadedMap = map.current;
+      if (!loadedMap) {
+        return;
+      }
+
+      setIsMapLoaded(true);
+      callback(loadedMap);
+    });
+  }, [mapReady]);
 
   // Debounced container size monitoring to prevent resize loops
   useEffect(() => {
@@ -322,55 +350,52 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
       const circleData = createGeoJSONCircle([searchCenter.lng, searchCenter.lat], searchRadiusKm);
 
-      // Remove existing layers if present
-      if (map.current.getLayer('search-radius-circle')) {
-        map.current.removeLayer('search-radius-circle');
-      }
-      if (map.current.getLayer('search-radius-border')) {
-        map.current.removeLayer('search-radius-border');
-      }
-      if (map.current.getSource('search-radius')) {
-        map.current.removeSource('search-radius');
-      }
-
-      // Add source
-      map.current.addSource('search-radius', {
-        type: 'geojson',
-        data: circleData as any
-      });
-
-      // Add fill layer
-      map.current.addLayer({
-        id: 'search-radius-circle',
-        type: 'fill',
-        source: 'search-radius',
-        paint: {
-          'fill-color': '#4F46E5',
-          'fill-opacity': 0.1
+      runWhenStyleReady((currentMap) => {
+        if (currentMap.getLayer('search-radius-circle')) {
+          currentMap.removeLayer('search-radius-circle');
         }
-      });
-
-      // Add border layer
-      map.current.addLayer({
-        id: 'search-radius-border',
-        type: 'line',
-        source: 'search-radius',
-        paint: {
-          'line-color': '#4F46E5',
-          'line-width': 2,
-          'line-opacity': 0.6
+        if (currentMap.getLayer('search-radius-border')) {
+          currentMap.removeLayer('search-radius-border');
         }
-      });
+        if (currentMap.getSource('search-radius')) {
+          currentMap.removeSource('search-radius');
+        }
 
-      // Fit map to show the circle
-      const bounds = new mapboxgl.LngLatBounds();
-      const coordinates = circleData.features[0]?.geometry?.coordinates[0];
-      if (coordinates) {
-        coordinates.forEach((coord) => {
-          bounds.extend(coord as [number, number]);
+        currentMap.addSource('search-radius', {
+          type: 'geojson',
+          data: circleData
         });
-      }
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+
+        currentMap.addLayer({
+          id: 'search-radius-circle',
+          type: 'fill',
+          source: 'search-radius',
+          paint: {
+            'fill-color': '#4F46E5',
+            'fill-opacity': 0.1
+          }
+        });
+
+        currentMap.addLayer({
+          id: 'search-radius-border',
+          type: 'line',
+          source: 'search-radius',
+          paint: {
+            'line-color': '#4F46E5',
+            'line-width': 2,
+            'line-opacity': 0.6
+          }
+        });
+
+        const bounds = new mapboxgl.LngLatBounds();
+        const coordinates = circleData.features[0]?.geometry?.coordinates[0];
+        if (coordinates) {
+          coordinates.forEach((coord) => {
+            bounds.extend(coord);
+          });
+        }
+        currentMap.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+      });
 
       sreLogger.debug('Search radius visualization added', {
         center: searchCenter,
@@ -384,21 +409,23 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     return () => {
       if (map.current && mapReady) {
         try {
-          if (map.current.getLayer('search-radius-circle')) {
-            map.current.removeLayer('search-radius-circle');
-          }
-          if (map.current.getLayer('search-radius-border')) {
-            map.current.removeLayer('search-radius-border');
-          }
-          if (map.current.getSource('search-radius')) {
-            map.current.removeSource('search-radius');
-          }
+          runWhenStyleReady((currentMap) => {
+            if (currentMap.getLayer('search-radius-circle')) {
+              currentMap.removeLayer('search-radius-circle');
+            }
+            if (currentMap.getLayer('search-radius-border')) {
+              currentMap.removeLayer('search-radius-border');
+            }
+            if (currentMap.getSource('search-radius')) {
+              currentMap.removeSource('search-radius');
+            }
+          });
         } catch (error) {
           sreLogger.warn('Error cleaning up search radius', {}, error as Error);
         }
       }
     };
-  }, [searchCenter, searchRadiusKm, mapReady]);
+  }, [searchCenter, searchRadiusKm, mapReady, runWhenStyleReady]);
 
   // Add/update markers with intelligent diffing - OPTIMIZED
   useEffect(() => {
@@ -511,10 +538,12 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
               popupRootsRef.current.set(popupContainer, root);
               
               root.render(
-                <SpaceMapPreview 
-                  space={space} 
-                  onViewDetails={onSpaceClick}
-                />
+                <QueryClientProvider client={optimizedQueryClient}>
+                  <SpaceMapPreview 
+                    space={space} 
+                    onViewDetails={onSpaceClick}
+                  />
+                </QueryClientProvider>
               );
 
               const popup = new mapboxgl.Popup({
@@ -676,6 +705,9 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p className="text-sm text-muted-foreground">Caricamento mappa...</p>
+            {!isMapLoaded && (
+              <p className="text-xs text-muted-foreground/80 mt-1">Attendo il caricamento dello stile...</p>
+            )}
           </div>
         </div>
       )}
