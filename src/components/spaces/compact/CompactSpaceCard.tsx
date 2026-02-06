@@ -16,6 +16,7 @@ interface CompactSpaceCardProps {
   isHighlighted?: boolean;
   size?: 'compact' | 'standard' | 'comfortable';
   selectedDate?: Date | null;
+  currentUserId: string | null;
 }
 
 export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
@@ -24,6 +25,7 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
   isHighlighted = false,
   size = 'standard',
   selectedDate = null,
+  currentUserId,
 }) => {
   const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
   const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
@@ -101,6 +103,10 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
   };
 
   const config = sizeConfig[size];
+
+  const isOwner = currentUserId === space.host_id;
+  const bookingButtonLabel = isOwner ? 'Il tuo spazio' : 'Prenota';
+  const bookingButtonTooltip = isOwner ? 'Non puoi prenotare il tuo spazio.' : 'Vai al dettaglio per prenotare questo spazio.';
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking availability toggle
@@ -181,13 +187,32 @@ export const CompactSpaceCard: React.FC<CompactSpaceCardProps> = ({
                 )}
               </div>
 
-              {/* Price - More prominent on comfortable */}
-              <div className="flex items-center gap-1">
-                <Euro className={size === 'comfortable' ? 'w-4 h-4 text-foreground' : 'w-3 h-3 text-foreground'} />
-                <span className={`font-bold text-foreground ${size === 'comfortable' ? 'text-base' : 'text-sm'}`}>
-                  {space.price_per_hour?.toFixed(0) || 0}
-                </span>
-                <span className="text-xs text-muted-foreground">/h</span>
+              {/* Price + quick booking action */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Euro className={size === 'comfortable' ? 'w-4 h-4 text-foreground' : 'w-3 h-3 text-foreground'} />
+                  <span className={`font-bold text-foreground ${size === 'comfortable' ? 'text-base' : 'text-sm'}`}>
+                    {space.price_per_hour?.toFixed(0) || 0}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/h</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={isOwner ? 'secondary' : 'default'}
+                  disabled={isOwner}
+                  title={bookingButtonTooltip}
+                  aria-label={bookingButtonTooltip}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (!isOwner) {
+                      onClick();
+                    }
+                  }}
+                  className="h-7 px-2 text-xs"
+                >
+                  {bookingButtonLabel}
+                </Button>
               </div>
             </div>
           </div>

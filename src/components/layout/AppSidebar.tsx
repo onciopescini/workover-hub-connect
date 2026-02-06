@@ -45,7 +45,7 @@ export function AppSidebar() {
       { title: "Home", url: "/", icon: Home },
       {
         title: "Spazi",
-        url: "/spaces",
+        url: "/search",
         icon: Building2,
         badge: (authState.roles.includes('admin') && pendingSpacesCount && pendingSpacesCount > 0) ? pendingSpacesCount : undefined
       },

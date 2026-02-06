@@ -11,11 +11,14 @@ import { useSpaceWeightedRatingQuery, useSpaceReviewsQuery } from '@/hooks/queri
 interface SpaceMapPreviewProps {
   space: Space;
   onViewDetails: (spaceId: string) => void;
+  currentUserId: string | null;
 }
 
-export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewDetails }) => {
+export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewDetails, currentUserId }) => {
   const { data: reviews = [] } = useSpaceReviewsQuery(space.id);
   const { data: weightedRating = 0 } = useSpaceWeightedRatingQuery(space.id);
+  const isOwner = currentUserId === space.host_id;
+
   const getMainPhoto = () => {
     if (space.photos && space.photos.length > 0) {
       return space.photos[0];
@@ -87,11 +90,18 @@ export const SpaceMapPreview: React.FC<SpaceMapPreviewProps> = ({ space, onViewD
           </div>
 
           <Button 
-            size="sm" 
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs h-8"
-            onClick={() => onViewDetails(space.id)}
+            size="sm"
+            variant={isOwner ? 'secondary' : 'default'}
+            disabled={isOwner}
+            title={isOwner ? 'Non puoi prenotare il tuo spazio.' : 'Apri lo spazio per prenotarlo'}
+            className="w-full text-xs h-8"
+            onClick={() => {
+              if (!isOwner) {
+                onViewDetails(space.id);
+              }
+            }}
           >
-            Visualizza dettagli
+            {isOwner ? 'Il tuo spazio' : 'Prenota'}
           </Button>
         </div>
       </CardContent>

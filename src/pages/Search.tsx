@@ -106,6 +106,7 @@ const Search = () => {
       )}
 
       <PublicSpacesContent
+        currentUserId={authState.user?.id ?? null}
         filters={filters}
         spaces={spaces ?? []}
         isLoading={isLoading}
