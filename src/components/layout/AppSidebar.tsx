@@ -1,5 +1,18 @@
 import { useMemo, useCallback } from "react";
-import { Home, Building2, Calendar, MessageSquare, Users, LayoutDashboard, Shield, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import {
+  Home,
+  Building2,
+  Calendar,
+  MessageSquare,
+  Users,
+  LayoutDashboard,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+  Wallet,
+  Sparkles,
+  Settings,
+} from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
 import {
@@ -8,6 +21,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -15,7 +29,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { hasAnyRole } from "@/lib/auth/role-utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,56 +39,69 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   const { data: pendingSpacesCount } = useQuery({
-    queryKey: ['admin-pending-spaces'],
+    queryKey: ["admin-pending-spaces"],
     queryFn: async () => {
-       const { count, error } = await supabase
-         .from("spaces")
-         .select("id", { count: "exact", head: true })
-         .eq("pending_approval", true);
-       if (error) throw error;
-       return count || 0;
+      const { count, error } = await supabase
+        .from("spaces")
+        .select("id", { count: "exact", head: true })
+        .eq("pending_approval", true);
+      if (error) throw error;
+      return count || 0;
     },
-    enabled: authState.roles.includes('admin'),
+    enabled: authState.roles.includes("admin"),
     staleTime: 60000,
   });
 
-  // Memoize navigation items to prevent recreation on every render
-  const allItems = useMemo(() => {
+  const mainItems = useMemo(() => {
     const items = [
       { title: "Home", url: "/", icon: Home },
       {
         title: "Spazi",
         url: "/search",
         icon: Building2,
-        badge: (authState.roles.includes('admin') && pendingSpacesCount && pendingSpacesCount > 0) ? pendingSpacesCount : undefined
+        badge:
+          authState.roles.includes("admin") && pendingSpacesCount && pendingSpacesCount > 0
+            ? pendingSpacesCount
+            : undefined,
       },
       { title: "Prenotazioni", url: "/bookings", icon: Calendar },
       { title: "Messaggi", url: "/messages", icon: MessageSquare },
       { title: "Networking", url: "/networking", icon: Users },
     ];
 
-    if (hasAnyRole(authState.roles, ['host', 'admin'])) {
-      items.push({ title: "Dashboard Host", url: "/host/dashboard", icon: LayoutDashboard });
-      items.push({ title: "Wallet", url: "/host/wallet", icon: Wallet });
-    }
-    
-    if (authState.roles.includes('admin')) {
+    if (authState.roles.includes("admin")) {
       items.push({ title: "Admin Panel", url: "/admin/users", icon: Shield });
     }
 
     return items;
   }, [authState.roles, pendingSpacesCount]);
 
-  const isActive = useCallback((path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
+  const hostItems = useMemo(() => {
+    if (authState.profile?.stripe_onboarding_status === "completed") {
+      return [
+        { title: "Dashboard", url: "/host/dashboard", icon: LayoutDashboard },
+        { title: "My Spaces", url: "/host/spaces", icon: Building2 },
+        { title: "Bookings", url: "/bookings", icon: Calendar },
+        { title: "Settings", url: "/settings", icon: Settings },
+        { title: "Wallet", url: "/host/wallet", icon: Wallet },
+      ];
     }
-    return location.pathname.startsWith(path);
-  }, [location.pathname]);
+
+    return [{ title: "Diventa Host", url: "/host/become", icon: Sparkles }];
+  }, [authState.profile?.stripe_onboarding_status]);
+
+  const isActive = useCallback(
+    (path: string) => {
+      if (path === "/") {
+        return location.pathname === "/";
+      }
+      return location.pathname.startsWith(path);
+    },
+    [location.pathname],
+  );
 
   return (
     <Sidebar collapsible="icon" className="border-r">
-      {/* Header with logo */}
       <SidebarHeader className="border-b px-3 py-4">
         <div className="flex items-center justify-center">
           {!isCollapsed ? (
@@ -86,12 +112,11 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      {/* Main navigation */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {allItems.map((item) => {
+              {mainItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -114,16 +139,31 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <SidebarGroup>
+          {!isCollapsed && <SidebarGroupLabel>Host</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {hostItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                      <NavLink to={item.url} className="flex items-center gap-2 w-full">
+                        <Icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer with toggle button */}
       <SidebarFooter className="border-t p-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="w-full justify-center"
-        >
+        <Button variant="ghost" size="sm" onClick={toggleSidebar} className="w-full justify-center">
           {isCollapsed ? (
             <ChevronRight className="h-4 w-4" />
           ) : (

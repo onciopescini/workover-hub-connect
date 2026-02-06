@@ -56,7 +56,7 @@ const Support = lazy(() => import("@/pages/Support"));
 const HostPaymentsPage = lazy(() => import("@/pages/host/HostPaymentsPage"));
 const HostDashboard = lazy(() => import("@/pages/HostDashboard"));
 const StripeReturn = lazy(() => import("@/pages/host/StripeReturn"));
-const HostOnboarding = lazy(() => import("@/pages/HostOnboarding"));
+const BecomeHost = lazy(() => import("@/pages/host/BecomeHost"));
 const SpaceNew = lazy(() => import("@/pages/SpaceNew"));
 const SpacesManage = lazy(() => import("@/pages/SpacesManage"));
 const SpaceEdit = lazy(() => import("@/pages/SpaceEdit"));
@@ -297,6 +297,14 @@ export const AppRoutes = () => {
           </AuthProtected>
         } />
 
+        <Route path="host/become" element={
+          <AuthProtected>
+            <LazyWrapper>
+              <BecomeHost />
+            </LazyWrapper>
+          </AuthProtected>
+        } />
+
         {/* QA Validation Dashboard */}
         <Route path="qa-validation" element={
           <LazyWrapper>
@@ -315,11 +323,7 @@ export const AppRoutes = () => {
           </RoleProtected>
         </AuthProtected>
       }>
-        <Route path="onboarding" element={
-          <LazyWrapper>
-            <HostOnboarding />
-          </LazyWrapper>
-        } />
+        <Route path="onboarding" element={<Navigate to="/host/become" replace />} />
         <Route path="dashboard" element={
           <LazyWrapper>
             <HostDashboard />
