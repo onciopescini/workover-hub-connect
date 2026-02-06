@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicSpacesContent } from '@/components/spaces/PublicSpacesContent';
 import { usePublicSpacesLogic } from '@/hooks/usePublicSpacesLogic';
@@ -16,8 +16,11 @@ const Search = () => {
 
   const {
     filters,
-    spaces,
+    spacesPages,
     isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     error,
     mapCenter,
     radiusKm,
@@ -27,6 +30,28 @@ const Search = () => {
     handleFiltersChange,
     handleRadiusChange,
   } = usePublicSpacesLogic();
+
+  const spaces = useMemo(() => spacesPages.flatMap((page) => page), [spacesPages]);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: '240px 0px' }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const isStitch = import.meta.env.VITE_UI_THEME === 'stitch';
 
@@ -84,6 +109,8 @@ const Search = () => {
         filters={filters}
         spaces={spaces ?? []}
         isLoading={isLoading}
+        isFetchingNextPage={isFetchingNextPage}
+        loadMoreRef={loadMoreRef}
         mapCenter={mapCenter}
         radiusKm={radiusKm}
         highlightedId={highlightedId}

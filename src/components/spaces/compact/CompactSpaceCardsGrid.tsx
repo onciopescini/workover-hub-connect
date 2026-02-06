@@ -10,6 +10,8 @@ interface CompactSpaceCardsGridProps {
   onSpaceClick: (spaceId: string) => void;
   highlightedId?: string | null;
   isLoading?: boolean;
+  isFetchingNextPage?: boolean;
+  loadMoreRef?: React.RefObject<HTMLDivElement>;
   onScrollToCard?: (spaceId: string) => void;
   selectedDate?: Date | null;
 }
@@ -19,6 +21,8 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
   onSpaceClick,
   highlightedId,
   isLoading = false,
+  isFetchingNextPage = false,
+  loadMoreRef,
   onScrollToCard,
   selectedDate = null
 }) => {
@@ -87,6 +91,16 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
             />
         </div>
       ))}
+
+      <div ref={loadMoreRef} className="h-1 w-full" aria-hidden="true" />
+
+      {isFetchingNextPage && (
+        <div className="space-y-3 pt-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={`next-page-skeleton-${i}`} className={`${skeletonHeight} w-full rounded-lg`} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

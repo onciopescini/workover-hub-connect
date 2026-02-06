@@ -22,6 +22,8 @@ interface PublicSpacesContentProps {
   filters: SpaceFilters;
   spaces: any[];
   isLoading: boolean;
+  isFetchingNextPage?: boolean;
+  loadMoreRef?: React.RefObject<HTMLDivElement | null>;
   mapCenter: Coordinates | null;
   radiusKm: number;
   highlightedId: string | null;
@@ -35,6 +37,8 @@ export const PublicSpacesContent = ({
   filters,
   spaces,
   isLoading,
+  isFetchingNextPage = false,
+  loadMoreRef,
   mapCenter,
   radiusKm,
   highlightedId,
@@ -211,6 +215,8 @@ export const PublicSpacesContent = ({
             onSpaceClick={onSpaceClick}
             highlightedId={highlightedId}
             isLoading={isLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            loadMoreRef={loadMoreRef}
             selectedDate={filters.startDate}
           />
       }
