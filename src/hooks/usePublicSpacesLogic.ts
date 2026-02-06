@@ -346,7 +346,7 @@ interface UsePublicSpacesLogicResult extends MapInteractionState {
   mapCenter: { lat: number; lng: number } | null;
   radiusKm: number;
   searchMode: 'text' | 'radius';
-  spaces: NormalizedSpace[] | undefined;
+  spacesPages: NormalizedSpace[][];
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
@@ -529,7 +529,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
   }, [filters.location, stableGeocodeAddress, info, warn]); // Removed updateLocationParam from dep to avoid loop
 
   // Spaces data fetching with React Query - optimized
-  const spacesQuery = useInfiniteQuery<SpacesPage, Error>({
+  const spacesQuery = useInfiniteQuery<NormalizedSpace[], Error>({
     queryKey: ['public-spaces', filterKey, searchMode, debouncedRadiusKm],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
@@ -549,6 +549,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             p_lng: number;
             p_radius_km: number;
             p_limit: number;
+            p_offset: number;
             p_category?: string;
             p_work_environment?: string;
             p_min_price?: number;
@@ -559,7 +560,8 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             p_lat: filters.coordinates.lat,
             p_lng: filters.coordinates.lng,
             p_radius_km: debouncedRadiusKm,
-            p_limit: 100
+            p_limit: SPACES_PAGE_SIZE,
+            p_offset: offset
           };
           
           // Add optional parameters only if they have values
@@ -588,17 +590,11 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             radius: debouncedRadiusKm
           });
           
-          const spaces = Array.isArray(data)
+          return Array.isArray(data)
             ? data
-                .slice(offset, offset + SPACES_PAGE_SIZE)
                 .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
                 .filter((space): space is NormalizedSpace => space !== null)
             : [];
-
-          return {
-            spaces,
-            nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
-          };
         } catch (err) {
           warn('Geographic search failed, switching to text search mode', {
             error: err
@@ -608,6 +604,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
             const fallbackParams: {
               p_search_text: string;
               p_limit: number;
+              p_offset: number;
               p_category?: string;
               p_work_environment?: string;
               p_min_price?: number;
@@ -616,7 +613,8 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
               p_min_capacity?: number;
             } = {
               p_search_text: filters.location,
-              p_limit: 100
+              p_limit: SPACES_PAGE_SIZE,
+              p_offset: offset
             };
 
             if (filters.category) fallbackParams.p_category = filters.category;
@@ -635,17 +633,11 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
               throw fallbackError;
             }
 
-            const fallbackSpaces = Array.isArray(fallbackData)
+            return Array.isArray(fallbackData)
               ? fallbackData
-                  .slice(offset, offset + SPACES_PAGE_SIZE)
                   .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
                   .filter((space): space is NormalizedSpace => space !== null)
               : [];
-
-            return {
-              spaces: fallbackSpaces,
-              nextOffset: fallbackSpaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
-            };
           }
 
           throw err;
@@ -659,6 +651,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
         const params: {
           p_search_text: string;
           p_limit: number;
+          p_offset: number;
           p_category?: string;
           p_work_environment?: string;
           p_min_price?: number;
@@ -667,7 +660,8 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
           p_min_capacity?: number;
         } = {
           p_search_text: filters.location,
-          p_limit: 100
+          p_limit: SPACES_PAGE_SIZE,
+          p_offset: offset
         };
         
         // Add optional parameters only if they have values
@@ -687,17 +681,11 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
           searchText: filters.location
         });
         
-        const spaces = Array.isArray(data)
+        return Array.isArray(data)
           ? data
-              .slice(offset, offset + SPACES_PAGE_SIZE)
               .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
               .filter((space): space is NormalizedSpace => space !== null)
           : [];
-
-        return {
-          spaces,
-          nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
-        };
       }
       
       // Fallback: Use standard query (fetch all from spaces + client-side filtering)
@@ -787,18 +775,16 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
       
       const spaces = Array.isArray(filteredSpaces) ? filteredSpaces : [];
       info(`Successfully fetched and filtered ${spaces.length} spaces`);
-      return {
-        spaces,
-        nextOffset: spaces.length < SPACES_PAGE_SIZE ? null : offset + SPACES_PAGE_SIZE,
-      };
+      return spaces;
     },
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < SPACES_PAGE_SIZE ? undefined : allPages.length * SPACES_PAGE_SIZE,
     staleTime: TIME_CONSTANTS.CACHE_DURATION,
     gcTime: TIME_CONSTANTS.CACHE_DURATION * 2,
     refetchOnWindowFocus: false,
   });
 
-  const flattenedSpaces = spacesQuery.data?.pages.flatMap((page) => page.spaces) ?? [];
+  const spacesPages = spacesQuery.data?.pages ?? [];
 
   const handleFiltersChange = (newFilters: SpaceFilters) => {
     info('Filters changed', { previousFilters: filters, newFilters });
@@ -879,7 +865,7 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
     searchMode, // NEW
     
     // Data
-    spaces: flattenedSpaces,
+    spacesPages,
     isLoading: spacesQuery.isLoading,
     isFetchingNextPage: spacesQuery.isFetchingNextPage,
     hasNextPage: Boolean(spacesQuery.hasNextPage),

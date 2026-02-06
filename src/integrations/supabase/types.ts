@@ -7365,6 +7365,7 @@ export type Database = {
           p_amenities?: string[]
           p_category?: string
           p_limit?: number
+          p_offset?: number
           p_max_price?: number
           p_min_capacity?: number
           p_min_price?: number
@@ -7398,6 +7399,7 @@ export type Database = {
           p_lat: number
           p_limit?: number
           p_lng: number
+          p_offset?: number
           p_max_price?: number
           p_min_capacity?: number
           p_min_price?: number
