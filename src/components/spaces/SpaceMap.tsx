@@ -22,13 +22,21 @@ interface SpaceMapProps {
   highlightedSpaceId?: string | null;
 }
 
-const isValidCoordinates = (coords: Coordinates | null | undefined): coords is Coordinates => (
-  !!coords
-  && typeof coords.lat === 'number'
-  && Number.isFinite(coords.lat)
-  && typeof coords.lng === 'number'
-  && Number.isFinite(coords.lng)
-);
+const isValidCoordinate = (coords: unknown): coords is Coordinates => {
+  if (!coords || typeof coords !== 'object') {
+    return false;
+  }
+
+  const candidate = coords as Partial<Coordinates>;
+  return (
+    typeof candidate.lat === 'number'
+    && !Number.isNaN(candidate.lat)
+    && Number.isFinite(candidate.lat)
+    && typeof candidate.lng === 'number'
+    && !Number.isNaN(candidate.lng)
+    && Number.isFinite(candidate.lng)
+  );
+};
 
 const SEARCH_RADIUS_SOURCE_ID = 'search-radius';
 const SEARCH_RADIUS_FILL_LAYER_ID = 'search-radius-circle';
@@ -221,7 +229,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
     mapboxgl.accessToken = mapboxToken;
 
-    const hasValidUserLocation = isValidCoordinates(userLocation);
+    const hasValidUserLocation = isValidCoordinate(userLocation);
 
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -342,14 +350,18 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
   useEffect(() => {
     const mapInstance = mapRef.current;
-    if (!mapInstance || !mapReady || !isValidCoordinates(userLocation)) {
+    if (!mapInstance || !mapReady) {
+      return;
+    }
+
+    if (!isValidCoordinate(userLocation)) {
       return;
     }
 
     const currentCenter = mapInstance.getCenter();
     const delta = Math.abs(currentCenter.lng - userLocation.lng) + Math.abs(currentCenter.lat - userLocation.lat);
 
-    if (delta > 0.001) {
+    if (delta > 0.001 && isValidCoordinate(userLocation)) {
       mapInstance.flyTo({
         center: [userLocation.lng, userLocation.lat],
         zoom: 11,
@@ -364,7 +376,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       return;
     }
 
-    if (!isValidCoordinates(searchCenter)) {
+    if (!isValidCoordinate(searchCenter)) {
       scheduleStyleTask('search-radius', (readyMap) => {
         removeSearchRadiusLayers(readyMap);
       });
@@ -379,6 +391,10 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     }
 
     scheduleStyleTask('search-radius', (readyMap) => {
+      if (!isValidCoordinate(searchCenter)) {
+        return;
+      }
+
       upsertSearchRadiusLayers(readyMap, searchCenter, searchRadiusKm);
     });
     lastDrawnRef.current = { lat: searchCenter.lat, lng: searchCenter.lng, radius: searchRadiusKm };
@@ -400,14 +416,10 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
     });
 
     validSpaces.forEach((space) => {
-      if (!space.latitude || !space.longitude) {
-        return;
-      }
-
       const longitude = Number(space.longitude);
       const latitude = Number(space.latitude);
 
-      if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
+      if (!isValidCoordinate({ lat: latitude, lng: longitude })) {
         return;
       }
 
@@ -491,7 +503,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
       return;
     }
 
-    if (!isValidCoordinates(userLocation)) {
+    if (!isValidCoordinate(userLocation)) {
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
       return;
