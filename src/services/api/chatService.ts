@@ -10,7 +10,8 @@ import { sreLogger } from '@/lib/sre-logger';
 import { 
   Conversation, 
   Message, 
-  ChatParticipant
+  ChatParticipant,
+  MessageAttachment
 } from '@/types/chat';
 
 // ============= TYPES =============
@@ -31,6 +32,7 @@ export interface SendMessageParams {
   conversationId: string;
   senderId: string;
   content: string;
+  attachments?: MessageAttachment[];
 }
 
 export interface SendMessageResult {
@@ -157,7 +159,7 @@ export async function fetchMessages(conversationId: string): Promise<FetchMessag
   try {
     const { data, error } = await supabase
       .from("messages")
-      .select("id, conversation_id, sender_id, content, created_at, is_read")
+      .select("id, conversation_id, sender_id, content, created_at, is_read, attachments")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
@@ -166,7 +168,26 @@ export async function fetchMessages(conversationId: string): Promise<FetchMessag
       return { success: false, error: error.message };
     }
 
-    return { success: true, messages: (data ?? []) as Message[] };
+    // Transform data to properly type attachments from JSONB
+    const messages: Message[] = (data ?? []).map(msg => {
+      const baseMessage: Message = {
+        id: msg.id,
+        conversation_id: msg.conversation_id ?? '',
+        sender_id: msg.sender_id,
+        content: msg.content,
+        created_at: msg.created_at ?? new Date().toISOString(),
+        is_read: msg.is_read ?? false
+      };
+      
+      // Only add attachments if they exist and are an array
+      if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+        baseMessage.attachments = msg.attachments as unknown as MessageAttachment[];
+      }
+      
+      return baseMessage;
+    });
+
+    return { success: true, messages };
   } catch (err) {
     sreLogger.error('Exception fetching messages', { component: 'chatService' }, err as Error);
     return { success: false, error: 'Failed to fetch messages' };
@@ -176,7 +197,7 @@ export async function fetchMessages(conversationId: string): Promise<FetchMessag
 // ============= SEND MESSAGE =============
 
 export async function sendMessage(params: SendMessageParams): Promise<SendMessageResult> {
-  const { conversationId, senderId, content } = params;
+  const { conversationId, senderId, content, attachments } = params;
 
   if (!conversationId || !senderId || !content) {
     return { success: false, error: 'Missing required parameters' };
@@ -207,7 +228,11 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     // Continue - don't block if check fails
   }
 
-  sreLogger.info('Sending message', { component: 'chatService', conversationId });
+  sreLogger.info('Sending message', { 
+    component: 'chatService', 
+    conversationId,
+    hasAttachments: !!attachments?.length 
+  });
 
   try {
     // Get the booking_id from the conversation (may be null for networking chats)
@@ -237,6 +262,11 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
     
     if (bookingId) {
       insertPayload.booking_id = bookingId;
+    }
+
+    // Add attachments if present (stored as JSONB)
+    if (attachments && attachments.length > 0) {
+      insertPayload.attachments = attachments;
     }
 
     const { data: insertedMessage, error: insertError } = await supabase

@@ -1,19 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ArchiveConversationPayload,
   ChatParticipant,
   Conversation,
   DeleteMessagePayload,
   MarkConversationUnreadPayload,
-  Message
+  Message,
+  MessageAttachment
 } from '@/types/chat';
 import { User } from '@supabase/supabase-js';
 import { MessageBubble } from './MessageBubble';
+import { MessageInput } from './MessageInput';
 import { BookingContextCard } from './BookingContextCard';
 import { NetworkingContextCard } from './NetworkingContextCard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Send, ArrowLeft, Archive, Mail, Trash2, Info } from 'lucide-react';
+import { ArrowLeft, Archive, Mail, Trash2, Info } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +22,7 @@ interface ChatWindowProps {
   messages: Message[];
   currentUser: User | null;
   isLoading: boolean;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, attachments?: MessageAttachment[]) => void;
   onDeleteMessage: (payload: DeleteMessagePayload) => void;
   onArchiveConversation: (payload: ArchiveConversationPayload) => void;
   onMarkConversationUnread: (payload: MarkConversationUnreadPayload) => void;
@@ -44,15 +45,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onToggleDetails,
   showDetails
 }) => {
-  const [inputValue, setInputValue] = useState("");
   const navigate = useNavigate();
-
-  const handleSend = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!inputValue.trim()) return;
-    onSendMessage(inputValue);
-    setInputValue("");
-  };
 
   const getOtherParticipant = (participants: ChatParticipant[]) => {
     if (!currentUser) return participants[0];
@@ -171,25 +164,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Footer / Input */}
-      <div className="p-4 bg-background border-t">
-        <form onSubmit={handleSend} className="flex gap-2">
-          <label htmlFor="chat-input" className="sr-only">
-            Scrivi un messaggio
-          </label>
-          <Input
-            id="chat-input"
-            aria-label="Scrivi un messaggio"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Scrivi un messaggio..."
-            className="flex-1"
-            autoFocus
-          />
-          <Button type="submit" size="icon" disabled={!inputValue.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </div>
+      {currentUser && activeConversation && (
+        <MessageInput
+          onSendMessage={onSendMessage}
+          userId={currentUser.id}
+          conversationId={activeConversation.id}
+        />
+      )}
     </div>
   );
 };
