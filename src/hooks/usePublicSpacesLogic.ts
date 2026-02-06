@@ -545,110 +545,60 @@ export const usePublicSpacesLogic = (): UsePublicSpacesLogicResult => {
       
       // Priority: when coordinates are available, always use radius search (PostGIS)
       if (hasValidCoordinates(filters.coordinates)) {
-        try {
-          info('Using geographic search by radius', { 
-            coordinates: filters.coordinates, 
-            radius: debouncedRadiusKm 
+        info('Using geographic search by radius', {
+          coordinates: filters.coordinates,
+          radius: debouncedRadiusKm
+        });
+
+        const params: {
+          p_lat: number;
+          p_lng: number;
+          p_radius_km: number;
+          p_limit: number;
+          p_offset: number;
+          p_category?: string;
+          p_work_environment?: string;
+          p_min_price?: number;
+          p_max_price?: number;
+          p_amenities?: string[];
+          p_min_capacity?: number;
+        } = {
+          p_lat: filters.coordinates.lat,
+          p_lng: filters.coordinates.lng,
+          p_radius_km: debouncedRadiusKm,
+          p_limit: SPACES_PAGE_SIZE,
+          p_offset: offset
+        };
+
+        // Add optional parameters only if they have values
+        if (filters.category) params.p_category = filters.category;
+        if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
+        if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
+        if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
+        if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
+        if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
+
+        const { data, error } = await supabase.rpc('search_spaces_by_radius', params);
+
+        if (error) {
+          warn('Radius search failed', {
+            error: error.message,
+            code: error.code,
+            hint: error.hint
           });
-          
-          const params: {
-            p_lat: number;
-            p_lng: number;
-            p_radius_km: number;
-            p_limit: number;
-            p_offset: number;
-            p_category?: string;
-            p_work_environment?: string;
-            p_min_price?: number;
-            p_max_price?: number;
-            p_amenities?: string[];
-            p_min_capacity?: number;
-          } = {
-            p_lat: filters.coordinates.lat,
-            p_lng: filters.coordinates.lng,
-            p_radius_km: debouncedRadiusKm,
-            p_limit: SPACES_PAGE_SIZE,
-            p_offset: offset
-          };
-          
-          // Add optional parameters only if they have values
-          if (filters.category) params.p_category = filters.category;
-          if (filters.workEnvironment) params.p_work_environment = filters.workEnvironment;
-          if (filters.priceRange[0]) params.p_min_price = filters.priceRange[0];
-          if (filters.priceRange[1] < 200) params.p_max_price = filters.priceRange[1];
-          if (filters.amenities.length > 0) params.p_amenities = filters.amenities;
-          if (filters.capacity[0] > 1) params.p_min_capacity = filters.capacity[0];
-          
-          const { data, error } = await supabase.rpc('search_spaces_by_radius', params);
-          
-          if (error) {
-            // Log specific error and fall back to text search
-            warn('Radius search failed, falling back to text search', {
-              error: error.message,
-              code: error.code,
-              hint: error.hint
-            });
-            
-            throw error;
-          }
-          
-          info('Geographic search completed', {
-            resultsCount: data?.length || 0,
-            radius: debouncedRadiusKm
-          });
-          
-          return Array.isArray(data)
-            ? data
-                .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
-                .filter((space): space is NormalizedSpace => space !== null)
-            : [];
-        } catch (err) {
-          warn('Geographic search failed, switching to text search mode', {
-            error: err
-          });
-
-          if (filters.location) {
-            const fallbackParams: {
-              p_search_text: string;
-              p_limit: number;
-              p_offset: number;
-              p_category?: string;
-              p_work_environment?: string;
-              p_min_price?: number;
-              p_max_price?: number;
-              p_amenities?: string[];
-              p_min_capacity?: number;
-            } = {
-              p_search_text: filters.location,
-              p_limit: SPACES_PAGE_SIZE,
-              p_offset: offset
-            };
-
-            if (filters.category) fallbackParams.p_category = filters.category;
-            if (filters.workEnvironment) fallbackParams.p_work_environment = filters.workEnvironment;
-            if (filters.priceRange[0]) fallbackParams.p_min_price = filters.priceRange[0];
-            if (filters.priceRange[1] < 200) fallbackParams.p_max_price = filters.priceRange[1];
-            if (filters.amenities.length > 0) fallbackParams.p_amenities = filters.amenities;
-            if (filters.capacity[0] > 1) fallbackParams.p_min_capacity = filters.capacity[0];
-
-            const { data: fallbackData, error: fallbackError } = await supabase.rpc(
-              'search_spaces_by_location_text',
-              fallbackParams
-            );
-
-            if (fallbackError) {
-              throw fallbackError;
-            }
-
-            return Array.isArray(fallbackData)
-              ? fallbackData
-                  .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
-                  .filter((space): space is NormalizedSpace => space !== null)
-              : [];
-          }
-
-          throw err;
+          throw error;
         }
+
+        info('Geographic search completed', {
+          resultsCount: data?.length || 0,
+          radius: debouncedRadiusKm
+        });
+
+        return Array.isArray(data)
+          ? data
+              .map((space) => (isRecord(space) ? normalizePublicSpace(space) : null))
+              .filter((space): space is NormalizedSpace => space !== null)
+          : [];
       }
       
       // NEW: Use text search RPC if location provided

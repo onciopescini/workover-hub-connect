@@ -293,139 +293,142 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
 
   // Add search radius circle and center marker when searchCenter is provided
   useEffect(() => {
-    if (!map.current || !mapReady || !searchCenter) {
-      // Remove search visualization if no searchCenter
-      if (map.current && mapReady) {
-        if (map.current.getLayer('search-radius-circle')) {
-          map.current.removeLayer('search-radius-circle');
-        }
-        if (map.current.getLayer('search-radius-border')) {
-          map.current.removeLayer('search-radius-border');
-        }
-        if (map.current.getSource('search-radius')) {
-          map.current.removeSource('search-radius');
-        }
+    const currentMap = map.current;
+
+    const removeSearchRadiusLayers = (targetMap: mapboxgl.Map): void => {
+      if (targetMap.getLayer('search-radius-circle')) {
+        targetMap.removeLayer('search-radius-circle');
+      }
+      if (targetMap.getLayer('search-radius-border')) {
+        targetMap.removeLayer('search-radius-border');
+      }
+      if (targetMap.getSource('search-radius')) {
+        targetMap.removeSource('search-radius');
+      }
+    };
+
+    if (!currentMap || !mapReady || !searchCenter) {
+      if (currentMap && mapReady && currentMap.isStyleLoaded()) {
+        removeSearchRadiusLayers(currentMap);
       }
       return;
     }
 
-    try {
-      // Create GeoJSON circle approximation
-      const createGeoJSONCircle = (center: [number, number], radiusInKm: number, points = 64) => {
-        const coords = {
-          latitude: center[1],
-          longitude: center[0]
-        };
-
-        const km = radiusInKm;
-        const ret: [number, number][] = [];
-        const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
-        const distanceY = km / 110.574;
-
-        for (let i = 0; i < points; i++) {
-          const theta = (i / points) * (2 * Math.PI);
-          const x = distanceX * Math.cos(theta);
-          const y = distanceY * Math.sin(theta);
-          ret.push([coords.longitude + x, coords.latitude + y]);
-        }
-        // Close the polygon by adding the first point again
-        if (ret[0]) {
-          ret.push([ret[0][0], ret[0][1]]);
-        }
-
-        return {
-          type: 'FeatureCollection' as const,
-          features: [
-            {
-              type: 'Feature' as const,
-              geometry: {
-                type: 'Polygon' as const,
-                coordinates: [ret]
-              },
-              properties: {}
-            }
-          ]
-        };
+    // Create GeoJSON circle approximation
+    const createGeoJSONCircle = (center: [number, number], radiusInKm: number, points = 64) => {
+      const coords = {
+        latitude: center[1],
+        longitude: center[0]
       };
 
+      const km = radiusInKm;
+      const ret: [number, number][] = [];
+      const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+      const distanceY = km / 110.574;
+
+      for (let i = 0; i < points; i++) {
+        const theta = (i / points) * (2 * Math.PI);
+        const x = distanceX * Math.cos(theta);
+        const y = distanceY * Math.sin(theta);
+        ret.push([coords.longitude + x, coords.latitude + y]);
+      }
+      if (ret[0]) {
+        ret.push([ret[0][0], ret[0][1]]);
+      }
+
+      return {
+        type: 'FeatureCollection' as const,
+        features: [
+          {
+            type: 'Feature' as const,
+            geometry: {
+              type: 'Polygon' as const,
+              coordinates: [ret]
+            },
+            properties: {}
+          }
+        ]
+      };
+    };
+
+    const addSearchRadiusLayers = (targetMap: mapboxgl.Map): void => {
       const circleData = createGeoJSONCircle([searchCenter.lng, searchCenter.lat], searchRadiusKm);
 
-      runWhenStyleReady((currentMap) => {
-        if (currentMap.getLayer('search-radius-circle')) {
-          currentMap.removeLayer('search-radius-circle');
-        }
-        if (currentMap.getLayer('search-radius-border')) {
-          currentMap.removeLayer('search-radius-border');
-        }
-        if (currentMap.getSource('search-radius')) {
-          currentMap.removeSource('search-radius');
-        }
+      removeSearchRadiusLayers(targetMap);
 
-        currentMap.addSource('search-radius', {
-          type: 'geojson',
-          data: circleData
-        });
-
-        currentMap.addLayer({
-          id: 'search-radius-circle',
-          type: 'fill',
-          source: 'search-radius',
-          paint: {
-            'fill-color': '#4F46E5',
-            'fill-opacity': 0.1
-          }
-        });
-
-        currentMap.addLayer({
-          id: 'search-radius-border',
-          type: 'line',
-          source: 'search-radius',
-          paint: {
-            'line-color': '#4F46E5',
-            'line-width': 2,
-            'line-opacity': 0.6
-          }
-        });
-
-        const bounds = new mapboxgl.LngLatBounds();
-        const coordinates = circleData.features[0]?.geometry?.coordinates[0];
-        if (coordinates) {
-          coordinates.forEach((coord) => {
-            bounds.extend(coord);
-          });
-        }
-        currentMap.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+      targetMap.addSource('search-radius', {
+        type: 'geojson',
+        data: circleData
       });
+
+      targetMap.addLayer({
+        id: 'search-radius-circle',
+        type: 'fill',
+        source: 'search-radius',
+        paint: {
+          'fill-color': '#4F46E5',
+          'fill-opacity': 0.1
+        }
+      });
+
+      targetMap.addLayer({
+        id: 'search-radius-border',
+        type: 'line',
+        source: 'search-radius',
+        paint: {
+          'line-color': '#4F46E5',
+          'line-width': 2,
+          'line-opacity': 0.6
+        }
+      });
+
+      const bounds = new mapboxgl.LngLatBounds();
+      const coordinates = circleData.features[0]?.geometry?.coordinates[0];
+      if (coordinates) {
+        coordinates.forEach((coord) => {
+          bounds.extend(coord);
+        });
+      }
+      targetMap.fitBounds(bounds, { padding: 50, maxZoom: 14 });
 
       sreLogger.debug('Search radius visualization added', {
         center: searchCenter,
         radiusKm: searchRadiusKm
       });
+    };
 
+    // Guard against style race-condition before layer/source operations
+    if (!currentMap.isStyleLoaded()) {
+      currentMap.once('style.load', () => {
+        if (!map.current || !map.current.isStyleLoaded()) {
+          return;
+        }
+
+        try {
+          addSearchRadiusLayers(map.current);
+        } catch (error) {
+          sreLogger.error('Error adding search radius visualization after style load', {}, error as Error);
+        }
+      });
+      return;
+    }
+
+    try {
+      addSearchRadiusLayers(currentMap);
     } catch (error) {
       sreLogger.error('Error adding search radius visualization', {}, error as Error);
     }
 
     return () => {
-      if (map.current && mapReady) {
+      if (map.current && mapReady && map.current.isStyleLoaded()) {
         try {
-          runWhenStyleReady((currentMap) => {
-            if (currentMap.getLayer('search-radius-circle')) {
-              currentMap.removeLayer('search-radius-circle');
-            }
-            if (currentMap.getLayer('search-radius-border')) {
-              currentMap.removeLayer('search-radius-border');
-            }
-            if (currentMap.getSource('search-radius')) {
-              currentMap.removeSource('search-radius');
-            }
-          });
+          removeSearchRadiusLayers(map.current);
         } catch (error) {
           sreLogger.warn('Error cleaning up search radius', {}, error as Error);
         }
       }
     };
-  }, [searchCenter, searchRadiusKm, mapReady, runWhenStyleReady]);
+  }, [searchCenter, searchRadiusKm, mapReady]);
 
   // Add/update markers with intelligent diffing - OPTIMIZED
   useEffect(() => {
@@ -618,7 +621,7 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
         operation: 'marker_update'
       });
     }
-  }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId]);
+  }, [memoizedSpaces, mapReady, onSpaceClick, highlightedSpaceId, queryClient]);
 
   // Add user location marker
   useEffect(() => {
