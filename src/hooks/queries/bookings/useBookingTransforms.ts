@@ -243,18 +243,3 @@ export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: st
     }
   });
 };
-
-export const removeDuplicateBookings = (bookings: BookingWithDetails[]): BookingWithDetails[] => {
-  if (!Array.isArray(bookings)) return [];
-  
-  const seen = new Set<string>();
-  return bookings.filter(booking => {
-    if (!booking?.id) return false;
-    
-    if (seen.has(booking.id)) {
-      return false;
-    }
-    seen.add(booking.id);
-    return true;
-  });
-};
