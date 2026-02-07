@@ -1,7 +1,6 @@
 
 // Re-export all the refactored hooks from their new locations
 export { useBookingFilters } from './bookings/useBookingFilters';
-export { useEnhancedBookings as useEnhancedBookingsQuery } from './bookings/useEnhancedBookings';
 export { useCoworkerBookings } from './bookings/useCoworkerBookings';
 export { useHostBookings } from './bookings/useHostBookings';
 export { useCancelBookingMutation as useEnhancedCancelBookingMutation } from './bookings/useCancelBookingMutation';

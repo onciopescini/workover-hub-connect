@@ -15,8 +15,15 @@ type BookingWithHost = {
   status: string;
   total_price: number;
   space_id: string;
+  host_id: string;
   hostStripeAccountId: string | null;
   confirmation_type: string;  // 'instant' | 'host_approval'
+};
+
+type SpaceJoinData = {
+  host_id: string;
+  confirmation_type: string | null;
+  profiles: { stripe_account_id: string | null } | null;
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -78,9 +85,9 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   }
 
   // Extract host's Stripe account ID and confirmation_type from nested join
-  const spaces = data.spaces as any;
-  const hostStripeAccountId = spaces?.profiles?.stripe_account_id || null;
-  const confirmationType = spaces?.confirmation_type || 'instant';
+  const spaces = data.spaces as SpaceJoinData;
+  const hostStripeAccountId = spaces?.profiles?.stripe_account_id ?? null;
+  const confirmationType = spaces?.confirmation_type ?? 'instant';
 
   // Base price is what the host set (before fees)
   const basePrice = Number(data.total_price);
@@ -93,6 +100,7 @@ async function fetchBookingAndPrice(booking_id: string, user_id: string) {
   return { 
     booking: {
       ...data,
+      host_id: spaces.host_id,
       hostStripeAccountId,
       confirmation_type: confirmationType,
     } as BookingWithHost,
@@ -208,9 +216,9 @@ async function createStripeCheckoutSession(params: {
   });
 
   const text = await resp.text();
-  let json: any;
+  let json: Record<string, unknown>;
   try {
-    json = JSON.parse(text);
+    json = JSON.parse(text) as Record<string, unknown>;
   } catch {
     return { error: "stripe_invalid_response", status: resp.status, raw: text };
   }
@@ -281,6 +289,10 @@ Deno.serve(async (req) => {
 
     const { pricing, basePrice, booking } = bookingRes;
     
+    if (booking.user_id === booking.host_id) {
+      throw new Error("Self-payment is not allowed. You cannot pay for your own space.");
+    }
+
     // Convert to cents for Stripe
     const totalChargeCents = Math.round(pricing.totalGuestPay * 100);
     const applicationFeeCents = Math.round(pricing.applicationFee * 100);
