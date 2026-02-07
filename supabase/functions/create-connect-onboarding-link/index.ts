@@ -63,7 +63,7 @@ serve(async (req) => {
     // Get user profile
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('id, stripe_account_id, stripe_connected, stripe_onboarding_status, role')
+      .select('id, stripe_account_id, stripe_connected, stripe_onboarding_status')
       .eq('id', user.id)
       .single();
 
@@ -75,16 +75,7 @@ serve(async (req) => {
       });
     }
 
-    // Verify user is a host
-    if (profile.role !== 'host' && profile.role !== 'admin') {
-      logStep('Access denied - not a host', { role: profile.role });
-      return new Response(JSON.stringify({ error: 'Only hosts can access this feature' }), {
-        status: 403, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    logStep('Host access verified', { 
+    logStep('Profile access verified', {
       userId: user.id, 
       stripeAccountId: profile.stripe_account_id,
       stripeConnected: profile.stripe_connected
@@ -118,6 +109,7 @@ serve(async (req) => {
           stripe_account_id: stripeAccountId,
           stripe_connected: false,
           stripe_onboarding_status: 'pending',
+          role: 'host',
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
