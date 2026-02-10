@@ -3653,6 +3653,7 @@ export type Database = {
           dac7_data_collected: boolean | null
           dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
+          deleted_at: string | null
           email_verification_blocked_actions: string[] | null
           face_data_ref: string | null
           facebook_url: string | null
@@ -3731,6 +3732,7 @@ export type Database = {
           dac7_data_collected?: boolean | null
           dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
+          deleted_at?: string | null
           email_verification_blocked_actions?: string[] | null
           face_data_ref?: string | null
           facebook_url?: string | null
@@ -3809,6 +3811,7 @@ export type Database = {
           dac7_data_collected?: boolean | null
           dac7_threshold_notified?: boolean | null
           data_retention_exempt?: boolean | null
+          deleted_at?: string | null
           email_verification_blocked_actions?: string[] | null
           face_data_ref?: string | null
           facebook_url?: string | null
@@ -5969,6 +5972,7 @@ export type Database = {
           dac7_data_collected: boolean | null
           dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
+          deleted_at: string | null
           email_verification_blocked_actions: string[] | null
           face_data_ref: string | null
           facebook_url: string | null
