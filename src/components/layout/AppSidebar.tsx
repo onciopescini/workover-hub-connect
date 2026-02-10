@@ -12,6 +12,7 @@ import {
   Wallet,
   Sparkles,
   Settings,
+  PlusCircle,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/auth/useAuth";
@@ -76,11 +77,15 @@ export function AppSidebar() {
     return items;
   }, [authState.roles, pendingSpacesCount]);
 
+  const stripeOnboardingStatus = authState.profile?.stripe_onboarding_status;
+  const isHostRestricted = stripeOnboardingStatus === "restricted";
+
   const hostItems = useMemo(() => {
-    if (authState.profile?.stripe_onboarding_status === "completed") {
+    if (stripeOnboardingStatus === "completed" || stripeOnboardingStatus === "restricted") {
       return [
         { title: "Dashboard", url: "/host/dashboard", icon: LayoutDashboard },
         { title: "My Spaces", url: "/host/spaces", icon: Building2 },
+        { title: "Crea Spazio", url: "/spaces/new", icon: PlusCircle, disabled: isHostRestricted },
         { title: "Bookings", url: "/bookings", icon: Calendar },
         { title: "Settings", url: "/settings", icon: Settings },
         { title: "Wallet", url: "/host/wallet", icon: Wallet },
@@ -88,7 +93,7 @@ export function AppSidebar() {
     }
 
     return [{ title: "Diventa Host", url: "/host/become", icon: Sparkles }];
-  }, [authState.profile?.stripe_onboarding_status]);
+  }, [isHostRestricted, stripeOnboardingStatus]);
 
   const isActive = useCallback(
     (path: string) => {
@@ -146,13 +151,32 @@ export function AppSidebar() {
             <SidebarMenu>
               {hostItems.map((item) => {
                 const Icon = item.icon;
+                const restrictedCreateSpaceTooltip =
+                  item.disabled === true
+                    ? "Creazione spazio non disponibile: Stripe ha limitato il tuo account host."
+                    : item.title;
+
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                      <NavLink to={item.url} className="flex items-center gap-2 w-full">
-                        <Icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </NavLink>
+                    <SidebarMenuButton
+                      asChild={!item.disabled}
+                      isActive={item.disabled ? false : isActive(item.url)}
+                      tooltip={restrictedCreateSpaceTooltip}
+                      disabled={item.disabled}
+                      title={item.disabled ? restrictedCreateSpaceTooltip : undefined}
+                      className={item.disabled ? "opacity-50 cursor-not-allowed" : undefined}
+                    >
+                      {item.disabled ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                      ) : (
+                        <NavLink to={item.url} className="flex items-center gap-2 w-full">
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </NavLink>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
