@@ -4,9 +4,18 @@ import { useProfileCache } from './useProfileCache';
 import { useAuthRedirects } from './useAuthRedirects';
 import { useLogger } from '@/hooks/useLogger';
 import type { AuthState, Profile, UserRole } from '@/types/auth';
-import { createAuthState, shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
+import { shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
 import { getAuthSyncChannel, AUTH_SYNC_EVENTS } from '@/utils/auth/multi-tab-sync';
-import type { Session } from '@supabase/supabase-js';
+import type { RealtimePostgresChangesPayload, Session } from '@supabase/supabase-js';
+import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type StripeOnboardingStatus = ProfileRow['stripe_onboarding_status'];
+
+const isStripeOnboardingStatus = (status: unknown): status is StripeOnboardingStatus => {
+  return status === 'none' || status === 'pending' || status === 'completed' || status === 'restricted' || status === null;
+};
 
 export const useAuthLogic = () => {
   const { error: logError, debug } = useLogger({ context: 'useAuthLogic' });
@@ -334,6 +343,65 @@ export const useAuthLogic = () => {
       unsubscribeProfileUpdate();
     };
   }, [updateAuthState, fetchProfile, fetchUserProfile, authState.user, clearCache, refreshProfile, debug, logError]);
+
+  useEffect(() => {
+    const userId = authState.user?.id;
+
+    if (!userId) {
+      return;
+    }
+
+    const profileStatusChannel = supabase
+      .channel(`profile-status-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${userId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<ProfileRow>) => {
+          const updatedProfile = payload.new;
+          const nextStatus = isStripeOnboardingStatus(updatedProfile.stripe_onboarding_status)
+            ? updatedProfile.stripe_onboarding_status
+            : null;
+
+          setAuthState((previousState) => {
+            if (!previousState.profile) {
+              return previousState;
+            }
+
+            const previousStatus = previousState.profile.stripe_onboarding_status;
+            const nextProfile: Profile = {
+              ...previousState.profile,
+              ...updatedProfile,
+            };
+
+            if (previousStatus !== nextStatus) {
+              if (nextStatus === 'completed') {
+                toast.success('Congratulazioni! Il tuo account Host è attivo.');
+              }
+
+              if (nextStatus === 'restricted') {
+                toast.error('Attenzione: Stripe ha limitato il tuo account. Controlla la dashboard.');
+              }
+            }
+
+            return {
+              ...previousState,
+              profile: nextProfile,
+            };
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      profileStatusChannel.unsubscribe();
+      void supabase.removeChannel(profileStatusChannel);
+    };
+  }, [authState.user?.id]);
 
   return {
     authState,
