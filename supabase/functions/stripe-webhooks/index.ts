@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.3";
 import Stripe from "npm:stripe@16.5.0";
 import { EnhancedCheckoutHandlers } from "./handlers/enhanced-checkout-handlers.ts";
+import { AccountUpdatedHandler } from "./handlers/account-updated.ts";
 import { SRELogger } from "../_shared/sre-logger.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -82,6 +83,30 @@ Deno.serve(async (req: Request) => {
           correlationId 
         });
       }
+    } else if (event.type === "account.updated") {
+      const result = await AccountUpdatedHandler.handle(event, supabase);
+
+      if (!result.success) {
+        const statusCode = result.statusCode ?? 500;
+
+        SRELogger.warn("account.updated handler returned failure", {
+          eventId: event.id,
+          statusCode,
+          error: result.error,
+          correlationId,
+        });
+
+        return new Response(JSON.stringify({ error: result.error }), {
+          status: statusCode,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      SRELogger.info("account.updated processed", {
+        eventId: event.id,
+        duplicate: result.duplicate ?? false,
+        correlationId,
+      });
     } else {
       SRELogger.info("Unhandled event type (acknowledged)", { 
         eventType: event.type,
@@ -94,12 +119,15 @@ Deno.serve(async (req: Request) => {
       headers: { "Content-Type": "application/json" }
     });
     
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown webhook error";
+
     SRELogger.error("Webhook processing error", { 
-      error: err.message,
+      error: errorMessage,
       correlationId 
     });
-    return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), { 
+
+    return new Response(JSON.stringify({ error: `Webhook Error: ${errorMessage}` }), { 
       status: 400,
       headers: { "Content-Type": "application/json" }
     });
