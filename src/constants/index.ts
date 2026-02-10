@@ -8,7 +8,7 @@ export const SUPABASE_ANON_KEY = import.meta.env['VITE_SUPABASE_ANON_KEY'];
 
 export const API_ENDPOINTS = {
   CREATE_CHECKOUT: 'create-checkout-v3',
-  CANCEL_BOOKING: 'cancel-booking',
+  CANCEL_BOOKING: 'handle-booking-cancellation',
   STRIPE_CONNECT: 'stripe-connect',
   CREATE_STRIPE_CONNECT_ACCOUNT: 'create-stripe-connect-account',
   UNSPLASH_BASE: 'https://images.unsplash.com',
