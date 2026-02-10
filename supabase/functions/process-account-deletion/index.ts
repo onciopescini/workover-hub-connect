@@ -389,8 +389,54 @@ Deno.serve(async (req) => {
     const userName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utente';
     const userEmail = profile?.email;
 
-    // GDPR-compliant account deletion
-    // 1. Anonymize personal data in profiles
+    // Guardrail: block host deletion when there are future active bookings.
+    const nowIsoDate = new Date().toISOString().slice(0, 10);
+
+    const { data: hostSpaces, error: hostSpacesError } = await supabase
+      .from('spaces')
+      .select('id')
+      .eq('host_id', deletionRequest.user_id)
+      .is('deleted_at', null);
+
+    if (hostSpacesError) {
+      console.error('Error while loading host spaces for deletion guardrail:', hostSpacesError);
+      return new Response(
+        JSON.stringify({ error: 'Errore durante il controllo degli spazi host' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const hostSpaceIds = hostSpaces?.map((space) => space.id) ?? [];
+
+    const { data: blockedBookings, error: guardrailError } = await supabase
+      .from('bookings')
+      .select('id, booking_date, status, space_id')
+      .in('status', ['pending', 'confirmed'])
+      .gte('booking_date', nowIsoDate)
+      .is('deleted_at', null)
+      .in('space_id', hostSpaceIds.length > 0 ? hostSpaceIds : ['00000000-0000-0000-0000-000000000000'])
+      .limit(1);
+
+    if (guardrailError) {
+      console.error('Error while checking host deletion guardrail:', guardrailError);
+      return new Response(
+        JSON.stringify({ error: 'Errore durante il controllo di integrità prenotazioni' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (blockedBookings && blockedBookings.length > 0) {
+      return new Response(
+        JSON.stringify({
+          error:
+            'Cancellazione bloccata: sono presenti prenotazioni future pending/confirmed per gli spazi host.',
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // GDPR-compliant account deactivation (soft-delete semantics)
+    // 1. Anonymize personal data in profiles without removing accounting references
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -398,12 +444,13 @@ Deno.serve(async (req) => {
         last_name: 'Cancellato',
         email: `deleted_${deletionRequest.user_id}@workover.it.com`,
         bio: null,
-        avatar_url: null,
+        profile_photo_url: null,
         linkedin_url: null,
-        website_url: null,
-        phone_number: null,
+        website: null,
+        phone: null,
         is_suspended: true,
         data_retention_exempt: false,
+        deleted_at: new Date().toISOString(),
       })
       .eq('id', deletionRequest.user_id);
 
@@ -430,20 +477,23 @@ Deno.serve(async (req) => {
       .update({ author_id: null })
       .eq('author_id', deletionRequest.user_id);
 
-    // 3. Delete auth user (this will cascade delete related data)
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(
-      deletionRequest.user_id
+    // 3. Disable auth user instead of hard delete to avoid destructive cascades.
+    const { error: deleteAuthError } = await supabase.auth.admin.updateUserById(
+      deletionRequest.user_id,
+      {
+        ban_duration: '876000h',
+      }
     );
 
     if (deleteAuthError) {
       console.error('Error deleting auth user:', deleteAuthError);
       return new Response(
-        JSON.stringify({ error: "Errore durante la cancellazione dell'account" }),
+        JSON.stringify({ error: "Errore durante la disattivazione dell'account" }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Account ${deletionRequest.user_id} deleted successfully`);
+    console.log(`Account ${deletionRequest.user_id} soft-deleted successfully`);
 
     // Send confirmation email
     if (isEmailConfigured() && userEmail) {
@@ -485,4 +535,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
