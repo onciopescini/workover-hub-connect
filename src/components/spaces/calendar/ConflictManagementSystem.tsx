@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { type AvailabilityData } from "@/types/availability";
 import { sreLogger } from '@/lib/sre-logger';
+import { API_ENDPOINTS } from "@/constants";
 
 interface ConflictManagementSystemProps {
   availability: AvailabilityData;
@@ -35,8 +36,10 @@ interface ConflictManagementSystemProps {
   onConflictResolved: (bookingId: string, action: 'cancel' | 'notify') => void;
 }
 
+type ConflictBooking = ConflictManagementSystemProps["bookings"][number];
+
 interface ConflictInfo {
-  booking: any;
+  booking: ConflictBooking;
   conflictType: 'blocked_date' | 'blocked_time';
   severity: 'high' | 'medium' | 'low';
 }
@@ -90,10 +93,12 @@ export const ConflictManagementSystem = ({
   const handleAutoCancelBooking = async (bookingId: string) => {
     setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
-      const { data, error } = await supabase.rpc('cancel_booking', {
-        booking_id: bookingId,
-        cancelled_by_host: true,
-        reason: "Conflitto con nuova disponibilità/ data bloccata"
+      const { error } = await supabase.functions.invoke(API_ENDPOINTS.CANCEL_BOOKING, {
+        body: {
+          booking_id: bookingId,
+          cancelled_by_host: true,
+          reason: "Conflitto con nuova disponibilità/ data bloccata"
+        }
       });
 
       if (error) throw error;
