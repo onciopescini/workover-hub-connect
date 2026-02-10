@@ -50,14 +50,13 @@ serve(async (req) => {
       );
     }
 
-    // Check if caller is admin
-    const { data: adminCheck } = await supabaseAdmin
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .single();
+    // Check if caller is admin through unified role system
+    const { data: hasAdminRole, error: roleError } = await supabaseAdmin.rpc('has_role', {
+      _user_id: user.id,
+      _role: 'admin'
+    });
 
-    if (!adminCheck) {
+    if (roleError || hasAdminRole !== true) {
       return new Response(
         JSON.stringify({ success: false, error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

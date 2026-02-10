@@ -5,6 +5,7 @@ import { useAuthLogic } from '@/hooks/auth/useAuthLogic';
 import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
+import { ADMIN_ROLES, ADMIN_ROUTES } from '@/constants/admin';
 
 export const AdminLayout = () => {
   const { authState } = useAuthLogic();
@@ -13,35 +14,44 @@ export const AdminLayout = () => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAdminStatus = async () => {
-      if (!authState.isLoading) {
-        if (!authState.isAuthenticated || !authState.user) {
-          navigate('/');
-          return;
-        }
-
-        try {
-          // Explicitly call the RPC as requested in instructions
-          // Casting 'is_admin' to any to avoid type errors with generated types
-          const { data: isAdmin, error } = await supabase.rpc('is_admin' as any, {
-            p_user_id: authState.user.id
-          });
-
-          if (error || !isAdmin) {
-            console.error('Access denied or error checking admin status:', error);
-            navigate('/');
-            return;
-          }
-
-          setIsAuthorized(true);
-        } catch (err) {
-          console.error('Unexpected error checking admin status:', err);
-          navigate('/');
-        }
+      if (authState.isLoading) {
+        return;
       }
+
+      if (!authState.isAuthenticated || !authState.user) {
+        navigate('/');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authState.user.id)
+        .eq('role', ADMIN_ROLES.ADMIN)
+        .limit(1)
+        .maybeSingle();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error || !data) {
+        console.error('Access denied or error checking admin status:', error);
+        navigate('/');
+        return;
+      }
+
+      setIsAuthorized(true);
     };
 
-    checkAdminStatus();
+    void checkAdminStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, [authState.isLoading, authState.isAuthenticated, authState.user, navigate]);
 
   if (authState.isLoading || isAuthorized === null) {
@@ -49,11 +59,11 @@ export const AdminLayout = () => {
   }
 
   const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { label: 'Users', path: '/admin/users', icon: <Users className="w-4 h-4" /> },
-    { label: 'Bookings', path: '/admin/bookings', icon: <Calendar className="w-4 h-4" /> },
-    { label: 'KYC Verification', path: '/admin/kyc', icon: <Shield className="w-4 h-4" /> },
-    { label: 'Platform Revenue', path: '/admin/revenue', icon: <DollarSign className="w-4 h-4" /> },
+    { label: 'Mission Control', path: ADMIN_ROUTES.DASHBOARD, icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: 'Users', path: ADMIN_ROUTES.USERS, icon: <Users className="w-4 h-4" /> },
+    { label: 'Bookings', path: ADMIN_ROUTES.BOOKINGS, icon: <Calendar className="w-4 h-4" /> },
+    { label: 'KYC Verification', path: ADMIN_ROUTES.KYC, icon: <Shield className="w-4 h-4" /> },
+    { label: 'Platform Revenue', path: ADMIN_ROUTES.REVENUE, icon: <DollarSign className="w-4 h-4" /> },
   ];
 
   const handleLogout = async () => {
@@ -63,7 +73,6 @@ export const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-10">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <span className="text-xl font-bold text-gray-900">Admin Panel</span>
@@ -112,7 +121,6 @@ export const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 ml-64 p-8">
         <Outlet />
       </main>

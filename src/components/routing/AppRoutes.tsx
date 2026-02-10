@@ -71,7 +71,7 @@ const HostWalletPage = lazy(() => import("@/pages/host/HostWalletPage"));
 const MyDocumentsPage = lazy(() => import("@/pages/coworker/MyDocumentsPage"));
 
 // Admin pages
-const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminMissionControlDashboard = lazy(() => import("@/pages/admin/AdminMissionControlDashboard"));
 const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
 const AdminRevenue = lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminBookings = lazy(() => import("@/pages/admin/AdminBookingsPage"));
@@ -404,7 +404,12 @@ export const AppRoutes = () => {
       <Route path="/admin/*" element={<AdminLayout />}>
         <Route index element={
           <LazyWrapper>
-            <AdminDashboard />
+            <AdminMissionControlDashboard />
+          </LazyWrapper>
+        } />
+        <Route path="dashboard" element={
+          <LazyWrapper>
+            <AdminMissionControlDashboard />
           </LazyWrapper>
         } />
         <Route path="users" element={
