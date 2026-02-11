@@ -11,6 +11,7 @@ interface BookingDetailDialogProps {
   isChatEnabled: boolean;
   onOpenMessageDialog: (bookingId: string, spaceTitle: string) => void;
   onOpenCancelDialog: (booking: BookingWithDetails) => void;
+  onOpenDisputeDialog: (booking: BookingWithDetails) => void;
 }
 
 export const BookingDetailDialog: React.FC<BookingDetailDialogProps> = ({
@@ -20,7 +21,8 @@ export const BookingDetailDialog: React.FC<BookingDetailDialogProps> = ({
   userRole,
   isChatEnabled,
   onOpenMessageDialog,
-  onOpenCancelDialog
+  onOpenCancelDialog,
+  onOpenDisputeDialog
 }) => {
   if (!booking) return null;
 
@@ -36,6 +38,7 @@ export const BookingDetailDialog: React.FC<BookingDetailDialogProps> = ({
           isChatEnabled={isChatEnabled}
           onOpenMessageDialog={onOpenMessageDialog}
           onOpenCancelDialog={onOpenCancelDialog}
+          onOpenDisputeDialog={onOpenDisputeDialog}
         />
       </DialogContent>
     </Dialog>

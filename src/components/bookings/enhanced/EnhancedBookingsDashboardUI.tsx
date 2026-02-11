@@ -33,7 +33,9 @@ interface EnhancedBookingsDashboardUIProps {
   setMessageDialogOpen: (open: boolean) => void;
   setCancelDialogOpen: (open: boolean) => void;
   setRejectDialogOpen: (open: boolean) => void;
+  setDisputeDialogOpen: (open: boolean) => void;
   cancelBookingLoading: boolean;
+  disputeBookingLoading: boolean;
   rejectBookingLoading: boolean;
   rejectDialogOpen: boolean;
   refetch: () => void;
@@ -50,7 +52,9 @@ export function EnhancedBookingsDashboardUI({
   setMessageDialogOpen,
   setCancelDialogOpen,
   setRejectDialogOpen,
+  setDisputeDialogOpen,
   cancelBookingLoading,
+  disputeBookingLoading,
   rejectBookingLoading,
   rejectDialogOpen,
   refetch
@@ -165,6 +169,7 @@ export function EnhancedBookingsDashboardUI({
                       onOpenCancelDialog={actions.onOpenCancelDialog}
                       onApproveBooking={actions.onApproveBooking}
                       onOpenRejectDialog={actions.onOpenRejectDialog}
+                      onOpenDisputeDialog={actions.onOpenDisputeDialog}
                     />
                   ))}
                 </div>
@@ -209,10 +214,14 @@ export function EnhancedBookingsDashboardUI({
         setCancelDialogOpen={setCancelDialogOpen}
         rejectDialogOpen={rejectDialogOpen}
         setRejectDialogOpen={setRejectDialogOpen}
+        disputeDialogOpen={dashboardState.dialogStates.disputeDialog}
+        setDisputeDialogOpen={setDisputeDialogOpen}
         selectedBooking={dashboardState.selectedBooking}
         onCancelBooking={actions.onCancelBooking}
+        onSubmitDispute={actions.onSubmitDispute}
         onRejectBooking={actions.onRejectBooking}
         cancelBookingLoading={cancelBookingLoading}
+        disputeBookingLoading={disputeBookingLoading}
         rejectBookingLoading={rejectBookingLoading}
       />
 
@@ -226,6 +235,10 @@ export function EnhancedBookingsDashboardUI({
         onOpenCancelDialog={(booking) => {
           setSelectedBookingDetails(null); // Close details modal first
           actions.onOpenCancelDialog(booking);
+        }}
+        onOpenDisputeDialog={(booking) => {
+          setSelectedBookingDetails(null);
+          actions.onOpenDisputeDialog(booking);
         }}
       />
 

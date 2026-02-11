@@ -93,7 +93,7 @@ export function CancelBookingDialog({
             Conferma Cancellazione
           </DialogTitle>
           <DialogDescription>
-            Stai per cancellare la tua prenotazione per "{booking.space?.title}".
+            Sei sicuro di voler cancellare la prenotazione per "{booking.space?.title}"? Verifica le policy di cancellazione dello spazio. L'operazione è irreversibile.
           </DialogDescription>
         </DialogHeader>
 

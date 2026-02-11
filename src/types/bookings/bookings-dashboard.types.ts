@@ -12,6 +12,7 @@ export interface BookingsDashboardState {
   dialogStates: {
     messageDialog: boolean;
     cancelDialog: boolean;
+    disputeDialog: boolean;
     messageBookingId: string;
     messageSpaceTitle: string;
   };

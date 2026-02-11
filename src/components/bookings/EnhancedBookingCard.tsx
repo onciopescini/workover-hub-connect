@@ -28,8 +28,7 @@ interface EnhancedBookingCardProps {
   onApproveBooking?: (bookingId: string) => Promise<void>;
   onOpenRejectDialog?: (booking: BookingWithDetails) => void;
   onMarkNoShow?: (booking: BookingWithDetails) => void;
-  onRequestRefund?: (booking: BookingWithDetails) => void;
-  onOpenDispute?: (booking: BookingWithDetails) => void;
+  onOpenDisputeDialog?: (booking: BookingWithDetails) => void;
   isChatEnabled?: boolean;
 }
 
@@ -41,8 +40,7 @@ export const EnhancedBookingCard = ({
   onApproveBooking,
   onOpenRejectDialog,
   onMarkNoShow,
-  onRequestRefund,
-  onOpenDispute,
+  onOpenDisputeDialog,
   isChatEnabled = false
 }: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
@@ -377,25 +375,14 @@ export const EnhancedBookingCard = ({
             </Button>
           )}
 
-          {canUseAdministrativeActions && onRequestRefund && (
+          {userRole === 'coworker' && canUseAdministrativeActions && onOpenDisputeDialog && (
             <Button
               variant="outline"
               size="sm"
               className="flex items-center"
-              onClick={() => onRequestRefund(booking)}
+              onClick={() => onOpenDisputeDialog(booking)}
             >
-              Richiedi Rimborso
-            </Button>
-          )}
-
-          {canUseAdministrativeActions && onOpenDispute && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center"
-              onClick={() => onOpenDispute(booking)}
-            >
-              Apri Contestazione
+              Segnala un problema / Richiedi Rimborso
             </Button>
           )}
         </div>
