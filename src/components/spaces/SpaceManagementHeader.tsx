@@ -35,7 +35,7 @@ export const SpaceManagementHeader = ({
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             <Button 
-              onClick={() => navigate('/space/new')}
+              onClick={() => navigate('/host/spaces/new')}
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-semibold"
             >
               <Plus className="w-4 h-4 mr-2" />

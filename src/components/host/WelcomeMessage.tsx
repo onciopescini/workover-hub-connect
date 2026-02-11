@@ -22,7 +22,7 @@ export function WelcomeMessage() {
   };
 
   const handleCreateSpace = () => {
-    navigate('/spaces/new');
+    navigate('/host/spaces/new');
   };
 
   return (

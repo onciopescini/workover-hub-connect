@@ -109,6 +109,7 @@ export const AppRoutes = () => {
             <Search />
           </LazyWrapper>
         } />
+        <Route path="spaces/new" element={<Navigate to="/host/spaces/new" replace />} />
         <Route path="spaces/:id" element={
           <LazyWrapper>
             <SpaceDetail />
@@ -127,8 +128,8 @@ export const AppRoutes = () => {
         {/* Legacy redirect from removed Events section */}
         <Route path="events" element={<Navigate to="/networking" replace />} />
 
-        {/* Redirect /space/new to /host/space/new */}
-        <Route path="space/new" element={<Navigate to="/host/space/new" replace />} />
+        {/* Redirect /space/new to /host/spaces/new */}
+        <Route path="space/new" element={<Navigate to="/host/spaces/new" replace />} />
         
         {/* Public user profiles */}
         <Route path="users/:userId" element={
@@ -339,7 +340,8 @@ export const AppRoutes = () => {
             <SpacesManage />
           </LazyWrapper>
         } />
-        <Route path="space/new" element={
+        <Route path="space/new" element={<Navigate to="/host/spaces/new" replace />} />
+        <Route path="spaces/new" element={
           <LazyWrapper>
             <SpaceNew />
           </LazyWrapper>
