@@ -78,6 +78,7 @@ const AdminTicketManagement = lazy(() => import("@/pages/admin/AdminTicketManage
 const AdminRevenue = lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminBookings = lazy(() => import("@/pages/admin/AdminBookingsPage"));
 const AdminKYC = lazy(() => import("@/pages/admin/AdminKYC"));
+const AdminInvoicesPage = lazy(() => import("@/pages/admin/AdminInvoicesPage"));
 
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
@@ -442,6 +443,11 @@ export const AppRoutes = () => {
         <Route path="kyc" element={
           <LazyWrapper>
             <AdminKYC />
+          </LazyWrapper>
+        } />
+        <Route path="invoices" element={
+          <LazyWrapper>
+            <AdminInvoicesPage />
           </LazyWrapper>
         } />
       </Route>
