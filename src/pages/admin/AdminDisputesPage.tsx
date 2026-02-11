@@ -206,10 +206,28 @@ const AdminDisputesPage = () => {
 
   const resolveDisputeMutation = useMutation({
     mutationFn: async ({ dispute, resolutionAction }: { dispute: AdminDispute; resolutionAction: ResolutionAction }) => {
-      const bookingStatus: BookingStatus =
-        resolutionAction === 'approve_refund' ? BOOKING_RESOLUTION_STATUS.REFUNDED : BOOKING_RESOLUTION_STATUS.CHECKED_OUT;
-      const disputeStatus: DisputeStatus =
-        resolutionAction === 'approve_refund' ? DISPUTE_STATUS.RESOLVED : DISPUTE_STATUS.CLOSED;
+      if (resolutionAction === 'approve_refund') {
+        const { data, error } = await supabase.functions.invoke('admin-process-refund', {
+          body: {
+            booking_id: dispute.bookingId,
+            dispute_id: dispute.id,
+            reason: `Admin approved dispute refund: ${dispute.reason}`,
+          },
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (!data || typeof data !== 'object' || !('success' in data) || data.success !== true) {
+          throw new Error('Il rimborso su Stripe non è stato completato.');
+        }
+
+        return;
+      }
+
+      const bookingStatus: BookingStatus = BOOKING_RESOLUTION_STATUS.CHECKED_OUT;
+      const disputeStatus: DisputeStatus = DISPUTE_STATUS.CLOSED;
 
       const { error: bookingError } = await supabase
         .from('bookings')
