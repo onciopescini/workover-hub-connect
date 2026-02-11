@@ -124,15 +124,19 @@ export const AdminActionCenter: React.FC = () => {
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
               </Link>
 
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
+              <Link 
+                to="/admin/tickets?status=open"
+                className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              >
                 <div className="p-2 rounded-full bg-blue-100">
                   <Ticket className="h-4 w-4 text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Open Tickets</p>
+                  <p className="text-sm font-medium">Ticket Aperti</p>
                   <p className="text-2xl font-bold text-blue-600">{alerts?.openTickets || 0}</p>
                 </div>
-              </div>
+                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+              </Link>
 
               <div className="flex items-center gap-3 p-3 rounded-lg border">
                 <div className="p-2 rounded-full bg-purple-100">

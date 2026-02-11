@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthLogic } from '@/hooks/auth/useAuthLogic';
-import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Shield, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
 import { ADMIN_ROLES, ADMIN_ROUTES } from '@/constants/admin';
@@ -60,6 +60,7 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: 'Mission Control', path: ADMIN_ROUTES.DASHBOARD, icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: 'Tickets', path: ADMIN_ROUTES.TICKETS, icon: <Ticket className="w-4 h-4" /> },
     { label: 'Users', path: ADMIN_ROUTES.USERS, icon: <Users className="w-4 h-4" /> },
     { label: 'Bookings', path: ADMIN_ROUTES.BOOKINGS, icon: <Calendar className="w-4 h-4" /> },
     { label: 'KYC Verification', path: ADMIN_ROUTES.KYC, icon: <Shield className="w-4 h-4" /> },
