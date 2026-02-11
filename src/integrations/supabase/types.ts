@@ -913,6 +913,8 @@ export type Database = {
           check_in_method: string | null
           checked_in_at: string | null
           checked_in_by: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
           created_at: string | null
           deleted_at: string | null
           end_time: string | null
@@ -924,6 +926,7 @@ export type Database = {
           id: string
           is_urgent: boolean | null
           issue_report_reason: string | null
+          no_show: boolean
           payment_deadline: string | null
           payment_reminder_sent: boolean | null
           payment_required: boolean | null
@@ -932,6 +935,7 @@ export type Database = {
           payout_scheduled_at: string | null
           payout_stripe_transfer_id: string | null
           processing_lock: string | null
+          qr_code_token: string | null
           reservation_token: string | null
           service_completed_at: string | null
           service_completed_by: string | null
@@ -957,6 +961,8 @@ export type Database = {
           check_in_method?: string | null
           checked_in_at?: string | null
           checked_in_by?: string | null
+          checked_out_at?: string | null
+          checked_out_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
           end_time?: string | null
@@ -968,6 +974,7 @@ export type Database = {
           id?: string
           is_urgent?: boolean | null
           issue_report_reason?: string | null
+          no_show?: boolean
           payment_deadline?: string | null
           payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
@@ -976,6 +983,7 @@ export type Database = {
           payout_scheduled_at?: string | null
           payout_stripe_transfer_id?: string | null
           processing_lock?: string | null
+          qr_code_token?: string | null
           reservation_token?: string | null
           service_completed_at?: string | null
           service_completed_by?: string | null
@@ -1001,6 +1009,8 @@ export type Database = {
           check_in_method?: string | null
           checked_in_at?: string | null
           checked_in_by?: string | null
+          checked_out_at?: string | null
+          checked_out_by?: string | null
           created_at?: string | null
           deleted_at?: string | null
           end_time?: string | null
@@ -1012,6 +1022,7 @@ export type Database = {
           id?: string
           is_urgent?: boolean | null
           issue_report_reason?: string | null
+          no_show?: boolean
           payment_deadline?: string | null
           payment_reminder_sent?: boolean | null
           payment_required?: boolean | null
@@ -1020,6 +1031,7 @@ export type Database = {
           payout_scheduled_at?: string | null
           payout_stripe_transfer_id?: string | null
           processing_lock?: string | null
+          qr_code_token?: string | null
           reservation_token?: string | null
           service_completed_at?: string | null
           service_completed_by?: string | null
@@ -7233,6 +7245,8 @@ export type Database = {
           check_in_method: string | null
           checked_in_at: string | null
           checked_in_by: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
           created_at: string | null
           deleted_at: string | null
           end_time: string | null
@@ -7244,6 +7258,7 @@ export type Database = {
           id: string
           is_urgent: boolean | null
           issue_report_reason: string | null
+          no_show: boolean
           payment_deadline: string | null
           payment_reminder_sent: boolean | null
           payment_required: boolean | null
@@ -7252,6 +7267,7 @@ export type Database = {
           payout_scheduled_at: string | null
           payout_stripe_transfer_id: string | null
           processing_lock: string | null
+          qr_code_token: string | null
           reservation_token: string | null
           service_completed_at: string | null
           service_completed_by: string | null
@@ -7286,6 +7302,8 @@ export type Database = {
           check_in_method: string | null
           checked_in_at: string | null
           checked_in_by: string | null
+          checked_out_at: string | null
+          checked_out_by: string | null
           created_at: string | null
           deleted_at: string | null
           end_time: string | null
@@ -7297,6 +7315,7 @@ export type Database = {
           id: string
           is_urgent: boolean | null
           issue_report_reason: string | null
+          no_show: boolean
           payment_deadline: string | null
           payment_reminder_sent: boolean | null
           payment_required: boolean | null
@@ -7305,6 +7324,7 @@ export type Database = {
           payout_scheduled_at: string | null
           payout_stripe_transfer_id: string | null
           processing_lock: string | null
+          qr_code_token: string | null
           reservation_token: string | null
           service_completed_at: string | null
           service_completed_by: string | null
@@ -8165,6 +8185,14 @@ export type Database = {
         }
         Returns: string
       }
+      host_scan_checkin: {
+        Args: { p_host_id: string; p_qr_token: string }
+        Returns: Json
+      }
+      host_scan_checkout: {
+        Args: { p_host_id: string; p_qr_token: string }
+        Returns: Json
+      }
       validate_and_reserve_multi_slots: {
         Args: {
           client_total_price_param?: number
@@ -8246,6 +8274,8 @@ export type Database = {
         | "disputed"
         | "frozen"
         | "checked_in"
+        | "checked_out"
+        | "no_show"
       cancellation_policy: "flexible" | "moderate" | "strict"
       capture_status_enum: "uncaptured" | "authorized" | "captured" | "canceled"
       confirmation_type: "instant" | "host_approval"
