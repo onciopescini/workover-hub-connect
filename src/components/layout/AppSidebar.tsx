@@ -85,7 +85,7 @@ export function AppSidebar() {
       return [
         { title: "Dashboard", url: "/host/dashboard", icon: LayoutDashboard },
         { title: "My Spaces", url: "/host/spaces", icon: Building2 },
-        { title: "Crea Spazio", url: "/spaces/new", icon: PlusCircle, disabled: isHostRestricted },
+        { title: "Crea Spazio", url: "/host/spaces/new", icon: PlusCircle, disabled: isHostRestricted },
         { title: "Bookings", url: "/bookings", icon: Calendar },
         { title: "Settings", url: "/settings", icon: Settings },
         { title: "Wallet", url: "/host/wallet", icon: Wallet },

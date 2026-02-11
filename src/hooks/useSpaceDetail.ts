@@ -54,6 +54,8 @@ const isAvailabilityPayload = (value: unknown): value is AvailabilityPayload => 
 
 export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => {
   const queryClient = useQueryClient();
+  const isCreateRoute = id === 'new';
+  const canLoadSpaceData = Boolean(id) && !isCreateRoute;
 
   const { data: space, isLoading: spaceLoading, error: spaceError } = useQuery<SpaceDetail | null, Error>({
     queryKey: ['space', id],
@@ -163,15 +165,15 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
 
       return spaceObj;
     },
-    enabled: !!id
+    enabled: canLoadSpaceData
   });
 
   // Load reviews
-  const { data: reviews = [] } = useSpaceReviewsQuery(id || '');
+  const { data: reviews = [] } = useSpaceReviewsQuery(canLoadSpaceData ? id : '');
 
   // Load location
-  const { data: preciseLocation } = useSpaceLocation(id, !!id);
-  const { data: hasConfirmedBooking } = useHasConfirmedBooking(id);
+  const { data: preciseLocation } = useSpaceLocation(id, canLoadSpaceData);
+  const { data: hasConfirmedBooking } = useHasConfirmedBooking(canLoadSpaceData ? id : undefined);
 
   // Enhance space
   const enhancedSpace = useMemo(() => {
@@ -197,7 +199,7 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
 
   // Realtime subscription
   useEffect(() => {
-    if (!space?.host_id || !id) return;
+    if (!space?.host_id || !id || !canLoadSpaceData) return;
 
     const channel = supabase
       .channel(`host-updates-${space.host_id}`)
@@ -235,7 +237,7 @@ export const useSpaceDetail = (id: string | undefined): UseSpaceDetailResult => 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [space?.host_id, id, queryClient]);
+  }, [space?.host_id, id, queryClient, canLoadSpaceData]);
 
   return {
     space: enhancedSpace,
