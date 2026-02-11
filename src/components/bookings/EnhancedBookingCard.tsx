@@ -375,7 +375,7 @@ export const EnhancedBookingCard = ({
         {/* QR Code for Guest Check-in - Only for Coworker view */}
         {userRole === 'coworker' && (
           <BookingQRCode
-            qrCodeToken={booking.qr_code_token}
+            qrCodeToken={booking.qr_code_token ?? null}
             status={booking.status}
           />
         )}

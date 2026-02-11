@@ -120,10 +120,12 @@ export const SpaceMap: React.FC<SpaceMapProps> = React.memo(({
   const cleanupPopups = useCallback(() => {
     popupsRef.current.forEach((popup) => {
       const popupElement = popup.getElement();
-      const root = popupRootsRef.current.get(popupElement);
-      if (root) {
-        root.unmount();
-        popupRootsRef.current.delete(popupElement);
+      if (popupElement) {
+        const root = popupRootsRef.current.get(popupElement);
+        if (root) {
+          root.unmount();
+          popupRootsRef.current.delete(popupElement);
+        }
       }
       popup.remove();
     });

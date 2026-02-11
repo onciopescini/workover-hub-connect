@@ -87,8 +87,8 @@ export const WhosHereList = () => {
 
         // Create a map of user_id to profile
         const profilesMap = new Map<string, ProfileData>();
-        (profilesData || []).forEach(p => {
-          profilesMap.set(p.id, p);
+        (profilesData || []).filter(p => p.id != null).forEach(p => {
+          profilesMap.set(p.id!, p as ProfileData);
         });
 
         // Combine the data

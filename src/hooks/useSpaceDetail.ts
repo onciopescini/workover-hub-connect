@@ -36,6 +36,8 @@ type SpaceDetail = Space & {
   host_total_spaces: number;
   host_stripe_account_id: string;
   host_stripe_connected: boolean;
+  hasPreciseLocation?: boolean;
+  hasConfirmedBooking?: boolean;
 };
 
 interface UseSpaceDetailResult {

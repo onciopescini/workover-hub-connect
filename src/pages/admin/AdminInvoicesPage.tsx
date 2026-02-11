@@ -23,7 +23,7 @@ import { Tables } from '@/integrations/supabase/types';
 
 type InvoiceQueueViewRow = Tables<'admin_platform_fee_invoices_queue_view'>;
 
-const STATUS_STYLES: Record<InvoiceQueueViewRow['status'], string> = {
+const STATUS_STYLES: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-800',
   processing: 'bg-blue-100 text-blue-800',
   completed: 'bg-green-100 text-green-800',
@@ -134,31 +134,32 @@ const AdminInvoicesPage = () => {
                 {(queueRows ?? []).length > 0 ? (
                   queueRows?.map((row) => {
                     const hostName = [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Host sconosciuto';
-                    const isProcessingRow = processingQueueIds.has(row.id);
+                    const rowId = row.id ?? '';
+                    const isProcessingRow = processingQueueIds.has(rowId);
                     const canProcessManually = row.status !== 'completed' && !isProcessingRow;
 
                     return (
-                      <TableRow key={row.id}>
-                        <TableCell>{format(new Date(row.created_at), 'dd/MM/yyyy HH:mm')}</TableCell>
+                      <TableRow key={rowId}>
+                        <TableCell>{row.created_at ? format(new Date(row.created_at), 'dd/MM/yyyy HH:mm') : '-'}</TableCell>
                         <TableCell className="font-medium">{hostName}</TableCell>
                         <TableCell>{row.email}</TableCell>
                         <TableCell>{row.vat_number ?? '-'}</TableCell>
                         <TableCell className="font-mono text-xs">{row.payment_id}</TableCell>
                         <TableCell className="text-right font-semibold">
-                          {formatPlatformFee(row.platform_fee_amount, row.currency)}
+                          {formatPlatformFee(row.platform_fee_amount ?? 0, row.currency ?? 'EUR')}
                         </TableCell>
                         <TableCell>
                           <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[row.status]}`}
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[row.status ?? 'pending'] ?? ''}`}
                           >
-                            {INVOICE_QUEUE_STATUS_LABELS[row.status]}
+                            {INVOICE_QUEUE_STATUS_LABELS[(row.status ?? 'pending') as keyof typeof INVOICE_QUEUE_STATUS_LABELS] ?? row.status}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
                             type="button"
                             size="sm"
-                            onClick={() => processInvoiceMutation.mutate(row.id)}
+                            onClick={() => processInvoiceMutation.mutate(rowId)}
                             disabled={!canProcessManually}
                           >
                             {isProcessingRow ? 'In elaborazione...' : 'Processa Manualmente'}

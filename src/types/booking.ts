@@ -62,6 +62,8 @@ export const BOOKING_STATUS_COLORS: Record<BookingStatus, string> = {
   disputed: "bg-rose-100 text-rose-800",
   frozen: "bg-gray-100 text-gray-800",
   checked_in: "bg-emerald-100 text-emerald-800",
+  checked_out: "bg-teal-100 text-teal-800",
+  no_show: "bg-slate-100 text-slate-800",
 };
 
 export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
@@ -75,6 +77,8 @@ export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
   disputed: "Contestata",
   frozen: "Sospesa",
   checked_in: "Check-in effettuato",
+  checked_out: "Check-out effettuato",
+  no_show: "Non presentato",
 };
 
 export type BookingWithDetails = {
@@ -84,7 +88,7 @@ export type BookingWithDetails = {
   booking_date: string;
   start_time: string;
   end_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment' | 'served' | 'refunded' | 'disputed' | 'frozen' | 'checked_in';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'pending_approval' | 'pending_payment' | 'served' | 'refunded' | 'disputed' | 'frozen' | 'checked_in' | 'checked_out' | 'no_show';
   created_at: string;
   updated_at: string;
   cancelled_at?: string | null;

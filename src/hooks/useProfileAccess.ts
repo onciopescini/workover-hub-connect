@@ -63,7 +63,7 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
       setVisibilityLevel(level);
 
       if (hasAccess && fetchedProfile) {
-        const filteredProfile = filterProfileData(fetchedProfile, level);
+        const filteredProfile = filterProfileData(fetchedProfile as unknown as Record<string, unknown>, level);
         setProfile(filteredProfile);
       } else {
         setProfile(null);
@@ -72,7 +72,7 @@ export const useProfileAccess = ({ userId, autoFetch = true }: UseProfileAccessP
         }
       }
     } catch (err: unknown) {
-      sreLogger.error('Error fetching profile', { userId }, err as Error);
+      sreLogger.error('Error fetching profile', { userId }, err instanceof Error ? err : new Error(String(err)));
       setError(err instanceof Error ? err.message : 'Errore nel recupero del profilo');
     } finally {
       setIsLoading(false);

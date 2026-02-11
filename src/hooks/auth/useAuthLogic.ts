@@ -363,7 +363,7 @@ export const useAuthLogic = () => {
         },
         (payload: RealtimePostgresChangesPayload<ProfileRow>) => {
           const updatedProfile = payload.new;
-          const nextStatus = isStripeOnboardingStatus(updatedProfile.stripe_onboarding_status)
+          const nextStatus = ('stripe_onboarding_status' in updatedProfile && isStripeOnboardingStatus(updatedProfile.stripe_onboarding_status))
             ? updatedProfile.stripe_onboarding_status
             : null;
 

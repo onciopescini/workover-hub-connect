@@ -78,6 +78,7 @@ export const mapSpaceRowToSpace = (row: PartialSpaceRow): Space => {
     features: getSpaceFeatures(row),
     name: row.title ?? '',
     city: row.city_name ?? undefined,
+    location: row.location ?? null,
   } as Space;
 };
 

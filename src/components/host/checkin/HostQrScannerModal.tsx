@@ -33,10 +33,13 @@ const toRpcScanResponse = (value: unknown): RpcScanResponse => {
   const successValue = value['success'];
   const errorValue = value['error'];
 
-  return {
+  const result: RpcScanResponse = {
     success: typeof successValue === 'boolean' ? successValue : false,
-    error: typeof errorValue === 'string' ? errorValue : undefined,
   };
+  if (typeof errorValue === 'string') {
+    result.error = errorValue;
+  }
+  return result;
 };
 
 const isUuid = (value: string): boolean => {

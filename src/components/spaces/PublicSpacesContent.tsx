@@ -220,7 +220,7 @@ export const PublicSpacesContent = ({
             highlightedId={highlightedId}
             isLoading={isLoading}
             isFetchingNextPage={isFetchingNextPage}
-            loadMoreRef={loadMoreRef}
+            {...(loadMoreRef ? { loadMoreRef } : {})}
             selectedDate={filters.startDate}
           />
       }
