@@ -21,6 +21,11 @@ interface RpcScanResponse {
   error?: string;
 }
 
+interface RpcErrorShape {
+  message?: string;
+  details?: string;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
 };
@@ -45,6 +50,33 @@ const toRpcScanResponse = (value: unknown): RpcScanResponse => {
 const isUuid = (value: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
+};
+
+const sanitizeScannedData = (scannedData: unknown): string => {
+  if (typeof scannedData !== 'string') {
+    throw new Error('QR non valido: payload non testuale.');
+  }
+
+  return scannedData.trim();
+};
+
+const getErrorDescription = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+
+  if (isRecord(error)) {
+    const rpcError = error as RpcErrorShape;
+    if (typeof rpcError.message === 'string' && rpcError.message.length > 0) {
+      return rpcError.message;
+    }
+
+    if (typeof rpcError.details === 'string' && rpcError.details.length > 0) {
+      return rpcError.details;
+    }
+  }
+
+  return fallback;
 };
 
 export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps) => {
@@ -98,8 +130,11 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
         throw new Error('Utente host non autenticato.');
       }
 
+      const cleanedData = sanitizeScannedData(token);
+      console.log('DATI GREZZI QR SCANSIONATO:', cleanedData);
+
       const { data, error } = await supabase.rpc(rpcName, {
-        p_qr_token: token,
+        p_qr_token: cleanedData,
         p_host_id: userId,
       });
 
@@ -137,7 +172,8 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
 
         throw new Error(rpcResponse.error ?? 'Impossibile completare il check-in.');
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Errore sconosciuto durante il check-in.';
+        console.error('RPC Error Details:', error);
+        const message = getErrorDescription(error, 'Errore sconosciuto durante il check-in.');
         toast.error('Check-in fallito', { description: message });
       } finally {
         setIsProcessing(false);
@@ -164,7 +200,8 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
       await invalidateRelevantQueries();
       onClose();
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Errore sconosciuto durante il check-out.';
+      console.error('RPC Error Details:', error);
+      const message = getErrorDescription(error, 'Errore sconosciuto durante il check-out.');
       toast.error('Check-out fallito', { description: message });
       setIsPaused(false);
     } finally {
@@ -179,7 +216,16 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
         return;
       }
 
-      const scannedToken = rawValue.trim();
+      let scannedToken = '';
+      try {
+        scannedToken = sanitizeScannedData(rawValue);
+      } catch (error: unknown) {
+        toast.error('QR non valido', {
+          description: getErrorDescription(error, 'Il token scansionato non è valido.'),
+        });
+        return;
+      }
+
       if (!isUuid(scannedToken)) {
         toast.error('QR non valido', {
           description: 'Il token scansionato non è un UUID valido.',
