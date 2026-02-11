@@ -68,6 +68,13 @@ export type PaymentWithHistoryBookingJoin = PaymentRow & {
 export type BookingWithSpacePaymentsJoin = BookingRow & {
   spaces: Pick<SpaceRow, 'id' | 'title' | 'address' | 'photos' | 'host_id' | 'price_per_day' | 'confirmation_type'> | null;
   payments?: Pick<PaymentRow, 'id' | 'payment_status' | 'amount' | 'created_at'>[] | null;
+  disputes:
+    | Array<
+        Pick<Database['public']['Tables']['disputes']['Row'], 'id' | 'reason' | 'guest_id' | 'status' | 'created_at'> & {
+          guest: Pick<ProfileRow, 'first_name' | 'last_name'> | null;
+        }
+      >
+    | null;
 };
 
 export type BookingWithSpacePaymentsAndCoworkerJoin = BookingWithSpacePaymentsJoin & {

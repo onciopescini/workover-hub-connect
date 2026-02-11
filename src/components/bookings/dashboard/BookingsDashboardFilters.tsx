@@ -53,6 +53,7 @@ export const BookingsDashboardFilters = ({
                 <SelectItem value="pending">In attesa</SelectItem>
                 <SelectItem value="confirmed">Confermate</SelectItem>
                 <SelectItem value="cancelled">Cancellate</SelectItem>
+                <SelectItem value="disputed">Contestate</SelectItem>
               </SelectContent>
             </Select>
 

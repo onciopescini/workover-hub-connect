@@ -33,12 +33,23 @@ export const fetchCoworkerBookings = async (userId: string, filters?: BookingFil
           payment_status,
           amount,
           created_at
+        ),
+        disputes (
+          id,
+          reason,
+          guest_id,
+          status,
+          created_at,
+          guest:profiles!disputes_guest_id_fkey (
+            first_name,
+            last_name
+          )
         )
       `)
       .eq('user_id', userId);
 
     // Apply filters with validation
-    if (filters?.status && ['pending', 'confirmed', 'cancelled'].includes(filters.status)) {
+    if (filters?.status && ['pending', 'confirmed', 'cancelled', 'disputed'].includes(filters.status)) {
       query = query.eq('status', filters.status);
     }
 
@@ -127,12 +138,23 @@ export const fetchHostBookings = async (userId: string, userRole: string, filter
           payment_status,
           amount,
           created_at
+        ),
+        disputes (
+          id,
+          reason,
+          guest_id,
+          status,
+          created_at,
+          guest:profiles!disputes_guest_id_fkey (
+            first_name,
+            last_name
+          )
         )
       `)
       .eq('spaces.host_id', userId);
 
     // Apply filters with validation
-    if (filters?.status && ['pending', 'confirmed', 'cancelled'].includes(filters.status)) {
+    if (filters?.status && ['pending', 'confirmed', 'cancelled', 'disputed'].includes(filters.status)) {
       query = query.eq('status', filters.status);
     }
 

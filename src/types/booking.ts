@@ -132,6 +132,17 @@ export type BookingWithDetails = {
     amount: number;
     created_at: string;
   }>;
+  disputes?: Array<{
+    id: string;
+    reason: string;
+    guest_id: string;
+    status: Database["public"]["Tables"]["disputes"]["Row"]["status"];
+    created_at: string;
+    guest: {
+      first_name: string | null;
+      last_name: string | null;
+    } | null;
+  }>;
 };
 
 // Raw booking data from database
