@@ -1,6 +1,7 @@
 import React from 'react';
 import { CancelBookingDialog } from '../CancelBookingDialog';
 import { RejectBookingDialog } from '../RejectBookingDialog';
+import { BookingDisputeDialog } from '../BookingDisputeDialog';
 import { BookingWithDetails } from '@/types/booking';
 
 interface EnhancedBookingsDashboardDialogsProps {
@@ -10,25 +11,33 @@ interface EnhancedBookingsDashboardDialogsProps {
   messageSpaceTitle: string;
   cancelDialogOpen: boolean;
   setCancelDialogOpen: (open: boolean) => void;
+  disputeDialogOpen: boolean;
+  setDisputeDialogOpen: (open: boolean) => void;
   rejectDialogOpen: boolean;
   setRejectDialogOpen: (open: boolean) => void;
   selectedBooking: BookingWithDetails | null;
   onCancelBooking: (reason?: string) => Promise<void>;
+  onSubmitDispute: (reason: string) => Promise<void>;
   onRejectBooking: (reason: string) => Promise<void>;
   cancelBookingLoading: boolean;
+  disputeBookingLoading: boolean;
   rejectBookingLoading: boolean;
 }
 
 export function EnhancedBookingsDashboardDialogs({
   cancelDialogOpen,
   setCancelDialogOpen,
+  disputeDialogOpen,
+  setDisputeDialogOpen,
   rejectDialogOpen,
   setRejectDialogOpen,
   selectedBooking,
   onCancelBooking,
+  onSubmitDispute,
   onRejectBooking,
   cancelBookingLoading,
-  rejectBookingLoading
+  disputeBookingLoading,
+  rejectBookingLoading,
 }: EnhancedBookingsDashboardDialogsProps) {
   return (
     <>
@@ -42,6 +51,14 @@ export function EnhancedBookingsDashboardDialogs({
             booking={selectedBooking}
             onConfirm={onCancelBooking}
             isLoading={cancelBookingLoading}
+          />
+
+          <BookingDisputeDialog
+            open={disputeDialogOpen}
+            onOpenChange={setDisputeDialogOpen}
+            booking={selectedBooking}
+            onConfirm={onSubmitDispute}
+            isLoading={disputeBookingLoading}
           />
 
           <RejectBookingDialog

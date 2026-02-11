@@ -4,6 +4,7 @@ import { useLogger } from "@/hooks/useLogger";
 import { useCoworkerBookings } from '@/hooks/queries/bookings/useCoworkerBookings';
 import { useHostBookings } from '@/hooks/queries/bookings/useHostBookings';
 import { useEnhancedCancelBookingMutation, BookingFilter } from '@/hooks/queries/useEnhancedBookingsQuery';
+import { useCreateBookingDisputeMutation } from '@/hooks/queries/bookings/useCreateBookingDisputeMutation';
 import { useApproveBooking, useRejectBooking } from '@/hooks/mutations/useBookingApproval';
 import { BookingWithDetails } from '@/types/booking';
 import { BookingsDashboardState, BookingsStats, BookingTabType } from '@/types/bookings/bookings-dashboard.types';
@@ -30,6 +31,7 @@ export const useBookingsDashboardState = () => {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
   const [messageBookingId, setMessageBookingId] = useState("");
   const [messageSpaceTitle, setMessageSpaceTitle] = useState("");
 
@@ -41,6 +43,7 @@ export const useBookingsDashboardState = () => {
   const cancelBookingMutation = useEnhancedCancelBookingMutation();
   const approveBookingMutation = useApproveBooking();
   const rejectBookingMutation = useRejectBooking();
+  const createBookingDisputeMutation = useCreateBookingDisputeMutation();
 
   const filteredBookings = useMemo(() => {
     try {
@@ -249,6 +252,37 @@ export const useBookingsDashboardState = () => {
     }
   }, [selectedBooking, getUserRole, cancelBookingMutation]);
 
+  const handleOpenDisputeDialog = useCallback((booking: BookingWithDetails) => {
+    try {
+      if (!booking) return;
+      setSelectedBooking(booking);
+      setDisputeDialogOpen(true);
+    } catch (dialogError) {
+      logError('Error opening dispute dialog', dialogError as Error, {
+        operation: 'open_dispute_dialog',
+        bookingId: booking?.id
+      });
+    }
+  }, []);
+
+  const handleSubmitDispute = useCallback(async (reason: string) => {
+    if (!selectedBooking) return;
+
+    try {
+      await createBookingDisputeMutation.mutateAsync({
+        bookingId: selectedBooking.id,
+        reason,
+      });
+      setDisputeDialogOpen(false);
+      setSelectedBooking(null);
+    } catch (disputeError) {
+      logError('Error creating booking dispute', disputeError as Error, {
+        operation: 'create_booking_dispute',
+        bookingId: selectedBooking?.id,
+      });
+    }
+  }, [createBookingDisputeMutation, selectedBooking]);
+
   const handleApproveBooking = useCallback(async (bookingId: string) => {
     try {
       await approveBookingMutation.mutateAsync(bookingId);
@@ -349,6 +383,7 @@ export const useBookingsDashboardState = () => {
     dialogStates: {
       messageDialog: messageDialogOpen,
       cancelDialog: cancelDialogOpen,
+      disputeDialog: disputeDialogOpen,
       messageBookingId,
       messageSpaceTitle,
     }
@@ -358,6 +393,8 @@ export const useBookingsDashboardState = () => {
     onOpenMessageDialog: handleOpenMessageDialog,
     onOpenCancelDialog: handleOpenCancelDialog,
     onCancelBooking: handleCancelBooking,
+    onOpenDisputeDialog: handleOpenDisputeDialog,
+    onSubmitDispute: handleSubmitDispute,
     onStatusFilter: handleStatusFilter,
     onDateRangeFilter: handleDateRangeFilter,
     onClearFilters: handleClearFilters,
@@ -376,6 +413,7 @@ export const useBookingsDashboardState = () => {
     setMessageDialogOpen,
     setCancelDialogOpen,
     setRejectDialogOpen,
+    setDisputeDialogOpen,
     setSearchTerm,
     isChatEnabled,
     getUserRole,
@@ -383,5 +421,6 @@ export const useBookingsDashboardState = () => {
     cancelBookingLoading: cancelBookingMutation.isPending,
     rejectBookingLoading: rejectBookingMutation.isPending,
     rejectDialogOpen,
+    disputeBookingLoading: createBookingDisputeMutation.isPending,
   };
 };
