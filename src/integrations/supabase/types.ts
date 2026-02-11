@@ -3404,6 +3404,92 @@ export type Database = {
           },
         ]
       }
+      platform_fee_invoices_queue: {
+        Row: {
+          booking_id: string
+          created_at: string
+          currency: string
+          error_log: string | null
+          host_id: string
+          id: string
+          payment_id: string
+          platform_fee_amount: number
+          status: Database["public"]["Enums"]["invoice_queue_status_enum"]
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          currency: string
+          error_log?: string | null
+          host_id: string
+          id?: string
+          payment_id: string
+          platform_fee_amount: number
+          status?: Database["public"]["Enums"]["invoice_queue_status_enum"]
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          currency?: string
+          error_log?: string | null
+          host_id?: string
+          id?: string
+          payment_id?: string
+          platform_fee_amount?: number
+          status?: Database["public"]["Enums"]["invoice_queue_status_enum"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_fee_invoices_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       private_chats: {
         Row: {
           created_at: string | null
@@ -5754,6 +5840,24 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_platform_fee_invoices_queue_view: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          currency: string | null
+          email: string | null
+          error_log: string | null
+          first_name: string | null
+          host_id: string | null
+          id: string | null
+          last_name: string | null
+          payment_id: string | null
+          platform_fee_amount: number | null
+          status: Database["public"]["Enums"]["invoice_queue_status_enum"] | null
+          vat_number: string | null
+        }
+        Relationships: []
+      }
       compliance_monitoring_metrics: {
         Row: {
           active_admins_7d: number | null
@@ -6329,6 +6433,10 @@ export type Database = {
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       addauth: { Args: { "": string }; Returns: boolean }
+      admin_process_invoice_queue: {
+        Args: { queue_id: string }
+        Returns: Database["public"]["Tables"]["platform_fee_invoices_queue"]["Row"]
+      }
       addgeometrycolumn:
         | {
             Args: {
@@ -8141,6 +8249,7 @@ export type Database = {
       cancellation_policy: "flexible" | "moderate" | "strict"
       capture_status_enum: "uncaptured" | "authorized" | "captured" | "canceled"
       confirmation_type: "instant" | "host_approval"
+      invoice_queue_status_enum: "pending" | "processing" | "completed" | "failed"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
       payment_status:
         | "pending"
@@ -8311,6 +8420,7 @@ export const Constants = {
       cancellation_policy: ["flexible", "moderate", "strict"],
       capture_status_enum: ["uncaptured", "authorized", "captured", "canceled"],
       confirmation_type: ["instant", "host_approval"],
+      invoice_queue_status_enum: ["pending", "processing", "completed", "failed"],
       message_template_type: [
         "confirmation",
         "reminder",

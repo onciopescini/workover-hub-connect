@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthLogic } from '@/hooks/auth/useAuthLogic';
-import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Shield, Ticket } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, DollarSign, LogOut, Shield, Ticket, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LoadingScreen from '@/components/LoadingScreen';
 import { ADMIN_ROLES, ADMIN_ROUTES } from '@/constants/admin';
@@ -65,6 +65,7 @@ export const AdminLayout = () => {
     { label: 'Bookings', path: ADMIN_ROUTES.BOOKINGS, icon: <Calendar className="w-4 h-4" /> },
     { label: 'KYC Verification', path: ADMIN_ROUTES.KYC, icon: <Shield className="w-4 h-4" /> },
     { label: 'Platform Revenue', path: ADMIN_ROUTES.REVENUE, icon: <DollarSign className="w-4 h-4" /> },
+    { label: 'Invoices', path: ADMIN_ROUTES.INVOICES, icon: <ReceiptText className="w-4 h-4" /> },
   ];
 
   const handleLogout = async () => {

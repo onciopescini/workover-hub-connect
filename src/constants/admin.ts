@@ -11,6 +11,7 @@ export const ADMIN_ROUTES = {
   BOOKINGS: '/admin/bookings',
   KYC: '/admin/kyc',
   REVENUE: '/admin/revenue',
+  INVOICES: '/admin/invoices',
 } as const;
 
 export const buildAdminUserInspectorRoute = (userId: string): string => `${ADMIN_ROUTES.USERS}/${userId}`;
