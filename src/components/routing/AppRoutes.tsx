@@ -77,6 +77,7 @@ const AdminUserInspectorPage = lazy(() => import("@/pages/admin/AdminUserInspect
 const AdminTicketManagement = lazy(() => import("@/pages/admin/AdminTicketManagement"));
 const AdminRevenue = lazy(() => import("@/pages/admin/AdminRevenue"));
 const AdminBookings = lazy(() => import("@/pages/admin/AdminBookingsPage"));
+const AdminDisputesPage = lazy(() => import("@/pages/admin/AdminDisputesPage"));
 const AdminKYC = lazy(() => import("@/pages/admin/AdminKYC"));
 const AdminInvoicesPage = lazy(() => import("@/pages/admin/AdminInvoicesPage"));
 
@@ -435,6 +436,11 @@ export const AppRoutes = () => {
         <Route path="bookings" element={
           <LazyWrapper>
             <AdminBookings />
+          </LazyWrapper>
+        } />
+        <Route path="disputes" element={
+          <LazyWrapper>
+            <AdminDisputesPage />
           </LazyWrapper>
         } />
         <Route path="revenue" element={
