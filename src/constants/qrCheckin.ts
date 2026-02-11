@@ -32,3 +32,10 @@ export const QR_CHECKIN_INVALIDATION_KEYS = {
   ENHANCED_BOOKINGS: 'enhanced-bookings',
   HOST_DASHBOARD: 'hostDashboard',
 } as const;
+
+export const QR_BOOKINGS_REALTIME = {
+  CHANNEL_PREFIX: 'guest-booking-status',
+  SCHEMA: 'public',
+  TABLE: 'bookings',
+  EVENT: 'UPDATE',
+} as const;
