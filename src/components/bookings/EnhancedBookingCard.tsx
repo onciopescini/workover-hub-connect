@@ -41,14 +41,12 @@ export const EnhancedBookingCard = ({
 }: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
     if (userRole === "host") {
-      // Cast to any to access cached_avg_rating which may not be in strict type
-      const coworker = booking.coworker as any;
       return {
         id: booking.user_id,
         name: `${booking.coworker?.first_name || ''} ${booking.coworker?.last_name || ''}`.trim() || 'Coworker',
         photo: booking.coworker?.profile_photo_url,
         role: "Coworker",
-        rating: coworker?.cached_avg_rating as number | undefined
+        rating: undefined
       };
     } else {
       return {
@@ -376,12 +374,9 @@ export const EnhancedBookingCard = ({
 
         {/* QR Code for Guest Check-in - Only for Coworker view */}
         {userRole === 'coworker' && (
-          <BookingQRCode 
-            bookingId={booking.id}
-            bookingDate={booking.booking_date}
+          <BookingQRCode
+            qrCodeToken={booking.qr_code_token}
             status={booking.status}
-            startTime={booking.start_time}
-            endTime={booking.end_time}
           />
         )}
 

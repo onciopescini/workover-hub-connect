@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Calendar, MessageSquare, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { QRScanner } from "./checkin/QRScanner";
+import { HostQrScannerModal } from "./checkin/HostQrScannerModal";
 
 export function QuickActions() {
   const navigate = useNavigate();
@@ -20,10 +20,10 @@ export function QuickActions() {
             {/* Check-in Scanner Button - Primary Position */}
             <Button 
               onClick={() => setIsScannerOpen(true)}
-              className="bg-green-600 hover:bg-green-700 h-24 flex flex-col items-center justify-center gap-2"
+              className="bg-green-600 hover:bg-green-700 h-24 col-span-2 md:col-span-1 flex flex-col items-center justify-center gap-2 text-center whitespace-normal"
             >
               <QrCode className="w-6 h-6" />
-              <span>Scanner</span>
+              <span>📷 Scansiona QR (Check-in / Check-out)</span>
             </Button>
             
             <Button 
@@ -56,9 +56,9 @@ export function QuickActions() {
       </Card>
       
       {/* QR Scanner Modal */}
-      <QRScanner 
-        isOpen={isScannerOpen} 
-        onClose={() => setIsScannerOpen(false)} 
+      <HostQrScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
       />
     </>
   );

@@ -51,3 +51,5 @@ export const BUSINESS_RULES = {
   AUTO_CANCEL_PENDING_HOURS: 24,
 };
 export * from './admin';
+
+export * from './qrCheckin';

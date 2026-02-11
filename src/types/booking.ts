@@ -96,6 +96,7 @@ export type BookingWithDetails = {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
+  qr_code_token?: string | null;
   approval_deadline?: string | null;
   payment_deadline?: string | null;
   is_urgent?: boolean | null;
