@@ -30,6 +30,7 @@ interface RawBookingData {
   payment_required?: boolean | null;
   payment_session_id?: string | null;
   reservation_token?: string | null;
+  qr_code_token?: string | null;
   service_completed_at?: string | null;
 
   // The fetcher returns 'spaces' (joined table)
@@ -150,6 +151,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
         payment_required: booking.payment_required || null,
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
+        qr_code_token: booking.qr_code_token || null,
         service_completed_at: booking.service_completed_at || null,
         space: getSpaceData(booking),
         coworker: null, // For coworker bookings, user is the coworker
@@ -198,6 +200,7 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
         payment_required: booking.payment_required || null,
         payment_session_id: booking.payment_session_id || null,
         reservation_token: booking.reservation_token || null,
+        qr_code_token: booking.qr_code_token || null,
         service_completed_at: booking.service_completed_at || null,
         space: getSpaceData(booking),
         coworker: booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null,
