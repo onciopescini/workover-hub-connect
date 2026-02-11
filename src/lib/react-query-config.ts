@@ -264,6 +264,7 @@ export const queryKeys = {
     stats: () => [...queryKeys.admin.all, 'stats'] as const,
     users: (filters?: Record<string, any>) => [...queryKeys.admin.all, 'users', filters] as const,
     user: (userId: string) => [...queryKeys.admin.all, 'user', userId] as const,
+    userInspector: (userId: string) => [...queryKeys.admin.all, 'user-inspector', userId] as const,
     userRoles: (userId: string) => [...queryKeys.admin.all, 'user-roles', userId] as const,
     reports: (filters?: Record<string, any>) => [...queryKeys.admin.all, 'reports', filters] as const,
     report: (reportId: string) => [...queryKeys.admin.all, 'report', reportId] as const,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminUser } from '@/types/admin';
 import {
@@ -18,13 +19,16 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { Search, UserX, UserCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { buildAdminUserInspectorRoute } from '@/constants';
+import { queryKeys } from '@/lib/react-query-config';
 
 const AdminUsers = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
 
   const { data: users, isLoading, error, refetch } = useQuery({
-    queryKey: ['admin_users'],
+    queryKey: queryKeys.admin.users(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('admin_users_view' as unknown as 'profiles')
@@ -48,8 +52,9 @@ const AdminUsers = () => {
 
       toast.success(newStatus === 'suspended' ? 'User suspended' : 'User activated');
       refetch();
-    } catch (err: any) {
-      toast.error('Error updating status: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Error updating status: ${message}`);
     } finally {
       setLoadingUserId(null);
     }
@@ -156,28 +161,37 @@ const AdminUsers = () => {
                         {user.space_count}
                       </TableCell>
                       <TableCell className="text-right">
-                        {user.status === 'active' ? (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleToggleStatus(user.id, 'suspended')}
-                            disabled={loadingUserId === user.id}
-                          >
-                            {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Suspend
-                          </Button>
-                        ) : (
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="outline"
-                            className="border-green-600 text-green-600 hover:bg-green-50"
                             size="sm"
-                            onClick={() => handleToggleStatus(user.id, 'active')}
-                            disabled={loadingUserId === user.id}
+                            onClick={() => navigate(buildAdminUserInspectorRoute(user.id))}
                           >
-                            {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Activate
+                            Inspector
                           </Button>
-                        )}
+                          {user.status === 'active' ? (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleToggleStatus(user.id, 'suspended')}
+                              disabled={loadingUserId === user.id}
+                            >
+                              {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Suspend
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              className="border-green-600 text-green-600 hover:bg-green-50"
+                              size="sm"
+                              onClick={() => handleToggleStatus(user.id, 'active')}
+                              disabled={loadingUserId === user.id}
+                            >
+                              {loadingUserId === user.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              Activate
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
