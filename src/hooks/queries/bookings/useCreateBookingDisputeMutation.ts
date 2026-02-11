@@ -24,7 +24,7 @@ export const useCreateBookingDisputeMutation = () => {
 
       const { error: disputeInsertError } = await supabase.from('disputes').insert({
         booking_id: bookingId,
-        opened_by: userId,
+        guest_id: userId,
         reason,
       });
 

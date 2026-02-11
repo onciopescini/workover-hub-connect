@@ -2106,8 +2106,8 @@ export type Database = {
           admin_notes: string | null
           booking_id: string
           created_at: string
+          guest_id: string
           id: string
-          opened_by: string
           reason: string
           status: string
           updated_at: string
@@ -2116,8 +2116,8 @@ export type Database = {
           admin_notes?: string | null
           booking_id: string
           created_at?: string
+          guest_id: string
           id?: string
-          opened_by: string
           reason: string
           status?: string
           updated_at?: string
@@ -2126,8 +2126,8 @@ export type Database = {
           admin_notes?: string | null
           booking_id?: string
           created_at?: string
+          guest_id?: string
           id?: string
-          opened_by?: string
           reason?: string
           status?: string
           updated_at?: string
@@ -2148,36 +2148,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
+            foreignKeyName: "disputes_guest_id_fkey"
+            columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
+            foreignKeyName: "disputes_guest_id_fkey"
+            columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
+            foreignKeyName: "disputes_guest_id_fkey"
+            columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
+            foreignKeyName: "disputes_guest_id_fkey"
+            columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "disputes_opened_by_fkey"
-            columns: ["opened_by"]
+            foreignKeyName: "disputes_guest_id_fkey"
+            columns: ["guest_id"]
             isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
