@@ -9,7 +9,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/lib/react-query-config';
-import { QR_CHECKIN_ERRORS, QR_CHECKIN_INVALIDATION_KEYS, QR_CHECKIN_RPC } from '@/constants/qrCheckin';
+import {
+  QR_CHECKIN_ERROR_MESSAGES,
+  QR_CHECKIN_INVALIDATION_KEYS,
+  QR_CHECKIN_RPC,
+  QR_SCAN_OPERATION,
+} from '@/constants/qrCheckin';
 
 interface HostQrScannerModalProps {
   isOpen: boolean;
@@ -18,8 +23,14 @@ interface HostQrScannerModalProps {
 
 interface RpcScanResponse {
   success: boolean;
+  booking_id?: string;
+  status?: string;
+  checked_in_at?: string;
+  checked_out_at?: string;
   error?: string;
 }
+
+type QrScanOperation = (typeof QR_SCAN_OPERATION)[keyof typeof QR_SCAN_OPERATION];
 
 interface RpcErrorShape {
   message?: string;
@@ -41,6 +52,24 @@ const toRpcScanResponse = (value: unknown): RpcScanResponse => {
   const result: RpcScanResponse = {
     success: typeof successValue === 'boolean' ? successValue : false,
   };
+
+  const bookingIdValue = value['booking_id'];
+  const statusValue = value['status'];
+  const checkedInAtValue = value['checked_in_at'];
+  const checkedOutAtValue = value['checked_out_at'];
+
+  if (typeof bookingIdValue === 'string') {
+    result.booking_id = bookingIdValue;
+  }
+  if (typeof statusValue === 'string') {
+    result.status = statusValue;
+  }
+  if (typeof checkedInAtValue === 'string') {
+    result.checked_in_at = checkedInAtValue;
+  }
+  if (typeof checkedOutAtValue === 'string') {
+    result.checked_out_at = checkedOutAtValue;
+  }
   if (typeof errorValue === 'string') {
     result.error = errorValue;
   }
@@ -84,15 +113,13 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [lastScannedToken, setLastScannedToken] = useState<string | null>(null);
-  const [showCheckoutAction, setShowCheckoutAction] = useState(false);
+  const [selectedOperation, setSelectedOperation] = useState<QrScanOperation>(QR_SCAN_OPERATION.CHECKIN);
   const [scannerError, setScannerError] = useState<string | null>(null);
 
   const resetScannerState = useCallback(() => {
     setIsProcessing(false);
     setIsPaused(false);
-    setLastScannedToken(null);
-    setShowCheckoutAction(false);
+    setSelectedOperation(QR_SCAN_OPERATION.CHECKIN);
     setScannerError(null);
   }, []);
 
@@ -131,8 +158,6 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
       }
 
       const cleanedData = sanitizeScannedData(token);
-      console.log('DATI GREZZI QR SCANSIONATO:', cleanedData);
-
       const { data, error } = await supabase.rpc(rpcName, {
         p_qr_token: cleanedData,
         p_host_id: userId,
@@ -147,68 +172,54 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
     [authState.user?.id],
   );
 
-  const executeCheckin = useCallback(
-    async (token: string) => {
+  const getOperationUiLabel = useCallback((operation: QrScanOperation): string => {
+    return operation === QR_SCAN_OPERATION.CHECKIN ? 'check-in' : 'check-out';
+  }, []);
+
+  const getRpcErrorMessage = useCallback(
+    (rpcResponse: RpcScanResponse, operation: QrScanOperation): string => {
+      if (rpcResponse.error) {
+        return QR_CHECKIN_ERROR_MESSAGES[rpcResponse.error] ?? `Errore RPC: ${rpcResponse.error}`;
+      }
+
+      return `Impossibile completare il ${getOperationUiLabel(operation)}.`;
+    },
+    [getOperationUiLabel],
+  );
+
+  const executeScanAction = useCallback(
+    async (token: string, operation: QrScanOperation) => {
       setIsPaused(true);
       setIsProcessing(true);
-      setShowCheckoutAction(false);
-      setLastScannedToken(token);
 
       try {
-        const rpcResponse = await callHostScanRpc(QR_CHECKIN_RPC.CHECKIN, token);
+        const rpcName = operation === QR_SCAN_OPERATION.CHECKIN ? QR_CHECKIN_RPC.CHECKIN : QR_CHECKIN_RPC.CHECKOUT;
+        const rpcResponse = await callHostScanRpc(rpcName, token);
 
         if (rpcResponse.success) {
-          toast.success('Check-in effettuato!');
+          const successMessage =
+            operation === QR_SCAN_OPERATION.CHECKIN ? 'Check-in completato!' : 'Check-out completato!';
+          toast.success(successMessage);
           await invalidateRelevantQueries();
           onClose();
           return;
         }
 
-        if (rpcResponse.error === QR_CHECKIN_ERRORS.INVALID_BOOKING_STATUS) {
-          setShowCheckoutAction(true);
-          toast.info("L'utente è già dentro.");
-          return;
-        }
-
-        throw new Error(rpcResponse.error ?? 'Impossibile completare il check-in.');
+        toast.error(`Errore ${getOperationUiLabel(operation)}`, {
+          description: getRpcErrorMessage(rpcResponse, operation),
+        });
       } catch (error: unknown) {
         console.error('RPC Error Details:', error);
-        const message = getErrorDescription(error, 'Errore sconosciuto durante il check-in.');
-        toast.error('Check-in fallito', { description: message });
+        const fallbackMessage = `Errore sconosciuto durante il ${getOperationUiLabel(operation)}.`;
+        const message = getErrorDescription(error, fallbackMessage);
+        toast.error(`Errore ${getOperationUiLabel(operation)}`, { description: message });
       } finally {
         setIsProcessing(false);
+        setIsPaused(false);
       }
     },
-    [callHostScanRpc, invalidateRelevantQueries, onClose],
+    [callHostScanRpc, getOperationUiLabel, getRpcErrorMessage, invalidateRelevantQueries, onClose],
   );
-
-  const handleCheckout = useCallback(async () => {
-    if (!lastScannedToken) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const rpcResponse = await callHostScanRpc(QR_CHECKIN_RPC.CHECKOUT, lastScannedToken);
-
-      if (!rpcResponse.success) {
-        throw new Error(rpcResponse.error ?? 'Impossibile completare il check-out.');
-      }
-
-      toast.success('Check-out effettuato!');
-      await invalidateRelevantQueries();
-      onClose();
-    } catch (error: unknown) {
-      console.error('RPC Error Details:', error);
-      const message = getErrorDescription(error, 'Errore sconosciuto durante il check-out.');
-      toast.error('Check-out fallito', { description: message });
-      setIsPaused(false);
-    } finally {
-      setIsProcessing(false);
-      setShowCheckoutAction(false);
-    }
-  }, [callHostScanRpc, invalidateRelevantQueries, lastScannedToken, onClose]);
 
   const handleScan = useCallback(
     (rawValue: string) => {
@@ -233,9 +244,9 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
         return;
       }
 
-      void executeCheckin(scannedToken);
+      void executeScanAction(scannedToken, selectedOperation);
     },
-    [executeCheckin, isPaused, isProcessing],
+    [executeScanAction, isPaused, isProcessing, selectedOperation],
   );
 
   const scannerHelpText = useMemo(() => {
@@ -243,12 +254,8 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
       return 'Elaborazione in corso...';
     }
 
-    if (showCheckoutAction) {
-      return "L'utente risulta già checked-in. Conferma il check-out oppure chiudi.";
-    }
-
-    return 'Inquadra il QR del Guest per check-in/check-out.';
-  }, [isProcessing, showCheckoutAction]);
+    return 'Inquadra il QR del Guest per la procedura selezionata.';
+  }, [isProcessing]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -298,22 +305,28 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
             </Alert>
           ) : null}
 
-          {showCheckoutAction ? (
+          <div className="grid grid-cols-2 gap-2">
             <Button
-              className="w-full"
-              onClick={() => {
-                void handleCheckout();
-              }}
+              type="button"
+              variant={selectedOperation === QR_SCAN_OPERATION.CHECKIN ? 'default' : 'outline'}
+              onClick={() => setSelectedOperation(QR_SCAN_OPERATION.CHECKIN)}
               disabled={isProcessing}
             >
-              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              L'utente è già dentro. Vuoi fare il Check-out?
+              Modalità Check-in
             </Button>
-          ) : (
-            <Button variant="outline" className="w-full" onClick={() => setIsPaused((previousValue) => !previousValue)}>
-              {isPaused ? 'Riprendi scanner' : 'Metti in pausa scanner'}
+            <Button
+              type="button"
+              variant={selectedOperation === QR_SCAN_OPERATION.CHECKOUT ? 'default' : 'outline'}
+              onClick={() => setSelectedOperation(QR_SCAN_OPERATION.CHECKOUT)}
+              disabled={isProcessing}
+            >
+              Modalità Check-out
             </Button>
-          )}
+          </div>
+
+          <Button variant="outline" className="w-full" onClick={() => setIsPaused((previousValue) => !previousValue)}>
+            {isPaused ? 'Riprendi scanner' : 'Metti in pausa scanner'}
+          </Button>
 
           <Button variant="ghost" className="w-full" onClick={onClose}>
             Chiudi
