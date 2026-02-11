@@ -197,6 +197,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          admin_id: string | null
+          created_at: string | null
+          event_message: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string | null
+          event_message?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string | null
+          event_message?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       admin_csv_exports: {
         Row: {
           admin_id: string
@@ -347,6 +380,13 @@ export type Database = {
             foreignKeyName: "ai_documents_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -445,6 +485,13 @@ export type Database = {
             foreignKeyName: "ai_threads_owner_id_fkey"
             columns: ["owner_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_threads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -513,6 +560,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -611,6 +665,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assistant_configs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -852,6 +913,13 @@ export type Database = {
             foreignKeyName: "booking_reviews_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -888,6 +956,13 @@ export type Database = {
             columns: ["target_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reviews_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1091,6 +1166,13 @@ export type Database = {
             foreignKeyName: "fk_bookings_user_id"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -1248,6 +1330,13 @@ export type Database = {
             foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
             columns: ["suggested_user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_suggested_user_id_fkey"
+            columns: ["suggested_user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -1270,6 +1359,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connection_suggestions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1335,6 +1431,13 @@ export type Database = {
             foreignKeyName: "connections_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -1357,6 +1460,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connections_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1420,6 +1530,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_participants_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1505,6 +1622,13 @@ export type Database = {
             foreignKeyName: "conversations_coworker_id_fkey"
             columns: ["coworker_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -1527,6 +1651,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -1739,6 +1870,13 @@ export type Database = {
             columns: ["generated_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dac7_reports_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -2034,6 +2172,13 @@ export type Database = {
             foreignKeyName: "disputes_opened_by_fkey"
             columns: ["opened_by"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -2099,6 +2244,13 @@ export type Database = {
             foreignKeyName: "email_templates_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_templates_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -2147,6 +2299,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_participants_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -2242,6 +2401,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_events_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -2476,6 +2642,13 @@ export type Database = {
             foreignKeyName: "host_report_subscriptions_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: true
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_report_subscriptions_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: true
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -2690,6 +2863,13 @@ export type Database = {
             foreignKeyName: "invoices_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -2842,6 +3022,13 @@ export type Database = {
             foreignKeyName: "message_templates_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -2898,6 +3085,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender_id"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -3019,6 +3213,13 @@ export type Database = {
             foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
             columns: ["coworker_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_coworker_id_fkey"
+            columns: ["coworker_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -3041,6 +3242,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "non_fiscal_receipts_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -3107,6 +3315,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -3411,6 +3626,13 @@ export type Database = {
             foreignKeyName: "performance_metrics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_metrics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -3490,13 +3712,20 @@ export type Database = {
             foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "platform_fee_invoices_queue_payment_id_fkey"
             columns: ["payment_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "payments"
             referencedColumns: ["id"]
           },
@@ -3550,6 +3779,13 @@ export type Database = {
             foreignKeyName: "private_chats_participant_1_id_fkey"
             columns: ["participant_1_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_1_id_fkey"
+            columns: ["participant_1_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -3572,6 +3808,13 @@ export type Database = {
             columns: ["participant_2_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_chats_participant_2_id_fkey"
+            columns: ["participant_2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -3644,6 +3887,13 @@ export type Database = {
             foreignKeyName: "private_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "private_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -3700,6 +3950,13 @@ export type Database = {
             foreignKeyName: "profile_views_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -3722,6 +3979,13 @@ export type Database = {
             columns: ["viewer_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4114,6 +4378,13 @@ export type Database = {
             foreignKeyName: "reports_reporter_id_fkey"
             columns: ["reporter_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -4190,6 +4461,13 @@ export type Database = {
             foreignKeyName: "reviews_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -4212,6 +4490,13 @@ export type Database = {
             columns: ["reviewer_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4292,6 +4577,13 @@ export type Database = {
             columns: ["admin_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settings_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4480,8 +4772,8 @@ export type Database = {
           ideal_guest_tags: string[] | null
           is_suspended: boolean | null
           latitude: number | null
+          location: unknown
           longitude: number | null
-          location: unknown | null
           max_capacity: number
           pending_approval: boolean | null
           photos: string[]
@@ -4528,8 +4820,8 @@ export type Database = {
           ideal_guest_tags?: string[] | null
           is_suspended?: boolean | null
           latitude?: number | null
+          location?: unknown
           longitude?: number | null
-          location?: unknown | null
           max_capacity: number
           pending_approval?: boolean | null
           photos?: string[]
@@ -4576,8 +4868,8 @@ export type Database = {
           ideal_guest_tags?: string[] | null
           is_suspended?: boolean | null
           latitude?: number | null
+          location?: unknown
           longitude?: number | null
-          location?: unknown | null
           max_capacity?: number
           pending_approval?: boolean | null
           photos?: string[]
@@ -4618,6 +4910,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -4770,6 +5069,36 @@ export type Database = {
           stripe_customer_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      stripe_webhooks: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_id: string
+          event_type: string | null
+          id: string
+          payload: Json | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_id: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string
         }
         Relationships: []
       }
@@ -4938,6 +5267,13 @@ export type Database = {
             foreignKeyName: "system_settings_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -5033,6 +5369,13 @@ export type Database = {
             foreignKeyName: "tax_details_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -5055,6 +5398,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_details_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5123,6 +5473,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5218,6 +5575,13 @@ export type Database = {
             foreignKeyName: "user_notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -5265,6 +5629,13 @@ export type Database = {
             columns: ["assigned_by"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5321,6 +5692,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_session_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5413,6 +5791,13 @@ export type Database = {
             foreignKeyName: "fk_waitlists_user_id"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_waitlists_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -5463,6 +5848,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5582,7 +5974,6 @@ export type Database = {
           latitude: number | null
           location_point: unknown
           longitude: number | null
-          location: unknown | null
           max_capacity: number | null
           name: string
           num_reviews: number
@@ -5622,7 +6013,6 @@ export type Database = {
           latitude?: number | null
           location_point?: unknown
           longitude?: number | null
-          location?: unknown | null
           max_capacity?: number | null
           name: string
           num_reviews?: number
@@ -5662,7 +6052,6 @@ export type Database = {
           latitude?: number | null
           location_point?: unknown
           longitude?: number | null
-          location?: unknown | null
           max_capacity?: number | null
           name?: string
           num_reviews?: number
@@ -5700,6 +6089,13 @@ export type Database = {
             columns: ["host_id"]
             isOneToOne: false
             referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
             referencedColumns: ["id"]
           },
           {
@@ -5803,7 +6199,91 @@ export type Database = {
             foreignKeyName: "fk_bookings_user_id"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_bookings_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_platform_fee_invoices_queue_view: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          currency: string | null
+          email: string | null
+          error_log: string | null
+          first_name: string | null
+          host_id: string | null
+          id: string | null
+          last_name: string | null
+          payment_id: string | null
+          platform_fee_amount: number | null
+          status:
+            | Database["public"]["Enums"]["invoice_queue_status_enum"]
+            | null
+          vat_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_fee_invoices_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "admin_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_with_role"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_fee_invoices_queue_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -5849,24 +6329,6 @@ export type Database = {
           last_name?: string | null
           space_count?: never
           status?: string | null
-        }
-        Relationships: []
-      }
-      admin_platform_fee_invoices_queue_view: {
-        Row: {
-          booking_id: string | null
-          created_at: string | null
-          currency: string | null
-          email: string | null
-          error_log: string | null
-          first_name: string | null
-          host_id: string | null
-          id: string | null
-          last_name: string | null
-          payment_id: string | null
-          platform_fee_amount: number | null
-          status: Database["public"]["Enums"]["invoice_queue_status_enum"] | null
-          vat_number: string | null
         }
         Relationships: []
       }
@@ -5960,6 +6422,13 @@ export type Database = {
             foreignKeyName: "workspaces_owner_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_owner_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -6036,6 +6505,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           company_name: string | null
+          created_at: string | null
           first_name: string | null
           id: string | null
           is_host: boolean | null
@@ -6047,10 +6517,11 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
-          company_name?: string | null
+          company_name?: never
+          created_at?: string | null
           first_name?: string | null
           id?: string | null
-          is_host?: boolean | null
+          is_host?: never
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
@@ -6059,10 +6530,11 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
-          company_name?: string | null
+          company_name?: never
+          created_at?: string | null
           first_name?: string | null
           id?: string | null
-          is_host?: boolean | null
+          is_host?: never
           job_title?: string | null
           last_name?: string | null
           linkedin_url?: string | null
@@ -6088,7 +6560,6 @@ export type Database = {
           dac7_data_collected: boolean | null
           dac7_threshold_notified: boolean | null
           data_retention_exempt: boolean | null
-          deleted_at: string | null
           email_verification_blocked_actions: string[] | null
           face_data_ref: string | null
           facebook_url: string | null
@@ -6294,6 +6765,13 @@ export type Database = {
             foreignKeyName: "spaces_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spaces_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
             referencedRelation: "profiles_with_role"
             referencedColumns: ["id"]
           },
@@ -6355,6 +6833,7 @@ export type Database = {
       }
     }
     Functions: {
+      _diag_stripe_webhooks_raw_count: { Args: never; Returns: number }
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string }
         Returns: undefined
@@ -6445,10 +6924,6 @@ export type Database = {
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       addauth: { Args: { "": string }; Returns: boolean }
-      admin_process_invoice_queue: {
-        Args: { queue_id: string }
-        Returns: Database["public"]["Tables"]["platform_fee_invoices_queue"]["Row"]
-      }
       addgeometrycolumn:
         | {
             Args: {
@@ -6501,9 +6976,64 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      admin_get_user_inspector_detail: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
+      admin_process_invoice_queue: {
+        Args: { queue_id: string }
+        Returns: {
+          booking_id: string
+          created_at: string
+          currency: string
+          error_log: string | null
+          host_id: string
+          id: string
+          payment_id: string
+          platform_fee_amount: number
+          status: Database["public"]["Enums"]["invoice_queue_status_enum"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_fee_invoices_queue"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_suspend_user: {
+        Args: { reason: string; target_id: string }
+        Returns: Json
+      }
       admin_toggle_user_status: {
         Args: { new_status: string; target_user_id: string }
         Returns: undefined
+      }
+      admin_update_ticket: {
+        Args: { admin_notes?: string; new_status: string; ticket_id: string }
+        Returns: {
+          assigned_at: string | null
+          assigned_to: string | null
+          category: string
+          created_at: string | null
+          first_response_at: string | null
+          id: string
+          message: string
+          priority: string
+          resolution_deadline: string | null
+          response: string | null
+          response_deadline: string | null
+          sla_status: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "support_tickets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       approve_tag: {
         Args: { approver_id: string; tag_id: string }
@@ -6674,6 +7204,15 @@ export type Database = {
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       expire_pending_connections: { Args: never; Returns: undefined }
       export_user_data: { Args: { target_user_id: string }; Returns: Json }
+      finalize_booking_cancellation_secure: {
+        Args: {
+          action_param: string
+          booking_id_param: string
+          cancelled_by_host_param: boolean
+          reason_param: string
+        }
+        Returns: undefined
+      }
       generate_connection_suggestions: { Args: never; Returns: undefined }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
@@ -6788,6 +7327,14 @@ export type Database = {
           stripe_connected: boolean
           tax_details_count: number
           total_bookings_count: number
+        }[]
+      }
+      get_admin_stats: {
+        Args: never
+        Returns: {
+          gmv_month: number
+          net_revenue: number
+          pending_payouts: number
         }[]
       }
       get_admin_user_id: { Args: never; Returns: string }
@@ -6945,17 +7492,17 @@ export type Database = {
         Returns: {
           address: string
           amenities: string[]
-          cached_avg_rating: number | null
-          cached_review_count: number | null
+          cached_avg_rating: number
+          cached_review_count: number
           category: Database["public"]["Enums"]["space_category"]
-          city_name: string | null
+          city_name: string
           confirmation_type: Database["public"]["Enums"]["confirmation_type"]
           description: string
           distance_meters: number
           host_id: string
           id: string
-          latitude: number | null
-          longitude: number | null
+          latitude: number
+          longitude: number
           max_capacity: number
           photos: string[]
           price_per_day: number
@@ -7038,6 +7585,15 @@ export type Database = {
           title: string
           work_environment: string
           workspace_features: string[]
+        }[]
+      }
+      get_recent_admin_audit_logs: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          event_message: string
+          event_type: string
+          id: string
         }[]
       }
       get_safe_public_profile: {
@@ -7217,13 +7773,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      host_scan_checkin: {
+        Args: { p_host_id: string; p_qr_token: string }
+        Returns: Json
+      }
+      host_scan_checkout: {
+        Args: { p_host_id: string; p_qr_token: string }
+        Returns: Json
+      }
       increment_webhook_retry: {
         Args: { event_uuid: string }
         Returns: undefined
       }
       is_admin:
         | { Args: never; Returns: boolean }
-        | { Args: { p_user_id: string }; Returns: boolean }
+        | { Args: { p_user_id?: string }; Returns: boolean }
       is_admin_new: { Args: { uid: string }; Returns: boolean }
       is_host_of_space: {
         Args: { p_space_id: string; p_user_id: string }
@@ -7497,32 +8061,67 @@ export type Database = {
           p_amenities?: string[]
           p_category?: string
           p_limit?: number
-          p_offset?: number
           p_max_price?: number
           p_min_capacity?: number
           p_min_price?: number
+          p_offset?: number
           p_search_text: string
           p_work_environment?: string
         }
         Returns: {
           address: string
           amenities: string[]
+          approved_at: string | null
+          approved_by: string | null
           approximate_location: unknown
-          category: string
-          city_name: string
-          country_code: string
+          availability: Json | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          capacity: number | null
+          category: Database["public"]["Enums"]["space_category"]
+          city_name: string | null
+          confirmation_type: Database["public"]["Enums"]["confirmation_type"]
+          country_code: string | null
           created_at: string
+          deleted_at: string | null
           description: string
+          event_friendly_tags: string[] | null
+          host_id: string
           id: string
+          ideal_guest_tags: string[] | null
+          is_suspended: boolean | null
+          latitude: number | null
+          location: unknown
+          longitude: number | null
           max_capacity: number
+          pending_approval: boolean | null
           photos: string[]
           price_per_day: number
           price_per_hour: number
+          published: boolean
+          rejection_reason: string | null
+          revision_notes: string | null
+          revision_requested: boolean | null
+          rules: string | null
           seating_types: string[]
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          timezone: string | null
           title: string
-          work_environment: string
+          updated_at: string
+          work_environment: Database["public"]["Enums"]["work_environment"]
           workspace_features: string[]
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "spaces"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       search_spaces_by_radius: {
         Args: {
@@ -7531,33 +8130,67 @@ export type Database = {
           p_lat: number
           p_limit?: number
           p_lng: number
-          p_offset?: number
           p_max_price?: number
           p_min_capacity?: number
           p_min_price?: number
+          p_offset?: number
           p_radius_km?: number
           p_work_environment?: string
         }
         Returns: {
           address: string
           amenities: string[]
+          approved_at: string | null
+          approved_by: string | null
           approximate_location: unknown
-          category: string
-          city_name: string
-          country_code: string
+          availability: Json | null
+          cached_avg_rating: number | null
+          cached_review_count: number | null
+          cancellation_policy:
+            | Database["public"]["Enums"]["cancellation_policy"]
+            | null
+          capacity: number | null
+          category: Database["public"]["Enums"]["space_category"]
+          city_name: string | null
+          confirmation_type: Database["public"]["Enums"]["confirmation_type"]
+          country_code: string | null
           created_at: string
+          deleted_at: string | null
           description: string
-          distance_km: number
+          event_friendly_tags: string[] | null
+          host_id: string
           id: string
+          ideal_guest_tags: string[] | null
+          is_suspended: boolean | null
+          latitude: number | null
+          location: unknown
+          longitude: number | null
           max_capacity: number
+          pending_approval: boolean | null
           photos: string[]
           price_per_day: number
           price_per_hour: number
+          published: boolean
+          rejection_reason: string | null
+          revision_notes: string | null
+          revision_requested: boolean | null
+          rules: string | null
           seating_types: string[]
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          timezone: string | null
           title: string
-          work_environment: string
+          updated_at: string
+          work_environment: Database["public"]["Enums"]["work_environment"]
           workspace_features: string[]
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "spaces"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       send_sla_alerts: { Args: never; Returns: undefined }
       should_send_notification: {
@@ -8185,14 +8818,6 @@ export type Database = {
         }
         Returns: string
       }
-      host_scan_checkin: {
-        Args: { p_host_id: string; p_qr_token: string }
-        Returns: Json
-      }
-      host_scan_checkout: {
-        Args: { p_host_id: string; p_qr_token: string }
-        Returns: Json
-      }
       validate_and_reserve_multi_slots: {
         Args: {
           client_total_price_param?: number
@@ -8279,7 +8904,11 @@ export type Database = {
       cancellation_policy: "flexible" | "moderate" | "strict"
       capture_status_enum: "uncaptured" | "authorized" | "captured" | "canceled"
       confirmation_type: "instant" | "host_approval"
-      invoice_queue_status_enum: "pending" | "processing" | "completed" | "failed"
+      invoice_queue_status_enum:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
       message_template_type: "confirmation" | "reminder" | "cancellation_notice"
       payment_status:
         | "pending"
@@ -8446,11 +9075,18 @@ export const Constants = {
         "disputed",
         "frozen",
         "checked_in",
+        "checked_out",
+        "no_show",
       ],
       cancellation_policy: ["flexible", "moderate", "strict"],
       capture_status_enum: ["uncaptured", "authorized", "captured", "canceled"],
       confirmation_type: ["instant", "host_approval"],
-      invoice_queue_status_enum: ["pending", "processing", "completed", "failed"],
+      invoice_queue_status_enum: [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+      ],
       message_template_type: [
         "confirmation",
         "reminder",
