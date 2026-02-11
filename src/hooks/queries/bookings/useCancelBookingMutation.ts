@@ -7,6 +7,7 @@ import { sreLogger } from '@/lib/sre-logger';
 import { useRLSErrorHandler } from '@/hooks/useRLSErrorHandler';
 import { API_ENDPOINTS } from '@/constants';
 import { queryKeys } from "@/lib/react-query-config";
+import { isInvalidStatusTransitionError, STATUS_TRANSITION_ERROR_TOAST_MESSAGE } from '@/lib/bookings/status-transition-errors';
 
 export const useCancelBookingMutation = () => {
   const queryClient = useQueryClient();
@@ -58,6 +59,11 @@ export const useCancelBookingMutation = () => {
       console.error("Cancellation failed:", error);
       
       // Try RLS error handler first
+      if (isInvalidStatusTransitionError(error)) {
+        toast.error(STATUS_TRANSITION_ERROR_TOAST_MESSAGE);
+        return;
+      }
+
       if (!handleError(error)) {
         // Fallback to generic error
         const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';

@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys } from '@/lib/react-query-config';
+import { isInvalidStatusTransitionError, STATUS_TRANSITION_ERROR_TOAST_MESSAGE } from '@/lib/bookings/status-transition-errors';
 import {
   QR_CHECKIN_ERROR_MESSAGES,
   QR_CHECKIN_INVALIDATION_KEYS,
@@ -210,6 +211,12 @@ export const HostQrScannerModal = ({ isOpen, onClose }: HostQrScannerModalProps)
         });
       } catch (error: unknown) {
         console.error('RPC Error Details:', error);
+
+        if (isInvalidStatusTransitionError(error)) {
+          toast.error(STATUS_TRANSITION_ERROR_TOAST_MESSAGE);
+          return;
+        }
+
         const fallbackMessage = `Errore sconosciuto durante il ${getOperationUiLabel(operation)}.`;
         const message = getErrorDescription(error, fallbackMessage);
         toast.error(`Errore ${getOperationUiLabel(operation)}`, { description: message });
