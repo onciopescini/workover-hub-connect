@@ -1,5 +1,6 @@
 import { AlertTriangle, ReceiptText, ShieldX, Ticket, Wallet } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -7,6 +8,7 @@ import { formatCurrency } from '@/lib/format';
 import {
   ADMIN_KYC_FAILED_STATUS,
   ADMIN_REFUND_REQUESTED_STATUS,
+  ADMIN_ROUTES,
   ADMIN_TICKET_OPEN_STATUSES,
 } from '@/constants/admin';
 
@@ -69,8 +71,10 @@ const AdminMissionControlDashboard = () => {
         pending_payouts: 0,
       }) as AdminStatsRpcRow;
 
+      const openTicketRows = ticketsResult.data ?? [];
+
       const actionRequired: AdminActionItem[] = [
-        ...(ticketsResult.data ?? []).map((ticket) => ({
+        ...openTicketRows.map((ticket) => ({
           id: ticket.id,
           type: 'ticket' as const,
           title: `Ticket aperto: ${ticket.subject}`,
@@ -101,6 +105,7 @@ const AdminMissionControlDashboard = () => {
         stats: statsRow,
         actionRequired,
         recentLogs,
+        openTicketsCount: openTicketRows.length,
       };
     },
   });
@@ -166,19 +171,32 @@ const AdminMissionControlDashboard = () => {
             {(data?.actionRequired.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nessuna azione urgente.</p>
             ) : (
-              data?.actionRequired.slice(0, 10).map((item) => (
-                <div key={`${item.type}-${item.id}`} className="rounded-md border p-3 text-sm">
+              <>
+                <Link
+                  to={`${ADMIN_ROUTES.TICKETS}?status=open`}
+                  className="block rounded-md border p-3 text-sm hover:bg-muted/30 transition-colors"
+                >
                   <div className="flex items-center gap-2 font-medium">
-                    {item.type === 'ticket' && <Ticket className="h-4 w-4" />}
-                    {item.type === 'kyc' && <ShieldX className="h-4 w-4" />}
-                    {item.type === 'refund' && <ReceiptText className="h-4 w-4" />}
-                    <span>{item.title}</span>
+                    <Ticket className="h-4 w-4" />
+                    <span>{data?.openTicketsCount ?? 0} Ticket Aperti</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(item.createdAt).toLocaleString('it-IT')}
-                  </p>
-                </div>
-              ))
+                  <p className="text-xs text-muted-foreground mt-1">Apri la coda ticket operativa</p>
+                </Link>
+
+                {data?.actionRequired.slice(0, 10).map((item) => (
+                  <div key={`${item.type}-${item.id}`} className="rounded-md border p-3 text-sm">
+                    <div className="flex items-center gap-2 font-medium">
+                      {item.type === 'ticket' && <Ticket className="h-4 w-4" />}
+                      {item.type === 'kyc' && <ShieldX className="h-4 w-4" />}
+                      {item.type === 'refund' && <ReceiptText className="h-4 w-4" />}
+                      <span>{item.title}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(item.createdAt).toLocaleString('it-IT')}
+                    </p>
+                  </div>
+                ))}
+              </>
             )}
           </CardContent>
         </Card>
