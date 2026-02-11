@@ -4,7 +4,7 @@ import { toZonedTime } from "date-fns-tz";
 import { it } from "date-fns/locale";
 import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-time";
 import { BookingWithDetails } from "@/types/booking";
-import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check } from "lucide-react";
+import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -158,6 +158,13 @@ export const EnhancedBookingCard = ({
   
   const statusInfo = getBookingStatusInfo();
   const chatState = getChatButtonState();
+  const latestDispute = booking.disputes && booking.disputes.length > 0
+    ? [...booking.disputes].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())[0]
+    : null;
+  const hasDispute = Boolean(latestDispute) || booking.status === 'disputed';
+  const disputeGuestName = latestDispute?.guest
+    ? `${latestDispute.guest.first_name ?? ''} ${latestDispute.guest.last_name ?? ''}`.trim()
+    : '';
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -256,6 +263,24 @@ export const EnhancedBookingCard = ({
             )}
           </div>
         </div>
+
+        {userRole === 'host' && hasDispute && (
+          <div className="mt-4 rounded-md border border-orange-300 bg-orange-50 p-3">
+            <div className="flex items-center gap-2 text-orange-800">
+              <AlertTriangle className="h-4 w-4" />
+              <p className="text-sm font-semibold">
+                Contestazione aperta
+                {latestDispute?.created_at ? ` il ${formatUtcDateForDisplay(latestDispute.created_at, 'dd/MM/yyyy HH:mm')}` : ''}
+              </p>
+            </div>
+            <p className="mt-2 text-sm text-orange-900">
+              Motivo: {latestDispute?.reason || 'Motivo non disponibile'}
+            </p>
+            <p className="text-sm text-orange-900">
+              Aperta da: {disputeGuestName || latestDispute?.guest_id || booking.user_id}
+            </p>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2 mt-4">

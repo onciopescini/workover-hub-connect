@@ -1,6 +1,8 @@
-
-import { BookingWithDetails } from "@/types/booking";
+import { BookingWithDetails, type BookingStatus } from "@/types/booking";
 import { logger } from "@/lib/logger";
+import type { Database } from "@/integrations/supabase/types";
+
+type DisputeStatus = Database["public"]["Tables"]["disputes"]["Row"]["status"];
 
 interface RawSpace {
   id: string;
@@ -12,6 +14,18 @@ interface RawSpace {
   confirmation_type: string;
 }
 
+interface RawDispute {
+  id?: string;
+  reason?: string | null;
+  guest_id?: string | null;
+  status?: DisputeStatus | null;
+  created_at?: string | null;
+  guest?: {
+    first_name?: string | null;
+    last_name?: string | null;
+  } | null;
+}
+
 interface RawBookingData {
   id?: string;
   space_id?: string | null;
@@ -19,7 +33,7 @@ interface RawBookingData {
   booking_date?: string;
   start_time?: string | null;
   end_time?: string | null;
-  status?: string | null;
+  status?: BookingStatus | null;
   created_at?: string | null;
   updated_at?: string | null;
   cancelled_at?: string | null;
@@ -32,11 +46,7 @@ interface RawBookingData {
   reservation_token?: string | null;
   qr_code_token?: string | null;
   service_completed_at?: string | null;
-
-  // The fetcher returns 'spaces' (joined table)
   spaces?: RawSpace | RawSpace[] | null | undefined;
-
-  // Legacy or alternative field structure
   space?: {
     id?: string;
     title?: string;
@@ -46,7 +56,6 @@ interface RawBookingData {
     price_per_day?: number;
     confirmation_type?: string;
   } | undefined;
-
   coworker?: {
     id?: string;
     first_name?: string;
@@ -58,21 +67,16 @@ interface RawBookingData {
     last_name?: string;
     profile_photo_url?: string | null;
   } | null | undefined;
-
-  // Accept undefined from Supabase queries (exactOptionalPropertyTypes: true)
-  payments?: unknown[] | null | undefined;
-  
-  // Allow for extra properties from the database
-  [key: string]: unknown;
+  payments?: BookingWithDetails["payments"] | null | undefined;
+  disputes?: RawDispute[] | null | undefined;
 }
 
 const toStringArray = (arr: unknown[] | string[] | null | undefined): string[] => {
   if (!arr || !Array.isArray(arr)) return [];
-  return arr.map(item => typeof item === 'string' ? item : String(item));
+  return arr.map(item => (typeof item === 'string' ? item : String(item)));
 };
 
-const getSpaceData = (booking: RawBookingData) => {
-  // Priority 1: Check 'spaces' returned by Supabase join
+const getSpaceData = (booking: RawBookingData): BookingWithDetails["space"] => {
   if (booking.spaces) {
     const s = Array.isArray(booking.spaces) ? booking.spaces[0] : booking.spaces;
     if (s) {
@@ -81,17 +85,16 @@ const getSpaceData = (booking: RawBookingData) => {
         id: s.id,
         title: s.title,
         address: s.address,
-        image_url: photos.length > 0 ? photos[0] : '', // Map first photo to image_url
-        photos: photos, // Keep photos array for gallery if needed
-        type: 'space', // Default type as it's not currently fetched
-        host_id: s.host_id, // CRITICAL: Ensure host_id is mapped
+        image_url: photos.length > 0 ? photos[0] : '',
+        photos,
+        type: 'space',
+        host_id: s.host_id,
         price_per_day: s.price_per_day,
         confirmation_type: s.confirmation_type
       };
     }
   }
 
-  // Priority 2: Check legacy 'space' property
   if (booking.space) {
     return {
       id: booking.space.id || '',
@@ -106,7 +109,6 @@ const getSpaceData = (booking: RawBookingData) => {
     };
   }
 
-  // Fallback: Empty/Default data
   return {
     id: '',
     title: 'Dati spazio mancanti',
@@ -120,6 +122,54 @@ const getSpaceData = (booking: RawBookingData) => {
   };
 };
 
+const getDisputesData = (booking: RawBookingData): BookingWithDetails["disputes"] => {
+  if (!Array.isArray(booking.disputes) || booking.disputes.length === 0) {
+    return [];
+  }
+
+  return booking.disputes
+    .filter((dispute): dispute is RawDispute & { id: string } => Boolean(dispute?.id))
+    .map((dispute) => ({
+      id: dispute.id,
+      reason: dispute.reason || 'Motivo non specificato',
+      guest_id: dispute.guest_id || '',
+      status: dispute.status || 'open',
+      created_at: dispute.created_at || '',
+      guest: dispute.guest
+        ? {
+            first_name: dispute.guest.first_name ?? null,
+            last_name: dispute.guest.last_name ?? null,
+          }
+        : null,
+    }));
+};
+
+const toBookingWithDetails = (booking: RawBookingData, fallbackCoworker: BookingWithDetails["coworker"]): BookingWithDetails => ({
+  id: booking.id || '',
+  space_id: booking.space_id || '',
+  user_id: booking.user_id || '',
+  booking_date: booking.booking_date || '',
+  start_time: booking.start_time || '',
+  end_time: booking.end_time || '',
+  status: booking.status || 'pending',
+  created_at: booking.created_at || '',
+  updated_at: booking.updated_at || '',
+  cancelled_at: booking.cancelled_at || null,
+  cancellation_fee: booking.cancellation_fee || null,
+  cancelled_by_host: booking.cancelled_by_host || null,
+  cancellation_reason: booking.cancellation_reason || null,
+  slot_reserved_until: booking.slot_reserved_until || null,
+  payment_required: booking.payment_required || null,
+  payment_session_id: booking.payment_session_id || null,
+  reservation_token: booking.reservation_token || null,
+  qr_code_token: booking.qr_code_token || null,
+  service_completed_at: booking.service_completed_at || null,
+  space: getSpaceData(booking),
+  coworker: fallbackCoworker,
+  payments: Array.isArray(booking.payments) ? booking.payments : [],
+  disputes: getDisputesData(booking)
+});
+
 export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDetails[] => {
   if (!Array.isArray(data)) {
     logger.error('Invalid data provided to transformCoworkerBookings', {
@@ -132,31 +182,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
 
   return data.map(booking => {
     try {
-      // @ts-ignore - The mapped object might have extra properties like 'photos' which are useful but strictly outside the current type definition if strict
-      return {
-        id: booking.id || '',
-        space_id: booking.space_id || '',
-        user_id: booking.user_id || '',
-        booking_date: booking.booking_date || '',
-        start_time: booking.start_time || '',
-        end_time: booking.end_time || '',
-        status: booking.status || 'pending',
-        created_at: booking.created_at || '',
-        updated_at: booking.updated_at || '',
-        cancelled_at: booking.cancelled_at || null,
-        cancellation_fee: booking.cancellation_fee || null,
-        cancelled_by_host: booking.cancelled_by_host || null,
-        cancellation_reason: booking.cancellation_reason || null,
-        slot_reserved_until: booking.slot_reserved_until || null,
-        payment_required: booking.payment_required || null,
-        payment_session_id: booking.payment_session_id || null,
-        reservation_token: booking.reservation_token || null,
-        qr_code_token: booking.qr_code_token || null,
-        service_completed_at: booking.service_completed_at || null,
-        space: getSpaceData(booking),
-        coworker: null, // For coworker bookings, user is the coworker
-        payments: Array.isArray(booking.payments) ? booking.payments : []
-      };
+      return toBookingWithDetails(booking, null);
     } catch (transformError) {
       const bookingId = booking.id || 'unknown';
       logger.error('Error transforming coworker booking', {
@@ -166,7 +192,7 @@ export const transformCoworkerBookings = (data: RawBookingData[]): BookingWithDe
       }, transformError as Error);
       return null;
     }
-  }).filter(Boolean) as BookingWithDetails[];
+  }).filter((booking): booking is BookingWithDetails => booking !== null);
 };
 
 export const transformHostBookings = (data: RawBookingData[]): BookingWithDetails[] => {
@@ -181,31 +207,13 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
 
   return data.map(booking => {
     try {
-      // @ts-ignore
-      return {
-        id: booking.id || '',
-        space_id: booking.space_id || '',
-        user_id: booking.user_id || '',
-        booking_date: booking.booking_date || '',
-        start_time: booking.start_time || '',
-        end_time: booking.end_time || '',
-        status: booking.status || 'pending',
-        created_at: booking.created_at || '',
-        updated_at: booking.updated_at || '',
-        cancelled_at: booking.cancelled_at || null,
-        cancellation_fee: booking.cancellation_fee || null,
-        cancelled_by_host: booking.cancelled_by_host || null,
-        cancellation_reason: booking.cancellation_reason || null,
-        slot_reserved_until: booking.slot_reserved_until || null,
-        payment_required: booking.payment_required || null,
-        payment_session_id: booking.payment_session_id || null,
-        reservation_token: booking.reservation_token || null,
-        qr_code_token: booking.qr_code_token || null,
-        service_completed_at: booking.service_completed_at || null,
-        space: getSpaceData(booking),
-        coworker: booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null,
-        payments: Array.isArray(booking.payments) ? booking.payments : []
-      };
+      const coworkerData = booking.coworker ? (Array.isArray(booking.coworker) ? booking.coworker[0] : booking.coworker) : null;
+      return toBookingWithDetails(booking, coworkerData ? {
+        id: coworkerData.id || '',
+        first_name: coworkerData.first_name || '',
+        last_name: coworkerData.last_name || '',
+        profile_photo_url: coworkerData.profile_photo_url || null,
+      } : null);
     } catch (transformError) {
       const bookingId = booking.id || 'unknown';
       logger.error('Error transforming host booking', {
@@ -215,22 +223,22 @@ export const transformHostBookings = (data: RawBookingData[]): BookingWithDetail
       }, transformError as Error);
       return null;
     }
-  }).filter(Boolean) as BookingWithDetails[];
+  }).filter((booking): booking is BookingWithDetails => booking !== null);
 };
 
 export const applySearchFilter = (bookings: BookingWithDetails[], searchTerm: string): BookingWithDetails[] => {
   if (!searchTerm || !searchTerm.trim()) return bookings;
-  
+
   const searchLower = searchTerm.toLowerCase().trim();
-  
+
   return bookings.filter(booking => {
     try {
       const spaceTitle = booking.space?.title?.toLowerCase() || '';
       const spaceAddress = booking.space?.address?.toLowerCase() || '';
-      const coworkerName = booking.coworker 
+      const coworkerName = booking.coworker
         ? `${booking.coworker.first_name} ${booking.coworker.last_name}`.toLowerCase()
         : '';
-      
+
       return spaceTitle.includes(searchLower) ||
              spaceAddress.includes(searchLower) ||
              coworkerName.includes(searchLower);

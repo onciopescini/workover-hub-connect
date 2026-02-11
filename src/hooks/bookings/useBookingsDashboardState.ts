@@ -332,7 +332,7 @@ export const useBookingsDashboardState = () => {
         if (status === 'all') {
           delete newFilters.status;
         } else {
-          newFilters.status = status as 'pending' | 'confirmed' | 'cancelled';
+          newFilters.status = status as 'pending' | 'confirmed' | 'cancelled' | 'disputed';
         }
         return newFilters;
       });

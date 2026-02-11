@@ -1,5 +1,5 @@
 export interface BookingFilter {
-  status?: 'pending' | 'confirmed' | 'cancelled';
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'disputed';
   dateRange?: {
     start: string;
     end: string;

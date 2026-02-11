@@ -10,10 +10,10 @@ interface CompactBookingsFiltersProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
   filters: {
-    status?: 'pending' | 'confirmed' | 'cancelled';
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'disputed';
     dateRange?: { start: string; end: string };
   };
-  onStatusFilter: (status: 'pending' | 'confirmed' | 'cancelled' | null) => void;
+  onStatusFilter: (status: 'pending' | 'confirmed' | 'cancelled' | 'disputed' | null) => void;
   onDateRangeFilter: (range: { start: string; end: string } | null | undefined) => void;
   onClearFilters: () => void;
 }
@@ -98,6 +98,13 @@ export const CompactBookingsFilters: React.FC<CompactBookingsFiltersProps> = ({
                 onClick={() => onStatusFilter(filters.status === 'cancelled' ? null : 'cancelled')}
               >
                 Annullate
+              </Button>
+              <Button
+                variant={filters.status === 'disputed' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onStatusFilter(filters.status === 'disputed' ? null : 'disputed')}
+              >
+                Contestate
               </Button>
             </div>
 
