@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isInvalidStatusTransitionError, STATUS_TRANSITION_ERROR_TOAST_MESSAGE } from '@/lib/bookings/status-transition-errors';
 
 export const useApproveBooking = () => {
   const queryClient = useQueryClient();
@@ -23,9 +24,16 @@ export const useApproveBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['host-activities'] });
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       console.error('Error approving booking:', error);
-      toast.error(error.message || 'Errore durante l\'approvazione della prenotazione');
+
+      if (isInvalidStatusTransitionError(error)) {
+        toast.error(STATUS_TRANSITION_ERROR_TOAST_MESSAGE);
+        return;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante l\'approvazione della prenotazione';
+      toast.error(errorMessage);
     },
   });
 };
@@ -53,9 +61,16 @@ export const useRejectBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['host-activities'] });
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       console.error('Error rejecting booking:', error);
-      toast.error(error.message || 'Errore durante il rifiuto della prenotazione');
+
+      if (isInvalidStatusTransitionError(error)) {
+        toast.error(STATUS_TRANSITION_ERROR_TOAST_MESSAGE);
+        return;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Errore durante il rifiuto della prenotazione';
+      toast.error(errorMessage);
     },
   });
 };

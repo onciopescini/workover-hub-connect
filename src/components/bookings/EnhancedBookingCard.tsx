@@ -3,7 +3,6 @@ import { format, parseISO, isBefore, addMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { it } from "date-fns/locale";
 import { utcToLocal, isDateInPast, parseBookingDateTime, formatBookingDateTime, formatUtcDateForDisplay } from "@/lib/date-time";
-import { canCancelBooking } from "@/lib/booking-datetime-utils";
 import { BookingWithDetails } from "@/types/booking";
 import { Calendar, MapPin, User, MessageSquare, X, Clock, Shield, Euro, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +17,7 @@ import { MessagesButton } from "@/components/chat/MessagesButton";
 import { CoworkerList } from "@/components/networking/CoworkerList";
 import { StarRating } from "@/components/ui/StarRating";
 import { BookingQRCode } from "./checkin/BookingQRCode";
+import { canCancelBookingByStatus, canMarkNoShowByStatus, canUseAdministrativeBookingActionsByStatus } from "@/constants";
 
 interface EnhancedBookingCardProps {
   booking: BookingWithDetails;
@@ -27,6 +27,9 @@ interface EnhancedBookingCardProps {
   // Approval workflow props - Required for Host Dashboard
   onApproveBooking?: (bookingId: string) => Promise<void>;
   onOpenRejectDialog?: (booking: BookingWithDetails) => void;
+  onMarkNoShow?: (booking: BookingWithDetails) => void;
+  onRequestRefund?: (booking: BookingWithDetails) => void;
+  onOpenDispute?: (booking: BookingWithDetails) => void;
   isChatEnabled?: boolean;
 }
 
@@ -37,6 +40,9 @@ export const EnhancedBookingCard = ({
   onOpenCancelDialog,
   onApproveBooking,
   onOpenRejectDialog,
+  onMarkNoShow,
+  onRequestRefund,
+  onOpenDispute,
   isChatEnabled = false
 }: EnhancedBookingCardProps) => {
   const getOtherParty = () => {
@@ -59,21 +65,10 @@ export const EnhancedBookingCard = ({
     }
   };
 
-  const canCancelBooking = () => {
-    // Allows cancellation for confirmed bookings.
-    // Pending bookings use Reject instead of Cancel for hosts, but Coworkers might still want to cancel.
-    // However, per requirements: "Do NOT show the "Cancel" button for pending requests (Reject covers this)."
-    // This implies for the HOST view.
-    // If I am a Coworker, I should still be able to cancel my pending request?
-    // The requirement says "Host Booking interface needs functionality updates".
-    // So for userRole === 'host', we hide Cancel on pending.
+  const canCancelBooking = () => canCancelBookingByStatus(booking.status);
 
-    if (userRole === 'host' && booking.status === 'pending') {
-      return false;
-    }
-
-    return booking.status === "confirmed" || booking.status === "pending";
-  };
+  const canMarkNoShow = userRole === "host" && canMarkNoShowByStatus(booking.status);
+  const canUseAdministrativeActions = canUseAdministrativeBookingActionsByStatus(booking.status);
 
   const canActionPending = () => {
     return (booking.status === "pending_approval" || booking.status === "pending") && userRole === "host";
@@ -367,7 +362,40 @@ export const EnhancedBookingCard = ({
               onClick={() => onOpenCancelDialog(booking)}
             >
               <X className="w-4 h-4 mr-1" />
-              Cancella
+              Cancella Prenotazione
+            </Button>
+          )}
+
+          {canMarkNoShow && onMarkNoShow && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={() => onMarkNoShow(booking)}
+            >
+              Segna come No-Show
+            </Button>
+          )}
+
+          {canUseAdministrativeActions && onRequestRefund && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={() => onRequestRefund(booking)}
+            >
+              Richiedi Rimborso
+            </Button>
+          )}
+
+          {canUseAdministrativeActions && onOpenDispute && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center"
+              onClick={() => onOpenDispute(booking)}
+            >
+              Apri Contestazione
             </Button>
           )}
         </div>
