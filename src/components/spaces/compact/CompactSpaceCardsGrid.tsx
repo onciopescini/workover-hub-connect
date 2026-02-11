@@ -12,7 +12,7 @@ interface CompactSpaceCardsGridProps {
   highlightedId?: string | null;
   isLoading?: boolean;
   isFetchingNextPage?: boolean;
-  loadMoreRef?: React.RefObject<HTMLDivElement>;
+  loadMoreRef?: React.RefObject<HTMLDivElement | null>;
   onScrollToCard?: (spaceId: string) => void;
   selectedDate?: Date | null;
 }
@@ -95,7 +95,7 @@ export const CompactSpaceCardsGrid: React.FC<CompactSpaceCardsGridProps> = ({
         </div>
       ))}
 
-      <div ref={loadMoreRef} className="h-1 w-full" aria-hidden="true" />
+      {loadMoreRef && <div ref={loadMoreRef as React.RefObject<HTMLDivElement>} className="h-1 w-full" aria-hidden="true" />}
 
       {isFetchingNextPage && (
         <div className="space-y-3 pt-2">

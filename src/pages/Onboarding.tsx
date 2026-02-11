@@ -51,7 +51,7 @@ const Onboarding = () => {
         firstName: authState.profile?.first_name ?? prev.firstName,
         lastName: authState.profile?.last_name ?? prev.lastName,
         bio: authState.profile?.bio ?? prev.bio,
-        avatarUrl: authState.profile?.avatar_url ?? prev.avatarUrl,
+        avatarUrl: authState.profile?.profile_photo_url ?? prev.avatarUrl,
       }));
     } catch {
       // no-op
@@ -87,7 +87,7 @@ const Onboarding = () => {
         first_name: formData.firstName,
         last_name: formData.lastName,
         bio: formData.bio,
-        avatar_url: formData.avatarUrl || null,
+        profile_photo_url: formData.avatarUrl || null,
         onboarding_completed: true,
       });
 

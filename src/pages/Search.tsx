@@ -68,8 +68,8 @@ const Search = () => {
     handleMarkerClick(spaceId);
   }, [handleMarkerClick]);
 
-  const handleFiltersUpdate = useCallback((nextFilters: SpaceFilters): void => {
-    handleFiltersChange(nextFilters);
+  const handleFiltersUpdate: import('@/types/space-filters').FilterChangeHandler = useCallback((nextFilters) => {
+    handleFiltersChange(nextFilters as SpaceFilters);
   }, [handleFiltersChange]);
 
   if (error) {

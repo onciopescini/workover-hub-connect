@@ -45,8 +45,14 @@ export const ProfilePreviewDialog = ({ open, onOpenChange, userId }: ProfilePrev
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error || !data || !data.id) throw error ?? new Error('Profile not found');
+      setProfile({
+        ...data,
+        id: data.id,
+        first_name: data.first_name ?? '',
+        last_name: data.last_name ?? '',
+        is_host: data.is_host ?? false,
+      } as UserProfile);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
