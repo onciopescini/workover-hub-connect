@@ -3338,7 +3338,10 @@ export type Database = {
           created_at: string | null
           id: string
           is_read: boolean | null
+          message: string | null
           metadata: Json | null
+          read_at: string | null
+          title: string | null
           type: string
           user_id: string
         }
@@ -3346,7 +3349,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
+          message?: string | null
           metadata?: Json | null
+          read_at?: string | null
+          title?: string | null
           type: string
           user_id: string
         }
@@ -3354,7 +3360,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_read?: boolean | null
+          message?: string | null
           metadata?: Json | null
+          read_at?: string | null
+          title?: string | null
           type?: string
           user_id?: string
         }
