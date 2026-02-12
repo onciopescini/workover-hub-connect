@@ -13,8 +13,9 @@ const DEFAULT_MESSAGE = "Hai una nuova notifica.";
 const BRAND_PRIMARY_COLOR = "#2F4063";
 const EMAIL_BACKGROUND_COLOR = "#F9FAFB";
 const MAIN_TEXT_COLOR = "#1F2937";
-const LOGO_ORIZZONTALE_URL = "URL_LOGO_ORIZZONTALE";
-const BRAND_ICON_URL = "URL_ICONA_BRAND";
+const DEFAULT_APP_URL = "https://workover.it.com";
+const LOGO_ORIZZONTALE_URL = "https://khtqwzvrxzsgfhsslwyz.supabase.co/storage/v1/object/public/public-assets/ChatGPT%20Image%2031%20gen%202026,%2018_07_29.png";
+const BRAND_ICON_URL = "https://khtqwzvrxzsgfhsslwyz.supabase.co/storage/v1/object/public/public-assets/ChatGPT%20Image%2031%20gen%202026,%2018_07_26.png";
 
 type NotificationType = "booking_update" | "payment_action" | "dispute_alert" | "system_alert";
 
@@ -127,21 +128,22 @@ function buildNotificationHtml(notification: NotificationRow, appUrl: string): s
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
         <tr>
           <td style="padding: 0 0 20px 0; text-align: center;">
-            <img src="${LOGO_ORIZZONTALE_URL}" alt="WorkOver" style="max-width: 220px; width: 100%; height: auto; display: inline-block;" />
+            <img src="${LOGO_ORIZZONTALE_URL}" alt="WorkOver" style="max-width: 180px; width: 100%; height: auto; display: inline-block;" />
           </td>
         </tr>
         <tr>
           <td style="background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08); padding: 24px;">
+            <h1 style="margin: 0 0 8px; font-size: 18px; line-height: 1.3; color: ${BRAND_PRIMARY_COLOR};">WorkOver</h1>
             <p style="margin: 0 0 10px; font-size: 15px; color: #4B5563;">${escapeHtml(intro)}</p>
-            <h2 style="margin: 0 0 12px; font-size: 22px; line-height: 1.3; color: ${MAIN_TEXT_COLOR};">${title}</h2>
+            <h2 style="margin: 0 0 12px; font-size: 22px; line-height: 1.3; color: ${BRAND_PRIMARY_COLOR};">${title}</h2>
             <p style="margin: 0; font-size: 16px; color: ${MAIN_TEXT_COLOR};">${message}</p>
             ${ctaHtml}
           </td>
         </tr>
         <tr>
           <td style="padding: 18px 8px 0; text-align: center;">
-            <img src="${BRAND_ICON_URL}" alt="Icona WorkOver" width="28" height="28" style="display: inline-block; margin: 0 0 10px;" />
-            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+            <p style="margin: 0; font-size: 12px; color: #6B7280; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <img src="${BRAND_ICON_URL}" alt="Icona WorkOver" width="30" height="30" style="display: inline-block; vertical-align: middle;" />
               Hai ricevuto questa email perché sei registrato su WorkOver.it.com. Se hai domande, rispondi a questa email.
             </p>
           </td>
@@ -180,7 +182,7 @@ serve(async (req) => {
     const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = requireEnv("RESEND_API_KEY");
     const resendFromEmail = requireEnv("RESEND_FROM_EMAIL");
-    const appUrl = (Deno.env.get("APP_URL") ?? "").trim().replace(/\/$/, "");
+    const appUrl = (Deno.env.get("APP_URL") ?? DEFAULT_APP_URL).trim().replace(/\/$/, "");
 
     console.log("Environment variables check passed");
 
