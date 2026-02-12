@@ -96,6 +96,8 @@ async function sendEmailWithResend(params: {
 }
 
 serve(async (req) => {
+  console.log("[Process Notifications] Function started");
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
