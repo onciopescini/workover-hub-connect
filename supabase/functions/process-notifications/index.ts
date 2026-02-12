@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { Resend } from "https://esm.sh/resend@4.0.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,34 +70,19 @@ function buildNotificationHtml(notification: NotificationRow): string {
   `;
 }
 
-async function sendEmailWithResend(params: {
-  apiKey: string;
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${params.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: "WorkOver <noreply@workover.app>",
-      to: [params.to],
-      subject: params.subject,
-      html: params.html,
-    }),
-  });
+function requireEnv(name: "SUPABASE_SERVICE_ROLE_KEY" | "RESEND_API_KEY" | "RESEND_FROM_EMAIL"): string {
+  const value = Deno.env.get(name);
 
-  if (!response.ok) {
-    const responseBody = await response.text();
-    throw new Error(`Resend error (${response.status}): ${responseBody}`);
+  if (!value) {
+    console.error(`Missing var: ${name}`);
+    throw new Error(`Required environment variable is missing: ${name}`);
   }
+
+  return value;
 }
 
 serve(async (req) => {
-  console.log("[Process Notifications] Function started");
+  console.log("Function invoked");
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -104,31 +90,28 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const isDevelopment = Deno.env.get("DENO_ENV") === "development";
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl) {
+      console.error("Missing var: SUPABASE_URL");
+      throw new Error("Required environment variable is missing: SUPABASE_URL");
     }
 
-    if (!resendApiKey) {
-      const message = "Missing RESEND_API_KEY: email worker cannot send notifications";
-      if (isDevelopment) {
-        console.warn(`[PROCESS-NOTIFICATIONS] ${message}`);
-        return new Response(
-          JSON.stringify({ processed: 0, sent: 0, errors: 0, warning: message }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-        );
-      }
-      throw new Error(message);
-    }
+    const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const resendApiKey = requireEnv("RESEND_API_KEY");
+    const resendFromEmail = requireEnv("RESEND_FROM_EMAIL");
 
+    console.log("Environment variables check passed");
+
+    console.log("Initializing Supabase Admin...");
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
       db: { schema: "public" },
     });
 
+    console.log("Initializing Resend...");
+    const resend = new Resend(resendApiKey);
+
+    console.log("Fetching notifications...");
     const { data: notificationData, error: notificationError } = await supabaseAdmin
       .from("notifications")
       .select("id, user_id, type, title, message, created_at, email_sent_at")
@@ -141,8 +124,10 @@ serve(async (req) => {
     }
 
     const notifications = (notificationData ?? []) as NotificationRow[];
+    console.log(`Fetched notifications: ${notifications.length}`);
 
     if (notifications.length === 0) {
+      console.log("No notifications to process");
       return new Response(
         JSON.stringify({ processed: 0, sent: 0, errors: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
@@ -150,7 +135,9 @@ serve(async (req) => {
     }
 
     const userIds = [...new Set(notifications.map((notification) => notification.user_id))];
+    console.log(`Unique users to resolve emails for: ${userIds.length}`);
 
+    console.log("Fetching profile emails...");
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select("id, email")
@@ -169,8 +156,10 @@ serve(async (req) => {
     }
 
     const missingEmailUserIds = userIds.filter((userId) => !emailByUserId.has(userId));
+    console.log(`Users missing profile email: ${missingEmailUserIds.length}`);
 
     if (missingEmailUserIds.length > 0) {
+      console.log("Fetching fallback emails from auth.users...");
       const { data: authUsersData, error: authUsersError } = await supabaseAdmin
         .schema("auth")
         .from("users")
@@ -194,6 +183,8 @@ serve(async (req) => {
     let errors = 0;
 
     for (const notification of notifications) {
+      console.log(`Processing notification ${notification.id}`);
+
       try {
         const recipientEmail = emailByUserId.get(notification.user_id);
 
@@ -209,13 +200,19 @@ serve(async (req) => {
         const subject = notification.title ?? DEFAULT_SUBJECT;
         const html = buildNotificationHtml(notification);
 
-        await sendEmailWithResend({
-          apiKey: resendApiKey,
-          to: recipientEmail,
+        console.log(`Sending email via Resend for notification ${notification.id}`);
+        const { error: resendError } = await resend.emails.send({
+          from: resendFromEmail,
+          to: [recipientEmail],
           subject,
           html,
         });
 
+        if (resendError) {
+          throw new Error(`Resend error: ${resendError.message}`);
+        }
+
+        console.log(`Marking notification ${notification.id} as sent`);
         const { error: updateError } = await supabaseAdmin
           .from("notifications")
           .update({ email_sent_at: new Date().toISOString() })
@@ -241,13 +238,14 @@ serve(async (req) => {
       }
     }
 
+    console.log(`Processing completed. processed=${notifications.length}, sent=${sent}, errors=${errors}`);
     return new Response(
       JSON.stringify({ processed: notifications.length, sent, errors }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
+    console.error("CRITICAL ERROR:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("[PROCESS-NOTIFICATIONS] Fatal error", { message });
 
     return new Response(
       JSON.stringify({ processed: 0, sent: 0, errors: 1, error: message }),
