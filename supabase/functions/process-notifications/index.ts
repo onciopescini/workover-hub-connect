@@ -17,11 +17,21 @@ const DEFAULT_APP_URL = "https://workover.it.com";
 const LOGO_ORIZZONTALE_URL = "https://khtqwzvrxzsgfhsslwyz.supabase.co/storage/v1/object/public/public-assets/ChatGPT%20Image%2031%20gen%202026,%2018_07_29.png";
 const BRAND_ICON_URL = "https://khtqwzvrxzsgfhsslwyz.supabase.co/storage/v1/object/public/public-assets/ChatGPT%20Image%2031%20gen%202026,%2018_07_26.png";
 
-type NotificationType = "booking_update" | "payment_action" | "dispute_alert" | "system_alert";
+type NotificationType = "booking_update" | "booking_confirmation" | "payment_action" | "dispute_alert" | "system_alert";
 
 type NotificationMetadata = {
   booking_id?: string | number;
   dispute_id?: string | number;
+  start_date?: string;
+  end_date?: string;
+  space_name?: string;
+  location?: string;
+};
+
+type EmailAttachment = {
+  filename: string;
+  content: string;
+  contentType: string;
 };
 
 type NotificationRow = {
@@ -53,6 +63,8 @@ function templateIntroByType(type: NotificationType): string {
   switch (type) {
     case "booking_update":
       return "Aggiornamento sulla tua prenotazione.";
+    case "booking_confirmation":
+      return "Conferma della tua prenotazione.";
     case "payment_action":
       return "Azione richiesta sul pagamento.";
     case "dispute_alert":
@@ -73,11 +85,75 @@ function extractMetadata(raw: unknown): NotificationMetadata {
 
   const bookingId = raw.booking_id;
   const disputeId = raw.dispute_id;
+  const startDate = raw.start_date;
+  const endDate = raw.end_date;
+  const spaceName = raw.space_name;
+  const location = raw.location;
 
   return {
     booking_id: typeof bookingId === "string" || typeof bookingId === "number" ? bookingId : undefined,
     dispute_id: typeof disputeId === "string" || typeof disputeId === "number" ? disputeId : undefined,
+    start_date: typeof startDate === "string" ? startDate : undefined,
+    end_date: typeof endDate === "string" ? endDate : undefined,
+    space_name: typeof spaceName === "string" ? spaceName : undefined,
+    location: typeof location === "string" ? location : undefined,
   };
+}
+
+function escapeIcsText(value: string): string {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll(";", "\\;")
+    .replaceAll(",", "\\,")
+    .replaceAll("\n", "\\n");
+}
+
+function parseDate(value: string | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatIcsDateTime(date: Date): string {
+  return date.toISOString().replaceAll("-", "").replaceAll(":", "").replace(/\.\d{3}Z$/, "Z");
+}
+
+function generateIcsContent(metadata: NotificationMetadata): string | null {
+  const startDate = parseDate(metadata.start_date);
+  const endDate = parseDate(metadata.end_date);
+
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  const now = formatIcsDateTime(new Date());
+  const dtStart = formatIcsDateTime(startDate);
+  const dtEnd = formatIcsDateTime(endDate);
+  const summary = escapeIcsText(`Prenotazione WorkOver - ${metadata.space_name ?? "Spazio"}`);
+  const description = escapeIcsText("Dettagli prenotazione WorkOver.");
+  const eventLocation = escapeIcsText(metadata.location ?? "WorkOver");
+  const uid = `${crypto.randomUUID()}@workover.it.com`;
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//WorkOver//Booking Notification//IT",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${now}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${eventLocation}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
 }
 
 function buildCtaDetails(type: NotificationType, metadata: NotificationMetadata, appUrl: string): CtaDetails | null {
@@ -85,7 +161,7 @@ function buildCtaDetails(type: NotificationType, metadata: NotificationMetadata,
     return null;
   }
 
-  if (type === "booking_update" && metadata.booking_id !== undefined) {
+  if ((type === "booking_update" || type === "booking_confirmation") && metadata.booking_id !== undefined) {
     return {
       href: `${appUrl}/bookings/${encodeURIComponent(String(metadata.booking_id))}`,
       label: "Gestisci Prenotazione",
@@ -254,6 +330,16 @@ serve(async (req) => {
 
         const subject = notification.title ?? DEFAULT_SUBJECT;
         const html = buildNotificationHtml(notification, appUrl);
+        const metadata = extractMetadata(notification.metadata);
+        const shouldAttachCalendar = notification.type === "booking_update" || notification.type === "booking_confirmation";
+        const icsContent = shouldAttachCalendar ? generateIcsContent(metadata) : null;
+        const attachments: EmailAttachment[] = icsContent
+          ? [{
+              filename: "prenotazione-workover.ics",
+              content: icsContent,
+              contentType: "text/calendar",
+            }]
+          : [];
 
         console.log(`Sending email via Resend for notification ${notification.id}`);
         const { error: resendError } = await resend.emails.send({
@@ -261,6 +347,7 @@ serve(async (req) => {
           to: [recipientEmail],
           subject,
           html,
+          ...(attachments.length > 0 ? { attachments } : {}),
         });
 
         if (resendError) {
