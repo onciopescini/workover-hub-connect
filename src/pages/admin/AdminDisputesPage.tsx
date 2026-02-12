@@ -95,6 +95,32 @@ type AdminDispute = {
 
 type ResolutionAction = 'approve_refund' | 'deny_refund';
 
+type RefundFunctionSuccessResponse = {
+  success: true;
+  data: {
+    booking_id: string;
+    payment_id: string;
+    stripe_refund_id: string;
+    stripe_refund_status: string;
+    idempotency_key: string;
+  };
+};
+
+type RefundFunctionErrorResponse = {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+};
+
+type ErrorWithContext = Error & {
+  context?: {
+    json?: () => Promise<unknown>;
+  };
+};
+
 const getPersonName = (firstName: string | null, lastName: string | null, fallback: string): string => {
   const fullName = [firstName, lastName].filter((part) => Boolean(part && part.trim().length > 0)).join(' ').trim();
   return fullName.length > 0 ? fullName : fallback;
@@ -115,6 +141,55 @@ const disputeStatusClassMap: Record<string, string> = {
 
 const getStatusClass = (status: string, map: Record<string, string>): string => {
   return map[status] ?? 'bg-muted text-muted-foreground border-border';
+};
+
+const isRefundSuccessResponse = (value: unknown): value is RefundFunctionSuccessResponse => {
+  if (typeof value !== 'object' || value === null || !('success' in value)) {
+    return false;
+  }
+
+  return value.success === true;
+};
+
+const isRefundErrorResponse = (value: unknown): value is RefundFunctionErrorResponse => {
+  if (typeof value !== 'object' || value === null || !('success' in value) || !('error' in value)) {
+    return false;
+  }
+
+  const response = value as { success: unknown; error: unknown };
+  if (response.success !== false || typeof response.error !== 'object' || response.error === null) {
+    return false;
+  }
+
+  const error = response.error as { code?: unknown; message?: unknown };
+  return typeof error.code === 'string' && typeof error.message === 'string';
+};
+
+const isIdempotentReplayMessage = (message: string): boolean => {
+  const normalizedMessage = message.toLowerCase();
+  return normalizedMessage.includes('idempotent replay') || normalizedMessage.includes('idempotenc');
+};
+
+const parseRefundFunctionError = async (error: unknown): Promise<RefundFunctionErrorResponse | null> => {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const errorWithContext = error as ErrorWithContext;
+
+  if (!errorWithContext.context || typeof errorWithContext.context.json !== 'function') {
+    return null;
+  }
+
+  try {
+    const parsed = await errorWithContext.context.json();
+    if (isRefundErrorResponse(parsed)) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 };
 
 const buildAdminDisputesQuery = () => {
@@ -210,16 +285,25 @@ const AdminDisputesPage = () => {
         const { data, error } = await supabase.functions.invoke('admin-process-refund', {
           body: {
             booking_id: dispute.bookingId,
-            dispute_id: dispute.id,
             reason: `Admin approved dispute refund: ${dispute.reason}`,
           },
         });
 
         if (error) {
-          throw new Error(error.message);
+          const parsedError = await parseRefundFunctionError(error);
+          const idempotentReplay =
+            parsedError?.error.code === 'IDEMPOTENT_REPLAY' ||
+            (parsedError ? isIdempotentReplayMessage(parsedError.error.message) : false) ||
+            isIdempotentReplayMessage(error.message);
+
+          if (idempotentReplay) {
+            return;
+          }
+
+          throw new Error(parsedError?.error.message ?? error.message);
         }
 
-        if (!data || typeof data !== 'object' || !('success' in data) || data.success !== true) {
+        if (!isRefundSuccessResponse(data)) {
           throw new Error('Il rimborso su Stripe non è stato completato.');
         }
 
