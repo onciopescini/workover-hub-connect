@@ -10,8 +10,18 @@ const corsHeaders = {
 const MAX_BATCH_SIZE = 50;
 const DEFAULT_SUBJECT = "Aggiornamento WorkOver";
 const DEFAULT_MESSAGE = "Hai una nuova notifica.";
+const BRAND_PRIMARY_COLOR = "#2F4063";
+const EMAIL_BACKGROUND_COLOR = "#F9FAFB";
+const MAIN_TEXT_COLOR = "#1F2937";
+const LOGO_ORIZZONTALE_URL = "URL_LOGO_ORIZZONTALE";
+const BRAND_ICON_URL = "URL_ICONA_BRAND";
 
 type NotificationType = "booking_update" | "payment_action" | "dispute_alert" | "system_alert";
+
+type NotificationMetadata = {
+  booking_id?: string | number;
+  dispute_id?: string | number;
+};
 
 type NotificationRow = {
   id: string;
@@ -21,6 +31,12 @@ type NotificationRow = {
   message: string | null;
   created_at: string;
   email_sent_at: string | null;
+  metadata: unknown;
+};
+
+type CtaDetails = {
+  href: string;
+  label: string;
 };
 
 function escapeHtml(input: string): string {
@@ -45,17 +61,92 @@ function templateIntroByType(type: NotificationType): string {
   }
 }
 
-function buildNotificationHtml(notification: NotificationRow): string {
+function isMetadataRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractMetadata(raw: unknown): NotificationMetadata {
+  if (!isMetadataRecord(raw)) {
+    return {};
+  }
+
+  const bookingId = raw.booking_id;
+  const disputeId = raw.dispute_id;
+
+  return {
+    booking_id: typeof bookingId === "string" || typeof bookingId === "number" ? bookingId : undefined,
+    dispute_id: typeof disputeId === "string" || typeof disputeId === "number" ? disputeId : undefined,
+  };
+}
+
+function buildCtaDetails(type: NotificationType, metadata: NotificationMetadata, appUrl: string): CtaDetails | null {
+  if (!appUrl) {
+    return null;
+  }
+
+  if (type === "booking_update" && metadata.booking_id !== undefined) {
+    return {
+      href: `${appUrl}/bookings/${encodeURIComponent(String(metadata.booking_id))}`,
+      label: "Gestisci Prenotazione",
+    };
+  }
+
+  if (type === "dispute_alert" && metadata.dispute_id !== undefined) {
+    return {
+      href: `${appUrl}/disputes/${encodeURIComponent(String(metadata.dispute_id))}`,
+      label: "Risolvi Contestazione",
+    };
+  }
+
+  return null;
+}
+
+function buildNotificationHtml(notification: NotificationRow, appUrl: string): string {
   const intro = templateIntroByType(notification.type);
   const title = escapeHtml(notification.title ?? DEFAULT_SUBJECT);
   const message = escapeHtml(notification.message ?? DEFAULT_MESSAGE);
+  const metadata = extractMetadata(notification.metadata);
+  const ctaDetails = buildCtaDetails(notification.type, metadata, appUrl);
+  const ctaHtml = ctaDetails
+    ? `
+      <div style="margin: 24px 0 8px;">
+        <a
+          href="${escapeHtml(ctaDetails.href)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="display: inline-block; background-color: ${BRAND_PRIMARY_COLOR}; color: #FFFFFF; border-radius: 10px; padding: 12px 18px; text-decoration: none; font-size: 14px; font-weight: 600;"
+        >
+          ${escapeHtml(ctaDetails.label)}
+        </a>
+      </div>
+    `
+    : "";
 
   return `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
-      <p>${escapeHtml(intro)}</p>
-      <h2 style="margin: 16px 0 8px;">${title}</h2>
-      <p style="margin: 0 0 16px;">${message}</p>
-      <p style="font-size: 12px; color: #6b7280;">Messaggio automatico di WorkOver.</p>
+    <div style="margin: 0; padding: 32px 16px; background-color: ${EMAIL_BACKGROUND_COLOR}; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5; color: ${MAIN_TEXT_COLOR};">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+          <td style="padding: 0 0 20px 0; text-align: center;">
+            <img src="${LOGO_ORIZZONTALE_URL}" alt="WorkOver" style="max-width: 220px; width: 100%; height: auto; display: inline-block;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08); padding: 24px;">
+            <p style="margin: 0 0 10px; font-size: 15px; color: #4B5563;">${escapeHtml(intro)}</p>
+            <h2 style="margin: 0 0 12px; font-size: 22px; line-height: 1.3; color: ${MAIN_TEXT_COLOR};">${title}</h2>
+            <p style="margin: 0; font-size: 16px; color: ${MAIN_TEXT_COLOR};">${message}</p>
+            ${ctaHtml}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 18px 8px 0; text-align: center;">
+            <img src="${BRAND_ICON_URL}" alt="Icona WorkOver" width="28" height="28" style="display: inline-block; margin: 0 0 10px;" />
+            <p style="margin: 0; font-size: 12px; color: #6B7280;">
+              Hai ricevuto questa email perché sei registrato su WorkOver.it.com. Se hai domande, rispondi a questa email.
+            </p>
+          </td>
+        </tr>
+      </table>
     </div>
   `;
 }
@@ -89,6 +180,7 @@ serve(async (req) => {
     const serviceRoleKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = requireEnv("RESEND_API_KEY");
     const resendFromEmail = requireEnv("RESEND_FROM_EMAIL");
+    const appUrl = (Deno.env.get("APP_URL") ?? "").trim().replace(/\/$/, "");
 
     console.log("Environment variables check passed");
 
@@ -104,7 +196,7 @@ serve(async (req) => {
     console.log("Fetching notifications...");
     const { data: notificationData, error: notificationError } = await supabaseAdmin
       .from("notifications")
-      .select("id, user_id, type, title, message, created_at, email_sent_at")
+      .select("id, user_id, type, title, message, created_at, email_sent_at, metadata")
       .is("email_sent_at", null)
       .order("created_at", { ascending: true })
       .limit(MAX_BATCH_SIZE);
@@ -159,7 +251,7 @@ serve(async (req) => {
         }
 
         const subject = notification.title ?? DEFAULT_SUBJECT;
-        const html = buildNotificationHtml(notification);
+        const html = buildNotificationHtml(notification, appUrl);
 
         console.log(`Sending email via Resend for notification ${notification.id}`);
         const { error: resendError } = await resend.emails.send({
