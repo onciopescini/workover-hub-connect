@@ -134,3 +134,6 @@ verify_jwt = false
 
 [functions.message-broadcast]
 verify_jwt = false
+
+[functions.admin-process-refund]
+verify_jwt = true
