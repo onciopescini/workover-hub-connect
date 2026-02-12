@@ -23,16 +23,6 @@ type NotificationRow = {
   email_sent_at: string | null;
 };
 
-type ProfileEmailRow = {
-  id: string;
-  email: string | null;
-};
-
-type AuthUserEmailRow = {
-  id: string;
-  email: string | null;
-};
-
 function escapeHtml(input: string): string {
   return input
     .replaceAll("&", "&amp;")
@@ -134,51 +124,6 @@ serve(async (req) => {
       );
     }
 
-    const userIds = [...new Set(notifications.map((notification) => notification.user_id))];
-    console.log(`Unique users to resolve emails for: ${userIds.length}`);
-
-    console.log("Fetching profile emails...");
-    const { data: profileData, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id, email")
-      .in("id", userIds);
-
-    if (profileError) {
-      throw profileError;
-    }
-
-    const emailByUserId = new Map<string, string>();
-
-    for (const profile of (profileData ?? []) as ProfileEmailRow[]) {
-      if (profile.email) {
-        emailByUserId.set(profile.id, profile.email);
-      }
-    }
-
-    const missingEmailUserIds = userIds.filter((userId) => !emailByUserId.has(userId));
-    console.log(`Users missing profile email: ${missingEmailUserIds.length}`);
-
-    if (missingEmailUserIds.length > 0) {
-      console.log("Fetching fallback emails from auth.users...");
-      const { data: authUsersData, error: authUsersError } = await supabaseAdmin
-        .schema("auth")
-        .from("users")
-        .select("id, email")
-        .in("id", missingEmailUserIds);
-
-      if (authUsersError) {
-        console.error("[PROCESS-NOTIFICATIONS] Unable to fetch auth.users emails", {
-          message: authUsersError.message,
-        });
-      } else {
-        for (const authUser of (authUsersData ?? []) as AuthUserEmailRow[]) {
-          if (authUser.email) {
-            emailByUserId.set(authUser.id, authUser.email);
-          }
-        }
-      }
-    }
-
     let sent = 0;
     let errors = 0;
 
@@ -186,7 +131,23 @@ serve(async (req) => {
       console.log(`Processing notification ${notification.id}`);
 
       try {
-        const recipientEmail = emailByUserId.get(notification.user_id);
+        console.log(`Fetching auth user for notification ${notification.id}`);
+        const { data: authUserResponse, error: authUserError } = await supabaseAdmin
+          .auth
+          .admin
+          .getUserById(notification.user_id);
+
+        if (authUserError) {
+          errors += 1;
+          console.error("[PROCESS-NOTIFICATIONS] Failed to fetch auth user", {
+            notificationId: notification.id,
+            userId: notification.user_id,
+            message: authUserError.message,
+          });
+          continue;
+        }
+
+        const recipientEmail = authUserResponse.user?.email;
 
         if (!recipientEmail) {
           errors += 1;
