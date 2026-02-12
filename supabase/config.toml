@@ -137,3 +137,6 @@ verify_jwt = false
 
 [functions.admin-process-refund]
 verify_jwt = true
+
+[functions.process-notifications]
+verify_jwt = false
