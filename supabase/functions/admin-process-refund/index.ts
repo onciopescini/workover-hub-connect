@@ -101,6 +101,33 @@ const isIdempotentReplay = (error: Stripe.errors.StripeError): boolean => {
   return type.includes("idempotency") || message.includes("idempotent") || message.includes("idempotency");
 };
 
+const getStripeErrorMessage = (error: unknown): string | null => {
+  if (error instanceof Error && typeof error.message === "string") {
+    return error.message;
+  }
+
+  if (typeof error !== "object" || error === null) {
+    return null;
+  }
+
+  const candidate = error as {
+    message?: unknown;
+    raw?: {
+      message?: unknown;
+    };
+  };
+
+  if (typeof candidate.message === "string") {
+    return candidate.message;
+  }
+
+  if (typeof candidate.raw?.message === "string") {
+    return candidate.raw.message;
+  }
+
+  return null;
+};
+
 const getRefundReason = (reason: string | undefined): Stripe.RefundCreateParams.Reason => {
   const normalized = reason?.toLowerCase() ?? "";
   if (normalized.includes("fraud")) {
@@ -266,7 +293,15 @@ serve(async (req) => {
     try {
       stripeRefund = await stripe.refunds.create(refundParams, { idempotencyKey });
     } catch (error: unknown) {
-      if (isStripeError(error)) {
+      const stripeErrorMessage = getStripeErrorMessage(error);
+
+      if (stripeErrorMessage && stripeErrorMessage.toLowerCase().includes("already been refunded")) {
+        console.info("Refund already exists on Stripe (Idempotent match). Proceeding to DB sync...");
+        stripeRefund = {
+          id: "existing_refund",
+          status: "succeeded",
+        } as Stripe.Response<Stripe.Refund>;
+      } else if (isStripeError(error)) {
         if (isIdempotentReplay(error)) {
           return createErrorResponse(
             requestOrigin,
@@ -281,9 +316,9 @@ serve(async (req) => {
           type: error.type,
           code: error.code,
         });
+      } else {
+        return createErrorResponse(requestOrigin, 500, "INTERNAL_ERROR", "Unexpected Stripe error.");
       }
-
-      return createErrorResponse(requestOrigin, 500, "INTERNAL_ERROR", "Unexpected Stripe error.");
     }
 
     if (stripeRefund.status !== "succeeded" && stripeRefund.status !== "pending") {
