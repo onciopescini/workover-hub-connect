@@ -1,11 +1,23 @@
 
 import Stripe from "https://esm.sh/stripe@15.0.0";
 import { EnhancedPaymentService } from "../services/enhanced-payment-service.ts";
-import { BookingService } from "../services/booking-service.ts";
-import { NotificationService } from "../services/notification-service.ts";
 import { EnhancedPaymentCalculator } from "../utils/enhanced-payment-calculator.ts";
 import { ErrorHandler } from "../utils/error-handler.ts";
 import type { EventHandlerResult } from "../types/webhook-types.ts";
+
+type BookingNotificationPayload = {
+  id: string;
+  user_id: string;
+  booking_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  spaces: {
+    title: string;
+    address: string | null;
+    city_name: string | null;
+    confirmation_type: string;
+  };
+};
 
 export class EnhancedCheckoutHandlers {
   static async handleCheckoutSessionCompleted(
@@ -261,8 +273,8 @@ export class EnhancedCheckoutHandlers {
       paymentIntentId: paymentIntentId || 'NULL (Warning)'
     });
 
-    // Send notifications
-    await this.sendCompletionNotifications(booking, breakdown, supabaseAdmin);
+    // Send centralized notification event (email delivery is handled asynchronously by process-notifications)
+    await this.sendCompletionNotifications(booking, bookingId, supabaseAdmin);
 
     // Generate fiscal documents asynchronously (MOCK mode)
     this.generateFiscalDocuments(payment.id, bookingId, booking.spaces.host_id, booking.user_id, supabaseAdmin);
@@ -328,61 +340,75 @@ export class EnhancedCheckoutHandlers {
   }
 
   private static async sendCompletionNotifications(
-    booking: any,
-    breakdown: ReturnType<typeof EnhancedPaymentCalculator.calculateBreakdown>,
+    booking: BookingNotificationPayload,
+    bookingId: string,
     supabaseAdmin: any
   ): Promise<void> {
     const confirmationType = booking.spaces.confirmation_type;
+    const notificationType = confirmationType === 'instant' ? 'booking_confirmation' : 'booking_update';
+    const startDate = this.composeIsoDateTime(booking.booking_date, booking.start_time);
+    const endDate = this.composeIsoDateTime(booking.booking_date, booking.end_time);
+    const locationParts = [booking.spaces.address, booking.spaces.city_name].filter((value): value is string => Boolean(value && value.trim()));
+    const location = locationParts.join(', ');
     
-    ErrorHandler.logInfo('Dispatching notifications via send-booking-notification', {
+    ErrorHandler.logInfo('Creating centralized notification for paid booking', {
       bookingId: booking.id,
-      confirmationType
+      confirmationType,
+      notificationType
     });
 
     try {
-      if (confirmationType === 'instant') {
-        // Instant Booking: Notify Guest (Confirmation) + Host (Not yet implemented in dispatcher, but dispatcher sends 'confirmation' to Guest)
-        // Wait, dispatcher logic for 'confirmation' only notifies Guest?
-        // Let's check my dispatcher code.
-        // Yes, 'confirmation' sends to Guest.
-        // Does 'confirmation' also send to Host?
-        // My dispatcher currently: 'confirmation' -> Guest Email + Guest In-App.
-        // It does NOT send to Host.
-        // But the previous code sent to Host too.
-        // The Prompt says: "Automated, reliable communication. When a booking happens, everyone gets notified automatically."
-        // I should probably update the Dispatcher to handle Host notification for confirmation too, or call it twice?
-        // Or 'confirmation' implies Guest. 'new_booking' implies Host.
-        // For Instant Booking: Guest needs 'confirmation'. Host needs 'new_booking_confirmed' (or just 'new_booking' but status is confirmed).
-
-        // I will call it for the GUEST (confirmation).
-        await supabaseAdmin.functions.invoke('send-booking-notification', {
-          body: { booking_id: booking.id, type: 'confirmation' }
+      const { error: notificationError } = await supabaseAdmin
+        .from('notifications')
+        .insert({
+          user_id: booking.user_id,
+          type: notificationType,
+          title: 'Pagamento Confermato! 🎉',
+          message: 'La tua prenotazione è confermata. Trovi i dettagli nel calendario allegato.',
+          metadata: {
+            booking_id: bookingId,
+            start_date: startDate,
+            end_date: endDate,
+            location,
+            space_name: booking.spaces.title
+          }
         });
 
-        // I will ALSO call it for the HOST (Instant Booking Notification).
-        await supabaseAdmin.functions.invoke('send-booking-notification', {
-          body: { booking_id: booking.id, type: 'host_confirmation' }
+      if (notificationError) {
+        ErrorHandler.logError('Failed to create centralized booking notification', {
+          bookingId,
+          errorMessage: notificationError.message,
+          errorCode: notificationError.code,
+          errorDetails: notificationError.details,
+          errorHint: notificationError.hint
         });
-
       } else {
-        // Request Booking:
-        // 1. Notify HOST (New Request)
-        await supabaseAdmin.functions.invoke('send-booking-notification', {
-            body: { booking_id: booking.id, type: 'new_request' }
+        ErrorHandler.logSuccess('Centralized notification created', {
+          bookingId,
+          notificationType,
+          userId: booking.user_id
         });
-
-        // 2. Notify GUEST (Request Sent / Pending)
-        // Note: Currently 'confirmation' sends "Booking Confirmed".
-        // We ideally need a 'request_sent' type for Guest, but using 'confirmation' would be misleading.
-        // For now, we accept the gap for Guest "Request Sent" email (not explicitly requested in Phase 2 spec),
-        // OR we can rely on Stripe Receipt email which they get anyway.
-        // The previous code sent: "Pagamento completato - In attesa di approvazione" notification to Guest.
-        // To restore parity, we should notify Guest.
-        // But Dispatcher lacks 'request_sent'.
-        // I will stick to notifying the HOST as the critical action for Requests.
       }
     } catch (error) {
-       ErrorHandler.logError('Failed to invoke send-booking-notification', error);
+      ErrorHandler.logError('Failed to create booking notification', error);
     }
+  }
+
+  private static composeIsoDateTime(
+    bookingDate: string | null,
+    time: string | null
+  ): string | null {
+    if (!bookingDate || !time) {
+      return null;
+    }
+
+    const normalizedTime = time.length === 5 ? `${time}:00` : time;
+    const dateTime = new Date(`${bookingDate}T${normalizedTime}`);
+
+    if (Number.isNaN(dateTime.getTime())) {
+      return null;
+    }
+
+    return dateTime.toISOString();
   }
 }

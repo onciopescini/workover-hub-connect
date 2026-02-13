@@ -61,9 +61,14 @@ export class EnhancedPaymentService {
             status,
             space_id,
             user_id,
+            booking_date,
+            start_time,
+            end_time,
             spaces!inner (
               id,
               title,
+              address,
+              city_name,
               host_id,
               confirmation_type
             )
