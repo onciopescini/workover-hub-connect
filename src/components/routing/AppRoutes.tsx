@@ -11,6 +11,7 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 // Auth protection
 import AuthProtected from "@/components/auth/AuthProtected";
 import RoleProtected from "@/components/auth/RoleProtected";
+import RequireAuth from "@/components/auth/RequireAuth";
 
 // Public pages (eager loading per performance)
 import Index from "@/pages/Index";
@@ -83,6 +84,7 @@ const AdminInvoicesPage = lazy(() => import("@/pages/admin/AdminInvoicesPage"));
 
 const BookingSuccess = lazy(() => import("@/pages/BookingSuccess"));
 const BookingCancelled = lazy(() => import("@/pages/BookingCancelled"));
+const BookingDetail = lazy(() => import("@/pages/BookingDetail"));
 
 // Wrapper per lazy loading
 const LazyWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -216,6 +218,15 @@ export const AppRoutes = () => {
           <AuthProtected>
             <Bookings />
           </AuthProtected>
+        } />
+
+
+        <Route path="bookings/:id" element={
+          <RequireAuth>
+            <LazyWrapper>
+              <BookingDetail />
+            </LazyWrapper>
+          </RequireAuth>
         } />
         
         <Route path="messages" element={

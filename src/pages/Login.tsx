@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ const Login = () => {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
   
-  const navigate = useNavigate();
   const location = useLocation();
   const { signIn, signInWithGoogle } = useAuth();
 
@@ -67,7 +66,7 @@ const Login = () => {
       
       toast.success('Email di conferma inviata! Controlla la tua casella di posta.');
       setResendCooldown(60);
-    } catch (err: any) {
+    } catch (_err: unknown) {
       toast.error('Impossibile inviare l\'email. Riprova tra poco.');
     } finally {
       setIsResending(false);
@@ -95,12 +94,14 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Use the redirectTo parameter from the URL, if available
       const searchParams = new URLSearchParams(location.search);
-      const redirectTo = searchParams.get('redirectTo') || '/';
+      const returnUrlParam = searchParams.get('returnUrl');
+      const redirectToParam = searchParams.get('redirectTo');
+      const requestedRoute = returnUrlParam ?? redirectToParam ?? '/';
+      const redirectTo = requestedRoute.startsWith('/') ? requestedRoute : '/';
 
       await signIn(email, password, redirectTo);
-      
+
       // Reset rate limit on successful login
       resetAuthRateLimit(email);
     } catch (error: unknown) {

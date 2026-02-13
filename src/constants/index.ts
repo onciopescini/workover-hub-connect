@@ -53,6 +53,7 @@ export const BUSINESS_RULES = {
 export * from './admin';
 export * from './admin-disputes';
 export * from './booking-actions';
+export * from './booking-detail';
 
 export * from './qrCheckin';
 
