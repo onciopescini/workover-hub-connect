@@ -105,86 +105,33 @@ export const useAuthLogic = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (signal?.aborted) return;
 
-        // Se il profilo non esiste, prova a crearlo tramite edge function e ricarica
+        // Se il profilo non esiste, non tentare creazione lato client.
+        // Il bootstrap iniziale è gestito solo dal trigger DB su auth.users.
         if (!profile && session?.user) {
-          // Verify roles first - prevent premature profile creation for users without role
           const roles = await fetchUserRoles(session.user.id);
 
           if (roles.length === 0) {
-            debug('User has no roles, skipping profile creation to allow onboarding redirect');
-            if (!signal?.aborted) {
-              // DIRECT STATE UPDATE: Force isLoading to false immediately
-              // This prevents the infinite spinner by bypassing any async overhead in updateAuthState
-              setAuthState({
-                user: session.user,
-                session: session,
-                profile: null,
-                roles: [],
-                isLoading: false,
-                isAuthenticated: true
-              });
-            }
-            return;
-          }
-
-          try {
-            const firstName = (session.user.user_metadata?.['given_name']
-              || session.user.user_metadata?.['first_name']
-              || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ')[0]
-              || '');
-            const lastName = (session.user.user_metadata?.['family_name']
-              || session.user.user_metadata?.['last_name']
-              || (session.user.user_metadata?.['full_name'] as string | undefined)?.split(' ').slice(1).join(' ')
-              || '');
-
-            if (signal?.aborted) return;
-
-            const { data: created, error: createErr } = await supabase.functions.invoke('create-profile', {
-              body: {
-                user_id: session.user.id,
-                email: session.user.email,
-                first_name: firstName,
-                last_name: lastName,
-              }
-            });
-
-            if (signal?.aborted) return;
-
-            if (createErr) {
-              debug('create-profile error', { error: createErr });
-              
-              // Fallback: prova inserimento diretto se edge function fallisce
-              try {
-                const { data: insertedProfile, error: insertErr } = await supabase
-                  .from('profiles')
-                  .insert({
-                    id: session.user.id,
-                    first_name: firstName,
-                    last_name: lastName,
-                    onboarding_completed: false,
-                  })
-                  .select()
-                  .single();
-                
-                if (!insertErr && insertedProfile) {
-                  profile = insertedProfile as Profile;
-                  debug('Profile created via direct insert fallback');
-                }
-              } catch (fallbackErr) {
-                debug('Direct profile insert fallback also failed', { error: fallbackErr });
-              }
-            } else if (created?.profile) {
-              profile = created.profile as Profile;
-            }
-          } catch (e) {
-            debug('create-profile invocation failed', { error: e });
+            debug('User has no roles yet, waiting for DB bootstrap to complete');
           }
 
           if (signal?.aborted) return;
 
-          // In ogni caso prova a ricaricare dal DB
-          if (!profile) {
-            profile = await fetchProfile(userId);
+          // Prova una nuova lettura: il trigger DB può completarsi poco dopo l'autenticazione.
+          profile = await fetchProfile(userId);
+
+          if (signal?.aborted) return;
+
+          if (!profile && roles.length === 0) {
+            // Evita spinner infiniti quando la registrazione è ancora in propagazione.
+            setAuthState({
+              user: session.user,
+              session,
+              profile: null,
+              roles: [],
+              isLoading: false,
+              isAuthenticated: true,
+            });
+            return;
           }
         }
 
@@ -206,7 +153,7 @@ export const useAuthLogic = () => {
       if (signal?.aborted) return;
       updateAuthState(session, cachedProfile, signal);
     }
-  }, [fetchProfile, getCachedProfile, updateAuthState, debug, logError]);
+  }, [fetchProfile, getCachedProfile, updateAuthState, debug, logError, fetchUserRoles]);
 
   // Refresh profile forzato
   const refreshProfile = useCallback(async (): Promise<void> => {
