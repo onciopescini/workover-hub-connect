@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,11 @@ const Login = () => {
   const [isResending, setIsResending] = useState(false);
   
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn, signInWithGoogle } = useAuth();
+  const returnUrlParam = searchParams.get('returnUrl') ?? searchParams.get('redirectTo');
+  const returnUrl = returnUrlParam?.startsWith('/') ? returnUrlParam : null;
 
   useEffect(() => {
     // Check for error parameters in URL
@@ -94,13 +98,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const searchParams = new URLSearchParams(location.search);
-      const returnUrlParam = searchParams.get('returnUrl');
-      const redirectToParam = searchParams.get('redirectTo');
-      const requestedRoute = returnUrlParam ?? redirectToParam ?? '/';
-      const redirectTo = requestedRoute.startsWith('/') ? requestedRoute : '/';
+      await signIn(email, password);
 
-      await signIn(email, password, redirectTo);
+      if (returnUrl) {
+        navigate(returnUrl, { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
 
       // Reset rate limit on successful login
       resetAuthRateLimit(email);
