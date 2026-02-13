@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavigationGuard } from "@/components/navigation/NavigationGuard";
 import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { sreLogger } from "@/lib/sre-logger";
+import { queryKeys } from "@/lib/react-query-config";
 
 interface OnboardingFormData {
   firstName: string;
@@ -23,6 +25,7 @@ interface OnboardingFormData {
 const Onboarding = () => {
   const { authState, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState<OnboardingFormData>({
     firstName: "",
@@ -91,11 +94,14 @@ const Onboarding = () => {
         onboarding_completed: true,
       });
 
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
+      await queryClient.refetchQueries({ queryKey: queryKeys.profile.all, type: "active" });
+
       toast.success("Profilo completato con successo!");
       if (draftKey) {
         localStorage.removeItem(draftKey);
       }
-      navigate("/dashboard");
+      navigate("/spaces", { replace: true });
     } catch (error) {
       sreLogger.error("Failed to complete onboarding", { userId: authState.user?.id }, error as Error);
       toast.error("Errore durante il completamento dell'onboarding");
