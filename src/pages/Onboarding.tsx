@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavigationGuard } from "@/components/navigation/NavigationGuard";
 import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { sreLogger } from "@/lib/sre-logger";
-import { queryKeys } from "@/lib/react-query-config";
 
 interface OnboardingFormData {
   firstName: string;
@@ -94,8 +93,11 @@ const Onboarding = () => {
         onboarding_completed: true,
       });
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
-      await queryClient.refetchQueries({ queryKey: queryKeys.profile.all, type: "active" });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+      await queryClient.refetchQueries({ queryKey: ["profile"], type: "active" });
+
+      // Small buffer to let observers consume the refetched profile before redirect guards run.
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       toast.success("Profilo completato con successo!");
       if (draftKey) {
