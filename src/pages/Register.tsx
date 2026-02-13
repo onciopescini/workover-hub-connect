@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,12 @@ const Register = () => {
   
   const { signUp, signInWithGoogle, authState } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrlParam = searchParams.get('returnUrl') ?? searchParams.get('redirect');
+  const returnUrl = returnUrlParam?.startsWith('/') ? returnUrlParam : null;
+  const origin = window.location.origin;
+  const next = returnUrl ? `?returnUrl=${encodeURIComponent(returnUrl)}` : '';
+  const emailRedirectTo = `${origin}/auth/callback${next}`;
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -78,6 +84,9 @@ const Register = () => {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: registeredEmail,
+        options: {
+          emailRedirectTo,
+        },
       });
       
       if (error) {
@@ -128,7 +137,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const result = await signUp(email, password);
+      const result = await signUp(email, password, emailRedirectTo);
       
       // Reset rate limit on successful signup
       resetAuthRateLimit(email);
@@ -232,7 +241,10 @@ const Register = () => {
                 >
                   Usa un'email diversa
                 </Button>
-                <Link to="/login" className="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                <Link
+                  to={returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login'}
+                  className="text-sm text-indigo-600 hover:text-indigo-500 font-medium"
+                >
                   Vai al login
                 </Link>
               </div>
@@ -365,7 +377,10 @@ const Register = () => {
             <div className="text-center space-y-2">
               <p className="text-sm text-gray-600">
                 Hai già un account?{' '}
-                <Link to="/login" className="text-indigo-600 hover:text-indigo-500 font-medium">
+                <Link
+                  to={returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login'}
+                  className="text-indigo-600 hover:text-indigo-500 font-medium"
+                >
                   Accedi
                 </Link>
               </p>

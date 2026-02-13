@@ -6,7 +6,7 @@ export interface SignUpResult {
 
 export interface AuthMethods {
   signIn: (email: string, password: string, redirectTo?: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<SignUpResult>;
+  signUp: (email: string, password: string, emailRedirectTo?: string) => Promise<SignUpResult>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;

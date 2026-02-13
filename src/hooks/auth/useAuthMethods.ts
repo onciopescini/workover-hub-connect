@@ -53,7 +53,7 @@ export const useAuthMethods = ({
     }
   }, [fetchProfile, updateAuthState, navigate]);
 
-  const signUp = useCallback(async (email: string, password: string): Promise<SignUpResult> => {
+  const signUp = useCallback(async (email: string, password: string, emailRedirectTo?: string): Promise<SignUpResult> => {
     try {
       // Pulisci eventuale stato auth e prova sign out globale per evitare limbo
       try {
@@ -67,7 +67,7 @@ export const useAuthMethods = ({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: emailRedirectTo ?? `${window.location.origin}/auth/callback`
         }
       });
 
@@ -82,11 +82,12 @@ export const useAuthMethods = ({
     } catch (signUpError: unknown) {
       error('Sign up error', signUpError as Error, {
         operation: 'sign_up',
-        email: email
+        email: email,
+        emailRedirectTo
       });
       throw signUpError;
     }
-  }, []);
+  }, [error]);
 
   const signInWithGoogle = useCallback(async (): Promise<void> => {
     try {
