@@ -2,10 +2,6 @@ import type { User, Session } from "@supabase/supabase-js";
 import type { AuthState, Profile, UserRole } from '@/types/auth';
 
 const hasProfileCriticalChanges = (previousProfile: Profile | null, nextProfile: Profile | null): boolean => {
-  if (previousProfile === nextProfile) {
-    return false;
-  }
-
   if (!previousProfile || !nextProfile) {
     return previousProfile !== nextProfile;
   }
