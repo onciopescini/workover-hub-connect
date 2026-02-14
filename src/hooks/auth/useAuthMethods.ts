@@ -9,6 +9,7 @@ import { containsSuspiciousContent } from '@/utils/security';
 import { AUTH_ERRORS, mapSupabaseError } from '@/utils/auth/auth-errors';
 import type { Profile, SignUpResult } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
+import { sanitizeProfileUpdate } from '@/utils/profile/sanitizeProfileUpdate';
 
 interface UseAuthMethodsProps {
   fetchProfile: (userId: string) => Promise<Profile | null>;
@@ -119,55 +120,6 @@ export const useAuthMethods = ({
     }
   }, [clearCache, error, currentUser?.id]);
 
-  // Sanitize and normalize profile updates before sending to DB
-  const sanitizeProfileUpdates = (raw: Partial<Profile>): Partial<Profile> => {
-    const cleaned: Partial<Profile> = {};
-
-    const stringToNullKeys = new Set([
-      'first_name','last_name','nickname','job_title','job_type','work_style','bio','location','skills','interests',
-      'website','linkedin_url','twitter_url','instagram_url','facebook_url','youtube_url','github_url',
-      'profile_photo_url','profession','city','phone','collaboration_description','tax_country','vat_number','tax_id',
-      'admin_notes','suspension_reason','restriction_reason','return_url','stripe_account_id'
-    ]);
-
-    const allowedJobTypes = new Set(['full_time','part_time','freelance','contract','intern','unemployed','student']);
-    const allowedWorkStyles = new Set(['remote','hybrid','office','nomad']);
-    const allowedPreferredModes = new Set(['remoto','presenza','ibrido','flessibile', 'remote', 'hybrid', 'office']);
-
-    for (const [key, value] of Object.entries(raw)) {
-      if (value === undefined) continue; // don't touch undefined keys
-
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (stringToNullKeys.has(key) && trimmed === '') {
-          cleaned[key] = null;
-          continue;
-        }
-
-        if (key === 'job_type') {
-          cleaned[key] = trimmed && allowedJobTypes.has(trimmed) ? trimmed : null;
-          continue;
-        }
-        if (key === 'work_style') {
-          cleaned[key] = trimmed && allowedWorkStyles.has(trimmed) ? trimmed : null;
-          continue;
-        }
-        if (key === 'preferred_work_mode') {
-          cleaned[key] = trimmed && allowedPreferredModes.has(trimmed) ? trimmed : 'flessibile';
-          continue;
-        }
-
-        cleaned[key] = trimmed;
-      } else if (Array.isArray(value)) {
-        cleaned[key] = value; // trust arrays like collaboration_types
-      } else {
-        cleaned[key] = value;
-      }
-    }
-
-    return cleaned as Partial<Profile>;
-  };
-
   const updateProfile = useCallback(async (updates: Partial<Profile>): Promise<void> => {
     if (!currentUser) throw new Error(AUTH_ERRORS.PERMISSION_DENIED);
 
@@ -179,7 +131,12 @@ export const useAuthMethods = ({
         }
       });
 
-      const sanitized = sanitizeProfileUpdates(updates);
+      const sanitized = sanitizeProfileUpdate(updates);
+
+      if (Object.keys(sanitized).length === 0) {
+        return;
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update(sanitized)
