@@ -9,9 +9,8 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { AdminLayout } from "@/layouts/AdminLayout";
 
 // Auth protection
-import AuthProtected from "@/components/auth/AuthProtected";
+import AuthFlowGate from "@/components/auth/AuthFlowGate";
 import RoleProtected from "@/components/auth/RoleProtected";
-import RequireAuth from "@/components/auth/RequireAuth";
 
 // Public pages (eager loading per performance)
 import Index from "@/pages/Index";
@@ -154,11 +153,11 @@ export const AppRoutes = () => {
           </LazyWrapper>
         } />
         <Route path="privacy/export-request" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <PrivacyExportRequest />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="privacy/confirm-deletion/:token" element={
@@ -175,117 +174,117 @@ export const AppRoutes = () => {
 
         {/* Protected routes */}
         <Route path="onboarding" element={
-          <AuthProtected requireOnboarding={false}>
+          <AuthFlowGate requireOnboarding={false}>
             <LazyWrapper>
               <Onboarding />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="dashboard" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Dashboard />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="profile" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Profile />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="profile/edit" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <ProfileEdit />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="favorites" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Favorites />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="bookings" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <Bookings />
-          </AuthProtected>
+          </AuthFlowGate>
         } />
 
 
         <Route path="bookings/:id" element={
-          <RequireAuth>
+          <AuthFlowGate>
             <LazyWrapper>
               <BookingDetail />
             </LazyWrapper>
-          </RequireAuth>
+          </AuthFlowGate>
         } />
         
         <Route path="messages" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <MessagesPage />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="messages/:id" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <MessagesPage />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         {/* Redirect Legacy Message Routes to New One */}
         <Route path="messages/conversation/:conversationId" element={<Navigate to="/messages" replace />} />
         
         <Route path="networking" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Networking />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="reviews" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Reviews />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="notifications" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Notifications />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="settings" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <Settings />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
         
         <Route path="settings/networking" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <NetworkingSettings />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
 
         <Route path="support" element={
@@ -306,19 +305,19 @@ export const AppRoutes = () => {
         
         {/* Coworker documents */}
         <Route path="my-documents" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <MyDocumentsPage />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
 
         <Route path="host/become" element={
-          <AuthProtected>
+          <AuthFlowGate>
             <LazyWrapper>
               <BecomeHost />
             </LazyWrapper>
-          </AuthProtected>
+          </AuthFlowGate>
         } />
 
         {/* QA Validation Dashboard */}
@@ -333,11 +332,11 @@ export const AppRoutes = () => {
 
       {/* Host routes */}
       <Route path="/host" element={
-        <AuthProtected>
+        <AuthFlowGate>
           <RoleProtected allowedRoles={['host']}>
             <MainLayout />
           </RoleProtected>
-        </AuthProtected>
+        </AuthFlowGate>
       }>
         <Route path="onboarding" element={<Navigate to="/host/become" replace />} />
         <Route path="dashboard" element={

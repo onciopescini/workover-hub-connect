@@ -23,8 +23,6 @@ import { FiscalModeIndicator } from "@/components/fiscal/FiscalModeIndicator";
 import { TermsGuardProvider } from "@/providers/TermsGuardProvider";
 import { MapboxTokenProvider } from "@/contexts/MapboxTokenContext";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
-import { LimboGuard } from "@/components/auth/LimboGuard";
-import { AuthRedirector } from "@/components/auth/AuthRedirector";
 import UIThemeProvider from "@/providers/UIThemeProvider";
 
 import "./App.css";
@@ -64,8 +62,6 @@ function App() {
               <WebsiteSchema />
               <FiscalModeIndicator />
               <ServiceWorkerRegistration />
-              <LimboGuard />
-              <AuthRedirector />
               <AppRoutes />
                             </ErrorBoundary>
                           </TermsGuardProvider>

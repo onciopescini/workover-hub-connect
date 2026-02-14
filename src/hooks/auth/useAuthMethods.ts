@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLogger } from '@/hooks/useLogger';
@@ -29,6 +29,7 @@ export const useAuthMethods = ({
 }: UseAuthMethodsProps) => {
   const { error } = useLogger({ context: 'useAuthMethods' });
   const navigate = useNavigate();
+  const location = useLocation();
 
   const signIn = useCallback(async (email: string, password: string, redirectTo?: string): Promise<void> => {
     try {
@@ -51,7 +52,7 @@ export const useAuthMethods = ({
       });
       throw signInError;
     }
-  }, [fetchProfile, updateAuthState, navigate]);
+  }, [error, fetchProfile, navigate, updateAuthState]);
 
   const signUp = useCallback(async (email: string, password: string, emailRedirectTo?: string): Promise<SignUpResult> => {
     try {
@@ -91,14 +92,16 @@ export const useAuthMethods = ({
 
   const signInWithGoogle = useCallback(async (): Promise<void> => {
     try {
-      await cleanSignInWithGoogle();
+      const currentPath = `${location.pathname}${location.search}${location.hash}`;
+      const safeReturnUrl = currentPath.startsWith('/') ? currentPath : '/';
+      await cleanSignInWithGoogle(safeReturnUrl);
     } catch (googleError: unknown) {
       error('Google sign in error', googleError as Error, {
         operation: 'google_sign_in'
       });
       throw googleError;
     }
-  }, []);
+  }, [error, location.hash, location.pathname, location.search]);
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
@@ -118,7 +121,7 @@ export const useAuthMethods = ({
 
   // Sanitize and normalize profile updates before sending to DB
   const sanitizeProfileUpdates = (raw: Partial<Profile>): Partial<Profile> => {
-    const cleaned: Record<string, any> = {};
+    const cleaned: Partial<Profile> = {};
 
     const stringToNullKeys = new Set([
       'first_name','last_name','nickname','job_title','job_type','work_style','bio','location','skills','interests',
@@ -203,7 +206,7 @@ export const useAuthMethods = ({
       });
       throw updateError;
     }
-  }, [currentUser, refreshProfile, invalidateProfile]);
+  }, [currentUser, error, refreshProfile, invalidateProfile]);
 
   return {
     signIn,
