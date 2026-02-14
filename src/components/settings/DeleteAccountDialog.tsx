@@ -18,6 +18,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
+import type { GDPRRequestInstant } from '@/types/gdpr';
+
+const GDPR_DELETION_REQUEST_TYPE: GDPRRequestInstant['request_type'] = 'data_deletion';
 
 export const DeleteAccountDialog = () => {
   const navigate = useNavigate();
@@ -42,7 +45,7 @@ export const DeleteAccountDialog = () => {
         .from('gdpr_requests')
         .insert({
           user_id: session.session.user.id,
-          request_type: 'deletion',
+          request_type: GDPR_DELETION_REQUEST_TYPE,
           status: 'pending'
         });
       
