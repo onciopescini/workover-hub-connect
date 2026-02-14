@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { sreLogger } from '@/lib/sre-logger';
 import { profileEditSchema } from '@/schemas/profileEditSchema';
 import { z } from 'zod';
+import { sanitizeProfileUpdate } from '@/utils/profile/sanitizeProfileUpdate';
 
 export interface ProfileFormData {
   // Basic Info
@@ -124,11 +125,8 @@ export const useProfileForm = () => {
       // Validazione completa pre-submit
       const validatedData = profileEditSchema.parse(formData);
       
-      // Converti undefined in null per compatibilità con il database
-      const dataToSubmit = Object.fromEntries(
-        Object.entries(validatedData).map(([key, value]) => [key, value === undefined ? null : value])
-      ) as Partial<ProfileFormData>;
-      
+      const dataToSubmit = sanitizeProfileUpdate(validatedData);
+
       await updateProfile(dataToSubmit);
       toast.success("Profilo aggiornato con successo");
       setErrors({});

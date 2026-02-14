@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NavigationGuard } from "@/components/navigation/NavigationGuard";
 import { AvatarUploader } from "@/components/profile/AvatarUploader";
 import { sreLogger } from "@/lib/sre-logger";
+import { sanitizeOnboardingProfileUpdate } from "@/utils/profile/sanitizeProfileUpdate";
 
 interface OnboardingFormData {
   firstName: string;
@@ -85,13 +86,14 @@ const Onboarding = () => {
 
   const handleComplete = async () => {
     try {
-      await updateProfile({
+      const onboardingPayload = sanitizeOnboardingProfileUpdate({
         first_name: formData.firstName,
         last_name: formData.lastName,
         bio: formData.bio,
         profile_photo_url: formData.avatarUrl || null,
-        onboarding_completed: true,
       });
+
+      await updateProfile(onboardingPayload);
 
       await queryClient.invalidateQueries({ queryKey: ["profile"] });
       await queryClient.refetchQueries({ queryKey: ["profile"], type: "active" });
