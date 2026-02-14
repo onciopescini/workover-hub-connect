@@ -13,6 +13,8 @@ import type { Session, User } from '@supabase/supabase-js';
 import { sanitizeProfileUpdate } from '@/utils/profile/sanitizeProfileUpdate';
 import { queryKeys } from '@/lib/react-query-config';
 
+const PROFILE_POST_REFRESH_INVALIDATION_DELAY_MS = 100;
+
 interface UseAuthMethodsProps {
   fetchProfile: (userId: string) => Promise<Profile | null>;
   updateAuthState: (session: Session | null, profile: Profile | null) => void;
@@ -151,10 +153,15 @@ export const useAuthMethods = ({
         throw new Error(mapSupabaseError(error));
       }
 
-      invalidateProfile(currentUser.id);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
-      await queryClient.refetchQueries({ queryKey: queryKeys.profile.all });
+      const profileQueryKey = queryKeys.profile.all;
+      await queryClient.invalidateQueries({ queryKey: profileQueryKey });
+      await queryClient.refetchQueries({ queryKey: profileQueryKey });
       await refreshProfile();
+      await new Promise<void>((resolve) => {
+        window.setTimeout(() => resolve(), PROFILE_POST_REFRESH_INVALIDATION_DELAY_MS);
+      });
+      await queryClient.invalidateQueries({ queryKey: profileQueryKey });
+      invalidateProfile(currentUser.id);
 
       // Broadcast a tutte le altre tab
       const authSync = getAuthSyncChannel();

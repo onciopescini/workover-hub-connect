@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationIcon } from '@/components/notifications/NotificationIcon';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { Badge } from '@/components/ui/badge';
+import { useCurrentProfile } from '@/hooks/queries/useCurrentProfile';
 
 export const OptimizedUnifiedHeader = () => {
   const { error } = useLogger({ context: 'OptimizedUnifiedHeader' });
@@ -25,6 +26,12 @@ export const OptimizedUnifiedHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const { data: cachedProfile } = useCurrentProfile({
+    userId: authState.user?.id ?? null,
+    initialProfile: authState.profile,
+  });
+  const profile = cachedProfile ?? authState.profile;
 
   // Memoized navigation items per evitare re-render eccessivi
   const navigationItems = useMemo(() => {
@@ -68,8 +75,8 @@ export const OptimizedUnifiedHeader = () => {
 
   // Memoized user initials
   const userInitials = useMemo(() => {
-    const firstName = authState.profile?.first_name;
-    const lastName = authState.profile?.last_name;
+    const firstName = profile?.first_name;
+    const lastName = profile?.last_name;
 
     if (firstName && lastName) {
       return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -81,16 +88,16 @@ export const OptimizedUnifiedHeader = () => {
     }
 
     return 'U';
-  }, [authState.profile?.first_name, authState.profile?.last_name, authState.user?.email]);
+  }, [profile?.first_name, profile?.last_name, authState.user?.email]);
 
   // Display Name logic
   const displayName = useMemo(() => {
-    if (authState.profile?.first_name) {
-      return `${authState.profile.first_name} ${authState.profile.last_name || ''}`;
+    if (profile?.first_name) {
+      return `${profile.first_name} ${profile.last_name || ''}`;
     }
     // Fallback: local part of email or 'Utente'
     return authState.user?.email?.split('@')[0] || 'Utente';
-  }, [authState.profile, authState.user]);
+  }, [profile, authState.user]);
 
   // Ottimizzata funzione isActivePath
   const isActivePath = useCallback((path: string) => {
@@ -109,11 +116,11 @@ export const OptimizedUnifiedHeader = () => {
     } catch (signOutError) {
       error('Error during sign out from header', signOutError as Error, { 
         operation: 'header_sign_out',
-        userId: authState.profile?.id,
+        userId: profile?.id,
         currentPath: location.pathname
       });
     }
-  }, [signOut, error, authState.profile?.id, location.pathname]);
+  }, [signOut, error, profile?.id, location.pathname]);
 
   // Ottimizzato mobile menu toggle
   const toggleMobileMenu = useCallback(() => {
@@ -192,7 +199,7 @@ export const OptimizedUnifiedHeader = () => {
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1">
                        <Avatar className="h-8 w-8">
                          <AvatarImage 
-                           src={authState.profile?.profile_photo_url ?? undefined}
+                           src={profile?.profile_photo_url ?? undefined}
                            alt={displayName}
                          />
                          <AvatarFallback>
@@ -205,7 +212,7 @@ export const OptimizedUnifiedHeader = () => {
                     <div className="flex items-center justify-start gap-2 p-2">
                        <Avatar className="h-8 w-8">
                          <AvatarImage 
-                           src={authState.profile?.profile_photo_url ?? undefined}
+                           src={profile?.profile_photo_url ?? undefined}
                            alt={displayName}
                          />
                          <AvatarFallback>
@@ -217,13 +224,13 @@ export const OptimizedUnifiedHeader = () => {
                           {displayName}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {authState.profile?.job_title || authState.user?.email}
+                          {profile?.job_title || authState.user?.email}
                         </p>
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {/* Show onboarding link if profile exists but incomplete, OR if no roles (Limbo) */}
-                    {((authState.profile && !authState.profile.onboarding_completed) || (!authState.roles || authState.roles.length === 0)) && !isAdmin && (
+                    {/* Show onboarding link based on latest profile cache to avoid stale auth state races */}
+                    {((profile && !profile.onboarding_completed) || (!profile && (!authState.roles || authState.roles.length === 0))) && !isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link to="/onboarding" className="flex items-center">
                           <CheckCircle className="mr-2 h-4 w-4" />
