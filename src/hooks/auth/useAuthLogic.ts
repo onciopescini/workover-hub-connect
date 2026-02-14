@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfileCache } from './useProfileCache';
-import { useAuthRedirects } from './useAuthRedirects';
 import { useLogger } from '@/hooks/useLogger';
 import type { AuthState, Profile, UserRole } from '@/types/auth';
 import { shouldUpdateAuthState } from '@/utils/auth/auth-helpers';
@@ -29,8 +28,6 @@ export const useAuthLogic = () => {
   });
 
   const { fetchProfile, invalidateProfile, clearCache, getCachedProfile } = useProfileCache();
-  const { handleRoleBasedRedirect } = useAuthRedirects();
-  
   // Ref per evitare re-render eccessivi e race conditions
   const isInitialized = useRef(false);
   const currentUserId = useRef<string | null>(null);
@@ -53,7 +50,7 @@ export const useAuthLogic = () => {
       debug('Error fetching user roles', { error: err });
       return [];
     }
-  }, [debug, logError]);
+  }, [debug]);
 
   // Funzione ottimizzata per aggiornare lo stato auth
   const updateAuthState = useCallback(async (session: Session | null, profile: Profile | null = null, signal?: AbortSignal) => {
@@ -82,13 +79,7 @@ export const useAuthLogic = () => {
 
       return newState;
     });
-
-    // Gestisci redirect solo se necessario
-    if (session && profile) {
-      // Direct call instead of setTimeout
-      handleRoleBasedRedirect(profile, session, roles);
-    }
-  }, [handleRoleBasedRedirect, fetchUserRoles, debug, logError]);
+  }, [fetchUserRoles]);
 
   // Profile fetching con gestione cache
   const fetchUserProfile = useCallback(async (userId: string, signal?: AbortSignal) => {

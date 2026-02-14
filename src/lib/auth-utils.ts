@@ -130,7 +130,7 @@ export const getUnreadMessagesCount = async (): Promise<number> => {
 };
 
 // Helper function to handle login with cleanup and force account picker
-export const cleanSignInWithGoogle = async () => {
+export const cleanSignInWithGoogle = async (returnUrl: string) => {
   try {
     logger.info('Starting clean Google sign in');
     
@@ -151,7 +151,7 @@ export const cleanSignInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(returnUrl)}`,
         // Force Google to show account picker even if user is already signed in
         queryParams: {
           prompt: 'select_account',
