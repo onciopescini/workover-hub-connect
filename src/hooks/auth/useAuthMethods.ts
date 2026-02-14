@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ import { AUTH_ERRORS, mapSupabaseError } from '@/utils/auth/auth-errors';
 import type { Profile, SignUpResult } from '@/types/auth';
 import type { Session, User } from '@supabase/supabase-js';
 import { sanitizeProfileUpdate } from '@/utils/profile/sanitizeProfileUpdate';
+import { queryKeys } from '@/lib/react-query-config';
 
 interface UseAuthMethodsProps {
   fetchProfile: (userId: string) => Promise<Profile | null>;
@@ -31,6 +33,7 @@ export const useAuthMethods = ({
   const { error } = useLogger({ context: 'useAuthMethods' });
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const signIn = useCallback(async (email: string, password: string, redirectTo?: string): Promise<void> => {
     try {
@@ -137,6 +140,8 @@ export const useAuthMethods = ({
         return;
       }
 
+      console.log('Sanitized Payload:', sanitized);
+
       const { error } = await supabase
         .from('profiles')
         .update(sanitized)
@@ -146,14 +151,15 @@ export const useAuthMethods = ({
         throw new Error(mapSupabaseError(error));
       }
 
-      // Invalida cache e ricarica nella tab corrente
       invalidateProfile(currentUser.id);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profile.all });
+      await queryClient.refetchQueries({ queryKey: queryKeys.profile.all });
       await refreshProfile();
-      
+
       // Broadcast a tutte le altre tab
       const authSync = getAuthSyncChannel();
       authSync.broadcastProfileUpdate({ userId: currentUser.id });
-      
+
       toast.success('Profilo aggiornato con successo');
     } catch (updateError: unknown) {
       error('Update profile error', updateError as Error, {
@@ -163,7 +169,7 @@ export const useAuthMethods = ({
       });
       throw updateError;
     }
-  }, [currentUser, error, refreshProfile, invalidateProfile]);
+  }, [currentUser, error, refreshProfile, invalidateProfile, queryClient]);
 
   return {
     signIn,
