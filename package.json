@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "type-check": "tsc --noEmit",
+    "migration:check-preview-workspaces": "ts-node scripts/check-preview-workspaces-migration.ts",
     "console-cleanup": "ts-node scripts/console-cleanup/index.ts scan",
     "console-cleanup:fix": "ts-node scripts/console-cleanup/index.ts scan --fix",
     "console-cleanup:report": "ts-node scripts/console-cleanup/index.ts scan --output cleanup-report.md"
